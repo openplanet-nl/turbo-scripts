@@ -1,0 +1,94 @@
+#Include "TextLib" as TextLib
+#Include "Libs/Nadeo/TMConsole/Menu/MenuLayers.Script.txt"					as Layers
+#Include "Libs/Nadeo/TMConsole/Menu/Controller/TaskMessageErrorController.Script.txt"	as TaskMessageErrorController
+
+#Const C_REQUESTSTATUS_NOREQUEST				0
+#Const C_REQUESTSTATUS_GETLOGINS				1
+#Const C_REQUESTSTATUS_GETONLINEPRESENCE		2
+
+declare Integer 	 																G_RequestBuddiesOnlinePresenceStatus;
+declare Text[Text][] 																G_BuddiesOnlinePresenceData;
+declare CGameMasterServerRichPresenceTaskResult_GetOnlinePresenceForPlayersScript 	G_GetBuddiesOnlinePresenceTask;	
+declare Text[]																		G_LayersToSend;
+
+Void GetBuddiesOnlinePresence() { //renvoie True si les buddies on été renvoyés cash
+	G_RequestBuddiesOnlinePresenceStatus = C_REQUESTSTATUS_GETLOGINS;
+	G_BuddiesOnlinePresenceData.clear();
+}
+
+Void Layer_GetBuddiesOnlinePresence(Text _LayerName) {
+	G_LayersToSend.add(_LayerName);
+	if (G_RequestBuddiesOnlinePresenceStatus == C_REQUESTSTATUS_NOREQUEST)
+		GetBuddiesOnlinePresence();
+}
+
+Void Load() {
+	G_LayersToSend.clear();
+	G_RequestBuddiesOnlinePresenceStatus = C_REQUESTSTATUS_NOREQUEST;
+	G_BuddiesOnlinePresenceData.clear();
+}
+
+Boolean IsReady()
+{
+	return G_RequestBuddiesOnlinePresenceStatus == C_REQUESTSTATUS_NOREQUEST;
+}
+
+Void Loop() {
+	switch (G_RequestBuddiesOnlinePresenceStatus)
+	{
+		case C_REQUESTSTATUS_GETLOGINS :
+		{
+			if (UserMgr.AreBuddiesLoginsReady(DataMgr.MenuUserId))
+			{
+				declare Text[] BuddiesLogins = TextLib::Split(",",UserMgr.GetBuddiesLogins(DataMgr.MenuUserId));
+				
+				G_GetBuddiesOnlinePresenceTask = PresenceMgr.GetOnlinePresenceForPlayers(DataMgr.MenuUserId);
+				
+				for (I, 0, BuddiesLogins.count - 1)
+				{
+					if (BuddiesLogins[I] != "")
+						G_GetBuddiesOnlinePresenceTask.AddLogin(BuddiesLogins[I]);
+				}
+				
+				G_GetBuddiesOnlinePresenceTask.StartTask();
+				G_RequestBuddiesOnlinePresenceStatus = C_REQUESTSTATUS_GETONLINEPRESENCE;
+			}
+		}
+		case C_REQUESTSTATUS_GETONLINEPRESENCE :
+		{
+			if (!G_GetBuddiesOnlinePresenceTask.IsProcessing)
+			{
+				if (G_GetBuddiesOnlinePresenceTask.HasSucceeded)
+				{
+					for (I, 0, G_GetBuddiesOnlinePresenceTask.OnlinePresences.count-1)
+					{
+						declare CGameMasterServerPlayerOnlinePresence OnlinePresence <=> G_GetBuddiesOnlinePresenceTask.OnlinePresences[I];
+						if (!OnlinePresence.IsOnline)
+							continue;
+						G_BuddiesOnlinePresenceData.add(Text[Text]);
+						G_BuddiesOnlinePresenceData[G_BuddiesOnlinePresenceData.count-1]["login"] = OnlinePresence.Login;
+						G_BuddiesOnlinePresenceData[G_BuddiesOnlinePresenceData.count-1]["displayname"] = OnlinePresence.DisplayName;
+						G_BuddiesOnlinePresenceData[G_BuddiesOnlinePresenceData.count-1]["dedicated_login"] = OnlinePresence.ServerLogin;
+					}
+				} else {
+					TaskMessageErrorController::TaskErrorMessage(G_GetBuddiesOnlinePresenceTask.ErrorType, G_GetBuddiesOnlinePresenceTask.ErrorCode);
+					G_BuddiesOnlinePresenceData.clear();
+				}
+				
+				G_RequestBuddiesOnlinePresenceStatus = C_REQUESTSTATUS_NOREQUEST;
+				G_GetBuddiesOnlinePresenceTask = Null;
+				
+				for (I, 0, G_LayersToSend.count - 1)
+				{
+					declare CUILayer LayerToSend = Layers::Get(G_LayersToSend[I]);
+					if (LayerToSend == Null)
+						continue;
+					declare Text[Text][] RequestedOnlinePresences for LayerToSend.LocalPage;
+					RequestedOnlinePresences = G_BuddiesOnlinePresenceData;
+					LayerCustomEvent(LayerToSend, "OnlinePresenceSent", Text[]);
+				}
+				G_LayersToSend.clear();
+			}
+		}
+	}
+}

@@ -1,0 +1,548 @@
+#RequireContext CManiaplanetPlugin
+
+#Include "TextLib" 	as TL
+
+#Include "PluginNadeo/Libs/Leaderboard.Script.txt"					as Leaderboard
+#Include "PluginNadeo/Libs/NotificationsPopUp.Script.txt"			as NotificationsPopUp
+#Include "PluginNadeo/Libs/NotificationsReminder.Script.txt"		as NotificationsReminder
+#Include "PluginNadeo/Libs/RecordCenter.Script.txt"					as RecordCenter
+#Include "PluginNadeo/Libs/RecordCenterDetails.Script.txt"			as RecordCenterDetails
+#Include "PluginNadeo/Libs/RecordsHandler.Script.txt"    			as RecordsHandler
+#Include "Libs/Nadeo/TMConsole/Menu/MenuLayers.Script.txt" 			as Layers
+#Include "Libs/Nadeo/TMConsole/LayerBuilders/LBSuperPopUp.Script.txt" as LBSuperPopUp
+#Include "Libs/Nadeo/TMConsole/Menu/LoadingScreenImplem.Script.txt"	as LoadingScreenImplem
+
+#Const InterfaceName			"UIPlugin"
+#Const S_EnableShowPlugin 		True	// TO HIDE PLUGIN SET TO FALSE
+#Const S_NotifPopUpDuration		4750
+
+main()
+{
+	Leaderboard::Load();
+	NotificationsPopUp::Load();
+	NotificationsReminder::Load();
+	RecordCenter::Load();
+	RecordCenterDetails::Load();
+	LoadingScreenImplem::Load();
+
+	declare Text MLText  = LBSuperPopUp::Build("", "");
+	Layers::Create("SuperPopUp", MLText);
+	declare CUILayer Layer <=> Layers::Get("SuperPopUp");
+	declare Text Page_SuperPopUp for Layer.LocalPage;
+	Page_SuperPopUp = "SuperPopUp";
+	Layers::Attach("SuperPopUp");
+
+
+	declare PrevRecordCenterIsVisible = False;
+	declare PrevRecordCenterDetailsIsVisible = False;
+	declare CUILayer Layer_RecordCenter 			for This;
+	declare CUILayer Layer_RecordCenterDetails 		for This;
+	declare CUILayer Layer_NotificationsPopUp;
+	declare CUILayer Layer_NotificationsReminder;
+	Layer_NotificationsPopUp 		= NotificationsPopUp::GetLayer();
+	Layer_NotificationsReminder	= NotificationsReminder::GetLayer();
+	Layer_RecordCenter 			= RecordCenter::GetLayer();
+	Layer_RecordCenterDetails 	= RecordCenterDetails::GetLayer();
+	Layer_RecordCenterDetails 	= RecordCenterDetails::GetLayer();
+
+	Layer_NotificationsPopUp.IsVisible = False;
+	Layer_NotificationsReminder.IsVisible = False;
+
+	declare CGameMasterServerOnlineSignal_RecordBeaten[]	SignalsToTreat;
+	declare CGameMasterServerUserOnlineSignals					PlayerOnlineSignals;
+	declare CGameMasterServerOnlineSignal_RecordBeaten[] 	PlayersSignals;
+	declare CGameMasterServerOnlineSignal_RecordBeaten[] 	BuddiesSignals;
+
+	declare Text[] 																				CastedBuddiesSignalsSenderLogins;
+
+	declare Boolean 																			DisplayNextPopup;
+	declare Boolean																				PopUpShown;
+	DisplayNextPopup = False;
+	PopUpShown = False;
+
+	declare NotifPopUpTimer = 0;
+	declare NotifNextPopUpTimer = 0;
+	declare Text PlayerName;
+	// declare persistent Integer LastSavedSignalId  for LocalUser;
+	// declare Integer LastSavedSignalId;
+	// LastSavedSignalId = 0;
+
+	while(True)
+	{
+		yield;
+
+		declare Boolean RecordCenterVisible  for LocalUser;
+		if(ManiaPlanet.MasterServer_MainMSUser != Null){
+			if(ManiaPlanet.MasterServer_MainMSUser.ConnectionStatus == CNetMasterServerUserInfo::EMasterServerConnectionStatus::NotConnected && RecordCenterVisible) {
+				RecordCenterVisible = False;
+				Layer_RecordCenter.IsVisible           = False;
+				Layer_RecordCenter.OutAnimation        = CUILayer::EUILayerAnimation::None;
+				Layer_RecordCenterDetails.IsVisible    = False;
+				Layer_RecordCenterDetails.OutAnimation = CUILayer::EUILayerAnimation::None;
+			}
+		}
+
+		if(UserMgr != Null && UserMgr.MainUser != Null)
+		{
+			if(PlayerName != UserMgr.MainUser.DisplayName)
+			{
+				//log("PlayerName: " ^ UserMgr.MainUser.DisplayName);
+				LayerCustomEvent(Layer_RecordCenter, "ChangeName", [UserMgr.MainUser.DisplayName]);
+				PlayerName = UserMgr.MainUser.DisplayName;
+			}
+		}
+
+		if(S_EnableShowPlugin)
+		{
+			foreach(Event in Input.PendingEvents)
+			{
+				//log("2vent.Button: "^ Event.Button);
+				if (Event.Type == CInputEvent::EType::PadButtonPress && Event.Button == CInputEvent::EButton::View && Event.Pad == UserMgr.MainUserPad)
+				{
+					if(!Layer_RecordCenter.IsVisible && !Layer_RecordCenterDetails.IsVisible)
+					{
+						//LayerCustomEvent(Layer_RecordCenter, "GetRecordsResume", ["4", "False"]);
+						//if(Layer_NotificationsReminder.IsVisible == True) Layer_NotificationsReminder.IsVisible = False;
+					}
+					else
+					{
+						//declare Boolean RecordCenterVisible  for LocalUser;
+						RecordCenterVisible = False;
+						RecordsHandler::ReleaseRecordsTaskResult("Main");
+						Layer_RecordCenter.OutAnimation = CUILayer::EUILayerAnimation::LeftFast;
+						Layer_RecordCenter.IsVisible = False;
+					}
+
+					if(Layer_RecordCenterDetails.IsVisible)
+					{
+						RecordsHandler::ReleaseRecordsTaskResult("Buddy");
+					}
+
+					Layer_RecordCenterDetails.OutAnimation = CUILayer::EUILayerAnimation::LeftFast;
+					Layer_RecordCenterDetails.IsVisible = False;
+				}
+			}
+
+			RecordsHandler::Loop();
+
+			if(PrevRecordCenterIsVisible != Layer_RecordCenter.IsVisible)
+			{
+				PrevRecordCenterIsVisible = Layer_RecordCenter.IsVisible;
+				if(!PrevRecordCenterIsVisible && !Layer_RecordCenterDetails.IsVisible)
+					ExternalCustomEvent("HidePlugin", [""]);
+				else
+					ExternalCustomEvent("ShowPlugin", [""]);
+			}
+
+			if(PrevRecordCenterDetailsIsVisible != Layer_RecordCenterDetails.IsVisible)
+			{
+				PrevRecordCenterDetailsIsVisible = Layer_RecordCenterDetails.IsVisible;
+				if(!PrevRecordCenterDetailsIsVisible && !Layer_RecordCenter.IsVisible)
+					ExternalCustomEvent("HidePlugin", [""]);
+			}
+
+			if(Now <= NotifPopUpTimer && NotifPopUpTimer != 0)
+			{
+				Layer_NotificationsPopUp.IsVisible = True;
+				if(Now >= NotifPopUpTimer - 10 && Layer_RecordCenter.IsVisible == False)
+				{
+					Layer_NotificationsReminder.IsVisible = True;
+				}
+
+				if(Now >= NotifPopUpTimer - 10)
+				{
+					if(BuddiesSignals.count != 0) DisplayNextPopup = True;
+					PopUpShown = True;
+				}
+			}
+			else
+				Layer_NotificationsPopUp.IsVisible = False;
+
+			if(Now <= NotifNextPopUpTimer && Now > NotifPopUpTimer)
+			{
+				Layer_NotificationsPopUp.IsVisible = True;
+				if(Now >= NotifNextPopUpTimer - 10 && Layer_RecordCenter.IsVisible == False) Layer_NotificationsReminder.IsVisible = True;
+			}
+			else if(Now > NotifPopUpTimer)
+				Layer_NotificationsPopUp.IsVisible = False;
+		}
+
+		foreach(Event in PendingEvents)
+		{
+			if(Event.Type == CManiaAppEvent::EType::KeyPress)
+			{
+				if(Event.KeyName == "F1")
+				{
+					if(!Layer_RecordCenter.IsVisible && !Layer_RecordCenterDetails.IsVisible)
+					{
+						//LayerCustomEvent(Layer_RecordCenter, "GetRecordsResume", ["4", "False"]);
+						//if(Layer_NotificationsReminder.IsVisible == True) Layer_NotificationsReminder.IsVisible = False;
+					}
+					else
+					{
+						//declare Boolean RecordCenterVisible  for LocalUser;
+						RecordCenterVisible = False;
+
+						RecordsHandler::ReleaseRecordsTaskResult("Main");
+						Layer_RecordCenter.OutAnimation = CUILayer::EUILayerAnimation::LeftFast;
+						Layer_RecordCenter.IsVisible = False;
+					}
+
+					if(Layer_RecordCenterDetails.IsVisible)
+						RecordsHandler::ReleaseRecordsTaskResult("Buddy");
+
+					Layer_RecordCenterDetails.OutAnimation = CUILayer::EUILayerAnimation::LeftFast;
+					Layer_RecordCenterDetails.IsVisible = False;
+				}
+			}
+			if(Event.Type == CManiaAppEvent::EType::ExternalCustomEvent)
+			{
+				if(Event.ExternalEventType == "SetRecordCenter")
+				{
+					if(!Layer_RecordCenter.IsVisible && !Layer_RecordCenterDetails.IsVisible)
+					{
+						LayerCustomEvent(Layer_RecordCenter, "GetRecordsResume", ["4", "False"]);
+						if(Layer_NotificationsReminder.IsVisible == True) Layer_NotificationsReminder.IsVisible = False;
+					}
+					else
+					{
+						//declare Boolean RecordCenterVisible  for LocalUser;
+						RecordCenterVisible = False;
+						RecordsHandler::ReleaseRecordsTaskResult("Main");
+						Layer_RecordCenter.OutAnimation = CUILayer::EUILayerAnimation::LeftFast;
+						Layer_RecordCenter.IsVisible = False;
+					}
+
+					if(Layer_RecordCenterDetails.IsVisible)
+						RecordsHandler::ReleaseRecordsTaskResult("Buddy");
+
+					Layer_RecordCenterDetails.OutAnimation = CUILayer::EUILayerAnimation::LeftFast;
+					Layer_RecordCenterDetails.IsVisible = False;
+				}
+				else if(Event.ExternalEventType == "HideRecordCenter")
+				{
+					if(Layer_RecordCenter.IsVisible || Layer_RecordCenterDetails.IsVisible)
+					{
+						//declare Boolean RecordCenterVisible  for LocalUser;
+						RecordCenterVisible = False;
+						RecordsHandler::ReleaseRecordsTaskResult("Main");
+						Layer_RecordCenter.OutAnimation        = CUILayer::EUILayerAnimation::LeftFast;
+						Layer_RecordCenterDetails.OutAnimation = CUILayer::EUILayerAnimation::None;
+						Layer_RecordCenter.IsVisible           = False;
+						Layer_RecordCenterDetails.IsVisible    = False;
+					}
+				}
+				else if(Event.ExternalEventType == "IsRecordCenter")
+				{
+					if(RecordsHandler::Get_RecordCenterMode())
+					{
+						LayerCustomEvent(Layer_RecordCenter, "GetRecordsResume", ["4", "False"]);
+						if(Layer_NotificationsReminder.IsVisible == True) Layer_NotificationsReminder.IsVisible = False;
+						//RecordsHandler::ReleaseRecordsTaskResult("Main");
+					}
+					else
+					{
+					}
+				}
+				if(Event.ExternalEventType == "SetLoadingScreen")
+				{
+					declare LoadingType = 0;
+					declare Environment = 0;
+					declare Difficulty = 0;
+					declare Mode = 0;
+					if (Event.ExternalEventData.count > 0) 
+						LoadingType	=  TL::ToInteger( Event.ExternalEventData[0] );
+					if (Event.ExternalEventData.count > 1) 
+						Environment	=  TL::ToInteger( Event.ExternalEventData[1] );
+					if (Event.ExternalEventData.count > 2) 
+						Difficulty	=  TL::ToInteger( Event.ExternalEventData[2] );
+					if (Event.ExternalEventData.count > 3) 
+						Mode		=  TL::ToInteger( Event.ExternalEventData[3] );
+					LoadingScreenImplem::SetLoadingType(LoadingType, Environment, Difficulty, Mode);
+				}
+			}
+			if(Event.Type == CManiaAppEvent::EType::LayerCustomEvent)
+			{
+				if(Event.CustomEventType == "HideLayerRecordCenterDetails")
+				{
+					Layer_RecordCenterDetails.OutAnimation = CUILayer::EUILayerAnimation::None;
+					Layer_RecordCenterDetails.IsVisible = False;
+				}
+				else
+				if(Event.CustomEventType == "HideLayerRecordCenter")
+				{
+					//declare Boolean RecordCenterVisible  for LocalUser;
+					RecordCenterVisible = False;
+					Layer_RecordCenter.OutAnimation = CUILayer::EUILayerAnimation::LeftFast;
+					Layer_RecordCenter.IsVisible = False;
+				}
+				else
+				if(Event.CustomEventType == "ShowLayerRecordCenter")
+				{
+					Layer_RecordCenter.OutAnimation = CUILayer::EUILayerAnimation::LeftFast;
+					Layer_RecordCenter.IsVisible = True;
+				}
+				else
+				if(Event.CustomEventType == "ShowDetails")
+				{
+					Layer_RecordCenter.OutAnimation = CUILayer::EUILayerAnimation::None;
+					Layer_RecordCenter.IsVisible = False;
+					Layer_RecordCenterDetails.IsVisible = True;
+					// log("PLUGIN SHOW DETAILS");
+					// declare Text Net_RecordCenterDetails_SelectedBuddy for Layer_RecordCenterDetails.LocalPage;
+				}
+				else
+				if(Event.CustomEventType == "ShowProfile")
+				{
+					log("ShowProfile of "^Event.CustomEventData[0]);
+					UserMgr.ShowProfile(DataMgr.MenuUserId, Event.CustomEventData[0]);
+				}
+				// EG : commenté parce que OnlineSignalsManager.OnlineSignals n'existe pas (pas ici, en tout cas)
+				else
+				if(Event.CustomEventType == "PluginRecordsLoaded"
+						&& PlayerOnlineSignals != Null
+						&& PlayerOnlineSignals.OnlineSignals.count > 0)
+				{
+					declare Text[Text][] 	RequestedRecordsResume							for Layer_RecordCenter.LocalPage;
+
+//???				LayerCustomEvent(Layer_RecordCenter, "GetRecordsResume", ["4", "True"]);
+
+					// declare CGameMasterServerOnlineSignal_RecordBeaten[] SignalsToTreat;
+					foreach(Signal in PlayerOnlineSignals.OnlineSignals)			// XXX tableau trié? si oui: parcourir depuis la fin et breaker dès qu'on les a tous.
+					{
+						declare CastedSignal <=> (Signal as CGameMasterServerOnlineSignal_RecordBeaten);
+						if (CastedSignal != Null) SignalsToTreat.add(CastedSignal);
+					}
+
+					if(SignalsToTreat.count == 1)
+					{
+						foreach(Signal in SignalsToTreat)
+						{
+							if(RequestedRecordsResume.count != 0)
+							{
+								declare CastedSignal <=> (Signal as CGameMasterServerOnlineSignal_RecordBeaten);
+
+								declare Text 					Net_NotificationsPopUp_Score 				for Layer_NotificationsPopUp.LocalPage;
+								declare Text 					Net_NotificationsPopUp_Description 	for Layer_NotificationsPopUp.LocalPage;
+
+								foreach(Buddy in RequestedRecordsResume)
+								{
+									if(Buddy["OpponentLogin"] == CastedSignal.SenderLogin)
+									{
+										Net_NotificationsPopUp_Score = CastedSignal.BeatenDisplayName^" "^ Buddy["BestRecordCount"] ^" $fff- "^ Buddy["OpponentBestRecordCount"] ^" "^ CastedSignal.SenderDisplayName ^"$z";
+										Net_NotificationsPopUp_Description =  "Beaten on the track $fff#"^TL::SubString(CastedSignal.ChallengeName, 0, 9)^"$z";
+									}
+									else
+									if(Buddy["OpponentLogin"] == CastedSignal.BeatenLogin)
+									{
+										Net_NotificationsPopUp_Score = CastedSignal.SenderDisplayName^" "^ Buddy["BestRecordCount"] ^" $fff- "^ Buddy["OpponentBestRecordCount"] ^" "^ CastedSignal.BeatenDisplayName ^"$z";
+										Net_NotificationsPopUp_Description =  "You beat $fff"^ CastedSignal.BeatenDisplayName ^"$z on $fff#"^TL::SubString(CastedSignal.ChallengeName, 0, 9)^"$z";
+									}
+								}
+
+								NotifPopUpTimer = Now + S_NotifPopUpDuration;
+								// LastSavedSignalId = Signal.OnlineSignalId;
+							}
+						}
+					}
+					else
+					{
+						declare Text 					Net_NotificationsPopUp_Score 				for Layer_NotificationsPopUp.LocalPage;
+						declare Text 					Net_NotificationsPopUp_Description 	for Layer_NotificationsPopUp.LocalPage;
+
+						declare CGameMasterServerOnlineSignal_RecordBeaten[] 	CastedSignals;
+						declare Text[] 																				CastedPlayerSignalsSenderLogins;
+
+						CastedSignals.clear();
+						CastedPlayerSignalsSenderLogins.clear();
+						PlayersSignals.clear();
+
+						if(BuddiesSignals.count != 0) CastedSignals = BuddiesSignals;
+
+						foreach(Signal in SignalsToTreat)
+						{
+							declare CastedSignal <=> (Signal as CGameMasterServerOnlineSignal_RecordBeaten);
+
+							if(CastedSignal.SenderLogin == ManiaPlanet.LocalUser.Login) PlayersSignals.add(CastedSignal);
+							else BuddiesSignals.add(CastedSignal);
+
+							// CastedSignals.add(CastedSignal);
+							if(!CastedPlayerSignalsSenderLogins.exists(CastedSignal.BeatenLogin) && CastedSignal.BeatenLogin != ManiaPlanet.LocalUser.Login) CastedPlayerSignalsSenderLogins.add(CastedSignal.BeatenLogin);
+							else if(!CastedBuddiesSignalsSenderLogins.exists(CastedSignal.SenderLogin) && CastedSignal.SenderLogin != ManiaPlanet.LocalUser.Login) CastedBuddiesSignalsSenderLogins.add(CastedSignal.SenderLogin);
+
+							// LastSavedSignalId = Signal.OnlineSignalId;
+						}
+
+						if(PlayersSignals.count != 0 && BuddiesSignals.count != 0)
+						{
+							CastedSignals = PlayersSignals;
+						}
+						else
+						if(PlayersSignals.count == 0 && BuddiesSignals.count != 0)
+						{
+							CastedSignals = BuddiesSignals;
+						}
+						else
+						{
+							CastedSignals = PlayersSignals;
+						}
+
+						if(CastedSignals.count == 2)
+						{
+							if(CastedBuddiesSignalsSenderLogins.count == 2 && PlayersSignals.count == 0)
+							{
+								Net_NotificationsPopUp_Score = CastedSignals[0].SenderDisplayName^" & "^ CastedPlayerSignalsSenderLogins.count - 1 ^" friend";
+								Net_NotificationsPopUp_Description =  "have beaten your records!";
+							}
+							else
+							if(CastedPlayerSignalsSenderLogins.count == 2)
+							{
+								Net_NotificationsPopUp_Score = "You have beaten $fff"^ CastedSignals.count ^"$z records";
+								Net_NotificationsPopUp_Description =  "of your friends!";
+							}
+							else
+							{
+								if(CastedSignals[0].BeatenLogin == ManiaPlanet.LocalUser.Login) Net_NotificationsPopUp_Score = CastedSignals[0].SenderDisplayName^" has beaten "^ CastedSignals.count - 1 ^" records!";
+								else Net_NotificationsPopUp_Score = "You beat the record of 2 friends";
+								Net_NotificationsPopUp_Description =  "on $fff#"^ TL::SubString(CastedSignals[0].ChallengeName, 0, 9) ^"$z";
+							}
+						}
+						else
+						if(CastedSignals.count > 2)
+						{
+							if(CastedBuddiesSignalsSenderLogins.count > 1  && PlayersSignals.count == 0)
+							{
+								if(CastedBuddiesSignalsSenderLogins.count == 2)
+									Net_NotificationsPopUp_Score = CastedSignals[0].SenderDisplayName^" & "^ CastedPlayerSignalsSenderLogins.count - 1 ^" friend";
+								else if(CastedBuddiesSignalsSenderLogins.count > 2)
+									Net_NotificationsPopUp_Score = CastedSignals[0].SenderDisplayName^" & "^ CastedPlayerSignalsSenderLogins.count - 1 ^" friends";
+
+								Net_NotificationsPopUp_Description =  "have beaten your records!";
+							}
+							else
+							{
+								if(PlayersSignals.count != 0) Net_NotificationsPopUp_Score = "You have beaten $fff"^ CastedSignals.count ^"$z records";
+								else Net_NotificationsPopUp_Score = CastedSignals[0].SenderDisplayName^" has beaten "^ CastedSignals.count - 1 ^" records!";
+
+								if(PlayersSignals.count != 0) Net_NotificationsPopUp_Description = "of your friends on $fff#"^ TL::SubString(CastedSignals[0].ChallengeName, 0, 9) ^"$z";
+								else Net_NotificationsPopUp_Description =  "";
+							}
+						}
+						else
+						{
+							// LayerCustomEvent(Layer_RecordCenter, "GetRecordsResume", ["4", "True"]);
+
+							declare Text[Text][] 	RequestedRecordsResume							for Layer_RecordCenter.LocalPage;
+
+							foreach(Buddy in RequestedRecordsResume)
+							{
+								if(Buddy["OpponentLogin"] == CastedSignals[0].SenderLogin)
+								{
+									Net_NotificationsPopUp_Score = CastedSignals[0].BeatenDisplayName^" "^ Buddy["BestRecordCount"] ^" $fff- "^ Buddy["OpponentBestRecordCount"] ^" "^ CastedSignals[0].SenderDisplayName ^"$z";
+									Net_NotificationsPopUp_Description =  "Beaten on the track $fff#"^TL::SubString(CastedSignals[0].ChallengeName, 0, 9)^"$z";
+								}
+								else
+								if(Buddy["OpponentLogin"] == CastedSignals[0].BeatenLogin)
+								{
+									Net_NotificationsPopUp_Score = CastedSignals[0].SenderDisplayName^" "^ Buddy["BestRecordCount"] ^" $fff- "^ Buddy["OpponentBestRecordCount"] ^" "^ CastedSignals[0].BeatenDisplayName ^"$z";
+									Net_NotificationsPopUp_Description =  "You beat $fff"^ CastedSignals[0].BeatenDisplayName ^"$z on $fff#"^TL::SubString(PlayersSignals[0].ChallengeName, 0, 9)^"$z";
+								}
+							}
+						}
+
+						NotifPopUpTimer = Now + S_NotifPopUpDuration;
+
+						if(PlayersSignals.count == 0 && BuddiesSignals.count != 0)
+						{
+							BuddiesSignals.clear();
+							CastedBuddiesSignalsSenderLogins.clear();
+						}
+					}
+
+					SignalsToTreat.clear();
+				}
+			}
+		}
+
+		if(DisplayNextPopup == True && Now > NotifPopUpTimer)
+		{
+			declare Text 					Net_NotificationsPopUp_Score 				for Layer_NotificationsPopUp.LocalPage;
+			declare Text 					Net_NotificationsPopUp_Description 	for Layer_NotificationsPopUp.LocalPage;
+			declare Text[Text][] 	RequestedRecordsResume							for Layer_RecordCenter.LocalPage;
+
+			if(BuddiesSignals.count == 2)
+			{
+				if(CastedBuddiesSignalsSenderLogins.count == 2)
+				{
+					Net_NotificationsPopUp_Score = BuddiesSignals[0].SenderDisplayName^" & "^ CastedBuddiesSignalsSenderLogins.count - 1 ^" friend";
+					Net_NotificationsPopUp_Description =  "have beaten your records!";
+				}
+				else
+				{
+					Net_NotificationsPopUp_Score = BuddiesSignals[0].SenderDisplayName^" & has beaten "^ BuddiesSignals.count - 1 ^" records!";
+					Net_NotificationsPopUp_Description =  "";
+				}
+			}
+			else
+			if(BuddiesSignals.count > 2)
+			{
+				if(CastedBuddiesSignalsSenderLogins.count > 1)
+				{
+					if(CastedBuddiesSignalsSenderLogins.count == 2)
+						Net_NotificationsPopUp_Score = BuddiesSignals[0].SenderDisplayName^" & "^ CastedBuddiesSignalsSenderLogins.count - 1 ^" friend";
+					else
+						Net_NotificationsPopUp_Score = BuddiesSignals[0].SenderDisplayName^" & "^ CastedBuddiesSignalsSenderLogins.count - 1 ^" friends";
+
+					Net_NotificationsPopUp_Description =  "have beaten your records!";
+				}
+				else
+				{
+					Net_NotificationsPopUp_Score = BuddiesSignals[0].SenderDisplayName^" & has beaten "^ BuddiesSignals.count - 1 ^" records!";
+					Net_NotificationsPopUp_Description =  "";
+				}
+			}
+			else
+			{
+				declare Text[Text][] 	RequestedRecordsResume							for Layer_RecordCenter.LocalPage;
+
+				foreach(Buddy in RequestedRecordsResume)
+				{
+					if(Buddy["OpponentLogin"] == BuddiesSignals[0].SenderLogin)
+					{
+						Net_NotificationsPopUp_Score = BuddiesSignals[0].BeatenDisplayName^" "^ Buddy["BestRecordCount"] ^" $fff- "^ Buddy["OpponentBestRecordCount"] ^" "^ BuddiesSignals[0].SenderDisplayName ^"$z";
+						Net_NotificationsPopUp_Description =  "Beaten on the track $fff#"^TL::SubString(BuddiesSignals[0].ChallengeName, 0, 9)^"$z";
+					}
+					else
+					if(Buddy["OpponentLogin"] == BuddiesSignals[0].BeatenLogin)
+					{
+						Net_NotificationsPopUp_Score = BuddiesSignals[0].SenderDisplayName^" "^ Buddy["BestRecordCount"] ^" $fff- "^ Buddy["OpponentBestRecordCount"] ^" "^ BuddiesSignals[0].BeatenDisplayName ^"$z";
+						Net_NotificationsPopUp_Description =  "You beat $fff"^ BuddiesSignals[0].BeatenDisplayName ^"$z on $fff#"^TL::SubString(BuddiesSignals[0].ChallengeName, 0, 9)^"$z";
+					}
+				}
+			}
+
+			BuddiesSignals.clear();
+			CastedBuddiesSignalsSenderLogins.clear();
+			DisplayNextPopup = False;
+			NotifNextPopUpTimer = NotifPopUpTimer + S_NotifPopUpDuration + 500;
+		}
+
+		/*if(Now >= TimerSignalsUpdate)
+		{
+			TimerSignalsUpdate = Now + 5000;
+
+			// PlayerOnlineSignals.clear();
+			PlayerOnlineSignals = OnlineSignalsManager.GetUserOnlineSignals(DataMgr.MenuUserId);
+
+			if(PlayerOnlineSignals != Null && PlayerOnlineSignals.OnlineSignals.count != 0) {
+				LayerCustomEvent(Layer_RecordCenter, "GetRecordsResume", ["4", "True"]);
+
+				foreach(Signal in PlayerOnlineSignals.OnlineSignals)
+				{
+					declare CastedSignal <=> (Signal as CGameMasterServerOnlineSignal_RecordBeaten);
+					SignalsToTreat.add(CastedSignal);
+				}
+			}
+		}*/
+	}
+}

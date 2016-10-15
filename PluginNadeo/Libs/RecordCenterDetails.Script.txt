@@ -1,0 +1,865 @@
+#Include "TextLib" as TL
+
+#Include "Libs/Nadeo/Manialink2.Script.txt"						as Manialink
+#Include "Libs/Nadeo/TMConsole/FontManager.Script.txt"			as Font
+#Include "Libs/Nadeo/TMConsole/Colors.Script.txt"				as Colors
+#Include "Libs/Nadeo/TMConsole/Volumes.Script.txt"				as Volumes
+#Include "Libs/Nadeo/TMConsole/Menu/MenuLayers.Script.txt" 		as Layers
+#Include "Libs/Nadeo/UIPadButtons.Script.txt"					as LibUIButtons
+
+#Const C_LayerName			"Layer_TMC_Plugin_RecordCenterDetails"
+#Const C_ImgBase			"file://Media/PluginNadeo/Images/"
+#Const C_ImgBaseIngame 		"file://Media/Images/TMConsole/Ingame/"
+
+#Const SoundPath				"file://Media/Sounds/TMConsole/"
+
+#Const SoundStartRace   		"menu-startrace.ogg"
+#Const SoundMove	   	 		"event-focus.wav"
+#Const SoundValidate 			"event-validate.wav"
+#Const SoundHideMenu 			"menu-page-back.wav"
+#Const SoundShowMenu			"event-menushow.wav"
+
+#Const C_RecordsMaxCount 		9
+
+#Const C_Quad_Title_SizeX 		200.
+#Const C_Quad_Title_SizeY 		10.
+
+
+#Const C_ImgBgSmall			"slot-small-bg.dds"
+#Const C_ImgFg	   			"slot-medium-fg.dds"
+#Const C_ImgBgLine2	   		"menu-bg-2.dds"
+
+#Const AlignTl				""" valign="top" 	halign="left" """
+#Const AlignTr				""" valign="top" 	halign="right" """
+#Const AlignTc				""" valign="top" 	halign="center" """
+#Const AlignCl				""" valign="center" halign="left" """
+#Const AlignCr				""" valign="center" halign="right" """
+#Const AlignCc				""" valign="center" halign="center" """
+#Const AlignC2r				""" valign="center2" halign="right" """
+#Const CapsLock				""" textprefix="$t" """
+
+#Const C_SCALE 				0.9
+#Const C_SIZEX				240
+#Const C_RATIOY				0.664864864865
+
+#Const C_TextSizeSmall 		3
+#Const C_TextSizeSmall2 	4
+#Const C_TextSizeMedium 	5
+#Const C_TextSizeBig 		13
+#Const C_TextSizeVeryBig 	27
+
+#Const C_LabelPosX 			4.5
+
+#Const C_PosXRatio_Map		0.03
+#Const C_PosXRatio_Time		0.3
+#Const C_PosXRatio_Diff		0.6
+#Const C_PosXRatio_Date		0.65
+
+Void CreateLayer()
+{
+	LibUIButtons::Load();
+	declare Integer Platform             = LibUIButtons::GetPlatform();
+
+	declare Text 	IMGSelect            = LibUIButtons::GetImage(Platform, CManiaAppEvent::EMenuNavAction::Select);
+	declare Text 	IMGAction1           = LibUIButtons::GetImage(Platform, CManiaAppEvent::EMenuNavAction::Action1);
+	declare Text 	IMGCancel            = LibUIButtons::GetImage(Platform, CManiaAppEvent::EMenuNavAction::Cancel);
+	declare Text 	IMGL1                = LibUIButtons::GetImage(Platform, CManiaAppEvent::EMenuNavAction::PageDown);
+	declare Text 	IMGR1                = LibUIButtons::GetImage(Platform, CManiaAppEvent::EMenuNavAction::PageUp);
+
+	declare Text 	IMG_PC_Select   = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"),  CManiaAppEvent::EMenuNavAction::Select);
+	declare Text 	IMG_PS_Select   = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::Select);
+	declare Text 	IMG_XB_Select   = LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::Select);
+	declare Text 	IMG_PC_Cancel   = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"),  CManiaAppEvent::EMenuNavAction::Cancel);
+	declare Text 	IMG_PS_Cancel   = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::Cancel);
+	declare Text 	IMG_XB_Cancel   = LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::Cancel);
+	declare Text 	IMG_PC_Action1  = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"),  CManiaAppEvent::EMenuNavAction::Action1);
+	declare Text 	IMG_PS_Action1  = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::Action1);
+	declare Text 	IMG_XB_Action1  = LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::Action1);
+	declare Text 	IMG_PC_PageDown = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"),  CManiaAppEvent::EMenuNavAction::PageDown);
+	declare Text 	IMG_PS_PageDown = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::PageDown);
+	declare Text 	IMG_XB_PageDown = LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::PageDown);
+	declare Text 	IMG_PC_PageUp   = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"),  CManiaAppEvent::EMenuNavAction::PageUp);
+	declare Text 	IMG_PS_PageUp   = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::PageUp);
+	declare Text 	IMG_XB_PageUp   = LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::PageUp);
+
+	declare TXTSelect 	= _("Play");
+	declare TXTAction1 	= _("Sort");
+	declare TXTCancel 	= _("Cancel");
+
+	declare Text 	IMGBackground            = C_ImgBase^"recordcenter-details-bg.dds";
+	declare Text 	IMGFgTitle            	 = C_ImgBase^"recordcenter-details-title-fg.dds";
+
+	declare ColorXmlBlack 		= Colors::GetColorXml("Black");
+	declare ColorXmlRed 		= Colors::GetColorXml("Red");
+	declare ColorXmlWhite 		= Colors::GetColorXml("White");
+	declare ColorXmlGrey 		= Colors::GetColorXml("Grey");
+	declare ColorXmlYellow		= Colors::GetColorXml("Yellow");
+	declare FontMain 			= Font::GetFontName("Main");
+	declare FontMainSmall2 		= Font::GetFontName("MainSmall2");
+	declare FontTitle 			= Font::GetFontName("Title");
+	declare FontNumberBig 		= Font::GetFontName("NumberBig");
+
+	declare SizeY 		 		= C_SIZEX * C_RATIOY;
+
+	declare ItemSizeX			= C_SIZEX / 2.;
+	declare ItemSizeY			= SizeY / 17.;
+
+	declare Separator 	 		= ItemSizeY * 0.095;
+
+	declare QuadSizeY			= ItemSizeY - Separator;
+	declare QuadSizeYTitle 		= 2.*ItemSizeY - Separator;
+	declare SizeXInput 			= 0.4666666 * ItemSizeX;
+	declare SpaceXInput 		= SizeXInput + ItemSizeX / 15.;
+	declare PosYLabel	 		= - (Separator  + QuadSizeY * 0.5);
+	declare PosYButton	 		= PosYLabel - 0.05;
+	declare MarginButton 		= 1.;
+	declare SizeXButton			= QuadSizeY - MarginButton * 0.5;
+	declare SizeXLabel			= SizeXInput - SizeXButton - MarginButton * 2.;
+
+	declare MarginX 	= 0.5;
+	declare ButtonSizeY	= ItemSizeY - 3.;
+	declare ButtonSizeX	= ButtonSizeY * 2;
+	declare ButtonPosX 	= ItemSizeX - MarginX;
+	declare Button2PosX = ButtonPosX - ButtonSizeX - MarginX;
+	declare ButtonPos 	= """ posn="{{{ButtonPosX}}} 	{{{PosYLabel}}}   .3" """;
+	declare ButtonPos2 	= """ posn="{{{Button2PosX}}} 	{{{PosYLabel}}}   .3" """;
+	declare ButtonStyle = """ sizen="{{{ButtonSizeX}}} 	{{{ButtonSizeY}}}"	{{{AlignCr}}} """;
+
+	declare ML_Bg3Style			= """ sizen="{{{ItemSizeX}}} {{{QuadSizeY}}}" {{{AlignTc}}} image="{{{C_ImgBaseIngame^C_ImgBgLine2}}}" """;
+	declare ML_LabelStyleMain	= """ textfont="{{{FontMain}}}" textsize="{{{C_TextSizeMedium}}}" {{{CapsLock}}}  """;
+	declare ML_LabelStyleMap	= """ textfont="{{{FontNumberBig}}}" textsize="{{{C_TextSizeSmall2}}}" {{{CapsLock}}}  """;
+	declare ML_LabelStyleInfo	= """ textfont="{{{FontMainSmall2}}}" textsize="{{{C_TextSizeSmall2}}}" {{{CapsLock}}}  """;
+	declare ML_LabelStyleDate	= """ textfont="{{{FontMainSmall2}}}" textsize="{{{C_TextSizeSmall2}}}"   """;
+
+
+	declare ML =
+	"""
+
+	<framemodel id="Framemodel_Switch">
+		<quad 	id="Quad_Bg" 	posn="0. {{{-Separator}}} .2"  	sizen="{{{ItemSizeX}}} 	{{{QuadSizeY}}}"  	{{{AlignTl}}} bgcolor="{{{ColorXmlYellow}}}"  />
+		<label 	id="Label_Switch" 	posn="{{{C_LabelPosX}}} 	{{{PosYLabel+1}}}   	.2" 	sizen="{{{ItemSizeX-10}}} 	{{{ItemSizeY}}}"			{{{AlignCl}}} textfont="{{{FontMainSmall2}}}" 	textsize="{{{C_TextSizeMedium}}}" textcolor="{{{ColorXmlBlack}}}" text="PAGE 1" {{{CapsLock}}} />
+		<quad {{{ButtonPos}}}  {{{ButtonStyle}}} image="{{{IMGR1}}}" keepratio="Fit" id="Quad_Up"/>
+		<quad {{{ButtonPos2}}} {{{ButtonStyle}}} image="{{{IMGL1}}}" keepratio="Fit" id="Quad_Down"/>
+		<quad 	id="Quad_Fg" 		posn="0.  									{{{-Separator}}}	1."  	sizen="{{{ItemSizeX}}} 		{{{QuadSizeY}}}" 	{{{AlignTl}}} 	image="{{{C_ImgBaseIngame^C_ImgFg}}}" />
+	</framemodel>
+
+	<framemodel	id="Framemodel_Input">
+		<quad 	id="Quad_Bg" 		posn="0.  									{{{-Separator}}}	.1"  	sizen="{{{SizeXInput}}} 		{{{QuadSizeY}}}" 	{{{AlignTr}}} 	image="{{{C_ImgBaseIngame^C_ImgBgSmall}}}" />
+		<quad 	id="Quad_Light" 	posn="0.  									{{{-Separator}}}	.2"  	sizen="{{{SizeXInput}}} 		{{{QuadSizeY}}}" 	{{{AlignTr}}} 	bgcolor="{{{ColorXmlRed}}}" hidden="1"/>
+		<quad 	id="Quad_Input"		posn="0 									{{{PosYButton}}} 	.3"  	sizen="{{{SizeXButton}}} 		{{{SizeXButton}}}" 	{{{AlignCr}}} 	/>
+		<label 	id="Label_Input" 	posn="{{{-SizeXButton-MarginButton}}}		{{{PosYLabel}}}		.4"  	sizen="{{{SizeXLabel}}} 		{{{SizeXButton}}}" 	{{{AlignC2r}}} 	textfont="{{{FontMainSmall2}}}" textsize="{{{C_TextSizeMedium}}}" textcolor="{{{ColorXmlWhite}}}" {{{CapsLock}}}/>
+		<quad 	id="Quad_Fg" 		posn="0.  									{{{-Separator}}}	1."  	sizen="{{{SizeXInput}}} 		{{{QuadSizeY}}}" 	{{{AlignTr}}} 	image="{{{C_ImgBaseIngame^C_ImgFg}}}" />
+	</framemodel>
+
+	<framemodel	id="Framemodel_TabInfos">
+		<quad  posn="0 {{{-Separator}}} .1" sizen="{{{ItemSizeX}}} {{{QuadSizeY}}}" {{{AlignTl}}} bgcolor="{{{ColorXmlBlack}}}" />
+		<frame posn="{{{C_LabelPosX}}} {{{PosYLabel}}}">
+			<label 	id="Label_Map"  posn="{{{ItemSizeX*C_PosXRatio_Map}}}  	0 .5" {{{AlignCl}}}  {{{ML_LabelStyleInfo}}} textcolor="{{{ColorXmlGrey}}}" text="{{{_("Track")}}}" />
+			<label 	id="Label_Time" posn="{{{ItemSizeX*C_PosXRatio_Time}}} 	0 .5" {{{AlignCl}}}  {{{ML_LabelStyleInfo}}} textcolor="{{{ColorXmlGrey}}}" text="{{{_("Time")}}}" />
+			<label 	id="Label_Diff" posn="{{{ItemSizeX*C_PosXRatio_Diff}}} 	0 .5" {{{AlignCl}}}  {{{ML_LabelStyleInfo}}} textcolor="{{{ColorXmlGrey}}}" text="{{{_("Diff")}}}" />
+			<label 	id="Label_Date" posn="{{{ItemSizeX*C_PosXRatio_Date}}} 	0 .5" {{{AlignCl}}}  {{{ML_LabelStyleInfo}}} textcolor="{{{ColorXmlGrey}}}" text="{{{_("Date")}}}" hidden="1"/>
+		</frame>
+	</framemodel>
+
+
+	<framemodel	id="Framemodel_CardRecord">
+		<quad
+			{{{AlignTl}}}
+			posn="0 {{{-Separator}}} 1.15"
+			sizen="{{{ItemSizeX}}} {{{QuadSizeY}}}"
+			image="{{{C_ImgBaseIngame^C_ImgBgSmall}}}"
+		/>
+
+		<quad id="Button_Bg"
+			{{{AlignTl}}}
+			posn="0. {{{-Separator}}} 1.2"
+			sizen="{{{ItemSizeX}}} 	{{{QuadSizeY}}}"
+			bgcolor="{{{ColorXmlRed}}}"
+			scriptevents="1"
+		/>
+
+		<frame posn="{{{C_LabelPosX}}} {{{PosYLabel}}}">
+			<label id="Label_ChallengeUidDetails" 	posn="{{{ItemSizeX*C_PosXRatio_Map}}} 	0 1.25" 	{{{AlignCl}}} 	{{{ML_LabelStyleMap}}} textcolor="{{{ColorXmlWhite}}}" text="A01" />
+			<label id="Label_RecordTime"			posn="{{{ItemSizeX*C_PosXRatio_Time}}} 	0 1.25" 	{{{AlignCl}}} 	{{{ML_LabelStyleInfo}}} textcolor="{{{ColorXmlWhite}}}" text="00:00.0" />
+			<label id="Label_RecordDetailsDiff"		posn="{{{ItemSizeX*C_PosXRatio_Diff}}} 	0 1.25" 	{{{AlignCl}}} 	{{{ML_LabelStyleInfo}}} textcolor="{{{ColorXmlWhite}}}" text="-00:00.0" />
+			<label id="Label_ElapsedTime"			posn="{{{ItemSizeX*C_PosXRatio_Date}}} 	0 1.25"		{{{AlignCl}}}	{{{ML_LabelStyleDate}}} textcolor="{{{ColorXmlWhite}}}" text="2mn ago" />
+		</frame>
+
+		<quad
+			{{{AlignTl}}}
+			posn="0.  {{{-Separator}}}	2."
+			sizen="{{{ItemSizeX}}} 	{{{QuadSizeY}}}"
+			image="{{{C_ImgBaseIngame^C_ImgFg}}}"
+		/>
+	</framemodel>
+
+
+
+	<frame scale="{{{C_SCALE}}}">
+
+		<quad posn="0 0 -3" sizen="{{{C_SIZEX}}} {{{SizeY}}}" {{{AlignCc}}} image="{{{IMGBackground}}}" />
+
+		<frame posn="0. {{{SizeY/2.}}}">
+			<quad 	id="Quad_Fg" 		posn="0.  							{{{-Separator}}}	1."  	sizen="{{{C_SIZEX}}} {{{QuadSizeYTitle}}}" 	{{{AlignTc}}} 	image="{{{IMGFgTitle}}}" />
+			<label 	id="Label_Title" 	posn="{{{-ItemSizeX+C_LabelPosX}}} 	{{{-QuadSizeY}}}	.3"  {{{AlignCl}}} 	textsize="{{{C_TextSizeBig}}}" textcolor="{{{ColorXmlWhite}}}" 	textfont="{{{FontTitle}}}" 	text="{{{_("Record center")}}}" {{{CapsLock}}} />
+		</frame>
+
+		<frame posn="0 {{{SizeY/2.-ItemSizeY*3}}} 1">
+
+			<frame posn="0 {{{PosYLabel}}}">
+				<label id="Label_TitleRecordBuddy" 	posn="{{{ ItemSizeX-C_LabelPosX}}} 0 1" {{{AlignCr}}}  {{{ML_LabelStyleMain}}} textcolor="{{{ColorXmlWhite}}}" 	text="" sizen="70"/>
+				<label id="Label_TitleRecordPlayer" posn="{{{-ItemSizeX+C_LabelPosX}}} 0 1" {{{AlignCl}}}  {{{ML_LabelStyleMain}}} textcolor="{{{ColorXmlYellow}}}" text="{{{_("Your records")}}}"  />
+				<label id="Label_CurrentFilter" 	posn="0 0 1" {{{AlignCc}}} text="SORT BY:" {{{ML_LabelStyleInfo}}} textcolor="{{{ColorXmlGrey}}}" sizen="86"/>
+			</frame>
+
+			<quad posn="{{{-ItemSizeX/2.}}}  {{{-Separator}}}	.2" {{{ML_Bg3Style}}} />
+			<quad posn="{{{ ItemSizeX/2.}}}  {{{-Separator}}}	.2" {{{ML_Bg3Style}}} />
+		</frame>
+
+		<frame posn="0 {{{SizeY/2.-ItemSizeY*4}}} 1">
+			<frameinstance id="Frame_TabInfoLeft" 		posn="{{{-ItemSizeX}}} 	0 1" 	modelid="Framemodel_TabInfos" />
+			<frameinstance id="Frame_TabInfoRight" 		posn="0					0 1" 	modelid="Framemodel_TabInfos" />
+		</frame>
+
+		<frame posn="0 {{{SizeY/2.-ItemSizeY*5}}} 1">
+			<frameinstance id="Frame_SwitchLeft" 		posn="{{{-ItemSizeX}}} 	0 1" 	modelid="Framemodel_Switch" />
+			<frameinstance id="Frame_SwitchRight" 		posn="0					0 1" 	modelid="Framemodel_Switch" />
+		</frame>
+
+		<frame posn="0 {{{SizeY/2.-ItemSizeY*6}}}">
+
+
+
+			<frame id="Frame_OpponentRecords">
+		""";
+		for(I, 0, C_RecordsMaxCount-1)
+			ML ^= """ <frameinstance id="Frame_Record{{{I}}}" 	posn="0	{{{-I*ItemSizeY}}} 1" 	modelid="Framemodel_CardRecord" />""";
+		ML ^= """
+			</frame>
+
+
+
+			<frame id="Frame_MyRecords"  posn="{{{-ItemSizeX}}} 0">
+		""";
+		for(I, 0, C_RecordsMaxCount-1)
+			ML ^= """ <frameinstance id="Frame_Record{{{I}}}" 	posn="0	{{{-I*ItemSizeY}}} 1" 	modelid="Framemodel_CardRecord" />""";
+		ML ^= """
+			</frame>
+
+
+
+		</frame>
+
+
+
+		<frame id="Frame_Inputs" posn="{{{ItemSizeX}}} {{{-SizeY/2.+ItemSizeY}}} 1">
+			<frameinstance id="Frame_InputSort" 		posn="{{{-SpaceXInput*2.}}} 0 1" 	modelid="Framemodel_Input" />
+			<quad 	id="Quad_InputSort"					posn="{{{-SpaceXInput*2.}}} {{{PosYButton}}} .3"  	sizen="{{{SizeXButton}}} 		{{{SizeXButton}}}" 	{{{AlignCr}}} 	scriptevents="1" />
+			<frameinstance id="Frame_InputBack" 		posn="{{{-SpaceXInput}}} 	0 1" 	modelid="Framemodel_Input" />
+			<quad 	id="Quad_InputBack"					posn="{{{-SpaceXInput}}} 	{{{PosYButton}}} .3"  	sizen="{{{SizeXButton}}} 		{{{SizeXButton}}}" 	{{{AlignCr}}} 	scriptevents="1" />
+			<frameinstance id="Frame_InputChallenge" 	posn="0 					0 1"	modelid="Framemodel_Input" />
+		</frame>
+	</frame>
+
+
+
+	<script><!--
+
+		#Include "TextLib" as TL
+		{{{Manialink::GetIncludes()}}}
+		#Const DebugName "L_PluginRecordCenterDetails"
+
+		#Const C_SORTBY_MAPNAME       	1
+		#Const C_SORTBY_RECORDTIME    	2
+		#Const C_SORTBY_DIFFTIME      	3
+
+		#Const C_LIST_OPPONENT      	0
+		#Const C_LIST_PLAYER     		1
+
+		declare Text 					G_BuddySelected;
+		declare Text 					G_BuddyNameSelected;
+		declare Integer 				G_SelectedList;
+		declare Integer 				G_SelectedFilter;
+		declare Integer[Integer]		G_Current_PageRecordDetailsList;
+		declare Integer[Integer] 		G_MaxPagesRecords;
+		declare Integer[Integer] 		G_RecordIndex;
+		declare Text[Text][][Integer] 	G_LoadedRecords;
+		declare Text[Integer]			G_SelectIMG;
+		declare Text[Integer]			G_SortIMG;
+		declare Text[Integer]			G_CancelIMG;
+		declare Text[Integer]			G_PageUpIMG;
+		declare Text[Integer]			G_PageDownIMG;
+		declare CMlQuad[] 				LabelsButtons;
+		declare CMlFrame[] 				FrameButtons;
+
+
+		{{{Manialink::Load()}}}
+		{{{LibUIButtons::Inject_SetInputInfoTextSelected()}}}
+
+		Vec3 GetSeriesColorFromMapNumber(Integer _MapNumber)
+		{
+			if		(_MapNumber >= 1 	&& _MapNumber <= 40) 	return {{{Colors::GetDifficultyColor(1)}}};
+			else if	(_MapNumber >= 41 	&& _MapNumber <= 80) 	return {{{Colors::GetDifficultyColor(2)}}};
+			else if	(_MapNumber >= 81 	&& _MapNumber <= 120) 	return {{{Colors::GetDifficultyColor(3)}}};
+			else if	(_MapNumber >= 121 	&& _MapNumber <= 160) 	return {{{Colors::GetDifficultyColor(4)}}};
+			else if	(_MapNumber >= 161 	&& _MapNumber <= 200) 	return {{{Colors::GetDifficultyColor(5)}}};
+
+			return  <0.5, 0.5, 0.5>;
+		}
+
+		Text GetMapNameShort(Text _MapName)
+		{
+			declare MapNameShort = TL::SubText(TL::StripFormatting(_MapName), 0, 3);
+			if(TL::ToInteger(MapNameShort) < 100)
+				MapNameShort = TL::SubText(MapNameShort, 1, TL::Length(MapNameShort));
+
+			return MapNameShort;
+		}
+
+		Integer GetMapNumberFromMapName(Text _MapName)
+		{
+			declare	MapName = GetMapNameShort(_MapName);
+			return TL::ToInteger(MapName)-1;
+		}
+
+		Integer GetDifficultyFromMapNumber(Integer _MapNumber)
+		{
+			return ((_MapNumber / 40) + 1);
+		}
+
+		Integer GetEnvironmentFromMapNumber(Integer _MapNumber)
+		{
+			return (_MapNumber / 10) % 4;
+		}
+
+		Text CalculateElapsedTime(Integer _RecordElapsedTime)
+		{
+			declare Minute 	= 60;
+			declare Hour 	= Minute * 60;
+			declare Day 	= Hour * 24;
+			declare Month 	= Day * 30;
+			declare Year 	= Day * 365;
+
+			declare RecordElapsedTimeToText	= "30s";
+
+			if(_RecordElapsedTime / Year >= 1)
+			{
+				declare Count = _RecordElapsedTime / Year;
+				RecordElapsedTimeToText = Count ^ " year";
+				if(Count > 1)
+					RecordElapsedTimeToText = RecordElapsedTimeToText ^ "s";
+			}
+			else
+			if(_RecordElapsedTime / Month >= 1)
+			{
+				declare Count = _RecordElapsedTime / Month;
+				RecordElapsedTimeToText = Count ^ " month";
+				if(Count > 1)
+					RecordElapsedTimeToText = RecordElapsedTimeToText ^ "s";
+			}
+			else
+			if(_RecordElapsedTime / Day >= 1)
+			{
+				declare Count = _RecordElapsedTime / Day;
+				RecordElapsedTimeToText = Count ^ " day";
+				if(Count > 1)
+					RecordElapsedTimeToText = RecordElapsedTimeToText ^ "s";
+			}
+			else
+			if(_RecordElapsedTime / Hour >= 1)
+			{
+				declare Count = _RecordElapsedTime / Hour;
+				RecordElapsedTimeToText = Count ^ " hour";
+				if(Count > 1)
+					RecordElapsedTimeToText = RecordElapsedTimeToText ^ "s";
+			}
+			else
+			if(_RecordElapsedTime / Minute >= 1)
+			{
+				declare Count = _RecordElapsedTime / Minute;
+				RecordElapsedTimeToText = Count ^ " minute";
+				if(Count > 1)
+					RecordElapsedTimeToText = RecordElapsedTimeToText ^ "s";
+			}
+
+			RecordElapsedTimeToText = RecordElapsedTimeToText^" ago";
+
+			return RecordElapsedTimeToText;
+		}
+
+		Void Init()
+		{
+			G_RecordIndex[C_LIST_OPPONENT]	= 0;
+			G_RecordIndex[C_LIST_PLAYER]	= 0;
+			//G_SelectedList                 	= 0;
+
+			declare Label_TitleRecordBuddy <=> (Page.GetFirstChild("Label_TitleRecordBuddy") as CMlLabel);
+			Label_TitleRecordBuddy.Value = G_BuddyNameSelected;
+		}
+
+		Void UpdateDisplayFromRecordDetails(Integer _List)
+		{
+			declare RecordIndex 	 = G_Current_PageRecordDetailsList[_List] * {{{C_RecordsMaxCount}}};
+			declare LoadedRecords 	 = G_LoadedRecords[_List];
+			declare RecordMaxIndex 	 = RecordIndex + {{{C_RecordsMaxCount-1}}};
+			if(RecordMaxIndex > LoadedRecords.count - 1)
+				RecordMaxIndex = LoadedRecords.count - 1;
+
+			declare Frame_MainFrame	<=> (Page.GetFirstChild("Frame_MyRecords") as CMlFrame);
+			if(_List == C_LIST_OPPONENT)
+				Frame_MainFrame		<=> (Page.GetFirstChild("Frame_OpponentRecords") as CMlFrame);
+
+
+			declare FrameIndex = 0;
+			for(I, RecordIndex, RecordMaxIndex)
+			{
+				declare LoadedRecord 			= LoadedRecords[I];
+				declare MapName 		 		= LoadedRecord["Mapname"];
+
+				declare ThisChallengeMapName    = GetMapNameShort(MapName);
+				declare ThisChallengeMapNumber 	= GetMapNumberFromMapName(MapName);
+				declare ThisRecordTime          = LoadedRecord["RecordTime"];
+				declare ThisRecordDiff          = LoadedRecord["RecordTimeDiff"];
+
+				declare Frame_Record  				<=> (Frame_MainFrame.GetFirstChild("Frame_Record"^FrameIndex) as CMlFrame);
+				declare Label_RecordTime         	<=> (Frame_Record	.GetFirstChild("Label_RecordTime") as CMlLabel);
+				declare Label_RecordDetailsDiff     <=> (Frame_Record	.GetFirstChild("Label_RecordDetailsDiff") as CMlLabel);
+				declare Label_ChallengeUidDetails   <=> (Frame_Record	.GetFirstChild("Label_ChallengeUidDetails") as CMlLabel);
+				declare Label_ElapsedTime         	<=> (Frame_Record	.GetFirstChild("Label_ElapsedTime") as CMlLabel);
+
+				Label_ChallengeUidDetails	.TextColor  = GetSeriesColorFromMapNumber(ThisChallengeMapNumber);
+				Label_ChallengeUidDetails	.Value  	= ThisChallengeMapName;
+				Label_RecordTime			.Value 		= ""^ThisRecordTime;
+				Label_RecordDetailsDiff		.Value 		= "("^ThisRecordDiff^")";
+				//Label_ElapsedTime			.Value 		= CalculateElapsedTime(TL::ToInteger(ThisRecordElapsedTime));
+				Label_ElapsedTime			.Value 		= "";
+
+				Frame_Record.Show();
+
+				FrameIndex += 1;
+			}
+
+			for (i, FrameIndex, {{{C_RecordsMaxCount-1}}})
+			{
+				declare Frame_Record  <=> (Frame_MainFrame.GetFirstChild("Frame_Record"^i) as CMlFrame);
+				Frame_Record.Hide();
+			}
+		}
+
+		Void UpdateDisplayFromRecordDetails()
+		{
+			UpdateDisplayFromRecordDetails(G_SelectedList);
+		}
+
+		Void ChangeFilterLabel()
+		{
+			declare Current_LabelFilter <=> (Page.GetFirstChild("Label_CurrentFilter") as CMlLabel);
+			declare Filter = "";
+
+			switch(G_SelectedFilter)
+			{
+				case C_SORTBY_MAPNAME		: Filter = _("Sort by: Track name");
+				case C_SORTBY_RECORDTIME	: Filter = _("Sort by: Record Time");
+				case C_SORTBY_DIFFTIME		: Filter = _("Sort by: Latest records");
+			}
+
+			if(Filter != "")
+				Current_LabelFilter.Value = Filter;
+		}
+
+		Void UpdatePages()
+		{
+			declare Frame_SwitchLeft 		<=> (Page.MainFrame.GetFirstChild("Frame_SwitchLeft") 		as CMlFrame);
+			declare Frame_SwitchRight 		<=> (Page.MainFrame.GetFirstChild("Frame_SwitchRight") 		as CMlFrame);
+			declare Label_SwitchLeft 		<=> (Frame_SwitchLeft	.GetFirstChild("Label_Switch")		as CMlLabel);
+			declare Label_SwitchRight 		<=> (Frame_SwitchRight	.GetFirstChild("Label_Switch")		as CMlLabel);
+
+			Label_SwitchLeft	.Value = TL::Compose(_("Page %1"), ""^G_Current_PageRecordDetailsList[C_LIST_PLAYER]+1);
+			Label_SwitchRight	.Value = TL::Compose(_("Page %1"), ""^G_Current_PageRecordDetailsList[C_LIST_OPPONENT]+1);
+		}
+
+		Void ChangeInputsImg(Integer _Platform)
+		{
+			declare Frame_InputChallenge <=> (Page.MainFrame.GetFirstChild("Frame_InputChallenge") 	    as CMlFrame);
+			declare Frame_InputSort      <=> (Page.MainFrame.GetFirstChild("Frame_InputSort") 		    as CMlFrame);
+			declare Frame_InputBack      <=> (Page.MainFrame.GetFirstChild("Frame_InputBack") 		    as CMlFrame);
+			declare Quad_InputChallenge  <=> (Frame_InputChallenge	.GetFirstChild("Quad_Input")	    as CMlQuad);
+			declare Quad_InputSort       <=> (Frame_InputSort		.GetFirstChild("Quad_Input")	    as CMlQuad);
+			declare Quad_InputBack       <=> (Frame_InputBack		.GetFirstChild("Quad_Input")	    as CMlQuad);
+			declare Frame_SwitchLeft     <=> (Page.MainFrame.GetFirstChild("Frame_SwitchLeft") 	        as CMlFrame);
+			declare Frame_SwitchRight    <=> (Page.MainFrame.GetFirstChild("Frame_SwitchRight") 	    as CMlFrame);
+			declare Quad_UpLeft          <=> (Frame_SwitchLeft.GetFirstChild("Quad_Up") 	            as CMlQuad);
+			declare Quad_DownLeft        <=> (Frame_SwitchLeft.GetFirstChild("Quad_Down") 	            as CMlQuad);
+			declare Quad_UpRight         <=> (Frame_SwitchRight.GetFirstChild("Quad_Up") 	            as CMlQuad);
+			declare Quad_DownRight       <=> (Frame_SwitchRight.GetFirstChild("Quad_Down") 	            as CMlQuad);
+
+			
+			Quad_InputChallenge	.ImageUrl = G_SelectIMG[_Platform];
+			Quad_InputBack		.ImageUrl = G_CancelIMG[_Platform];
+			Quad_InputSort		.ImageUrl = G_SortIMG[_Platform];
+			Quad_UpLeft			.ImageUrl = G_PageUpIMG[_Platform];
+			Quad_DownLeft		.ImageUrl = G_PageDownIMG[_Platform];
+			Quad_UpRight		.ImageUrl = G_PageUpIMG[_Platform];
+			Quad_DownRight		.ImageUrl = G_PageDownIMG[_Platform];
+		}
+		
+		Void UpdateLabelLight(CMlControl _Control)
+		{
+			foreach(I => Button in LabelsButtons)
+			{
+
+				declare Label_LeftInput <=> (FrameButtons[I].GetFirstChild("Label_Input") 	  as CMlLabel);
+				//declare Boolean IsFocus  = ButtonSelected == Null && (I == 0 && Event.Control.ControlId == "ButtonInput_Sort" || I == 1 && Event.Control.ControlId == "ButtonInput_Cancel");
+				declare Boolean IsFocus  = False;
+				if (_Control == Button)
+				{
+					IsFocus = True;
+				}
+				else
+				{
+					IsFocus = False;
+				}
+				//log("Button["^Button^"]: " ^ IsFocus);
+				SetInputInfoTextSelected(Label_LeftInput, IsFocus);
+			}
+		}
+
+		Void Input_Cancel()
+		{
+			SendCustomEvent("ReleaseRecordsTaskResult", ["Buddy"]);
+			SendCustomEvent("HideLayerRecordCenterDetails", [""]);
+			SendCustomEvent("ShowLayerRecordCenter", [""]);
+		}
+
+		Void Input_Action1()
+		{
+			if(G_SelectedFilter < 4)
+			{
+				if(G_SelectedFilter == 3)
+					G_SelectedFilter = C_SORTBY_MAPNAME;
+				else
+					G_SelectedFilter += 1;
+			}
+			SendCustomEvent("GetRecords", [TL::ToText(G_SelectedFilter), G_BuddySelected, "2", "False", G_BuddyNameSelected]);
+		}
+
+		main()
+		{
+
+			G_SelectIMG[0]   = "{{{IMG_PS_Select}}}";
+			G_SelectIMG[1]   = "{{{IMG_XB_Select}}}";
+			G_SelectIMG[2]   = "{{{IMG_PC_Select}}}";
+			G_SortIMG[0]     = "{{{IMG_PS_Action1}}}";
+			G_SortIMG[1]     = "{{{IMG_XB_Action1}}}";
+			G_SortIMG[2]     = "{{{IMG_PC_Action1}}}";
+			G_CancelIMG[0]   = "{{{IMG_PS_Cancel}}}";
+			G_CancelIMG[1]   = "{{{IMG_XB_Cancel}}}";
+			G_CancelIMG[2]   = "{{{IMG_PC_Cancel}}}";
+			G_PageUpIMG[0]   = "{{{IMG_PS_PageDown}}}";
+			G_PageUpIMG[1]   = "{{{IMG_XB_PageDown}}}";
+			G_PageUpIMG[2]   = "{{{IMG_PC_PageDown}}}";
+			G_PageDownIMG[0] = "{{{IMG_PS_PageUp}}}";
+			G_PageDownIMG[1] = "{{{IMG_XB_PageUp}}}";
+			G_PageDownIMG[2] = "{{{IMG_PC_PageUp}}}";
+
+
+			// CONTROLS DECLARATIONS
+
+			declare Frame_InputChallenge 	<=> (Page.MainFrame.GetFirstChild("Frame_InputChallenge") 	as CMlFrame);
+			declare Frame_InputSort 		<=> (Page.MainFrame.GetFirstChild("Frame_InputSort") 		as CMlFrame);
+			declare Frame_InputBack 		<=> (Page.MainFrame.GetFirstChild("Frame_InputBack") 		as CMlFrame);
+
+			declare Quad_InputChallenge 	<=> (Frame_InputChallenge	.GetFirstChild("Quad_Input")	as CMlQuad);
+			declare Quad_InputSort 			<=> (Frame_InputSort		.GetFirstChild("Quad_Input")	as CMlQuad);
+			declare Quad_InputBack 			<=> (Frame_InputBack		.GetFirstChild("Quad_Input")	as CMlQuad);
+
+			declare Label_InputChallenge 	<=> (Frame_InputChallenge	.GetFirstChild("Label_Input")	as CMlLabel);
+			declare Label_InputSort 		<=> (Frame_InputSort		.GetFirstChild("Label_Input")	as CMlLabel);
+			declare Label_InputBack 		<=> (Frame_InputBack		.GetFirstChild("Label_Input")	as CMlLabel);
+
+			Quad_InputChallenge	.ImageUrl = "{{{IMGSelect}}}";
+			Quad_InputSort		.ImageUrl = "{{{IMGAction1}}}";
+			Quad_InputBack		.ImageUrl = "{{{IMGCancel}}}";
+
+			declare Vec2 SizeButton = <6., 6.>;
+			Quad_InputChallenge.Size = SizeButton;
+			Quad_InputSort.Size      = SizeButton;
+			Quad_InputBack.Size      = SizeButton;
+
+			Label_InputChallenge.Value = "{{{TXTSelect}}}";
+			Label_InputSort		.Value = "{{{TXTAction1}}}";
+			Label_InputBack		.Value = "{{{TXTCancel}}}";
+
+
+			declare Frame_OpponentRecords 	<=> (Page.MainFrame.GetFirstChild("Frame_OpponentRecords") 	as CMlFrame);
+			declare Frame_MyRecords 		<=> (Page.MainFrame.GetFirstChild("Frame_MyRecords") 		as CMlFrame);
+
+			declare CMlFrame[] 	Frame_MyRecord;
+			declare CMlFrame[] 	Frame_OpponnentRecord;
+			declare CMlQuad[][] Buttons = [CMlQuad[], CMlQuad[]];
+
+			for(I, 0, {{{C_RecordsMaxCount-1}}})
+			{
+				Frame_MyRecord			.add((Frame_MyRecords			.GetFirstChild("Frame_Record"^I) as CMlFrame));
+				Frame_OpponnentRecord	.add((Frame_OpponentRecords		.GetFirstChild("Frame_Record"^I) as CMlFrame));
+			}
+
+			foreach(Frame in Frame_OpponnentRecord)
+				Buttons[0].add((Frame.GetFirstChild("Button_Bg") as CMlQuad));
+
+			foreach(Frame in Frame_MyRecord)
+				Buttons[1].add((Frame.GetFirstChild("Button_Bg") as CMlQuad));
+
+			LabelsButtons.add((Page.MainFrame.GetFirstChild("Quad_InputSort") as CMlQuad));
+			FrameButtons.add(Frame_InputSort);
+			LabelsButtons.add((Page.MainFrame.GetFirstChild("Quad_InputBack") as CMlQuad));
+			FrameButtons.add(Frame_InputBack);
+			//LabelsButtons.add((Page.MainFrame.GetFirstChild("Quad_Input") as CMlQuad));
+			//FrameButtons.add(Frame_InputBack);
+
+			declare CMlQuad  ButtonSelected <=> Buttons[0][0];
+
+
+			// VAR DECLARATIONS
+
+			declare M_PrevPageIsVisible = False;
+
+
+			// CEDRIC
+
+			declare CWebServicesTaskResult  RecordsTaskResult		for Page;
+			declare Boolean 				RecordsTaskResultLoaded	for Page;
+			declare Text[Text][]			RequestedPlayerRecords 	for Page;
+			declare Text[Text][] 			RequestedBuddyRecords 	for Page;
+
+			declare Integer	G_LockInput;
+
+			log(Now^" > LOAD OK : {{{C_LayerName}}}");
+			declare Integer ActiveButtonPlatform;
+
+			while(True)
+			{
+				yield;
+
+
+
+				if(M_PrevPageIsVisible != PageIsVisible)
+				{
+					M_PrevPageIsVisible = PageIsVisible;
+
+					if(M_PrevPageIsVisible)
+						Audio.PlaySoundEvent("{{{SoundPath^SoundShowMenu}}}", {{{Volumes::GetVolumedB("MenuShow")-3.}}});
+					else
+						Audio.PlaySoundEvent("{{{SoundPath^SoundHideMenu}}}", {{{Volumes::GetVolumedB("MenuHide")}}});
+
+					EnableMenuNavigation(M_PrevPageIsVisible, True, Null, 1);
+				}
+
+
+				if (Input.PendingEvents.count != 0) {
+					declare Integer LastInputPlatform;
+					switch (Input.PendingEvents[Input.PendingEvents.count-1].Pad.Type) {
+						case CInputPad::EPadType::Keyboard 		: LastInputPlatform = {{{LibUIButtons::GetPlatform("PC")}}};
+						case CInputPad::EPadType::PlayStation 	: LastInputPlatform = {{{LibUIButtons::GetPlatform("PS4")}}};
+						case CInputPad::EPadType::XBox 			: LastInputPlatform = {{{LibUIButtons::GetPlatform("XB1")}}};
+						default 								: LastInputPlatform = {{{LibUIButtons::GetPlatform("PC")}}};
+					}
+					if (LastInputPlatform != ActiveButtonPlatform)
+					{
+						ActiveButtonPlatform = LastInputPlatform;
+						//SendCustomEvent("SetActiveButtonPlaform", ["MapsOverview", TL::ToText(LastInputPlatform)]);
+						ChangeInputsImg(ActiveButtonPlatform);
+					}
+				}
+
+				LibManialink_AnimLoop();
+
+				if(!PageIsVisible && PendingEvents.count == 0) continue;
+
+				foreach(Event in PendingEvents)
+				{
+					switch(Event.Type)
+					{
+						case CMlEvent::Type::MouseClick :
+						{
+							if(Event.Control.ControlId == "Quad_InputSort")
+							{
+								Input_Action1();
+							}
+							else if(Event.Control.ControlId == "Quad_InputBack")
+							{
+								Input_Cancel();
+							}
+
+							Audio.PlaySoundEvent("{{{SoundPath^SoundValidate}}}", {{{Volumes::GetVolumedB("MenuClick")}}});
+							Audio.PlaySoundEvent("{{{SoundPath^SoundStartRace}}}", {{{Volumes::GetVolumedB("MenuStartRace")}}});
+							declare LoadedRecords 	= G_LoadedRecords[G_SelectedList];
+							declare RecordIndex 	= G_Current_PageRecordDetailsList[G_SelectedList] *  {{{C_RecordsMaxCount}}} + G_RecordIndex[G_SelectedList];
+							declare MapFileName		= LoadedRecords[RecordIndex]["MapFileName"];
+							declare MapName			= LoadedRecords[RecordIndex]["Mapname"];
+							declare GhostUrl		= LoadedRecords[RecordIndex]["GhostUrl"];
+							declare MapNumber		= GetMapNumberFromMapName(MapName);
+							declare Difficulty		= GetDifficultyFromMapNumber(MapNumber);
+							declare Environment		= GetEnvironmentFromMapNumber(MapNumber);
+							SendCustomEvent("RecordPlayTrack", [MapFileName, ""^Difficulty, ""^Environment, GhostUrl]);
+						}
+
+						case CMlEvent::Type::MouseOver :
+						{
+							Audio.PlaySoundEvent("{{{SoundPath^SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+							ButtonSelected = Null;
+							foreach(RowIndex => Row in Buttons)
+							{
+								foreach(ButtonIndex => Button in Row)
+								{
+									if (Event.Control == Button)
+									{
+										ButtonSelected = Button;
+										G_SelectedList = RowIndex;
+										G_RecordIndex[G_SelectedList] = ButtonIndex;
+									}
+								}
+							}
+							//if(Event.Control.ControlId != "Button_Bg") 
+							UpdateLabelLight(Event.Control);
+						}
+
+						case CMlEvent::Type::MenuNavigation:
+						{
+							if(G_LockInput + 50 > Now) continue;
+							G_LockInput = Now;
+							switch (Event.MenuNavAction)
+							{
+								case CMlEvent::EMenuNavAction::Cancel :
+								{
+									Input_Cancel();
+								}
+								case CMlEvent::EMenuNavAction::AppMenu :
+								{
+									SendCustomEvent("ReleaseRecordsTaskResult", ["Buddy"]);
+									SendCustomEvent("HideLayerRecordCenterDetails", [""]);
+									SendCustomEvent("ShowLayerRecordCenter", [""]);
+								}
+
+								case CMlEvent::EMenuNavAction::Action1:
+								{
+									Input_Action1();
+								}
+
+								case CMlEvent::EMenuNavAction::PageUp:
+								{
+									if(G_Current_PageRecordDetailsList[G_SelectedList] > 0)
+									{
+										G_Current_PageRecordDetailsList[G_SelectedList] -= 1;
+										Buttons[G_SelectedList][0].Focus();
+										UpdateDisplayFromRecordDetails(G_SelectedList);
+										UpdatePages();
+									}
+								}
+
+								case CMlEvent::EMenuNavAction::PageDown:
+								{
+									if(G_Current_PageRecordDetailsList[G_SelectedList] < G_MaxPagesRecords[G_SelectedList])
+									{
+										G_Current_PageRecordDetailsList[G_SelectedList] += 1;
+										Buttons[G_SelectedList][0].Focus();
+										UpdateDisplayFromRecordDetails(G_SelectedList);
+										UpdatePages();
+									}
+								}
+							}
+						}
+
+						case CMlEvent::Type::PluginCustomEvent:
+						{
+							switch(Event.PluginCustomEventType)
+							{
+								case "BuddyLoaded":
+								{
+									SendCustomEvent("ShowDetails", [""]);
+									G_BuddySelected       = Event.CustomEventData[0];
+									G_BuddyNameSelected       = Event.CustomEventData[2];
+									G_SelectedFilter      = TL::ToInteger(Event.CustomEventData[1]);
+
+									//HACK HAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACK
+									//declare Text[Text][]	NewRequestedBuddyRecords;
+									//NewRequestedBuddyRecords.add(RequestedPlayerRecords[0]);
+									//RequestedPlayerRecords = NewRequestedBuddyRecords;
+									//RequestedBuddyRecords.clear();
+									//HACKEND
+
+									G_LoadedRecords[C_LIST_OPPONENT] 	= RequestedBuddyRecords;
+									G_LoadedRecords[C_LIST_PLAYER] 		= RequestedPlayerRecords;
+									G_Current_PageRecordDetailsList[C_LIST_OPPONENT] 	= 0;
+									G_Current_PageRecordDetailsList[C_LIST_PLAYER] 		= 0;
+									//G_SelectedList = 0;
+
+									G_MaxPagesRecords[C_LIST_PLAYER] 	= ((G_LoadedRecords[C_LIST_PLAYER].count - 1) / {{{C_RecordsMaxCount}}} );
+									G_MaxPagesRecords[C_LIST_OPPONENT] 	= ((G_LoadedRecords[C_LIST_OPPONENT].count - 1) / {{{C_RecordsMaxCount}}} );
+
+									Init();
+									UpdateDisplayFromRecordDetails(C_LIST_OPPONENT);
+									UpdateDisplayFromRecordDetails(C_LIST_PLAYER);
+									ChangeFilterLabel();
+								}
+
+								// Load the data in the table to display them
+								case "GetRecords":
+								{
+									SendCustomEvent("GetRecords", [Event.CustomEventData[0], Event.CustomEventData[1], Event.CustomEventData[2], Event.CustomEventData[3], Event.CustomEventData[4]]);
+								}
+
+								case "ReleaseRecordsTaskResult":
+								{
+									SendCustomEvent("ReleaseRecordsTaskResult", [Event.CustomEventData[0]]);
+								}
+							}
+						}
+					}
+				}
+
+				declare ButtonSelectedSinVar 	= ML::Sin(Now * 0.01) * 0.5 + 0.5;
+				declare ButtonSelectedOpacity 	= 0.0 + ButtonSelectedSinVar * 1.;
+
+				foreach(Row in Buttons)
+					foreach(Button in Row)
+						Button.Opacity = 0.;
+
+				if(ButtonSelected != Null) ButtonSelected.Opacity = ButtonSelectedOpacity;
+
+
+			}
+		}
+	--></script>
+	""";
+
+
+	Layers::Create(C_LayerName, ML);
+	Layers::Attach(C_LayerName);
+	declare Layer = Layers::Get(C_LayerName);
+	Layer.InAnimation  = CUILayer::EUILayerAnimation::LeftSlow;
+	Layer.OutAnimation = CUILayer::EUILayerAnimation::None;
+	Layer.IsVisible = False;
+}
+
+
+
+Void Load()
+{
+	CreateLayer();
+}
+
+CUILayer GetLayer()
+{
+	return Layers::Get(C_LayerName);
+}
+
+Integer GetRecordsMaxCount()
+{
+	return C_RecordsMaxCount;
+}
+
+Text GetLayerName()
+{
+	return C_LayerName;
+}

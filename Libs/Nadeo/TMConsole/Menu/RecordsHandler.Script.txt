@@ -1,0 +1,36 @@
+#Include "Libs/Nadeo/TMConsole/Menu/MenuLayers.Script.txt"								as Layers
+#Include "Libs/Nadeo/TMConsole/Logger.Script.txt"										as Logger
+
+#Include "Libs/Nadeo/TMConsole/PopUpManager.Script.txt"									as PopUpManager
+
+Void WarnNotEnoughParams(CMlAppEvent _Event) {
+	Logger::Warn("[Menucontroller] event "^_Event.CustomEventType^": not enough params ["^_Event.CustomEventData^"]");
+}
+
+Void SendFriendLoginToDetails()
+{
+	declare CUILayer RecordCenter = Layers::Get("RecordCenter");
+	declare CUILayer RecordCenterDetails = Layers::Get("RecordCenterDetails");
+
+	declare Text FriendLogin for RecordCenter.LocalPage;
+	declare Text RequestedFriendLogin for RecordCenterDetails.LocalPage;
+	RequestedFriendLogin = FriendLogin;
+
+	LayerCustomEvent(RecordCenterDetails, "FriendSent", [""]);
+}
+
+Void Loop() {
+	foreach(Event in PendingEvents) {
+		if(Event.Type != CMlAppEvent::EType::LayerCustomEvent) continue;
+		log("Received an event ! -> "^Event.CustomEventType);
+		switch(Event.CustomEventType) {
+			case "SendFriendLogin" : {
+				SendFriendLoginToDetails();
+			}
+			case "PopUpRequestError" : {
+				PopUpManager::AddPopUp(0, 0, "An unexpected error occured. Please refresh this page later.", "", False);
+			}
+
+		}
+	}
+}

@@ -1,0 +1,89 @@
+Text MLSimpleAnims() {
+	log("MLSimpleAnims");
+	return """
+	// <script><!-- FOR SYNTAXE COLORATION
+	
+	Boolean SA_LinearRotation(CMlControl _Control, Real _RelativeRotationTarget, Real _RotationSpeed) {
+		declare Real CurrentRot = _Control.RelativeRotation;
+		declare Real FrameRotation = Period * _RotationSpeed;
+		
+		if((_RelativeRotationTarget - CurrentRot) > FrameRotation) {
+			_Control.RelativeRotation += FrameRotation;
+			return False;
+		} else if((_RelativeRotationTarget - CurrentRot) < -FrameRotation) {
+			_Control.RelativeRotation -= FrameRotation;
+			return False;
+		}
+		
+		_Control.RelativeRotation = _RelativeRotationTarget;
+		return True;
+	}
+	
+	Boolean SA_LinearTranslation(CMlControl _Control, Vec3 _RelativePositionTarget, Real _TranslationSpeed) {
+		declare Vec3 VecTranslation = _RelativePositionTarget - _Control.RelativePosition;
+		declare Real SquVecTranslationNorm = (VecTranslation.X * VecTranslation.X) + (VecTranslation.Y * VecTranslation.Y) + (VecTranslation.Z * VecTranslation.Z);
+		declare Real FrameSpeed = _TranslationSpeed * Period;
+		declare Real SqSpeed = FrameSpeed * FrameSpeed;
+		
+		if(SquVecTranslationNorm < SqSpeed) {
+			_Control.RelativePosition = _RelativePositionTarget;
+			return True;
+		}
+		
+		declare Real VecTranslationNorm = ML::Sqrt(SquVecTranslationNorm);
+		VecTranslation = (1./VecTranslationNorm) * VecTranslation;
+		_Control.RelativePosition.X += VecTranslation.X;
+		_Control.RelativePosition.Y += VecTranslation.Y;
+		_Control.RelativePosition.Z += VecTranslation.Z;
+		return False;
+	}
+	
+	Boolean SA_LinearScale(CMlControl _Control, Real _RelativeScaleTarget, Real _ScaleSpeed) {
+		declare Real CurrentScale = _Control.RelativeScale;
+		declare Real FrameScale = Period * _ScaleSpeed;
+		
+		if((_RelativeScaleTarget - CurrentScale) > FrameScale) {
+			_Control.RelativeScale += FrameScale;
+			return False;
+		} else if((_RelativeScaleTarget - CurrentScale) < -FrameScale) {
+			_Control.RelativeScale -= FrameScale;
+			return False;
+		}
+		
+		_Control.RelativeScale = _RelativeScaleTarget;
+		return True;
+	}
+	
+	Boolean SA_LinearFade(CMlQuad _Quad, Real _OpacityTarget, Real _OpacitySpeed) {
+		declare Real CurrentOpacity = _Quad.Opacity;
+		declare Real FrameOpacity = Period * _OpacitySpeed;
+		
+		if((_OpacityTarget - CurrentOpacity) > FrameOpacity) {
+			_Quad.Opacity += FrameOpacity;
+			return False;
+		} else if((_OpacityTarget - CurrentOpacity) < -FrameOpacity) {
+			_Quad.Opacity -= FrameOpacity;
+			return False;
+		}
+		
+		_Quad.Opacity = _OpacityTarget;
+		return True;
+	}
+	
+	Boolean SA_LinearFade(CMlLabel _Label, Real _OpacityTarget, Real _OpacitySpeed) {
+		declare Real CurrentOpacity = _Label.Opacity;
+		declare Real FrameOpacity = Period * _OpacitySpeed;
+		
+		if((_OpacityTarget - CurrentOpacity) > FrameOpacity) {
+			_Label.Opacity += FrameOpacity;
+			return False;
+		} else if((_OpacityTarget - CurrentOpacity) < -FrameOpacity) {
+			_Label.Opacity -= FrameOpacity;
+			return False;
+		}
+		
+		_Label.Opacity = _OpacityTarget;
+		return True;
+	}
+	""";
+}

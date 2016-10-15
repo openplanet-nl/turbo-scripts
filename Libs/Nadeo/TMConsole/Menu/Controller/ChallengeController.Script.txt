@@ -1,0 +1,2525 @@
+#Include "TextLib"			as TextLib
+#Include "Libs/Nadeo/TMConsole/Menu/MenuLayers.Script.txt"								as Layers
+#Include "Libs/Nadeo/TMConsole/Live/LiveEvent.Script.txt" 								as LiveEvent
+#Include "Libs/Nadeo/TMConsole/Live/LiveHttp.Script.txt" 								as LiveHttp
+#Include "Libs/Nadeo/TMConsole/Live/LiveXml.Script.txt" 								as LiveXml
+#Include "Libs/Nadeo/TMConsole/Live/LiveAuth.Script.txt"								as LiveAuth
+#Include "Libs/Nadeo/TMConsole/Menu/MenuAchievements.Script.txt"						as MenuAchievements
+#Include "Libs/Nadeo/TMConsole/Menu/Controller/TaskMessageErrorController.Script.txt"	as TaskMessageErrorController
+
+#Include "Libs/Nadeo/TMConsole/PopUpManager.Script.txt"				as PopUpManager
+
+#Const  C_MAXINSTALLEDCHALLENGES				20
+
+#Const	C_AUTHOR_NADEO							"Nadeo"
+
+#Const	C_REQUESTSTATUS_NOREQUEST 						"0"
+#Const	C_REQUESTSTATUS_WAITING 						"1"
+#Const  C_REQUESTSTATUS_TOSEND							"2"
+#Const	C_REQUESTSTATUS_WAITFORDISPLAYNAMES 			"3"
+#Const  C_REQUESTSTATUS_WAITFORINSTALLEDCHALLENGESIDS	"4"
+#Const  C_REQUESTSTATUS_WAITFORINSTALLEDCHALLENGESDATA	"5" //cas du challengeinstance qui a potentiellement une currentrace
+#Const	C_REQUESTSTATUS_SUCCEEDED 						"6"
+#Const  C_REQUESTSTATUS_FAILED							"7"
+
+#Const C_REQUESTTYPE_NONE							-1
+#Const C_REQUESTTYPE_ALLCHALLENGES					0
+#Const C_REQUESTTYPE_INSTALLEDCHALLENGES			1
+#Const C_REQUESTTYPE_GETBUDDIESCHALLENGES			2
+#Const C_REQUESTTYPE_GETCHALLENGE					3
+#Const C_REQUESTTYPE_GETBUDDIESCHALLENGE			4
+#Const C_REQUESTTYPE_GETINSTALLEDCHALLENGE			5
+//end WaitForDisplayNames		
+#Const C_REQUESTTYPE_MYCHALLENGES					6
+//end WaitForInstalledIds, garder MyChallenges en dernier
+#Const C_REQUESTTYPE_GETCHALLENGEMAPS				7
+#Const C_REQUESTTYPE_MYCHALLENGES_INSTALLED 		8
+#Const C_REQUESTTYPE_CREATECHALLENGE				9
+#Const C_REQUESTTYPE_PUBLISHCHALLENGE				10
+#Const C_REQUESTTYPE_INSTALLCHALLENGE				11
+#Const C_REQUESTTYPE_UNINSTALLCHALLENGE				12
+
+#Const C_REQUESTTYPE_RACE_FORCHALLENGE				13
+#Const C_REQUESTTYPE_RACE_START						14
+#Const C_REQUESTTYPE_RACE_BEGINMAP					15
+#Const C_REQUESTTYPE_RACE_ENDMAP					16
+#Const C_REQUESTTYPE_RACE_FINISH					17
+#Const C_REQUESTTYPE_RACE_GETRESULT					18
+#Const C_REQUESTTYPE_TRAIN							19
+
+#Const C_REQUESTTYPE_CHALLENGEBUDDIES				20
+#Const C_REQUESTTYPE_REMOVEBUDDYCHALLENGE			21
+#Const C_REQUESTTYPE_SETBUDDIESCHALLENGESBROWSED	22
+
+#Const C_REQUESTTYPE_VOTECHALLENGE					23
+#Const C_REQUESTTYPE_GETSTATS						24
+		
+#Const C_EXTERNALREQUESTSCOUNT						25
+		
+#Const C_REQUESTTYPE_INSTALLEDCHALLENGESIDS 		26 //internal request //A virer ?
+		
+#Const C_REQUESTSCOUNT								27
+
+//structure de G_Requests
+//G_Requests = Request[]
+//Request = Text[Text]
+//Champs : "status", "layer", "id", "challengeid"
+
+//Requests Data
+declare Text[Text][]		G_Requests;
+
+//Additionnal Request Data
+declare Integer				G_RequestAllChallengesOffset;
+declare Integer				G_RequestAllChallengesLength;
+declare Text				G_RequestAllChallengesFilters;
+
+declare Integer				G_RequestInstalledChallengesOffset;
+declare Integer				G_RequestInstalledChallengesLength;
+
+declare Integer				G_RequestMyChallengesOffset;
+declare Integer				G_RequestMyChallengesLength;
+
+declare Integer				G_RequestChallengeRacesOffset;
+declare Integer				G_RequestChallengeRacesLength;
+
+declare Integer 			G_RequestBuddiesChallengesOffset;
+declare Integer 			G_RequestBuddiesChallengesLength;
+
+declare Integer				G_RequestBuddiesChallengeInstanceId;
+
+declare Text				G_CreateChallenge_DataToSend;
+
+declare Integer				G_NewTryId;
+declare Integer				G_Race_GiveUp_TryId;
+
+declare Text				G_Race_BeginMap_MapUid;
+declare Integer				G_Race_BeginMap_TryId;
+
+declare Text				G_Race_EndMap_MapUid;
+declare Integer				G_Race_EndMap_TryId;
+declare Text				G_Race_EndMap_DataToSend;
+
+declare Integer 			G_Race_GetResult_TryId;
+
+declare Text				G_Train_DataToSend;
+declare Integer[]			G_Race_ChallengeInstanceIds;
+
+//External Datas
+declare Text[Text][]		G_AllChallenges;
+declare Text[Text][]		G_InstalledChallenges;
+declare Text[Text][]		G_BuddiesChallenges;
+declare Text[Text][]		G_MyChallenges;
+
+declare Text[Text]			G_Challenge;
+declare Text[Text][]		G_ChallengeMaps;
+
+declare Text[Text]			G_InstalledChallenge;
+declare Text[Text][]		G_InstalledChallengeMaps;
+
+declare Integer				G_GetResult_LadderPointsWon;
+declare Integer				G_GetResult_PlayerLadderPoints;
+
+declare Text[Text]			G_BuddiesChallenge;
+declare Text[Text][]		G_BuddiesChallengeMaps;
+declare Text[Text][]		G_BuddiesChallengeResults;
+declare Text[Text][][Text]	G_BuddiesChallengeGhosts;
+
+declare Text[Text][]		G_ChallengeTries;
+
+declare Integer 			G_ChallengesCount;
+declare Integer				G_BuddiesChallengesCount;
+declare Integer				G_MaxLadderPoints;
+declare Boolean				G_RemoveBuddyChallenge_CountsForChallengesCount;
+
+declare Integer				G_EndMap_PlayerLadderPoints;
+declare Integer				G_EndMap_PlayerLadderPointsWon;
+
+//Internal Data
+declare Text				G_DisconnectErrorText;
+
+declare Boolean				G_ChallengeUpvoteOrElseDownvote;
+declare Text 				G_ChallengeBuddies_DataToSend;
+declare Text[]				G_InstalledChallengesIds; 
+declare Text[]				G_UninstallChallenge_MapUids;
+
+declare CWebServicesTaskResult[Integer] GetDisplayNamesTasks; //indexé par requesttype (<=1)
+
+///////////////////
+// INIT & RESET
+///////////////////
+Void ReInitRequest(Integer _RequestType) {
+	G_Requests[_RequestType]["status"]  		= C_REQUESTSTATUS_NOREQUEST;
+	G_Requests[_RequestType]["id"]				= "";
+	G_Requests[_RequestType]["layer"]			= "";
+	G_Requests[_RequestType]["challengeid"] 	= "-1";
+}
+
+Void InitRequestsData() {
+	G_Requests = Text[Text][];
+	
+	for (I, 0, C_REQUESTSCOUNT-1)
+	{
+		G_Requests.add(Text[Text]);
+		ReInitRequest(I);
+	}
+}
+
+Void OnConnexionLost(Text _Message) {
+	InitRequestsData();
+	G_DisconnectErrorText = _Message;
+}
+
+Void Load() {
+	InitRequestsData();
+	G_DisconnectErrorText = "";
+}
+
+///////////////////
+// REQUESTS
+///////////////////
+Void SetRequestStatus(Integer _RequestType, Text _Status, Text _Id)
+{
+	if (_Id != "")
+		G_Requests[_RequestType]["id"]		= _Id;
+	if (_Id == "" && _Status == C_REQUESTSTATUS_WAITING)
+		G_Requests[_RequestType]["status"]	= C_REQUESTSTATUS_FAILED;
+	else
+		G_Requests[_RequestType]["status"]	= _Status;
+}
+
+Void DropCurrentRequest(Integer _RequestType)
+{
+	if (G_Requests[_RequestType]["id"] == "")
+		return;
+	declare Text RequestId = G_Requests[_RequestType]["id"];
+	for (I, 0, Http.Requests.count-1)
+	{
+		if (Http.Requests[I].Id^"" == RequestId)
+		{
+			Http.Destroy(Http.Requests[I]);
+			return;
+		}
+	}
+}
+
+Void RequestAllChallenges() {
+	DropCurrentRequest(C_REQUESTTYPE_ALLCHALLENGES);
+	declare Url = "/challenges";
+	Url ^= "?offset="^G_RequestAllChallengesOffset;
+	Url ^= "&length="^G_RequestAllChallengesLength;
+	Url ^= "&notInstalled=True";
+	if (ManiaPlanet.TmTurbo_IsPartialInstall || ManiaPlanet.TmTurbo_IsDemo)
+		Url ^= "&environments[]=Canyon";
+	Url ^= G_RequestAllChallengesFilters;
+	
+	declare Ident CurId	= LiveHttp::Manialib_Http_GetAsync(Url, LiveAuth::Auth_GetHttpHeader());
+
+	SetRequestStatus(C_REQUESTTYPE_ALLCHALLENGES, C_REQUESTSTATUS_WAITING, CurId^"");
+}
+
+Void RequestInstalledChallenges() {
+	DropCurrentRequest(C_REQUESTTYPE_INSTALLEDCHALLENGES);
+	declare Url = "/challenges/installed";
+	Url ^= "?statuses[]=3";
+	Url ^= "&offset="^G_RequestInstalledChallengesOffset;
+	Url ^= "&length="^G_RequestInstalledChallengesLength;
+	if (ManiaPlanet.TmTurbo_IsPartialInstall || ManiaPlanet.TmTurbo_IsDemo)
+		Url ^= "&environments[]=Canyon";
+	
+	declare Ident CurId	= LiveHttp::Manialib_Http_GetAsync(Url, LiveAuth::Auth_GetHttpHeader());
+
+	SetRequestStatus(C_REQUESTTYPE_INSTALLEDCHALLENGES, C_REQUESTSTATUS_WAITING, CurId^"");
+}
+
+Void RequestMyChallenges() {
+	DropCurrentRequest(C_REQUESTTYPE_MYCHALLENGES);
+	
+	if( ManiaPlanet.MasterServer_MainMSUser == Null) return;
+	
+	declare Url = "/challenges/installed?challengeAuthors[]="^ManiaPlanet.MasterServer_MainMSUser.Login;
+	Url ^= "&offset="^G_RequestMyChallengesOffset;
+	Url ^= "&length="^G_RequestMyChallengesLength;
+	Url ^= "&statuses[]=2&statuses[]=1";
+	if (ManiaPlanet.TmTurbo_IsPartialInstall || ManiaPlanet.TmTurbo_IsDemo)
+		Url ^= "&environments[]=Canyon";
+	
+	declare Ident CurId	= LiveHttp::Manialib_Http_GetAsync(Url, LiveAuth::Auth_GetHttpHeader());
+	SetRequestStatus(C_REQUESTTYPE_MYCHALLENGES, C_REQUESTSTATUS_WAITING, CurId^"");
+}
+
+Void RequestChallenge() {
+	DropCurrentRequest(C_REQUESTTYPE_GETCHALLENGE);
+	declare Ident CurId = LiveHttp::Manialib_Http_GetAsync("/challenges/"^G_Requests[C_REQUESTTYPE_GETCHALLENGE]["challengeid"], LiveAuth::Auth_GetHttpHeader());
+	SetRequestStatus(C_REQUESTTYPE_GETCHALLENGE, C_REQUESTSTATUS_WAITING, CurId^"");
+}
+
+Void RequestInstalledChallenge() {
+	DropCurrentRequest(C_REQUESTTYPE_GETINSTALLEDCHALLENGE);
+	declare Ident CurId = LiveHttp::Manialib_Http_GetAsync("/challenges/installed/"^G_Requests[C_REQUESTTYPE_GETINSTALLEDCHALLENGE]["challengeid"], LiveAuth::Auth_GetHttpHeader());
+	SetRequestStatus(C_REQUESTTYPE_GETINSTALLEDCHALLENGE, C_REQUESTSTATUS_WAITING, CurId^"");
+}
+
+Void RequestChallengeMaps() {
+	DropCurrentRequest(C_REQUESTTYPE_GETCHALLENGEMAPS);
+	declare Ident CurId = LiveHttp::Manialib_Http_GetAsync("/challenges/"^G_Requests[C_REQUESTTYPE_GETCHALLENGEMAPS]["challengeid"], LiveAuth::Auth_GetHttpHeader());
+	SetRequestStatus(C_REQUESTTYPE_GETCHALLENGEMAPS, C_REQUESTSTATUS_WAITING, CurId^"");
+}
+
+Void RequestCreateChallenge() {
+	DropCurrentRequest(C_REQUESTTYPE_CREATECHALLENGE);
+	declare Ident CurId = LiveHttp::Manialib_Http_PostAsync("/challenges", G_CreateChallenge_DataToSend, LiveAuth::Auth_GetHttpHeader());
+	SetRequestStatus(C_REQUESTTYPE_CREATECHALLENGE, C_REQUESTSTATUS_WAITING, CurId^"");
+}
+
+Void RequestPublishChallenge() {
+	DropCurrentRequest(C_REQUESTTYPE_PUBLISHCHALLENGE);
+	declare Ident CurId = LiveHttp::Manialib_Http_PostAsync("/challenges/"^G_Requests[C_REQUESTTYPE_PUBLISHCHALLENGE]["challengeid"]^"/publish", "", LiveAuth::Auth_GetHttpHeader());
+	SetRequestStatus(C_REQUESTTYPE_PUBLISHCHALLENGE, C_REQUESTSTATUS_WAITING, CurId^"");
+}
+
+Void RequestInstallChallenge() {
+	DropCurrentRequest(C_REQUESTTYPE_INSTALLCHALLENGE);
+	declare Ident CurId = LiveHttp::Manialib_Http_PostAsync("/challenges/"^G_Requests[C_REQUESTTYPE_INSTALLCHALLENGE]["challengeid"]^"/install", "", LiveAuth::Auth_GetHttpHeader());
+	SetRequestStatus(C_REQUESTTYPE_INSTALLCHALLENGE, C_REQUESTSTATUS_WAITING, CurId^"");
+}
+
+Void RequestUninstallChallenge() {
+	DropCurrentRequest(C_REQUESTTYPE_UNINSTALLCHALLENGE);
+	if (G_InstalledChallenge["id"] != G_Requests[C_REQUESTTYPE_UNINSTALLCHALLENGE]["challengeid"])
+	{
+		SetRequestStatus(C_REQUESTTYPE_UNINSTALLCHALLENGE, C_REQUESTSTATUS_FAILED, "");
+		return;
+	}
+
+	//récupérer les uids des maps pour pouvoir delete les ghosts en cas de réussite / le challenge devrait se trouver dans G_InstalledChallenges
+	G_UninstallChallenge_MapUids.clear();
+	for (I, 0, G_InstalledChallengeMaps.count-1)
+		G_UninstallChallenge_MapUids.add(G_InstalledChallengeMaps[I]["uid"]);
+	
+	declare Ident CurId = LiveHttp::Manialib_Http_PostAsync("/challenges/"^G_Requests[C_REQUESTTYPE_UNINSTALLCHALLENGE]["challengeid"]^"/uninstall", "", LiveAuth::Auth_GetHttpHeader());
+	SetRequestStatus(C_REQUESTTYPE_UNINSTALLCHALLENGE, C_REQUESTSTATUS_WAITING, CurId^"");
+}
+
+Void RequestChallengeRaces() {
+	DropCurrentRequest(C_REQUESTTYPE_RACE_FORCHALLENGE);
+	declare Url = "/challenges/"^G_Requests[C_REQUESTTYPE_RACE_FORCHALLENGE]["challengeid"]^"/race/tries";
+	Url ^= "?offset="^G_RequestChallengeRacesOffset;
+	Url ^= "&length="^G_RequestChallengeRacesLength;
+
+	declare Ident CurId = LiveHttp::Manialib_Http_GetAsync(Url, LiveAuth::Auth_GetHttpHeader());
+	SetRequestStatus(C_REQUESTTYPE_RACE_FORCHALLENGE, C_REQUESTSTATUS_WAITING, CurId^"");
+}
+
+Void RequestStartRace() {
+	DropCurrentRequest(C_REQUESTTYPE_RACE_START);
+	declare Url = "/challenges/"^G_Requests[C_REQUESTTYPE_RACE_START]["challengeid"]^"/race/try/start";
+	if (G_Race_ChallengeInstanceIds.count != 0)
+	{
+		for (I, 0, G_Race_ChallengeInstanceIds.count - 1)
+		{
+			if (I == 0)
+				Url ^= "?";
+			else
+				Url ^= "&";
+			Url ^= "challengeInstanceIds[]="^G_Race_ChallengeInstanceIds[I];
+		}
+	}
+	declare Ident CurId = LiveHttp::Manialib_Http_PostAsync(Url, "", LiveAuth::Auth_GetHttpHeader());
+	SetRequestStatus(C_REQUESTTYPE_RACE_START, C_REQUESTSTATUS_WAITING, CurId^"");
+}
+
+Void RequestFinishRace() {
+	DropCurrentRequest(C_REQUESTTYPE_RACE_FINISH);
+	declare Ident CurId = LiveHttp::Manialib_Http_PostAsync("/challenges/"^G_Requests[C_REQUESTTYPE_RACE_FINISH]["challengeid"]^"/race/try/"^G_Race_GiveUp_TryId^"/giveup", "", LiveAuth::Auth_GetHttpHeader());
+	SetRequestStatus(C_REQUESTTYPE_RACE_FINISH, C_REQUESTSTATUS_WAITING, CurId^"");
+}
+
+Void RequestBeginMap() {
+	DropCurrentRequest(C_REQUESTTYPE_RACE_BEGINMAP);
+	declare Ident CurId = LiveHttp::Manialib_Http_PostAsync("/challenges/"^G_Requests[C_REQUESTTYPE_RACE_BEGINMAP]["challengeid"]^"/race/try/"^G_Race_BeginMap_TryId^"/maps/"^G_Race_BeginMap_MapUid^"/start", "", LiveAuth::Auth_GetHttpHeader());
+	SetRequestStatus(C_REQUESTTYPE_RACE_BEGINMAP, C_REQUESTSTATUS_WAITING, CurId^"");
+}
+
+Void RequestEndMap() {
+	DropCurrentRequest(C_REQUESTTYPE_RACE_ENDMAP);
+	declare Ident CurId = LiveHttp::Manialib_Http_PostAsync("/challenges/"^G_Requests[C_REQUESTTYPE_RACE_ENDMAP]["challengeid"]^"/race/try/"^G_Race_EndMap_TryId^"/maps/"^G_Race_EndMap_MapUid^"/end", G_Race_EndMap_DataToSend, LiveAuth::Auth_GetHttpHeader());
+	SetRequestStatus(C_REQUESTTYPE_RACE_ENDMAP, C_REQUESTSTATUS_WAITING, CurId^"");
+}
+
+Void RequestGetResult() {
+	DropCurrentRequest(C_REQUESTTYPE_RACE_GETRESULT);
+	declare Ident CurId = LiveHttp::Manialib_Http_GetAsync("/challenges/"^G_Requests[C_REQUESTTYPE_RACE_GETRESULT]["challengeid"]^"/race/try/"^G_Race_GetResult_TryId, LiveAuth::Auth_GetHttpHeader());
+	SetRequestStatus(C_REQUESTTYPE_RACE_GETRESULT, C_REQUESTSTATUS_WAITING, CurId^"");
+}
+
+Void RequestNewBestTrainScore() {
+	DropCurrentRequest(C_REQUESTTYPE_TRAIN);
+	declare Ident CurId = LiveHttp::Manialib_Http_PostAsync("/challenges/"^G_Requests[C_REQUESTTYPE_TRAIN]["challengeid"]^"/race/train", G_Train_DataToSend, LiveAuth::Auth_GetHttpHeader());
+	SetRequestStatus(C_REQUESTTYPE_TRAIN, C_REQUESTSTATUS_WAITING, CurId^"");
+}
+
+Void RequestInstalledChallengesIds() {
+	DropCurrentRequest(C_REQUESTTYPE_INSTALLEDCHALLENGESIDS);
+	declare Url = "/challenges/installed";
+	Url ^= "?offset="^0;
+	Url ^= "&length="^1000; // >> MaxInstalledChallengesCount
+	declare Ident CurId = LiveHttp::Manialib_Http_GetAsync("/challenges/installed", LiveAuth::Auth_GetHttpHeader());
+	SetRequestStatus(C_REQUESTTYPE_INSTALLEDCHALLENGESIDS, C_REQUESTSTATUS_WAITING, CurId^"");
+}
+
+Void RequestChallengeBuddies() {
+	DropCurrentRequest(C_REQUESTTYPE_CHALLENGEBUDDIES);
+	declare Url = "/challenges/";
+	Url ^= G_Requests[C_REQUESTTYPE_CHALLENGEBUDDIES]["challengeid"];
+	Url ^= "/instances";
+	declare Ident CurId = LiveHttp::Manialib_Http_PostAsync(Url, G_ChallengeBuddies_DataToSend, LiveAuth::Auth_GetHttpHeader());
+	SetRequestStatus(C_REQUESTTYPE_CHALLENGEBUDDIES, C_REQUESTSTATUS_WAITING, CurId^"");
+}
+
+Void RequestBuddiesChallenges() {
+	DropCurrentRequest(C_REQUESTTYPE_GETBUDDIESCHALLENGES);
+	declare Url = "/challenges/instances/mine";
+	Url ^= "?offset="^G_RequestBuddiesChallengesOffset;
+	Url ^= "&length="^G_RequestBuddiesChallengesLength;
+	//Url ^= "&players[]="^ManiaPlanet.MasterServer_MainMSUser.Login;
+	if (ManiaPlanet.TmTurbo_IsPartialInstall || ManiaPlanet.TmTurbo_IsDemo)
+		Url ^= "&environments[]=Canyon";
+		
+	declare Ident CurId = LiveHttp::Manialib_Http_GetAsync(Url, LiveAuth::Auth_GetHttpHeader());
+	SetRequestStatus(C_REQUESTTYPE_GETBUDDIESCHALLENGES, C_REQUESTSTATUS_WAITING, CurId^"");
+}
+
+Void RequestBuddiesChallenge() {
+	DropCurrentRequest(C_REQUESTTYPE_GETBUDDIESCHALLENGE);
+	declare Url = "/challenges/instances/"^G_RequestBuddiesChallengeInstanceId^"/mine";
+	declare Ident CurId = LiveHttp::Manialib_Http_GetAsync(Url, LiveAuth::Auth_GetHttpHeader());
+	SetRequestStatus(C_REQUESTTYPE_GETBUDDIESCHALLENGE, C_REQUESTSTATUS_WAITING, CurId^"");
+}
+
+Void RequestBuddiesChallengeInstalledChallengeData() {
+	declare Url = "/challenges/installed/"^G_Requests[C_REQUESTTYPE_GETBUDDIESCHALLENGE]["challengeid"];
+	declare Ident CurId = LiveHttp::Manialib_Http_GetAsync(Url, LiveAuth::Auth_GetHttpHeader());
+	SetRequestStatus(C_REQUESTTYPE_GETBUDDIESCHALLENGE, C_REQUESTSTATUS_WAITFORINSTALLEDCHALLENGESDATA, CurId^"");
+}
+
+Void RequestVoteChallenge() {
+	DropCurrentRequest(C_REQUESTTYPE_VOTECHALLENGE);
+	declare Url = "/challenges/";
+	Url ^= G_Requests[C_REQUESTTYPE_VOTECHALLENGE]["challengeid"];
+	Url ^= "/vote/";
+	if (G_ChallengeUpvoteOrElseDownvote)
+		Url ^= "plus";
+	else
+		Url ^= "minus";
+	declare Ident CurId = LiveHttp::Manialib_Http_PostAsync(Url, "", LiveAuth::Auth_GetHttpHeader());
+	SetRequestStatus(C_REQUESTTYPE_VOTECHALLENGE, C_REQUESTSTATUS_WAITING, CurId^"");
+}
+
+Void RequestStats() {
+	if ((ManiaPlanet.MasterServer_MainMSUser != Null) && ManiaPlanet.MasterServer_MainMSUser.ConnectionStatus == CNetMasterServerUserInfo::EMasterServerConnectionStatus::Connected)
+	{
+		DropCurrentRequest(C_REQUESTTYPE_GETSTATS);
+		declare Ident CurId = LiveHttp::Manialib_Http_GetAsync("/me", LiveAuth::Auth_GetHttpHeader());
+		SetRequestStatus(C_REQUESTTYPE_GETSTATS, C_REQUESTSTATUS_WAITING, CurId^"");
+	}
+}
+
+Void RequestRemoveBuddyChallenge()
+{
+	DropCurrentRequest(C_REQUESTTYPE_REMOVEBUDDYCHALLENGE);
+	declare Ident CurId = LiveHttp::Manialib_Http_PostAsync("/challenges/instances/"^G_Requests[C_REQUESTTYPE_REMOVEBUDDYCHALLENGE]["challengeid"]^"/leave", "", LiveAuth::Auth_GetHttpHeader());
+	SetRequestStatus(C_REQUESTTYPE_REMOVEBUDDYCHALLENGE, C_REQUESTSTATUS_WAITING, CurId^"");
+}
+
+///////////////////
+// EXTERNAL CALLS
+///////////////////
+Void GetAllChallenges(Text _LayerName, Integer _Offset, Integer _Length, Text _Filters) {
+	G_Requests[C_REQUESTTYPE_ALLCHALLENGES]["layer"] = _LayerName;
+	G_RequestAllChallengesOffset	= _Offset;
+	G_RequestAllChallengesLength  	= _Length;
+	G_RequestAllChallengesFilters 	= _Filters;
+	
+	SetRequestStatus(C_REQUESTTYPE_MYCHALLENGES, 			C_REQUESTSTATUS_NOREQUEST, "");
+	DropCurrentRequest(C_REQUESTTYPE_MYCHALLENGES);
+	SetRequestStatus(C_REQUESTTYPE_INSTALLEDCHALLENGES, 	C_REQUESTSTATUS_NOREQUEST, "");
+	DropCurrentRequest(C_REQUESTTYPE_INSTALLEDCHALLENGES);
+	SetRequestStatus(C_REQUESTTYPE_ALLCHALLENGES, 			C_REQUESTSTATUS_TOSEND, "");
+}
+
+Void GetInstalledChallenges(Text _LayerName, Integer _Offset, Integer _Length) {
+	G_Requests[C_REQUESTTYPE_INSTALLEDCHALLENGES]["layer"] = _LayerName;
+	G_RequestInstalledChallengesOffset	= _Offset;
+	G_RequestInstalledChallengesLength 	= _Length;
+	SetRequestStatus(C_REQUESTTYPE_MYCHALLENGES, 			C_REQUESTSTATUS_NOREQUEST, "");
+	DropCurrentRequest(C_REQUESTTYPE_MYCHALLENGES);
+	SetRequestStatus(C_REQUESTTYPE_ALLCHALLENGES, 			C_REQUESTSTATUS_NOREQUEST, "");
+	DropCurrentRequest(C_REQUESTTYPE_ALLCHALLENGES);
+	SetRequestStatus(C_REQUESTTYPE_INSTALLEDCHALLENGES, 	C_REQUESTSTATUS_TOSEND, "");
+}
+
+Void GetMyChallenges(Text _LayerName, Integer _Offset, Integer _Length) {
+	G_Requests[C_REQUESTTYPE_MYCHALLENGES]["layer"] = _LayerName;	
+	G_RequestMyChallengesOffset		= _Offset;
+	G_RequestMyChallengesLength 	= _Length;
+	SetRequestStatus(C_REQUESTTYPE_ALLCHALLENGES, 			C_REQUESTSTATUS_NOREQUEST, "");
+	DropCurrentRequest(C_REQUESTTYPE_ALLCHALLENGES);
+	SetRequestStatus(C_REQUESTTYPE_INSTALLEDCHALLENGES, 	C_REQUESTSTATUS_NOREQUEST, "");
+	DropCurrentRequest(C_REQUESTTYPE_INSTALLEDCHALLENGES);
+	SetRequestStatus(C_REQUESTTYPE_MYCHALLENGES, 			C_REQUESTSTATUS_TOSEND, "");
+}
+
+Void GetChallenge(Text _LayerName, Integer _Id) {
+	G_Requests[C_REQUESTTYPE_GETCHALLENGE]["layer"] = _LayerName;
+	G_Requests[C_REQUESTTYPE_GETCHALLENGE]["challengeid"] = _Id^"";
+	SetRequestStatus(C_REQUESTTYPE_GETCHALLENGE, C_REQUESTSTATUS_TOSEND, "");
+}
+
+Void GetInstalledChallenge(Text _LayerName, Integer _Id) {
+	G_Requests[C_REQUESTTYPE_GETINSTALLEDCHALLENGE]["layer"] = _LayerName;
+	G_Requests[C_REQUESTTYPE_GETINSTALLEDCHALLENGE]["challengeid"] = _Id^"";
+	SetRequestStatus(C_REQUESTTYPE_GETINSTALLEDCHALLENGE, C_REQUESTSTATUS_TOSEND, "");
+}
+
+Void GetChallengeMaps(Text _LayerName, Integer _Id) {
+	G_Requests[C_REQUESTTYPE_GETCHALLENGEMAPS]["layer"] = _LayerName;
+	G_Requests[C_REQUESTTYPE_GETCHALLENGEMAPS]["challengeid"] = _Id^"";
+	SetRequestStatus(C_REQUESTTYPE_GETCHALLENGEMAPS, C_REQUESTSTATUS_TOSEND, "");
+}
+
+Void CreateChallenge(Text _LayerName, Text _Data)
+{
+	if (G_Requests[C_REQUESTTYPE_CREATECHALLENGE]["status"] != C_REQUESTSTATUS_NOREQUEST)
+		return;
+
+	G_Requests[C_REQUESTTYPE_CREATECHALLENGE]["layer"] = _LayerName;
+	G_CreateChallenge_DataToSend = _Data;
+	SetRequestStatus(C_REQUESTTYPE_CREATECHALLENGE, C_REQUESTSTATUS_TOSEND, "");
+}
+
+Void PublishChallenge(Text _LayerName, Integer _Id)
+{
+	if (G_Requests[C_REQUESTTYPE_PUBLISHCHALLENGE]["status"] != C_REQUESTSTATUS_NOREQUEST)
+		return;
+		
+	G_Requests[C_REQUESTTYPE_PUBLISHCHALLENGE]["layer"] = _LayerName;
+	G_Requests[C_REQUESTTYPE_PUBLISHCHALLENGE]["challengeid"] = _Id^"";
+	SetRequestStatus(C_REQUESTTYPE_PUBLISHCHALLENGE, C_REQUESTSTATUS_TOSEND, "");
+}
+
+Void InstallChallenge(Text _LayerName, Integer _Id)
+{
+	if (G_Requests[C_REQUESTTYPE_INSTALLCHALLENGE]["status"] != C_REQUESTSTATUS_NOREQUEST)
+		return;
+
+	G_Requests[C_REQUESTTYPE_INSTALLCHALLENGE]["layer"] = _LayerName;
+	G_Requests[C_REQUESTTYPE_INSTALLCHALLENGE]["challengeid"] = _Id^"";
+	SetRequestStatus(C_REQUESTTYPE_INSTALLCHALLENGE, C_REQUESTSTATUS_TOSEND, "");
+}
+
+Void UninstallChallenge(Text _LayerName, Integer _Id)
+{
+	if (G_Requests[C_REQUESTTYPE_UNINSTALLCHALLENGE]["status"] != C_REQUESTSTATUS_NOREQUEST)
+		return;
+		
+	G_Requests[C_REQUESTTYPE_UNINSTALLCHALLENGE]["layer"] = _LayerName;
+	G_Requests[C_REQUESTTYPE_UNINSTALLCHALLENGE]["challengeid"] = _Id^"";
+	SetRequestStatus(C_REQUESTTYPE_UNINSTALLCHALLENGE, C_REQUESTSTATUS_TOSEND, "");
+}
+
+Void GetChallengeTries(Text _LayerName, Integer _ChallengeId, Integer _Offset, Integer _Length)
+{
+	G_Requests[C_REQUESTTYPE_RACE_FORCHALLENGE]["layer"] = _LayerName;
+	G_Requests[C_REQUESTTYPE_RACE_FORCHALLENGE]["challengeid"] = _ChallengeId^"";
+	G_RequestChallengeRacesOffset	= _Offset;
+	G_RequestChallengeRacesLength  	= _Length;
+	SetRequestStatus(C_REQUESTTYPE_RACE_FORCHALLENGE, C_REQUESTSTATUS_TOSEND, "");
+}
+
+Void StartRace(Text _LayerName, Integer _ChallengeId, Integer[] _ChallengeInstanceIds)
+{
+	if (G_Requests[C_REQUESTTYPE_RACE_START]["status"] != C_REQUESTSTATUS_NOREQUEST)
+		return;
+		
+	G_Race_ChallengeInstanceIds = _ChallengeInstanceIds;
+		
+	G_Requests[C_REQUESTTYPE_RACE_START]["layer"] = _LayerName;
+	G_Requests[C_REQUESTTYPE_RACE_START]["challengeid"] = _ChallengeId^"";
+	SetRequestStatus(C_REQUESTTYPE_RACE_START, C_REQUESTSTATUS_TOSEND, "");
+}
+
+Void FinishRace(Text _LayerName, Integer _ChallengeId, Integer _RaceId)
+{
+	if (G_Requests[C_REQUESTTYPE_RACE_FINISH]["status"] != C_REQUESTSTATUS_NOREQUEST)
+		return;
+		
+	G_Requests[C_REQUESTTYPE_RACE_FINISH]["layer"] = _LayerName;
+	G_Requests[C_REQUESTTYPE_RACE_FINISH]["challengeid"] = _ChallengeId^"";
+	G_Race_GiveUp_TryId = _RaceId;
+	SetRequestStatus(C_REQUESTTYPE_RACE_FINISH, C_REQUESTSTATUS_TOSEND, "");
+}
+
+Void BeginMap(Text _LayerName, Integer _ChallengeId, Text _MapUid, Integer _TryId)
+{
+	if (G_Requests[C_REQUESTTYPE_RACE_BEGINMAP]["status"] != C_REQUESTSTATUS_NOREQUEST)
+		return;
+		
+	G_Requests[C_REQUESTTYPE_RACE_BEGINMAP]["layer"] = _LayerName;
+	G_Requests[C_REQUESTTYPE_RACE_BEGINMAP]["challengeid"] = _ChallengeId^"";
+	
+	G_Race_BeginMap_MapUid = _MapUid;
+	G_Race_BeginMap_TryId = _TryId;
+	
+	SetRequestStatus(C_REQUESTTYPE_RACE_BEGINMAP, C_REQUESTSTATUS_TOSEND, "");
+}
+
+Void EndMap(Text _LayerName, Integer _ChallengeId, Text _MapUid, Integer _TryId, Integer _BestTime)
+{
+	if (G_Requests[C_REQUESTTYPE_RACE_ENDMAP]["status"] != C_REQUESTSTATUS_NOREQUEST)
+		return;
+		
+	G_Requests[C_REQUESTTYPE_RACE_ENDMAP]["layer"] = _LayerName;
+	G_Requests[C_REQUESTTYPE_RACE_ENDMAP]["challengeid"] = _ChallengeId^"";
+	
+	G_Race_EndMap_MapUid = _MapUid;
+	G_Race_EndMap_TryId = _TryId;
+	G_Race_EndMap_DataToSend = "";
+	
+	SetRequestStatus(C_REQUESTTYPE_RACE_ENDMAP, C_REQUESTSTATUS_TOSEND, "");
+}
+
+Void GetLadderPointsWon(Text _LayerName, Integer _ChallengeId, Integer _TryId)
+{
+	G_Requests[C_REQUESTTYPE_RACE_GETRESULT]["layer"] = _LayerName;
+	G_Requests[C_REQUESTTYPE_RACE_GETRESULT]["challengeid"] = _ChallengeId^"";
+	G_Race_GetResult_TryId = _TryId;
+	SetRequestStatus(C_REQUESTTYPE_RACE_GETRESULT, C_REQUESTSTATUS_TOSEND, "");
+}
+
+Void NewBestTrainScore(Text _LayerName, Integer _ChallengeId, Integer _MapUid, Integer _NewBestTime)
+{
+	SetRequestStatus(C_REQUESTTYPE_TRAIN, C_REQUESTSTATUS_FAILED, "");
+}
+
+Void ChallengeBuddies(Text _LayerName, Integer _ChallengeId, Text _Body)
+{
+	if (G_Requests[C_REQUESTTYPE_CHALLENGEBUDDIES]["status"] != C_REQUESTSTATUS_NOREQUEST)
+		return;
+
+	G_Requests[C_REQUESTTYPE_CHALLENGEBUDDIES]["layer"] = _LayerName;
+	G_Requests[C_REQUESTTYPE_CHALLENGEBUDDIES]["challengeid"] = _ChallengeId^"";
+	
+	G_ChallengeBuddies_DataToSend = _Body;
+	
+	SetRequestStatus(C_REQUESTTYPE_CHALLENGEBUDDIES, C_REQUESTSTATUS_TOSEND, "");
+}
+
+Void GetBuddiesChallenges(Text _LayerName, Integer _Offset, Integer _Length)
+{
+	G_Requests[C_REQUESTTYPE_GETBUDDIESCHALLENGES]["layer"] = _LayerName;
+	G_RequestBuddiesChallengesOffset = _Offset;
+	G_RequestBuddiesChallengesLength = _Length;
+	
+	SetRequestStatus(C_REQUESTTYPE_GETBUDDIESCHALLENGES, C_REQUESTSTATUS_TOSEND, "");
+}
+
+Void GetBuddiesChallenge(Text _LayerName, Integer _ChallengeInstanceId, Integer _ChallengeId)
+{
+	G_Requests[C_REQUESTTYPE_GETBUDDIESCHALLENGE]["layer"] = _LayerName;
+	G_Requests[C_REQUESTTYPE_GETBUDDIESCHALLENGE]["challengeid"] = _ChallengeId^"";
+	G_RequestBuddiesChallengeInstanceId = _ChallengeInstanceId;
+	SetRequestStatus(C_REQUESTTYPE_GETBUDDIESCHALLENGE, C_REQUESTSTATUS_TOSEND, "");
+}
+
+Void VoteForChallenge(Text _LayerName, Integer _ChallengeId, Boolean _UpvoteOrElseDownvote)
+{
+	G_Requests[C_REQUESTTYPE_VOTECHALLENGE]["layer"] = _LayerName;
+	G_Requests[C_REQUESTTYPE_VOTECHALLENGE]["challengeid"] = _ChallengeId^"";
+	G_ChallengeUpvoteOrElseDownvote = _UpvoteOrElseDownvote;
+	SetRequestStatus(C_REQUESTTYPE_VOTECHALLENGE, C_REQUESTSTATUS_TOSEND, "");
+}
+
+Void GetStats(Text _LayerName)
+{
+	G_Requests[C_REQUESTTYPE_GETSTATS]["layer"] = _LayerName;
+	SetRequestStatus(C_REQUESTTYPE_GETSTATS, C_REQUESTSTATUS_TOSEND, "");
+}
+
+Void RemoveBuddyChallenge(Text _LayerName, Integer _ChallengeInstanceId, Boolean _CountsForChallengesCount)
+{
+	G_Requests[C_REQUESTTYPE_REMOVEBUDDYCHALLENGE]["layer"] = _LayerName;
+	G_Requests[C_REQUESTTYPE_REMOVEBUDDYCHALLENGE]["challengeid"] = TextLib::ToText(_ChallengeInstanceId);
+	SetRequestStatus(C_REQUESTTYPE_REMOVEBUDDYCHALLENGE, C_REQUESTSTATUS_TOSEND, "");
+	G_RemoveBuddyChallenge_CountsForChallengesCount = _CountsForChallengesCount;
+}
+
+Void SetBuddiesChallengesBrowsed() {
+	SetRequestStatus(C_REQUESTTYPE_SETBUDDIESCHALLENGESBROWSED, C_REQUESTSTATUS_SUCCEEDED, ""); //on va direct au traitement vu qu'il n'y a pas de requête live à faire
+}
+
+///////////////////
+// UI INTERACTION
+///////////////////
+Text GetFeedbackText(Integer _Request) {												
+	declare Text Feedback = "Request_";
+	switch(_Request)
+	{
+		case C_REQUESTTYPE_ALLCHALLENGES 		: Feedback ^= "AllChallenges";
+		case C_REQUESTTYPE_INSTALLEDCHALLENGES 	: Feedback ^= "InstalledChallenges";
+		case C_REQUESTTYPE_GETCHALLENGE 		: Feedback ^= "GetChallenge";
+		case C_REQUESTTYPE_GETINSTALLEDCHALLENGE: Feedback ^= "GetInstalledChallenge";
+		case C_REQUESTTYPE_GETCHALLENGEMAPS		: Feedback ^= "GetChallengeMaps";
+		case C_REQUESTTYPE_MYCHALLENGES 		: Feedback ^= "MyChallenges";
+		case C_REQUESTTYPE_CREATECHALLENGE 		: { 
+			Feedback ^= "CreateChallenge";
+			MenuAchievements::ChallengeCreated();
+		}
+		case C_REQUESTTYPE_PUBLISHCHALLENGE 	: Feedback ^= "PublishChallenge";
+		case C_REQUESTTYPE_INSTALLCHALLENGE 	: Feedback ^= "InstallChallenge";
+		case C_REQUESTTYPE_UNINSTALLCHALLENGE 	: Feedback ^= "UninstallChallenge";
+		case C_REQUESTTYPE_RACE_FORCHALLENGE	: Feedback ^= "GetChallengeTries";
+		case C_REQUESTTYPE_RACE_START			: Feedback ^= "StartRace";
+		case C_REQUESTTYPE_RACE_BEGINMAP		: Feedback ^= "BeginMap";
+		case C_REQUESTTYPE_RACE_ENDMAP			: Feedback ^= "EndMap";
+		case C_REQUESTTYPE_RACE_FINISH			: Feedback ^= "FinishRace";
+		case C_REQUESTTYPE_RACE_GETRESULT		: Feedback ^= "GetResult";
+		case C_REQUESTTYPE_TRAIN				: Feedback ^= "Train";
+		case C_REQUESTTYPE_CHALLENGEBUDDIES		: Feedback ^= "ChallengeBuddies";
+		case C_REQUESTTYPE_GETBUDDIESCHALLENGES : Feedback ^= "GetBuddiesChallenges";
+		case C_REQUESTTYPE_GETBUDDIESCHALLENGE	: Feedback ^= "GetBuddiesChallenge";
+		case C_REQUESTTYPE_VOTECHALLENGE		: Feedback ^= "VoteForChallenge";
+		case C_REQUESTTYPE_REMOVEBUDDYCHALLENGE	: Feedback ^= "RemoveBuddyChallenge";
+		default : return "";
+	}
+	
+	declare Boolean Success = G_Requests[_Request]["status"] == C_REQUESTSTATUS_SUCCEEDED;
+	if (Success)
+		Feedback ^= "_Success";
+	else
+		Feedback ^= "_Failure";
+	
+	return Feedback;
+}
+
+Void SendFeedbackToUI(Integer _RequestType) {
+	declare CUILayer LayerToSend = Layers::Get(G_Requests[_RequestType]["layer"]);
+	if(LayerToSend == Null) return;
+	declare Text FeedbackText = GetFeedbackText(_RequestType);
+	LayerCustomEvent(LayerToSend, FeedbackText, [""]);
+}
+
+Void SendMyChallengesListToUI(Integer _RequestType) {
+	declare CUILayer 		LayerToSend 	= Layers::Get(G_Requests[_RequestType]["layer"]);
+	if(LayerToSend == Null) return;
+	
+	declare Text[Text][] 	RequestedChallenges	 	for LayerToSend.LocalPage;
+	RequestedChallenges								= G_MyChallenges; 
+}
+
+Void SendAllChallengesListToUI(Integer _RequestType) {
+	declare CUILayer 		LayerToSend 	= Layers::Get(G_Requests[_RequestType]["layer"]);
+	if(LayerToSend == Null) return;
+	
+	declare Text[Text][] 	RequestedChallenges 	for LayerToSend.LocalPage;
+	RequestedChallenges								= G_AllChallenges;
+}
+
+Void SendInstalledChallengesListToUI(Integer _RequestType) {
+	declare CUILayer 		LayerToSend 	= Layers::Get(G_Requests[_RequestType]["layer"]);
+	if(LayerToSend == Null) return;
+	
+	declare Text[Text][] 	RequestedChallenges 	for LayerToSend.LocalPage;
+	RequestedChallenges								= G_InstalledChallenges;
+}
+
+Void SendChallengeToUI(Integer _RequestType) {
+	declare CUILayer 		LayerToSend 	= Layers::Get(G_Requests[_RequestType]["layer"]);
+	if(LayerToSend == Null) return;
+	
+	declare Text[Text] RequestedChallenge for LayerToSend.LocalPage;
+	RequestedChallenge = G_Challenge;
+}
+
+Void SendInstalledChallengeToUI(Integer _RequestType) {
+	declare CUILayer 		LayerToSend 	= Layers::Get(G_Requests[_RequestType]["layer"]);
+	if(LayerToSend == Null) return;
+	
+	declare Text[Text] Challenge for LayerToSend.LocalPage;
+	Challenge = G_InstalledChallenge;
+	declare Text[Text][] ChallengeTracks for LayerToSend.LocalPage;
+	ChallengeTracks = G_InstalledChallengeMaps;
+}
+
+Void SendChallengeMapsToUI(Integer _RequestType) {
+	declare CUILayer 		LayerToSend 	= Layers::Get(G_Requests[_RequestType]["layer"]);
+	if(LayerToSend == Null) return;
+	
+	declare Text[Text][] RequestedChallengeMaps for LayerToSend.LocalPage;
+	RequestedChallengeMaps = G_ChallengeMaps;
+}
+
+Void SendStartRaceTryIdToUI(Integer _RequestType)
+{
+	declare CUILayer 		LayerToSend 	= Layers::Get(G_Requests[_RequestType]["layer"]);
+	if(LayerToSend == Null) return;
+	
+	declare Integer NewRaceTryId for LayerToSend.LocalPage;
+	NewRaceTryId = G_NewTryId;
+}
+
+Void SendChallengeTriesToUI(Integer _RequestType)
+{
+	declare CUILayer 		LayerToSend 	= Layers::Get(G_Requests[_RequestType]["layer"]);
+	if(LayerToSend == Null) return;
+	
+	declare Text[Text][] RequestedChallengeTries for LayerToSend.LocalPage;
+	RequestedChallengeTries = G_ChallengeTries;
+}
+
+Void SendBuddiesChallengesToUI(Integer _RequestType)
+{
+	declare CUILayer 		LayerToSend 	= Layers::Get(G_Requests[_RequestType]["layer"]);
+	if(LayerToSend == Null) return;
+	
+	declare Text[Text][] RequestedChallenges for LayerToSend.LocalPage;
+	RequestedChallenges = G_BuddiesChallenges;
+}
+
+Void SendBuddiesChallengeToUI(Integer _RequestType)
+{
+	declare CUILayer 		LayerToSend 	= Layers::Get(G_Requests[_RequestType]["layer"]);
+	if(LayerToSend == Null) return;
+	
+	declare Text[Text] 			Challenge for LayerToSend.LocalPage;
+	declare Text[Text][] 		ChallengeTracks for LayerToSend.LocalPage;
+	declare Text[Text][] 		ChallengeResults for LayerToSend.LocalPage;
+	declare Text[Text][][Text]	ChallengeGhosts for LayerToSend.LocalPage;
+	Challenge 			= G_BuddiesChallenge;
+	ChallengeTracks 	= G_BuddiesChallengeMaps;
+	ChallengeResults 	= G_BuddiesChallengeResults;
+	ChallengeGhosts		= G_BuddiesChallengeGhosts;
+}
+
+Void SendStatsToUI(Integer _RequestType)
+{
+	declare CUILayer 		LayerToSend 	= Layers::Get(G_Requests[_RequestType]["layer"]);
+	if(LayerToSend == Null) return;
+	if(UserMgr.MainUser == Null) return;
+	
+	declare persistent Integer ChallengesCount 			for UserMgr.MainUser;
+	declare persistent Integer BuddiesChallengesCount 	for UserMgr.MainUser;
+	declare persistent Boolean HasNewBuddiesChallenges	for UserMgr.MainUser;
+	HasNewBuddiesChallenges = HasNewBuddiesChallenges || (BuddiesChallengesCount != G_BuddiesChallengesCount);
+	
+	
+	if (BuddiesChallengesCount != G_BuddiesChallengesCount)
+	{
+		ManiaPlanet.MasterServer_Tracking_StatChallenge(DataMgr.MenuUserId, G_BuddiesChallengesCount);
+	}
+
+	if ((G_ChallengesCount != ChallengesCount || G_BuddiesChallengesCount != BuddiesChallengesCount) && UserMgr.MainUser.PersistentIsReady)
+	{
+		ChallengesCount = G_ChallengesCount;
+		BuddiesChallengesCount = G_BuddiesChallengesCount;
+		UserMgr.MainUser.PersistentSave();
+	}
+	
+	LayerCustomEvent(LayerToSend, "StatsReceived", [TextLib::ToText(G_ChallengesCount), TextLib::ToText(G_BuddiesChallengesCount), TextLib::ToText(HasNewBuddiesChallenges)]);
+	
+	//En plus, on envoie le MaxLadderPoints aux 2 browsers
+	{
+		declare CUILayer	RoomsBrowser	= Layers::Get("ServerBrowser");
+		declare Integer 	MaxLadderPoints for RoomsBrowser.LocalPage;
+		MaxLadderPoints = G_MaxLadderPoints;
+	}
+	{
+		declare CUILayer	JoinAFriend	= Layers::Get("JoinAFriend");
+		declare Integer 	MaxLadderPoints for JoinAFriend.LocalPage;
+		MaxLadderPoints = G_MaxLadderPoints;
+	}
+	{
+		declare CUILayer	PopUp_JoinAFriend	= Layers::Get("PopUp_JoinAFriend");
+		declare Integer 	MaxLadderPoints for PopUp_JoinAFriend.LocalPage;
+		MaxLadderPoints = G_MaxLadderPoints;
+	}
+}
+
+Void SendBuddiesChallengesBrowsed()
+{
+	if((UserMgr.MainUser == Null) || (!UserMgr.MainUser.PersistentIsReady)) return;
+	
+	declare persistent Boolean HasNewBuddiesChallenges	for UserMgr.MainUser;
+	HasNewBuddiesChallenges = False;
+	UserMgr.MainUser.PersistentSave();
+}
+
+Void ChangeBuddiesChallengesCount(Integer _Offset)
+{
+	if((UserMgr.MainUser == Null) || (!UserMgr.MainUser.PersistentIsReady)) return;
+	
+	declare persistent Integer BuddiesChallengesCount 	for UserMgr.MainUser;
+	if (BuddiesChallengesCount + _Offset >= 0)
+		BuddiesChallengesCount += _Offset;
+	else
+		BuddiesChallengesCount = 0;
+	UserMgr.MainUser.PersistentSave();
+}
+
+Void SendEndMapInfoToUI(Integer _RequestType)
+{
+	declare CUILayer 		LayerToSend 	= Layers::Get(G_Requests[_RequestType]["layer"]);
+	if(LayerToSend == Null) return;
+	
+	declare Integer PlayerLadderPoints 		for LayerToSend.LocalPage;
+	declare Integer PlayerLadderPointsWon 	for LayerToSend.LocalPage;
+	PlayerLadderPoints 		= G_EndMap_PlayerLadderPoints;
+	PlayerLadderPointsWon 	= G_EndMap_PlayerLadderPointsWon;
+}
+
+Void SendRaceResultToUI(Integer _RequestType)
+{
+	declare CUILayer 		LayerToSend 	= Layers::Get(G_Requests[_RequestType]["layer"]);
+	if(LayerToSend == Null) return;
+	
+	declare Integer PlayerLadderPoints 		for LayerToSend.LocalPage;
+	declare Integer PlayerLadderPointsWon 	for LayerToSend.LocalPage;
+	PlayerLadderPoints 		= G_GetResult_PlayerLadderPoints;
+	PlayerLadderPointsWon 	= G_GetResult_LadderPointsWon;
+	// log("LADDER POINTS WON: "^G_GetResult_LadderPointsWon);
+}
+
+///////////////////
+// REQUESTS ANSWERS
+///////////////////
+CXmlDocument ConvertResultToXml(Text _RequestResult) {
+	return LiveXml::Manialib_Xml_CreateDocument(_RequestResult);
+}
+
+Void RequestDisplayNames(Integer _RequestType, Text[] _Logins)
+{
+	if (ManiaPlanet.MasterServer_MainMSUser == Null)
+	{
+		SetRequestStatus(_RequestType, C_REQUESTSTATUS_FAILED, "");
+		return;
+	}
+	
+	if (_Logins.count == 0)
+	{
+		SetRequestStatus(_RequestType, C_REQUESTSTATUS_SUCCEEDED, "");
+		return;
+	}
+	
+	declare CWebServicesTaskResult TaskResult = ManiaPlanet.MasterServer_GetDisplayName(ManiaPlanet.MasterServer_MainMSUser.Id);
+	
+	declare GetDisplayNameTaskResult <=> (TaskResult as CWebServicesTaskResult_GetDisplayNameScriptResult);
+	for (I, 0, _Logins.count - 1)
+	{
+		GetDisplayNameTaskResult.AddLogin(_Logins[I]);
+	}
+	GetDisplayNameTaskResult.StartTask();
+
+	GetDisplayNamesTasks[_RequestType] = TaskResult;
+}
+
+Void SetAllChallengesList(Text _RequestResult) {
+	declare CXmlDocument	Doc 			= ConvertResultToXml(_RequestResult);
+	if (Doc == Null)
+		return; //réponse invalide !
+	
+	declare CXmlNode		ResultNode		= Doc.GetFirstChild("result");
+	if (ResultNode == Null)
+	{
+		LiveXml::Manialib_Xml_DestroyDocument(Doc);
+		return; //réponse invalide !
+	}
+	declare Text[Text][]	Result			= LiveXml::Manialib_Xml_NodeToArray2(ResultNode);
+	
+	declare Text[] Logins;
+	//concat
+	//G_AllChallenges fait au moins G_RequestAllChallengesOffset en taille, sinon on n'aurait pas permis de passer à la page suivante
+	for (I, 0, G_RequestAllChallengesLength-1)
+	{
+		if (Result.existskey(I))
+		{
+			if (Result[I].existskey("author"))
+				if (Result[I]["author"] != C_AUTHOR_NADEO)
+					Logins.add(Result[I]["author"]);
+				else
+					Result[I]["displayname"] = C_AUTHOR_NADEO;
+			if (!G_AllChallenges.existskey(G_RequestAllChallengesOffset + I)) // G_AllChallenges.count == G_RequestAllChallengesOffset+I-1
+			{
+				G_AllChallenges.add(Result[I]);
+			} else {
+				G_AllChallenges[G_RequestAllChallengesOffset+I] = Result[I];
+			}
+		} else if (G_AllChallenges.count > G_RequestAllChallengesOffset+I) {
+			declare CountToRemove = G_AllChallenges.count-(G_RequestAllChallengesOffset+I);
+			for (I, 0, CountToRemove-1)
+			{
+				G_AllChallenges.removekey(G_AllChallenges.count-1);
+			}
+		}
+	}
+	LiveXml::Manialib_Xml_DestroyDocument(Doc);
+	RequestDisplayNames(C_REQUESTTYPE_ALLCHALLENGES, Logins);
+}
+
+Void SetInstalledChallengesList(Text _RequestResult) {
+	declare CXmlDocument	Doc 			= ConvertResultToXml(_RequestResult);
+	if (Doc == Null)
+		return; //réponse invalide !
+	
+	declare CXmlNode		ResultNode		= Doc.GetFirstChild("result");
+	if (ResultNode == Null)
+	{
+		LiveXml::Manialib_Xml_DestroyDocument(Doc);
+		return; //réponse invalide !
+	}
+	
+	//compute the Result Array
+	declare Text[Text][] Result;
+	
+	foreach (Challenge in ResultNode.Children)
+	{
+		Result.add(Text[Text]);
+		foreach (field in Challenge.Children)
+		{
+			if (field.Name == "challenge") {
+				foreach(challengeInfo in field.Children)
+				{
+					if (challengeInfo.Children.count == 0)
+						Result[Result.count-1][challengeInfo.Name] = challengeInfo.TextContents;
+					else if (challengeInfo.Name == "maps") {
+						declare Text MapUids = "";
+						foreach (map in challengeInfo.Children)
+						{
+							if (MapUids != "")
+								MapUids ^= ",";
+							MapUids ^= map.GetFirstChild("uid").TextContents;
+						}
+						Result[Result.count-1]["maps_uids"] = MapUids;
+					}
+				}
+			} else if (field.Name == "current_challenge_race_try") {
+				foreach(raceInfo in field.Children)
+				{
+					if (raceInfo.Children.count == 0)
+						Result[Result.count-1]["currentrace_"^raceInfo.Name] = raceInfo.TextContents;
+					else if (raceInfo.Name == "challenge_race_try_maps") {
+						declare Text CurrentRaceTracksTimes;
+						foreach(trackInfo in raceInfo.Children)
+						{
+							if (CurrentRaceTracksTimes != "")
+								CurrentRaceTracksTimes ^= ";";
+							declare CXmlNode TrackTime = trackInfo.GetFirstChild("time");
+							if (TrackTime != Null)
+								CurrentRaceTracksTimes ^= TrackTime.TextContents;
+							else
+								CurrentRaceTracksTimes ^= "-1";
+						}
+						Result[Result.count-1]["currentrace_trackstimes"] = CurrentRaceTracksTimes;
+					}
+				}
+			} else if (field.Name == "best_challenge_race_try") {
+				declare CXmlNode BestTryScore = field.GetFirstChild("score");
+				if (BestTryScore != Null)
+					Result[Result.count-1]["best_score"] = BestTryScore.TextContents;
+				declare CXmlNode BestTryMaps = field.GetFirstChild("challenge_race_try_maps");
+				if (BestTryMaps != Null) {
+					declare Text[] BestRaceTracksTimes;
+					foreach(trackInfo in BestTryMaps.Children)
+					{
+						declare CXmlNode Track		= trackInfo.GetFirstChild("map");
+						if (Track != Null)
+						{
+							declare CXmlNode TrackTime 	= trackInfo.GetFirstChild("time");
+							declare CXmlNode TrackId	= Track.GetFirstChild("id");
+							if (TrackTime != Null && TrackId != Null)
+								BestRaceTracksTimes.add(TrackId.TextContents^":"^TrackTime.TextContents);
+						}
+					}
+					Result[Result.count-1]["best_times"] = TextLib::Join(",", BestRaceTracksTimes);
+				}
+			}
+		}
+	}
+	
+	declare Text[] Logins;
+	//concat
+	//G_InstalledChallenges fait au moins G_RequestInstalledChallengesOffset en taille, sinon on n'aurait pas permis de passer à la page suivante
+	for (I, 0, G_RequestInstalledChallengesLength-1)
+	{
+		if (Result.existskey(I))
+		{
+			if (Result[I].existskey("author"))
+				if (Result[I]["author"] != C_AUTHOR_NADEO)
+					Logins.add(Result[I]["author"]);
+				else
+					Result[I]["displayname"] = C_AUTHOR_NADEO;
+			if (!G_InstalledChallenges.existskey(G_RequestInstalledChallengesOffset + I)) // G_InstalledChallenges.count == G_RequestInstalledChallengesOffset+I-1
+			{
+				G_InstalledChallenges.add(Result[I]);
+			} else {
+				G_InstalledChallenges[G_RequestInstalledChallengesOffset+I] = Result[I];
+			}
+			G_InstalledChallenges[G_RequestInstalledChallengesOffset+I]["installed"] = "1";
+		} else if (G_InstalledChallenges.count > G_RequestInstalledChallengesOffset+I) {
+			declare CountToRemove = G_InstalledChallenges.count-(G_RequestInstalledChallengesOffset+I);
+			for (I, 0, CountToRemove-1)
+			{
+				G_InstalledChallenges.removekey(G_InstalledChallenges.count-1);
+			}
+		}
+	}
+	
+	LiveXml::Manialib_Xml_DestroyDocument(Doc);
+	RequestDisplayNames(C_REQUESTTYPE_INSTALLEDCHALLENGES, Logins);
+}
+
+Void SetMyChallengesList(Text _RequestResult) {
+	declare CXmlDocument	Doc 			= ConvertResultToXml(_RequestResult);
+	if (Doc == Null)
+		return; //réponse invalide !
+	
+	declare CXmlNode		ResultNode		= Doc.GetFirstChild("result");
+	if (ResultNode == Null)
+	{
+		LiveXml::Manialib_Xml_DestroyDocument(Doc);
+		return; //réponse invalide !
+	}
+
+	//compute the Result Array
+	declare Text[Text][] Result;
+	foreach (Challenge in ResultNode.Children)
+	{
+		Result.add(Text[Text]);
+		foreach (field in Challenge.Children)
+		{
+			if (field.Name == "challenge") {
+				foreach(challengeInfo in field.Children)
+				{
+					if (challengeInfo.Children.count == 0)
+						Result[Result.count-1][challengeInfo.Name] = challengeInfo.TextContents;
+					else if (challengeInfo.Name == "maps") {
+						declare Text MapUids = "";
+						foreach (map in challengeInfo.Children)
+						{
+							if (MapUids != "")
+								MapUids ^= ",";
+							MapUids ^= map.GetFirstChild("uid").TextContents;
+						}
+						Result[Result.count-1]["maps_uids"] = MapUids;
+					}
+				}
+			} else if (field.Name == "current_challenge_race_try") {
+				foreach(raceInfo in field.Children)
+				{
+					if (raceInfo.Children.count == 0)
+						Result[Result.count-1]["currentrace_"^raceInfo.Name] = raceInfo.TextContents;
+				}
+			} else if (field.Name == "best_challenge_race_try") {
+				declare CXmlNode BestTryScore = field.GetFirstChild("score");
+				if (BestTryScore != Null)
+					Result[Result.count-1]["best_score"] = BestTryScore.TextContents;
+				declare CXmlNode BestTryMaps = field.GetFirstChild("challenge_race_try_maps");
+				if (BestTryMaps != Null) {
+					declare Text[] BestRaceTracksTimes;
+					foreach(trackInfo in BestTryMaps.Children)
+					{
+						declare CXmlNode Track		= trackInfo.GetFirstChild("map");
+						if (Track != Null)
+						{
+							declare CXmlNode TrackTime 	= trackInfo.GetFirstChild("time");
+							declare CXmlNode TrackId	= Track.GetFirstChild("id");
+							if (TrackTime != Null && TrackId != Null)
+								BestRaceTracksTimes.add(TrackId.TextContents^":"^TrackTime.TextContents);
+						}
+					}
+					Result[Result.count-1]["best_times"] = TextLib::Join(",", BestRaceTracksTimes);
+				}
+			}
+		}
+	}
+	
+	//concat
+	//G_MyChallenges fait au moins G_RequestMyChallengesOffset en taille, sinon on n'aurait pas permis de passer à la page suivante
+	for (I, 0, G_RequestMyChallengesLength-1)
+	{
+		if (Result.existskey(I))
+		{
+			if (!G_MyChallenges.existskey(G_RequestMyChallengesOffset + I)) // G_MyChallenges.count == G_RequestMyChallengesOffset+I-1
+			{
+				G_MyChallenges.add(Result[I]);
+			} else {
+				G_MyChallenges[G_RequestMyChallengesOffset+I] = Result[I];
+			}	
+			if (ManiaPlanet.MasterServer_MainMSUser != Null)
+				G_MyChallenges[G_RequestMyChallengesOffset+I]["displayname"] = ManiaPlanet.MasterServer_MainMSUser.DisplayName;
+			else
+				G_MyChallenges[G_RequestMyChallengesOffset+I]["displayname"] = "";
+		} else if (G_MyChallenges.count > G_RequestMyChallengesOffset+I) {
+			declare CountToRemove = G_MyChallenges.count-(G_RequestMyChallengesOffset+I);
+			for (I, 0, CountToRemove-1)
+			{
+				G_MyChallenges.removekey(G_MyChallenges.count-1);
+			}
+		}
+	}
+	LiveXml::Manialib_Xml_DestroyDocument(Doc);
+}
+
+Void SetChallenge(Text _RequestResult) {
+	G_Challenge.clear();
+	G_ChallengeMaps.clear();
+	declare CXmlDocument	Doc 			= ConvertResultToXml(_RequestResult);
+	if (Doc == Null)
+		return; //réponse invalide !
+	
+	declare CXmlNode		ResultNode		= Doc.GetFirstChild("result");
+	if (ResultNode == Null)
+	{
+		LiveXml::Manialib_Xml_DestroyDocument(Doc);
+		return; //réponse invalide !
+	}
+		
+	declare Text[Integer] AuthorTimes;
+	declare Text[Integer] GoldTimes;
+	declare Text[Integer] SilverTimes;
+	declare Text[Integer] BronzeTimes;
+	
+	foreach(child in ResultNode.Children)
+	{
+		if (child.Children.count == 0)
+			G_Challenge[child.Name] = LiveXml::Manialib_Xml_NodeToText(child);
+		else if (child.Name == "maps") {
+			G_ChallengeMaps = LiveXml::Manialib_Xml_NodeToArray2(child);
+		} else if (child.Name == "reference_times") {
+			foreach (time in child.Children)
+			{
+				declare Integer MapId = TextLib::ToInteger(time.GetFirstChild("id").TextContents);
+				if (MapId == -1)
+					continue;
+				AuthorTimes[MapId] 	= time.GetFirstChild("author").TextContents;
+				GoldTimes[MapId] 	= time.GetFirstChild("gold").TextContents;
+				SilverTimes[MapId] 	= time.GetFirstChild("silver").TextContents;
+				BronzeTimes[MapId] 	= time.GetFirstChild("bronze").TextContents;
+			}
+		}
+	}
+	
+	if (AuthorTimes.count != 0)
+	{
+		for (I, 0, G_ChallengeMaps.count-1)
+		{
+			declare MapId = TextLib::ToInteger(G_ChallengeMaps[I]["id"]);
+			if (AuthorTimes.existskey(MapId)) {
+				G_ChallengeMaps[I]["author_challenge_time"] = AuthorTimes[MapId];
+				G_ChallengeMaps[I]["gold_challenge_time"] 	= GoldTimes[MapId];
+				G_ChallengeMaps[I]["silver_challenge_time"] = SilverTimes[MapId];
+				G_ChallengeMaps[I]["bronze_challenge_time"] = BronzeTimes[MapId];
+			} else {
+				G_ChallengeMaps[I]["author_challenge_time"] = "";
+				G_ChallengeMaps[I]["gold_challenge_time"] 	= "";
+				G_ChallengeMaps[I]["silver_challenge_time"] = "";
+				G_ChallengeMaps[I]["bronze_challenge_time"] = "";
+			}
+		}
+	}
+
+	declare Text[] Author;
+	if (G_Challenge["author"] != C_AUTHOR_NADEO)
+		Author.add(G_Challenge["author"]);
+	else
+		G_Challenge["displayname"] = C_AUTHOR_NADEO;
+	RequestDisplayNames(C_REQUESTTYPE_GETCHALLENGE, Author);
+	LiveXml::Manialib_Xml_DestroyDocument(Doc);
+}
+
+Void SetInstalledChallenge(Text _RequestResult) {
+	G_InstalledChallenge.clear();
+	G_InstalledChallengeMaps.clear();
+	declare CXmlDocument	Doc 			= ConvertResultToXml(_RequestResult);
+	if (Doc == Null)
+		return; //réponse invalide !
+	
+	declare CXmlNode		ResultNode		= Doc.GetFirstChild("result");
+	if (ResultNode == Null)
+	{
+		LiveXml::Manialib_Xml_DestroyDocument(Doc);
+		return; //réponse invalide !
+	}
+		
+	declare Text[Integer] AuthorTimes;
+	declare Text[Integer] GoldTimes;
+	declare Text[Integer] SilverTimes;
+	declare Text[Integer] BronzeTimes;
+	
+	declare Text[Integer] CurrentRaceTracksTimes;
+	declare Text[Integer] BestRaceTracksTimes;
+	
+	foreach(field in ResultNode.Children)
+	{
+		if (field.Name == "challenge")
+		{
+			foreach (child in field.Children)
+			{
+				if (child.Children.count == 0)
+					G_InstalledChallenge[child.Name] = LiveXml::Manialib_Xml_NodeToText(child);
+				else if (child.Name == "maps") {
+					G_InstalledChallengeMaps = LiveXml::Manialib_Xml_NodeToArray2(child);
+				} else if (child.Name == "reference_times") {
+					foreach (time in child.Children)
+					{
+						declare Integer MapId = TextLib::ToInteger(time.GetFirstChild("id").TextContents);
+						if (MapId == -1)
+							continue;
+						AuthorTimes[MapId] 	= time.GetFirstChild("author").TextContents;
+						GoldTimes[MapId] 	= time.GetFirstChild("gold").TextContents;
+						SilverTimes[MapId] 	= time.GetFirstChild("silver").TextContents;
+						BronzeTimes[MapId] 	= time.GetFirstChild("bronze").TextContents;
+					}
+				}
+			}
+		} else if (field.Name == "current_challenge_race_try") {
+			foreach(raceInfo in field.Children)
+			{
+				if (raceInfo.Children.count == 0)
+					G_InstalledChallenge["currentrace_"^raceInfo.Name] = raceInfo.TextContents;
+				else if (raceInfo.Name == "challenge_race_try_maps") {
+					foreach(trackInfo in raceInfo.Children)
+					{
+						declare CXmlNode Track		= trackInfo.GetFirstChild("map");
+						if (Track != Null)
+						{
+							declare CXmlNode TrackTime 	= trackInfo.GetFirstChild("time");
+							declare CXmlNode TrackId	= Track.GetFirstChild("id");
+							CurrentRaceTracksTimes[TextLib::ToInteger(TrackId.TextContents)] = TrackTime.TextContents;
+						}
+					}
+				}
+			}
+		} else if (field.Name == "best_challenge_race_try") {
+			declare CXmlNode BestTryScore = field.GetFirstChild("score");
+			if (BestTryScore != Null)
+				G_InstalledChallenge["best_score"] = BestTryScore.TextContents;
+			declare CXmlNode BestTryMaps = field.GetFirstChild("challenge_race_try_maps");
+			if (BestTryMaps != Null) {
+				declare Text[] BestRaceTracksTimesForChallenge;
+				foreach(trackInfo in BestTryMaps.Children)
+				{
+					declare CXmlNode Track		= trackInfo.GetFirstChild("map");
+					if (Track != Null)
+					{
+						declare CXmlNode TrackTime 	= trackInfo.GetFirstChild("time");
+						declare CXmlNode TrackId	= Track.GetFirstChild("id");
+						if (TrackTime != Null && TrackId != Null)
+						{
+							BestRaceTracksTimesForChallenge.add(TrackId.TextContents^":"^TrackTime.TextContents);
+							BestRaceTracksTimes[TextLib::ToInteger(TrackId.TextContents)] = TrackTime.TextContents;
+						}
+					}
+				}
+				G_InstalledChallenge["best_times"] = TextLib::Join(",", BestRaceTracksTimesForChallenge);
+			}
+		}
+	}
+	
+	for (I, 0, G_InstalledChallengeMaps.count-1)
+	{
+		declare MapId = TextLib::ToInteger(G_InstalledChallengeMaps[I]["id"]);
+		if (AuthorTimes.existskey(MapId))
+		{
+			G_InstalledChallengeMaps[I]["author_challenge_time"] = AuthorTimes[MapId];
+			G_InstalledChallengeMaps[I]["gold_challenge_time"] 	= GoldTimes[MapId];
+			G_InstalledChallengeMaps[I]["silver_challenge_time"] = SilverTimes[MapId];
+			G_InstalledChallengeMaps[I]["bronze_challenge_time"] = BronzeTimes[MapId];
+		}
+		if (BestRaceTracksTimes.existskey(MapId))
+			G_InstalledChallengeMaps[I]["best_race_time"] = BestRaceTracksTimes[MapId];
+		else
+			G_InstalledChallengeMaps[I]["best_race_time"] = "-1";
+		if (CurrentRaceTracksTimes.existskey(MapId))
+			G_InstalledChallengeMaps[I]["current_race_time"] = CurrentRaceTracksTimes[MapId];
+		else
+			G_InstalledChallengeMaps[I]["current_race_time"] = "-1";
+	}
+	
+	declare Text[] Author;
+	if (G_InstalledChallenge["author"] != C_AUTHOR_NADEO)
+		Author.add(G_InstalledChallenge["author"]);
+	else
+		G_InstalledChallenge["displayname"] = C_AUTHOR_NADEO;
+	RequestDisplayNames(C_REQUESTTYPE_GETINSTALLEDCHALLENGE, Author);
+	LiveXml::Manialib_Xml_DestroyDocument(Doc);
+}
+
+Void SetTryId(Text _RequestResult) {
+	declare CXmlDocument	Doc 			= ConvertResultToXml(_RequestResult);
+	if (Doc == Null)
+		return; //réponse invalide !
+	
+	declare CXmlNode		ResultNode		= Doc.GetFirstChild("result");
+	if (ResultNode == Null)
+	{
+		LiveXml::Manialib_Xml_DestroyDocument(Doc);
+		return; //réponse invalide !
+	}
+	declare Text[Text]	Result			= LiveXml::Manialib_Xml_NodeToArray(ResultNode);
+	
+	if (Result.existskey("id"))
+	{
+		G_NewTryId = TextLib::ToInteger(Result["id"]);
+	} else {
+		G_NewTryId = -1;
+	}
+	LiveXml::Manialib_Xml_DestroyDocument(Doc);
+}
+
+Void SetChallengeTries(Text _RequestResult) {
+	G_ChallengeTries.clear();
+	declare CXmlDocument	Doc 			= ConvertResultToXml(_RequestResult);
+	if (Doc == Null)
+		return; //réponse invalide !
+	
+	declare CXmlNode		ResultNode		= Doc.GetFirstChild("result");
+	if (ResultNode == Null)
+	{
+		LiveXml::Manialib_Xml_DestroyDocument(Doc);
+		return; //réponse invalide !
+	}
+	
+	foreach(Try in ResultNode.Children)
+	{
+		G_ChallengeTries.add(Text[Text]);
+		declare Index = G_ChallengeTries.count-1;
+	
+		foreach(Field in Try.Children)
+		{
+			if (Field.Children.count == 0)
+			{
+				G_ChallengeTries[Index][Field.Name] = Field.TextContents;
+			} else if (Field.Name == "challenge_race_try_maps") {
+				declare Text MapTimes;
+				foreach (Map in Field.Children)
+				{
+					if (MapTimes != "")
+						MapTimes ^= ",";
+					declare CXmlNode Time = Map.GetFirstChild("time");
+					if (Time != Null)
+					{
+						MapTimes ^= Time.TextContents;
+					}
+				}
+				G_ChallengeTries[Index]["map_times"] = MapTimes;
+			}
+		}
+	}
+	LiveXml::Manialib_Xml_DestroyDocument(Doc);
+}
+
+Void SetInstalledChallengesIds(Text _RequestResult) {
+	declare CXmlDocument	Doc 			= ConvertResultToXml(_RequestResult);
+	if (Doc == Null)
+		return; //réponse invalide !
+	
+	declare CXmlNode		ResultNode		= Doc.GetFirstChild("result");
+	if (ResultNode == Null)
+	{
+		LiveXml::Manialib_Xml_DestroyDocument(Doc);
+		return; //réponse invalide !
+	}
+	
+	G_InstalledChallengesIds.clear();
+	//fill G_InstalledChallengesIds
+	foreach (InstalledChallenge in ResultNode.Children)
+	{
+		declare CXmlNode ChallengeNode = InstalledChallenge.GetFirstChild("challenge");
+		if (ChallengeNode == Null)
+			continue;
+		declare CXmlNode ChallengeIdNode = ChallengeNode.GetFirstChild("id");
+		if (ChallengeIdNode == Null)
+			continue;
+		G_InstalledChallengesIds.add(ChallengeIdNode.TextContents);
+	}
+	
+	//update G_BuddiesChallenge
+	if (G_InstalledChallengesIds.exists(G_BuddiesChallenge["id"]))
+		G_BuddiesChallenge["installed"] = "1";
+	else
+		G_BuddiesChallenge["installed"] = "0";
+		
+	LiveXml::Manialib_Xml_DestroyDocument(Doc);
+}
+
+Void OnChallengeUninstalled(Text _RequestResult) {	//delete les ghosts de train et de races existants
+
+	declare CXmlDocument	Doc 			= ConvertResultToXml(_RequestResult);
+	if (Doc == Null)
+		return; //réponse invalide !
+	
+	declare CXmlNode		ResultNode		= Doc.GetFirstChild("result");
+	if (ResultNode == Null)
+	{
+		LiveXml::Manialib_Xml_DestroyDocument(Doc);
+		return; //réponse invalide !
+	}
+	declare Integer[] RaceToDeleteIds;
+	
+	foreach(RaceId in ResultNode.Children)
+		RaceToDeleteIds.add(TextLib::ToInteger(RaceId.TextContents));
+	LiveXml::Manialib_Xml_DestroyDocument(Doc);
+	
+	for (I, 0, G_UninstallChallenge_MapUids.count - 1)
+	{	//pour chaque map du challenge
+		wait(DataMgr.Ready);
+		// DataMgr.RetrieveRecordsNoMedals(G_UninstallChallenge_MapUids[I], DataMgr.MenuUserId);
+		wait(DataMgr.Ready);
+		for (J, 0, DataMgr.Records.count - 1)
+		{
+			if (DataMgr.Records[J].GhostUrl == "")
+				continue;
+			declare Text[] RecordGhostName = TextLib::Split("_", DataMgr.Records[J].GhostName);
+			if (RecordGhostName.count != 3 || RecordGhostName[0] != "Championship" || RecordGhostName[1] != G_Requests[C_REQUESTTYPE_UNINSTALLCHALLENGE]["challengeid"])
+				continue;
+			DataMgr.DeleteFile(DataMgr.Records[J].GhostUrl);
+			wait(DataMgr.Ready);
+		}
+	}
+}
+
+Void SetBuddiesChallenge(Text _RequestResult) {
+	G_BuddiesChallenge.clear();
+	G_BuddiesChallengeMaps.clear();
+	G_BuddiesChallengeResults.clear();
+	G_BuddiesChallengeGhosts.clear();
+	
+	declare CXmlDocument	Doc 			= ConvertResultToXml(_RequestResult);
+	if (Doc == Null)
+	{
+		log("NODOC");
+		return; //réponse invalide !
+	}
+	declare CXmlNode		ResultNode		= Doc.GetFirstChild("result");
+	if (ResultNode == Null)
+	{ 
+		log("NORESULT");
+		LiveXml::Manialib_Xml_DestroyDocument(Doc);
+		return; //réponse invalide !
+	}
+	
+	declare Text[Integer] AuthorTimes;
+	declare Text[Integer] GoldTimes;
+	declare Text[Integer] SilverTimes;
+	declare Text[Integer] BronzeTimes;
+	
+	declare Text[Integer] BestRaceTracksTimes;
+	
+	declare Text[Text][][Integer][Integer] 	PlayersWhoRaced;
+	declare Text[Text][][Integer]			PlayersWhoFailed;
+	declare Text[Text][] 					PlayersWhoDidnt;	
+	declare Text[Text]						ThisPlayer;
+	
+	declare Boolean 						ShowGhosts = True;
+	
+	//On remplit BuddiesChallenge, BuddiesChallengeMaps & BuddiesChallengeResults
+	//foreach(entry in ResultNode.Children)
+	{
+		foreach(child in ResultNode.Children)
+		{
+			switch (child.Name)
+			{
+				case "challenge_instance" :
+				{
+					foreach(field in child.Children)
+					{
+						if (field.Children.count == 0)
+						{
+							G_BuddiesChallenge["buddies_challenge_"^field.Name] = field.TextContents;
+							if (field.Name == "end_date") {
+								declare Text[] SplitDate = TextLib::Split("T", field.TextContents);
+								if (SplitDate.count != 2)
+									G_BuddiesChallenge["buddies_challenge_"^field.Name] = "";
+								else {
+									SplitDate = TextLib::Split("-", SplitDate[0]);
+									if (SplitDate.count != 3)
+										G_BuddiesChallenge["buddies_challenge_"^field.Name] = "";
+								}
+							}
+							if (field.Name == "show_ghosts" && field.TextContents == "false")
+							{	
+								ShowGhosts = False;
+								G_BuddiesChallengeGhosts.clear();
+							}
+						} else if (field.Name == "challenge") {
+							foreach (challengeField in field.Children)
+							{
+								if (challengeField.Children.count == 0)
+									G_BuddiesChallenge[challengeField.Name] = LiveXml::Manialib_Xml_NodeToText(challengeField);
+								else if (challengeField.Name == "maps") {
+									G_BuddiesChallengeMaps = LiveXml::Manialib_Xml_NodeToArray2(challengeField);
+								} else if (challengeField.Name == "reference_times") {
+									foreach (time in challengeField.Children)
+									{
+										declare Integer MapId = TextLib::ToInteger(time.GetFirstChild("id").TextContents);
+										if (MapId == -1)
+											continue;
+										AuthorTimes[MapId] 	= time.GetFirstChild("author").TextContents;
+										GoldTimes[MapId] 	= time.GetFirstChild("gold").TextContents;
+										SilverTimes[MapId] 	= time.GetFirstChild("silver").TextContents;
+										BronzeTimes[MapId] 	= time.GetFirstChild("bronze").TextContents;
+									}
+								}
+							}
+						} else if (field.Name == "challenge_instance_players") {
+							foreach(player in field.Children)
+							{
+								if (player.Children.count == 0)
+									continue;
+								declare CXmlNode BestRaceNode 	= player.GetFirstChild("best_challenge_race_try");
+								declare CXmlNode PlayerNode		= player.GetFirstChild("player");
+								declare CXmlNode TriesLeft		= player.GetFirstChild("tries_left");
+								
+								if (BestRaceNode == Null || PlayerNode == Null || TriesLeft == Null)
+									continue;
+								
+								if (BestRaceNode.Children.count == 0)
+								{
+									PlayersWhoDidnt.add(["login"=>PlayerNode.TextContents, "tries_left"=>TriesLeft.TextContents]);
+								} else {
+									declare CXmlNode CompletedAllMapsNode = BestRaceNode.GetFirstChild("completed_all_maps");
+									
+									if (CompletedAllMapsNode != Null && CompletedAllMapsNode.TextContents == "true")
+									{
+										declare CXmlNode TotalTimeNode 	= BestRaceNode.GetFirstChild("total_time");
+										declare CXmlNode ScoreNode 		= BestRaceNode.GetFirstChild("score");
+										if (TotalTimeNode != Null && ScoreNode != Null) {
+											declare Integer Total_Time 	= TextLib::ToInteger(TotalTimeNode.TextContents);
+											declare Integer Score 		= - TextLib::ToInteger(ScoreNode.TextContents);
+											if (!PlayersWhoRaced.existskey(Score))
+											{
+												PlayersWhoRaced[Score] = [Total_Time=>[["login"=>PlayerNode.TextContents, "tries_left"=>TriesLeft.TextContents, "total_time"=>TotalTimeNode.TextContents, "score"=>ScoreNode.TextContents]]];
+											} else {
+												if (!PlayersWhoRaced[Score].existskey(Total_Time))
+													PlayersWhoRaced[Score][Total_Time] = [["login"=>PlayerNode.TextContents, "tries_left"=>TriesLeft.TextContents, "total_time"=>TotalTimeNode.TextContents, "score"=>ScoreNode.TextContents]];
+												else
+													PlayersWhoRaced[Score][Total_Time].add(["login"=>PlayerNode.TextContents, "tries_left"=>TriesLeft.TextContents, "total_time"=>TotalTimeNode.TextContents, "score"=>ScoreNode.TextContents]);
+											}
+										}
+									} else {
+										declare CXmlNode ScoreNode 		= BestRaceNode.GetFirstChild("score");
+										if (ScoreNode != Null) {
+											declare Integer Score 		= - TextLib::ToInteger(ScoreNode.TextContents);
+											if (PlayersWhoFailed.existskey(Score))
+												PlayersWhoFailed[Score].add(["login"=>PlayerNode.TextContents, "tries_left"=>TriesLeft.TextContents, "score"=>ScoreNode.TextContents]);
+											else
+												PlayersWhoFailed[Score] = [["login"=>PlayerNode.TextContents, "tries_left"=>TriesLeft.TextContents, "score"=>ScoreNode.TextContents]];
+										}
+									}
+									
+									if (ShowGhosts)
+									{
+										declare CXmlNode ChallengeTryMaps = BestRaceNode.GetFirstChild("challenge_race_try_maps");
+										if (ChallengeTryMaps != Null)
+										{
+											foreach (MapNode in ChallengeTryMaps.Children)
+											{
+												declare CXmlNode MapInfoNode = MapNode.GetFirstChild("map");
+												if (MapInfoNode == Null)
+													continue;
+												declare CXmlNode MapIdNode = MapInfoNode.GetFirstChild("id");
+												if (MapIdNode == Null || MapIdNode.TextContents == "")
+													continue;
+												
+												declare CXmlNode GhostNode = MapNode.GetFirstChild("ghost");
+												if (GhostNode != Null)
+												{
+													declare CXmlNode GhostUrlNode = GhostNode.GetFirstChild("file_url");
+													if (GhostUrlNode != Null)
+													{
+														if (G_BuddiesChallengeGhosts.existskey(MapIdNode.TextContents))
+															G_BuddiesChallengeGhosts[MapIdNode.TextContents].add(["login"=>PlayerNode.TextContents, "url"=>GhostUrlNode.TextContents]);
+														else
+															G_BuddiesChallengeGhosts[MapIdNode.TextContents] = [["login"=>PlayerNode.TextContents, "url"=>GhostUrlNode.TextContents]];
+													}
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+				case "player" : ThisPlayer["login"] = child.TextContents;
+				case "tries_left" :
+				{
+					G_BuddiesChallenge["buddies_challenge_tries_left"] = child.TextContents;
+					ThisPlayer["tries_left"] = child.TextContents;
+				}
+				case "best_challenge_race_try" :
+				{
+					declare CXmlNode CompletedAllMapsNode 		= child.GetFirstChild("completed_all_maps");
+					declare CXmlNode TotalTimeNode 				= child.GetFirstChild("total_time");
+					declare CXmlNode ScoreNode 					= child.GetFirstChild("score");
+					if(CompletedAllMapsNode != Null && CompletedAllMapsNode.TextContents == "true" && TotalTimeNode != Null)
+						ThisPlayer["total_time"] 	= TotalTimeNode.TextContents;
+						
+					if (ScoreNode != Null)
+						ThisPlayer["score"] = ScoreNode.TextContents;
+					
+					declare CXmlNode BestTryMaps = child.GetFirstChild("challenge_race_try_maps");
+					if (BestTryMaps != Null) {
+						declare Text[] BestRaceTracksTimesForChallenge;
+						foreach(trackInfo in BestTryMaps.Children)
+						{
+							declare CXmlNode Track		= trackInfo.GetFirstChild("map");
+							if (Track != Null)
+							{
+								declare CXmlNode TrackTime 	= trackInfo.GetFirstChild("time");
+								declare CXmlNode TrackId	= Track.GetFirstChild("id");
+								if (TrackTime != Null && TrackId != Null)
+								{
+									BestRaceTracksTimesForChallenge.add(TrackId.TextContents^":"^TrackTime.TextContents);
+									BestRaceTracksTimes[TextLib::ToInteger(TrackId.TextContents)] = TrackTime.TextContents;
+								}
+							}
+						}
+						G_BuddiesChallenge["buddies_challenge_best_times"] = TextLib::Join(",", BestRaceTracksTimesForChallenge);
+					}
+					
+					if (ShowGhosts)
+					{
+						declare CXmlNode ChallengeTryMaps = child.GetFirstChild("challenge_race_try_maps");
+						if (ChallengeTryMaps != Null)
+						{
+							foreach (MapNode in ChallengeTryMaps.Children)
+							{
+								declare CXmlNode MapInfoNode = MapNode.GetFirstChild("map");
+								if (MapInfoNode == Null)
+									continue;
+								declare CXmlNode MapIdNode = MapInfoNode.GetFirstChild("id");
+								if (MapIdNode == Null || MapIdNode.TextContents == "")
+									continue;
+								
+								declare CXmlNode GhostNode = MapNode.GetFirstChild("ghost");
+								if (GhostNode != Null)
+								{
+									declare CXmlNode GhostUrlNode = GhostNode.GetFirstChild("file_url");
+									if (GhostUrlNode != Null)
+									{
+										declare Text DisplayName;
+										if (ManiaPlanet.MasterServer_MainMSUser != Null)
+											DisplayName = ManiaPlanet.MasterServer_MainMSUser.DisplayName;
+										else
+											DisplayName = "";
+									
+										if (G_BuddiesChallengeGhosts.existskey(MapIdNode.TextContents))
+											G_BuddiesChallengeGhosts[MapIdNode.TextContents].add(["login"=>"localUser", "displayname"=>DisplayName, "url"=>GhostUrlNode.TextContents]);
+										else
+											G_BuddiesChallengeGhosts[MapIdNode.TextContents] = [["login"=>"localUser", "displayname"=>DisplayName, "url"=>GhostUrlNode.TextContents]];
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	if (ThisPlayer.existskey("total_time"))
+	{
+		declare Integer Total_Time = TextLib::ToInteger(ThisPlayer["total_time"]);
+		declare Integer Score = - TextLib::ToInteger(ThisPlayer["score"]);
+		
+		if (!PlayersWhoRaced.existskey(Score))
+			PlayersWhoRaced[Score] = [Total_Time=>[ThisPlayer]];
+		else
+			if (!PlayersWhoRaced[Score].existskey(Total_Time))
+				PlayersWhoRaced[Score][Total_Time] = [ThisPlayer];
+			else
+				PlayersWhoRaced[Score][Total_Time].add(ThisPlayer);
+	} else if (ThisPlayer.existskey("score")) {
+		declare Integer Score = - TextLib::ToInteger(ThisPlayer["score"]);
+		if (!PlayersWhoFailed.existskey(Score))
+			PlayersWhoFailed[Score] = [ThisPlayer];
+		else
+			PlayersWhoFailed[Score].add(ThisPlayer);
+	} else {
+		PlayersWhoDidnt.add(ThisPlayer);
+	}
+	
+	foreach(Score=>ScoreTier in PlayersWhoRaced)
+		PlayersWhoRaced[Score] = ScoreTier.sortkey();
+	foreach(Score=>ScoreTier in PlayersWhoFailed)
+	{
+		if (PlayersWhoRaced.existskey(Score))
+		{
+			declare Integer WorseTotalTime;
+			foreach(Time=>TimeTier in PlayersWhoRaced[Score])
+				WorseTotalTime = Time; //PlayersWhoRaced est trié, donc on aura effectivement le worsetotaltime;
+			PlayersWhoRaced[Score][WorseTotalTime+1] = ScoreTier;
+		} else {
+			PlayersWhoRaced[Score] = [0=>ScoreTier];
+		}
+	}
+	PlayersWhoRaced = PlayersWhoRaced.sortkey();
+	
+	declare Integer Rank = 0;
+	foreach (Score=>ScoreTier in PlayersWhoRaced)
+	{
+		foreach (Time=>TimeTier in ScoreTier)
+		{
+			Rank += 1;
+			for (J, 0, TimeTier.count-1)
+			{
+				G_BuddiesChallengeResults.add(TimeTier[J]);
+				G_BuddiesChallengeResults[G_BuddiesChallengeResults.count-1]["rank"] = TextLib::ToText(Rank);
+			}
+		}
+	}
+	for (I, 0, PlayersWhoDidnt.count-1)
+	{
+		G_BuddiesChallengeResults.add(PlayersWhoDidnt[I]);
+		//G_BuddiesChallengeResults[G_BuddiesChallengeResults.count-1]["rank"] = TextLib::ToText(PlayersWhoRaced.count+1);
+	}
+	
+	
+	
+	LiveXml::Manialib_Xml_DestroyDocument(Doc);
+	
+	for (I, 0, G_BuddiesChallengeMaps.count-1)
+	{
+		declare MapId = TextLib::ToInteger(G_BuddiesChallengeMaps[I]["id"]);
+		if (AuthorTimes.existskey(MapId)) {
+			G_BuddiesChallengeMaps[I]["author_challenge_time"] 	= AuthorTimes[MapId];
+			G_BuddiesChallengeMaps[I]["gold_challenge_time"] 	= GoldTimes[MapId];
+			G_BuddiesChallengeMaps[I]["silver_challenge_time"] 	= SilverTimes[MapId];
+			G_BuddiesChallengeMaps[I]["bronze_challenge_time"] 	= BronzeTimes[MapId];
+		} else {
+			G_BuddiesChallengeMaps[I]["author_challenge_time"]	= "";
+			G_BuddiesChallengeMaps[I]["gold_challenge_time"] 	= "";
+			G_BuddiesChallengeMaps[I]["silver_challenge_time"]	= "";
+			G_BuddiesChallengeMaps[I]["bronze_challenge_time"]	= "";
+		}
+		if (BestRaceTracksTimes.existskey(MapId))
+			G_BuddiesChallengeMaps[I]["best_race_time"] = BestRaceTracksTimes[MapId];
+		else
+			G_BuddiesChallengeMaps[I]["best_race_time"] = "-1";
+	}
+}
+
+Void SetBuddiesChallengeInstalledChallengeData(Text _RequestResult) {
+	declare CXmlDocument	Doc 			= ConvertResultToXml(_RequestResult);
+	if (Doc == Null)
+		return; //réponse invalide !
+	
+	declare CXmlNode		ResultNode		= Doc.GetFirstChild("result");
+	if (ResultNode == Null)
+	{
+		LiveXml::Manialib_Xml_DestroyDocument(Doc);
+		return; //réponse invalide !
+	}
+	
+	declare Text[Integer] CurrentRaceTracksTimes;
+	
+	declare CXmlNode		CurrentRaceNode = ResultNode.GetFirstChild("current_challenge_race_try");
+	if (CurrentRaceNode != Null)
+	{
+		declare CXmlNode 	CurrentRaceInstancesNode = CurrentRaceNode.GetFirstChild("challenge_instances");
+		if (CurrentRaceInstancesNode != Null)
+		{
+			declare Boolean IsRacingForThisBuddiesChallenge = False;
+			foreach (challengeInstance in CurrentRaceInstancesNode.Children)
+			{
+				declare CXmlNode ChallengeInstanceIdNode = challengeInstance.GetFirstChild("id");
+				if (ChallengeInstanceIdNode != Null && TextLib::ToInteger(ChallengeInstanceIdNode.TextContents) == G_RequestBuddiesChallengeInstanceId)
+				{
+					IsRacingForThisBuddiesChallenge = True;
+					break;
+				}
+			}
+			if (IsRacingForThisBuddiesChallenge)
+				G_BuddiesChallenge["currentrace_playable"] = "1";
+			else
+				G_BuddiesChallenge["currentrace_playable"] = "0";
+		} else {
+			declare CXmlNode CurrentRaceIdNode = CurrentRaceNode.GetFirstChild("id");
+			if (CurrentRaceIdNode != Null)
+				G_BuddiesChallenge["currentrace_playable"] = "0";
+		}
+		
+		foreach(raceInfo in CurrentRaceNode.Children)
+		{
+			if (raceInfo.Children.count == 0)
+				G_BuddiesChallenge["currentrace_"^raceInfo.Name] = raceInfo.TextContents;
+			else if (raceInfo.Name == "challenge_race_try_maps") {
+				foreach(trackInfo in raceInfo.Children)
+				{
+					declare CXmlNode Track		= trackInfo.GetFirstChild("map");
+					if (Track != Null)
+					{
+						declare CXmlNode TrackTime 	= trackInfo.GetFirstChild("time");
+						declare CXmlNode TrackId	= Track.GetFirstChild("id");
+						CurrentRaceTracksTimes[TextLib::ToInteger(TrackId.TextContents)] = TrackTime.TextContents;
+					}
+				}
+			}
+		}
+	}
+	LiveXml::Manialib_Xml_DestroyDocument(Doc);
+	
+	
+	for (I, 0, G_BuddiesChallengeMaps.count - 1)
+	{
+		if (CurrentRaceTracksTimes.existskey(TextLib::ToInteger(G_BuddiesChallengeMaps[I]["id"])))
+			G_BuddiesChallengeMaps[I]["current_race_time"] = CurrentRaceTracksTimes[TextLib::ToInteger(G_BuddiesChallengeMaps[I]["id"])];
+		else
+			G_BuddiesChallengeMaps[I]["current_race_time"] = "-1";
+	}
+	
+	declare Text[] Logins;
+	
+	
+	if (G_BuddiesChallenge["buddies_challenge_author"] != C_AUTHOR_NADEO)
+		Logins.add(G_BuddiesChallenge["buddies_challenge_author"]);
+	else
+		G_BuddiesChallenge["buddies_challenge_displayname"] = C_AUTHOR_NADEO;
+	if (G_BuddiesChallenge["author"] != C_AUTHOR_NADEO)
+		Logins.add(G_BuddiesChallenge["author"]);
+	else
+		G_BuddiesChallenge["displayname"] = C_AUTHOR_NADEO;
+	for (I, 0, G_BuddiesChallengeResults.count-1)
+		if (G_BuddiesChallengeResults[I]["login"] != C_AUTHOR_NADEO)
+			Logins.add(G_BuddiesChallengeResults[I]["login"]);
+		else
+			G_BuddiesChallengeResults[I]["displayname"] = C_AUTHOR_NADEO;
+
+	RequestDisplayNames(C_REQUESTTYPE_GETBUDDIESCHALLENGE, Logins);
+}
+
+Void SetBuddiesChallengesList(Text _RequestResult) {
+	declare CXmlDocument	Doc 			= ConvertResultToXml(_RequestResult);
+	if (Doc == Null)
+		return; //réponse invalide !
+	
+	declare CXmlNode		ResultNode		= Doc.GetFirstChild("result");
+	if (ResultNode == Null)
+	{
+		LiveXml::Manialib_Xml_DestroyDocument(Doc);
+		return; //réponse invalide !
+	}
+	
+	//compute the Result Array
+	declare Text[Text][] Result;
+	
+	foreach (Challenge in ResultNode.Children)
+	{
+		Result.add(Text[Text]);
+		foreach (field in Challenge.Children)
+		{
+			if (field.Name == "challenge") {
+				foreach(challengeInfo in field.Children)
+				{
+					if (challengeInfo.Children.count == 0)
+						Result[Result.count-1][challengeInfo.Name] = challengeInfo.TextContents;
+					else if (challengeInfo.Name == "maps") {
+						declare Text MapUids = "";
+						foreach (map in challengeInfo.Children)
+						{
+							if (MapUids != "")
+								MapUids ^= ",";
+							MapUids ^= map.GetFirstChild("uid").TextContents;
+						}
+						Result[Result.count-1]["maps_uids"] = MapUids;
+					}
+				}
+			} else if (field.Name == "current_challenge_race_try") {
+				foreach(raceInfo in field.Children)
+				{
+					if (raceInfo.Children.count == 0)
+						Result[Result.count-1]["currentrace_"^raceInfo.Name] = raceInfo.TextContents;
+					else if (raceInfo.Name == "challenge_race_try_maps") {
+						declare Text CurrentRaceTracksTimes;
+						foreach(trackInfo in raceInfo.Children)
+						{
+							if (CurrentRaceTracksTimes != "")
+								CurrentRaceTracksTimes ^= ";";
+							declare CXmlNode TrackTime = trackInfo.GetFirstChild("time");
+							if (TrackTime != Null)
+								CurrentRaceTracksTimes ^= TrackTime.TextContents;
+							else
+								CurrentRaceTracksTimes ^= "-1";
+						}
+						Result[Result.count-1]["currentrace_trackstimes"] = CurrentRaceTracksTimes;
+					}
+				}
+			} else if (field.Name == "best_challenge_race_try") {
+				declare CXmlNode BestTryScore = field.GetFirstChild("score");
+				if (BestTryScore != Null)
+					Result[Result.count-1]["best_score"] = BestTryScore.TextContents;
+				declare CXmlNode BestTryMaps = field.GetFirstChild("challenge_race_try_maps");
+				if (BestTryMaps != Null) {
+					declare Text[] BestRaceTracksTimes;
+					foreach(trackInfo in BestTryMaps.Children)
+					{
+						declare CXmlNode Track		= trackInfo.GetFirstChild("map");
+						if (Track != Null)
+						{
+							declare CXmlNode TrackTime 	= trackInfo.GetFirstChild("time");
+							declare CXmlNode TrackId	= Track.GetFirstChild("id");
+							if (TrackTime != Null && TrackId != Null)
+								BestRaceTracksTimes.add(TrackId.TextContents^":"^TrackTime.TextContents);
+						}
+					}
+					Result[Result.count-1]["best_times"] = TextLib::Join(",", BestRaceTracksTimes);
+				}
+			} else if (field.Children.count == 0) {
+				Result[Result.count-1]["buddies_challenge_"^field.Name] = field.TextContents;
+			}
+		}
+	}
+	
+	declare Text[] Logins;
+	//concat
+	//G_BuddiesChallenges fait au moins G_RequestBuddiesChallengesOffset en taille, sinon on n'aurait pas permis de passer à la page suivante
+	for (I, 0, G_RequestBuddiesChallengesLength-1)
+	{
+		if (Result.existskey(I))
+		{
+			if (Result[I].existskey("author"))
+				if (Result[I]["author"] != C_AUTHOR_NADEO)
+					Logins.add(Result[I]["author"]);
+				else
+					Result[I]["displayname"] = C_AUTHOR_NADEO;
+			if (Result[I].existskey("buddies_challenge_author"))
+				if (Result[I]["buddies_challenge_author"] != C_AUTHOR_NADEO)
+					Logins.add(Result[I]["buddies_challenge_author"]);
+				else
+					Result[I]["buddies_challenge_displayname"] = C_AUTHOR_NADEO;
+			if (!G_BuddiesChallenges.existskey(G_RequestBuddiesChallengesOffset + I)) // G_BuddiesChallenges.count == G_RequestBuddiesChallengesOffset+I-1
+			{
+				G_BuddiesChallenges.add(Result[I]);
+			} else {
+				G_BuddiesChallenges[G_RequestBuddiesChallengesOffset+I] = Result[I];
+			}
+		} else if (G_BuddiesChallenges.count > G_RequestBuddiesChallengesOffset+I) {
+			declare CountToRemove = G_BuddiesChallenges.count-(G_RequestBuddiesChallengesOffset+I);
+			for (I, 0, CountToRemove-1)
+			{
+				G_BuddiesChallenges.removekey(G_BuddiesChallenges.count-1);
+			}
+		}
+	}
+	
+	LiveXml::Manialib_Xml_DestroyDocument(Doc);
+	RequestDisplayNames(C_REQUESTTYPE_GETBUDDIESCHALLENGES, Logins);
+}
+
+Void SetStats(Text _RequestResult)
+{
+	G_ChallengesCount = -1;
+	G_BuddiesChallengesCount = -1;
+	G_MaxLadderPoints = -1;
+	declare CXmlDocument	Doc 			= ConvertResultToXml(_RequestResult);
+	if (Doc == Null)
+		return; //réponse invalide !
+	
+	declare CXmlNode		ResultNode		= Doc.GetFirstChild("result");
+	if (ResultNode == Null)
+	{
+		LiveXml::Manialib_Xml_DestroyDocument(Doc);
+		return; //réponse invalide !
+	}
+	
+	declare CXmlNode ChallengeCountNode = ResultNode.GetFirstChild("challenges");
+	if (ChallengeCountNode != Null)
+		G_ChallengesCount = TextLib::ToInteger(ChallengeCountNode.TextContents);
+	declare CXmlNode BuddiesChallengeCountNode = ResultNode.GetFirstChild("challenge_buddies");
+	if (BuddiesChallengeCountNode != Null)
+		G_BuddiesChallengesCount = TextLib::ToInteger(BuddiesChallengeCountNode.TextContents);
+	declare CXmlNode MaxLadderPointsNode = ResultNode.GetFirstChild("ladder_points_max");
+	if (MaxLadderPointsNode != Null)
+		G_MaxLadderPoints = TextLib::ToInteger(MaxLadderPointsNode.TextContents);
+	
+	LiveXml::Manialib_Xml_DestroyDocument(Doc);
+}
+
+Void SetEndMapInfo(Text _RequestResult)
+{
+	G_EndMap_PlayerLadderPoints = -1;
+	G_EndMap_PlayerLadderPointsWon = -1;
+	
+	declare CXmlDocument	Doc 			= ConvertResultToXml(_RequestResult);
+	if (Doc == Null)
+		return; //réponse invalide !
+	
+	declare CXmlNode		ResultNode		= Doc.GetFirstChild("result");
+	if (ResultNode == Null)
+	{
+		LiveXml::Manialib_Xml_DestroyDocument(Doc);
+		return; //réponse invalide !
+	}
+	
+	declare CXmlNode PlayerLadderPointsNode = ResultNode.GetFirstChild("player_ladder_points");
+	if (PlayerLadderPointsNode != Null)
+		G_EndMap_PlayerLadderPoints = TextLib::ToInteger(PlayerLadderPointsNode.TextContents);
+	declare CXmlNode PlayerLadderPointsWonNode = ResultNode.GetFirstChild("ladder_points_won");
+	if (PlayerLadderPointsWonNode != Null)
+		G_EndMap_PlayerLadderPointsWon = TextLib::ToInteger(PlayerLadderPointsWonNode.TextContents);
+	
+	LiveXml::Manialib_Xml_DestroyDocument(Doc);
+}
+
+Void SetRaceResult(Text _RequestResult)
+{
+	G_GetResult_LadderPointsWon = -1;
+	G_GetResult_PlayerLadderPoints = -1;
+	
+	declare CXmlDocument	Doc 			= ConvertResultToXml(_RequestResult);
+	if (Doc == Null)
+		return; //réponse invalide !
+	
+	declare CXmlNode		ResultNode		= Doc.GetFirstChild("result");
+	if (ResultNode == Null)
+	{
+		LiveXml::Manialib_Xml_DestroyDocument(Doc);
+		return; //réponse invalide !
+	}
+	
+	declare CXmlNode PlayerLadderPointsNode = ResultNode.GetFirstChild("player_ladder_points");
+	if (PlayerLadderPointsNode != Null)
+		G_GetResult_PlayerLadderPoints = TextLib::ToInteger(PlayerLadderPointsNode.TextContents);
+	declare CXmlNode PlayerLadderPointsWonNode = ResultNode.GetFirstChild("ladder_points_won");
+	if (PlayerLadderPointsWonNode != Null)
+		G_GetResult_LadderPointsWon = TextLib::ToInteger(PlayerLadderPointsWonNode.TextContents);
+	
+	LiveXml::Manialib_Xml_DestroyDocument(Doc);
+}
+
+Void SetError(Integer _RequestType, Integer _StatusCode) {
+	declare Text Message;
+	if (_StatusCode / 100 == 4 || _StatusCode / 100 == 5)
+	{   //erreurs client ou serveur
+		switch(_RequestType)
+		{
+			case C_REQUESTTYPE_ALLCHALLENGES 		: Message = TextLib::GetTranslatedText(_("Error: the challenges could not be retrieved."));
+			case C_REQUESTTYPE_INSTALLEDCHALLENGES 	: Message = TextLib::GetTranslatedText(_("Error: the challenges could not be retrieved."));
+			case C_REQUESTTYPE_MYCHALLENGES 		: Message = TextLib::GetTranslatedText(_("Error: the challenges could not be retrieved."));
+			case C_REQUESTTYPE_GETCHALLENGE			: Message = TextLib::GetTranslatedText(_("Error: the challenge could not be retrieved."));
+			case C_REQUESTTYPE_GETINSTALLEDCHALLENGE: Message = TextLib::GetTranslatedText(_("Error: the challenge could not be retrieved."));
+			case C_REQUESTTYPE_GETCHALLENGEMAPS		: Message = TextLib::GetTranslatedText(_("Error: the maps of the challenge could not be retrieved."));
+			case C_REQUESTTYPE_CREATECHALLENGE 		: Message = TextLib::GetTranslatedText(_("Error: the challenge could not be created."));
+			case C_REQUESTTYPE_PUBLISHCHALLENGE 	: Message = TextLib::GetTranslatedText(_("Error: the challenge could not be published."));
+			case C_REQUESTTYPE_INSTALLCHALLENGE 	: Message = TextLib::GetTranslatedText(_("Error: the challenge could not be installed."));
+			case C_REQUESTTYPE_UNINSTALLCHALLENGE 	: Message = TextLib::GetTranslatedText(_("Error: the challenge could not be removed."));
+			case C_REQUESTTYPE_RACE_FORCHALLENGE	: Message = TextLib::GetTranslatedText(_("Error: the race could not be started."));
+			case C_REQUESTTYPE_RACE_START			: Message = TextLib::GetTranslatedText(_("Error: the race could not be started."));
+			case C_REQUESTTYPE_RACE_FINISH			: Message = TextLib::GetTranslatedText(_("Error: the race could not be given up."));
+			case C_REQUESTTYPE_CHALLENGEBUDDIES		: Message = TextLib::GetTranslatedText(_("Error: the operation failed."));
+			case C_REQUESTTYPE_GETBUDDIESCHALLENGES : Message = TextLib::GetTranslatedText(_("Error: the challenges could not be retrieved."));
+			case C_REQUESTTYPE_GETBUDDIESCHALLENGE	: Message = TextLib::GetTranslatedText(_("Error: the challenge could not be retrieved."));
+			case C_REQUESTTYPE_VOTECHALLENGE		: Message = TextLib::GetTranslatedText(_("Error: the challenge could not be upvoted."));
+			case C_REQUESTTYPE_REMOVEBUDDYCHALLENGE	: Message = TextLib::GetTranslatedText(_("Error: the challenge could not be removed."));
+		}
+		Message ^= " "^TextLib::GetTranslatedText(_("The connection to the Trackmania Servers has been lost."))^" "^TextLib::GetTranslatedText(_("Please try again later or visit support.ubi.com"));
+	} else {
+		if (G_DisconnectErrorText != "")
+			Message = G_DisconnectErrorText;
+		else
+			Message = _("The connection to the Trackmania Servers has been lost. Online features will become available once the connection has been re-established.");
+	}	
+	PopUpManager::AddPopUp2(0, Message, "", False);
+}
+
+///////////////////
+// UPDATE
+///////////////////
+
+Void SendCompletedRequestData(Integer _RequestType)
+{
+	switch(_RequestType)
+	{
+		case C_REQUESTTYPE_MYCHALLENGES 		: SendMyChallengesListToUI(C_REQUESTTYPE_MYCHALLENGES);
+		case C_REQUESTTYPE_ALLCHALLENGES 		: SendAllChallengesListToUI(C_REQUESTTYPE_ALLCHALLENGES);
+		case C_REQUESTTYPE_GETCHALLENGE			: SendChallengeToUI(C_REQUESTTYPE_GETCHALLENGE);
+		case C_REQUESTTYPE_GETINSTALLEDCHALLENGE: SendInstalledChallengeToUI(C_REQUESTTYPE_GETINSTALLEDCHALLENGE);
+		case C_REQUESTTYPE_GETCHALLENGEMAPS		: SendChallengeMapsToUI(C_REQUESTTYPE_GETCHALLENGEMAPS);
+		case C_REQUESTTYPE_INSTALLEDCHALLENGES	: SendInstalledChallengesListToUI(C_REQUESTTYPE_INSTALLEDCHALLENGES);
+		case C_REQUESTTYPE_RACE_FORCHALLENGE	: SendChallengeTriesToUI(C_REQUESTTYPE_RACE_FORCHALLENGE);
+		case C_REQUESTTYPE_RACE_START			: SendStartRaceTryIdToUI(C_REQUESTTYPE_RACE_START);
+		case C_REQUESTTYPE_GETBUDDIESCHALLENGES : SendBuddiesChallengesToUI(C_REQUESTTYPE_GETBUDDIESCHALLENGES);
+		case C_REQUESTTYPE_GETBUDDIESCHALLENGE	: SendBuddiesChallengeToUI(C_REQUESTTYPE_GETBUDDIESCHALLENGE);
+		case C_REQUESTTYPE_RACE_ENDMAP			: SendEndMapInfoToUI(C_REQUESTTYPE_RACE_ENDMAP);
+		case C_REQUESTTYPE_RACE_GETRESULT		: SendRaceResultToUI(C_REQUESTTYPE_RACE_GETRESULT);
+		case C_REQUESTTYPE_GETSTATS				: 
+		{
+			if (G_Requests[C_REQUESTTYPE_GETSTATS]["status"] == C_REQUESTSTATUS_SUCCEEDED)
+				if (UserMgr.MainUser != Null && UserMgr.MainUser.PersistentIsReady)
+				{
+					SendStatsToUI(C_REQUESTTYPE_GETSTATS);
+					ReInitRequest(_RequestType);
+				}
+			else
+				ReInitRequest(_RequestType);
+		}
+		case C_REQUESTTYPE_SETBUDDIESCHALLENGESBROWSED :
+		{
+			if (UserMgr.MainUser != Null && UserMgr.MainUser.PersistentIsReady)
+			{
+				SendBuddiesChallengesBrowsed();
+				ReInitRequest(_RequestType);
+			}
+		}
+		case C_REQUESTTYPE_REMOVEBUDDYCHALLENGE :
+		{
+			if (G_Requests[C_REQUESTTYPE_REMOVEBUDDYCHALLENGE]["status"] == C_REQUESTSTATUS_SUCCEEDED) {
+				if (G_RemoveBuddyChallenge_CountsForChallengesCount)
+				{
+					if (UserMgr.MainUser != Null && UserMgr.MainUser.PersistentIsReady)
+					{
+						ChangeBuddiesChallengesCount(-1);
+						SendFeedbackToUI(_RequestType);	
+						ReInitRequest(_RequestType);
+					}
+				} else {
+					SendFeedbackToUI(_RequestType);	
+					ReInitRequest(_RequestType);
+				}
+			} else {
+				SendFeedbackToUI(_RequestType);	
+				ReInitRequest(_RequestType);
+			}
+		}
+		case C_REQUESTTYPE_CHALLENGEBUDDIES : 
+		{
+			if (G_Requests[C_REQUESTTYPE_CHALLENGEBUDDIES]["status"] == C_REQUESTSTATUS_SUCCEEDED) {
+				if (UserMgr.MainUser != Null && UserMgr.MainUser.PersistentIsReady)
+				{
+					ChangeBuddiesChallengesCount(1);
+					SendFeedbackToUI(_RequestType);	
+					ReInitRequest(_RequestType);
+				} 
+			} else {
+				SendFeedbackToUI(_RequestType);	
+				ReInitRequest(_RequestType);
+			}
+		
+		}
+	}
+	
+	if (_RequestType != C_REQUESTTYPE_GETSTATS && _RequestType != C_REQUESTTYPE_SETBUDDIESCHALLENGESBROWSED && _RequestType != C_REQUESTTYPE_REMOVEBUDDYCHALLENGE && _RequestType != C_REQUESTTYPE_CHALLENGEBUDDIES)
+	{
+		SendFeedbackToUI(_RequestType);	
+		ReInitRequest(_RequestType);
+	}
+}
+
+Void RequestRetry(Integer _RequestType)
+{
+	if	(ManiaPlanet.MasterServer_MainMSUser == Null || ManiaPlanet.MasterServer_MainMSUser.ConnectionStatus != CNetMasterServerUserInfo::EMasterServerConnectionStatus::Connected)
+	{
+		SetRequestStatus(_RequestType, C_REQUESTSTATUS_FAILED, "");
+		return;
+	}
+
+	if (LiveAuth::Auth_IsWaitingForToken())
+		return;
+
+	if (_RequestType == C_REQUESTTYPE_GETSTATS && !LiveAuth::Auth_IsReady())
+		return;
+		
+	switch(_RequestType)
+	{
+		case C_REQUESTTYPE_MYCHALLENGES 		: RequestMyChallenges();
+		case C_REQUESTTYPE_ALLCHALLENGES 		: RequestAllChallenges();
+		case C_REQUESTTYPE_GETCHALLENGE			: RequestChallenge();
+		case C_REQUESTTYPE_GETINSTALLEDCHALLENGE: RequestInstalledChallenge();
+		case C_REQUESTTYPE_GETCHALLENGEMAPS		: RequestChallengeMaps();
+		case C_REQUESTTYPE_INSTALLEDCHALLENGES 	: RequestInstalledChallenges();
+		case C_REQUESTTYPE_CREATECHALLENGE		: RequestCreateChallenge();
+		case C_REQUESTTYPE_PUBLISHCHALLENGE		: RequestPublishChallenge();
+		case C_REQUESTTYPE_INSTALLCHALLENGE 	: RequestInstallChallenge();
+		case C_REQUESTTYPE_UNINSTALLCHALLENGE 	: RequestUninstallChallenge();
+		case C_REQUESTTYPE_RACE_FORCHALLENGE	: RequestChallengeRaces();
+		case C_REQUESTTYPE_RACE_START			: RequestStartRace();
+		case C_REQUESTTYPE_RACE_BEGINMAP		: RequestBeginMap();
+		case C_REQUESTTYPE_RACE_ENDMAP			: RequestEndMap();
+		case C_REQUESTTYPE_RACE_FINISH			: RequestFinishRace();
+		case C_REQUESTTYPE_RACE_GETRESULT		: RequestGetResult();
+		case C_REQUESTTYPE_TRAIN				: RequestNewBestTrainScore();
+		case C_REQUESTTYPE_CHALLENGEBUDDIES		: RequestChallengeBuddies();
+		case C_REQUESTTYPE_GETBUDDIESCHALLENGES : RequestBuddiesChallenges();
+		case C_REQUESTTYPE_GETBUDDIESCHALLENGE	: RequestBuddiesChallenge();
+		case C_REQUESTTYPE_VOTECHALLENGE		: RequestVoteChallenge();
+		case C_REQUESTTYPE_GETSTATS				: RequestStats();
+		case C_REQUESTTYPE_REMOVEBUDDYCHALLENGE : RequestRemoveBuddyChallenge();
+	}
+}
+
+Void SendDatasToUILoop() {
+	for (I, 0, C_EXTERNALREQUESTSCOUNT-1)
+	{
+		declare Text Status = G_Requests[I]["status"];
+		if ( Status == C_REQUESTSTATUS_SUCCEEDED || Status == C_REQUESTSTATUS_FAILED)
+			SendCompletedRequestData(I);
+		else if (Status == C_REQUESTSTATUS_TOSEND)
+			RequestRetry(I);
+	}
+}
+
+Integer GetRequestTypeFromRequestId(Text _RequestId)
+{
+	for(I, 0, C_REQUESTSCOUNT-1)
+	{
+		if (G_Requests[I]["id"] == _RequestId)
+			return I;
+	}
+	return -1;
+}
+
+Void SetBuddiesChallengeDisplayNames(CWebServicesTaskResult_GetDisplayNameScriptResult _TaskResult)
+{
+	if (G_BuddiesChallenge["author"] != C_AUTHOR_NADEO)
+		G_BuddiesChallenge["displayname"] 					= _TaskResult.GetDisplayName(G_BuddiesChallenge["author"]);
+	if (G_BuddiesChallenge["buddies_challenge_author"] != C_AUTHOR_NADEO)
+		G_BuddiesChallenge["buddies_challenge_displayname"] = _TaskResult.GetDisplayName(G_BuddiesChallenge["buddies_challenge_author"]);
+	for (I, 0, G_BuddiesChallengeResults.count-1)
+		if (G_BuddiesChallengeResults[I]["login"] != C_AUTHOR_NADEO)
+			G_BuddiesChallengeResults[I]["displayname"] = _TaskResult.GetDisplayName(G_BuddiesChallengeResults[I]["login"]);
+		
+	foreach (MapId => MapGhosts in G_BuddiesChallengeGhosts) {
+		for (I, 0, G_BuddiesChallengeGhosts[MapId].count - 1) {
+			if (G_BuddiesChallengeGhosts[MapId][I].existskey("login") && G_BuddiesChallengeGhosts[MapId][I]["login"] != "localUser" && G_BuddiesChallengeGhosts[MapId][I]["login"] != C_AUTHOR_NADEO)
+				G_BuddiesChallengeGhosts[MapId][I]["displayname"] = _TaskResult.GetDisplayName(G_BuddiesChallengeGhosts[MapId][I]["login"]);
+		}
+	}
+}
+
+Void SetBuddiesChallengesDisplayNames(CWebServicesTaskResult_GetDisplayNameScriptResult _TaskResult)
+{
+	for (I, 0, G_BuddiesChallenges.count - 1)
+	{
+		if (G_BuddiesChallenges[I]["author"] != C_AUTHOR_NADEO)
+			G_BuddiesChallenges[I]["displayname"] = _TaskResult.GetDisplayName(G_BuddiesChallenges[I]["author"]);
+		if (G_BuddiesChallenges[I]["buddies_challenge_author"] != C_AUTHOR_NADEO)
+			G_BuddiesChallenges[I]["buddies_challenge_displayname"] = _TaskResult.GetDisplayName(G_BuddiesChallenges[I]["buddies_challenge_author"]);
+	}
+}
+
+Void SetAllChallengesDisplayNames(CWebServicesTaskResult_GetDisplayNameScriptResult _TaskResult)
+{
+	for (I, 0, G_AllChallenges.count - 1)
+		if (G_AllChallenges[I]["author"] != C_AUTHOR_NADEO)
+		G_AllChallenges[I]["displayname"] = _TaskResult.GetDisplayName(G_AllChallenges[I]["author"]);
+}
+
+Void SetInstalledChallengesDisplayNames(CWebServicesTaskResult_GetDisplayNameScriptResult _TaskResult)
+{
+	for (I, 0, G_InstalledChallenges.count - 1)
+		if (G_InstalledChallenges[I]["author"] != C_AUTHOR_NADEO)
+		G_InstalledChallenges[I]["displayname"] = _TaskResult.GetDisplayName(G_InstalledChallenges[I]["author"]);
+}
+
+Void SetChallengeDisplayName(CWebServicesTaskResult_GetDisplayNameScriptResult _TaskResult)
+{
+	if (G_Challenge["author"] != C_AUTHOR_NADEO)
+		G_Challenge["displayname"] = _TaskResult.GetDisplayName(G_Challenge["author"]);
+}
+
+Void SetInstalledChallengeDisplayName(CWebServicesTaskResult_GetDisplayNameScriptResult _TaskResult)
+{
+	if (G_InstalledChallenge["author"] != C_AUTHOR_NADEO)
+	G_InstalledChallenge["displayname"] = _TaskResult.GetDisplayName(G_InstalledChallenge["author"]);
+}
+
+Void GetDisplayNamesLoop() {
+	for (I, 0, C_REQUESTTYPE_GETINSTALLEDCHALLENGE)
+	{
+		if (GetDisplayNamesTasks.existskey(I) && GetDisplayNamesTasks[I] != Null && !GetDisplayNamesTasks[I].IsProcessing)
+		{
+			declare GetDisplayNameTaskResult <=> (GetDisplayNamesTasks[I] as CWebServicesTaskResult_GetDisplayNameScriptResult);
+			if (G_Requests[I]["status"] == C_REQUESTSTATUS_WAITFORDISPLAYNAMES)
+			{
+				if (GetDisplayNameTaskResult.HasSucceeded)
+				{
+					G_Requests[I]["status"] = C_REQUESTSTATUS_SUCCEEDED;
+					switch (I)
+					{
+						case C_REQUESTTYPE_ALLCHALLENGES 		: SetAllChallengesDisplayNames(GetDisplayNameTaskResult);
+						case C_REQUESTTYPE_INSTALLEDCHALLENGES 	: SetInstalledChallengesDisplayNames(GetDisplayNameTaskResult);
+						case C_REQUESTTYPE_GETCHALLENGE			: SetChallengeDisplayName(GetDisplayNameTaskResult);
+						case C_REQUESTTYPE_GETINSTALLEDCHALLENGE: SetInstalledChallengeDisplayName(GetDisplayNameTaskResult);
+						case C_REQUESTTYPE_GETBUDDIESCHALLENGES : SetBuddiesChallengesDisplayNames(GetDisplayNameTaskResult);
+						case C_REQUESTTYPE_GETBUDDIESCHALLENGE	: SetBuddiesChallengeDisplayNames(GetDisplayNameTaskResult);
+					}
+				} else {
+					TaskMessageErrorController::TaskErrorMessage(GetDisplayNameTaskResult.ErrorType, GetDisplayNameTaskResult.ErrorCode);
+					switch (I)
+					{
+						case C_REQUESTTYPE_ALLCHALLENGES 		: G_AllChallenges.clear();
+						case C_REQUESTTYPE_INSTALLEDCHALLENGES 	: G_InstalledChallenges.clear();
+						case C_REQUESTTYPE_GETCHALLENGE			: { G_Challenge.clear(); G_ChallengeMaps.clear(); }
+						case C_REQUESTTYPE_GETINSTALLEDCHALLENGE: { G_InstalledChallenge.clear(); G_InstalledChallengeMaps.clear(); }
+						case C_REQUESTTYPE_GETBUDDIESCHALLENGES : G_BuddiesChallenges.clear();
+						case C_REQUESTTYPE_GETBUDDIESCHALLENGE	: { G_BuddiesChallenge.clear(); G_BuddiesChallengeMaps.clear(); G_BuddiesChallengeResults.clear(); }
+					}
+					G_Requests[I]["status"] = C_REQUESTSTATUS_FAILED;
+				}
+			}
+			GetDisplayNamesTasks[I] = Null;
+		}
+	}
+}
+
+Void GetInstalledChallengesIdsLoop() {
+	if (G_Requests[C_REQUESTTYPE_GETBUDDIESCHALLENGE]["status"] == C_REQUESTSTATUS_WAITFORINSTALLEDCHALLENGESIDS)
+	{
+		if (G_Requests[C_REQUESTTYPE_INSTALLEDCHALLENGESIDS]["status"] == C_REQUESTSTATUS_NOREQUEST || G_Requests[C_REQUESTTYPE_INSTALLEDCHALLENGESIDS]["status"] == C_REQUESTSTATUS_TOSEND)
+			RequestInstalledChallengesIds();
+		else if (G_Requests[C_REQUESTTYPE_INSTALLEDCHALLENGESIDS]["status"] == C_REQUESTSTATUS_FAILED || G_Requests[C_REQUESTTYPE_INSTALLEDCHALLENGESIDS]["status"] == C_REQUESTSTATUS_SUCCEEDED) {
+			if (G_Requests[C_REQUESTTYPE_GETBUDDIESCHALLENGE]["status"] == C_REQUESTSTATUS_WAITFORINSTALLEDCHALLENGESIDS)
+			{
+				if (G_Requests[C_REQUESTTYPE_INSTALLEDCHALLENGESIDS]["status"] == C_REQUESTSTATUS_FAILED || !G_BuddiesChallenge.existskey("installed"))
+					G_Requests[C_REQUESTTYPE_GETBUDDIESCHALLENGE]["status"] = C_REQUESTSTATUS_FAILED;
+				else if (G_BuddiesChallenge["installed"] == "0") {
+					declare Text[] Logins;
+					Logins.add(G_BuddiesChallenge["buddies_challenge_author"]);
+					Logins.add(G_BuddiesChallenge["author"]);
+					for (I, 0, G_BuddiesChallengeResults.count-1)
+						Logins.add(G_BuddiesChallengeResults[I]["login"]);
+					
+					RequestDisplayNames(C_REQUESTTYPE_GETBUDDIESCHALLENGE, Logins);
+					G_Requests[C_REQUESTTYPE_GETBUDDIESCHALLENGE]["status"] = C_REQUESTSTATUS_WAITFORDISPLAYNAMES;
+				} else
+					RequestBuddiesChallengeInstalledChallengeData();
+			}
+			ReInitRequest(C_REQUESTTYPE_INSTALLEDCHALLENGESIDS);
+		}
+	}
+}
+
+Void LiveLoop() {
+	foreach(LiveEvent in LiveEvent::Manialib_Event_PendingEvents()) {
+		declare Text RequestId = LiveEvent[1][0];
+		declare Integer RequestType = GetRequestTypeFromRequestId(RequestId);
+		if (RequestType == -1)
+			continue;
+	
+		switch(LiveEvent[0][0]) {
+			case "Manialib.Http.Success": {
+				switch(RequestType)
+				{
+					case C_REQUESTTYPE_ALLCHALLENGES :
+					{
+						if(LiveEvent[1].count < 1)
+							continue;
+						SetAllChallengesList(LiveEvent[1][1]);
+						if(GetDisplayNamesTasks.existskey(RequestType) && GetDisplayNamesTasks[RequestType] != Null)
+							G_Requests[RequestType]["status"] = C_REQUESTSTATUS_WAITFORDISPLAYNAMES;
+						else
+							G_Requests[RequestType]["status"] = C_REQUESTSTATUS_SUCCEEDED;
+					}
+					case C_REQUESTTYPE_GETCHALLENGE : { //foireux
+						if(LiveEvent[1].count < 1)
+							continue;
+						SetChallenge(LiveEvent[1][1]);
+						if(GetDisplayNamesTasks.existskey(RequestType) && GetDisplayNamesTasks[RequestType] != Null)
+							G_Requests[RequestType]["status"] = C_REQUESTSTATUS_WAITFORDISPLAYNAMES;
+						else
+							G_Requests[RequestType]["status"] = C_REQUESTSTATUS_SUCCEEDED;
+					}
+					case C_REQUESTTYPE_GETINSTALLEDCHALLENGE : {
+						if(LiveEvent[1].count < 1)
+							continue;
+						SetInstalledChallenge(LiveEvent[1][1]);
+						if(GetDisplayNamesTasks.existskey(RequestType) && GetDisplayNamesTasks[RequestType] != Null)
+							G_Requests[RequestType]["status"] = C_REQUESTSTATUS_WAITFORDISPLAYNAMES;
+						else
+							G_Requests[RequestType]["status"] = C_REQUESTSTATUS_SUCCEEDED;
+					}
+					case C_REQUESTTYPE_INSTALLEDCHALLENGES : {
+						if(LiveEvent[1].count < 1)
+							continue;
+						SetInstalledChallengesList(LiveEvent[1][1]);
+						if(GetDisplayNamesTasks.existskey(RequestType) && GetDisplayNamesTasks[RequestType] != Null)
+							G_Requests[RequestType]["status"] = C_REQUESTSTATUS_WAITFORDISPLAYNAMES;
+						else
+							G_Requests[RequestType]["status"] = C_REQUESTSTATUS_SUCCEEDED;
+					}
+					case C_REQUESTTYPE_GETBUDDIESCHALLENGES :
+					{
+						if(LiveEvent[1].count < 1)
+							continue;
+						SetBuddiesChallengesList(LiveEvent[1][1]);
+						if(GetDisplayNamesTasks.existskey(RequestType) && GetDisplayNamesTasks[RequestType] != Null)
+							G_Requests[RequestType]["status"] = C_REQUESTSTATUS_WAITFORDISPLAYNAMES;
+						else
+							G_Requests[RequestType]["status"] = C_REQUESTSTATUS_SUCCEEDED;
+					}
+					case C_REQUESTTYPE_GETBUDDIESCHALLENGE :
+					{
+						if (G_Requests[C_REQUESTTYPE_GETBUDDIESCHALLENGE]["status"] == C_REQUESTSTATUS_WAITING) {
+							SetBuddiesChallenge(LiveEvent[1][1]);
+							if (G_BuddiesChallenge.count != 0)
+								G_Requests[RequestType]["status"] = C_REQUESTSTATUS_WAITFORINSTALLEDCHALLENGESIDS;
+							else
+								G_Requests[RequestType]["status"] = C_REQUESTSTATUS_FAILED; //on n'est pas censés avoir une réponse vide en fait !
+						} else if (G_Requests[C_REQUESTTYPE_GETBUDDIESCHALLENGE]["status"] == C_REQUESTSTATUS_WAITFORINSTALLEDCHALLENGESDATA) {
+							SetBuddiesChallengeInstalledChallengeData(LiveEvent[1][1]);
+							if(GetDisplayNamesTasks.existskey(RequestType) && GetDisplayNamesTasks[RequestType] != Null)
+								G_Requests[RequestType]["status"] = C_REQUESTSTATUS_WAITFORDISPLAYNAMES;
+							else
+								G_Requests[RequestType]["status"] = C_REQUESTSTATUS_SUCCEEDED;
+						}
+					}
+					case C_REQUESTTYPE_MYCHALLENGES :
+					{
+						if(LiveEvent[1].count < 1)
+							continue;
+						SetMyChallengesList(LiveEvent[1][1]);
+						G_Requests[RequestType]["status"] = C_REQUESTSTATUS_SUCCEEDED;
+					}
+					case C_REQUESTTYPE_UNINSTALLCHALLENGE		: OnChallengeUninstalled(LiveEvent[1][1]);
+					case C_REQUESTTYPE_INSTALLEDCHALLENGESIDS	: SetInstalledChallengesIds(LiveEvent[1][1]);
+					case C_REQUESTTYPE_GETCHALLENGEMAPS			: SetChallenge(LiveEvent[1][1]);
+					case C_REQUESTTYPE_RACE_START 				: SetTryId(LiveEvent[1][1]);
+					case C_REQUESTTYPE_RACE_FORCHALLENGE 		: SetChallengeTries(LiveEvent[1][1]);
+					case C_REQUESTTYPE_GETSTATS					: SetStats(LiveEvent[1][1]);
+					case C_REQUESTTYPE_RACE_ENDMAP				: SetEndMapInfo(LiveEvent[1][1]);
+					case C_REQUESTTYPE_RACE_GETRESULT			: SetRaceResult(LiveEvent[1][1]);
+				}
+				if (RequestType > C_REQUESTTYPE_MYCHALLENGES)
+					G_Requests[RequestType]["status"] = C_REQUESTSTATUS_SUCCEEDED;
+			}
+			
+			case "Manialib.Http.Error": {	
+				G_Requests[RequestType]["status"] = C_REQUESTSTATUS_FAILED;
+				switch(RequestType) {
+					case C_REQUESTTYPE_ALLCHALLENGES 		: G_AllChallenges.clear();
+					case C_REQUESTTYPE_INSTALLEDCHALLENGES 	: G_InstalledChallenges.clear();
+					case C_REQUESTTYPE_MYCHALLENGES			: G_MyChallenges.clear();
+					case C_REQUESTTYPE_GETCHALLENGE			: { G_Challenge.clear(); G_ChallengeMaps.clear(); }
+					case C_REQUESTTYPE_GETINSTALLEDCHALLENGE: { G_InstalledChallenge.clear(); G_InstalledChallengeMaps.clear(); }
+					case C_REQUESTTYPE_GETCHALLENGEMAPS		: { G_Challenge.clear(); G_ChallengeMaps.clear(); }
+					case C_REQUESTTYPE_RACE_FORCHALLENGE	: G_ChallengeTries.clear();
+					case C_REQUESTTYPE_GETBUDDIESCHALLENGES : G_BuddiesChallenges.clear();
+					case C_REQUESTTYPE_GETBUDDIESCHALLENGE	: { G_BuddiesChallenge.clear(); G_BuddiesChallengeMaps.clear(); G_BuddiesChallengeResults.clear(); }
+					case C_REQUESTTYPE_GETSTATS				: { G_BuddiesChallengesCount = -1; G_ChallengesCount = -1; }
+					case C_REQUESTTYPE_RACE_ENDMAP			: { G_EndMap_PlayerLadderPoints = -1; G_EndMap_PlayerLadderPointsWon = -1; }
+					case C_REQUESTTYPE_RACE_GETRESULT		: { G_GetResult_LadderPointsWon = -1; G_GetResult_PlayerLadderPoints = -1; }
+				}
+				
+				declare Integer StatusCode = TextLib::ToInteger(LiveEvent[1][3]);		
+				if (RequestType != C_REQUESTTYPE_GETSTATS)
+					SetError(RequestType, StatusCode);
+			}
+			case "Manialib.Http.Retry": {
+				G_Requests[RequestType]["status"] = C_REQUESTSTATUS_TOSEND;
+			}
+		}
+	}
+	SendDatasToUILoop();
+	GetDisplayNamesLoop();
+	GetInstalledChallengesIdsLoop();
+}

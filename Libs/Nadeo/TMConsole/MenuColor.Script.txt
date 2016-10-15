@@ -1,0 +1,52 @@
+
+#Const C_DifficultyCustom 		<1.0, 0.9, 0.0>
+#Const C_DifficultyWhite 		<1., 1., 1.>
+#Const C_DifficultyGreen 		<0., 1., 0.>
+#Const C_DifficultyBlue  		<0., 0.2, 1.>
+#Const C_DifficultyRed   		<1., 0., 0.>
+#Const C_DifficultyBlack 		<0.25, 0.25, 0.25>
+
+#Const C_ColorQuadScreen0 		<0.8, 0.0, 0.0>
+#Const C_ColorQuadScreen1 		<1.0, 1.0, 0.0>
+	
+#Const C_MenuOnline	       		<1.0, 0.2, 0.0>
+#Const C_MenuMultiplayer	   	<0.0, 1.0, 0.65>
+#Const C_MenuCampaign	       	<1.0, 0.9, 0.0>
+#Const C_MenuTrackBuilder	    <0.61, 0.31, 1.0>
+#Const C_MenuGlobalLeaderBoard	<0.9, 0.9, 0.9>
+
+
+Vec3 GetDifficultyColor(Integer _IndexDifficulty) {
+	switch(_IndexDifficulty)
+	{
+		case 0: return C_DifficultyCustom;
+		case 1: return C_DifficultyWhite;
+		case 2: return C_DifficultyGreen;
+		case 3: return C_DifficultyBlue;
+		case 4: return C_DifficultyRed;
+		case 5: return C_DifficultyBlack;
+	}
+	return <0., 0., 0.>;
+}
+			
+Vec3 GetMenuColor(Integer _IndexMenu) {
+	switch(_IndexMenu)
+	{
+		case 0: return C_MenuOnline;
+		case 1: return C_MenuMultiplayer;
+		case 2: return C_MenuCampaign;
+		case 3: return C_MenuTrackBuilder;
+		case 4: return C_MenuGlobalLeaderBoard;
+		case 4: return C_MenuGlobalLeaderBoard;
+	}
+	return <0., 0., 0.>;
+}
+		
+Vec3 GetColorQuadScreen(Integer _Index) {
+	switch(_Index)
+	{
+		case 0: return C_ColorQuadScreen0;
+		case 1: return C_ColorQuadScreen1;
+	}
+	return <0., 0., 0.>;
+}

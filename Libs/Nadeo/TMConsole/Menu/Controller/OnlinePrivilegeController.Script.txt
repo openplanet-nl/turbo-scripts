@@ -1,0 +1,266 @@
+#Include "TextLib" as TextLib
+#Include "Libs/Nadeo/TMConsole/Menu/MenuLayers.Script.txt"								as Layers
+#Include "Libs/Nadeo/TMConsole/Menu/Controller/TaskMessageErrorController.Script.txt"	as TaskMessageErrorController
+
+#Const C_REQUESTTYPE_CHECKTARGETED_VIEWUGCREQUIRED	0 //ServerInfo:GetMaps
+#Const C_REQUESTTYPE_CHECKTARGETED_VIEWUGC			1
+#Const C_REQUESTTYPE_CHECK_PLAYMULTISESSION			2 //JoinRoom
+#Const C_REQUESTTYPE_CHECK_VIEWUGC					3 
+#Const C_REQUESTTYPE_CHECK_VIEWUGCREQUIRED			4 //Tabs Tracks & AuthorTracks de TrackbuilderWorkshop
+#Const C_REQUESTTYPE_CHECK_UPLOADUGC				5 //Upload Track
+#Const C_REQUESTTYPE_CHECK_DOWNLOADUGC				6 
+#Const C_REQUESTTYPE_CHECK_MULTIASYNCREQUIRED		7
+#Const C_REQUESTTYPE_GETSESSIONINFO					8 //traduire SessionId en ServerLogin + ServerPwd
+
+#Const C_PRIVILEGEREQUESTS_COUNT					9
+
+declare CWebServicesTaskResult[]	G_Requests;
+declare Text[]						G_Requests_LayersToSend;
+
+declare Text[]						G_CheckTargeted_ViewUgc_Logins;
+
+Void Load() {
+	G_Requests.clear();
+	G_Requests_LayersToSend.clear();
+	for (I, 0, C_PRIVILEGEREQUESTS_COUNT-1)
+	{
+		G_Requests.add(Null);
+		G_Requests_LayersToSend.add("");
+	}
+}
+
+Void CheckTargeted_ViewUgcRequired(Text _LayerName, Text[] _Logins) {
+	declare CWebServicesTaskResult_CheckTargetedPrivilegeResultScript Request = PrivilegeMgr.CheckTargetedPrivilege(DataMgr.MenuUserId, CPrivilegeMgr::EPrivilege::ViewUserCreatedContentRequired);
+	
+	for (I, 0, _Logins.count-1)
+		Request.AddLogin(_Logins[I]);
+	Request.StartTask();
+	G_Requests[C_REQUESTTYPE_CHECKTARGETED_VIEWUGCREQUIRED] = Request;
+	G_Requests_LayersToSend[C_REQUESTTYPE_CHECKTARGETED_VIEWUGCREQUIRED] = _LayerName;
+}
+
+Void CheckTargeted_ViewUgcRequired_OnCompletion() {
+	declare CUILayer LayerToSend = Layers::Get(G_Requests_LayersToSend[C_REQUESTTYPE_CHECKTARGETED_VIEWUGCREQUIRED]);
+	if(LayerToSend == Null) return;
+	
+	declare Text FeedbackText = "CheckTargeted_ViewUgcRequired_";
+	if (G_Requests[C_REQUESTTYPE_CHECKTARGETED_VIEWUGCREQUIRED].HasFailed)
+		FeedbackText ^= "Failed";
+	else if (G_Requests[C_REQUESTTYPE_CHECKTARGETED_VIEWUGCREQUIRED].HasSucceeded)
+		FeedbackText ^= "Succeeded";
+	else
+		FeedbackText ^= "Failed";
+	LayerCustomEvent(LayerToSend, FeedbackText, Text[]);
+}
+
+Void Check_ViewUgcRequired(Text _LayerName, Ident _UserId) {
+	declare CWebServicesTaskResult Request = PrivilegeMgr.CheckPrivilege(_UserId, CPrivilegeMgr::EPrivilege::ViewUserCreatedContentRequired);
+	G_Requests[C_REQUESTTYPE_CHECK_VIEWUGCREQUIRED] = Request;
+	G_Requests_LayersToSend[C_REQUESTTYPE_CHECK_VIEWUGCREQUIRED] = _LayerName;
+}
+
+Void Check_PlayMultiplayerAsyncRequired(Text _LayerName, Ident _UserId) {
+	declare CWebServicesTaskResult Request = PrivilegeMgr.CheckPrivilege(_UserId, CPrivilegeMgr::EPrivilege::PlayMultiplayerAsync);
+	G_Requests[C_REQUESTTYPE_CHECK_MULTIASYNCREQUIRED] = Request;
+	G_Requests_LayersToSend[C_REQUESTTYPE_CHECK_MULTIASYNCREQUIRED] = _LayerName;
+}
+
+Void Check_PlayMultiplayerAsyncRequired_OnCompletion() {
+	declare CUILayer LayerToSend = Layers::Get(G_Requests_LayersToSend[C_REQUESTTYPE_CHECK_MULTIASYNCREQUIRED]);
+	if(LayerToSend == Null) return;
+	
+	declare Text FeedbackText = "Check_PlayMultiplayerAsyncRequired_";
+	if (G_Requests[C_REQUESTTYPE_CHECK_MULTIASYNCREQUIRED].HasFailed)
+		FeedbackText ^= "Failed";
+	else if (G_Requests[C_REQUESTTYPE_CHECK_MULTIASYNCREQUIRED].HasSucceeded)
+		FeedbackText ^= "Succeeded";
+	else
+		FeedbackText ^= "Failed";
+	LayerCustomEvent(LayerToSend, FeedbackText, Text[]);
+}
+
+Void Check_ViewUgcRequired(Text _LayerName) {
+	Check_ViewUgcRequired(_LayerName, DataMgr.MenuUserId);
+}
+
+Void Check_ViewUgcRequired_OnCompletion() {
+	declare CUILayer LayerToSend = Layers::Get(G_Requests_LayersToSend[C_REQUESTTYPE_CHECK_VIEWUGCREQUIRED]);
+	if(LayerToSend == Null) return;
+	
+	declare Text FeedbackText = "Check_ViewUgcRequired_";
+	if (G_Requests[C_REQUESTTYPE_CHECK_VIEWUGCREQUIRED].HasFailed)
+		FeedbackText ^= "Failed";
+	else if (G_Requests[C_REQUESTTYPE_CHECK_VIEWUGCREQUIRED].HasSucceeded)
+		FeedbackText ^= "Succeeded";
+	else
+		FeedbackText ^= "Failed";
+	LayerCustomEvent(LayerToSend, FeedbackText, Text[]);
+}
+
+Void Check_PlayMultiplayerSession(Text _LayerName) {
+	declare CWebServicesTaskResult Request = PrivilegeMgr.CheckPrivilege(DataMgr.MenuUserId, CPrivilegeMgr::EPrivilege::PlayMultiplayerSession);
+	G_Requests[C_REQUESTTYPE_CHECK_PLAYMULTISESSION] = Request;
+	G_Requests_LayersToSend[C_REQUESTTYPE_CHECK_PLAYMULTISESSION] = _LayerName;
+}
+
+Void Check_PlayMultiplayerSession_OnCompletion() {
+	declare CUILayer LayerToSend = Layers::Get(G_Requests_LayersToSend[C_REQUESTTYPE_CHECK_PLAYMULTISESSION]);
+	log("MultiSessionOnCompletionLayer"^G_Requests_LayersToSend[C_REQUESTTYPE_CHECK_PLAYMULTISESSION]^LayerToSend);	
+	if(LayerToSend == Null) return;
+	
+	declare Text FeedbackText = "Check_PlayMultiplayerSession_";
+	if (G_Requests[C_REQUESTTYPE_CHECK_PLAYMULTISESSION].HasFailed)
+		FeedbackText ^= "Failed";
+	else if (G_Requests[C_REQUESTTYPE_CHECK_PLAYMULTISESSION].HasSucceeded)
+		FeedbackText ^= "Succeeded";
+	else
+		FeedbackText ^= "Failed";
+	LayerCustomEvent(LayerToSend, FeedbackText, Text[]);
+}
+
+Void Check_ViewUgc(Text _LayerName) {
+	declare CWebServicesTaskResult Request = PrivilegeMgr.CheckPrivilege(DataMgr.MenuUserId, CPrivilegeMgr::EPrivilege::ViewUserCreatedContent);
+	G_Requests[C_REQUESTTYPE_CHECK_VIEWUGC] = Request;
+	G_Requests_LayersToSend[C_REQUESTTYPE_CHECK_VIEWUGC] = _LayerName;
+}
+
+Void Check_ViewUgc_OnCompletion() {
+	declare CUILayer LayerToSend = Layers::Get(G_Requests_LayersToSend[C_REQUESTTYPE_CHECK_VIEWUGC]);
+	if(LayerToSend == Null) return;
+	
+	declare Text FeedbackText = "Check_ViewUgc_";
+	if (G_Requests[C_REQUESTTYPE_CHECK_VIEWUGC].HasFailed)
+		FeedbackText ^= "Failed";
+	else if (G_Requests[C_REQUESTTYPE_CHECK_VIEWUGC].HasSucceeded)
+		FeedbackText ^= "Succeeded";
+	else
+		FeedbackText ^= "Failed";
+	LayerCustomEvent(LayerToSend, FeedbackText, Text[]);
+}
+
+Void CheckTargetedForAllUsers_ViewUgc(Text _LayerName, Text[] _Logins) {
+	// declare CWebServicesTaskResult_CheckTargetedPrivilegeResultScript Request = PrivilegeMgr.CheckTargetedPrivilegeForAllUsers(CPrivilegeMgr::EPrivilege::ViewUserCreatedContent);
+	declare CWebServicesTaskResult_CheckTargetedPrivilegeResultScript Request = PrivilegeMgr.CheckTargetedPrivilege(DataMgr.MenuUserId, CPrivilegeMgr::EPrivilege::ViewUserCreatedContent);
+	
+	for (I, 0, _Logins.count-1)
+		Request.AddLogin(_Logins[I]);
+	Request.StartTask();
+	G_Requests[C_REQUESTTYPE_CHECKTARGETED_VIEWUGC] = Request;
+	G_Requests_LayersToSend[C_REQUESTTYPE_CHECKTARGETED_VIEWUGC] = _LayerName;
+	G_CheckTargeted_ViewUgc_Logins = _Logins;
+}
+
+Void CheckTargetedForAllUsers_ViewUgc_OnCompletion() {
+	declare CUILayer LayerToSend = Layers::Get(G_Requests_LayersToSend[C_REQUESTTYPE_CHECKTARGETED_VIEWUGC]);
+	if(LayerToSend == Null) return;
+	
+	declare Text FeedbackText = "CheckTargeted_ViewUgc_";
+	declare Text FeedbackLogins;
+	if (G_Requests[C_REQUESTTYPE_CHECKTARGETED_VIEWUGC].HasFailed)
+		FeedbackText ^= "Failed";
+	else if (G_Requests[C_REQUESTTYPE_CHECKTARGETED_VIEWUGC].HasSucceeded) {
+		FeedbackText ^= "Succeeded";
+		declare Text[] AuthorizedLogins;
+		declare CWebServicesTaskResult_CheckTargetedPrivilegeResultScript Request <=> (G_Requests[C_REQUESTTYPE_CHECKTARGETED_VIEWUGC] as CWebServicesTaskResult_CheckTargetedPrivilegeResultScript);
+		for (I, 0, G_CheckTargeted_ViewUgc_Logins.count-1)
+			if (Request.HasPrivilege(G_CheckTargeted_ViewUgc_Logins[I]))
+				AuthorizedLogins.add(G_CheckTargeted_ViewUgc_Logins[I]);
+		FeedbackLogins = TextLib::Join(",", AuthorizedLogins);
+	} else
+		FeedbackText ^= "Failed";
+	LayerCustomEvent(LayerToSend, FeedbackText, [FeedbackLogins]);
+	G_CheckTargeted_ViewUgc_Logins.clear();
+}
+
+Void Check_UploadUgc(Text _LayerName) {
+	declare CWebServicesTaskResult Request = PrivilegeMgr.CheckPrivilege(DataMgr.MenuUserId, CPrivilegeMgr::EPrivilege::UploadUserCreatedContent);
+	G_Requests[C_REQUESTTYPE_CHECK_UPLOADUGC] = Request;
+	G_Requests_LayersToSend[C_REQUESTTYPE_CHECK_UPLOADUGC] = _LayerName;
+}
+
+Void Check_UploadUgc_OnCompletion() {
+	declare CUILayer LayerToSend = Layers::Get(G_Requests_LayersToSend[C_REQUESTTYPE_CHECK_UPLOADUGC]);
+	if(LayerToSend == Null) return;
+	declare Text FeedbackText = "Check_UploadUgc_";
+	if (G_Requests[C_REQUESTTYPE_CHECK_UPLOADUGC].HasFailed)
+		FeedbackText ^= "Failed";
+	else if (G_Requests[C_REQUESTTYPE_CHECK_UPLOADUGC].HasSucceeded)
+		FeedbackText ^= "Succeeded";
+	else
+		FeedbackText ^= "Failed";
+	LayerCustomEvent(LayerToSend, FeedbackText, Text[]);
+}
+
+Void GetSessionInfo(Text _LayerName, Text _SessionId) {
+	declare CWebServicesTaskResult_Session_Get Request =  ManiaPlanet.MasterServer_GetSessionInfo(DataMgr.MenuUserId, _SessionId);
+	G_Requests[C_REQUESTTYPE_GETSESSIONINFO] = Request;
+	G_Requests_LayersToSend[C_REQUESTTYPE_GETSESSIONINFO] = _LayerName;
+	
+	
+}
+
+Void GetSessionInfo_OnCompletion() {
+	declare CUILayer LayerToSend = Layers::Get(G_Requests_LayersToSend[C_REQUESTTYPE_GETSESSIONINFO]);
+	if(LayerToSend == Null) return;
+	declare Text FeedbackText = "GetSessionInfo_";
+	if (G_Requests[C_REQUESTTYPE_GETSESSIONINFO].HasFailed)
+		FeedbackText ^= "Failed";
+	else if (G_Requests[C_REQUESTTYPE_GETSESSIONINFO].HasSucceeded) {
+		FeedbackText ^= "Succeeded";
+		declare CWebServicesTaskResult_Session_Get Request <=> (G_Requests[C_REQUESTTYPE_GETSESSIONINFO] as CWebServicesTaskResult_Session_Get);
+		declare Text Net_LoginToJoin 	for LayerToSend.LocalPage;
+		declare Text Net_PasswordToJoin for LayerToSend.LocalPage;
+		Net_LoginToJoin 	= Request.ServerLogin;
+		Net_PasswordToJoin 	= "";
+	} else
+		FeedbackText ^= "Failed";
+	LayerCustomEvent(LayerToSend, FeedbackText, Text[]);
+}
+
+Void CheckForAllUsers_DownloadUgc(Text _LayerName) {
+	// declare CWebServicesTaskResult Request = PrivilegeMgr.CheckPrivilegeForAllUsers(CPrivilegeMgr::EPrivilege::DownloadUserCreatedContent);
+	declare CWebServicesTaskResult Request = PrivilegeMgr.CheckPrivilege(DataMgr.MenuUserId, CPrivilegeMgr::EPrivilege::DownloadUserCreatedContent);
+	
+	G_Requests[C_REQUESTTYPE_CHECK_DOWNLOADUGC] = Request;
+	G_Requests_LayersToSend[C_REQUESTTYPE_CHECK_DOWNLOADUGC] = _LayerName;
+}
+
+Void CheckForAllUsers_DownloadUgc_OnCompletion() {
+	declare CUILayer LayerToSend = Layers::Get(G_Requests_LayersToSend[C_REQUESTTYPE_CHECK_DOWNLOADUGC]);
+	if(LayerToSend == Null) return;
+	
+	declare Text FeedbackText = "Check_DownloadUgc_";
+	if (G_Requests[C_REQUESTTYPE_CHECK_DOWNLOADUGC].HasFailed)
+		FeedbackText ^= "Failed";
+	else if (G_Requests[C_REQUESTTYPE_CHECK_DOWNLOADUGC].HasSucceeded)
+		FeedbackText ^= "Succeeded";
+	else
+		FeedbackText ^= "Failed";
+	LayerCustomEvent(LayerToSend, FeedbackText, Text[]);
+}
+
+Void Loop() {
+	
+	for (I, 0, G_Requests.count-1)
+	{
+		if (G_Requests[I] == Null || G_Requests[I].IsProcessing) {
+			continue;
+		}
+		if (G_Requests[I].HasFailed) {
+			TaskMessageErrorController::TaskErrorMessage(G_Requests[I].ErrorType, G_Requests[I].ErrorCode);
+		}
+		switch (I)
+		{
+			case C_REQUESTTYPE_CHECKTARGETED_VIEWUGCREQUIRED 	: CheckTargeted_ViewUgcRequired_OnCompletion();
+			case C_REQUESTTYPE_CHECK_PLAYMULTISESSION			: Check_PlayMultiplayerSession_OnCompletion();
+			case C_REQUESTTYPE_CHECK_VIEWUGC					: Check_ViewUgc_OnCompletion();
+			case C_REQUESTTYPE_CHECK_VIEWUGCREQUIRED			: Check_ViewUgcRequired_OnCompletion();
+			case C_REQUESTTYPE_CHECKTARGETED_VIEWUGC			: CheckTargetedForAllUsers_ViewUgc_OnCompletion();
+			case C_REQUESTTYPE_CHECK_UPLOADUGC					: Check_UploadUgc_OnCompletion();
+			case C_REQUESTTYPE_CHECK_DOWNLOADUGC				: CheckForAllUsers_DownloadUgc_OnCompletion();
+			case C_REQUESTTYPE_GETSESSIONINFO					: GetSessionInfo_OnCompletion();
+			case C_REQUESTTYPE_CHECK_MULTIASYNCREQUIRED			: Check_PlayMultiplayerAsyncRequired_OnCompletion();
+		}
+		G_Requests[I] = Null;
+	}
+}

@@ -1,0 +1,138 @@
+/**
+ *	
+ * 	Especially made for console
+ */
+
+
+#Include "Libs/Nadeo/TMConsole/Menu/LibOnlineGameplay.Script.txt"		as LibOnlineGameplay
+#Include "Libs/Nadeo/TMConsole/Live/LiveHelpers.Script.txt" 			as LiveHelpers
+
+#Const C_GETDISPLAY 0
+#Const C_WEBTASK	1
+
+#Include "TextLib" as TL
+
+declare CWebServicesTaskResult 		G_GetDisplayNamesTask;
+
+declare Boolean G_DisplayNameDescFilled;
+declare Text 	G_RoomDisplayName;
+declare Text 	G_RoomLogin;
+declare Text 	G_RoomLength;
+declare Text 	G_RoomStyle;
+declare Integer G_GetDisplayNameState;
+declare Text	G_TrackFinalName;
+
+Void SendRoomDescriptionToLayer() {
+	declare Text	Net_RoomFinalName	for UI;
+	declare Text[] RoomDurationArray 	= LibOnlineGameplay::GetDurations();
+	declare Text RoomDuration 	= "Various";
+	declare Integer RoomInteger = TL::ToInteger(G_RoomLength);
+	if(RoomDurationArray.existskey(RoomInteger)) {
+		RoomDuration = RoomDurationArray[RoomInteger];
+	}
+	Net_RoomFinalName 	= TL::Compose("%1 - %2 - %3", G_RoomDisplayName, TL::GetTranslatedText(RoomDuration), TL::GetTranslatedText(G_RoomStyle));
+}
+
+Void SendTrackDescriptionToLayer() {
+	declare Text	Net_TrackFinalName	for UI;
+	Net_TrackFinalName	= G_TrackFinalName;
+	// log("TRACK FINAL NAME: "^Net_TrackFinalName);
+}
+
+Void GenFinalTrackName() {
+	declare Integer TrackDurationIndex 		= LiveHelpers::GetTrackDurationIndex(Map.TMObjective_GoldTime, Map.TMObjective_IsLapRace);
+	declare Text[] TracksDurationName 		= LibOnlineGameplay::GetTrackDurations();
+	declare Text TrackDuration				= TracksDurationName[TrackDurationIndex-1];
+	G_TrackFinalName 						=  TL::Compose("%1 - %2 %3 %4", Map.AuthorNickName, Map.MapName, TL::GetTranslatedText(TrackDuration), TL::GetTranslatedText(Map.MapStyle));
+	// G_TrackFinalName 						= Map.AuthorNickName^" - "^Map.MapName^" "^TrackDuration^" "^Map.MapStyle;
+	// log(G_TrackFinalName);
+}
+
+Void SetNewTrackName() {
+	G_DisplayNameDescFilled 		= False;
+	// G_TrackAuthorLogin				= Map.MapInfo.AuthorLogin;
+	// log("AUTHOR NICKNAME: "^Map.AuthorNickName);
+	GenFinalTrackName();
+	SendTrackDescriptionToLayer();
+}
+
+Void StartGetDisplayName() {
+	declare GetDisplayNameTaskResult <=> (G_GetDisplayNamesTask as CWebServicesTaskResult_GetDisplayNameScriptResult);
+	GetDisplayNameTaskResult.AddLogin(G_RoomLogin);
+	// GetDisplayNameTaskResult.AddLogin(G_TrackAuthorLogin);
+	GetDisplayNameTaskResult.StartTask();
+}
+
+Void RequestRoomDesc() {
+	declare Text Net_CurrentServerDesc for UI;
+	declare Text[] CurrentServerDesc = TL::Split("|", Net_CurrentServerDesc);
+	// log("CURRENT SERVER DESC: "^Net_CurrentServerDesc);
+	
+	// log()
+	if(CurrentServerDesc.existskey(0)) {
+		G_RoomLogin 	= CurrentServerDesc[0];
+	}
+	
+	if(CurrentServerDesc.existskey(1)) {
+		G_RoomStyle 	= CurrentServerDesc[1];
+	}
+	
+	if(CurrentServerDesc.existskey(2)) {
+		G_RoomLength 	= CurrentServerDesc[2];
+	}
+}
+
+Void GetTask() {
+	if(ManiaPlanet.MasterServer_MainMSUser != Null) {
+		G_GetDisplayNamesTask 		= ManiaPlanet.MasterServer_GetDisplayName(ManiaPlanet.MasterServer_MainMSUser.Id);
+	}
+}
+
+Void Loop() {
+	// log(G_GetDisplayNamesTask.ErrorType);
+	if(!G_DisplayNameDescFilled) {
+		if(G_GetDisplayNameState == C_GETDISPLAY) {
+			if(G_RoomLogin != "") {
+				StartGetDisplayName();
+				G_GetDisplayNameState = C_WEBTASK;
+			} else {
+				RequestRoomDesc();
+			}
+		} else if(G_GetDisplayNameState == C_WEBTASK) {
+			if(G_GetDisplayNamesTask != Null) {
+				if(!G_GetDisplayNamesTask.IsProcessing) {
+					declare GetDisplayNameTaskResult <=> (G_GetDisplayNamesTask as CWebServicesTaskResult_GetDisplayNameScriptResult);
+					if(GetDisplayNameTaskResult.HasSucceeded) {
+						
+						G_RoomDisplayName 			= GetDisplayNameTaskResult.GetDisplayName(G_RoomLogin);
+						// G_TrackDisplayName			= GetDisplayNameTaskResult.GetDisplayName(G_TrackAuthorLogin);
+						G_DisplayNameDescFilled 	= True;
+						// log("ROOM FINAL NAME SEND TO LAYER BITCH");
+						SendRoomDescriptionToLayer();
+					} else {
+						G_RoomDisplayName 	= "";
+						// G_TrackAuthorLogin 	= "";
+					}
+				}
+			} else {
+				GetTask();
+			}
+		}
+	}
+	
+	/*
+	if(ManiaPlanet.MasterServer_MainMSUser == Null) {
+		GetMSUser();
+	} else {
+		
+	}
+	*/
+}
+
+Void Load() {
+	GetTask();
+	G_GetDisplayNameState 		= C_GETDISPLAY;
+	G_RoomLogin					= "";
+	G_RoomLength				= "";
+	G_RoomStyle					= "";
+}

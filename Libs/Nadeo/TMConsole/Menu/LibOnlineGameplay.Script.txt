@@ -1,0 +1,121 @@
+//Lib Gameplay
+////////////////////////////////////
+// ATTENTION
+// Informer live de toute modification dans les enums
+
+
+//valeurs par défaut en première position
+Text[] GetRoomStyles() {
+	return ["Various",
+			"Race",
+			"Tech",
+			"Lol",
+			"Fullspeed",
+			"Platform",
+			"Offroad",
+			"Trial",
+			"Concept",
+			"Pressforward",
+			//"Smash",
+			"Stunts",
+			//"Bonus",
+			"Random"];			
+}
+
+Text[] GetTrackStyles() {
+	return ["Race",
+			"Tech",
+			"Lol",
+			"Fullspeed",
+			"Platform",
+			"Offroad",
+			"Trial",
+			"Concept",
+			"Pressforward",
+			"Smash",
+			"Stunts",
+			"Bonus",
+			"Random"];
+}
+
+Text[] GetRandomOnlineTrackStyles() {
+	return ["Race",
+			"Tech",
+			"Lol",
+			"Fullspeed",
+			"Platform",
+			"Offroad",
+			"Trial",
+			"Concept",
+			"Pressforward",
+			"Smash",
+			"Stunts",
+			"Bonus"];
+}
+
+Text[] GetMaxPlayers() {
+	return ["4", "8", "16", "24", "32", "64", "100"];
+}
+
+Text[] GetRoomEnvironments() {
+	return [/*"Various",*/
+			"Canyon",
+			"Valley",
+			"Lagoon",
+			"Stadium"];
+}
+
+Text[] GetGameModesDisplayNames() {
+	return [_("Time Attack"),
+			_("Rounds"),
+			_("Laps"),
+			_("Time Attack")^" - Stunt",
+			_("Rounds")		^" - Stunt",
+			_("Laps")		^" - Stunt"];
+}
+
+Text[] GetLapsCounts() {
+	return ["1","2","3","4","5","7","10","15","20","30","60","100"];
+}
+
+Text[] GetTimeAttackDurations() {
+	return ["180", "300", "600", "1200", "3600"];
+}
+
+Text[] GetRoundPoints() {
+	return ["30", "50", "100", "120", "150"];
+}
+
+Text[] GetEchelons() {
+	return ["file://Media/Manialinks/Nadeo/TMConsole/Images/Echelons/Icones/RNKG_00a.png",
+			"file://Media/Manialinks/Nadeo/TMConsole/Images/Echelons/Icones/RNKG_01a.png",
+			"file://Media/Manialinks/Nadeo/TMConsole/Images/Echelons/Icones/RNKG_02a.png",
+			"file://Media/Manialinks/Nadeo/TMConsole/Images/Echelons/Icones/RNKG_03a.png",
+			"file://Media/Manialinks/Nadeo/TMConsole/Images/Echelons/Icones/RNKG_04a.png",
+			"file://Media/Manialinks/Nadeo/TMConsole/Images/Echelons/Icones/RNKG_05a.png",
+			"file://Media/Manialinks/Nadeo/TMConsole/Images/Echelons/Icones/RNKG_06a.png",
+			"file://Media/Manialinks/Nadeo/TMConsole/Images/Echelons/Icones/RNKG_07a.png",
+			"file://Media/Manialinks/Nadeo/TMConsole/Images/Echelons/Icones/RNKG_08a.png",
+			"file://Media/Manialinks/Nadeo/TMConsole/Images/Echelons/Icones/RNKG_09a.png"];
+}
+
+Text[] GetDurations() {
+	return [_("Various"),
+			_("Mini"), 
+			_("Short"), 
+			_("Normal"), 
+			_("Long"),
+			_("Multilap")];
+}
+
+Text[] GetTrackDurations() {
+	return [_("Mini"), 
+			_("Short"), 
+			_("Normal"), 
+			_("Long"),
+			_("Multilap")];
+}
+
+Text[] GetBooleanSetting() {
+	return [_("No"), _("Yes")];
+}

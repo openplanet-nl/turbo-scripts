@@ -1,0 +1,704 @@
+/**
+ *  Checkpoint ranking
+ *
+ *  Display the ranking of the player at last checkpoint crossed
+ */
+#Const Version		"2016-02-25"
+#Const ScriptName	"UIOnlineCheckpointRanking.Script.txt"
+
+#Include "TextLib" as TL
+#Include "Libs/Nadeo/TMConsole/Colors.Script.txt" as Colors
+#Include "Libs/Nadeo/TMConsole/FontManager.Script.txt" as Font
+#Include "Libs/Nadeo/TMConsole/Menu/MenuLayers.Script.txt" as Layers
+
+// ---------------------------------- //
+// Constants
+// ---------------------------------- //
+#Const C_LayerName			"LibOCR_CheckpointRanking" ///< Name of the layer
+#Const C_DisplayDuration	2750 ///< Duration of the checkpoint rank display
+
+// ---------------------------------- //
+// Functions
+// ---------------------------------- //
+// ---------------------------------- //
+// Private
+// ---------------------------------- //
+/*
+Text Private_GetCheckpointRankML() {
+	declare ImgPath = "file://Media/Images/TMConsole/Ingame/";
+	declare FontMain = Font::GetFontName("Main");
+	declare FontNumber = Font::GetFontName("NumberBig");
+	declare ColorCyan = Colors::GetColorXml("Cyan2");
+	declare ColorYellow = Colors::GetColorXml("Yellow");
+
+	return """
+<manialink version="3" name="LibOCR:CheckpointRanking">
+<stylesheet>
+	<style class="text-ranking" scale="0.88" textsize="2" textfont="{{{FontMain}}}" textprefix="$t" />
+	<style class="number-ranking" textsize="7" textfont="{{{FontNumber}}}" textcolor="{{{ColorCyan}}}" />
+	<style class="number-ranking-big" textsize="12" textfont="{{{FontNumber}}}" textcolor="{{{ColorCyan}}}" />
+</stylesheet>
+<frame id="Frame_Global">
+	<frame pos="-3.3 83">
+	<frame pos="0 30" id="Frame_CRTop">
+		<quad size="6 18" colorize="{{{ColorCyan}}}" image="{{{ImgPath}}}barre.dds" />
+
+		<label pos="2.7 -0.7" size="30 10" halign="right" textcolor="{{{ColorYellow}}}" class="number-ranking" id="Label_BestPlace" />
+		<label pos="6.5 -0.6" size="70 10" textcolor="{{{ColorCyan}}}" text="{{{_("Ranking")}}}" class="text-ranking" />
+
+		<label pos="0.5 -17.6" size="30 10" halign="right" valign="bottom" textcolor="{{{ColorCyan}}}" class="number-ranking" id="Label_CurrentPlace" />
+		<label pos="3 -16.9" size="70 10" valign="bottom" textcolor="{{{ColorCyan}}}" text="{{{_("Current position")}}}" class="text-ranking" />
+
+		<label pos="3.5 -5" size="30 10" textcolor="{{{ColorCyan}}}" class="number-ranking" id="Label_TotalPlace" />
+	</frame>
+	</frame>
+	<frame pos="0 -55" id="Frame_CRBottom">
+		<label size="30 10" halign="center" valign="center" textcolor="{{{ColorCyan}}}" opacity="0" class="number-ranking-big" id="Label_CurrentPlace" />
+	</frame>
+</frame>
+<script><!--
+#Include "AnimLib" as AL
+
+declare Integer G_OCRAnim_CP_StartTime;
+declare Integer G_OCRAnim_CP_EndTime;
+declare Real G_OCRAnim_StartPos;
+declare Real G_OCRAnim_DeltaPos;
+declare Real G_OCRAnim_StartScale;
+declare Real G_OCRAnim_DeltaScale;
+declare Real G_OCRAnim_CP_StartOpacity;
+declare Real G_OCRAnim_CP_DeltaOpacity;
+
+Integer GetCheckpointRank(Integer _CheckpointIndex, Integer _Time) {
+	if (GUIPlayer == Null) return 0;
+
+	declare Rank = 1;
+	declare CTmResult Result;
+	foreach (Score in Scores) {
+		if (IndependantLaps) Result <=> Score.BestLap;
+		else Result <=> Score.BestRace;
+		
+		if (Result != Null && Result.Time >= 0 && Score.User.Id != GUIPlayer.User.Id) {
+			if (_CheckpointIndex >= 0 && Result.Checkpoints.count > _CheckpointIndex) {
+				if (Result.Checkpoints[_CheckpointIndex] < _Time) Rank += 1;
+			} else if (Result.Time >= 0) {
+				if (Result.Time < _Time) Rank += 1;
+			}
+		}
+	}
+	
+	return Rank;
+}
+
+Void HideRank() {
+	declare Frame_CRTop <=> (Page.GetFirstChild("Frame_CRTop") as CMlFrame);
+	declare Frame_CRBottom <=> (Page.GetFirstChild("Frame_CRBottom") as CMlFrame);
+	declare Label_CurrentPlace <=> (Frame_CRBottom.GetFirstChild("Label_CurrentPlace") as CMlLabel);
+
+	G_OCRAnim_CP_StartTime = Now;
+	G_OCRAnim_CP_EndTime = Now + 250;
+	G_OCRAnim_StartPos = Frame_CRTop.RelativePosition_V3.Y;
+	G_OCRAnim_DeltaPos = 30. - G_OCRAnim_StartPos;
+	G_OCRAnim_StartScale = Label_CurrentPlace.RelativeScale;
+	G_OCRAnim_DeltaScale = 0. - G_OCRAnim_StartScale;
+	G_OCRAnim_CP_StartOpacity = Label_CurrentPlace.Opacity;
+	G_OCRAnim_CP_DeltaOpacity = 0. - G_OCRAnim_CP_StartOpacity;
+}
+
+Void ShowRank(Integer _LapTime) {
+	if (GUIPlayer == Null || GUIPlayer.Score == Null) return;
+
+	declare Frame_CRTop <=> (Page.GetFirstChild("Frame_CRTop") as CMlFrame);
+	declare Label_BestPlace <=> (Frame_CRTop.GetFirstChild("Label_BestPlace") as CMlLabel);
+	declare Label_CurrentPlaceTop <=> (Frame_CRTop.GetFirstChild("Label_CurrentPlace") as CMlLabel);
+	declare Label_TotalPlace <=> (Frame_CRTop.GetFirstChild("Label_TotalPlace") as CMlLabel);
+	declare Frame_CRBottom <=> (Page.GetFirstChild("Frame_CRBottom") as CMlFrame);
+	declare Label_CurrentPlaceBottom <=> (Frame_CRBottom.GetFirstChild("Label_CurrentPlace") as CMlLabel);
+	
+	declare CheckpointTime = 0;
+	declare CheckpointIndex = 0;
+	if (IndependantLaps) {
+		CheckpointTime = _LapTime;
+		CheckpointIndex = GUIPlayer.CurLap.Checkpoints.count - 1;
+	} else {
+		CheckpointTime = GUIPlayer.CurCheckpointRaceTime;
+		CheckpointIndex = GUIPlayer.CurRace.Checkpoints.count - 1;
+	}
+
+	declare CurrentPlace = GetCheckpointRank(CheckpointIndex, CheckpointTime);
+
+	declare BestPlace = 0;
+	if (Scores.exists(GUIPlayer.Score)) BestPlace = Scores.keyof(GUIPlayer.Score) + 1;
+
+	Label_BestPlace.Value = ""^BestPlace;
+	Label_CurrentPlaceTop.Value = ""^CurrentPlace;
+	Label_TotalPlace.Value = ""^Scores.count;
+	Label_CurrentPlaceBottom.Value = ""^CurrentPlace;
+
+	Label_CurrentPlaceBottom.RelativeScale = 0.;
+
+	G_OCRAnim_CP_StartTime = Now;
+	G_OCRAnim_CP_EndTime = Now + 250;
+	G_OCRAnim_StartPos = Frame_CRTop.RelativePosition_V3.Y;
+	G_OCRAnim_DeltaPos = 0. - G_OCRAnim_StartPos;
+	G_OCRAnim_StartScale = Label_CurrentPlaceBottom.RelativeScale;
+	G_OCRAnim_DeltaScale = 1. - G_OCRAnim_StartScale;
+	G_OCRAnim_CP_StartOpacity = Label_CurrentPlaceBottom.Opacity;
+	G_OCRAnim_CP_DeltaOpacity = 1. - G_OCRAnim_CP_StartOpacity;
+}
+
+main() {
+	declare Frame_CRTop <=> (Page.GetFirstChild("Frame_CRTop") as CMlFrame);
+	declare Frame_CRBottom <=> (Page.GetFirstChild("Frame_CRBottom") as CMlFrame);
+	declare Label_CurrentPlaceBottom <=> (Frame_CRBottom.GetFirstChild("Label_CurrentPlace") as CMlLabel);
+
+	declare HideTime = -1;
+
+	while (True) {
+		yield;
+
+		if (!PageIsVisible) continue;
+
+		if (HideTime > 0 && Now >= HideTime) {
+			HideTime = -1;
+			HideRank();
+		}
+
+		if (Now >= G_OCRAnim_CP_StartTime && Now <= G_OCRAnim_CP_EndTime) {
+			Frame_CRTop.RelativePosition_V3.Y = AL::EaseInOutQuad(
+				Now - G_OCRAnim_CP_StartTime,
+				G_OCRAnim_StartPos,
+				G_OCRAnim_DeltaPos,
+				G_OCRAnim_CP_EndTime - G_OCRAnim_CP_StartTime
+			);
+			Label_CurrentPlaceBottom.RelativeScale = AL::EaseInOutQuad(
+				Now - G_OCRAnim_CP_StartTime,
+				G_OCRAnim_StartScale,
+				G_OCRAnim_DeltaScale,
+				G_OCRAnim_CP_EndTime - G_OCRAnim_CP_StartTime
+			);
+			Label_CurrentPlaceBottom.Opacity = AL::EaseInOutQuad(
+				Now - G_OCRAnim_CP_StartTime,
+				G_OCRAnim_CP_StartOpacity,
+				G_OCRAnim_CP_DeltaOpacity,
+				G_OCRAnim_CP_EndTime - G_OCRAnim_CP_StartTime
+			);
+		}
+
+		if (GUIPlayer == Null) continue;
+
+		foreach (Event in RaceEvents) {
+			if (Event.Type == CTmRaceClientEvent::EType::WayPoint) {
+				ShowRank(Event.LapTime);
+				HideTime = Now + {{{C_DisplayDuration}}};
+			} else if (Event.Type == CTmRaceClientEvent::EType::Respawn) {
+				HideRank();
+			}
+		}
+	}
+}
+--></script>
+</manialink>
+""";
+}
+*/
+/*
+Text Private_GetCheckpointRankML() {
+	declare ImgPath = "file://Media/Images/TMConsole/Ingame/";
+	declare FontMain = Font::GetFontName("Main");
+	declare FontNumber = Font::GetFontName("NumberBig");
+	declare ColorCyan = Colors::GetColorXml("Cyan2");
+	declare ColorWhite = Colors::GetColorXml("White");
+	declare ColorYellow = Colors::GetColorXml("Yellow");
+
+	return """
+<manialink version="3" name="LibOCR:CheckpointRanking">
+<stylesheet>
+	<style class="text-ranking" scale="0.88" textsize="2" textfont="{{{FontMain}}}" textprefix="$t" />
+	<style class="number-ranking" textfont="{{{FontNumber}}}" />
+</stylesheet>
+<frame id="Frame_Global">
+	<frame pos="-3.3 83" id="Frame_CRTop">
+		<quad size="6 18" colorize="{{{ColorCyan}}}" image="{{{ImgPath}}}barre.dds" />
+
+		<label pos="1. -7.7" size="30 10" halign="right" valign="center" textsize="15" textcolor="{{{ColorYellow}}}" class="number-ranking" id="Label_BestPlace" />
+		<label pos="6.5 -0.6" size="70 10" textcolor="{{{ColorCyan}}}" text="{{{_("Ranking")}}}" class="text-ranking" />
+
+		<label pos="3.5 -5" size="30 10" textsize="7" textcolor="{{{ColorCyan}}}" class="number-ranking" id="Label_TotalPlace" />
+	</frame>
+	<frame pos="0 -55" id="Frame_CRBottom">
+		<label pos="5 1" size="100 10" valign="center" textsize="12" textcolor="{{{ColorWhite}}}" text="{{{_("Rank:")}}}" opacity="0" class="text-ranking" id="Label_CPRank" />
+		<label pos="6 0" size="30 10" valign="center" textsize="12" textcolor="{{{ColorWhite}}}" opacity="0" class="number-ranking" id="Label_CurrentPlace" />
+	</frame>
+</frame>
+<script><!--
+#Include "AnimLib" as AL
+
+declare Integer G_OCRAnim_CP_StartTime;
+declare Integer G_OCRAnim_CP_EndTime;
+declare Real G_OCRAnim_StartScale;
+declare Real G_OCRAnim_DeltaScale;
+declare Real G_OCRAnim_CP_StartOpacity;
+declare Real G_OCRAnim_CP_DeltaOpacity;
+
+Integer GetCheckpointRank(Integer _CheckpointIndex, Integer _Time) {
+	if (GUIPlayer == Null) return 0;
+
+	declare Rank = 1;
+	declare CTmResult Result;
+	foreach (Score in Scores) {
+		if (IndependantLaps) Result <=> Score.BestLap;
+		else Result <=> Score.BestRace;
+		
+		if (Result != Null && Result.Time >= 0 && Score.User.Id != GUIPlayer.User.Id) {
+			if (_CheckpointIndex >= 0 && Result.Checkpoints.count > _CheckpointIndex) {
+				if (Result.Checkpoints[_CheckpointIndex] < _Time) Rank += 1;
+			} else if (Result.Time >= 0) {
+				if (Result.Time < _Time) Rank += 1;
+			}
+		}
+	}
+	
+	return Rank;
+}
+
+Void HideRank() {
+	declare Frame_CRTop <=> (Page.GetFirstChild("Frame_CRTop") as CMlFrame);
+	declare Frame_CRBottom <=> (Page.GetFirstChild("Frame_CRBottom") as CMlFrame);
+	declare Label_CurrentPlace <=> (Frame_CRBottom.GetFirstChild("Label_CurrentPlace") as CMlLabel);
+
+	G_OCRAnim_CP_StartTime = Now;
+	G_OCRAnim_CP_EndTime = Now + 250;
+	G_OCRAnim_StartScale = Frame_CRBottom.RelativeScale;
+	G_OCRAnim_DeltaScale = 0. - G_OCRAnim_StartScale;
+	G_OCRAnim_CP_StartOpacity = Label_CurrentPlace.Opacity;
+	G_OCRAnim_CP_DeltaOpacity = 0. - G_OCRAnim_CP_StartOpacity;
+}
+
+Void UpdateCheckpointRank(Integer _LapTime) {
+	if (GUIPlayer == Null) return;
+
+	declare Frame_CRBottom <=> (Page.GetFirstChild("Frame_CRBottom") as CMlFrame);
+	declare Label_CurrentPlaceBottom <=> (Frame_CRBottom.GetFirstChild("Label_CurrentPlace") as CMlLabel);
+	declare Label_CPRank <=> (Frame_CRBottom.GetFirstChild("Label_CPRank") as CMlLabel);
+	
+	declare CheckpointTime = 0;
+	declare CheckpointIndex = 0;
+	if (IndependantLaps) {
+		CheckpointTime = _LapTime;
+		CheckpointIndex = GUIPlayer.CurLap.Checkpoints.count - 1;
+	} else {
+		CheckpointTime = GUIPlayer.CurCheckpointRaceTime;
+		CheckpointIndex = GUIPlayer.CurRace.Checkpoints.count - 1;
+	}
+
+	declare CurrentPlace = GetCheckpointRank(CheckpointIndex, CheckpointTime);
+	Label_CurrentPlaceBottom.Value = ""^CurrentPlace;
+	//Frame_CRBottom.RelativeScale = 0.;
+
+	declare Width1 = Label_CurrentPlaceBottom.ComputeWidth(Label_CurrentPlaceBottom.Value, True);
+	if (Width1 > Label_CurrentPlaceBottom.Size.X) Width1 = Label_CurrentPlaceBottom.Size.X;
+	declare Width2 = Label_CPRank.ComputeWidth(Label_CPRank.Value, True);
+	if (Width2 > Label_CPRank.Size.X) Width2 = Label_CPRank.Size.X;
+	declare Width = Width1 + Width2;
+	Label_CPRank.RelativePosition_V3.X = -Width * 0.5;
+	Label_CurrentPlaceBottom.RelativePosition_V3.X = Label_CPRank.RelativePosition_V3.X + Width2 - 5;
+
+	G_OCRAnim_CP_StartTime = Now;
+	G_OCRAnim_CP_EndTime = Now + 250;
+	G_OCRAnim_StartScale = Frame_CRBottom.RelativeScale;
+	G_OCRAnim_DeltaScale = 1. - G_OCRAnim_StartScale;
+	G_OCRAnim_CP_StartOpacity = Label_CurrentPlaceBottom.Opacity;
+	G_OCRAnim_CP_DeltaOpacity = 1. - G_OCRAnim_CP_StartOpacity;
+}
+
+Void UpdateBestRank(Integer _BestPlace) {
+	declare Frame_CRTop <=> (Page.GetFirstChild("Frame_CRTop") as CMlFrame);
+	declare Label_BestPlace <=> (Frame_CRTop.GetFirstChild("Label_BestPlace") as CMlLabel);
+	declare Label_TotalPlace <=> (Frame_CRTop.GetFirstChild("Label_TotalPlace") as CMlLabel);
+
+	Label_BestPlace.Value = ""^_BestPlace;
+	Label_TotalPlace.Value = ""^Scores.count;
+}
+
+main() {
+	declare Frame_CRTop <=> (Page.GetFirstChild("Frame_CRTop") as CMlFrame);
+	declare Frame_CRBottom <=> (Page.GetFirstChild("Frame_CRBottom") as CMlFrame);
+	declare Label_CurrentPlaceBottom <=> (Frame_CRBottom.GetFirstChild("Label_CurrentPlace") as CMlLabel);
+	declare Label_CPRank <=> (Frame_CRBottom.GetFirstChild("Label_CPRank") as CMlLabel);
+
+	declare HideTime = -1;
+	declare PrevBestPlace = -1;
+
+	while (True) {
+		yield;
+
+		if (!PageIsVisible) continue;
+
+		if (HideTime > 0 && Now >= HideTime) {
+			HideTime = -1;
+			HideRank();
+		}
+
+		if (Now >= G_OCRAnim_CP_StartTime && Now <= G_OCRAnim_CP_EndTime) {
+			//Frame_CRBottom.RelativeScale = AL::EaseInOutQuad(
+			//	Now - G_OCRAnim_CP_StartTime,
+			//	G_OCRAnim_StartScale,
+			//	G_OCRAnim_DeltaScale,
+			//	G_OCRAnim_CP_EndTime - G_OCRAnim_CP_StartTime
+			//);
+
+			declare Opacity = AL::EaseInOutQuad(
+				Now - G_OCRAnim_CP_StartTime,
+				G_OCRAnim_CP_StartOpacity,
+				G_OCRAnim_CP_DeltaOpacity,
+				G_OCRAnim_CP_EndTime - G_OCRAnim_CP_StartTime
+			);
+			Label_CurrentPlaceBottom.Opacity = Opacity;
+			Label_CPRank.Opacity = Opacity;
+		}
+
+		if (GUIPlayer == Null || GUIPlayer.Score == Null) continue;
+
+		declare BestPlace = Scores.keyof(GUIPlayer.Score) + 1;
+		if (BestPlace < 0) BestPlace = Scores.count;
+
+		if (PrevBestPlace != BestPlace) {
+			PrevBestPlace = BestPlace;
+			UpdateBestRank(BestPlace);
+		}
+
+		foreach (Event in RaceEvents) {
+			if (Event.Type == CTmRaceClientEvent::EType::WayPoint) {
+				UpdateCheckpointRank(Event.LapTime);
+				HideTime = Now + {{{C_DisplayDuration}}};
+			} else if (Event.Type == CTmRaceClientEvent::EType::Respawn) {
+				HideRank();
+			}
+		}
+	}
+}
+--></script>
+</manialink>
+""";
+
+}
+*/
+Text Private_GetCheckpointRankML() {
+	declare ImgPath = "file://Media/Images/TMConsole/Ingame/";
+	declare FontMain = Font::GetFontName("Main");
+	declare FontNumber = Font::GetFontName("NumberBig");
+	declare ColorCyan = Colors::GetColorXml("Cyan2");
+	declare ColorBlack = Colors::GetColorXml("White");
+	declare ColorYellow = Colors::GetColorXml("Yellow");
+
+	return """
+<manialink version="3" name="LibOCR:CheckpointRanking">
+<stylesheet>
+	<style class="text-ranking" scale="0.88" textsize="2" textfont="{{{FontMain}}}" textprefix="$t" />
+	<style class="number-ranking" textfont="{{{FontNumber}}}" />
+</stylesheet>
+<frame id="Frame_Global">
+	<!-- frame qui sert a rien mais qui est là pour fix mle z-index qui fait n'importe quoi ... -->
+	<frame pos="-3.3 83" hidden="1"><quad size="6 18" colorize="{{{ColorCyan}}}" image="{{{ImgPath}}}barre.dds" /><label pos="1. -7.7" size="30 10" halign="right" valign="center" textsize="15" textcolor="{{{ColorYellow}}}" class="number-ranking" /><label pos="6.5 -0.6" size="70 10" textcolor="{{{ColorCyan}}}" text="{{{_("Ranking")}}}" class="text-ranking" /><label pos="3.5 -5" size="30 10" textsize="7" textcolor="{{{ColorCyan}}}" class="number-ranking" /></frame>
+	<frame pos="-3.3 110" id="Frame_CRTop">
+		<quad size="6 18" colorize="{{{ColorCyan}}}" image="{{{ImgPath}}}barre.dds" />
+
+		<label pos="1. -7.7" size="30 10" halign="right" valign="center" textsize="15" textcolor="{{{ColorYellow}}}" class="number-ranking" id="Label_BestPlace" />
+		<label pos="6.5 -0.6" size="70 10" textcolor="{{{ColorCyan}}}" text="{{{_("Ranking")}}}" class="text-ranking" />
+
+		<label pos="3.5 -5" size="30 10" textsize="7" textcolor="{{{ColorCyan}}}" class="number-ranking" id="Label_TotalPlace" />
+	</frame>
+	<frame pos="-3.3 -45" scale="0.8" id="Frame_CRBottom">
+		<quad size="6 18" colorize="{{{ColorCyan}}}" image="{{{ImgPath}}}barre.dds" opacity="0" id="Quad_Barre" />
+
+		<label pos="1. -7.7" size="30 10" halign="right" valign="center" textsize="15" textcolor="{{{ColorCyan}}}" opacity="0" class="number-ranking" id="Label_CurrentPlace" />
+		<label pos="6.5 -0.6" size="70 10" textcolor="{{{ColorCyan}}}" text="{{{_("|BlockInfo|Checkpoint")}}}" opacity="0" class="text-ranking" id="Label_Checkpoint" />
+
+		<label pos="3.5 -5" size="30 10" textsize="7" textcolor="{{{ColorCyan}}}" opacity="0" class="number-ranking" id="Label_TotalPlace" />
+	</frame>
+</frame>
+<script><!--
+#Include "AnimLib" as AL
+#Include "MathLib" as ML
+
+declare Integer G_OCRAnim_CP_StartTime;
+declare Integer G_OCRAnim_CP_EndTime;
+declare Real G_OCRAnim_CP_StartOpacity;
+declare Real G_OCRAnim_CP_DeltaOpacity;
+
+declare Integer G_OCRAnim_Map_StartTime;
+declare Integer G_OCRAnim_Map_EndTime;
+declare Real G_OCRAnim_Map_StartPos;
+declare Real G_OCRAnim_Map_DeltaPos;
+
+Void SetMapRankVisibility(Boolean _Visible) {
+	declare Frame_CRTop <=> (Page.GetFirstChild("Frame_CRTop") as CMlFrame);
+
+	G_OCRAnim_Map_StartTime = Now;
+	G_OCRAnim_Map_EndTime = Now + 250;
+	G_OCRAnim_Map_StartPos = Frame_CRTop.RelativePosition_V3.Y;
+
+	if (_Visible) G_OCRAnim_Map_DeltaPos = 80.8 - G_OCRAnim_Map_StartPos;
+	else G_OCRAnim_Map_DeltaPos = 110. - G_OCRAnim_Map_StartPos;
+}
+
+// Get rank at the checkpoint for the current live race (eg: round, laps)
+Integer GetCurCheckpointRank(Integer _CheckpointIndex, Integer _Time) {
+	if (GUIPlayer == Null) return 0;
+
+	declare Rank = 1;
+	declare CTmResult Result;
+	foreach (Player in Players) {
+		if (IndependantLaps) Result <=> Player.CurLap;
+		else Result <=> Player.CurRace;
+		
+		if (Result != Null && Player.Id != GUIPlayer.Id) {
+			if (_CheckpointIndex >= 0 && Result.Checkpoints.count > _CheckpointIndex) {
+				if (Result.Checkpoints[_CheckpointIndex] < _Time) Rank += 1;
+			} 
+		}
+	}
+	
+	return Rank;
+}
+
+// Get rank at the checkpoint for the best race (eg: time attack)
+Integer GetBestCheckpointRank(Integer _CheckpointIndex, Integer _Time) {
+	if (GUIPlayer == Null) return 0;
+
+	declare Rank = 1;
+	declare CTmResult Result;
+	foreach (Score in Scores) {
+		if (IndependantLaps) Result <=> Score.BestLap;
+		else Result <=> Score.BestRace;
+		
+		if (Result != Null && Result.Time >= 0 && Score.User.Id != GUIPlayer.User.Id) {
+			if (_CheckpointIndex >= 0 && Result.Checkpoints.count > _CheckpointIndex) {
+				if (Result.Checkpoints[_CheckpointIndex] < _Time) Rank += 1;
+			} else if (Result.Time >= 0) {
+				if (Result.Time < _Time) Rank += 1;
+			}
+		}
+	}
+	
+	return Rank;
+}
+
+Void HideRank() {
+	declare Frame_CRTop <=> (Page.GetFirstChild("Frame_CRTop") as CMlFrame);
+	declare Frame_CRBottom <=> (Page.GetFirstChild("Frame_CRBottom") as CMlFrame);
+	declare Label_CurrentPlace <=> (Frame_CRBottom.GetFirstChild("Label_CurrentPlace") as CMlLabel);
+
+	G_OCRAnim_CP_StartTime = Now;
+	G_OCRAnim_CP_EndTime = Now + 250;
+	G_OCRAnim_CP_StartOpacity = Label_CurrentPlace.Opacity;
+	G_OCRAnim_CP_DeltaOpacity = 0. - G_OCRAnim_CP_StartOpacity;
+}
+
+Void UpdateCheckpointRank(Integer _LapTime) {
+	if (GUIPlayer == Null) return;
+
+	declare Frame_CRBottom <=> (Page.GetFirstChild("Frame_CRBottom") as CMlFrame);
+	declare Label_CurrentPlace <=> (Frame_CRBottom.GetFirstChild("Label_CurrentPlace") as CMlLabel);
+	declare Label_TotalPlace <=> (Frame_CRBottom.GetFirstChild("Label_TotalPlace") as CMlLabel);
+
+	declare CheckpointTime = 0;
+	declare CheckpointIndex = 0;
+	if (IndependantLaps) {
+		CheckpointTime = _LapTime;
+		CheckpointIndex = GUIPlayer.CurLap.Checkpoints.count - 1;
+	} else {
+		CheckpointTime = GUIPlayer.CurCheckpointRaceTime;
+		CheckpointIndex = GUIPlayer.CurRace.Checkpoints.count - 1;
+	}
+
+	declare Text UI_ModeName for UI; ///< Come from UI_Online.Script.txt
+	declare CurrentPlace = 0;
+	
+	if (UI_ModeName == "OnlineTimeAttack") {
+		Label_CurrentPlace.TextColor = {{{Colors::GetColor("Cyan2")}}};
+		if (GUIPlayer.Score != Null) {
+			declare CTmResult Result;
+			if (IndependantLaps) Result <=> GUIPlayer.Score.BestLap;
+			else Result <=> GUIPlayer.Score.BestRace;
+
+			if (Result != Null && CheckpointIndex >= 0 && Result.Checkpoints.count > CheckpointIndex) {
+				if (CheckpointTime > Result.Checkpoints[CheckpointIndex]) Label_CurrentPlace.TextColor = {{{Colors::GetColor("Red")}}};
+				//else Label_CurrentPlace.TextColor = {{{Colors::GetColor("Cyan2")}}};
+			}
+		}
+		CurrentPlace = GetBestCheckpointRank(CheckpointIndex, CheckpointTime);
+	} else {
+		CurrentPlace = GetCurCheckpointRank(CheckpointIndex, CheckpointTime);
+	}
+
+	Label_CurrentPlace.Value = ""^CurrentPlace;
+	Label_TotalPlace.Value = ""^Scores.count;
+
+	G_OCRAnim_CP_StartTime = Now;
+	G_OCRAnim_CP_EndTime = Now + 250;
+	G_OCRAnim_CP_StartOpacity = Label_CurrentPlace.Opacity;
+	G_OCRAnim_CP_DeltaOpacity = 1. - G_OCRAnim_CP_StartOpacity;
+}
+
+Void UpdateBestRank(Integer _BestPlace) {
+	declare Frame_CRTop <=> (Page.GetFirstChild("Frame_CRTop") as CMlFrame);
+	declare Label_BestPlace <=> (Frame_CRTop.GetFirstChild("Label_BestPlace") as CMlLabel);
+	declare Label_TotalPlace <=> (Frame_CRTop.GetFirstChild("Label_TotalPlace") as CMlLabel);
+
+	Label_BestPlace.Value = ""^_BestPlace;
+	Label_TotalPlace.Value = ""^Scores.count;
+}
+
+main() {
+	declare Frame_CRTop			<=> (Page.GetFirstChild("Frame_CRTop")					as CMlFrame);
+	declare Frame_CRBottom		<=> (Page.GetFirstChild("Frame_CRBottom")				as CMlFrame);
+	declare Quad_Barre			<=> (Frame_CRBottom.GetFirstChild("Quad_Barre")			as CMlQuad);
+	declare Label_CurrentPlace	<=> (Frame_CRBottom.GetFirstChild("Label_CurrentPlace")	as CMlLabel);
+	declare Label_TotalPlace	<=> (Frame_CRBottom.GetFirstChild("Label_TotalPlace")	as CMlLabel);
+	declare Label_Checkpoint	<=> (Frame_CRBottom.GetFirstChild("Label_Checkpoint")	as CMlLabel);
+
+	declare Boolean Net_HudIsVisible for UI; ///< Come from UI_Online.Script.txt
+
+	declare HideTime = -1;
+	declare PrevBestPlace = -1;
+	declare PrevScoresCount = -1;
+	declare PrevHudIsVisible = !Net_HudIsVisible;
+
+	declare AnimOpacity = False;
+
+	while (True) {
+		yield;
+
+		if (!PageIsVisible) continue;
+
+		if (PrevHudIsVisible != Net_HudIsVisible) {
+			PrevHudIsVisible = Net_HudIsVisible;
+
+			if (Net_HudIsVisible) {
+				SetMapRankVisibility(True);
+			} else {
+				SetMapRankVisibility(False);
+				HideRank();
+			}
+		}
+
+		if (HideTime > 0 && Now >= HideTime) {
+			HideTime = -1;
+			HideRank();
+		}
+
+		if (Now >= G_OCRAnim_CP_StartTime && Now <= G_OCRAnim_CP_EndTime) {
+			declare Opacity = AL::EaseInOutQuad(
+				Now - G_OCRAnim_CP_StartTime,
+				G_OCRAnim_CP_StartOpacity,
+				G_OCRAnim_CP_DeltaOpacity,
+				G_OCRAnim_CP_EndTime - G_OCRAnim_CP_StartTime
+			);
+			Quad_Barre.Opacity = Opacity;
+			Label_CurrentPlace.Opacity = Opacity;
+			Label_TotalPlace.Opacity = Opacity;
+			Label_Checkpoint.Opacity = Opacity;
+			AnimOpacity = (G_OCRAnim_CP_DeltaOpacity > 0.);
+		} else if (AnimOpacity) {
+			declare CurSin = 0.5 + ML::Sin(Now*0.025)*0.5;
+			declare Opacity = 0.4 + CurSin * (1 - 0.4);
+			Label_CurrentPlace.Opacity = Opacity;
+		}
+
+		if (Now >= G_OCRAnim_Map_StartTime && Now <= G_OCRAnim_Map_EndTime) {
+			Frame_CRTop.RelativePosition_V3.Y = AL::EaseInOutQuad(
+				Now - G_OCRAnim_Map_StartTime,
+				G_OCRAnim_Map_StartPos,
+				G_OCRAnim_Map_DeltaPos,
+				G_OCRAnim_Map_EndTime - G_OCRAnim_Map_StartTime
+			);
+		}
+
+		if (GUIPlayer == Null || GUIPlayer.Score == Null) continue;
+
+		declare BestPlace = Scores.keyof(GUIPlayer.Score) + 1;
+		if (BestPlace < 0) BestPlace = Scores.count;
+
+		if (PrevBestPlace != BestPlace || PrevScoresCount != Scores.count) {
+			PrevBestPlace = BestPlace;
+			PrevScoresCount = Scores.count;
+			UpdateBestRank(BestPlace);
+		}
+
+		foreach (Event in RaceEvents) {
+			if (Event.Player != Null && Event.Player.Id == GUIPlayer.Id) {
+				if (Event.Type == CTmRaceClientEvent::EType::WayPoint) {
+					declare Text UI_ModeName for UI; ///< Come from UI_Online.Script.txt
+					declare CanDisplayRanking = False;
+					if (UI_ModeName == "OnlineTimeAttack" && Scores.existskey(0)) {
+						declare CTmResult Result;
+						if (IndependantLaps) Result <=> Scores[0].BestLap;
+						else Result <=> Scores[0].BestRace;
+						if (Result != Null && Result.Time >= 0) {
+							CanDisplayRanking = True;
+						}
+					} else {
+						CanDisplayRanking = True;
+					}
+					if (CanDisplayRanking) {
+						UpdateCheckpointRank(Event.LapTime);
+						HideTime = Now + {{{C_DisplayDuration}}};
+					}
+				} else if (Event.Type == CTmRaceClientEvent::EType::Respawn) {
+					HideRank();
+				}
+			}
+		}
+	}
+}
+--></script>
+</manialink>
+""";
+}
+
+// ---------------------------------- //
+// Public
+// ---------------------------------- //
+// ---------------------------------- //
+/** Set the visibility of the checkpoint ranking UI
+ *
+ *	@param	_Show					True to show the UI, False to hide
+ */
+Void SetVisibility(Boolean _Show) {
+	Layers::SetVisibility(C_LayerName, _Show);
+}
+
+// ---------------------------------- //
+/// Hide the checkpoint ranking UI
+Void Hide() {
+	SetVisibility(False);
+}
+
+// ---------------------------------- //
+/// Show the checklpoint ranking UI
+Void Show() {
+	SetVisibility(True);
+}
+
+// ---------------------------------- //
+/// Unload the library
+Void Unload() {
+
+}
+
+// ---------------------------------- //
+/// Load the library
+Void Load() {
+	Unload();
+
+	declare Layer <=> Layers::Get(C_LayerName);
+	if (Layer == Null) {
+		Layers::Create(C_LayerName, Private_GetCheckpointRankML());
+		Layers::Attach(C_LayerName);
+		Layer <=> Layers::Get(C_LayerName);
+	}
+	Layer.InOutAnimation = CUILayer::EUILayerAnimation::DownFast;
+	Layers::SetType(C_LayerName, CUILayer::EUILayerType::Normal);
+	Layers::SetVisibility(C_LayerName, True);
+}

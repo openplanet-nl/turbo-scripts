@@ -1,0 +1,33 @@
+#Include "Libs/Nadeo/TMConsole/Menu/MenuLayers.Script.txt"								as Layers
+#Include "Libs/Nadeo/TMConsole/Logger.Script.txt"										as Logger
+#Include "Libs/Nadeo/TMConsole/Live/LiveXml.Script.txt" 								as LiveXml
+	
+
+declare Text[Text][] 	G_Tracks;
+
+Void WarnNotEnoughParams(CMlAppEvent _Event) {
+	Logger::Warn("[Menucontroller] event "^_Event.CustomEventType^": not enough params ["^_Event.CustomEventData^"]");
+}
+
+Void SetTracksList(Text _RequestResult) {
+	declare CUILayer 		LayerOnline 	= Layers::Get("CommunityTracks");
+	declare Text[Text][] 	ServerTracksList for LayerOnline.LocalPage;
+	declare Integer         Update2DArray    for LayerOnline.LocalPage;
+	
+	declare CXmlDocument	Doc 		= LiveXml::Manialib_Xml_CreateDocument(_RequestResult);
+	G_Tracks							= LiveXml::Manialib_Xml_NodeToArray2(Doc.GetFirstChild("result"));
+	ServerTracksList 					= G_Tracks;
+	LiveXml::Manialib_Xml_DestroyDocument(Doc);
+	Update2DArray = Now;
+}
+
+Void Loop() {
+	foreach(Event in PendingEvents) {
+		if(Event.Type != CMlAppEvent::EType::LayerCustomEvent) continue;
+		switch(Event.CustomEventType) {
+			case "RequestTracksList" : {
+				RequestTracksList();
+			}
+		}
+	}
+}

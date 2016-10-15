@@ -1,0 +1,458 @@
+/**
+ *	Rounds base mode
+ */
+
+// #Extends "Modes/TrackMania/ModeMatchmaking.Script.txt"
+#Extends "Modes/TrackMania/TMC_ModeBase.Script.txt"
+
+#Const	RoundsBaseVersion		"2015-02-20"
+#Const	RoundsBaseScriptName	"RoundsBase.Script.txt"
+
+#Include "Libs/Nadeo/TMConsole/Ingame/Game_Online.Script.txt" 				as Game
+#Include "Libs/Nadeo/TMConsole/Ingame/Medals.Script.txt" 					as Medals
+#Include "TextLib" as TL
+// ---------------------------------- //
+// Settings
+// ---------------------------------- //
+#Setting S_PointsLimit 						50		as _("Points limit : ")
+#Setting S_AlternateRulesPointsLimit		3		as _("Points limit alternate rules : ")
+#Setting S_FinishTimeout					-1		as _("Finish timeout :")
+#Setting S_UseAlternateRules				False	as _("Use alternate rules :")
+#Setting S_ForceLapsNb						-1		as _("Force number of laps :")
+#Setting S_DisplayTimeDiff					False	as _("Display time difference at checkpoint :")
+#Setting S_IsShowcase						False 	as _("Showcase mode :")  // Is mode launched for a showcase / kiosk mode")
+#Setting S_ApiKey							""		as "<hidden>" ///< Live api key
+
+#Const C_PointsRepartition [10, 6, 4, 3, 2, 1]
+
+#Const TMC_MEDAL_AUTHOR					0
+#Const TMC_MEDAL_GOLD					1
+#Const TMC_MEDAL_SILVER					2
+#Const TMC_MEDAL_BRONZE					3
+#Const TMC_MEDAL_PLAYER					4
+#Const TMC_MEDAL_NONE					5
+#Const TMC_MEDAL_ANOTHERPLAYER			6
+
+#Const TMC_TEMPQUESTION_LIKEMAP			0
+#Const TMC_TEMPQUESTION_ADDMAP			1
+#Const TMC_TEMPQUESTION_ADDROOM			2
+#Const TMC_TEMPQUESTION_LIKECHALLENGE	3
+
+#Const TMC_TEMPQUESTION_OFF 			0
+#Const TMC_TEMPQUESTION_VOTING 			1
+#Const TMC_TEMPQUESTION_RESULT 			2
+
+#Const C_PLAYERCHOICE_RACE				1
+#Const C_PLAYERCHOICE_RIDE				2
+
+// ---------------------------------- //
+// Globales
+// ---------------------------------- //
+declare Integer 	G_RoundStartTime;
+declare Integer 	G_NbPlayersReachedLine;
+declare Integer		G_NbPlayersGiveUp;
+
+// ---------------------------------- //
+// Extend
+// ---------------------------------- //
+***LogVersion***
+***
+MB_LogVersion(RoundsBaseScriptName, RoundsBaseVersion);
+***
+
+// @mm start
+***InitServer***
+***
+declare IsRematch = False;	///< Do the players want a rematch ?
+declare RematchNb = 0;		///< Number of consecutive rematch
+declare Text PrevMapUid;
+***
+// @mm end
+
+***StartServer***
+***
+---InitMatchmaking---
+
+// ---------------------------------- //
+// Initialize mode
+UiRounds = True;
+UiLaps = True;
+MB_UseSectionRound = True;
+declare Integer[] Rounds_PointsRepartitionBackUp for This;
+// Reload XmlRpc or load default values
+if (Rounds_PointsRepartitionBackUp.count > 0) {
+	MB_PointsRepartition = Rounds_PointsRepartitionBackUp;
+} else {
+	MB_PointsRepartition = C_PointsRepartition;
+}
+Game::SetIsShowcase(S_IsShowcase);
+// UI::LoadModules(["TimeGap", "SmallScoresTable", "Chrono", "CheckpointTime", "PrevBestTime", "SpeedAndDistance", "Countdown"]);
+// UI::DisplayTimeDiff(S_DisplayTimeDiff);
+
+// XmlRpc::RegisterCallback("Rounds_PointsRepartition", """
+// * Data : An array of text containing the current points repartition.
+// * Example : ["10", "6", "4", "3", "2", "1"]
+// * Note : This callback is sent when you use the Rounds_GetPointsRepartition method
+// """);
+***
+
+***BeforeLoadMap***
+***
+ClientManiaAppUrl = "file://Media/Manialinks/Nadeo/TMConsole/Ingame/UIOnlineManiaApp.Script.txt";
+***
+
+***InitMap***
+***
+MB_SetLapsNb(S_ForceLapsNb);
+***
+
+***StartMap***
+***
+
+
+// ---------------------------------- //
+// Open ladder
+MB_Ladder_OpenMatch_All();
+MB_SetLapsNb(S_ForceLapsNb);
+
+foreach (Player in AllPlayers) {
+	declare netwrite Boolean Net_HasPlayedOnce for Player = False;
+	Net_HasPlayedOnce = False;
+}
+
+***
+
+// @mm end
+
+***InitRound***
+***
+declare ForceEndRound = False;
+***
+
+***StartRound***
+***
+
+while(Players.count == 0) {
+	yield;
+}
+
+G_NbPlayersGiveUp 	= 0;
+CutOffTimeLimit		= -1;
+
+foreach(Player in Players) {
+	Player.IsSpawned 		= True;	
+	Player.RaceStartTime = -1;	
+}
+
+// ---------------------------------- //
+// How players want to play
+declare Boolean AllPlayersHasConfirmedReady = False;
+declare Integer NbPlayersConfirm = 0;
+
+SetHowToPlayPopupVisibility(True);
+declare netwrite Text	Net_ModeName			for Teams[0];
+Net_ModeName = "OnlineRounds";
+
+declare netwrite Integer Net_MaxPoints for Teams[0];
+if(S_UseAlternateRules) {
+	Net_MaxPoints = S_AlternateRulesPointsLimit;
+} else {
+	Net_MaxPoints = S_PointsLimit;
+}
+
+if(!MatchEndRequested) {
+	// ---------------------------------- //
+	// Initialize round
+	UIManager.UIAll.UISequence = CUIConfig::EUISequence::Playing;
+	G_RoundStartTime = Now + 3000;
+	if (S_UseAlternateRules) {
+		CutOffTimeLimit = G_RoundStartTime + 300000;
+	} else {
+		CutOffTimeLimit = -1;
+	}
+
+	MB_SetLapsNb(S_ForceLapsNb);
+	ForceEndRound = False;
+
+	// ---------------------------------- //
+	// Initialize scores
+	foreach (Score in Scores) {
+		Score.PrevRace = Null;
+		Score.PrevRaceDeltaPoints = 0;
+	}
+
+	foreach(Player in AllPlayers) {
+		declare UI <=> UIManager.GetUI(Player);
+		Game::SetGamePhase(Player, C_GAMEPHASE_GAME);
+		declare netwrite Boolean Net_IsEndGame for UI;
+		Net_IsEndGame = False;
+		Game::FlushPlayerEvent(Player);
+	}
+
+	// ---------------------------------- //
+	// Set the players who can spawn
+	// ---CanSpawn---
+	foreach (Score in Scores) {
+		declare CanSpawn for Score = False;
+		CanSpawn = True;
+	}
+	
+	foreach(Player in Players) {
+		declare CanSpawn for Player.Score = False;
+		if(CanSpawn) {
+			if(S_IsStuntMode && !Player.EnableStuntMode) {
+				SetPlayerStuntMode(Player);
+			}
+			Game::StartRace(Player, G_RoundStartTime);
+			CanSpawn = False;
+			SetOpponentForUI(Player, TMC_MEDAL_PLAYER);
+			
+			if(Game::IsPlayerBrowseScoresTable(Player)) {
+				Game::HideScoresTable(Player);
+				Game::SetInputAvailableScoresTable(Player, False);
+			}
+			declare netwrite Boolean Net_HasPlayedOnce for Player = False;
+			Net_HasPlayedOnce = True;
+			
+		}
+	}
+}
+G_OnePlayerHasRaced = False;
+
+***
+
+// @mm start
+// ***PlayLoopSpawnPlayers***
+// ***
+// ---------------------------------- //
+// Spawn allowed players
+// foreach (Player in Players) {
+	// if (Player.Score == Null) continue;
+	
+	// declare CanSpawn for Player.Score = True;
+	// if (Game::IsWaiting(Player) && CanSpawn) {
+		// if (MM_IsMatchServer()) {
+			// if (MM_PlayerIsValid(Player)) {
+				// if (UseClans) SetPlayerClan(Player, MM_GetRequestedClan(Player));
+				// Game::StartRace(Player, G_RoundStartTime);
+			// }
+		// } else {
+			// if (UseClans) SetPlayerClan(Player, MM_GetRequestedClan(Player));
+			// Game::StartRace(Player, G_RoundStartTime);
+		// }
+		// CanSpawn = False;
+	// }
+// }
+// ***
+// @mm end
+
+***Yield***
+***
+// ---------------------------------- //
+// Manage XmlRpc events
+foreach (Event in XmlRpc.PendingEvents) {
+	if (Event.ParamArray1 == "Rounds_SetPointsRepartition") {
+		declare PointsRepartition = Integer[];
+		foreach (Point in Event.ParamArray2) {
+			PointsRepartition.add(TL::ToInteger(Point));
+		}
+		if (PointsRepartition.count >= 1) {
+			MB_PointsRepartition = PointsRepartition;
+			declare Integer[] Rounds_PointsRepartitionBackUp for This;
+			Rounds_PointsRepartitionBackUp = MB_PointsRepartition;
+		}
+	} else if (Event.Param1 == "Rounds_GetPointsRepartition") {
+		declare PointsRepartition = Text[];
+		foreach (Point in MB_PointsRepartition) {
+			PointsRepartition.add(TL::ToText(Point));
+		}
+		// if (XmlRpc::CallbackIsAllowed("Rounds_PointsRepartition")) XmlRpc::SendCallbackArray("Rounds_PointsRepartition", PointsRepartition);
+	}
+}
+***
+
+***PlayLoop***
+***
+// ---------------------------------- //
+// Spawn players joining during the round
+---PlayLoopSpawnPlayers---
+
+// ---------------------------------- //
+// Manage XmlRpc events
+foreach (Event in XmlRpc.PendingEvents) {
+	if (Event.Param1 == "Rounds_ForceEndRound") {
+		ForceEndRound = True;
+	}
+}
+
+
+***
+
+// @mm start
+***EndMap***
+***
+declare MasterLogin = "";
+declare MasterPoints = 0;
+***
+// @mm end
+
+// @mm start
+// ***EndMapAfterPodium***
+// ***
+// if (MM_IsMatchServer()) {
+	// if (!MM_RestartMatchmaking && Game::GetClanNbPlayers(1) > 0 && Game::GetClanNbPlayers(2) > 0) {
+		// if (MB_StopMatch) {
+			// if (RematchNb < S_MatchmakingRematchNbMax) {
+				// IsRematch = MM_VoteForRematch();
+				// RematchNb += 1;
+			// }
+			
+			// if (!IsRematch) {
+				// RematchNb = 0;
+				// MM_MatchEnd(MasterLogin);
+				// MM_MatchToLobby();
+			// } else {
+				// MM_VoteForNextMap(False);
+			// }
+		// } else {
+			// MM_VoteForNextMap(False);
+		// }
+	// } else {
+		// RematchNb = 0;
+		// MM_MatchEnd(MasterLogin);
+		// MM_MatchToLobby();
+	// }
+// }
+// ***
+// @mm end
+
+// ***EndServer***
+// ***
+// XmlRpc::UnregisterCallback("Rounds_PointsRepartition");
+// ***
+
+// ---------------------------------- //
+// Display a message if the round was skipped
+Void ForcedEndRoundSequence() {
+	UIManager.UIAll.UISequence = CUIConfig::EUISequence::EndRound;
+	UIManager.UIAll.BigMessage = _("Round skipped");
+	MB_Sleep(3000);
+	UIManager.UIAll.BigMessage = "";
+	UIManager.UIAll.UISequence = CUIConfig::EUISequence::Playing;
+}
+
+Void SetOpponentForUI(CTmPlayer _Player, Integer _OpponentType) {
+	declare Integer[] PlayerCpTime;
+	if(_Player.Score.BestRace.Checkpoints.count != 0 && _OpponentType != TMC_MEDAL_NONE) {
+		foreach(Cp in _Player.Score.BestRace.Checkpoints) PlayerCpTime.add(Cp);
+		Game::SetOpponent(_Player, _OpponentType, PlayerCpTime);
+		declare Text OpponentName = Medals::GetMedalName(TMC_MEDAL_PLAYER);
+		Game::SetOpponentName(OpponentName);
+	} else {
+		Game::SetOpponent(_Player, TMC_MEDAL_NONE, Integer[]);
+	}
+}
+
+/*
+*	HACK FOR PGW
+*
+*/
+Integer GetPlayerPlayChoice(CTmPlayer _Player) 
+{
+	declare UI <=> UIManager.GetUI(_Player);
+	declare netread Integer Net_PlayerChoice for UI;
+	return Net_PlayerChoice;
+}
+
+Boolean GetHowToPlayPopupVisibility() {
+	return Layers::IsVisible("HowToPlayPopup");
+}
+
+Void SetHowToPlayPopupVisibility(Boolean _Show) {
+	Layers::SetVisibility("HowToPlayPopup", _Show);
+}
+
+// Void SetGamePopupMessage(CTmPlayer _Player, Text _Message) {
+	// declare UI <=> UIManager.GetUI(_Player);
+	// declare netwrite Text 		Net_GamePopupTitle		for UI;
+	// Net_GamePopupTitle = _Message;
+// }
+
+// Boolean GetGamePopUpAnswer(CTmPlayer _Player)
+// {
+	// declare UI <=> UIManager.GetUI(_Player);
+	// declare netread Integer Net_GamePopup_PopupUpdate 	for UI;
+	// declare 		Integer Prev_GamePopup_PopupUpdate 	for UI;
+	// if(Prev_GamePopup_PopupUpdate != Net_GamePopup_PopupUpdate) {
+		// Prev_GamePopup_PopupUpdate = Net_GamePopup_PopupUpdate;
+		// return True;
+	// }
+	// return False;
+// }
+
+/*
+Void ConstructHowToPlayPopup() {
+	// declare UI <=> UIManager.GetUI(Players[0]);
+	declare netwrite Text[] 	Net_MenuStatusInputs		for Teams[0];
+	
+	declare IMGSelect 		= UIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Select);
+	declare IMGCancel 		= UIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Cancel);
+	declare TXTSelect 		= _("Continue");
+
+	Net_MenuStatusInputs 	= [IMGSelect, TXTSelect];
+	
+	declare Vec3 LayerPos = <0., 0., 30.>;
+	declare Text[][] LayersContent;
+	LayersContent.add(["Title", 	"Title", 		"HOW DO YOU WANT TO PLAY?", 				"2",	"", "", 	"Net_GamePopupTitle Net_GamePopupSubtitle"]);
+	LayersContent.add(["Button", 	"RACE", 		_("PLAY"), 									"1",	"Net_PlayerChoice = "^C_PLAYERCHOICE_RACE^"; Player_SetAutoPilotMedal(InputPlayer, ::EMedal::None);", "", ""]);
+	LayersContent.add(["Button", 	"RIDE", 		_("REPLAY"), 								"1",	"Net_PlayerChoice = "^C_PLAYERCHOICE_RIDE^"; Player_SetAutoPilotMedal(InputPlayer, ::EMedal::Author);", "", ""]);
+	LayersContent.add(["Input", 	"Input", 		"", 										"1",	"", "", "Net_MenuStatusInputs"]);
+	
+	declare LayerBeforeWhile 	= """ declare netwrite Integer Net_PlayerChoice	for UI;  Net_PlayerChoice = 0;""";
+	declare LayerWhenShown 		= """ Net_PlayerChoice = 0; """;
+	declare LayerWhileLoop		= """
+		declare CMlQuad 	Button_RACE 		<=> (Page.MainFrame.GetFirstChild("Button_RACE") as CMlQuad);
+		declare CMlLabel 	Label_RACE 			<=> (Page.MainFrame.GetFirstChild("Label_RACE") as CMlLabel);
+			
+		declare CMlQuad 	Button_RIDE 		<=> (Page.MainFrame.GetFirstChild("Button_RIDE") as CMlQuad);
+		declare CMlLabel 	Label_RIDE 			<=> (Page.MainFrame.GetFirstChild("Label_RIDE") as CMlLabel);
+		
+		if(!InputPlayer.RequestsSpectate) {
+			if(Net_PlayerChoice != 0) {
+				EnableMenuNavigation(False, False, Button_Back, 0);
+				if(Net_PlayerChoice == {{{C_PLAYERCHOICE_RACE}}}) {
+					Button_RIDE.Hide();
+					Label_RIDE.TextColor = <0.3, 0.3, 0.3>;
+				} else if(Net_PlayerChoice == {{{C_PLAYERCHOICE_RIDE}}}) {
+					Button_RACE.Hide();
+					Label_RACE.TextColor = <0.3, 0.3, 0.3>;
+				}
+			} else {
+				Button_RIDE.Show();
+				Label_RIDE.TextColor = <0.879, 0.879, 0.879>;
+				
+				Button_RACE.Show();
+				Label_RACE.TextColor = <0.879, 0.879, 0.879>;
+			}
+		} else {
+			Button_RACE.Hide();
+			Label_RACE.TextColor = <0.3, 0.3, 0.3>;
+			
+			Button_RIDE.Hide();
+			Label_RIDE.TextColor = <0.3, 0.3, 0.3>;
+		}
+	""";
+	
+	UIPopupBuilder::CreateLayer(
+		"HowToPlayPopup", 
+		LayerPos,
+		LayersContent,
+		"",
+		LayerBeforeWhile,
+		LayerWhenShown,
+		LayerWhileLoop
+	);
+	
+	Layers::SetVisibility("ConfirmPresence", False);
+}
+*/

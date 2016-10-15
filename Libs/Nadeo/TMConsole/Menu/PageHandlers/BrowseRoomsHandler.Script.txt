@@ -1,0 +1,76 @@
+#Include "Libs/Nadeo/TMConsole/Menu/MenuLayers.Script.txt"								as Layers
+#Include "Libs/Nadeo/TMConsole/Logger.Script.txt"										as Logger
+#Include "Libs/Nadeo/TMConsole/Live/LiveEvent.Script.txt" 								as LiveEvent
+#Include "Libs/Nadeo/TMConsole/Live/LiveHttp.Script.txt" 								as LiveHttp
+#Include "Libs/Nadeo/TMConsole/Live/LiveXml.Script.txt" 								as LiveXml
+	
+#Const C_ApiUrl "http://preprod.live.nadeo.com/daas-api/"
+
+declare Ident 			G_RequestRoomsListId;
+declare Text[Text][]	G_Instances;
+
+Void WarnNotEnoughParams(CMlAppEvent _Event) {
+	Logger::Warn("[Menucontroller] event "^_Event.CustomEventType^": not enough params ["^_Event.CustomEventData^"]");
+}
+
+Void JoinRoom(Text _Link) {
+	OpenLink(_Link, CManiaApp::ELinkType::ManialinkBrowser);
+}
+
+Void SetRoomsList(Text _RequestResult) {
+	declare CUILayer 		LayerOnline 	= Layers::Get("BrowseOnlineRooms");
+	declare Text[Text][] 	ServerRoomsList for LayerOnline.LocalPage;
+	
+	declare CXmlDocument	Doc 		= LiveXml::Manialib_Xml_CreateDocument(_RequestResult);
+	G_Instances							= LiveXml::Manialib_Xml_NodeToArray2(Doc.GetFirstChild("result"));
+	ServerRoomsList 					= G_Instances;
+	LiveXml::Manialib_Xml_DestroyDocument(Doc);
+}
+
+Void RequestRoomsList() {
+	G_RequestRoomsListId = LiveHttp::Manialib_Http_GetAsync(C_ApiUrl^"instances");
+}
+
+Void LiveLoop() {
+	foreach(LiveEvent in LiveEvent::Manialib_Event_PendingEvents()) {
+		switch(LiveEvent[0][0]) {
+			case "Manialib.Http.Success": {
+				declare Text CurRequestId = LiveEvent[1][0];
+				declare Text RequestResult;
+				switch(CurRequestId) {
+					case G_RequestRoomsListId^"" : {
+						if(LiveEvent[1].count < 1) {
+							continue;
+						}
+						RequestResult = LiveEvent[1][1];
+						SetRoomsList(RequestResult);
+					}
+				}
+			}
+		}
+	}
+	LiveHttp::Manialib_Http_Loop();
+    LiveEvent::Manialib_Event_Yield();
+}
+
+Void Loop() {
+	foreach(Event in PendingEvents) {
+		if(Event.Type != CMlAppEvent::EType::LayerCustomEvent) continue;
+		switch(Event.CustomEventType) {
+			case "RequestRoomsList" : {
+				RequestRoomsList();
+			}
+			case "JoinRoom" : {
+				if(Event.CustomEventData.count < 1) {
+					WarnNotEnoughParams(Event);
+					continue;
+				}
+				
+				declare Text URL      = Event.CustomEventData[0];
+				JoinRoom(URL);
+			}
+			
+		}
+	}
+	LiveLoop();
+}

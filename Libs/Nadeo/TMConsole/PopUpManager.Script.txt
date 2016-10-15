@@ -1,0 +1,106 @@
+#Const Version 		"2015-02-12"
+#Const ScriptName	"PagesShift.Script.txt"
+
+#Include "Libs/Nadeo/TMConsole/Menu/MenuLayers.Script.txt"		as Layers
+
+
+#Const C_ImgBase 	       "file://Media/Manialinks/Nadeo/TMConsole/Images/"
+
+Text GetScriptVersion() {return Version;}
+Text GetScriptName() {return ScriptName;}
+
+Void ShowMessage(Text _Layer, Integer _Update, Text _LabelText, Text _ButtonText, Boolean _FocusOnButton)
+{
+	declare CUILayer PopUpLayer <=> Layers::Get(_Layer);
+
+	if(PopUpLayer != Null) 
+		LayerCustomEvent(PopUpLayer, "UpdatePopUp", [_Update^"", _LabelText, _ButtonText, ""^_FocusOnButton]);
+	else  
+		log(Now ^"> PopUpLayer == Null");
+}
+
+//Rajoute la PopUp en attente dans la liste d'attente
+Void AddPopUp(Integer _Priority ,Integer _Update, Text _LabelText, Text _ButtonText, Boolean _FocusOnButton)
+{
+	ShowMessage("PopUp", _Update, _LabelText, _ButtonText, _FocusOnButton);
+}
+
+Void AddPopUpInGame(Text _Layer, Integer _Priority ,Integer _Update, Text _LabelText, Text _ButtonText, Boolean _FocusOnButton)
+{
+	ShowMessage(_Layer, _Update, _LabelText, _ButtonText, _FocusOnButton);
+}
+
+Void AddPopUp2(Integer _Update, Text _LabelText, Text _ButtonText, Boolean _FocusOnButton)
+{
+	ShowMessage("SuperPopUp", _Update, _LabelText, _ButtonText, _FocusOnButton);
+}
+
+// ////////////////////////
+// YES | NO POPUP
+Void AddAskYesNo(Text _LabelText, Text _TitleText, Text _TitleColor, Text _ManagerName, Text _Choix1, Text _Choix2, Boolean _CanCancel)
+{
+	declare CUILayer PopUpLayer <=> Layers::Get("PopUp");
+	LayerCustomEvent(PopUpLayer, "UpdateAskYesNo", [_LabelText, _TitleText, _TitleColor, _ManagerName, _Choix1, _Choix2, ""^_CanCancel]);
+}
+Void AddAskYesNo(Text _LabelText, Text _TitleText, Text _TitleColor, Text _ManagerName)
+{
+	AddAskYesNo(_LabelText, _TitleText, _TitleColor, _ManagerName, _("No"), _("Yes"), False);
+}
+Void AddAskYesNo(Text _LabelText, Text _TitleText, Text _ManagerName)
+{
+	AddAskYesNo(_LabelText, _TitleText, "0ff", _ManagerName, _("No"), _("Yes"), False);
+}
+
+// ////////////////////////
+// YES | NO FULL SCREEN
+/*
+Void AddAskYesNo2(Text _LabelText, Text _TitleText, Text _TitleColor, Text _ManagerName, Text _LabelText2)
+{
+	declare CUILayer PopUpLayer <=> Layers::Get("SuperPopUp");
+	LayerCustomEvent(PopUpLayer, "UpdateAskYesNo", [_LabelText, _TitleText, _TitleColor, _ManagerName, _LabelText2]);
+}
+*/
+
+Void AddAskYesNo2(Text _LabelText, Text _TitleText, Text _TitleColor, Text _ManagerName, Text _Choix1, Text _Choix2) 
+{
+	declare CUILayer PopUpLayer <=> Layers::Get("SuperPopUp");
+	LayerCustomEvent(PopUpLayer, "UpdateAskYesNo", [_LabelText, _TitleText, _TitleColor, _ManagerName, _Choix1, _Choix2]);
+}
+
+
+Void AddAskYesNo2(Text _LabelText, Text _TitleText, Text _TitleColor, Text _ManagerName)
+{
+	AddAskYesNo2(_LabelText, _TitleText, _TitleColor, _ManagerName, _("Yes"), _("No"));
+}
+
+Void AddAskYesNo2(Text _LabelText, Text _TitleText, Text _ManagerName)
+{
+	AddAskYesNo2(_LabelText, _TitleText, "$fff", _ManagerName, _("Yes"), _("No"));
+}
+
+Void AddAskYesNo2BuyFullGame(Text _LabelText, Text _TitleText, Text _ManagerName) 
+{
+	declare CUILayer PopUpLayer <=> Layers::Get("SuperPopUp");
+	declare Text BGImg = C_ImgBase^"BuyFullGameScreen.jpg";
+	LayerCustomEvent(PopUpLayer, "UpdateAskYesNo", [_LabelText, _TitleText, "$fff", _ManagerName, _("Unlock the full game"), _("Back to trial"), BGImg]);
+}
+
+Void HidePopUpInGame(Text _Layer) {
+	declare CUILayer PopUpLayer <=> Layers::Get(_Layer);
+	if(PopUpLayer == Null) return;
+	LayerCustomEvent(PopUpLayer, "HidePopUp", [""]);
+}
+
+Void HidePopUp()
+{
+	declare CUILayer PopUpLayer <=> Layers::Get("PopUp");
+	if(PopUpLayer == Null) return;
+	LayerCustomEvent(PopUpLayer, "HidePopUp", [""]);
+}
+Void HidePopUpAsk(Text _Layer)
+{
+	declare CUILayer PopUpLayer <=> Layers::Get(_Layer);
+	if(PopUpLayer == Null) return;
+	LayerCustomEvent(PopUpLayer, "HidePopUpAsk", [""]);
+}
+

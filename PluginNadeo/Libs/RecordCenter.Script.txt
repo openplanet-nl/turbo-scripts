@@ -1,0 +1,692 @@
+#Include "TextLib" as TL
+
+#Include "Libs/Nadeo/Manialink2.Script.txt"						as Manialink
+#Include "Libs/Nadeo/TMConsole/UIXmlBuilder.Script.txt"			as UIXmlBuilder
+#Include "Libs/Nadeo/TMConsole/Menu/MenuLayers.Script.txt" 		as Layers
+#Include "Libs/Nadeo/TMConsole/FontManager.Script.txt" 			as Font
+#Include "Libs/Nadeo/TMConsole/Volumes.Script.txt" 				as Volumes
+#Include "Libs/Nadeo/UIPadButtons.Script.txt"					as LibUIButtons
+#Include "Libs/Nadeo/SystemText.Script.txt"						as SystemText
+
+#Const C_LayerName				"Layer_TMC_Plugin_RecordCenter"
+
+#Const C_RecordsMaxCount 		10
+
+#Const SoundPath				"file://Media/Sounds/TMConsole/"
+#Const SoundMove	   	 		"event-focus.wav"
+#Const SoundValidate 			"event-validate.wav"
+#Const SoundShowPauseMenu		"event-menupause.wav"
+#Const SoundHideMenu 			"menu-page-back.wav"
+
+
+
+///////////////////////////
+// CEDRIC
+
+
+#Const C_Quad_Title_SizeX 			200.
+#Const C_Quad_Title_SizeY 			10.
+
+
+
+
+Void CreateLayer()
+{
+	LibUIButtons::Load();
+	SystemText::Load();
+	
+	//declare IMGSelect 	= UIButtons::GetImage(Platform, CManiaAppEvent::EMenuNavAction::Select);
+	//declare IMGCancel 	= UIButtons::GetImage(Platform, CManiaAppEvent::EMenuNavAction::Action1);
+	declare Text 	IMGSelect            = LibUIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Select);
+	declare Text 	IMGCancel            = LibUIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Cancel);
+	declare Text 	IMGSort  			 = LibUIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Action1);
+	declare Text 	IMGProfile           = LibUIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Action2);
+
+
+	declare Text 	IMG_PC_Select   = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"),  CManiaAppEvent::EMenuNavAction::Select);
+	declare Text 	IMG_PS_Select   = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::Select);
+	declare Text 	IMG_XB_Select   = LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::Select);
+	declare Text 	IMG_PC_Cancel   = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"),  CManiaAppEvent::EMenuNavAction::Cancel);
+	declare Text 	IMG_PS_Cancel   = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::Cancel);
+	declare Text 	IMG_XB_Cancel   = LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::Cancel);
+	declare Text 	IMG_PC_Action1  = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"),  CManiaAppEvent::EMenuNavAction::Action1);
+	declare Text 	IMG_PS_Action1  = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::Action1);
+	declare Text 	IMG_XB_Action1  = LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::Action1);
+	declare Text 	IMG_PC_PageDown = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"),  CManiaAppEvent::EMenuNavAction::PageDown);
+	declare Text 	IMG_PS_PageDown = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::PageDown);
+	declare Text 	IMG_XB_PageDown = LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::PageDown);
+	declare Text 	IMG_PC_PageUp   = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"),  CManiaAppEvent::EMenuNavAction::PageUp);
+	declare Text 	IMG_PS_PageUp   = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::PageUp);
+	declare Text 	IMG_XB_PageUp   = LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::PageUp);
+
+
+	declare Text	TXTSelect 	= _("Details");
+	declare Text	TXTCancel 	= _("Campaign");
+	declare Text	TXTSort 	= _("Sort");
+	declare Text 	TXTProfile = SystemText::GetShowProfileTextForInputCard();
+	
+	///////////////////////////
+	// CEDRIC
+
+	declare FontLabel		= Font::GetFontName("MainSmall2");
+
+
+
+	declare Real LayerScale = 1.;
+	declare Vec3 LayerPos 	= <-85. / LayerScale, 0. / LayerScale, 25.>;
+	declare Text[][] LayersContent;
+	declare CustomLabel = """ """;
+	// declare CustomLabel = """<label id="Label_Filters" 	posn="4. 	-4.35	 .2" 	sizen="50 8" valign="center" textsize="3" textfont="{{{FontLabel}}}" text="FILTERS" opacity="0.66" textprefix="$t" hidden="1" /> """;
+
+	declare CUser CurrentPlayer <=> LocalUser;
+	declare Text CurrentPlayerDisplayName = CurrentPlayer.Name;
+
+	//L16N %1 stands for the player's name. This segment is shown in the "record center" (screen attached)
+	declare Text VersusText = TL::Compose( _("%1 versus"), CurrentPlayerDisplayName);
+	
+	LayersContent.add(["Title", 	"Title",    "Record Center", 	"2",	"", "", ""]);
+	LayersContent.add(["Space", 	"", 	    "", 			 	"1",	"", "", ""]);
+	LayersContent.add(["Switch", 	"Switch",  	"Page 1",	 		"1",	"", "L1R1", ""]);
+	LayersContent.add(["Label", 	"Player",  	"VersusText",	 		"1",	CustomLabel, "Big Bg3", ""]);
+
+	for(I, 0, C_RecordsMaxCount-1)
+		LayersContent.add(["Compare", "Compare"^I, "Buddy "^I+1, "1", "", "Button", ""]);
+
+	LayersContent.add(["Space", 	"", 	    "", 			 	"1",	"", "", ""]);
+	LayersContent.add(["Label", 	"Filters",  "",	 		"1",	"", 	"", ""]);
+	LayersContent.add(["Input", 	"Input",    "", 			 	"1",	"", "", ""]);
+	LayersContent.add(["Input", 	"Input2",    "", 			 	"1",	"", "", ""]);
+
+	// log(UIXmlBuilder::GetXml("RecordCenter", LayersContent, 1., LayerPos));
+
+	declare MLShowAnim = UIXmlBuilder::GetShowAnim(LayersContent, LayerPos);
+
+	declare ML =
+	"""
+	<frame scale="{{{LayerScale}}}" hidden="0">
+		{{{UIXmlBuilder::GetXml("RecordCenter", LayersContent, 1., LayerPos)}}}
+		<quad 	id="ButtonInput_Sort"		posn="-139. -64 30.2"  	sizen="50 8" 	 bgcolor="090" opacity="0." scriptevents="1" />
+		<quad 	id="ButtonInput_Cancel"		posn="-81. -72 30.2"  	sizen="50 8" 	 bgcolor="090" opacity="0." scriptevents="1" />
+	</frame>
+
+
+
+
+	<script><!--
+		#Include "TextLib" as TL
+		{{{Manialink::GetIncludes()}}}
+		#Const DebugName "L_PluginRecordCenter"
+
+		#Const C_SORTBY_OPPONENT_LOGIN  1
+		#Const C_SORTBY_PLAYERCOUNT     2
+		#Const C_SORTBY_OPPONENTCOUNT   3
+		#Const C_SORTBY_OPPONENT_DATE   4
+
+		declare Integer 		G_CurrPage;
+		declare Integer 		G_LockInput;
+		declare Integer 		G_MaxPages;
+		declare Integer 		G_SelectedIndexY;
+		declare Integer 		G_RecordIndex;
+		declare Integer 		G_SelectedFilter;
+		declare Text[Integer]	G_SelectIMG;
+		declare Text[Integer]	G_SortIMG;
+		declare Text[Integer]	G_CancelIMG;
+		declare Text[Integer]	G_PageUpIMG;
+		declare Text[Integer]	G_PageDownIMG;
+
+
+
+		{{{Manialink::Load()}}}
+
+		{{{LibUIButtons::Inject_SetInputInfoTextSelected()}}}
+
+		Void ChangeFilterLabel()
+		{
+			declare Label_Filters <=> (Page.GetFirstChild("Label_Filters") as CMlLabel);
+
+			declare Text Filter = "";
+			switch(G_SelectedFilter)
+			{
+				case C_SORTBY_OPPONENT_LOGIN	: Filter = _("Sort by name");
+				case C_SORTBY_PLAYERCOUNT		: Filter = _("Sort by records");
+				case C_SORTBY_OPPONENTCOUNT		: Filter = _("Sort by records");
+				case C_SORTBY_OPPONENT_DATE		: Filter = _("Sort by: Latest records");
+			}
+			
+			
+
+			if(Filter != "")
+				Label_Filters.Value = Filter;
+		}
+
+		Void UpdateDisplayFromRecords(Text[Text][] _RecordsComparison)
+		{
+			G_LockInput = Now + 500;
+
+
+			for (i, 0, {{{C_RecordsMaxCount-1}}})
+			{
+				declare RecordIndex = i + ((G_CurrPage - 1) * 10);
+
+				declare Frame_Compare                 			<=> (Page.GetFirstChild("Frame_Compare"^i) as CMlLabel);
+				// declare Label_OpponentLogin                 <=> (Page.GetFirstChild("Label_Name_Compare"^i) as CMlLabel);
+				declare Label_OpponentDisplayName           <=> (Page.GetFirstChild("Label_Name_Compare"^i) as CMlLabel);
+				declare Label_OpponentBestRecordCount       <=> (Page.GetFirstChild("Label_Score_Compare"^i) as CMlLabel);
+				declare Label_BestRecordCount               <=> (Page.GetFirstChild("Label_MyScore_Compare"^i) as CMlLabel);
+				declare Label_OpponentBestRecordElapsedTime <=> (Page.GetFirstChild("Label_Time_Compare"^i) as CMlLabel);
+
+				if(_RecordsComparison.count - 1 >= RecordIndex)
+				{
+					Frame_Compare.Show();
+					Label_OpponentDisplayName.Value = _RecordsComparison[RecordIndex]["OpponentDisplayName"];
+					G_LockInput += 100;
+
+					{
+						declare ThisOpponentBestRecordElapsedTime = TL::ToInteger(_RecordsComparison[RecordIndex]["OpponentBestRecordElapsedTime"]);
+						declare ThisOpponentBestRecordElapsedTimeToText	= "30s";
+
+						if(ThisOpponentBestRecordElapsedTime / (3600 * 24 * 365) >= 40)
+							Label_OpponentBestRecordElapsedTime.Value = "";
+						else
+						{
+							if(ThisOpponentBestRecordElapsedTime / (3600 * 24 * 365) >= 1)
+								ThisOpponentBestRecordElapsedTimeToText = ThisOpponentBestRecordElapsedTime / (3600 * 24 * 365) ^ "y";
+							else
+							if(ThisOpponentBestRecordElapsedTime / (3600 * 24 * 30) >= 1)
+								ThisOpponentBestRecordElapsedTimeToText = ThisOpponentBestRecordElapsedTime / (3600 * 24 * 30) ^ "m";
+							else
+							if(ThisOpponentBestRecordElapsedTime / (3600 * 24) >= 1)
+								ThisOpponentBestRecordElapsedTimeToText = ThisOpponentBestRecordElapsedTime / (3600 * 24) ^ "d";
+							else
+							if(ThisOpponentBestRecordElapsedTime / 3600 >= 1)
+								ThisOpponentBestRecordElapsedTimeToText = ThisOpponentBestRecordElapsedTime / 3600 ^ "h";
+							else
+							if(ThisOpponentBestRecordElapsedTime / 60 >= 1)
+								ThisOpponentBestRecordElapsedTimeToText = ThisOpponentBestRecordElapsedTime / 60 ^ "mn";
+
+							//Label_OpponentBestRecordElapsedTime.Value = ThisOpponentBestRecordElapsedTimeToText^" ago";
+							Label_OpponentBestRecordElapsedTime.Value = "";
+						}
+					}
+
+
+					{
+						declare ThisBestRecordCount         = TL::ToInteger(_RecordsComparison[RecordIndex]["BestRecordCount"]);
+						declare ThisOpponentBestRecordCount = TL::ToInteger(_RecordsComparison[RecordIndex]["OpponentBestRecordCount"]);
+
+						if(ThisBestRecordCount >= ThisOpponentBestRecordCount)
+						{
+							Label_OpponentBestRecordCount	.Value = TL::ToText(ThisOpponentBestRecordCount);
+							Label_BestRecordCount			.Value = TL::ToText(ThisBestRecordCount);
+						}
+						else
+						{
+							Label_OpponentBestRecordCount	.Value = TL::ToText(ThisOpponentBestRecordCount);
+							Label_BestRecordCount			.Value = TL::ToText(ThisBestRecordCount);
+						}
+					}
+				}
+				else
+					Frame_Compare.Hide();
+			}
+
+			declare Frame_RightInput 		<=> (Page.MainFrame.GetFirstChild("Frame_RightInput") 	as CMlFrame);
+			declare Frame_LeftInput 		<=> (Page.MainFrame.GetFirstChild("Frame_LeftInput") 	as CMlFrame);
+			declare Frame_LeftInput2 		<=> (Page.MainFrame.GetFirstChild("Frame_LeftInput2") 	as CMlFrame);
+			if(_RecordsComparison.count <= 0)
+			{
+				Frame_RightInput.Hide();
+				Frame_LeftInput.Hide();
+				Frame_LeftInput2.Hide();
+			}
+			else
+			{
+				Frame_RightInput.Show();
+				Frame_LeftInput.Show();
+				Frame_LeftInput2.Show();
+			}
+		}
+
+		Void ChangeInputsImg(Integer _Platform)
+		{
+			declare Quad_RightInput       <=> (Page.MainFrame.GetFirstChild("Quad_RightInputInput") 	as CMlQuad);
+			declare Quad_RightInput2      <=> (Page.MainFrame.GetFirstChild("Quad_RightInputInput2") 	as CMlQuad);
+			declare Quad_LeftInput        <=> (Page.MainFrame.GetFirstChild("Quad_LeftInputInput") 	as CMlQuad);
+			declare Quad_Up               <=> (Page.MainFrame.GetFirstChild("Quad_Up") 	as CMlQuad);
+			declare Quad_Down             <=> (Page.MainFrame.GetFirstChild("Quad_Down") 	as CMlQuad);
+			Quad_RightInput		.ImageUrl  = G_SelectIMG[_Platform];
+			Quad_LeftInput		.ImageUrl  = G_CancelIMG[_Platform];
+			Quad_RightInput2	.ImageUrl  = G_SortIMG[_Platform];
+			Quad_Up				.ImageUrl  = G_PageUpIMG[_Platform];
+			Quad_Down			.ImageUrl  = G_PageDownIMG[_Platform];
+		}
+
+
+		Void Input_Cancel()
+		{
+			SendCustomEvent("HideLayerRecordCenter", [""]);
+			SendCustomEvent("ReleaseRecordsTaskResult", ["Main"]);
+		}
+
+		Void Input_PageUp()
+		{
+			declare Text[Text][] 			RequestedRecordsResume 	for Page;
+			if(RequestedRecordsResume.count <= 0 || G_LockInput >= Now) return;
+			if(G_CurrPage > 1)
+			{
+				G_CurrPage -= 1;
+				G_SelectedIndexY = 0;
+
+				G_RecordIndex = G_SelectedIndexY + ((G_CurrPage - 1) * {{{C_RecordsMaxCount}}});
+
+				UpdateDisplayFromRecords(RequestedRecordsResume);
+			}
+		}
+
+		Void Input_PageDown()
+		{
+			declare Text[Text][] 			RequestedRecordsResume 	for Page;
+			if(RequestedRecordsResume.count <= 0 || G_LockInput >= Now) return;
+			if(G_CurrPage < G_MaxPages)
+			{
+				G_CurrPage += 1;
+				G_SelectedIndexY = 0;
+
+				G_RecordIndex = G_SelectedIndexY + ((G_CurrPage - 1) * {{{C_RecordsMaxCount}}});
+
+				UpdateDisplayFromRecords(RequestedRecordsResume);
+			}
+		}
+
+
+		Void Input_Action1()
+		{
+			declare Text[Text][] 			RequestedRecordsResume 	for Page;
+			if(RequestedRecordsResume.count <= 0) return;
+			if(G_SelectedFilter < 5)
+			{
+				if(G_SelectedFilter == 4)
+					G_SelectedFilter = C_SORTBY_OPPONENT_LOGIN;
+				else
+					G_SelectedFilter += 1;
+			}
+			SendCustomEvent("GetRecordsResume", [""^G_SelectedFilter, "False"]);
+		}
+
+		Void Input_Select(Text _ControlId)
+		{
+
+			declare Text[Text][] 			RequestedRecordsResume 	for Page;
+			log("_ControlId: " ^ _ControlId);
+			if(_ControlId == "ButtonInput_Sort") //Inversement entre Cancel et Sort
+			{
+				Input_Cancel();
+				return;
+			}
+			else if(_ControlId == "ButtonInput_Cancel")
+			{
+				Input_Action1();
+				return;
+			}
+			Audio.PlaySoundEvent("{{{SoundPath^SoundValidate}}}", {{{Volumes::GetVolumedB("MenuClick")}}});
+			// if(Event.Control == Button_Back)
+				// SendCustomEvent("HideLayerNotifications", [""]);
+			// else
+				// SendCustomEvent("SendNotificationTest", [""]);
+			// declare Text LocalBuddyLogin for Page;
+			// LocalBuddyLogin = RequestedRecordsResume[G_RecordIndex]["OpponentLogin"];
+			SendCustomEvent("GetRecords", ["3", RequestedRecordsResume[G_RecordIndex]["OpponentLogin"], "2", "False", RequestedRecordsResume[G_RecordIndex]["OpponentDisplayName"]]);
+			// log("LAYER SHOW DETAILS");
+		}
+
+		main()
+		{
+			 // CONTROLS DECLARATIONS
+
+			declare Quad_RightInput 		<=> (Page.MainFrame.GetFirstChild("Quad_RightInputInput") 	as CMlQuad);
+			declare Quad_RightInput2 		<=> (Page.MainFrame.GetFirstChild("Quad_RightInputInput2") 	as CMlQuad);
+			declare Quad_LeftInput 			<=> (Page.MainFrame.GetFirstChild("Quad_LeftInputInput") 	as CMlQuad);
+			declare Quad_LeftInput2			<=> (Page.MainFrame.GetFirstChild("Quad_LeftInputInput2") 	as CMlQuad);
+			declare Label_RightInput 		<=> (Page.MainFrame.GetFirstChild("Label_RightInputInput") 	as CMlLabel);
+			declare Label_RightInput2 		<=> (Page.MainFrame.GetFirstChild("Label_RightInputInput2") 	as CMlLabel);
+			declare Label_LeftInput 		<=> (Page.MainFrame.GetFirstChild("Label_LeftInputInput") 	as CMlLabel);
+			declare Label_LeftInput2		<=> (Page.MainFrame.GetFirstChild("Label_LeftInputInput2") 	as CMlLabel);
+			declare Label_Switch			<=> (Page.MainFrame.GetFirstChild("Label_Switch") 			as CMlLabel);
+			declare Label_SubtitleTitle	 	<=> (Page.MainFrame.GetFirstChild("Label_SubtitleTitle") 	as CMlLabel);
+
+			declare CMlFrame[] 	Frames;
+			declare CMlQuad[] 	Buttons;
+
+			for(I, 0, {{{C_RecordsMaxCount-1}}})
+			{
+				Frames		.add((Page.MainFrame.GetFirstChild("Frame_Compare" ^I) as CMlFrame));
+				Buttons		.add((Page.MainFrame.GetFirstChild("Button_Compare"^I) as CMlQuad));
+			}
+
+			{{{MLShowAnim[0]}}}
+
+			declare CMlQuad  ButtonSelected <=> Buttons[0];
+
+			G_SelectIMG[0]   = "{{{IMG_PS_Select}}}";
+			G_SelectIMG[1]   = "{{{IMG_XB_Select}}}";
+			G_SelectIMG[2]   = "{{{IMG_PC_Select}}}";
+			G_SortIMG[0]     = "{{{IMG_PS_Cancel}}}";
+			G_SortIMG[1]     = "{{{IMG_XB_Cancel}}}";
+			G_SortIMG[2]     = "{{{IMG_PC_Cancel}}}";
+			G_CancelIMG[0]   = "{{{IMG_PS_Action1}}}";
+			G_CancelIMG[1]   = "{{{IMG_XB_Action1}}}";
+			G_CancelIMG[2]   = "{{{IMG_PC_Action1}}}";
+			G_PageUpIMG[0]   = "{{{IMG_PS_PageDown}}}";
+			G_PageUpIMG[1]   = "{{{IMG_XB_PageDown}}}";
+			G_PageUpIMG[2]   = "{{{IMG_PC_PageDown}}}";
+			G_PageDownIMG[0] = "{{{IMG_PS_PageUp}}}";
+			G_PageDownIMG[1] = "{{{IMG_XB_PageUp}}}";
+			G_PageDownIMG[2] = "{{{IMG_PC_PageUp}}}";
+
+			Quad_RightInput		.ImageUrl 	= "{{{IMGSelect}}}";
+			Quad_LeftInput		.ImageUrl 	= "{{{IMGSort}}}";
+			Quad_RightInput2	.ImageUrl 	= "{{{IMGCancel}}}";
+			Label_RightInput	.Value 		= "{{{TXTSelect}}}";
+			Label_LeftInput		.Value 		= "{{{TXTSort}}}";
+			""";
+			if(SystemPlatform == CMlScript::ESystemPlatform::PS4 || SystemPlatform == CMlScript::ESystemPlatform::XBoxOne)
+				{
+			ML^="""Label_LeftInput2	.Value 		= "{{{TXTProfile}}}";
+			Quad_LeftInput2		.ImageUrl 	= "{{{IMGProfile}}}";
+			""";
+				}
+			ML^="""
+			Label_RightInput2	.Value 		= "{{{TXTCancel}}}";
+			Label_SubtitleTitle	.Value 		= _("Compete with your friends");
+
+			declare Vec2 SizeButton = <6., 6.>;
+			Quad_RightInput.Size  = SizeButton;
+			Quad_RightInput2.Size = SizeButton;
+			Quad_LeftInput.Size   = SizeButton;
+			Quad_LeftInput2.Size  = SizeButton;
+
+			// VAR DECLARATIONS
+
+			declare M_PrevPageIsVisible = False;
+
+
+
+			// CEDRIC
+
+			declare CWebServicesTaskResult 	RecordsTaskResult 		for Page;
+			declare Boolean 				RecordsTaskResultLoaded	for Page;
+			declare Text[Text][] 			RequestedRecordsResume 	for Page;
+
+			// EMILIEN :)
+			
+			declare Text LastUserSystemName = "";
+			
+			RecordsTaskResultLoaded 	= False;
+			G_SelectedIndexY 			= 0;
+			G_RecordIndex 				= 0;
+			G_SelectedFilter 			= C_SORTBY_OPPONENT_DATE;
+			G_CurrPage 	= 1;
+			G_MaxPages 					= ((RequestedRecordsResume.count - 1) / {{{C_RecordsMaxCount}}} + 1);
+
+			declare Integer	M_LockInput;
+			declare Integer	M_Prev_PageRecordsList;
+			declare Text	Prev_Name;
+
+			UpdateDisplayFromRecords(RequestedRecordsResume);
+
+			log(Now^" > LOAD OK : {{{C_LayerName}}}");
+
+			declare Integer ActiveButtonPlatform;
+
+			
+			while(True)
+			{
+				yield;
+
+				/*
+				if(LocalUser.Name != Prev_Name)
+				{
+					declare Text VersusText = TL::Compose( _("%1 versus"), LocalUser.Name);
+					declare Label_Player   <=> (Page.MainFrame.GetFirstChild("Label_Player") as CMlLabel);
+					Label_Player.Value = VersusText;
+					Prev_Name = LocalUser.Name;
+				}
+				*/
+
+				// EG : un peu bourrin, mais c'est une opération rare...
+				if(ManiaPlanet.UserMgr.MainUser == Null) {
+					if(LastUserSystemName != "") {
+						SendCustomEvent("HideLayerRecordCenter", [""]);
+						SendCustomEvent("HideLayerRecordCenterDetails", [""]);
+						// SendCustomEvent("ReleaseRecordsTaskResult", ["Main"]);
+						// SendCustomEvent("ReleaseRecordsTaskResult", ["NotMain"]);
+					}
+					LastUserSystemName = "";
+				} else {
+					if(LastUserSystemName != ManiaPlanet.UserMgr.MainUser.SystemName) {
+						LastUserSystemName = ManiaPlanet.UserMgr.MainUser.SystemName;
+						SendCustomEvent("HideLayerRecordCenter", [""]);
+						SendCustomEvent("HideLayerRecordCenterDetails", [""]);
+						// SendCustomEvent("ReleaseRecordsTaskResult", ["Main"]);
+						// SendCustomEvent("ReleaseRecordsTaskResult", ["NotMain"]);
+					}
+				}
+
+				
+				if (Input.PendingEvents.count != 0) {
+					declare Integer LastInputPlatform;
+					switch (Input.PendingEvents[Input.PendingEvents.count-1].Pad.Type) {
+						case CInputPad::EPadType::Keyboard 		: LastInputPlatform = {{{LibUIButtons::GetPlatform("PC")}}};
+						case CInputPad::EPadType::PlayStation 	: LastInputPlatform = {{{LibUIButtons::GetPlatform("PS4")}}};
+						case CInputPad::EPadType::XBox 			: LastInputPlatform = {{{LibUIButtons::GetPlatform("XB1")}}};
+						default 								: LastInputPlatform = {{{LibUIButtons::GetPlatform("PC")}}};
+					}
+					if (LastInputPlatform != ActiveButtonPlatform)
+					{
+						ActiveButtonPlatform = LastInputPlatform;
+						//SendCustomEvent("SetActiveButtonPlaform", ["MapsOverview", TL::ToText(LastInputPlatform)]);
+						ChangeInputsImg(ActiveButtonPlatform);
+					}
+				}
+				
+				
+				// HIDING FRAME IS BEFORE SHOW ANIM
+				// FRAMES ARE NEEDED TO BE HIDDEN BEFORE THE ANIM IS LAUNCHED TO REMOVE THEM FROM THE ANIM QUEUE
+				// foreach(I => Frame in Frames)
+				// {
+					// declare IsVisible 	= True;
+					// Frame.Visible 		= IsVisible;
+				// }
+
+				{{{MLShowAnim[1]}}}
+
+				if(M_PrevPageIsVisible != PageIsVisible)
+				{
+					M_PrevPageIsVisible = PageIsVisible;
+					if(M_PrevPageIsVisible)
+						Audio.PlaySoundEvent("{{{SoundPath^SoundShowPauseMenu}}}", {{{Volumes::GetVolumedB("MenuPauseShow")}}});
+					else
+						Audio.PlaySoundEvent("{{{SoundPath^SoundHideMenu}}}", {{{Volumes::GetVolumedB("MenuHide")}}});
+
+					EnableMenuNavigation(M_PrevPageIsVisible, True, Null, 1);
+				}
+
+				if(M_Prev_PageRecordsList != G_CurrPage)
+				{
+					M_Prev_PageRecordsList 	= G_CurrPage;
+					M_LaunchShowAnim 		= True;
+					Label_Switch.Value 		= TL::Compose(_("Page %1"), ""^G_CurrPage);
+				}
+
+				LibManialink_AnimLoop();
+
+				if(!PageIsVisible && PendingEvents.count == 0) continue;
+
+				foreach(Event in PendingEvents)
+				{
+					if(Event.Type == CMlEvent::Type::MouseClick)
+					{
+						Input_Select(Event.Control.ControlId);
+						
+					}
+					else
+					if(Event.Type == CMlEvent::Type::MouseOver)
+					{
+						Audio.PlaySoundEvent("{{{SoundPath^SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+						ButtonSelected = Null;
+						foreach(I => Button in Buttons)
+						{
+							if (Event.Control == Button)
+							{
+								ButtonSelected = Button;
+								G_RecordIndex = I + ((G_CurrPage - 1) * {{{C_RecordsMaxCount}}});
+							}
+						}
+
+						for(I, 0, 1)
+						{
+							declare Text MyLabel;
+							switch(I)
+							{
+								case 1: MyLabel = "Label_LeftInputInput";
+								case 0: MyLabel = "Label_RightInputInput2";
+							}
+							declare Label_LeftInput <=> (Page.MainFrame.GetFirstChild(MyLabel) 	  as CMlLabel);
+							declare Boolean IsFocus  = ButtonSelected == Null && (I == 0 && Event.Control.ControlId == "ButtonInput_Sort" || I == 1 && Event.Control.ControlId == "ButtonInput_Cancel");
+							SetInputInfoTextSelected(Label_LeftInput, IsFocus);
+						}
+					}
+					else
+					if(Event.Type == CMlEvent::Type::MenuNavigation)
+					{
+						if(M_LockInput + 50 > Now) continue;
+						M_LockInput = Now;
+
+						switch(Event.MenuNavAction)
+						{
+							case CMlEvent::EMenuNavAction::Cancel :
+							{
+								// log("Cancel");
+								Input_Cancel();
+							}
+							case CMlEvent::EMenuNavAction::AppMenu :
+							{
+								// log("Cancel");
+								SendCustomEvent("HideLayerRecordCenter", [""]);
+								SendCustomEvent("ReleaseRecordsTaskResult", ["Main"]);
+							}
+
+							case CMlEvent::EMenuNavAction::PageUp:
+							{
+								Input_PageUp();
+							}
+
+							case CMlEvent::EMenuNavAction::PageDown:
+							{
+								Input_PageDown();
+							}
+
+							case CMlEvent::EMenuNavAction::Action1:
+							{
+								Input_Action1();
+							}
+
+							case CMlEvent::EMenuNavAction::Action2:
+							{
+								//Aucun effet sur la version PC
+							}
+						}
+					}
+
+					if(Event.Type == CMlEvent::Type::PluginCustomEvent)
+					{
+						switch(Event.PluginCustomEventType)
+						{
+							// Wait to receive the confirmation that the other page receive the information before displaying it
+							case "BuddyLoaded":
+							{
+								// SendCustomEvent("GotoPage", ["RecordCenterDetails"]);
+								// SendCustomEvent("DetachPage", ["RecordCenter"]);
+							}
+
+							// Load the data in the table to display them
+							case "RecordsLoaded":
+							{
+								
+								// if(RecordsTaskResultLoaded == True) continue;
+								G_MaxPages = ((RequestedRecordsResume.count - 1) / {{{C_RecordsMaxCount}}} + 1);
+								G_CurrPage = 1;
+								G_SelectedIndexY = 0;
+								G_RecordIndex = 0;
+
+								UpdateDisplayFromRecords(RequestedRecordsResume);
+								ChangeFilterLabel();
+								if(!PageIsVisible) SendCustomEvent("ShowLayerRecordCenter", [""]);
+							}
+
+							// Load the data in the table to display them
+							case "GetRecordsResume":
+							{
+								SendCustomEvent("GetRecordsResume", [""^G_SelectedFilter, Event.CustomEventData[1]]);
+							}
+
+							case "PluginRecordsLoaded":
+							{
+								SendCustomEvent("PluginRecordsLoaded", Text[]);
+							}
+							case "ChangeName":
+							{
+								declare PlayerName = Event.CustomEventData[0];
+								declare Text VersusText = TL::Compose( _("%1 versus"), PlayerName);
+								declare Label_Player   <=> (Page.MainFrame.GetFirstChild("Label_Player") as CMlLabel);
+								Label_Player.Value = VersusText;
+							}
+						}
+					}
+				}
+
+
+
+				declare ButtonSelectedSinVar 	= ML::Sin(Now * 0.01) * 0.5 + 0.5;
+				declare ButtonSelectedOpacity 	= 0.0 + ButtonSelectedSinVar * 1.;
+
+				foreach(Button in Buttons)
+				{
+					Button.Opacity = 0.;
+				}
+
+				if(ButtonSelected != Null) ButtonSelected.Opacity = ButtonSelectedOpacity;
+			}
+		}
+	--></script>
+	""";
+
+
+	Layers::Create(C_LayerName, ML);
+	Layers::Attach(C_LayerName);
+	declare Layer = Layers::Get(C_LayerName);
+	Layer.OutAnimation = CUILayer::EUILayerAnimation::None;
+	Layer.IsVisible = False;
+}
+
+
+
+Void Load()
+{
+	CreateLayer();
+}
+
+CUILayer GetLayer()
+{
+	return Layers::Get(C_LayerName);
+}
+
+Integer GetRecordsMaxCount()
+{
+	return C_RecordsMaxCount;
+}
+
+Text GetLayerName()
+{
+	return C_LayerName;
+}

@@ -1,0 +1,271 @@
+#Const Version		"2014-07-28"
+#Const ScriptName	"LayersFactory.Script.txt"
+
+#Const C_DefaultShowAnim """
+//sleep(100);
+"""
+#Const C_DefaultHideAnim 	"""
+//EnableMenuNavigation(False,False,Null);
+//Page.MainFrame.Hide();
+
+"""
+#Const C_MenuVersion0 ""
+#Const C_MenuVersion1 "VersionRetourPreFPPMixFlorentEncore/"
+
+
+#Include "Libs/Nadeo/TMConsole/Logger.Script.txt"											as Logger
+#Include "Libs/Nadeo/TMConsole/Menu/MenuLayers.Script.txt"									as Layers
+
+#Include "Libs/Nadeo/TMConsole/Menu/SceneryManager.Script.txt"								as SceneryManager
+
+#Include "Libs/Nadeo/TMConsole/LayerBuilders/LBMainSelector.Script.txt"						as LBMainSelector
+#Include "Libs/Nadeo/TMConsole/LayerBuilders/LBStartMain.Script.txt"						as LBStartMain
+//#Include "Libs/Nadeo/TMConsole/LayerBuilders/LBWorkInProgress.Script.txt"					as LBWorkInProgress
+#Include "Libs/Nadeo/TMConsole/LayerBuilders/LBHelmetEditor.Script.txt"					    as LBHelmetEditor
+#Include "Libs/Nadeo/TMConsole/LayerBuilders/LBWorkInProgress_Campaign.Script.txt"			as LBWorkInProgress_Campaign
+#Include "Libs/Nadeo/TMConsole/LayerBuilders/LBWorkInProgress_RoundSplitMulti.Script.txt"	as LBWorkInProgress_RoundSplitMulti
+
+#Include "Libs/Nadeo/TMConsole/LayerBuilders/LBIntro.Script.txt"							as LBIntro
+#Include "Libs/Nadeo/TMConsole/LayerBuilders/LBIntroAdvise.Script.txt"						as LBIntroAdvise
+#Include "Libs/Nadeo/TMConsole/LayerBuilders/LBDifficultySelector.Script.txt"				as LBDifficultySelector
+#Include "Libs/Nadeo/TMConsole/LayerBuilders/LBMapsOverview.Script.txt"						as LBMapsOverview
+#Include "Libs/Nadeo/TMConsole/LayerBuilders/LBUnderConstruction.Script.txt"				as LBUnderConstruction
+#Include "Libs/Nadeo/TMConsole/LayerBuilders/LBBrowseTracks.Script.txt"						as LBBrowseTracks
+#Include "Libs/Nadeo/TMConsole/LayerBuilders/LBCommunityTracks.Script.txt"					as LBCommunityTracks
+#Include "Libs/Nadeo/TMConsole/LayerBuilders/LBWorkshop.Script.txt"							as LBWorkshop
+#Include "Libs/Nadeo/TMConsole/LayerBuilders/LBTrackLeaderboard.Script.txt"					as LBTrackLeaderboard
+#Include "Libs/Nadeo/TMConsole/LayerBuilders/LBGlobalLeaderBoard.Script.txt"				as LBGlobalLeaderBoard
+#Include "Libs/Nadeo/TMConsole/LayerBuilders/LBBackgroundMenu.Script.txt"					as LBBackgroundMenu
+#Include "Libs/Nadeo/TMConsole/LayerBuilders/LBBoard.Script.txt"							as LBBoard
+#Include "Libs/Nadeo/TMConsole/LayerBuilders/LBMusics.Script.txt"							as LBMusics
+
+#Include "Libs/Nadeo/TMConsole/LayerBuilders/LBRankingModule.Script.txt"					as LBRankingModule
+
+#Include "Libs/Nadeo/TMConsole/LayerBuilders/LBScreens.Script.txt"							as LBScreens
+#Include "Libs/Nadeo/TMConsole/LayerBuilders/LBMoodSelector.Script.txt"						as LBMoodSelector
+#Include "Libs/Nadeo/TMConsole/LayerBuilders/LBEnviroSelector.Script.txt"					as LBEnviroSelector
+#Include "Libs/Nadeo/TMConsole/LayerBuilders/LBTransitionPages.Script.txt"					as LBTransitionPages
+#Include "Libs/Nadeo/TMConsole/LayerBuilders/LBSettings.Script.txt"							as LBSettings
+#Include "Libs/Nadeo/TMConsole/LayerBuilders/LBPopUp.Script.txt"							as LBPopUp
+#Include "Libs/Nadeo/TMConsole/LayerBuilders/LBSuperPopUp.Script.txt"						as LBSuperPopUp
+#Include "Libs/Nadeo/TMConsole/LayerBuilders/Settings/LBLocation.Script.txt"				as LBLocation
+#Include "Libs/Nadeo/TMConsole/LayerBuilders/Settings/LBCredits.Script.txt"					as LBCredits
+#Include "Libs/Nadeo/TMConsole/LayerBuilders/LBMapFamily.Script.txt"						as LBMapFamily
+
+#Include "Libs/Nadeo/TMConsole/LayerBuilders/LBBrowseOnlineRooms.Script.txt"				as LBBrowseOnlineRooms
+#Include "Libs/Nadeo/TMConsole/LayerBuilders/LBRoomManager.Script.txt"						as LBRoomManager
+#Include "Libs/Nadeo/TMConsole/LayerBuilders/LBMyRooms.Script.txt"							as LBMyRooms
+#Include "Libs/Nadeo/TMConsole/LayerBuilders/LBKindOfTracks.Script.txt"						as LBKindOfTracks
+#Include "Libs/Nadeo/TMConsole/LayerBuilders/LBMyPrivateRoom.Script.txt"					as LBMyPrivateRoom
+#Include "Libs/Nadeo/TMConsole/LayerBuilders/LBUPlaySignInUp.Script.txt"					as LBUPlaySignInUp
+#Include "Libs/Nadeo/TMConsole/LayerBuilders/LBStartDemo.Script.txt"						as LBStartDemo
+
+#Include "Libs/Nadeo/TMConsole/LayerBuilders/LBServerBrowser.Script.txt"					as LBServerBrowser
+#Include "Libs/Nadeo/TMConsole/LayerBuilders/LBChallengeBrowser.Script.txt"					as LBChallengeBrowser
+#Include "Libs/Nadeo/TMConsole/LayerBuilders/LB_Dbg_RequestLogger.Script.txt"				as LB_Dbg_RequestLogger
+#Include "Libs/Nadeo/TMConsole/LayerBuilders/LBRoomPlaylist.Script.txt"						as LBRoomPlaylist
+#Include "Libs/Nadeo/TMConsole/LayerBuilders/LBMyTracks.Script.txt"							as LBMyTracks
+#Include "Libs/Nadeo/TMConsole/LayerBuilders/LBChallengeManager.Script.txt"					as LBChallengeManager
+#Include "Libs/Nadeo/TMConsole/LayerBuilders/LBChallengeTracks.Script.txt"					as LBChallengeTracks
+#Include "Libs/Nadeo/TMConsole/LayerBuilders/LBChallengeBuddies.Script.txt"					as LBChallengeBuddies
+#Include "Libs/Nadeo/TMConsole/LayerBuilders/LBTrackbuilderWorkshop.Script.txt"				as LBTrackbuilderWorkshop
+#Include "Libs/Nadeo/TMConsole/LayerBuilders/LBBuddiesChallengeBrowser.Script.txt"			as LBBuddiesChallengeBrowser
+#Include "Libs/Nadeo/TMConsole/LayerBuilders/LBJoinAFriend.Script.txt"						as LBJoinAFriend
+#Include "Libs/Nadeo/TMConsole/LayerBuilders/LBLoadingPopUp.Script.txt"						as LBLoadingPopUp
+#Include "Libs/Nadeo/TMConsole/LayerBuilders/LBPopUp_JoinAFriend.Script.txt"				as LBPopUp_JoinAFriend
+
+#Include "Libs/Nadeo/TMConsole/LayerBuilders/VR/LBMapsSelector.Script.txt"					as VRMapsSelector
+
+Text GetScriptVersion() { return Version; }
+Text GetScriptName() 	{ return ScriptName; }
+
+
+Void Build(Text _LayerName, Boolean _Attach) {
+
+	declare Text MLText;
+	switch(_LayerName) {
+		case("MainSelector"):{
+			MLText = LBMainSelector::Build(C_DefaultShowAnim, C_DefaultHideAnim, SceneryManager::GetScenery());
+		}
+		case("StartMain"):{
+			MLText = LBStartMain::Build(C_DefaultShowAnim, C_DefaultHideAnim);
+		}
+		case("WorkInProgress"):{
+			MLText = "<label text='DISABLED' />";	//MLText = LBWorkInProgress::Build(C_DefaultShowAnim, C_DefaultHideAnim);
+		}
+		case("WorkInProgress_Campaign"):{
+			MLText = LBWorkInProgress_Campaign::Build(C_DefaultShowAnim, C_DefaultHideAnim);
+		}
+		case("WorkInProgress_RoundSplitMulti"):{
+			MLText = LBWorkInProgress_RoundSplitMulti::Build(C_DefaultShowAnim, C_DefaultHideAnim);
+		}
+		case("HelmetEditor"):{
+			MLText = LBHelmetEditor::Build(C_DefaultShowAnim, C_DefaultHideAnim);
+		}
+		case("Intro"):{
+			MLText = LBIntro::Build(C_DefaultShowAnim, C_DefaultHideAnim);
+		}
+		case("IntroAdvise"):{
+			MLText = LBIntroAdvise::Build(C_DefaultShowAnim, C_DefaultHideAnim);
+		}
+		case("DifficultySelector"):{
+			MLText = LBDifficultySelector::Build(C_DefaultShowAnim, C_DefaultHideAnim);
+		}
+		case("MapsOverview"):{
+			MLText = LBMapsOverview::Build(C_DefaultShowAnim, C_DefaultHideAnim);
+		}
+		case("UnderConstruction"):{
+			MLText = LBUnderConstruction::Build(C_DefaultShowAnim, C_DefaultHideAnim);
+		}
+		case("BrowseTracks"):{
+			MLText = LBBrowseTracks::Build(C_DefaultShowAnim, C_DefaultHideAnim);
+		}
+		case("BackgroundMenu"):{
+			MLText = LBBackgroundMenu::Build(C_DefaultShowAnim, C_DefaultHideAnim);
+		}
+		case("Board"):{
+			MLText = LBBoard::Build(C_DefaultShowAnim, C_DefaultHideAnim);
+		}
+		case("Musics"):{
+			MLText = LBMusics::Build(C_DefaultShowAnim, C_DefaultHideAnim);
+		}
+		case("RankingModule"):{
+			MLText = LBRankingModule::Build(C_DefaultShowAnim, C_DefaultHideAnim);
+		}
+		case("Screens"):{
+			MLText = LBScreens::Build(C_DefaultShowAnim, C_DefaultHideAnim);
+		}
+		case("Mood"):{
+			MLText = LBMoodSelector::Build(C_DefaultShowAnim, C_DefaultHideAnim);
+		}
+		case("Enviro"):{
+			MLText = LBEnviroSelector::Build(C_DefaultShowAnim, C_DefaultHideAnim);
+		}
+		case("TransitionPages"):{
+			MLText = LBTransitionPages::Build(C_DefaultShowAnim, C_DefaultHideAnim);
+		}
+		case("PopUp"):{
+			MLText = LBPopUp::Build(C_DefaultShowAnim, C_DefaultHideAnim);
+		}
+		case("SuperPopUp"):{
+			MLText = LBSuperPopUp::Build(C_DefaultShowAnim, C_DefaultHideAnim);
+		}
+		case("Location"):{
+			MLText = LBLocation::Build(C_DefaultShowAnim, C_DefaultHideAnim);
+		}
+
+		case("Settings"):{
+			MLText = LBSettings::Build(C_DefaultShowAnim, C_DefaultHideAnim);
+		}
+		case("Credits"):{
+			MLText = LBCredits::Build(C_DefaultShowAnim, C_DefaultHideAnim);
+		}
+		case("MapFamily"):{
+			MLText = LBMapFamily::Build(C_DefaultShowAnim, C_DefaultHideAnim);
+		}
+		case("BrowseOnlineRooms"):{
+			MLText = LBBrowseOnlineRooms::Build(C_DefaultShowAnim, C_DefaultHideAnim);
+		}
+		case("CommunityTracks"):{
+			MLText = LBCommunityTracks::Build(C_DefaultShowAnim, C_DefaultHideAnim);
+		}
+		case("Workshop"):{
+			MLText = LBWorkshop::Build(C_DefaultShowAnim, C_DefaultHideAnim);
+		}
+		case("TrackLeaderboard"):{
+			MLText = LBTrackLeaderboard::Build(C_DefaultShowAnim, C_DefaultHideAnim);
+		}
+		case("GlobalLeaderBoard"):{
+			MLText = LBGlobalLeaderBoard::Build(C_DefaultShowAnim, C_DefaultHideAnim);
+		}
+		case("RoomManager"):{
+			MLText = LBRoomManager::Build(C_DefaultShowAnim, C_DefaultHideAnim);
+		}
+		case("MyRooms"):{
+			MLText = LBMyRooms::Build(C_DefaultShowAnim, C_DefaultHideAnim);
+		}
+		case("KindOfTracks"):{
+			MLText = LBKindOfTracks::Build(C_DefaultShowAnim, C_DefaultHideAnim);
+		}
+		case("MyPrivateRoom"):{
+			MLText = LBMyPrivateRoom::Build(C_DefaultShowAnim, C_DefaultHideAnim);
+		}
+		case("UPlaySignInUp"):{
+			MLText = LBUPlaySignInUp::Build(C_DefaultShowAnim, C_DefaultHideAnim);
+		}
+		case("StartDemo"):{
+			MLText = LBStartDemo::Build(C_DefaultShowAnim, C_DefaultHideAnim);
+		}
+		case("ServerBrowser"):{
+			MLText = LBServerBrowser::Build(C_DefaultShowAnim, C_DefaultHideAnim);
+		}
+		case("RoomManager"):{
+			MLText = LBRoomManager::Build(C_DefaultShowAnim, C_DefaultHideAnim);
+		}
+		case("RoomPlaylist"):{
+			MLText = LBRoomPlaylist::Build(C_DefaultShowAnim, C_DefaultHideAnim);
+		}
+		case("MyTracks"):{
+			MLText = LBMyTracks::Build(C_DefaultShowAnim, C_DefaultHideAnim);
+		}
+		case ("Dbg_RequestLogger") : {
+			MLText = LB_Dbg_RequestLogger::Build(C_DefaultShowAnim, C_DefaultHideAnim);
+		}
+		case ("ChallengeManager") : {
+			MLText = LBChallengeManager::Build(C_DefaultShowAnim, C_DefaultHideAnim);
+		}
+		case ("ChallengeBrowser") : {
+			MLText = LBChallengeBrowser::Build(C_DefaultShowAnim, C_DefaultHideAnim);
+		}
+		case ("ChallengeBuddies") : {
+			MLText = LBChallengeBuddies::Build(C_DefaultShowAnim, C_DefaultHideAnim);
+		}
+		//Version VR
+		case("VRMapsSelector"):{
+			MLText = VRMapsSelector::Build(C_DefaultShowAnim, C_DefaultHideAnim);
+		}
+		case ("ChallengeTracks"):{
+			MLText = LBChallengeTracks::Build(C_DefaultShowAnim, C_DefaultHideAnim);
+		}
+		case ("TrackbuilderWorkshop") : {
+			MLText = LBTrackbuilderWorkshop::Build(C_DefaultShowAnim, C_DefaultHideAnim);
+		}
+		case ("BuddiesChallengeBrowser") : {
+			MLText = LBBuddiesChallengeBrowser::Build(C_DefaultShowAnim, C_DefaultHideAnim);
+		}
+		case ("JoinAFriend") : {
+			MLText = LBJoinAFriend::Build(C_DefaultShowAnim, C_DefaultHideAnim);
+		}
+		case ("PopUp_JoinAFriend") : {
+			MLText = LBPopUp_JoinAFriend::Build(C_DefaultShowAnim, C_DefaultHideAnim);
+		}
+		case ("LoadingPopUp") : {
+			MLText = LBLoadingPopUp::Build(C_DefaultShowAnim, C_DefaultHideAnim);
+		}	}
+
+	
+	if(MLText == "") {
+		Logger::Warn("Unknown Page: "^_LayerName);
+		return;
+	}
+	
+	Layers::Create(_LayerName, MLText);
+	
+	declare CUILayer Layer <=> Layers::Get(_LayerName);
+	declare Text Page_LayerName for Layer.LocalPage;
+	
+	Page_LayerName = _LayerName;
+	if(_Attach) Layers::Attach(_LayerName);
+}
+
+Void Build(Text _LayerName) {
+	Build(_LayerName, False);
+
+}
+
+Void Rebuild(Text _LayerName) {
+	declare CUILayer Layer <=> Layers::Get(_LayerName);
+	if(Layer == Null) return;
+	Layers::Destroy(_LayerName);
+	Build(_LayerName);
+}

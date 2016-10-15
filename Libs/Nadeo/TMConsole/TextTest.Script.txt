@@ -1,0 +1,16 @@
+
+Void Load() {
+	
+	declare Text TheTest = _("[CharsTest]");
+	
+	declare Text MLText = """
+	<frame>
+		<quad posn="0 0 0" bgcolo="000f" sizen="320 80" halign="center" valign="center" />
+		<label posn="-150 70 1" id="Label_TestText" autonewline="1" text="{{{TheTest}}}"/>
+	</frame>
+	""";
+	
+	Layers::Destroy("TestText");
+	Layers::Create("TestText", MLText);
+	Layers::Attach("TestText");	
+}

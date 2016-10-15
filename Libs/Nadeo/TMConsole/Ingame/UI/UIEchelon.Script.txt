@@ -1,0 +1,105 @@
+/** 
+ *	UIUIEchelon
+ */
+#Include "Libs/Nadeo/TMConsole/Colors.Script.txt" 								as Colors
+ 
+#Const C_ImgBaseManialinks				"file://Media/Manialinks/Nadeo/TMConsole/Images/"
+
+Text GetMLEchelonFunctions() 
+{
+
+	declare Text Echelon0           = C_ImgBaseManialinks^"Echelons/RNKG_00b.png";
+	declare Text Echelon1           = C_ImgBaseManialinks^"Echelons/RNKG_01b.png";
+	declare Text Echelon2           = C_ImgBaseManialinks^"Echelons/RNKG_02b.png";
+	declare Text Echelon3           = C_ImgBaseManialinks^"Echelons/RNKG_03b.png";
+	declare Text Echelon4           = C_ImgBaseManialinks^"Echelons/RNKG_04b.png";
+	declare Text Echelon5           = C_ImgBaseManialinks^"Echelons/RNKG_05b.png";
+	declare Text Echelon6           = C_ImgBaseManialinks^"Echelons/RNKG_06b.png";
+	declare Text Echelon7           = C_ImgBaseManialinks^"Echelons/RNKG_07b.png";
+	declare Text Echelon8           = C_ImgBaseManialinks^"Echelons/RNKG_08b.png";
+	declare Text Echelon9           = C_ImgBaseManialinks^"Echelons/RNKG_09b.png";
+	declare Text EchelonIcone0      = C_ImgBaseManialinks^"Echelons/Icones/RNKG_00a.png";
+	declare Text EchelonIcone1      = C_ImgBaseManialinks^"Echelons/Icones/RNKG_01a.png";
+	declare Text EchelonIcone2      = C_ImgBaseManialinks^"Echelons/Icones/RNKG_02a.png";
+	declare Text EchelonIcone3      = C_ImgBaseManialinks^"Echelons/Icones/RNKG_03a.png";
+	declare Text EchelonIcone4      = C_ImgBaseManialinks^"Echelons/Icones/RNKG_04a.png";
+	declare Text EchelonIcone5      = C_ImgBaseManialinks^"Echelons/Icones/RNKG_05a.png";
+	declare Text EchelonIcone6      = C_ImgBaseManialinks^"Echelons/Icones/RNKG_06a.png";
+	declare Text EchelonIcone7      = C_ImgBaseManialinks^"Echelons/Icones/RNKG_07a.png";
+	declare Text EchelonIcone8      = C_ImgBaseManialinks^"Echelons/Icones/RNKG_08a.png";
+	declare Text EchelonIcone9      = C_ImgBaseManialinks^"Echelons/Icones/RNKG_09a.png";
+	declare Text EchelonText =
+	"""
+		Vec3 GetColorEchelon(Integer _Echelon)
+		{
+			switch(_Echelon)
+			{
+				case 0: return {{{Colors::GetColor("Grey")}}};
+				case 1: return {{{Colors::GetColor("Orange")}}};
+				case 2: return {{{Colors::GetColor("Red")}}};
+				case 3: return {{{Colors::GetColor("Red2")}}};
+				case 4: return {{{Colors::GetColor("Purple")}}};
+				case 5: return {{{Colors::GetColor("PinkRed")}}};
+				case 6: return {{{Colors::GetColor("Blue")}}};
+				case 7: return {{{Colors::GetColor("Green")}}};
+				case 8: return {{{Colors::GetColor("Cyan")}}};
+				case 9: return {{{Colors::GetColor("Cyan2")}}};
+			}
+			return {{{Colors::GetColor("Grey")}}};
+		}
+
+		Text GetImgEchelon(Integer _Echelon)
+		{
+			switch(_Echelon)
+			{
+				case 0: return "{{{Echelon0}}}";
+				case 1: return "{{{Echelon1}}}";
+				case 2: return "{{{Echelon2}}}";
+				case 3: return "{{{Echelon3}}}";
+				case 4: return "{{{Echelon4}}}";
+				case 5: return "{{{Echelon5}}}";
+				case 6: return "{{{Echelon6}}}";
+				case 7: return "{{{Echelon7}}}";
+				case 8: return "{{{Echelon8}}}";
+				case 9: return "{{{Echelon9}}}";
+			}
+			return "{{{Echelon0}}}";
+		}
+		
+		Text GetImgIcone(Integer _Echelon)
+		{
+			switch(_Echelon)
+			{
+				case 0: return "{{{EchelonIcone0}}}";
+				case 1: return "{{{EchelonIcone1}}}";
+				case 2: return "{{{EchelonIcone2}}}";
+				case 3: return "{{{EchelonIcone3}}}";
+				case 4: return "{{{EchelonIcone4}}}";
+				case 5: return "{{{EchelonIcone5}}}";
+				case 6: return "{{{EchelonIcone6}}}";
+				case 7: return "{{{EchelonIcone7}}}";
+				case 8: return "{{{EchelonIcone8}}}";
+				case 9: return "{{{EchelonIcone9}}}";
+			}
+			return "{{{EchelonIcone0}}}";
+		}
+		
+		Integer GetEchelonPlayerIndex(CTmMlPlayer _Player) {
+			switch(_Player.User.Echelon) {
+				case CUser::EEchelon::None 		: return 0;
+				case CUser::EEchelon::Bronze1 	: return 1;
+				case CUser::EEchelon::Bronze2 	: return 2;
+				case CUser::EEchelon::Bronze3 	: return 3;
+				case CUser::EEchelon::Silver1 	: return 4;
+				case CUser::EEchelon::Silver2 	: return 5;
+				case CUser::EEchelon::Silver3 	: return 6;
+				case CUser::EEchelon::Gold1 	: return 7;
+				case CUser::EEchelon::Gold2 	: return 8;
+				case CUser::EEchelon::Gold3 	: return 9;
+			}
+			return -1;
+		}
+	""";
+	
+	return EchelonText;
+}

@@ -1,0 +1,671 @@
+/** 
+ *	In-Game UI library
+ */
+	
+#Include "Libs/Nadeo/TMConsole/Menu/MenuLayers.Script.txt"								as Layers
+#Include "Libs/Nadeo/TMConsole/Ingame/UI/UIOnlinePopupBuilder.Script.txt"				as UIPopupBuilder
+#Include "Libs/Nadeo/TMConsole/Colors.Script.txt" 										as Colors
+#Include "Libs/Nadeo/UIPadButtons.Script.txt"											as UIButtons
+#Include "Libs/Nadeo/TMConsole/Menu/Controller/TrackController.Script.txt" 				as TrackController
+#Include "Libs/Nadeo/TMConsole/Ingame/UI/UIOnlineRoomTrackDescDisplay.Script.txt" 		as UIOnlineRoomTrackDescDisplay
+
+#Const Version		"2015-03-02"
+#Const ScriptName	"UIOnlineManageFavorite.Script.txt"
+
+#Const LAYERNAME_FAVORITEMANAGER			"FavoriteManager"
+#Const C_TIMERTIMEOUT						5000
+#Const C_NBATTEMPS							5
+
+#Const C_GAMEPHASE_CHALLENGE			3
+#Const C_GAMEPHASE_PREPARATION			0
+#Const C_GAMEPHASE_GAME					1
+#Const C_GAMEPHASE_POSTGAME				2
+#Const C_GAMEPHASE_OUTRO				4
+
+declare Text[Text][] 		G_FavoriteTracks;
+declare Text[Text][] 		G_MyRooms;
+declare Boolean				G_IsConnectedMasterServer;
+declare Boolean				G_IsTrackFavorite;
+declare Boolean				G_IsRoomFavorite;
+declare Boolean				G_IsAuthorFavorite;
+
+declare Integer				G_IsTrackFavoriteNbAttempt;
+declare Integer				G_IsAuthorFavoriteNbAttempt;
+declare Integer				G_IsRoomFavoriteNbAttempt;
+
+declare Text				G_TrackUid;
+declare Integer				G_ForceMapUpdate;
+
+
+Void ShowFavoriteManager(Boolean _Show) {
+	Layers::SetVisibility(LAYERNAME_FAVORITEMANAGER, _Show);
+	declare netwrite Boolean Net_IsFavoriteManagerShown for UI;
+	Net_IsFavoriteManagerShown = _Show;
+	// log("SET SHOW MANAGE FAVORITE: "^Net_IsFavoriteManagerShown);
+}
+
+Void ConstructFavoriteManager() {
+
+	declare netwrite Text 		Net_MenuFavoriteTitle			for UI;
+	declare netwrite Text 		Net_MenuFavoriteSubtitle		for UI;
+	declare netwrite Text[] 	Net_FavoriteInputs 				for UI;
+	
+	declare Text 		ColorMode;
+	declare Text 		LayerName		= LAYERNAME_FAVORITEMANAGER;
+	declare Vec3 		LayerPos		= <-85., 15., 61.>;
+	declare Text[][] 	LayerContent;
+	declare Text 		LayerBeforeWhile;
+	
+	declare IMGSelect 		= UIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Select);
+	// log(IMGSelect);
+	declare TXTSelect 		= _("Select");
+	Net_FavoriteInputs 	= [IMGSelect, TXTSelect];
+	// Net_FavoriteInputs 	= "Manage your favorite or report a track";
+	
+	declare ColorWhite 			= Colors::GetColor("White");
+	declare ColorGrey 			= Colors::GetColor("Grey");
+	
+	// log("SERVER MODE NAME: "^Playground.ServerInfo.ModeName);
+	if(Playground.ServerInfo.ModeName != "TMC_LocalArcade" && Playground.ServerInfo.ModeName != "TMC_HotSeat" && Playground.ServerInfo.ModeName != "TMC_LocalRounds" && Playground.ServerInfo.ModeName != "TMC_Championship") {
+			// Net_MenuFavoriteTitle 		= IMGPATH^IMG_ONLINE;
+			ColorMode 					= Colors::GetModeColorName(0);
+			declare TitleParam			= "ColorText "^ColorMode;
+			LayerContent 	= 
+			[
+				["Title", 	"Favorite", 	"Favorite",									"2",	"", TitleParam, "Net_MenuFavoriteTitle Net_MenuFavoriteSubtitle"], 
+				["Space", 	"", 			"", 										"1",	"", "", ""],
+				["Button", 	"SetRoom", 		_("Add room to favorite"), 					"1",	"Net_PlayerWantsToSetRoomUpdate += 1;", "", "Net_RoomButtonContent"],
+				["Button", 	"SetTrack", 	_("Add track to favorite"), 				"1",	"Net_PlayerWantsToSetTrackUpdate += 1;", "", "Net_TrackButtonContent"],
+				["Button", 	"SetAuthor", 	_("Add track's author to favorite"),		"1",	"Net_PlayerWantsToSetAuthorUpdate += 1;", "", "Net_AuthorButtonContent"],
+				["Button", 	"ReporTrack", 	_("Report track"),							"1",	"Net_PlayerWantsToReportTrackUpdate += 1;", "", ""],
+				["Button", 	"Resume", 		_("Resume"), 								"1",	"Net_PlayerWantsToResumeMFUpdate += 1;" , "", ""],
+				["Space", 	"", 		  	"", 										"1",	"", "", ""],
+				["Input", 	"Input", 		"", 										"1",	"", "", "Net_FavoriteInputs"]
+			];
+
+			LayerBeforeWhile = 
+		"""
+			declare netwrite Integer 	Net_PlayerWantsToSetRoomUpdate 			for UI;
+			declare netwrite Integer 	Net_PlayerWantsToSetTrackUpdate 		for UI;
+			declare netwrite Integer 	Net_PlayerWantsToSetAuthorUpdate 		for UI;
+			declare netwrite Integer 	Net_PlayerWantsToResumeMFUpdate 		for UI;
+			declare netwrite Integer 	Net_PlayerWantsToReportTrackUpdate 		for UI;
+			declare netwrite Boolean	Net_IsTrackPrivate for UI;
+			declare Pre_IsTrackPrivate = False;
+			
+		""";
+
+		declare Text LayerInLoop = 
+		"""
+			declare CMlQuad 	Button_SetTrack 				<=> (Page.MainFrame.GetFirstChild("Button_SetTrack") as CMlQuad);
+			declare CMlLabel 	Label_SetTrack 					<=> (Page.MainFrame.GetFirstChild("Label_SetTrack") as CMlLabel);
+			if(Pre_IsTrackPrivate != Net_IsTrackPrivate) {
+				if(Net_IsTrackPrivate) {
+					Button_SetTrack.Hide();
+					Label_SetTrack.TextColor = {{{ColorGrey}}};
+					
+				} else {
+					Button_SetTrack.Hide();
+					Label_SetTrack.TextColor = {{{ColorWhite}}};
+				}
+				Pre_IsTrackPrivate = Net_IsTrackPrivate;
+			}
+			
+		""";
+		
+		UIPopupBuilder::CreateLayer(
+			LayerName,
+			LayerPos,
+			LayerContent,
+			LayerBeforeWhile,
+			"",
+			LayerInLoop
+		);
+		
+	}
+	ShowFavoriteManager(False);
+}
+
+Void ConstructManageFavoriteLiveEventFeedbackML() {
+	declare Text ML = 
+	"""
+	<script ><!--
+		#Include "TextLib" as TL
+
+		main() {
+			while(True) {
+				yield;
+
+				foreach(Event in PendingEvents) {
+					switch(Event.Type) {
+						case CMlEvent::Type::PluginCustomEvent: {
+							switch(Event.PluginCustomEventType) {
+								case "Request_TrackInfo_Success" : {
+									declare Text[Text] TrackInfo for Page;
+									declare LibOMF_VoteMapUid for UI = "";
+									declare LibOMF_VotePlus for UI = "";
+									declare LibOMF_VoteMinus for UI = "";
+
+									if (TrackInfo.existskey("uid")) LibOMF_VoteMapUid = TrackInfo["uid"];
+									else LibOMF_VoteMapUid = "";
+									if (TrackInfo.existskey("vote_plus")) LibOMF_VotePlus = TrackInfo["vote_plus"];
+									else LibOMF_VotePlus = "";
+									if (TrackInfo.existskey("vote_minus")) LibOMF_VoteMinus = TrackInfo["vote_minus"];
+									else LibOMF_VoteMinus = "";
+									
+									if (TL::ToInteger(LibOMF_VotePlus) < 0) LibOMF_VotePlus = "0";
+									if (TL::ToInteger(LibOMF_VoteMinus) < 0) LibOMF_VoteMinus = "0";
+									SendCustomEvent("Request_TrackInfo_Success", Text[]);
+								}
+								
+								case "Request_TrackInfo_Failure" : {
+									SendCustomEvent("Request_TrackInfo_Failure", Text[]);
+								}
+								
+								case "TrackSetAsFavorite" : {
+									// log("TRACK ADDED TO FAVORITE");
+									SendCustomEvent("TrackSetAsFavorite", Text[]);
+								}
+								case "TrackRemovedFromFavorite" : {
+									// log("TRACK REMOVED TO FAVORITE");
+									SendCustomEvent("TrackRemovedFromFavorite", Text[]);
+								}
+								
+								case "Request_IsTrackFavorite_Success" : {
+									declare Text CustomData = Event.CustomEventData[0];
+									SendCustomEvent("Request_IsTrackFavorite_Success", [CustomData]);
+								}
+								case "Request_IsTrackFavorite_Failure" : {
+									SendCustomEvent("Request_IsTrackFavorite_Failure", Text[]);
+								}
+								
+								case "Request_IsAuthorFavorite_Success" : {
+									declare Text CustomData = Event.CustomEventData[0];
+									SendCustomEvent("Request_IsAuthorFavorite_Success", [CustomData]);
+								}
+								
+								case "Request_IsAuthorFavorite_Failure" : {
+									SendCustomEvent("Request_IsAuthorFavorite_Failure", Text[]);
+								}
+								
+								case "Request_IsRoomFavorite_Success" : {
+									declare Text CustomData = Event.CustomEventData[0];
+									SendCustomEvent("Request_IsRoomFavorite_Success", [CustomData]);
+								}
+								
+								case "Request_IsRoomFavorite_Failure" : {
+									SendCustomEvent("Request_IsRoomFavorite_Failure", Text[]);
+								}
+								
+								case "Request_AddRoomAsFavorite_Success" : {
+									SendCustomEvent("Request_AddRoomAsFavorite_Success", Text[]);
+								}
+								
+								case "Request_AddRoomAsFavorite_Failure" : {
+									// log("FAILURE");
+								}
+								
+								case "Request_RemoveRoomFromFavorite_Success" : {
+									SendCustomEvent("Request_RemoveRoomFromFavorite_Success", Text[]);
+								}
+								case "Request_VoteTrack_Success" : {
+									SendCustomEvent("Request_VoteTrack_Success", Text[]);
+								}
+								case "Request_VoteTrack_Failure" : {
+									SendCustomEvent("Request_VoteTrack_Failure", Text[]);
+								}
+								case "Request_SetAuthorAsFavorite_Success" : {
+									
+									SendCustomEvent("Request_SetAuthorAsFavorite_Success", Text[]);
+								}
+								case "Request_UnsetAuthorAsFavorite_Success" : {
+									SendCustomEvent("Request_UnsetAuthorAsFavorite_Success", Text[]);
+								}
+								
+							}
+						}
+					}
+				}
+			}
+		}
+	--></script> 
+	""";
+	Layers::Create("ManageFavoriteLiveEventFeedback", ML);
+	Layers::Attach("ManageFavoriteLiveEventFeedback");
+	declare CUILayer LiveEventFeedbackML <=> Layers::Get("ManageFavoriteLiveEventFeedback");
+	if(LiveEventFeedbackML == Null) return;
+}
+
+Boolean IsPlayerRoom() {
+	foreach(Room in G_MyRooms) {
+		if(Room["game_server_host"] == Playground.ServerInfo.ServerName) {
+			return True;
+		}
+	}
+	return False;
+}
+
+// Boolean IsTrackFavorite() {
+	// foreach(TracksInfo in G_FavoriteTracks) {
+		// if(TracksInfo["uid"] == Playground.Map.MapInfo.MapUid) {
+			// return True;
+		// }
+	// }
+	// return False;
+// }
+
+// Boolean IsAuthorsFavorite() {
+	// We use the nickname, hoping that it is the displayname
+	// return G_FavoriteAuthors.exists(Map.AuthorNickName);
+// }
+
+Void SetTrackAsFavorite(Boolean _AddToFavorite) {
+	//Recuperer l'id de la track
+	TrackController::SetTracksAsFavorite("ManageFavoriteLiveEventFeedback", Playground.Map.MapInfo.MapUid, _AddToFavorite);
+}
+
+Boolean IsFavoriteManagerShown() {
+	// return Layers::IsVisible(LAYERNAME_FAVORITEMANAGER);
+	declare netwrite Boolean Net_IsFavoriteManagerShown for UI;
+	return Net_IsFavoriteManagerShown;
+}
+
+Void IsTrackFavorite() {
+	TrackController::IsTrackFavorite("ManageFavoriteLiveEventFeedback", Playground.Map.MapInfo.MapUid);
+}
+
+Void IsAuthorFavorite() {
+	TrackController::IsAuthorFavorite("ManageFavoriteLiveEventFeedback", Map.AuthorLogin);
+}
+
+Void IsServerFavorite() {
+	TrackController::IsRoomFavorite("ManageFavoriteLiveEventFeedback", Playground.ServerInfo.ServerLogin);
+}
+
+Void FlushEvent() {
+	declare  netwrite 	Integer	Net_PlayerWantsToManageFavoriteUpdate 	for UI;
+	declare   			Integer	Pre_PlayerWantsToManageFavoriteUpdate 	for UI;
+	declare netwrite Integer	Net_PlayerWantsToSetRoomUpdate 			for UI;
+	declare   		Integer		Pre_PlayerWantsToSetRoomUpdate 			for UI;
+	declare netwrite Integer	Net_PlayerWantsToSetTrackUpdate 		for UI;
+	declare   		Integer		Pre_PlayerWantsToSetTrackUpdate 		for UI;
+	declare netwrite Integer	Net_PlayerWantsToSetAuthorUpdate 		for UI;
+	declare   		Integer		Pre_PlayerWantsToSetAuthorUpdate 		for UI;
+	declare netwrite Integer 	Net_PlayerWantsToReportTrackUpdate 		for UI;
+	declare  		 Integer 	Pre_PlayerWantsToReportTrackUpdate 		for UI;
+	declare netwrite Integer	Net_PlayerWantsToResumeMFUpdate 		for UI;
+	declare   		Integer		Pre_PlayerWantsToResumeMFUpdate 		for UI;
+	Pre_PlayerWantsToManageFavoriteUpdate 	= Net_PlayerWantsToManageFavoriteUpdate;
+	Pre_PlayerWantsToSetRoomUpdate			= Net_PlayerWantsToSetRoomUpdate;
+	Pre_PlayerWantsToSetAuthorUpdate		= Net_PlayerWantsToSetAuthorUpdate;
+	Pre_PlayerWantsToReportTrackUpdate		= Net_PlayerWantsToReportTrackUpdate;
+	Pre_PlayerWantsToResumeMFUpdate			= Net_PlayerWantsToResumeMFUpdate;
+	Pre_PlayerWantsToSetTrackUpdate			= Net_PlayerWantsToSetTrackUpdate;
+}
+
+Void Load() {
+	ConstructFavoriteManager();
+	TrackController::Load();
+	ConstructManageFavoriteLiveEventFeedbackML();
+	FlushEvent();
+	UIButtons::Load();
+	// IsTrackFavorite();
+	// IsAuthorFavorite();
+	IsServerFavorite();
+}
+
+Boolean IsSetRoomAsFavorite() {
+	declare netwrite Integer	Net_PlayerWantsToSetRoomUpdate for UI;
+	declare   		Integer		Pre_PlayerWantsToSetRoomUpdate for UI;
+
+	if(Pre_PlayerWantsToSetRoomUpdate != Net_PlayerWantsToSetRoomUpdate) {
+		Pre_PlayerWantsToSetRoomUpdate = Net_PlayerWantsToSetRoomUpdate;
+		return True;
+	}
+	return False;
+}
+
+Boolean IsSetTrackAsFavorite() {
+	declare netwrite Integer	Net_PlayerWantsToSetTrackUpdate for UI;
+	declare   		Integer	Pre_PlayerWantsToSetTrackUpdate for UI;
+	if(Pre_PlayerWantsToSetTrackUpdate != Net_PlayerWantsToSetTrackUpdate) {
+		Pre_PlayerWantsToSetTrackUpdate = Net_PlayerWantsToSetTrackUpdate;
+		return True;
+	}
+	return False;
+}
+
+Boolean IsSetAuthorAsFavorite() {
+	declare netwrite Integer	Net_PlayerWantsToSetAuthorUpdate for UI;
+	declare   		Integer	Pre_PlayerWantsToSetAuthorUpdate for UI;
+	if(Pre_PlayerWantsToSetAuthorUpdate != Net_PlayerWantsToSetAuthorUpdate) {
+		Pre_PlayerWantsToSetAuthorUpdate = Net_PlayerWantsToSetAuthorUpdate;
+		return True;
+	}
+	return False;
+}
+
+Boolean IsReportTrack() {
+	declare netwrite Integer Net_PlayerWantsToReportTrackUpdate for UI;
+	declare  		 Integer Pre_PlayerWantsToReportTrackUpdate for UI;
+	if(Pre_PlayerWantsToReportTrackUpdate != Net_PlayerWantsToReportTrackUpdate) {
+		Pre_PlayerWantsToReportTrackUpdate = Net_PlayerWantsToReportTrackUpdate;
+		return True;
+	}
+	return False;
+}
+
+Void SetLikeTrack() {
+	declare Integer	Net_PlayerWantsToLikeTrackVote			for UI;
+	declare Boolean VoteOrElseMinus = False;
+	if(Net_PlayerWantsToLikeTrackVote == 1) {
+		VoteOrElseMinus = True;
+	}
+	TrackController::VoteTrack("ManageFavoriteLiveEventFeedback", Playground.Map.MapInfo.MapUid, VoteOrElseMinus);
+}
+
+Boolean IsSetLikeTrack() {
+	declare Integer Net_PlayerWantsToLikeTrackUpdate for UI;
+	declare Integer Pre_PlayerWantsToLikeTrackUpdate for UI;
+	if(Pre_PlayerWantsToLikeTrackUpdate != Net_PlayerWantsToLikeTrackUpdate) {
+		Pre_PlayerWantsToLikeTrackUpdate = Net_PlayerWantsToLikeTrackUpdate;
+		return True;
+	}
+	return False;
+}
+
+Boolean IsResume() {
+	declare netwrite Integer	Net_PlayerWantsToResumeMFUpdate for UI;
+	declare   		Integer		Pre_PlayerWantsToResumeMFUpdate for UI;
+	if(Pre_PlayerWantsToResumeMFUpdate != Net_PlayerWantsToResumeMFUpdate) {
+		Pre_PlayerWantsToResumeMFUpdate = Net_PlayerWantsToResumeMFUpdate;
+		return True;
+	}
+	return False;
+}
+
+Void SetManageTrackFavoriteButton(Boolean _IsFavorite) {
+	declare netwrite Text Net_TrackButtonContent for UI;
+	if(_IsFavorite) {
+		// L16N Button the player can use to remove the track they are playing online from their favorite
+		Net_TrackButtonContent = _("Remove track from favorite");
+	} else {
+		//L16N Button the player can use to add the track they are playing online to their favorite
+		Net_TrackButtonContent = _("Add track to favorite");
+	}
+	// log("NEW TRACK BUTTON: "^Net_TrackButtonContent);
+}
+
+Void SetManageRoomFavoriteButton(Boolean _IsFavorite) {
+	declare netwrite Text Net_RoomButtonContent for UI;
+	if(_IsFavorite) {
+		//L16N Button the player can use to remove the room  they are playing online from their favorite
+		Net_RoomButtonContent = _("Remove room from favorite");
+	} else {
+		//L16N Button the player can use to add the room they are playing online from their favorite
+		Net_RoomButtonContent = _("Add room to favorite");
+	}
+}
+
+Void SetManageAuthorFavoriteButton(Boolean _IsFavorite) {
+	declare netwrite Text Net_AuthorButtonContent for UI;
+	if(_IsFavorite) {
+		//L16N Button the player can use to remove the track's author they are playing online from their favorite
+		Net_AuthorButtonContent = _("Remove track's author from favorite");
+	} else {
+		//L16N Button the player can use to add the track's author they are playing online to their favorite
+		Net_AuthorButtonContent = _("Add track's author to favorite");
+	}
+}
+
+Boolean MustDisplayManageFavorite() {
+	declare  netwrite 	Integer	Net_PlayerWantsToManageFavoriteUpdate for UI;
+	declare   			Integer	Pre_PlayerWantsToManageFavoriteUpdate for UI;
+	// log(Now^">"^Net_PlayerWantsToManageFavoriteUpdate);
+	if(Pre_PlayerWantsToManageFavoriteUpdate != Net_PlayerWantsToManageFavoriteUpdate) {
+		Pre_PlayerWantsToManageFavoriteUpdate = Net_PlayerWantsToManageFavoriteUpdate;
+		return True;
+	}
+	return False;
+}
+
+Void PlayerWantsToBrowseUpdate() {
+	declare netwrite Integer Net_PlayerWantsToBrowse for UI;
+	Net_PlayerWantsToBrowse += 1;
+}
+
+Void SetIsTrackFavorite(Boolean _IsFavorite) {
+	G_IsTrackFavorite = _IsFavorite;
+	declare netwrite Boolean 	Net_IsTrackFavorite 			for UI;
+	Net_IsTrackFavorite = _IsFavorite;
+}
+
+Void SetIsRoomFavorite(Boolean _IsFavorite) {
+	G_IsRoomFavorite = _IsFavorite;
+	declare netwrite Boolean 	Net_IsRoomFavorite 			for UI;
+	Net_IsRoomFavorite = _IsFavorite;
+}
+
+Void SetTrackLike(Boolean _LikeTrack) {
+	// TrackController::
+}
+
+Void ReportTrack() {
+	TrackController::ReportTrack("ManageFavoriteLiveEventFeedback", Playground.Map.MapInfo.MapUid);
+}
+
+Void GetTrackInfo() {
+	TrackController::GetTrackInfo("ManageFavoriteLiveEventFeedback", Playground.Map.MapInfo.MapUid);
+}
+
+Void Loop()
+{
+	// log(Now^">Manage Favorite");
+	if(ManiaPlanet.MasterServer_MainMSUser != Null) {
+		if(ManiaPlanet.MasterServer_MainMSUser.ConnectionStatus == CMasterServerUser::EMasterServerConnectionStatus::Connected) {
+			G_IsConnectedMasterServer = True;
+		} else {
+			G_IsConnectedMasterServer = False;
+		}
+	} else {
+		G_IsConnectedMasterServer = False;
+	}
+	// declare Boolean Net_IsTrackPrivate for UI;
+	// Net_IsTrackPrivate = True;
+	// log(G_IsConnectedMasterServer);
+	if(G_IsConnectedMasterServer) {
+		declare netread Integer LibOMF_ForceMapUpdate for UI;
+		if (G_ForceMapUpdate != LibOMF_ForceMapUpdate) {
+			G_ForceMapUpdate = LibOMF_ForceMapUpdate;
+			G_TrackUid = "";
+		}
+		//IF DIFERENT WE HAVE TO CHANGE THE TRACK
+		if(G_TrackUid != Map.MapInfo.MapUid) {
+			declare netwrite Boolean Net_IsPlayerAuthorTrack for UI;
+			if(Map.AuthorLogin == LocalUser.Login) {
+				Net_IsPlayerAuthorTrack = True;
+			}
+			IsTrackFavorite();
+			IsAuthorFavorite();
+			GetTrackInfo();
+			UIOnlineRoomTrackDescDisplay::SetNewTrackName();
+			G_TrackUid = Map.MapInfo.MapUid;
+		}
+	
+		foreach(Event in PendingEvents) {
+			if(Event.Type != CMlAppEvent::EType::LayerCustomEvent) continue;
+			switch(Event.CustomEventType) {
+				
+				case "Request_TrackInfo_Success" : {
+					declare netwrite Boolean Net_IsTrackPrivate for UI;
+					Net_IsTrackPrivate = False;
+				}
+				
+				case "Request_TrackInfo_Failure" : {
+					declare netwrite Boolean Net_IsTrackPrivate for UI;
+					Net_IsTrackPrivate = True;
+				}
+				
+				case "Request_SetAuthorAsFavorite_Success" : {
+					G_IsAuthorFavorite = True;
+					SetManageAuthorFavoriteButton(G_IsAuthorFavorite);
+				}
+				case "Request_UnsetAuthorAsFavorite_Success" : {
+					G_IsAuthorFavorite = False;
+					SetManageAuthorFavoriteButton(G_IsAuthorFavorite);
+				}
+				
+				case "TrackSetAsFavorite" : {
+					// G_IsTrackFavorite = True;
+					// log("REQUEST ADD TRACK SUCCESS");
+					SetIsTrackFavorite(True);
+					SetManageTrackFavoriteButton(True);
+				}
+				case "TrackRemovedFromFavorite" : {
+					// log("TRACK REMOVE FROM FAVORITE");
+					// G_IsTrackFavorite = False;
+					SetIsTrackFavorite(False);
+					SetManageTrackFavoriteButton(False);
+				}
+				case "AddRoomAsFavorite" : {
+					SetManageRoomFavoriteButton(True);
+				}
+				
+				case "RemoveRoomFromFavorite" : {
+					SetManageRoomFavoriteButton(False);
+				}
+				
+				case "Request_IsTrackFavorite_Success" : {
+					if(Event.CustomEventData[0] == "true") {
+						SetIsTrackFavorite(True);
+					} else {
+						SetIsTrackFavorite(False);
+					}
+					
+					G_IsTrackFavoriteNbAttempt = 0;
+					SetManageTrackFavoriteButton(G_IsTrackFavorite);
+				}
+				
+				case "Request_IsTrackFavorite_Failure" : {
+					if(G_IsTrackFavoriteNbAttempt < C_NBATTEMPS) {
+						// IsTrackFavorite();
+					}
+					G_IsTrackFavoriteNbAttempt += 1;
+				}
+				
+				case "Request_IsAuthorFavorite_Success" : {
+					G_IsAuthorFavoriteNbAttempt = 0;
+					if(Event.CustomEventData[0] == "true") {
+						G_IsAuthorFavorite = True;
+					} else {
+						G_IsAuthorFavorite = False;
+					}
+					SetManageAuthorFavoriteButton(G_IsAuthorFavorite);
+				}
+				
+				case "Request_IsAuthorFavorite_Failure" : {
+					if(G_IsAuthorFavoriteNbAttempt < C_NBATTEMPS) {
+						// IsAuthorFavorite();
+					}
+					G_IsAuthorFavoriteNbAttempt += 1;
+				}
+				
+				case "Request_IsRoomFavorite_Success" : {
+					G_IsRoomFavoriteNbAttempt = 0;
+					if(Event.CustomEventData[0] == "true") {
+						// G_IsRoomFavorite = True;
+						SetIsRoomFavorite(True);
+					} else {
+						// G_IsRoomFavorite = False;
+						SetIsRoomFavorite(False);
+					}
+					
+					SetManageRoomFavoriteButton(G_IsRoomFavorite);
+				}
+				
+				case "Request_IsRoomFavorite_Failure" : {
+					if(G_IsRoomFavoriteNbAttempt < C_NBATTEMPS) {
+						// IsServerFavorite();
+					}
+					G_IsRoomFavoriteNbAttempt += 1;
+				}
+				
+				case "Request_AddRoomAsFavorite_Success" : {
+					// G_IsRoomFavorite = True;
+					SetIsRoomFavorite(True);
+					SetManageRoomFavoriteButton(G_IsRoomFavorite);
+				}
+				
+				case "Request_RemoveRoomFromFavorite_Success" : {
+					// G_IsRoomFavorite = False;
+					SetIsRoomFavorite(False);
+					SetManageRoomFavoriteButton(G_IsRoomFavorite);
+				}
+				case "Request_VoteTrack_Success" : {
+					log("VOTE IS A SUCCESS");
+				}
+				case "Request_VoteTrack_Failure" : {
+					log("VOTE IS A FAILURE");
+				}
+			}
+		}
+	}
+	
+	declare Boolean DoesCloseManager = False;
+	if(IsSetRoomAsFavorite()) {
+		if(!G_IsRoomFavorite) {
+			TrackController::AddRoomAsFavorite("ManageFavoriteLiveEventFeedback", Playground.ServerInfo.ServerLogin);
+		} else {
+			TrackController::RemoveRoomFromFavorite("ManageFavoriteLiveEventFeedback", Playground.ServerInfo.ServerLogin);
+		}
+		// IsServerFavorite();
+		DoesCloseManager = True;
+	}
+	
+	if(IsSetTrackAsFavorite()) {
+		SetTrackAsFavorite(!G_IsTrackFavorite);
+		DoesCloseManager = True;
+	}
+	
+	if(IsSetAuthorAsFavorite()) {
+		if(Map.AuthorLogin != "00000000") {
+			TrackController::SetAuthorsAsFavorite("ManageFavoriteLiveEventFeedback", Map.AuthorLogin, Playground.Map.MapInfo.MapUid, !G_IsAuthorFavorite);
+		}
+		DoesCloseManager = True;
+	}
+	
+	if(IsReportTrack()) {
+		ReportTrack();
+		DoesCloseManager = True;
+	}
+	
+	if(IsSetLikeTrack()) {
+		SetLikeTrack();
+	}
+	
+	if(IsResume()) {
+		DoesCloseManager = True;
+	}
+	
+	if(DoesCloseManager) {
+		if(IsFavoriteManagerShown()) {
+			ShowFavoriteManager(False);
+		}
+	}
+
+	if(MustDisplayManageFavorite()) {
+		PlayerWantsToBrowseUpdate();
+		ShowFavoriteManager(True);
+	}
+	
+	if(Playground.ServerInfo.ModeName != "TMC_LocalArcade" && Playground.ServerInfo.ModeName != "TMC_HotSeat" && Playground.ServerInfo.ModeName != "TMC_LocalRounds" && Playground.ServerInfo.ModeName != "TMC_Championship") {
+		declare netread Integer Net_GamePhase for UI;
+		if(Net_GamePhase == C_GAMEPHASE_POSTGAME) {
+			if(IsFavoriteManagerShown()) {
+				ShowFavoriteManager(False);
+			}
+		}
+	}
+	
+	TrackController::LiveLoop();
+}

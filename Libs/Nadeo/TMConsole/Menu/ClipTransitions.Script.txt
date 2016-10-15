@@ -1,0 +1,90 @@
+	
+
+//TUTO
+/******
+Le Clip doit être dans une frame nommée Frame_Content	
+Pour le lancer, appelez la fonction StartSetClipPosition_[Le nom de la frame clip](Vec2 _NewPosition, Vec2 _OldPosition, Integer _StartTime, Integer _TimeTransition)
+******/
+
+
+Text InjectInWhile(Text[] _Clips) {
+	declare Text MLText;
+	foreach(Clip in _Clips)
+	{
+		MLText ^= """
+		if(G_ClipTransitionTimeStart_{{{Clip}}} < Now && G_ClipTransitionTimeEnd_{{{Clip}}} > Now)
+		{
+			declare CMlFrame  FrameClip <=> (Page.GetFirstChild("{{{Clip}}}") as CMlFrame);
+			declare Real TimeAnimClip    = C_TimeAnimClip*1.;
+			if(TimeAnimClip == 0) continue;
+			//declare Real RatioAnimClip = (G_ClipTransitionTimeEnd_{{{Clip}}} - Now)*1./TimeAnimClip;
+			declare Real RatioAnimClip   = (G_ClipTransitionTimeEnd_{{{Clip}}} - Now - TimeAnimClip)*-1./TimeAnimClip;
+			declare Real ClipPositionX   = (G_ClipNewPosition_{{{Clip}}}.X - G_ClipOldPosition_{{{Clip}}}.X) * RatioAnimClip + G_ClipOldPosition_{{{Clip}}}.X;
+			
+			FrameClip.ClipWindowRelativePosition.X = ClipPositionX;
+			
+		}
+
+		if(G_EndTransitionTime_{{{Clip}}} <= Now && G_EndTransitionTime_{{{Clip}}} != -1)
+		{
+			declare CMlFrame  FrameClip <=> (Page.GetFirstChild("{{{Clip}}}") as CMlFrame);
+			declare Real ClipPositionX   = (G_ClipNewPosition_{{{Clip}}}.X - G_ClipOldPosition_{{{Clip}}}.X) * 1.0 + G_ClipOldPosition_{{{Clip}}}.X;
+			FrameClip.ClipWindowRelativePosition.X = ClipPositionX;
+			G_EndTransitionTime_{{{Clip}}} = -1;
+		}
+
+		//HACK - ToClean - ça ne sert plus à rien!
+		if(G_ClipTransitionTimeEnd_{{{Clip}}} < Now && !G_ClipIsTransitionFinish_{{{Clip}}})
+		{
+			declare CMlFrame  FrameClip <=> (Page.GetFirstChild("{{{Clip}}}") as CMlFrame);
+			//FrameClip.ClipWindowRelativePosition.X = ClipPositionX;
+			G_ClipIsTransitionFinish_{{{Clip}}} = True;
+		}
+		""";
+	}
+	return MLText;
+}
+
+
+Text Functions(Text[] _Clips) {
+	declare Text MLText;
+	foreach(Clip in _Clips)
+	{
+		MLText ^= """
+		declare Integer	G_ClipTransitionTimeStart_{{{Clip}}};
+		declare Integer	G_ClipTransitionTimeEnd_{{{Clip}}};
+		declare Integer	G_EndTransitionTime_{{{Clip}}};
+		declare Boolean	G_ClipIsTransitionFinish_{{{Clip}}};
+		declare Vec2	G_ClipNewPosition_{{{Clip}}};
+		declare Vec2	G_ClipOldPosition_{{{Clip}}};
+
+		Void StartSetClipPosition_{{{Clip}}}(Vec2 _NewPosition, Vec2 _OldPosition, Integer _StartTime, Integer _TimeTransition)
+		{
+			declare CMlFrame  FrameClip <=> (Page.GetFirstChild("{{{Clip}}}") as CMlFrame);
+			G_ClipTransitionTimeStart_{{{Clip}}} = Now + _StartTime;
+			G_ClipTransitionTimeEnd_{{{Clip}}}   = Now + _StartTime + _TimeTransition;
+			G_ClipNewPosition_{{{Clip}}}         = _NewPosition;
+			G_ClipOldPosition_{{{Clip}}}         = _OldPosition;
+			G_ClipIsTransitionFinish_{{{Clip}}}  = False;
+			FrameClip.ClipWindowRelativePosition = G_ClipOldPosition_{{{Clip}}};
+			//log("{{{Clip}}}: "^ G_ClipTransitionTimeStart_{{{Clip}}});
+			G_EndTransitionTime_{{{Clip}}} = Now + _StartTime + _TimeTransition;
+		}
+
+		Void StartSetClipPosition_{{{Clip}}}(Vec2 _NewPosition, Integer _TimeTransition)
+		{
+			declare CMlFrame  FrameClip <=> (Page.GetFirstChild("{{{Clip}}}") as CMlFrame);
+			declare Vec2 OldPosition = FrameClip.ClipWindowRelativePosition;
+			StartSetClipPosition_{{{Clip}}}(_NewPosition, OldPosition, 0, _TimeTransition);
+		}
+
+		Void StartSetClipPosition_{{{Clip}}}(Vec2 _NewPosition, Integer _TimeTransition, Integer _StartTime)
+		{
+			declare CMlFrame  FrameClip <=> (Page.GetFirstChild("{{{Clip}}}") as CMlFrame);
+			declare Vec2 OldPosition = FrameClip.ClipWindowRelativePosition;
+			StartSetClipPosition_{{{Clip}}}(_NewPosition, OldPosition, _StartTime, _TimeTransition);
+		}
+		""";
+	}
+	return MLText;
+}

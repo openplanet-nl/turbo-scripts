@@ -1,0 +1,893 @@
+/** 
+ *	In-Game UI library
+ */
+
+#Include "TextLib"																as TL
+#Include "Libs/Nadeo/TMConsole/Menu/MenuLayers.Script.txt"						as Layers
+#Include "Libs/Nadeo/TMConsole/Ingame/UI/UIOnlinePopupBuilder.Script.txt"		as UIPopupBuilder
+#Include "Libs/Nadeo/TMConsole/Colors.Script.txt" 								as Colors
+#Include "Libs/Nadeo/UIPadButtons.Script.txt"									as UIButtons
+#Include "Libs/Nadeo/TMConsole/Ingame/UI/UIButtonNamesPopup.Script.txt"			as UIButtonNamesPopup
+#Include "Libs/Nadeo/TMConsole/Volumes.Script.txt" 		as Volumes
+
+#Const Version		"2015-03-02"
+#Const ScriptName	"UIOnlineManageFavorite.Script.txt"
+
+#Const LAYERNAMETHREE	"TempQuestionThreeOptions"
+#Const LAYERNAMETWO			"TempQuestionTwoOptions"
+
+#Const C_RACE_MAPNAME_SIZE_X 			70.
+#Const MODE_COLORID_MULTIPLAYER			1
+#Const C_RACE_MAPNAME_SIZE_MEDAL		18
+#Const C_RATIO 							12.962
+#Const C_RATIO_1CIRCLE					0.06666666667
+#Const C_MARGINS_GLOBALRATIO			1.
+
+#Const TMC_TEMPQUESTION_OFF 	0
+#Const TMC_TEMPQUESTION_ACTION 	1
+#Const TMC_TEMPQUESTION_RESULT 	2
+
+#Const TMC_TEMPQUESTION_LIKEMAP			0
+#Const TMC_TEMPQUESTION_ADDMAP			1
+#Const TMC_TEMPQUESTION_ADDROOM			2
+#Const TMC_TEMPQUESTION_LIKECHALLENGE	3
+
+#Const SoundPath				"file://Media/Sounds/TMConsole/"
+#Const SoundValidate 			"event-validate.wav"
+
+Void ShowTempQuestion(Boolean _Show, Text _LayerName) {
+	Layers::SetVisibility(_LayerName, _Show);
+}
+
+
+Boolean IsTempQuestionShown(Text _LayerName) {
+	
+	return Layers::IsVisible(_LayerName);
+}
+
+Void ConstructTempQuestionPopupThreeOptions() {
+	declare netwrite Text 		Net_TempQuestionTwoOptionsPopupTitle			for UI;
+	declare netwrite Text 		Net_TempQuestionTwoOptionsPopupMessage			for UI;
+	declare netwrite Text 		Net_TempQuestionTwoOptionsPopupSubtitle			for UI;
+	// declare netwrite Text[] 	Net_TempQuestionTwoOptionsPopupInputs			for UI;
+	
+	declare IMGSelect 							= UIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Select);
+	declare TXTSelect 							= UIButtonNamesPopup::GetSelectText();
+
+	// Net_TempQuestionTwoOptionsPopupInputs 		= [IMGSelect, TXTSelect];
+	
+	//L16N. Title of a popup asking for player's opinion
+	// Net_TempQuestionTwoOptionsPopupTitle 		= _("Your opinion");
+	//L16N. Title of the
+	// Net_TempQuestionTwoOptionsPopupTitle 		= _("Your opinion");
+	Net_TempQuestionTwoOptionsPopupSubtitle 	= "";
+		declare ColorXmlYellow					= Colors::GetColorXml("Yellow");
+	declare ColorMode 							=  Colors::GetModeColorName(0);
+	declare TitleParam							= "ColorText "^ColorMode;
+	declare Vec3 LayerPosition = <-85., 15., 30.>;
+	declare Text[][] LayersContent;
+	LayersContent.clear();
+	
+	declare Text MLXml_Gauge = """
+		<quad  id="Quad_Gauge" posn="0. -5.4 0.3" 	sizen="120. 7.0" valign="center" halign="left" bgcolor="{{{ColorXmlYellow}}}" hidden="0" />
+	""";
+	
+	LayersContent = 
+	[
+		["Title", "Title", 		_("Question"), 									"2",	"", TitleParam, "Net_TempQuestionTwoOptionsPopupTitle Net_TempQuestionTwoOptionsPopupSubtitle"],
+		["Space", "", 		  	"", 											"1",	"", "", ""],
+		["Custom", 	"Gauge",		  	MLXml_Gauge, 					"1",	"", "Fg Bg", ""],
+		// ["Label", 	"Content", 	"",												"1",	"", "Bg Roll", "Net_TempQuestionTwoOptionsPopupMessage"],
+		["Button", 	"FirstOption", 			"", 	"1",				   	"Net_PlayerChoice = 1;", "", "Net_TempQuestionTwoOptionsPopupButton1Content"],
+		["Button", 	"SecondOption", 		"",  	"1",			       	"Net_PlayerChoice = 2;", "", "Net_TempQuestionTwoOptionsPopupButton2Content"],
+		["Button", 	"ThirdOption", 			"",  	"1",			       	"Net_PlayerChoice = 3;", "", "Net_TempQuestionTwoOptionsPopupButton3Content"],
+		["Space", "", 		  	"", 								"1",	"", "", ""]
+	];
+		
+	declare LayerBeforeWhile 	= """ 
+		declare Integer Net_PlayerChoice	for UI;  Net_PlayerChoice = 0;
+		declare Quad_Gauge 						<=> (Page.MainFrame.GetFirstChild("Quad_Gauge")					as CMlQuad);
+		declare netread Integer 	Net_TempQuestionState			for UI;
+		declare netread Integer		Net_TempQuestionType			for UI;
+		declare netread Integer 	Net_TempQuestionTime			for UI;
+		declare netread Real 	 	Net_TempQuestionResult			for UI;
+		declare netwrite Integer 	Net_TempQuestionChoice			for UI;
+		declare Integer ActionTimer = Net_TempQuestionTime;
+		declare Real GaugeMaxSize = 120.;
+
+		declare LibOMF_VoteMapUid for UI = "";
+		declare LibOMF_VotePlus for UI = "";
+		declare LibOMF_VoteMinus for UI = "";
+		declare Prev_VoteMapUid = "";
+		declare Prev_VotePlus = "";
+		declare Prev_VoteMinus = "";
+		declare Boolean 	IsFinishUsed = False;
+	""";
+	declare LayerWhenShown 		= """ 
+	ActionTimer	= Net_TempQuestionTime;
+	Net_PlayerChoice = 0; 
+	IsFinishUsed = False;
+	// if(M_PrevPageIsVisible) {
+		
+	// }
+	Button_FirstOption.Show();
+	Button_SecondOption.Show();
+	Button_ThirdOption.Show();
+	""";
+	declare LayerWhileLoop		= """
+		declare CMlQuad 	Button_FirstOption 		<=> (Page.MainFrame.GetFirstChild("Button_FirstOption") as CMlQuad);
+		declare CMlLabel 	Label_FirstOption 		<=> (Page.MainFrame.GetFirstChild("Label_FirstOption") as CMlLabel);
+			
+		declare CMlQuad 	Button_SecondOption		<=> (Page.MainFrame.GetFirstChild("Button_SecondOption") as CMlQuad);
+		declare CMlLabel 	Label_SecondOption 		<=> (Page.MainFrame.GetFirstChild("Label_SecondOption") as CMlLabel);
+		
+		declare CMlQuad 	Button_ThirdOption		<=> (Page.MainFrame.GetFirstChild("Button_ThirdOption") as CMlQuad);
+		declare CMlLabel 	Label_ThirdOption 		<=> (Page.MainFrame.GetFirstChild("Label_ThirdOption") as CMlLabel);
+		
+		
+		
+		ActionTimer				-= Period;
+		declare Speed 			= 0.01;
+		declare CurSin 			= 0.5 + ML::Sin(Now*Speed)*0.5;
+		declare MinOpacity 		= 0.1;
+		declare TheOpacity 		= MinOpacity + CurSin * (1-MinOpacity);
+		Quad_Gauge.Opacity 		= TheOpacity;
+		
+		declare Integer 	RemainingTime 	= Net_TempQuestionTime - ActionTimer;
+		declare Real 		TimePercentage 	= RemainingTime*1.0/Net_TempQuestionTime*1.0;
+		
+		declare Real		GaugeFinalSize = (1.0 - TimePercentage)*GaugeMaxSize;
+		
+		if(GaugeFinalSize > 0) {
+			Quad_Gauge.Size.X 	= GaugeFinalSize;
+		}
+
+		if (Net_TempQuestionType == {{{TMC_TEMPQUESTION_LIKEMAP}}}) {
+			if (
+				Prev_VoteMapUid != LibOMF_VoteMapUid ||
+				Prev_VotePlus != LibOMF_VotePlus ||
+				Prev_VoteMinus != LibOMF_VoteMinus
+			) {
+				Prev_VoteMapUid = LibOMF_VoteMapUid;
+				Prev_VotePlus = LibOMF_VotePlus;
+				Prev_VoteMinus = LibOMF_VoteMinus;
+
+				if (LibOMF_VoteMapUid == Map.MapInfo.MapUid && LibOMF_VotePlus != "" && LibOMF_VoteMinus != "") {
+					Label_FirstOption.Value = TL::Compose("%1 (%2)", "{{{UIButtonNamesPopup::GetLikeTrackText()}}}", ""^LibOMF_VotePlus);
+					Label_ThirdOption.Value = TL::Compose("%1 (%2)", "{{{UIButtonNamesPopup::GetDislikeTrackText()}}}", ""^LibOMF_VoteMinus);
+				} else {
+					Label_FirstOption.Value = "{{{UIButtonNamesPopup::GetLikeTrackText()}}}";
+					Label_ThirdOption.Value = "{{{UIButtonNamesPopup::GetDislikeTrackText()}}}";
+				}
+			}
+		}
+		
+		
+		if(ButtonSelected.Id == Button_FirstOption.Id) {
+			Net_PlayerChoice = 1;
+		} else if(ButtonSelected.Id == Button_SecondOption.Id) {
+			Net_PlayerChoice = 2;
+		} else if(ButtonSelected.Id == Button_ThirdOption.Id) {
+			Net_PlayerChoice = 3;
+		}
+		
+		// log(Net_PlayerChoice);
+		
+		/*
+		if(Net_PlayerChoice != 0) {
+			if(Net_PlayerChoice == 1) {
+				Button_SecondOption.Hide();
+				Label_SecondOption.TextColor 	= <0.3, 0.3, 0.3>;
+				
+				Button_ThirdOption.Hide();
+				Label_ThirdOption.TextColor 	= <0.3, 0.3, 0.3>;
+			} else if(Net_PlayerChoice == 2) {
+				Button_FirstOption.Hide();
+				Label_FirstOption.TextColor 	= <0.3, 0.3, 0.3>;
+				
+				Button_ThirdOption.Hide();
+				Label_ThirdOption.TextColor 	= <0.3, 0.3, 0.3>;
+			} else if(Net_PlayerChoice == 3) {
+				Button_FirstOption.Hide();
+				Label_FirstOption.TextColor 	= <0.3, 0.3, 0.3>;
+				
+				Button_SecondOption.Hide();
+				Label_SecondOption.TextColor 	= <0.3, 0.3, 0.3>;
+			}
+		} else {
+			
+		}
+		*/
+		
+		if(ActionTimer > 0) {
+			
+			// Button_FirstOption.Show();
+			Label_FirstOption.TextColor 	= <0.879, 0.879, 0.879>;
+			
+			// Button_SecondOption.Show();
+			Label_SecondOption.TextColor 	= <0.879, 0.879, 0.879>;
+			
+			// Button_ThirdOption.Show();
+			Label_ThirdOption.TextColor 	= <0.879, 0.879, 0.879>;
+			
+		} else {
+			
+			if(!IsFinishUsed) {
+				log(Now^"WOUHOU");
+				Audio.PlaySoundEvent("{{{SoundPath^SoundValidate}}}", {{{Volumes::GetVolumedB("MenuClick")}}});	
+				IsFinishUsed = True;
+			}
+			
+			if(Net_PlayerChoice == 1) {
+				Button_FirstOption.Hide();
+				
+				Button_SecondOption.Hide();
+				Label_SecondOption.TextColor 	= <0.3, 0.3, 0.3>;
+				
+				Button_ThirdOption.Hide();
+				Label_ThirdOption.TextColor 	= <0.3, 0.3, 0.3>;
+			} else if(Net_PlayerChoice == 2) {
+				Button_SecondOption.Hide();
+				
+				Button_FirstOption.Hide();
+				Label_FirstOption.TextColor 	= <0.3, 0.3, 0.3>;
+				
+				Button_ThirdOption.Hide();
+				Label_ThirdOption.TextColor 	= <0.3, 0.3, 0.3>;
+			} else if(Net_PlayerChoice == 3) {
+				Button_ThirdOption.Hide();
+				
+				Button_FirstOption.Hide();
+				Label_FirstOption.TextColor 	= <0.3, 0.3, 0.3>;
+				
+				Button_SecondOption.Hide();
+				Label_SecondOption.TextColor 	= <0.3, 0.3, 0.3>;
+			} else {
+				Button_FirstOption.Show();
+				Label_FirstOption.TextColor 	= <0.879, 0.879, 0.879>;
+				
+				Button_SecondOption.Show();
+				Label_SecondOption.TextColor 	= <0.879, 0.879, 0.879>;
+				
+				Button_ThirdOption.Show();
+				Label_ThirdOption.TextColor 	= <0.879, 0.879, 0.879>;
+			}
+		}
+	""";
+	
+	UIPopupBuilder::CreateLayer(
+		LAYERNAMETHREE, 
+		LayerPosition,
+		LayersContent, 
+		LayerBeforeWhile, 
+		LayerWhenShown,
+		LayerWhileLoop
+	);
+	ShowTempQuestion(False, LAYERNAMETHREE);
+}
+
+Void ContructTempQuestionTwoOptions() {
+	declare netwrite Text 		Net_TempQuestionTwoOptionsPopupTitle			for UI;
+	declare netwrite Text 		Net_TempQuestionTwoOptionsPopupMessage			for UI;
+	declare netwrite Text 		Net_TempQuestionTwoOptionsPopupSubtitle			for UI;
+	declare netwrite Text[] 	Net_TempQuestionTwoOptionsPopupInputs			for UI;
+	
+	declare IMGSelect 							= UIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Select);
+	declare TXTSelect 							= UIButtonNamesPopup::GetSelectText();
+
+	Net_TempQuestionTwoOptionsPopupInputs 		= [IMGSelect, TXTSelect];
+	Net_TempQuestionTwoOptionsPopupTitle 		= "QUESTION";
+	Net_TempQuestionTwoOptionsPopupSubtitle 	= "";
+		declare ColorXmlYellow			= Colors::GetColorXml("Yellow");
+	declare ColorMode 		=  Colors::GetModeColorName(0);
+	declare TitleParam		= "ColorText "^ColorMode;
+	declare Vec3 LayerPosition = <0., 15., 30.>;
+	declare Text[][] LayersContent;
+	LayersContent.clear();
+	
+	declare Text MLXml_Gauge = """
+		<quad  id="Quad_Gauge" posn="0. -5.4 0.3" 	sizen="120. 7.0" valign="center" halign="left" bgcolor="{{{ColorXmlYellow}}}" hidden="0" />
+	""";
+	
+	LayersContent = 
+	[
+		["Title", "Title", 		_("Question"), 									"2",	"", TitleParam, "Net_TempQuestionTwoOptionsPopupTitle Net_TempQuestionTwoOptionsPopupSubtitle"],
+		["Space", "", 		  	"", 											"1",	"", "", ""],
+		["Custom", 	"Gauge",		  	MLXml_Gauge, 					"1",	"", "Fg Bg", ""],
+		["Label", 	"Content", 	"",												"1",	"", "Bg Roll", "Net_TempQuestionTwoOptionsPopupMessage"],
+		["Button", 	"FirstOption", 			"", 	"1",				   	"Net_PlayerChoice = 1;", "", "Net_TempQuestionTwoOptionsPopupButton1Content"],
+		["Button", 	"SecondOption", 		"",  	"1",			       	"Net_PlayerChoice = 2;", "", "Net_TempQuestionTwoOptionsPopupButton2Content"],
+		["Space", "", 		  	"", 								"1",	"", "", ""]
+	];
+		
+	declare LayerBeforeWhile 	= """ 
+		declare Integer Net_PlayerChoice	for UI;  Net_PlayerChoice = 0;
+		declare Quad_Gauge 						<=> (Page.MainFrame.GetFirstChild("Quad_Gauge")					as CMlQuad);
+		declare netread Integer 	Net_TempQuestionState			for UI;
+		declare netread Integer		Net_TempQuestionType			for UI;
+		declare netread Integer 	Net_TempQuestionTime			for UI;
+		declare netread Real 	 	Net_TempQuestionResult			for UI;
+		declare netwrite Integer 	Net_TempQuestionChoice			for UI;
+		declare Integer ActionTimer = Net_TempQuestionTime;
+		declare Real GaugeMaxSize = 120.;
+	""";
+	declare LayerWhenShown 		= """ 
+	ActionTimer	= Net_TempQuestionTime;
+	Net_PlayerChoice = 0; 
+		
+	""";
+	declare LayerWhileLoop		= """
+		declare CMlQuad 	Button_FirstOption 		<=> (Page.MainFrame.GetFirstChild("Button_FirstOption") as CMlQuad);
+		declare CMlLabel 	Label_FirstOption 		<=> (Page.MainFrame.GetFirstChild("Label_FirstOption") as CMlLabel);
+			
+		declare CMlQuad 	Button_SecondOption		<=> (Page.MainFrame.GetFirstChild("Button_SecondOption") as CMlQuad);
+		declare CMlLabel 	Label_SecondOption 		<=> (Page.MainFrame.GetFirstChild("Label_SecondOption") as CMlLabel);
+		
+		
+		
+		ActionTimer				-= Period;
+		declare Speed 			= 0.01;
+		declare CurSin 			= 0.5 + ML::Sin(Now*Speed)*0.5;
+		declare MinOpacity 		= 0.1;
+		declare TheOpacity 		= MinOpacity + CurSin * (1-MinOpacity);
+		Quad_Gauge.Opacity 		= TheOpacity;
+		
+		declare Integer 	RemainingTime 	= Net_TempQuestionTime - ActionTimer;
+		declare Real 		TimePercentage 	= RemainingTime*1.0/Net_TempQuestionTime*1.0;
+		
+		declare Real		GaugeFinalSize = (1.0 - TimePercentage)*GaugeMaxSize;
+		
+		if(GaugeFinalSize > 0) {
+			Quad_Gauge.Size.X 	= GaugeFinalSize;
+		}
+		
+		if(ButtonSelected.Id == Button_FirstOption.Id) {
+			Net_PlayerChoice = 1;
+		} else if(ButtonSelected.Id == Button_SecondOption.Id) {
+			Net_PlayerChoice = 2;
+		}
+		
+		/*
+		if(Net_PlayerChoice != 0) {
+			if(Net_PlayerChoice == 1) {
+				Button_SecondOption.Hide();
+				Label_SecondOption.TextColor 	= <0.3, 0.3, 0.3>;
+				
+				Button_ThirdOption.Hide();
+				Label_ThirdOption.TextColor 	= <0.3, 0.3, 0.3>;
+			} else if(Net_PlayerChoice == 2) {
+				Button_FirstOption.Hide();
+				Label_FirstOption.TextColor 	= <0.3, 0.3, 0.3>;
+				
+				Button_ThirdOption.Hide();
+				Label_ThirdOption.TextColor 	= <0.3, 0.3, 0.3>;
+			} else if(Net_PlayerChoice == 3) {
+				Button_FirstOption.Hide();
+				Label_FirstOption.TextColor 	= <0.3, 0.3, 0.3>;
+				
+				Button_SecondOption.Hide();
+				Label_SecondOption.TextColor 	= <0.3, 0.3, 0.3>;
+			}
+		} else {
+			
+		}
+		*/
+		
+		if(ActionTimer > 0) {
+			/*
+			Button_FirstOption.Show();
+			Label_FirstOption.TextColor 	= <0.879, 0.879, 0.879>;
+			
+			Button_SecondOption.Show();
+			Label_SecondOption.TextColor 	= <0.879, 0.879, 0.879>;
+			
+			Button_ThirdOption.Show();
+			Label_ThirdOption.TextColor 	= <0.879, 0.879, 0.879>;
+			*/
+		} else {
+			if(Net_PlayerChoice == 1) {
+				Button_SecondOption.Hide();
+				Label_SecondOption.TextColor 	= <0.3, 0.3, 0.3>;				
+			} else if(Net_PlayerChoice == 2) {
+				Button_FirstOption.Hide();
+				Label_FirstOption.TextColor 	= <0.3, 0.3, 0.3>;
+			} else {
+				Button_FirstOption.Show();
+				Label_FirstOption.TextColor 	= <0.879, 0.879, 0.879>;
+				
+				Button_SecondOption.Show();
+				Label_SecondOption.TextColor 	= <0.879, 0.879, 0.879>;
+			}
+		}
+	""";
+	
+	UIPopupBuilder::CreateLayer(
+		LAYERNAMETWO, 
+		LayerPosition,
+		LayersContent, 
+		LayerBeforeWhile, 
+		LayerWhenShown,
+		LayerWhileLoop
+	);
+	ShowTempQuestion(False, LAYERNAMETWO);
+}
+
+/*
+Void ConstructTempQuestion() {
+	UIButtons::Load();
+	declare IMGSelect 				= UIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Select);
+	declare IMGVoteConfirmed		= IMGPATH^"circle.dds";
+	declare FontMain 				= Font::GetFontName("Main");
+	declare FontMainSmall2 			= Font::GetFontName("MainSmall2");
+	declare FontTitle 				= Font::GetFontName("Title");
+	declare FontNumberBig 			= Font::GetFontName("NumberBig");
+	
+	declare ColorXmlBlack 			= Colors::GetColorXml("Black");
+	declare ColorXmlRed 			= Colors::GetColorXml("Red");
+	declare ColorXmlWhite 			= Colors::GetColorXml("White");
+	declare ColorXmlGrey 			= Colors::GetColorXml("Grey");
+	declare ColorXmlYellow			= Colors::GetColorXml("Yellow");
+	declare ColorGreen				= Colors::GetColor("Green");
+	declare MapNameSizeY 			= C_RACE_MAPNAME_SIZE_X / C_RATIO;
+	declare OpponentSizeY			= MapNameSizeY;
+	declare MapNameSizeX 			= C_RACE_MAPNAME_SIZE_X + C_RACE_MAPNAME_SIZE_X * C_RATIO_1CIRCLE+0.2;
+	// declare QuadStyleBg				= """sizen="{{{C_RACE_MAPNAME_SIZE_X+4.75}}} {{{MapNameSizeY}}}" image="{{{IMGPATH^IMG_BG_LINE}}}" {{{hR}}} """;
+	declare QuadStyleBg				= """sizen="{{{MapNameSizeX}}} {{{MapNameSizeY}}}" image="{{{IMGPATH^IMG_BG_LINE}}}" {{{hR}}}""";
+	declare MapNameSeparator 		= MapNameSizeY * 0.095;
+	declare MapMarginRatio 			= 1.  * C_MARGINS_GLOBALRATIO;
+	declare MapNameMarginY			= 9.  * MapMarginRatio;
+	declare MapNameSizeXElement		= C_RACE_MAPNAME_SIZE_X * C_RATIO_1CIRCLE * 13.;
+	declare OpponentSizeYElement	= MapNameSizeY - MapNameSeparator;
+	declare TextStyleMain			= """textfont="{{{FontMain}}}" textsize="3" scale="0.95" """;
+	declare TextStyleMainS			= """textfont="{{{FontMainSmall2}}}" textsize="3" scale="0.95" """;
+	declare MapNameSizeYElement		= MapNameSizeY * 2. - MapNameSeparator;
+	
+	declare Text ML = 
+	"""
+
+	<frame id="Frame_TempQuestion" posn="0 0 36">
+		<frame id="Frame_Timer">
+			<frame id="Frame_Player" 	posn="{{{160}}} {{{81.5}}} 37" hidden="">
+				<quad  id="Quad_Gauge" 				posn="-74.5 {{{-MapNameSeparator}}} .3" 	sizen="{{{MapNameSizeXElement+4.25}}} {{{OpponentSizeYElement}}}" {{{vT}}} 	halign="left" bgcolor="{{{ColorXmlYellow}}}" hidden="0" />
+				<quad  id="Quad_MiddleLign" 		posn="31. {{{-MapNameSeparator}}} .5" 	sizen="0.5 5" halign="left" valign="top" bgcolor="000" hidden="1" />
+				<label id="Label_Result" 			posn="46 {{{-MapNameSeparator-0.5}}} .5" sizen="60 10" valign="top" {{{TextStyleMain}}} text="Result" halign="right"/>
+				
+				{{{Prompter2::InjectInManialink("ResultText", <-36.75, -2.5, .5>, <MapNameSizeXElement+3.5, OpponentSizeYElement+2.0>, 3, FontMain, """textcolor="{{{Colors::GetColorXml("Black")}}}" """)}}}
+				
+				<quad posn="-9.5 {{{-MapNameSeparator}}} .1"  	sizen="{{{MapNameSizeXElement+4.75}}} {{{OpponentSizeYElement}}}" {{{vT}}} 	{{{hR}}}	image="{{{IMGPATH^IMG_BG}}}" />
+				<quad posn="-9.5 {{{-MapNameSeparator}}} 1." 	sizen="{{{MapNameSizeXElement+4.75}}} {{{OpponentSizeYElement}}}" {{{vT}}} 	{{{hR}}}	image="{{{IMGPATH^IMG_FG}}}" />
+			</frame>
+			
+			<frame id="Frame_Vote" 	posn="{{{160}}} {{{81.5 - OpponentSizeYElement-0.5}}} 37" hidden="0">
+				<quad  id="Quad_Button" 		posn="-73.5 -1. .3" 	sizen="4 4" halign="left" valign="top" bgcolor="999" hidden="0" image="{{{IMGSelect}}}"/>
+				<label id="Label_Action" 		posn="45 -1 .5" sizen="60 10" valign="top" {{{TextStyleMain}}} text="GO NEXT TRACK" halign="right"/>
+				{{{Prompter2::InjectInManialink("ActionText", <-33.85, -2.5, .5>, <MapNameSizeXElement-2.0, OpponentSizeYElement+2.0>, 3, FontMain, """textcolor="{{{Colors::GetColorXml("Black")}}}" """)}}}
+				<quad posn="-9.5 {{{-MapNameSeparator}}} .1"  	sizen="{{{MapNameSizeXElement+4.75}}} {{{OpponentSizeYElement}}}" {{{vT}}} 	{{{hR}}}	image="{{{IMGPATH^IMG_BG}}}" />
+				<quad posn="-9.5 {{{-MapNameSeparator}}} 1." 	sizen="{{{MapNameSizeXElement+4.75}}} {{{OpponentSizeYElement}}}" {{{vT}}} 	{{{hR}}}	image="{{{IMGPATH^IMG_FG}}}" />
+			</frame>
+		</frame>
+		<frame posn="{{{160}}} {{{81.5}}} 36.5">
+			<quad id="Quad_Bg1" posn="0. 0. 				   -8.1" 	{{{QuadStyleBg}}} />
+			<quad id="Quad_Bg2" posn="0. {{{-MapNameSizeY}}}   -8.1" 	{{{QuadStyleBg}}} />
+			<quad id="Quad_Bg3" posn="0. {{{-MapNameSizeY*2}}} -8.1" 	{{{QuadStyleBg}}} />
+		</frame>
+	</frame>
+	
+	<script ><!--
+
+
+		#Const TMC_TEMPQUESTION_OFF 	0
+		#Const TMC_TEMPQUESTION_ACTION 	1
+		#Const TMC_TEMPQUESTION_RESULT 	2
+		
+		#Const TMC_TEMPQUESTION_LIKEMAP			0
+		#Const TMC_TEMPQUESTION_ADDMAP			1
+		#Const TMC_TEMPQUESTION_ADDROOM			2
+		#Const TMC_TEMPQUESTION_LIKECHALLENGE	3
+		
+		{{{Prompter2::InjectInGlobals()}}}
+		{{{Prompter2::InjectInFunctions()}}}
+		
+		Text GetActionToDoText() {
+			declare netread Integer		Net_TempQuestionType			for UI;
+			switch(Net_TempQuestionType) {
+				case TMC_TEMPQUESTION_ADDMAP: 	return _("Add track to favorite");
+				case TMC_TEMPQUESTION_LIKEMAP:	return _("Like this track");
+			}
+			return "";
+		}
+		
+		Text GetAlreadyDoneActionText() {
+			declare netread Integer		Net_TempQuestionType			for UI;
+			switch(Net_TempQuestionType) {
+				case TMC_TEMPQUESTION_ADDMAP: 	return _("Track already in favourite");
+				case TMC_TEMPQUESTION_LIKEMAP:	return _("Track already liked");
+			}
+			return "";
+		}
+		
+		Void DoAccordedAction() {
+			declare netread Integer		Net_TempQuestionType					for UI;
+			declare netwrite Integer 	Net_PlayerWantsToSetRoomUpdate 			for UI;
+			declare netwrite Integer 	Net_PlayerWantsToSetTrackUpdate 		for UI;
+			declare netwrite Integer 	Net_PlayerWantsToSetAuthorUpdate 		for UI;
+			
+			declare netwrite Integer 	Net_PlayerWantsToLikeTrackUpdate 		for UI;
+			switch(Net_TempQuestionType) {
+				case TMC_TEMPQUESTION_ADDMAP: 		Net_PlayerWantsToSetTrackUpdate += 1;
+				case TMC_TEMPQUESTION_LIKEMAP:		Net_PlayerWantsToLikeTrackUpdate += 1;
+			}
+		}
+		
+		Boolean GetActionResult() {
+			declare netread Integer		Net_TempQuestionType					for UI;
+			declare netwrite Boolean 	Net_IsTrackFavorite 					for UI;
+			
+			switch(Net_TempQuestionType) {
+				case TMC_TEMPQUESTION_ADDMAP: 		{
+					if(True) {
+						return True;
+					}
+				}
+				case TMC_TEMPQUESTION_LIKEMAP: 		{
+					if(True) {
+						return True;
+					}
+				}
+			
+			}
+			return False;
+		}
+		
+		Text GetActionResultText(Boolean _PlayerHasPerformedAction) {
+			declare netread Integer		Net_TempQuestionType					for UI;
+			declare netwrite Boolean 	Net_IsTrackFavorite 					for UI;
+			declare netwrite Boolean 	Net_IsTrackLiked 						for UI;
+			
+			switch(Net_TempQuestionType) {
+				case TMC_TEMPQUESTION_ADDMAP: 		{
+					if(_PlayerHasPerformedAction) {
+						if(Net_IsTrackFavorite) {
+						// if(True) {
+							return _("Track added to favorite");
+
+						} else {
+							return _("Waiting response...");
+						}
+					} else {
+						return _("Track not added to favorite");
+					}
+				}
+				case TMC_TEMPQUESTION_LIKEMAP: 		{
+					if(_PlayerHasPerformedAction) {
+						// if(Net_IsTrackLiked) {
+						if(True) {
+							return _("Track liked");
+
+						} else {
+							return _("Waiting response...");
+						}
+					} else {
+						return _("Track hasn't been liked");
+					}
+				}
+			}
+			return "";
+		}
+		
+		main() {
+			{{{Prompter2::InjectInInit()}}}
+			declare Frame_TempQuestion 				<=> (Page.MainFrame.GetFirstChild("Frame_TempQuestion")			as CMlFrame);
+			declare Quad_Gauge 						<=> (Page.MainFrame.GetFirstChild("Quad_Gauge")					as CMlQuad);
+			declare Quad_MiddleLign 				<=> (Page.MainFrame.GetFirstChild("Quad_MiddleLign")			as CMlQuad);
+			declare Quad_Button 					<=> (Page.MainFrame.GetFirstChild("Quad_Button")				as CMlQuad);
+			declare Label_Action 					<=> (Page.MainFrame.GetFirstChild("Label_Action")				as CMlLabel);
+			declare Label_Result 					<=> (Page.MainFrame.GetFirstChild("Label_Result")				as CMlLabel);
+			
+			Frame_TempQuestion.Visible		= False;
+			
+			declare netread Integer 	Net_TempQuestionState			for UI;
+			declare netread Integer		Net_TempQuestionType			for UI;
+			declare netread Integer 	Net_TempQuestionTime			for UI;
+			declare netread Real 	 	Net_TempQuestionResult			for UI;
+			declare netwrite Integer 	Net_TempQuestionChoice			for UI;
+			declare netwrite Integer	Net_PlayerWantsToSetTrackUpdate for UI;
+			
+			declare netwrite Boolean 	Net_IsTrackFavorite 			for UI;
+			declare netwrite Boolean 	Net_IsTrackLiked				for UI;
+			
+			declare Boolean ActionAlreadyPerfomed;
+			declare Boolean ActionHasBeenPerformed;
+			
+			declare Integer ActionTimer = Net_TempQuestionTime;
+			declare Integer Pre_TempQuestionState;
+			declare Real GaugeMaxSize = {{{MapNameSizeXElement}}};
+			while(True) {
+				yield;
+				{{{Prompter2::InjectInLoop()}}}
+				if(InputPlayer == Null) continue;
+				
+				if(Pre_TempQuestionState != Net_TempQuestionState) {
+					Pre_TempQuestionState = Net_TempQuestionState;
+					
+					if(Net_TempQuestionState == TMC_TEMPQUESTION_ACTION) {
+						
+						Frame_TempQuestion.Visible	= True;
+						if(Net_TempQuestionType == TMC_TEMPQUESTION_ADDMAP) {
+							if(Net_IsTrackFavorite) {
+								ActionAlreadyPerfomed = True;
+							} else {
+								ActionAlreadyPerfomed = False;
+							}
+						}						
+						
+						//CB : HACK TO TEST
+						// ActionAlreadyPerfomed = False;
+						if(!ActionAlreadyPerfomed) {
+							ActionHasBeenPerformed			= False;
+							ActionTimer						= Net_TempQuestionTime;
+							Net_TempQuestionChoice 			= -1;
+							Quad_Button.ImageUrl 			= "{{{IMGSelect}}}";
+							declare Text ActionText			= GetActionToDoText();
+							
+							Prompter_SetBanner("ActionText", ActionText, 4000, 20, <1.0, 1.0, 1.0>);
+							Prompter_SetBannerIsActive("ActionText", True, True);
+							
+							Prompter_SetBanner("ResultText", "", 4000, 20, <1.0, 1.0, 1.0>);
+							Prompter_SetBannerIsActive("ResultText", True, True);
+							
+							Quad_Button.Visible 			= True;
+						} else {
+							Prompter_SetBanner("ActionText", "", 4000, 20, <1.0, 1.0, 1.0>);
+							Prompter_SetBannerIsActive("ActionText", False, False);
+							declare Text ResultText			= GetAlreadyDoneActionText();
+							Prompter_SetBanner("ResultText", ResultText, 4000, 20, <1.0, 1.0, 1.0>);
+							Prompter_SetBannerIsActive("ResultText", True, True);
+							Label_Action.Value 				= "";
+							Quad_Button.Visible 			= False;
+						}
+						
+						Frame_TempQuestion.Visible		= True;
+					} else if(Net_TempQuestionState == TMC_TEMPQUESTION_OFF) {
+						Frame_TempQuestion.Visible		= False;
+						Quad_Button.ImageUrl 			= "{{{IMGSelect}}}";
+					} else if(Net_TempQuestionState == TMC_TEMPQUESTION_RESULT){
+						// declare Real GaugeFinalSize 	= Net_TempQuestionResult*GaugeMaxSize;
+						Quad_Gauge.Size.X 				= 0.;
+						// Quad_MiddleLign.Visible 		= False;
+						Quad_Gauge.Opacity 				= 0.0;
+						
+					}
+				}
+				
+				if(Net_TempQuestionState == TMC_TEMPQUESTION_ACTION) {
+					ActionTimer				-= Period;
+					declare Speed 			= 0.01;
+					declare CurSin 			= 0.5 + ML::Sin(GameTime*Speed)*0.5;
+					declare MinOpacity 		= 0.1;
+					declare TheOpacity 		= MinOpacity + CurSin * (1-MinOpacity);
+					Quad_Gauge.Opacity 		= TheOpacity;
+					
+					declare Integer 	RemainingTime 	= Net_TempQuestionTime - ActionTimer;
+					declare Real 		TimePercentage 	= RemainingTime*1.0/Net_TempQuestionTime*1.0;
+					
+					declare Real		GaugeFinalSize = (1.0 - TimePercentage)*GaugeMaxSize;
+					if(GaugeFinalSize > 0) {
+						Quad_Gauge.Size.X 	= GaugeFinalSize;
+					}
+					
+					if(Net_TempQuestionChoice == 1) {
+						Quad_Button.ImageUrl = "{{{IMGVoteConfirmed}}}";
+						Quad_Button.Colorize = {{{ColorGreen}}};
+					}
+					
+					foreach(PadIndex => Pad in Input.Pads) 
+					{
+						if(Input.Pads.existskey(Pad))
+						{
+							foreach(Button in Input.Pads[PadIndex].ButtonEvents)
+							{
+								switch(Button) 
+								{
+									case CInputScriptPad::EButton::A : 
+									{
+										if(!ActionHasBeenPerformed) {
+											Audio.PlaySoundEvent("{{{SOUNDPATH ^ SOUND_SELECT}}}", {{{Volumes::GetVolumedB("MenuClick")}}}, 0);
+											Net_TempQuestionChoice = 1;
+											ActionHasBeenPerformed = True;
+											DoAccordedAction();
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+				
+				if(Net_TempQuestionState == TMC_TEMPQUESTION_RESULT) {
+					if(!ActionAlreadyPerfomed) {
+						if(GetActionResult() == True) {
+							declare Text ActionResult		= GetActionResultText(ActionHasBeenPerformed);
+							Label_Action.Value 				= "";
+							Quad_Button.Visible 			= False;
+							Prompter_SetBanner("ResultText", ActionResult, 4000, 20, <1.0, 1.0, 1.0>);
+							Prompter_SetBannerIsActive("ResultText", True, True);
+							Prompter_SetBanner("ActionText", "", 4000, 20, <1.0, 1.0, 1.0>);
+							Prompter_SetBannerIsActive("ActionText", False, False);
+						}
+					}
+				}
+			}
+		}
+	--></script> 
+	""";
+	Layers::Create(LAYERNAME, ML);
+	Layers::Attach(LAYERNAME);
+	declare Layer <=> Layers::Get(LAYERNAME);
+	Layer.InOutAnimation = CUILayer::EUILayerAnimation::LeftFast;
+}
+*/
+
+Void SetTempQuestionContent() {
+	declare netread Integer 	Net_TempQuestionState			for UI;
+	declare netread Integer		Net_TempQuestionType			for UI;
+	declare Text LayerName = "";
+	if(Net_TempQuestionType == TMC_TEMPQUESTION_ADDMAP) {
+		LayerName = LAYERNAMETWO;
+	} else if(Net_TempQuestionType == TMC_TEMPQUESTION_LIKEMAP) {
+		LayerName = LAYERNAMETHREE;
+	} else if(Net_TempQuestionType == TMC_TEMPQUESTION_LIKECHALLENGE) {
+		LayerName = LAYERNAMETHREE;
+	}
+	
+	if(Net_TempQuestionType == TMC_TEMPQUESTION_ADDMAP) {
+		declare netwrite Text 		Net_TempQuestionTwoOptionsPopupMessage					for UI;
+		declare netwrite Text 		Net_TempQuestionTwoOptionsPopupButton1Content			for UI;
+		declare netwrite Text 		Net_TempQuestionTwoOptionsPopupButton2Content			for UI;
+		declare netwrite Text 		Net_TempQuestionTwoOptionsPopupButton3Content			for UI;
+		Net_TempQuestionTwoOptionsPopupMessage 				= 	_("Add this track to your favorite?");
+		Net_TempQuestionTwoOptionsPopupButton1Content		= 	UIButtonNamesPopup::GetYesText();
+		Net_TempQuestionTwoOptionsPopupButton2Content		=  	UIButtonNamesPopup::GetNoText();
+		UIPopupBuilder::SetDefaultFocusedButton(LayerName, 1);
+	} else if(Net_TempQuestionType == TMC_TEMPQUESTION_LIKEMAP) {
+		declare netwrite Text 		Net_TempQuestionTwoOptionsPopupTitle					for UI;
+		declare netwrite Text 		Net_TempQuestionTwoOptionsPopupMessage					for UI;
+		declare netwrite Text 		Net_TempQuestionTwoOptionsPopupButton1Content			for UI;
+		declare netwrite Text 		Net_TempQuestionTwoOptionsPopupButton2Content			for UI;
+		declare netwrite Text 		Net_TempQuestionTwoOptionsPopupButton3Content			for UI;
+		Net_TempQuestionTwoOptionsPopupTitle				= 	UIButtonNamesPopup::GetRateTrackTitle();
+		Net_TempQuestionTwoOptionsPopupButton1Content		= 	UIButtonNamesPopup::GetLikeTrackText();
+		Net_TempQuestionTwoOptionsPopupButton2Content		=  	UIButtonNamesPopup::GetIndifferentTrackText();
+		Net_TempQuestionTwoOptionsPopupButton3Content		=  	UIButtonNamesPopup::GetDislikeTrackText();
+		UIPopupBuilder::SetDefaultFocusedButton(LayerName, 1);
+	} else if(Net_TempQuestionType == TMC_TEMPQUESTION_LIKECHALLENGE) {
+		declare netwrite Text 		Net_TempQuestionTwoOptionsPopupTitle					for UI;
+		declare netwrite Text 		Net_TempQuestionTwoOptionsPopupMessage					for UI;
+		declare netwrite Text 		Net_TempQuestionTwoOptionsPopupButton1Content			for UI;
+		declare netwrite Text 		Net_TempQuestionTwoOptionsPopupButton2Content			for UI;
+		declare netwrite Text 		Net_TempQuestionTwoOptionsPopupButton3Content			for UI;
+		Net_TempQuestionTwoOptionsPopupTitle				= 	UIButtonNamesPopup::GetRateChallengeTitle();
+		// log(Net_TempQuestionTwoOptionsPopupTitle);
+		Net_TempQuestionTwoOptionsPopupButton1Content		= 	UIButtonNamesPopup::GetLikeChallengeText();
+		Net_TempQuestionTwoOptionsPopupButton2Content		=  	UIButtonNamesPopup::GetIndifferentChallengeText();
+		Net_TempQuestionTwoOptionsPopupButton3Content		=  	UIButtonNamesPopup::GetDislikeChallengeText();
+		UIPopupBuilder::SetDefaultFocusedButton(LayerName, 1);
+	}
+}
+
+/*
+Void SetTempQuestionResult() {
+	declare netwrite Text 		Net_TempQuestionTwoOptionsPopupMessage	for UI;
+	declare netread Integer 	Net_TempQuestionState					for UI;
+	declare netread Integer		Net_TempQuestionType					for UI;
+	declare 		Integer 	Net_PlayerChoice						for UI;
+	
+	if(Net_TempQuestionType == TMC_TEMPQUESTION_ADDMAP) {
+		declare netwrite Text 		Net_TempQuestionTwoOptionsPopupMessage	for UI;
+		declare netwrite Boolean 	Net_IsTrackFavorite 					for UI;
+		if(Net_PlayerChoice > 0) {
+			if(Net_PlayerChoice == 1) {
+				if(Net_IsTrackFavorite) {
+					Net_TempQuestionTwoOptionsPopupMessage	= _("Track added to your favourite");
+				} else {
+					Net_TempQuestionTwoOptionsPopupMessage 	= _("Thank you");
+				}
+			} else if(Net_PlayerChoice == 2) {
+				Net_TempQuestionTwoOptionsPopupMessage 		= _("Track not added to your favourite");
+			}
+		}
+	} else if(Net_TempQuestionType == TMC_TEMPQUESTION_LIKEMAP) {
+		if(Net_PlayerChoice == 1 || Net_PlayerChoice == 2 || Net_PlayerChoice == 3) {
+			Net_TempQuestionTwoOptionsPopupMessage = _("Thank you");
+		} else {
+			Net_TempQuestionTwoOptionsPopupMessage = _("Thank you");
+		}
+	}
+}
+*/
+
+Void DoAccordedAction() {
+	declare netread Integer		Net_TempQuestionType					for UI;
+	declare netwrite Integer 	Net_PlayerWantsToSetRoomUpdate 			for UI;
+	declare netwrite Integer 	Net_PlayerWantsToSetTrackUpdate 		for UI;
+	declare netwrite Integer 	Net_PlayerWantsToSetAuthorUpdate 		for UI;
+	declare Integer 	Net_PlayerWantsToLikeTrackUpdate 		for UI;
+	declare Integer		Net_PlayerWantsToLikeTrackVote			for UI;
+	declare Integer 	Net_PlayerChoice						for UI;
+	declare netwrite Integer Net_PlayerVoteChoice 				for UI;
+	
+	declare Boolean PlayerHasDoneAction for UI;
+	
+	switch(Net_TempQuestionType) {
+		case TMC_TEMPQUESTION_ADDMAP: {
+			if(Net_PlayerChoice == 1) {
+				if(!PlayerHasDoneAction) {
+					Net_PlayerWantsToSetTrackUpdate += 1;
+					PlayerHasDoneAction = True;
+				}
+			} else if(Net_PlayerChoice == 2) {
+				
+			}
+		}
+		case TMC_TEMPQUESTION_LIKEMAP:	{
+			if(Net_PlayerChoice == 1 || Net_PlayerChoice == 3) {
+				if(!PlayerHasDoneAction) {
+					Net_PlayerWantsToLikeTrackUpdate += 1;
+					if(Net_PlayerChoice == 1) {
+						Net_PlayerWantsToLikeTrackVote = 1;
+					} else if(Net_PlayerChoice == 3) {
+						Net_PlayerWantsToLikeTrackVote = -1;
+					}
+					PlayerHasDoneAction = True;
+				}
+			}
+		}
+		case TMC_TEMPQUESTION_LIKECHALLENGE: {
+			if(Net_PlayerChoice == 1 || Net_PlayerChoice == 3) {
+				if(!PlayerHasDoneAction) {
+					if(Net_PlayerChoice == 1) {
+						Net_PlayerVoteChoice = 1;
+					} else if(Net_PlayerChoice == 3) {
+						Net_PlayerVoteChoice = -1;
+					}
+				}
+			}
+		}
+	}
+}
+
+Void Loop() {
+	// log(Now^"LOOP");
+	declare netread Integer 	Net_TempQuestionState			for UI;
+	declare netread Integer		Net_TempQuestionType			for UI;
+	declare Text LayerName = "";
+	if(Net_TempQuestionType == TMC_TEMPQUESTION_ADDMAP) {
+		LayerName = LAYERNAMETWO;
+	} else if(Net_TempQuestionType == TMC_TEMPQUESTION_LIKEMAP) {
+		LayerName = LAYERNAMETHREE;
+	} else if(Net_TempQuestionType == TMC_TEMPQUESTION_LIKECHALLENGE) {
+		LayerName = LAYERNAMETHREE;
+	}
+	
+	if(Net_TempQuestionState != TMC_TEMPQUESTION_OFF) {
+		if(!IsTempQuestionShown(LayerName)) {
+			declare Boolean PlayerHasDoneAction for UI;
+			PlayerHasDoneAction = False;
+			SetTempQuestionContent();
+			ShowTempQuestion(True, LayerName);
+		}
+		if(Net_TempQuestionState == TMC_TEMPQUESTION_ACTION) {
+			// DoAccordedAction();
+		}
+		if(Net_TempQuestionState == TMC_TEMPQUESTION_RESULT) {
+			DoAccordedAction();
+			// SetTempQuestionResult();	
+		}
+	} else {
+		ShowTempQuestion(False, LayerName);
+	}
+}
+
+Void Load() {
+	ConstructTempQuestionPopupThreeOptions();
+}

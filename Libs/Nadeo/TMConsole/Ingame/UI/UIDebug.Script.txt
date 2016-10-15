@@ -1,0 +1,222 @@
+/**
+ *	ScoreTable Library
+ * 	Especially made for console
+ */
+
+#Const Version				"2014-07-17"
+#Const ScriptName			"UIDebug.Script.txt"
+
+
+#Include "Libs/Nadeo/Layers2.Script.txt" as Layers
+
+#Const C_LayerNameUIDebug	"LibTMC_LayerName_UIDebug"
+
+#Const SIZE_X	320
+#Const SIZE_Y	180
+#Const RATIO	0.05
+#Const POSZ		30.
+#Const OPACITY	0.95
+#Const COLOR	"""0f0"""
+
+// ---------------------------------- //
+// Functions
+// ---------------------------------- //
+
+// ---------------------------------- //
+// Private
+// ---------------------------------- //
+
+Void Private_CreateLayerUIDebug() {
+	
+	declare TOPSIZE_X = SIZE_X - SIZE_X * RATIO * 2.;
+	
+	declare Text MLText = """
+	<frame id="Frame_UILimits" 	posn="0 0 {{{POSZ}}}" hidden="1">
+		<frame hidden="0">
+			<quad id="Quad_Left" 	posn="-{{{SIZE_X*0.5}}} 0. 1." sizen="{{{SIZE_X*RATIO}}} 	{{{SIZE_Y}}}" 		halign="left" 	valign="center" bgcolor="{{{COLOR}}}" opacity="{{{OPACITY}}}" />
+			<quad id="Quad_Right" 	posn=" {{{SIZE_X*0.5}}} 0. 1." sizen="{{{SIZE_X*RATIO}}} 	{{{SIZE_Y}}}" 		halign="right" 	valign="center" bgcolor="{{{COLOR}}}" opacity="{{{OPACITY}}}" />
+			<quad id="Quad_Bottom" 	posn="0. -{{{SIZE_Y*0.5}}} 1." sizen="{{{TOPSIZE_X}}} 		{{{SIZE_Y*RATIO}}}" halign="center" valign="bottom" bgcolor="{{{COLOR}}}" opacity="{{{OPACITY}}}" />
+			<quad id="Quad_Top" 	posn="0.  {{{SIZE_Y*0.5}}} 1." sizen="{{{TOPSIZE_X}}} 		{{{SIZE_Y*RATIO}}}" halign="center" valign="top" 	bgcolor="{{{COLOR}}}" opacity="{{{OPACITY}}}" />
+			
+			<label id="Label_DebugHelper" posn="-{{{SIZE_X*0.5-1}}} -{{{SIZE_Y*0.5-1}}} 2." halign="left" valign="bottom" textsize="5" textcolor="fff" opacity="0.75" />
+		</frame>
+		
+		<frame posn="0. 50. {{{-POSZ-2.}}}" hidden="1">
+			<quad posn="0. 0.   -1." sizen="320 40" 	valign="bottom" halign="center" bgcolor="0f0" />
+			<quad posn="0. 0.   -1." sizen="320 35" 	valign="top" halign="center" bgcolor="000" />
+			<quad posn="0. -80. -1." sizen="320 140" 	valign="top" halign="center" bgcolor="000" />
+		</frame>
+		
+	</frame>
+	
+	
+	<script><!--
+		
+		#Const DebugName  "L_Debug"
+		
+		
+		main() 
+		{
+			declare Frame_UILimits 			<=> ((Page.MainFrame.GetFirstChild("Frame_UILimits")) 		as CMlFrame);
+			declare Quad_Left	 			<=> ((Page.MainFrame.GetFirstChild("Quad_Left")) 			as CMlQuad);
+			declare Quad_Right	 			<=> ((Page.MainFrame.GetFirstChild("Quad_Right")) 			as CMlQuad);
+			declare Quad_Bottom	 			<=> ((Page.MainFrame.GetFirstChild("Quad_Bottom")) 			as CMlQuad);
+			declare Quad_Top	 			<=> ((Page.MainFrame.GetFirstChild("Quad_Top")) 			as CMlQuad);
+			declare Label_DebugHelper	 	<=> ((Page.MainFrame.GetFirstChild("Label_DebugHelper")) 	as CMlLabel);
+			
+			declare Boolean FrameDebug_UILimits_Visible 	for UI;
+			declare Boolean FrameDebug_UILimits_Helper 		for UI;
+			declare Real 	FrameDebug_UILimits_Opacity 	for UI;
+			declare Real 	FrameDebug_UILimits_SizeRatio	for UI;
+			
+			declare Real 	Prev_UILimits_Opacity 	= FrameDebug_UILimits_Opacity;
+			declare Real 	Prev_UILimits_SizeRatio = FrameDebug_UILimits_SizeRatio;
+			
+			FrameDebug_UILimits_Visible 	= False;
+			FrameDebug_UILimits_Helper 		= True;
+			FrameDebug_UILimits_Opacity 	= 0.95;
+			FrameDebug_UILimits_SizeRatio 	= {{{RATIO}}};
+			
+			while(True) 
+			{
+				yield;
+				if (!PageIsVisible || InputPlayer == Null) continue;
+				
+				/*
+				foreach(Event in PendingEvents)
+				{
+					// log(Event.KeyName);
+					if(Event.Type == CMlEvent::Type::KeyPress)
+					{
+						if(Event.KeyName == "D")
+						{
+							FrameDebug_UILimits_Visible = !FrameDebug_UILimits_Visible;
+							Label_DebugHelper.Value = "DEBUG : ON";
+						}
+						
+						if(FrameDebug_UILimits_Visible)
+						{
+							if(Event.KeyName == "H")
+							{
+								FrameDebug_UILimits_Helper = !FrameDebug_UILimits_Helper;
+								Label_DebugHelper.Value = "HELPER : ON";
+							}
+							else
+							if(Event.KeyName == "Numpad0")
+							{
+								FrameDebug_UILimits_SizeRatio = {{{RATIO}}};
+								Label_DebugHelper.Value = "SIZE RATIO PER QUAD : BACK TO 5%";
+							}
+							else
+							if(Event.KeyName == "Up" && FrameDebug_UILimits_Opacity < 1.)
+							{
+								FrameDebug_UILimits_Opacity += 0.05;
+								Label_DebugHelper.Value = "OPACITY : " ^ FrameDebug_UILimits_Opacity;
+							}
+							else 
+							if(Event.KeyName == "Down" && FrameDebug_UILimits_Opacity > 0.)
+							{
+								FrameDebug_UILimits_Opacity -= 0.05;
+								if(FrameDebug_UILimits_Opacity < 0.04) FrameDebug_UILimits_Opacity = 0.;
+								Label_DebugHelper.Value = "OPACITY : " ^ FrameDebug_UILimits_Opacity;
+							}
+							else
+							if(Event.KeyName == "Right" && FrameDebug_UILimits_SizeRatio < 0.5)
+							{
+								FrameDebug_UILimits_SizeRatio += 0.005;
+								if(FrameDebug_UILimits_SizeRatio > 0.5) FrameDebug_UILimits_SizeRatio = 0.5;
+								Label_DebugHelper.Value = "SIZE RATIO PER QUAD : " ^ FrameDebug_UILimits_SizeRatio * 100 ^ " %";
+							}
+							else 
+							if(Event.KeyName == "Left" && FrameDebug_UILimits_SizeRatio > 0.)
+							{
+								FrameDebug_UILimits_SizeRatio -= 0.005;
+								if(FrameDebug_UILimits_SizeRatio < 0.005) FrameDebug_UILimits_SizeRatio = 0.;
+								Label_DebugHelper.Value = "SIZE RATIO PER QUAD : " ^ FrameDebug_UILimits_SizeRatio * 100 ^ " %";
+							}
+						}
+					}
+				}
+				*/
+		
+				Frame_UILimits.Visible = FrameDebug_UILimits_Visible;
+				
+				if(FrameDebug_UILimits_Visible)
+				{
+					Label_DebugHelper.Visible = FrameDebug_UILimits_Helper;
+					
+					if(Prev_UILimits_Opacity != FrameDebug_UILimits_Opacity)
+					{
+						Prev_UILimits_Opacity = FrameDebug_UILimits_Opacity;
+						Quad_Left			.Opacity = FrameDebug_UILimits_Opacity;
+						Quad_Right			.Opacity = FrameDebug_UILimits_Opacity;
+						Quad_Bottom			.Opacity = FrameDebug_UILimits_Opacity;
+						Quad_Top			.Opacity = FrameDebug_UILimits_Opacity;				
+					}
+					
+					if(Prev_UILimits_SizeRatio != FrameDebug_UILimits_SizeRatio)
+					{
+						Prev_UILimits_SizeRatio = FrameDebug_UILimits_SizeRatio;
+						declare TOPSIZE_X = {{{SIZE_X}}} - {{{SIZE_X}}} * FrameDebug_UILimits_SizeRatio * 2.;
+						
+						Quad_Left			.Size.X  = FrameDebug_UILimits_SizeRatio * {{{SIZE_X}}};
+						Quad_Right			.Size.X  = FrameDebug_UILimits_SizeRatio * {{{SIZE_X}}};
+						Quad_Bottom			.Size.X  = TOPSIZE_X;
+						Quad_Top			.Size.X  = TOPSIZE_X;
+						Quad_Bottom			.Size.Y  = FrameDebug_UILimits_SizeRatio * {{{SIZE_Y}}};
+						Quad_Top			.Size.Y  = FrameDebug_UILimits_SizeRatio * {{{SIZE_Y}}};
+					}
+				}
+			}
+		}
+
+	--></script>
+	""";
+	
+	Layers::Create(C_LayerNameUIDebug, MLText);
+	Layers::Attach(C_LayerNameUIDebug);
+}
+
+// ---------------------------------- //
+/** Return the version number of the script
+ *
+ *	@return		The version number of the script
+ */
+Text GetScriptVersion() 
+{
+	return Version;
+}
+
+// ---------------------------------- //
+/** Return the name of the script
+ *
+ *	@return		The name of the script
+ */
+Text GetScriptName() 
+{
+	return ScriptName;
+}
+
+// ---------------------------------- //
+/// Unload the library
+Void Unload() 
+{
+	Layers::Destroy(C_LayerNameUIDebug);
+}
+
+// ---------------------------------- //
+/// Load the library
+Void Load() 
+{
+	Unload();
+	Private_CreateLayerUIDebug();
+}
+
+// Hack (todo  virer)
+// ---------------------------------- //
+/// To re-attach layers in case of UI ResetAll
+Void Attach() 
+{
+	Layers::Attach(C_LayerNameUIDebug);
+}
+

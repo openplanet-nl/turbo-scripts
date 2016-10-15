@@ -1,0 +1,324 @@
+#Include "TextLib"																	as TextLib
+#Include "MathLib"																	as MathLib
+#Include "Libs/Nadeo/TMConsole/Logger.Script.txt"									as Logger
+#Include "Libs/Nadeo/TMConsole/Menu/IngameAccessController.Script.txt"				as IngameAccessController
+#Include "Libs/Nadeo/TMConsole/Menu/Controller/Solo_CampaignController.Script.txt"	as CampaignController
+#Include "Libs/Nadeo/TMConsole/Menu/Controller/Duo_CampaignController.Script.txt"	as CampaignDuoController
+#Include "Libs/Nadeo/TMConsole/Menu/Controller/ModeController.Script.txt"			as ModeController
+#Include "Libs/Nadeo/TMConsole/Menu/LoadingScreen.Script.txt"						as LoadingScreen
+#Include "Libs/Nadeo/TMConsole/Menu/Controller/PrivilegeController.Script.txt"		as PrivilegeController
+#Include "Libs/Nadeo/TMConsole/Menu/MenuTracking.Script.txt"						as MenuTracking
+#Include "Libs/Nadeo/TMConsole/Menu/MenuLayers.Script.txt"							as Layers
+#Include "Libs/Nadeo/TMConsole/Menu/LibCheats.Script.txt"							as Cheats
+#Include "Libs/Nadeo/TMConsole/PopUpManager.Script.txt"								as PopUpManager
+
+#Const C_Env_Canyon  		0
+#Const C_Env_Valley  		1
+#Const C_Env_Lagoon  		2
+#Const C_Env_Stadium 		3
+
+declare Text G_Environment;
+declare Text G_EditorMode;
+declare Text G_TrackStyle;
+declare Text G_LandStyle;
+declare Text G_MoodIndex;
+declare Text G_Args;
+
+Void WarnNotEnoughParams(CMlAppEvent _Event) {
+	Logger::Warn("[Menucontroller] event "^_Event.CustomEventType^": not enough params ["^_Event.CustomEventData^"]");
+}
+
+
+Void IsUnlockAnimation(Integer _Environment, Integer _Difficulty)
+{
+
+	declare Text Mode = ModeController::GetModeName();
+	if(Mode == "TMC_CampaignDuo")
+	{
+		CampaignDuoController::SendUnlockAnimationToStart(_Environment, _Difficulty, "BrowseTracks");
+	}
+	else
+	{
+		CampaignController::SendUnlockAnimationToStart(_Environment, _Difficulty, "BrowseTracks");
+	}
+}
+
+/* Rebrancher cette partie ?
+Void AfterEditor(Text _EditorPluginScript)
+{
+	declare Text CustomResultType = TitleFlow.CustomResultType;
+	while(CustomResultType == "PlayNow") {
+		declare MapPath = TitleFlow.CustomResultData[0];
+		declare Text ModeSelect     = TitleFlow.CustomResultData[1];
+		declare Text ScriptModeName = ModeName::GetModeScript(ModeSelect);
+		LoadingScreen::SetLoadingType(0);
+		
+		//UIManager.HoldLoadingScreen = True;
+		wait(TitleFlow.IsReady);
+		TitleFlow.PlayMap(MapPath, ScriptModeName, "");
+
+		wait(TitleFlow.IsReady);
+		// HACK EG : à remettre
+		// TitleFlow.EditMap(MapPath, _EditorPluginScript);
+		
+		CustomResultType = TitleFlow.CustomResultType;
+	}
+	
+
+	WorkshopController::ReloadLayer();
+}
+*/
+Void EditNewTrack_Unused(Text _Environment, Text _Mood, Text _ModUrl, Text _PlayerModel, Text _MapType, Text _EditorPluginScript){
+	
+	declare Integer Enviro = TextLib::ToInteger(_Environment);
+	LoadingScreen::SetLoadingType(1, Enviro);
+	
+				
+	declare Text Mood = _Mood;
+	//HACK
+	if(_Environment == "Lagoon" || _Environment == "Valley") Mood = "Day48";
+	//HACKEND
+	//TitleFlow.EditNewMap(_Environment, Mood, _ModUrl, _PlayerModel, _MapType, _EditorPluginScript, "");
+	
+	wait(TitleFlow.IsReady);
+	//AfterEditor(_EditorPluginScript);
+}
+
+Void LayerHideQuadBlack()
+{
+	declare CUILayer LayerKOT <=> Layers::Get("KindOfTracks");
+	declare Boolean	Page_SetQuadBlack		for LayerKOT.LocalPage;
+	Page_SetQuadBlack = False;
+}
+
+Void DoEditNewTrack(Text _Environment, Text _EditorMode, Text _TrackStyle, Text _LandStyle, Text _MoodIndex)
+{
+	if(!PrivilegeController::CanIGotoEnviro(_Environment)) {
+		LayerHideQuadBlack();
+		return;
+	}
+	if(!PrivilegeController::CanIGotoEditor(_EditorMode)) {
+		LayerHideQuadBlack();
+		return;
+	}
+	MenuTracking::StartTrackbuilderContext(_Environment, _EditorMode);
+	
+	declare Text Mood;
+	//if(_MoodIndex == "0")  _MoodIndex = MathLib::Rand(1, 3)^"";
+	switch(_MoodIndex)
+	{
+		case "0": Mood = "Sunrise";
+		case "1": Mood = "Day";
+		case "2": Mood = "Sunset";
+		case "3": Mood = "Night";
+		default : Mood = "Day";
+	}
+	
+	if(_Environment == "Lagoon" || _Environment == "Valley") Mood = Mood^"48";
+	declare Text Args;
+	declare persistent Integer Pers_SettingLightsState for UserMgr.MainUser = 0;
+	declare Integer ShadowQuality;
+
+	switch(Pers_SettingLightsState)
+	{
+		case 0: ShadowQuality   = 1;
+		case 1: ShadowQuality   = 2;
+		case 2: ShadowQuality   = 0;
+		default : ShadowQuality = 1;
+	}
+	//log("ShadowQuality: " ^ ShadowQuality);
+	if(_EditorMode != "3")
+	{
+		Args = """
+		<mode_script_settings>
+			<setting name="S_EditorLevel"   value="{{{_EditorMode}}}"   type="integer"/>
+			<setting name="S_ShadowQuality" value="{{{ShadowQuality}}}" type="integer"/>
+		</mode_script_settings>
+		""";
+	}
+	else
+	{
+		declare Text Lenght             = _TrackStyle;
+		Args = """
+		<mode_script_settings>
+			<setting name="S_EditorLevel"        value="0"                   type="integer"/>
+			<setting name="S_RandomMap_Generate" value="True"                type="boolean"/>
+			<setting name="S_RandomMap_Validate" value="True"                type="boolean"/>
+			<setting name="S_RandomMap_Length"   value="{{{Lenght}}}"        type="text"/>
+			<setting name="S_ShadowQuality"      value="{{{ShadowQuality}}}" type="integer"/>
+		</mode_script_settings>
+		""";
+	}
+	
+
+	wait(TitleFlow.IsReady);
+	//ManiaPlanet.RichPresenceManager.SetPresence
+	PresenceMgr.SetPresence(DataMgr.MenuUserId, CPresenceMgr::ERichPresence::Create);
+
+	declare Integer EnvironmentIndex = 0;
+	switch(_Environment)
+	{
+		case "Canyon" : EnvironmentIndex = 0;
+		case "Valley" : EnvironmentIndex = 1;
+		case "Lagoon" : EnvironmentIndex = 2;
+		case "Stadium": EnvironmentIndex = 3;
+	}
+	LoadingScreen::SetLoadingType(1, EnvironmentIndex);
+
+	TitleFlow.EditNewMap(
+	 _Environment,				//< Enviro
+	 Mood,              		//< Deco
+	 "",                		//< Mod
+	 _Environment^"Car",      	//< PlayerModel 
+	 "RaceCE.Script.txt",		//< MapType
+	 "PartyEditor2.Script.txt",	//< Plugin script
+	 Args);             		//< Plugin arguments
+	wait(TitleFlow.IsReady);
+	PresenceMgr.SetPresence(DataMgr.MenuUserId, CPresenceMgr::ERichPresence::MainMenu);
+}
+
+Void LaunchEditor()
+{
+	DoEditNewTrack(G_Environment, G_EditorMode, G_TrackStyle, G_LandStyle, G_MoodIndex);
+	LayerHideQuadBlack();
+}
+
+Void LaunchRandomGenerator()
+{
+	IngameAccessController::EditNewMap(G_Environment,  G_MoodIndex,  "",  G_Environment^"Car",  "RaceCE.Script.txt",  "PartyEditor2.Script.txt",  G_Args, True);
+	LayerHideQuadBlack();
+}
+
+
+Void Loop() {
+	foreach(Event in PendingEvents) {
+		if(Event.Type != CMlAppEvent::EType::LayerCustomEvent) continue;
+		switch(Event.CustomEventType) {
+			case "GetModeName" :
+			{
+				//declare Text Page = Event.CustomEventData[0];
+				ModeController::SendModeName("KindOfTracks");
+			}
+			case "IsMonoscreenActivated" : {
+				declare CUILayer Layer = Layers::Get("KindOfTracks");
+				LayerCustomEvent(Layer, "IsMonoscreenActivated", [TextLib::ToText(Cheats::IsMonoscreenActivated())]);
+			}
+			case "PopUpMonoscreenForbidden" : {
+				//L16N Do not translate MonoScreen.
+				PopUpManager::AddPopUp2(0, _("You cannot use random generated tracks with the \"MonoScreen\" secret code activated."), "", False);
+			}
+			case "LaunchRandomGenerator" : {
+				declare Integer EnviroIndex = TextLib::ToInteger(Event.CustomEventData[0]);
+				LoadingScreen::SetLoadingType(1, EnviroIndex);
+				declare Text Enviro;
+
+				if(!PrivilegeController::CanIGotoEnviro(EnviroIndex))
+				{
+					LayerHideQuadBlack();
+					continue;
+				}
+
+				switch(EnviroIndex)
+				{
+					case C_Env_Canyon : Enviro = "Canyon";
+					case C_Env_Valley : Enviro = "Valley";
+					case C_Env_Lagoon : Enviro = "Lagoon";
+					case C_Env_Stadium: Enviro = "Stadium";
+				}
+				declare Integer Seed = Now;
+				/*
+				declare Text MapSettings = """<commands>
+		  <!-- Seed à utiliser pour la génération -->
+		  <seed>{{{Seed}}}</seed>
+		  <properties>
+			<!-- La longueur de la map en mètres -->
+			<length>1500.</length>
+			<!-- La distance entre deux checkpoints en mètres -->
+			<checkpointsspacing>200.</checkpointsspacing>
+		  </properties>
+		  <!-- Affecte les probabilités de sélectionner certains type de block -->
+		  <trackmultipliers>
+			<multiplier>2.</multiplier>
+			<multiplier isturning="1">0.5</multiplier>
+			<multiplier type="Turbos">0.</multiplier>
+		  </trackmultipliers>
+		  <!-- Affecte la repartition des blocks de déco -->
+		  <decomultupliers>
+			<multiplier type="Natural">1.</multiplier>
+			<multiplier type="Podium">1.</multiplier>
+			<multiplier type="Industrial">0.</multiplier>
+		  </decomultupliers>
+		</commands>""";
+				declare Args = """
+	<mode_script_settings>
+		<setting name="S_RandomMap_Generate" value="1" type="boolean"/>
+		<setting name="S_RandomMap_Config" value="{{{TextLib::MLEncode(MapSettings)}}}" type="text"/>
+		<setting name="S_EditorLevel" value="2" type="integer"/>
+	</mode_script_settings>
+				""";
+*/
+				
+				declare Text Mood = "Day";
+				declare Text MoodIndex          = Event.CustomEventData[1];
+				declare Text Lenght             = Event.CustomEventData[2];
+				
+				if(MoodIndex == "0")  MoodIndex = MathLib::Rand(1, 3)^"";
+				switch(MoodIndex)
+				{
+					case "1": Mood = "Sunrise";
+					case "2": Mood = "Day";
+					case "3": Mood = "Sunset";
+					case "4": Mood = "Night";
+					default : Mood = "Day";
+				}
+				//HACK
+				if(Enviro == "Lagoon" || Enviro == "Valley") Mood = Mood^"48";
+				//HACKEND
+				
+				declare Args = """
+					<mode_script_settings>
+						<setting name="S_RandomMap_Generate" value="1" type="boolean"/>
+						<setting name="S_EditorLevel" value="2" type="integer"/>
+						<setting name="S_RandomMap_Length" value="{{{Lenght}}}" type="text"/>
+					</mode_script_settings>
+					""";
+
+
+				G_Environment        = Enviro;
+				G_MoodIndex          = Mood;
+				G_Args               = Args;
+
+				PrivilegeController::CheckCanCreateTrack("LaunchRandomGenerator");
+
+				//IngameAccessController::EditNewMap(Enviro,  Mood,  "",  Enviro^"Car",  "RaceCE.Script.txt",  "PartyEditor2.Script.txt",  Args, True);
+
+				//LayerHideQuadBlack();
+			}
+			case "EditNewTrack" : {
+				if(Event.CustomEventData.count < 5) {
+					WarnNotEnoughParams(Event);
+					continue;
+				}
+
+				G_Environment        = Event.CustomEventData[0];
+				G_EditorMode         = Event.CustomEventData[1];
+				G_TrackStyle         = Event.CustomEventData[2];
+				G_LandStyle          = Event.CustomEventData[3];
+				G_MoodIndex          = Event.CustomEventData[4];
+				PrivilegeController::CheckCanCreateTrack("EditNewTrack");
+				//DoEditNewTrack(Environment, EditorMode, TrackStyle, LandStyle, MoodIndex);
+			}
+			case "GetTitleReachable" : {
+				/*
+				declare Text Page = Event.CustomEventData[0];
+				declare CUILayer Layer = Layers::Get(Page);
+				declare Boolean[Integer] TitleReachable for Layer.LocalPage;
+				TitleReachable[0] = !PrivilegeController::IsTrial(False);
+				TitleReachable[1] = !PrivilegeController::IsTrial(False);
+				TitleReachable[2] = True;
+				LayerCustomEvent(Layer, "SendTitleReachable", [""]);
+				*/
+			}
+		}
+	}
+}

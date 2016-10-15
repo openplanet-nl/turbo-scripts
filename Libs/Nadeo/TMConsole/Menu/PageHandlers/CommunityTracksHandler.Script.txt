@@ -1,0 +1,100 @@
+#Include "Libs/Nadeo/TMConsole/Menu/MenuLayers.Script.txt"								as Layers
+#Include "Libs/Nadeo/TMConsole/Logger.Script.txt"										as Logger
+#Include "Libs/Nadeo/TMConsole/Menu/PlaylistController.Script.txt"						as PlaylistController
+#Include "Libs/Nadeo/TMConsole/Live/LiveXml.Script.txt" 								as LiveXml
+#Include "Libs/Nadeo/TMConsole/Menu/TrackController.Script.txt" 						as TrackController
+	
+
+declare Text[Text][] 	G_Tracks;
+
+Void WarnNotEnoughParams(CMlAppEvent _Event) {
+	Logger::Warn("[Menucontroller] event "^_Event.CustomEventType^": not enough params ["^_Event.CustomEventData^"]");
+}
+
+Void SetTracksList(Text _RequestResult) {
+	declare CUILayer 		LayerOnline 	= Layers::Get("CommunityTracks");
+	declare Text[Text][] 	ServerTracksList for LayerOnline.LocalPage;
+	declare Integer         Update2DArray    for LayerOnline.LocalPage;
+	
+	declare CXmlDocument	Doc 		= LiveXml::Manialib_Xml_CreateDocument(_RequestResult);
+	G_Tracks							= LiveXml::Manialib_Xml_NodeToArray2(Doc.GetFirstChild("result"));
+	ServerTracksList 					= G_Tracks;
+	LiveXml::Manialib_Xml_DestroyDocument(Doc);
+	Update2DArray = Now;
+}
+
+Void PlayTrack(Text _TrackPath)
+{
+	OpenLink(_TrackPath, CManiaApp::ELinkType::ManialinkBrowser);
+}
+
+Void SetHasFavorite(Text _IdTracks)
+{
+	//log("SetHasFavorite");
+	//OpenLink(_TrackPath, CManiaApp::ELinkType::ManialinkBrowser);
+
+	TrackController::SetTrackAsFavorite("CommunityTracks", _IdTracks, True);
+}
+
+Void RemoveFromFavorite(Text _TrackPath)
+{
+	log("RemoveFromFavorite");
+	//OpenLink(_TrackPath, CManiaApp::ELinkType::ManialinkBrowser);
+}
+
+Void GetEditedPlaylist() {
+	PlaylistController::SendEditedPlaylistIdToUI("CommunityTracks");
+}
+
+Void GetMyPlaylist() {
+	//PlaylistController::GetMyPlaylist("CommunityTracks");
+	PlaylistController::GetMyPlaylistsToUI("CommunityTracks");
+}
+
+Void GetFavoriteList() {
+	TrackController::GetFavoriteTracks("CommunityTracks");
+}
+
+Void RequestTracksList() {
+	TrackController::GetAllTracks("CommunityTracks");
+}
+
+Void Loop() {
+	
+	foreach(Event in PendingEvents) {
+		if(Event.Type != CMlAppEvent::EType::LayerCustomEvent) continue;
+		switch(Event.CustomEventType) {
+			case "RequestTracksList" : {
+				RequestTracksList();
+			}
+			case "GetFavoriteList" : {
+				GetFavoriteList();
+			}
+			case "GetMyPlaylist" : {
+				GetMyPlaylist();
+			}
+			case "GetEditedPlaylist" : {
+				GetEditedPlaylist();
+			}
+			case "PlayMap" : {
+				Logger::Warn("NOT IMPLEMENTED");
+			}
+			case "SetHasFavorite" : {
+				if(Event.CustomEventData.count < 1) {
+					WarnNotEnoughParams(Event);
+					continue;
+				}
+				declare Text TrackId = Event.CustomEventData[0];
+				SetHasFavorite(TrackId);
+			}
+			case "RemoveFromFavorite" : {
+				if(Event.CustomEventData.count < 1) {
+					WarnNotEnoughParams(Event);
+					continue;
+				}
+				declare Text TrackPath = Event.CustomEventData[0];
+				RemoveFromFavorite(TrackPath);
+			}
+		}
+	}
+}

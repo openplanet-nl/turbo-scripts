@@ -1,0 +1,278 @@
+// #Include "Libs/Nadeo/TMConsole/Menu/MenuLayers.Script.txt"		as Layers
+#Include "Libs/Nadeo/TMConsole/Logger.Script.txt" 				as Logger
+#Include "Libs/Nadeo/TMConsole/UbisoftClubPopup.Script.txt"		as UbisoftClubPopup
+
+// MNEMOS
+#Const C_MnemoNewMedal			"OnNewMedal"
+#Const C_MnemoModeFinished		"OnModeFinished"
+#Const C_MnemoTryHarder			"OnTryHarder"
+#Const C_MnemoDDriver			"OnDDriverComplete"
+#Const C_MnemoOnlineTrack		"OnOnlineTrackComplete"
+
+// ACHIEVEMENTS CONSTANTS
+#Const C_TryHarderThreshold			5 	 // nb tries to have the "try harder" achievement
+
+// CONSTS
+#Const TMC_MEDAL_SUPERMEDALI		-5
+#Const TMC_MEDAL_SUPERMEDALII		-4
+#Const TMC_MEDAL_SUPERMEDALIII		-3
+#Const TMC_MEDAL_SUPERMEDALIV		-2
+#Const TMC_MEDAL_SUPERMEDALV		-1 
+
+#Const TMC_MEDAL_AUTHOR				0
+#Const TMC_MEDAL_GOLD				1
+#Const TMC_MEDAL_SILVER				2
+#Const TMC_MEDAL_BRONZE				3
+#Const TMC_MEDAL_PLAYER				4
+#Const TMC_MEDAL_NONE				5
+#Const TMC_MEDAL_ANOTHERPLAYER		6
+
+#Const C_HotSeatMode				1
+#Const C_ArcadeMode					2
+#Const C_SplitScreenMode			3
+
+
+// UPLAY
+#Const C_UPLAYCanyonFirstStepName	"3"
+#Const C_UPLAYCanyonFirstStepLabel	_("Welcome To Canyon")
+#Const C_UPLAYValleyFirstStepName	"4"
+#Const C_UPLAYValleyFirstStepLabel	_("Welcome To Valley")
+#Const C_UPLAYLagoonFirstStepName	"5"
+#Const C_UPLAYLagoonFirstStepLabel	_("Welcome To Lagoon")
+#Const C_UPLAYStadiumFirstStepName	"6"
+#Const C_UPLAYStadiumFirstStepLabel	_("Welcome To Stadium")
+#Const C_UPLAYLongRoadName			"8"
+#Const C_UPLAYLongRoadLabel			_("The Long Road Ahead")
+#Const C_UPLAYSilversToGetLongRoad	25
+#Const C_UPLAYLongerRoadName		"9"
+#Const C_UPLAYLongerRoadLabel		_("The Longer Road Ahead")
+#Const C_UPLAYGoldsToGetLongerRoad	50
+#Const C_UplayChallengeID			"7"
+#Const C_UplayChallengeLabel		_("First Challenge")
+
+#Const C_UplayGoldPackBaseID		99
+
+
+declare Integer G_TryHarderCounter;
+
+Void SendAchievementEvent(Text _EventMnemo, Integer _Value) {
+	declare Integer[] Values;
+	Values.add(_Value);
+	AchievementsManager.SendEvent(DataMgr.MenuUserId, _EventMnemo, Values);
+	// Logger::Log("[SendAchievementEvent]"^_EventMnemo^": "^_Value);
+}
+
+Void SendUplayActionEvent(Text _ActionID, Text _ActionLabel, Boolean _ShowPopup) 
+{
+	if(!AchievementsManager.MasterServer_IsUplayActionCompleted(DataMgr.MenuUserId, _ActionID))
+	{
+		AchievementsManager.MasterServer_UplayCompleteAction(DataMgr.MenuUserId, _ActionID);
+
+		declare Integer PopupContext = 1;  // 1 = ingame	
+		
+		declare CGameAchievementScriptUplayAction TheAction = AchievementsManager.MasterServer_GetUplayAction(DataMgr.MenuUserId, _ActionID);
+		
+		declare Text ActionName 		= _ActionLabel;
+		declare Text ActionDesc 		= "";
+		declare Integer ActionValue 	= 0;
+		
+		if(TheAction != Null) {
+			ActionName = TheAction.Name;
+			ActionDesc = TheAction.Description;
+			ActionValue = TheAction.Value;
+		} else {
+			Logger::Warn("Unknown UplayAction: "^_ActionID^" ("^_ActionLabel^") for MenuUserId "^DataMgr.MenuUserId);
+		}
+		
+		UbisoftClubPopup::ShowUplayPopup(_ActionID, ActionName, ActionDesc, ActionValue, Users[0], PopupContext, _ShowPopup);
+		Logger::Log("[SendUplayActionEvent]"^_ActionID^" new!");
+	} else {
+		Logger::Log("[SendUplayActionEvent]"^_ActionID^" already completed.");
+	}
+}
+
+/**
+ * EG: Un peu impropre ici, mais c'est là qu'on récupère les médailles...
+**/
+Void SendProgressionEvent(Integer _BronzeMedals) {
+	declare CManiaplanetPluginInterface PluginInterface = GetPluginInterface("TrackingPlugin");
+	if(PluginInterface == Null) {
+		Logger::Warn("[IngameAchievements]TrackingPlugin for progression event. _BronzeMedals= "^_BronzeMedals);
+		return;
+	}
+	
+	// Ubisoft Progression
+	// seulement toutes les 10 médailles de bronze
+	if(_BronzeMedals >= 10 && _BronzeMedals % 10 == 0) {
+		declare Integer Progression = _BronzeMedals / 10;
+		PluginInterface.CustomEvent("Tracking_Progression", [""^Progression]);
+	}
+}
+
+
+Void SendEchelonEvent(Integer _Echelon) {
+	switch(_Echelon) {
+		case 1: SendUplayActionEvent("1000", _("The Smile"), False);
+		case 3: SendUplayActionEvent("1001", _("The Daruma"), False);
+		case 6: SendUplayActionEvent("1002", _("The Bear"), False);
+		case 9: SendUplayActionEvent("1003", _("The Cloud"), False);
+	}
+}
+
+Void SendMedalAchievementEvent(
+	Integer	_MedalIndex,
+	Integer _Enviro,
+	Integer _Difficulty,
+	Integer[] _MedalsByTypeByEnviroDiff,
+	Integer[] _MedalsByTypeByDiff,
+	Integer _TotalMedals, 
+	Boolean _IsNewMedal) 
+{
+	// declare Text	EventMnemo		= C_MedalEventMnemos[_MedalIndex];
+	declare Integer NbMedalsInBlock = _MedalsByTypeByEnviroDiff[_MedalIndex]; 	
+	declare Integer NbMedalsInDiff	= _MedalsByTypeByDiff[_MedalIndex]; 		
+	declare Integer NbMedalsTotal	= _TotalMedals; 							
+	
+	if(_IsNewMedal) {
+		// ces comptes ne sont pas mis à jour
+		NbMedalsInBlock +=  1;
+		NbMedalsInDiff +=  1;
+		
+		Logger::Log("Is NewMedal : "^_MedalIndex^" - _MedalsByTypeByEnviroDiff "^_MedalsByTypeByEnviroDiff^" - _MedalsByTypeByDiff "^_MedalsByTypeByDiff);
+	}
+	
+	if(NbMedalsInBlock < 0) NbMedalsInBlock = 0;
+	if(NbMedalsInDiff < 0) NbMedalsInDiff = 0;
+	if(NbMedalsTotal < 0) NbMedalsTotal = 0;
+	
+	AchievementsManager.SendEvent(DataMgr.MenuUserId, C_MnemoNewMedal, [_MedalIndex, _Enviro, _Difficulty, NbMedalsInBlock, NbMedalsInDiff, NbMedalsTotal]);
+	Logger::Log("NEW MEDAL ACHIEVEMENT EVENT (MenuUserID|Mnemo|Params): "^DataMgr.MenuUserId^" : "^C_MnemoNewMedal^" : "^[_MedalIndex, _Enviro, _Difficulty, NbMedalsInBlock, NbMedalsInDiff, NbMedalsTotal]);
+	
+	
+	// Logger::Log("[SendMedalAchievementEvent]"^C_MnemoNewMedal^[_MedalIndex, _Enviro, _Difficulty, NbMedalsInBlock, NbMedalsInDiff, NbMedalsTotal]);
+}
+
+Void HackTestUplayAction(Text _ActionID) {
+	SendUplayActionEvent(_ActionID, "", True);
+}
+
+Void CheckMedalAchievements(
+	Integer _Enviro,
+	Integer _Difficulty,
+	Integer _PrevMedal, 
+	Integer _NewMedal, 
+	Integer _AuthorMedalNb, 
+	Integer _GoldMedalNb, 
+	Integer _SilverMedalNb, 
+	Integer _BronzeMedalNb,
+	Integer[] _MedalsByTypeByEnviroDiff,
+	Integer[] _MedalsByTypeByDiff)
+{
+	if( _NewMedal <= TMC_MEDAL_BRONZE) {
+		declare Integer NewMedalCount = _BronzeMedalNb;
+		declare Boolean IsNewMedal = False;
+		
+		if( _PrevMedal > TMC_MEDAL_BRONZE) {
+			NewMedalCount += 1;
+			IsNewMedal = True;
+		}
+		SendMedalAchievementEvent(TMC_MEDAL_BRONZE, _Enviro, _Difficulty, _MedalsByTypeByEnviroDiff, _MedalsByTypeByDiff, NewMedalCount, IsNewMedal);
+		
+		SendProgressionEvent(NewMedalCount);
+		switch(_Enviro) {
+			case 0 : SendUplayActionEvent(C_UPLAYCanyonFirstStepName, C_UPLAYCanyonFirstStepLabel, True);
+			case 1 : SendUplayActionEvent(C_UPLAYValleyFirstStepName, C_UPLAYValleyFirstStepLabel, True);
+			case 2 : SendUplayActionEvent(C_UPLAYLagoonFirstStepName, C_UPLAYLagoonFirstStepLabel, True);
+			case 3 : SendUplayActionEvent(C_UPLAYStadiumFirstStepName, C_UPLAYStadiumFirstStepLabel, True);
+		}
+	} 
+	
+	if( _NewMedal <= TMC_MEDAL_SILVER) {
+		declare Integer NewMedalCount = _SilverMedalNb;
+		declare Boolean IsNewMedal = False;
+		
+		if( _PrevMedal > TMC_MEDAL_SILVER) {
+			NewMedalCount += 1;
+			IsNewMedal = True;
+		}
+		SendMedalAchievementEvent(TMC_MEDAL_SILVER, _Enviro, _Difficulty, _MedalsByTypeByEnviroDiff, _MedalsByTypeByDiff, NewMedalCount, IsNewMedal);
+		
+		if(NewMedalCount >= C_UPLAYSilversToGetLongRoad) {
+			SendUplayActionEvent(C_UPLAYLongRoadName, C_UPLAYLongRoadLabel, True);
+		}
+	}
+	
+	if(_NewMedal <= TMC_MEDAL_GOLD) {
+		declare Integer NewMedalCount = _GoldMedalNb;
+		declare Boolean IsNewMedal = False;
+		
+		if (_PrevMedal > TMC_MEDAL_GOLD) {
+			NewMedalCount += 1;
+			IsNewMedal = True;
+		}
+		SendMedalAchievementEvent(TMC_MEDAL_GOLD, _Enviro, _Difficulty, _MedalsByTypeByEnviroDiff, _MedalsByTypeByDiff, NewMedalCount, IsNewMedal);
+		
+		if(NewMedalCount >= C_UPLAYGoldsToGetLongerRoad) {
+			SendUplayActionEvent(C_UPLAYLongerRoadName, C_UPLAYLongerRoadLabel, True);
+		}
+		
+		// on envoie une action Uplay toutes les 10 médailles d'or.
+		if(NewMedalCount >= 10)
+		{
+			declare Integer UbiClubActionId = C_UplayGoldPackBaseID + (NewMedalCount/10);
+			SendUplayActionEvent(""^UbiClubActionId, "", False);
+		}
+	
+	}
+	
+	if(_NewMedal <= TMC_MEDAL_AUTHOR) {
+		declare Integer NewMedalCount = _AuthorMedalNb;
+		declare Boolean IsNewMedal = False;
+		
+		if (_PrevMedal > TMC_MEDAL_AUTHOR) {
+			NewMedalCount += 1;
+			IsNewMedal = True;
+		}
+		SendMedalAchievementEvent(TMC_MEDAL_AUTHOR, _Enviro, _Difficulty, _MedalsByTypeByEnviroDiff, _MedalsByTypeByDiff, NewMedalCount, IsNewMedal);
+	}
+}
+
+Void RestartTryHarderAchievement() {
+	G_TryHarderCounter = 0;
+}
+
+Void AddOneTryTryHarderAchievements()  {
+	G_TryHarderCounter += 1;
+	if(G_TryHarderCounter >= C_TryHarderThreshold) {
+		SendAchievementEvent(C_MnemoTryHarder, 0);
+		G_TryHarderCounter = 0;
+	}
+}
+
+Void SendHotSeatFinishedEvent() {
+	SendAchievementEvent(C_MnemoModeFinished, C_HotSeatMode);
+}
+
+Void SendArcadeFinishedEvent() {
+	SendAchievementEvent(C_MnemoModeFinished, C_ArcadeMode);
+}
+
+Void SendSplitScreenFinishedEvent() {
+	SendAchievementEvent(C_MnemoModeFinished, C_SplitScreenMode);
+}
+
+Void SendDDriverDoneEvent() {
+	SendAchievementEvent(C_MnemoDDriver, 0);
+}
+
+Void SendOnlineDoneEvent() {
+	SendAchievementEvent(C_MnemoOnlineTrack, 0);
+}
+
+Void SendChallengeDoneEvent() {
+	SendUplayActionEvent(C_UplayChallengeID, C_UplayChallengeLabel, True);
+}
+
+Void Load() {
+	G_TryHarderCounter = 0;
+}

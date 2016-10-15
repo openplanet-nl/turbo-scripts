@@ -1,0 +1,1644 @@
+#Include "TextLib"			as TextLib
+#Include "Libs/Nadeo/TMConsole/Menu/MenuLayers.Script.txt"								as Layers
+#Include "Libs/Nadeo/TMConsole/Live/LiveEvent.Script.txt" 								as LiveEvent
+#Include "Libs/Nadeo/TMConsole/Live/LiveHttp.Script.txt" 								as LiveHttp
+#Include "Libs/Nadeo/TMConsole/Live/LiveXml.Script.txt" 								as LiveXml
+#Include "Libs/Nadeo/TMConsole/Live/LiveAuth.Script.txt"								as LiveAuth
+#Include "Libs/Nadeo/TMConsole/PopUpManager.Script.txt"									as PopUpManager
+#Include "Libs/Nadeo/TMConsole/Menu/Controller/TaskMessageErrorController.Script.txt"	as TaskMessageErrorController
+
+#Const	C_CAMPAIGNTRACKS_UPLOADER2				"Nadeo"
+
+#Const	C_REQUESTSTATUS_NOREQUEST 				"0"
+#Const	C_REQUESTSTATUS_WAITING 				"1"
+#Const  C_REQUESTSTATUS_TOSEND					"2"
+#Const	C_REQUESTSTATUS_WAITFORDISPLAYNAMES 	"3"
+#Const	C_REQUESTSTATUS_WAITFORBUDDIES		 	"4"
+#Const	C_REQUESTSTATUS_SUCCEEDED 				"5"
+#Const  C_REQUESTSTATUS_FAILED					"6"
+
+#Const C_REQUESTTYPE_NONE					-1
+#Const C_REQUESTTYPE_ALLTRACKS				0
+#Const C_REQUESTTYPE_RANDOMTRACKS			1
+#Const C_REQUESTTYPE_FAVORITETRACKS			2
+#Const C_REQUESTTYPE_BUDDIESTRACKS     		3
+#Const C_REQUESTTYPE_FAVORITEAUTHORSTRACKS	4
+//end WaitForDisplayNames, Garder FavoriteAuthors en dernier !
+#Const C_REQUESTTYPE_CAMPAIGNTRACKS			5
+#Const C_REQUESTTYPE_UPLOADEDTRACKS     	6
+#Const C_REQUESTTYPE_FAVORITEAUTHORS		7
+#Const C_REQUESTTYPE_SETTRACKASFAVORITE		8
+#Const C_REQUESTTYPE_UNSETTRACKASFAVORITE	9
+#Const C_REQUESTTYPE_SETAUTHORASFAVORITE	10
+#Const C_REQUESTTYPE_UNSETAUTHORASFAVORITE	11
+#Const C_REQUESTTYPE_ADDROOMASFAVORITE		12
+#Const C_REQUESTTYPE_REMOVEROOMFROMFAVORITE 13
+#Const C_REQUESTTYPE_GETFAVORITES			14
+#Const C_REQUESTTYPE_INCREMENTPLAYCOUNT		15
+#Const C_REQUESTTYPE_PUBLICIZETRACK			16
+#Const C_REQUESTTYPE_REPORTTRACK			17
+#Const C_REQUESTTYPE_VOTETRACK				18
+
+#Const C_REQUESTTYPE_UPLOADEDTRACKSUIDS    	19
+#Const C_REQUESTTYPE_GETTRACKSFROMUIDS		20
+#Const C_REQUESTTYPE_TRACKINFO				21
+
+#Const C_REQUESTSCOUNT						22
+
+#Const C_IsFavoriteCooldown					5000
+
+//Requests Data
+declare Text[Text][]		G_Requests;
+declare CWebServicesTaskResult[Integer] GetDisplayNamesTasks; //indexé par requesttype (<=2)
+
+//Additionnal Request Data
+declare Text 				G_RequestSetTrackAsFavoriteBody;
+declare Text 				G_RequestUnsetTrackAsFavoriteBody;
+
+declare Text				G_RequestSetAuthorAsFavorite_Author;
+declare Text				G_RequestSetAuthorAsFavorite_MapUid;
+declare Text				G_RequestUnsetAuthorAsFavorite_Author;
+declare Text				G_RequestUnsetAuthorAsFavorite_MapUid;
+
+//Internal Data
+declare Text				G_DisconnectErrorText;
+
+declare Text[]				G_BuddiesLogins;
+
+declare Integer				G_TracksRequestOffset;
+declare Integer				G_TracksRequestLength;
+
+declare Text				G_CampaignTracksEnv;
+declare Text 				G_RandomTracksFilters;
+
+declare Text				G_IsAuthorFavoriteLogin;
+declare Text				G_IsAuthorFavoriteLayer;
+declare Boolean				G_AreFavoriteAuthorsUpdated;
+declare Integer 			G_FavoriteAuthorsLastUpdate;
+declare Text[] 				G_FavoriteAuthorsLogins;
+
+declare Text 				G_IsTrackFavoriteUid;
+declare Text				G_IsTrackFavoriteLayer;
+declare Boolean				G_AreFavoriteTracksUpdated;
+declare Integer 			G_FavoriteTracksLastUpdate;
+declare Text[]				G_FavoriteTracksUids;
+
+declare Text				G_IsRoomFavoriteLayer;
+declare Text				G_IsRoomFavoriteDedicatedLogin;
+declare Boolean				G_AreFavoriteRoomsUpdated;
+declare Integer				G_FavoriteRoomsLastUpdate;
+declare Text[]				G_FavoriteRoomsDedicatedLogins;
+
+declare Integer				G_IncrementPlayCount_Count;
+declare Text				G_IncrementPlayCount_Uid;
+
+declare Text 				G_PublicizeTrack_Uid;
+declare Text				G_ReportTrack_Uid;
+declare Text				G_VoteTrack_Uid;
+declare Text				G_TrackInfo_Uid;
+
+declare Boolean				G_VoteTrack_PlusOrElseMinus;
+
+//External Data
+declare Text[Text][]		G_AllTracks;
+declare Text[Text][]		G_RandomTracks;
+declare Text[Text][]		G_CampaignTracks;
+declare Text[Text][]		G_FavoriteTracks;
+declare Text[Text][]		G_FavoriteAuthorsTracks;
+declare Text[Text][]		G_UploadedTracks;
+declare Text[Text][]		G_BuddiesTracks;
+declare Text[]				G_FavoriteAuthors;
+declare Text[]				G_UploadedTracksUids;
+declare Text[Text]			G_TrackInfo_Track;
+
+////////////////////
+// FILTERS
+////////////////////
+Text GetAuthorFilter(Text[] _Authors)
+{
+	declare Text Filter;
+	for (I, 0, _Authors.count-1)
+	{
+		if (TextLib::Length(_Authors[I]) != 0)
+		{
+			//Filter ^= "?authors[]=";
+			if (I == 0)
+				Filter^="?uploaders[]=";
+			else
+				Filter ^= "&uploaders[]=";
+			Filter ^= _Authors[I];
+		}
+	}
+	return Filter;
+}
+
+///////////////////
+// INIT & RESET
+///////////////////
+Void ReInitRequest(Integer _RequestType) {
+	G_Requests[_RequestType]["status"]  = C_REQUESTSTATUS_NOREQUEST;
+	G_Requests[_RequestType]["id"]		= "";
+	G_Requests[_RequestType]["layer"]	= "";
+}
+
+Void InitRequestsData() {
+	// EG faut-il ajouter ça ?
+	// G_Requests = Text[Text][];
+	
+	for (I, 0, C_REQUESTSCOUNT-1)
+	{
+		G_Requests.add(Text[Text]);
+		ReInitRequest(I);
+	}
+}
+
+Void OnConnexionLost(Text _Message) {
+	G_DisconnectErrorText = _Message;
+	InitRequestsData();
+}
+
+Void Load() {
+	G_DisconnectErrorText = "";
+	InitRequestsData();
+	
+	G_AreFavoriteAuthorsUpdated = False;
+	G_FavoriteAuthorsLastUpdate = -1;
+	
+	G_AreFavoriteTracksUpdated = False;
+	G_FavoriteTracksLastUpdate = -1;
+	
+	G_AreFavoriteRoomsUpdated = False;
+	G_FavoriteRoomsLastUpdate = -1;
+	
+	G_IsTrackFavoriteLayer = "";
+	G_IsAuthorFavoriteLayer = "";
+	G_IsRoomFavoriteLayer = "";
+}
+
+////////////////////
+// UI INTERACTION
+////////////////////
+Text GetFeedbackText(Integer _Request) {
+declare Boolean Success = G_Requests[_Request]["status"] == C_REQUESTSTATUS_SUCCEEDED;
+	switch(_Request)
+	{
+		case C_REQUESTTYPE_ALLTRACKS :
+		{
+			if (Success)
+				return "AllTracksSent";
+			else
+				return "AllTracksNotSent";
+		}
+		case C_REQUESTTYPE_RANDOMTRACKS : {
+			if (Success)	
+				return "Request_GetRandomTracks_Success";
+			else
+				return "Request_GetRandomTracks_Failure";
+		}
+		case C_REQUESTTYPE_CAMPAIGNTRACKS : {
+			if (Success)
+				return "Request_GetCampaignTracks_Success";
+			else
+				return "Request_GetCampaignTracks_Failure";
+		}
+		case C_REQUESTTYPE_FAVORITETRACKS :
+		{
+			if (Success)
+				return "FavoriteTracksSent";
+			else
+				return "FavoriteTracksNotSent";
+		}
+		case C_REQUESTTYPE_FAVORITEAUTHORSTRACKS :
+		{
+			if (Success)
+				return "FavoriteAuthorsTracksSent";
+			else
+				return "FavoriteAuthorsTracksNotSent";
+		}
+		case C_REQUESTTYPE_UPLOADEDTRACKS :
+		{
+			if (Success)
+				return "UploadedTracksSent";
+			else
+				return "UploadedTracksNotSent";
+		}
+		case C_REQUESTTYPE_BUDDIESTRACKS :
+		{
+			if (Success)
+				return "BuddiesTracksSent";
+			else
+				return "BuddiesTracksNotSent";
+		}
+		case C_REQUESTTYPE_SETTRACKASFAVORITE :
+		{
+			if (Success)
+				return "TrackSetAsFavorite";
+			else
+				return "TrackNotSetAsFavorite";
+		}
+		case C_REQUESTTYPE_UNSETTRACKASFAVORITE :
+		{
+			if (Success)
+				return "TrackRemovedFromFavorite";
+			else
+				return "TrackNotRemovedFromFavorite";
+		}
+		case C_REQUESTTYPE_SETAUTHORASFAVORITE : 
+		{	
+			if(Success)
+				return "Request_SetAuthorAsFavorite_Success";
+			else
+				return "Request_SetAuthorAsFavorite_Failure";
+		}
+		case C_REQUESTTYPE_UNSETAUTHORASFAVORITE :
+		{
+			if(Success)
+				return "Request_UnsetAuthorAsFavorite_Success";
+			else
+				return "Request_UnsetAuthorAsFavorite_Failure";
+		}
+		case C_REQUESTTYPE_FAVORITEAUTHORS :
+		{
+			if(Success)
+				return "FavoriteAuthorsListSent";
+			else
+				return "FavoriteAuthorsListNotSent";
+		}
+		case C_REQUESTTYPE_INCREMENTPLAYCOUNT :
+		{
+			if(Success)
+				return "Request_IncrementPlayCount_Success";
+			else
+				return "Request_IncrementPlayCount_Failure";
+		}
+		case C_REQUESTTYPE_PUBLICIZETRACK :
+		{
+			if(Success)
+				return "Request_PublicizeTrack_Success";
+			else
+				return "Request_PublicizeTrack_Failure";
+		}
+		case C_REQUESTTYPE_REPORTTRACK :
+		{
+			if (Success)
+				return "Request_ReportTrack_Success";
+			else
+				return "Request_ReportTrack_Failure";
+		}
+		case C_REQUESTTYPE_VOTETRACK :
+		{
+			if (Success)
+				return "Request_VoteTrack_Success";
+			else
+				return "Request_VoteTrack_Failure";
+		}
+		case C_REQUESTTYPE_UPLOADEDTRACKSUIDS :
+		{
+			if (Success)
+				return "Request_UploadedTracksUids_Success";
+			else
+				return "Request_UploadedTracksUids_Failure";
+		}
+		case C_REQUESTTYPE_ADDROOMASFAVORITE : {
+			if (Success)
+				return "Request_AddRoomAsFavorite_Success";
+			else
+				return "Request_AddRoomAsFavorite_Failure";
+		}
+		case C_REQUESTTYPE_REMOVEROOMFROMFAVORITE : {
+			if (Success)
+				return "Request_RemoveRoomFromFavorite_Success";
+			else
+				return "Request_RemoveRoomFromFavorite_Failure";
+		}
+		case C_REQUESTTYPE_TRACKINFO : {
+			if (Success)
+				return "Request_TrackInfo_Success";
+			else
+				return "Request_TrackInfo_Failure";
+		}
+	}
+	return "";
+}
+	
+Void SendFeedbackToUI(Integer _RequestType) {
+	declare CUILayer LayerToSend = Layers::Get(G_Requests[_RequestType]["layer"]);
+	if(LayerToSend == Null) return;
+	declare Text FeedbackText = GetFeedbackText(_RequestType);
+	LayerCustomEvent(LayerToSend, FeedbackText, [""]);
+}
+
+Void SendAllTracksListToUI(Integer _RequestType) {
+	declare CUILayer 		LayerToSend 	= Layers::Get(G_Requests[_RequestType]["layer"]);
+	if(LayerToSend == Null) return;
+	
+	declare Text[Text][] 	RequestedTracks 		for LayerToSend.LocalPage;
+	RequestedTracks									= G_AllTracks;
+}
+
+Void SendRandomTracksListToUI(Integer _RequestType) {
+	declare CUILayer 		LayerToSend 	= Layers::Get(G_Requests[_RequestType]["layer"]);
+	if(LayerToSend == Null) return;
+	
+	declare Text[Text][] 	RequestedTracks 		for LayerToSend.LocalPage;
+	RequestedTracks									= G_RandomTracks;
+}
+
+Void SendCampaignTracksListToUI(Integer _RequestType) {
+	declare CUILayer 		LayerToSend 	= Layers::Get(G_Requests[_RequestType]["layer"]);
+	if(LayerToSend == Null) return;
+	
+	declare Text[Text][] 	RequestedTracks 		for LayerToSend.LocalPage;
+	RequestedTracks									= G_CampaignTracks;
+}
+
+Void SendFavoriteTracksListToUI(Integer _RequestType) {
+	declare CUILayer 		LayerToSend 	= Layers::Get(G_Requests[_RequestType]["layer"]);
+	if(LayerToSend == Null) return;
+	
+	declare Text[Text][] 	RequestedTracks 		for LayerToSend.LocalPage;
+	RequestedTracks									= G_FavoriteTracks;
+}
+
+Void SendFavoriteAuthorsTracksListToUI(Integer _RequestType) {
+	declare CUILayer 		LayerToSend 	= Layers::Get(G_Requests[_RequestType]["layer"]);
+	if(LayerToSend == Null) return;
+	
+	declare Text[Text][] 	RequestedTracks 		for LayerToSend.LocalPage;
+	RequestedTracks									= G_FavoriteAuthorsTracks;
+}
+
+Void SendUploadedTracksListToUI(Integer _RequestType) {
+	declare CUILayer 		LayerToSend 	= Layers::Get(G_Requests[_RequestType]["layer"]);
+	if(LayerToSend == Null) return;
+	
+	declare Text[Text][] 	RequestedTracks 		for LayerToSend.LocalPage;
+	RequestedTracks									= G_UploadedTracks;
+}
+
+Void SendBuddiesTracksListToUI(Integer _RequestType) {
+	declare CUILayer 		LayerToSend 	= Layers::Get(G_Requests[_RequestType]["layer"]);
+	if(LayerToSend == Null) return;
+	
+	declare Text[Text][] 	RequestedTracks 		for LayerToSend.LocalPage;
+	RequestedTracks									= G_BuddiesTracks;
+}
+
+Void SendFavoriteAuthorsListToUI(Integer _RequestType) {
+	declare CUILayer 		LayerToSend 	= Layers::Get(G_Requests[_RequestType]["layer"]);
+	if(LayerToSend == Null) return;
+	
+	declare Text[] 	FavoriteAuthors for LayerToSend.LocalPage;
+	FavoriteAuthors	= G_FavoriteAuthors;
+}
+
+Void SendTrackInfoToUI(Integer _RequestType) {
+	declare CUILayer 		LayerToSend 	= Layers::Get(G_Requests[_RequestType]["layer"]);
+	if(LayerToSend == Null) return;
+	
+	declare Text[Text] 	TrackInfo for LayerToSend.LocalPage;
+	TrackInfo	= G_TrackInfo_Track;
+}
+
+Void SendIsTrackFavorite() {
+	if (G_IsTrackFavoriteLayer == "")
+		return;	
+	declare CUILayer LayerToSend = Layers::Get(G_IsTrackFavoriteLayer);
+	if(LayerToSend == Null) return;
+	
+	if (G_AreFavoriteTracksUpdated)
+	{
+		declare Text IsTrackFavorite;
+		if (G_FavoriteTracksUids.exists(G_IsTrackFavoriteUid))
+			IsTrackFavorite = "true";
+		else
+			IsTrackFavorite = "false";	
+		LayerCustomEvent(LayerToSend, "Request_IsTrackFavorite_Success", [IsTrackFavorite]);
+	} else {
+		LayerCustomEvent(LayerToSend, "Request_IsTrackFavorite_Failure", Text[]);
+	}
+	
+	G_IsTrackFavoriteUid = "";
+	G_IsTrackFavoriteLayer = "";
+}
+
+Void SendIsAuthorFavorite() {
+	if (G_IsAuthorFavoriteLayer == "")
+		return;
+	declare CUILayer LayerToSend = Layers::Get(G_IsAuthorFavoriteLayer);
+	if(LayerToSend == Null) return;	
+	
+	if (G_AreFavoriteAuthorsUpdated)
+	{
+		declare Text IsAuthorFavorite;
+		if (G_FavoriteAuthorsLogins.exists(G_IsAuthorFavoriteLogin))
+			IsAuthorFavorite = "true";
+		else
+			IsAuthorFavorite = "false";
+		LayerCustomEvent(LayerToSend, "Request_IsAuthorFavorite_Success", [IsAuthorFavorite]);
+	} else {
+		LayerCustomEvent(LayerToSend, "Request_IsAuthorFavorite_Failure", Text[]);
+	}
+	
+	G_IsAuthorFavoriteLogin = "";
+	G_IsAuthorFavoriteLayer = "";
+}
+
+Void SendIsRoomFavorite() {
+	if (G_IsRoomFavoriteLayer == "")
+		return;	
+	declare CUILayer LayerToSend = Layers::Get(G_IsRoomFavoriteLayer);
+	if(LayerToSend == Null) return;
+	
+	if (G_AreFavoriteRoomsUpdated)
+	{
+		declare Text IsRoomFavorite;
+		if (G_FavoriteRoomsDedicatedLogins.exists(G_IsRoomFavoriteDedicatedLogin))
+			IsRoomFavorite = "true";
+		else
+			IsRoomFavorite = "false";	
+		LayerCustomEvent(LayerToSend, "Request_IsRoomFavorite_Success", [IsRoomFavorite]);
+	} else {
+		LayerCustomEvent(LayerToSend, "Request_IsRoomFavorite_Failure", Text[]);
+	}
+	
+	G_IsRoomFavoriteDedicatedLogin = "";
+	G_IsRoomFavoriteLayer = "";
+}
+
+Void UpdateUploadedTracksUids() {
+	if(UserMgr.MainUser == Null) return;
+	
+	declare persistent Text[] UploadedMapsUids for UserMgr.MainUser;	
+	UploadedMapsUids = G_UploadedTracksUids;
+	if(UserMgr.MainUser.PersistentIsReady) {
+		UserMgr.MainUser.PersistentSave();
+	}
+}
+
+////////////////////
+// REQUESTS
+////////////////////
+Void SetRequestStatus(Integer _RequestType, Text _Status, Text _Id) {
+	if (_Id != "")
+		G_Requests[_RequestType]["id"]		= _Id;
+	if (_Id == "" && _Status == C_REQUESTSTATUS_WAITING)
+		G_Requests[_RequestType]["status"]	= C_REQUESTSTATUS_FAILED;
+	else
+		G_Requests[_RequestType]["status"]	= _Status;
+}
+
+Void DropCurrentRequest(Integer _RequestType) {
+	if (G_Requests[_RequestType]["id"] == "")
+		return;
+	declare Text RequestId = G_Requests[_RequestType]["id"];
+	for (I, 0, Http.Requests.count-1)
+	{
+		if (Http.Requests[I].Id^"" == RequestId)
+		{
+			Http.Destroy(Http.Requests[I]);
+			return;
+		}
+	}
+}
+
+Void RequestAllTracks() {
+	DropCurrentRequest(C_REQUESTTYPE_ALLTRACKS);
+	declare Ident CurId = LiveHttp::Manialib_Http_GetAsync("/maps?offset="^G_TracksRequestOffset^"&length="^G_TracksRequestLength);
+	SetRequestStatus(C_REQUESTTYPE_ALLTRACKS, C_REQUESTSTATUS_WAITING, CurId^"");
+}
+
+Void RequestRandomTracks() {
+	DropCurrentRequest(C_REQUESTTYPE_RANDOMTRACKS);
+	declare Ident CurId = LiveHttp::Manialib_Http_GetAsync("/maps/random?offset="^G_TracksRequestOffset^"&length="^G_TracksRequestLength^G_RandomTracksFilters, LiveAuth::Auth_GetHttpHeader());
+	SetRequestStatus(C_REQUESTTYPE_RANDOMTRACKS, C_REQUESTSTATUS_WAITING, CurId^"");
+}
+
+Void RequestCampaignTracks() {
+	DropCurrentRequest(C_REQUESTTYPE_CAMPAIGNTRACKS);
+	declare Url = "/maps/campaign?offset="^G_TracksRequestOffset^"&length="^G_TracksRequestLength;
+	if (G_CampaignTracksEnv != "")
+		Url ^= "&environments[]="^G_CampaignTracksEnv;
+	declare Ident CurId = LiveHttp::Manialib_Http_GetAsync(Url, LiveAuth::Auth_GetHttpHeader());
+	SetRequestStatus(C_REQUESTTYPE_CAMPAIGNTRACKS, C_REQUESTSTATUS_WAITING, CurId^"");
+}
+
+Void RequestFavoriteTracks() {
+	DropCurrentRequest(C_REQUESTTYPE_FAVORITETRACKS);
+	declare Ident CurId = LiveHttp::Manialib_Http_GetAsync("/maps?favorite=true&offset="^G_TracksRequestOffset^"&length="^G_TracksRequestLength, LiveAuth::Auth_GetHttpHeader());
+	//declare Ident CurId = LiveHttp::Manialib_Http_GetAsync("/maps?offset="^G_TracksRequestOffset^"&length="^G_TracksRequestLength, LiveAuth::Auth_GetHttpHeader());
+	SetRequestStatus(C_REQUESTTYPE_FAVORITETRACKS, C_REQUESTSTATUS_WAITING, CurId^"");
+}
+
+Void RequestFavoriteAuthorsTracks() {
+	DropCurrentRequest(C_REQUESTTYPE_FAVORITEAUTHORSTRACKS);
+	declare Ident CurId = LiveHttp::Manialib_Http_GetAsync("/maps?favoriteAuthor=true&offset="^G_TracksRequestOffset^"&length="^G_TracksRequestLength, LiveAuth::Auth_GetHttpHeader());
+	SetRequestStatus(C_REQUESTTYPE_FAVORITEAUTHORSTRACKS, C_REQUESTSTATUS_WAITING, CurId^"");
+}
+
+Void RequestUploadedTracks() {
+	DropCurrentRequest(C_REQUESTTYPE_UPLOADEDTRACKS);
+	if( ManiaPlanet.MasterServer_MainMSUser == Null) return;
+	declare Ident CurId = LiveHttp::Manialib_Http_GetAsync("/maps?uploaders[]="^ManiaPlanet.MasterServer_MainMSUser.Login^"&offset="^G_TracksRequestOffset^"&length="^G_TracksRequestLength, LiveAuth::Auth_GetHttpHeader());
+	SetRequestStatus(C_REQUESTTYPE_UPLOADEDTRACKS, C_REQUESTSTATUS_WAITING, CurId^"");
+}
+
+Void RequestBuddiesTracks() {
+	DropCurrentRequest(C_REQUESTTYPE_BUDDIESTRACKS);
+	if (G_BuddiesLogins.count != 0)
+	{
+		declare Ident CurId = LiveHttp::Manialib_Http_GetAsync("/maps"^GetAuthorFilter(G_BuddiesLogins)^"&offset="^G_TracksRequestOffset^"&length="^G_TracksRequestLength, LiveAuth::Auth_GetHttpHeader());
+		SetRequestStatus(C_REQUESTTYPE_BUDDIESTRACKS, C_REQUESTSTATUS_WAITING, CurId^"");
+	} else {
+		G_BuddiesTracks.clear();
+		SetRequestStatus(C_REQUESTTYPE_BUDDIESTRACKS, C_REQUESTSTATUS_SUCCEEDED, "");
+	}
+}
+
+Void RequestSetTrackAsFavorite() {
+	DropCurrentRequest(C_REQUESTTYPE_SETTRACKASFAVORITE);
+	declare Ident CurId = LiveHttp::Manialib_Http_PostAsync("/me/maps/favorites/add/"^G_RequestSetTrackAsFavoriteBody, "", LiveAuth::Auth_GetHttpHeader());
+	SetRequestStatus(C_REQUESTTYPE_SETTRACKASFAVORITE, C_REQUESTSTATUS_WAITING, CurId^"");
+}
+
+Void RequestUnsetTrackAsFavorite() {
+	DropCurrentRequest(C_REQUESTTYPE_UNSETTRACKASFAVORITE);
+	declare Ident CurId = LiveHttp::Manialib_Http_PostAsync("/me/maps/favorites/remove/"^G_RequestUnsetTrackAsFavoriteBody, "", LiveAuth::Auth_GetHttpHeader());
+	SetRequestStatus(C_REQUESTTYPE_UNSETTRACKASFAVORITE, C_REQUESTSTATUS_WAITING, CurId^"");
+}
+
+Void RequestSetAuthorAsFavorite() {
+	DropCurrentRequest(C_REQUESTTYPE_SETAUTHORASFAVORITE);
+	declare Ident CurId = LiveHttp::Manialib_Http_PostAsync("/me/maps/authors/favorites/add/"^G_RequestSetAuthorAsFavorite_Author^"?mapId="^G_RequestSetAuthorAsFavorite_MapUid, "", LiveAuth::Auth_GetHttpHeader());
+	SetRequestStatus(C_REQUESTTYPE_SETAUTHORASFAVORITE, C_REQUESTSTATUS_WAITING, CurId^"");
+}
+
+Void RequestUnsetAuthorAsFavorite() {
+	DropCurrentRequest(C_REQUESTTYPE_UNSETAUTHORASFAVORITE);
+	declare Ident CurId = LiveHttp::Manialib_Http_PostAsync("/me/maps/authors/favorites/remove/"^G_RequestUnsetAuthorAsFavorite_Author^"?mapId="^G_RequestUnsetAuthorAsFavorite_MapUid, "", LiveAuth::Auth_GetHttpHeader());
+	SetRequestStatus(C_REQUESTTYPE_UNSETAUTHORASFAVORITE, C_REQUESTSTATUS_WAITING, CurId^"");
+}
+
+Void RequestAddRoomAsFavorite() {
+	DropCurrentRequest(C_REQUESTTYPE_ADDROOMASFAVORITE);
+	declare Url = "/me/rooms/favorite/add/";
+	Url ^= G_Requests[C_REQUESTTYPE_ADDROOMASFAVORITE]["roomid"];
+	declare Ident CurId	= LiveHttp::Manialib_Http_PostAsync(Url, "", LiveAuth::Auth_GetHttpHeader());
+	SetRequestStatus(C_REQUESTTYPE_ADDROOMASFAVORITE, C_REQUESTSTATUS_WAITING, CurId^"");
+}
+
+Void RequestRemoveRoomFromFavorite() {
+	DropCurrentRequest(C_REQUESTTYPE_REMOVEROOMFROMFAVORITE);
+	declare Url = "/me/rooms/favorite/remove/";
+	Url ^= G_Requests[C_REQUESTTYPE_REMOVEROOMFROMFAVORITE]["roomid"];
+	declare Ident CurId	= LiveHttp::Manialib_Http_PostAsync(Url, "", LiveAuth::Auth_GetHttpHeader());
+	SetRequestStatus(C_REQUESTTYPE_REMOVEROOMFROMFAVORITE, C_REQUESTSTATUS_WAITING, CurId^"");
+}
+
+Void RequestFavoriteAuthors() {
+	DropCurrentRequest(C_REQUESTTYPE_FAVORITEAUTHORS);
+	declare Ident CurId = LiveHttp::Manialib_Http_GetAsync("/me/maps/authors/favorites", LiveAuth::Auth_GetHttpHeader());
+	SetRequestStatus(C_REQUESTTYPE_FAVORITEAUTHORS, C_REQUESTSTATUS_WAITFORBUDDIES, CurId^"");
+}
+
+Void RefreshFavorites() {
+	DropCurrentRequest(C_REQUESTTYPE_GETFAVORITES);
+	declare Ident CurId = LiveHttp::Manialib_Http_GetAsync("/me/favorites", LiveAuth::Auth_GetHttpHeader());
+	SetRequestStatus(C_REQUESTTYPE_GETFAVORITES, C_REQUESTSTATUS_WAITING, CurId^"");
+}
+
+Void RequestIncrementPlayCount() {
+	DropCurrentRequest(C_REQUESTTYPE_INCREMENTPLAYCOUNT);
+	declare Ident CurId = LiveHttp::Manialib_Http_PostAsync("/maps/"^G_IncrementPlayCount_Uid^"/playcount", """{"plays":{{{G_IncrementPlayCount_Count}}}}""", LiveAuth::Auth_GetHttpHeader());
+	SetRequestStatus(C_REQUESTTYPE_INCREMENTPLAYCOUNT, C_REQUESTSTATUS_WAITING, CurId^"");
+}
+
+Void RequestPublicizeTrack() {
+	DropCurrentRequest(C_REQUESTTYPE_PUBLICIZETRACK);
+	declare Ident CurId = LiveHttp::Manialib_Http_PostAsync("/maps/"^G_PublicizeTrack_Uid^"/publicize", "", LiveAuth::Auth_GetHttpHeader());
+	SetRequestStatus(C_REQUESTTYPE_PUBLICIZETRACK, C_REQUESTSTATUS_WAITING, CurId^"");
+}
+
+Void RequestReportTrack() {
+	DropCurrentRequest(C_REQUESTTYPE_REPORTTRACK);
+	declare Ident CurId = LiveHttp::Manialib_Http_PostAsync("/me/reports/maps/"^G_ReportTrack_Uid^"/add", "", LiveAuth::Auth_GetHttpHeader());
+	SetRequestStatus(C_REQUESTTYPE_REPORTTRACK, C_REQUESTSTATUS_WAITING, CurId^"");
+}
+
+Void RequestVoteTrack() {
+	DropCurrentRequest(C_REQUESTTYPE_VOTETRACK);
+	declare Ident CurId;
+	if (G_VoteTrack_PlusOrElseMinus)
+		CurId = LiveHttp::Manialib_Http_PostAsync("/me/maps/"^G_VoteTrack_Uid^"/vote/plus", "", LiveAuth::Auth_GetHttpHeader());
+	else
+		CurId = LiveHttp::Manialib_Http_PostAsync("/me/maps/"^G_VoteTrack_Uid^"/vote/minus", "", LiveAuth::Auth_GetHttpHeader());
+	SetRequestStatus(C_REQUESTTYPE_VOTETRACK, C_REQUESTSTATUS_WAITING, CurId^"");
+}
+
+Void RequestUploadedTracksUids() {
+	DropCurrentRequest(C_REQUESTTYPE_UPLOADEDTRACKSUIDS);
+	declare Ident CurId = LiveHttp::Manialib_Http_GetAsync("/me/maps", LiveAuth::Auth_GetHttpHeader());
+	SetRequestStatus(C_REQUESTTYPE_UPLOADEDTRACKSUIDS, C_REQUESTSTATUS_WAITING, CurId^"");
+}
+
+Void RequestTrackInfo() {
+	DropCurrentRequest(C_REQUESTTYPE_TRACKINFO);
+	declare Ident CurId = LiveHttp::Manialib_Http_GetAsync("/maps/"^G_TrackInfo_Uid, LiveAuth::Auth_GetHttpHeader());
+	SetRequestStatus(C_REQUESTTYPE_TRACKINFO, C_REQUESTSTATUS_WAITING, CurId^"");
+}
+
+////////////////////
+// EXTERNAL CALLS
+////////////////////
+Void GetAllTracks(Text _LayerName, Integer _Offset, Integer _Length) {
+	G_Requests[C_REQUESTTYPE_ALLTRACKS]["layer"] = _LayerName;
+	SetRequestStatus(C_REQUESTTYPE_ALLTRACKS, C_REQUESTSTATUS_TOSEND, "");
+	
+	SetRequestStatus(C_REQUESTTYPE_FAVORITETRACKS, C_REQUESTSTATUS_NOREQUEST, "");
+	SetRequestStatus(C_REQUESTTYPE_RANDOMTRACKS, C_REQUESTSTATUS_NOREQUEST, "");
+	SetRequestStatus(C_REQUESTTYPE_CAMPAIGNTRACKS, C_REQUESTSTATUS_NOREQUEST, "");
+	SetRequestStatus(C_REQUESTTYPE_FAVORITEAUTHORSTRACKS, C_REQUESTSTATUS_NOREQUEST, "");
+	SetRequestStatus(C_REQUESTTYPE_BUDDIESTRACKS, C_REQUESTSTATUS_NOREQUEST, "");
+	SetRequestStatus(C_REQUESTTYPE_UPLOADEDTRACKS, C_REQUESTSTATUS_NOREQUEST, "");
+	
+	G_TracksRequestOffset = _Offset;
+	G_TracksRequestLength = _Length;
+}
+
+Void GetCampaignTracks(Text _LayerName, Integer _Offset, Integer _Length, Text _CampaignTracksEnv) {
+	G_Requests[C_REQUESTTYPE_CAMPAIGNTRACKS]["layer"] = _LayerName;
+	SetRequestStatus(C_REQUESTTYPE_CAMPAIGNTRACKS, C_REQUESTSTATUS_TOSEND, "");
+	
+	SetRequestStatus(C_REQUESTTYPE_FAVORITETRACKS, C_REQUESTSTATUS_NOREQUEST, "");
+	SetRequestStatus(C_REQUESTTYPE_RANDOMTRACKS, C_REQUESTSTATUS_NOREQUEST, "");
+	SetRequestStatus(C_REQUESTTYPE_ALLTRACKS, C_REQUESTSTATUS_NOREQUEST, "");
+	SetRequestStatus(C_REQUESTTYPE_FAVORITEAUTHORSTRACKS, C_REQUESTSTATUS_NOREQUEST, "");
+	SetRequestStatus(C_REQUESTTYPE_BUDDIESTRACKS, C_REQUESTSTATUS_NOREQUEST, "");
+	SetRequestStatus(C_REQUESTTYPE_UPLOADEDTRACKS, C_REQUESTSTATUS_NOREQUEST, "");
+	
+	G_TracksRequestOffset = _Offset;
+	G_TracksRequestLength = _Length;
+	
+	G_CampaignTracksEnv = _CampaignTracksEnv;
+	
+	if (_Offset == 0)
+		G_CampaignTracks.clear();
+}
+
+Void GetRandomTracks(Text _LayerName, Integer _Offset, Integer _Length, Text _Filters) {
+	G_Requests[C_REQUESTTYPE_RANDOMTRACKS]["layer"] = _LayerName;
+	SetRequestStatus(C_REQUESTTYPE_RANDOMTRACKS, C_REQUESTSTATUS_TOSEND, "");
+	
+	SetRequestStatus(C_REQUESTTYPE_ALLTRACKS, C_REQUESTSTATUS_NOREQUEST, "");
+	SetRequestStatus(C_REQUESTTYPE_FAVORITETRACKS, C_REQUESTSTATUS_NOREQUEST, "");
+	SetRequestStatus(C_REQUESTTYPE_FAVORITEAUTHORSTRACKS, C_REQUESTSTATUS_NOREQUEST, "");
+	SetRequestStatus(C_REQUESTTYPE_CAMPAIGNTRACKS, C_REQUESTSTATUS_NOREQUEST, "");
+	SetRequestStatus(C_REQUESTTYPE_BUDDIESTRACKS, C_REQUESTSTATUS_NOREQUEST, "");
+	SetRequestStatus(C_REQUESTTYPE_UPLOADEDTRACKS, C_REQUESTSTATUS_NOREQUEST, "");
+	
+	G_TracksRequestOffset = _Offset;
+	G_TracksRequestLength = _Length;
+	
+	G_RandomTracksFilters = _Filters;
+}
+
+Void GetFavoriteAuthors(Text _LayerName) {
+	G_Requests[C_REQUESTTYPE_FAVORITEAUTHORS]["layer"] = _LayerName;
+	SetRequestStatus(C_REQUESTTYPE_FAVORITEAUTHORS, C_REQUESTSTATUS_TOSEND, "");
+}
+
+Void GetFavoriteTracks(Text _LayerName, Integer _Offset, Integer _Length) {
+	G_Requests[C_REQUESTTYPE_FAVORITETRACKS]["layer"] = _LayerName;
+	SetRequestStatus(C_REQUESTTYPE_FAVORITETRACKS, C_REQUESTSTATUS_TOSEND, "");
+	
+	SetRequestStatus(C_REQUESTTYPE_ALLTRACKS, C_REQUESTSTATUS_NOREQUEST, "");
+	SetRequestStatus(C_REQUESTTYPE_FAVORITEAUTHORSTRACKS, C_REQUESTSTATUS_NOREQUEST, "");
+	SetRequestStatus(C_REQUESTTYPE_CAMPAIGNTRACKS, C_REQUESTSTATUS_NOREQUEST, "");
+	SetRequestStatus(C_REQUESTTYPE_RANDOMTRACKS, C_REQUESTSTATUS_NOREQUEST, "");
+	SetRequestStatus(C_REQUESTTYPE_BUDDIESTRACKS, C_REQUESTSTATUS_NOREQUEST, "");
+	SetRequestStatus(C_REQUESTTYPE_UPLOADEDTRACKS, C_REQUESTSTATUS_NOREQUEST, "");
+	
+	G_TracksRequestOffset = _Offset;
+	G_TracksRequestLength = _Length;
+}
+
+Void GetFavoriteAuthorsTracks(Text _LayerName, Integer _Offset, Integer _Length) {
+	G_Requests[C_REQUESTTYPE_FAVORITEAUTHORSTRACKS]["layer"] = _LayerName;
+	SetRequestStatus(C_REQUESTTYPE_FAVORITEAUTHORSTRACKS, C_REQUESTSTATUS_TOSEND, "");
+	
+	SetRequestStatus(C_REQUESTTYPE_ALLTRACKS, C_REQUESTSTATUS_NOREQUEST, "");
+	SetRequestStatus(C_REQUESTTYPE_BUDDIESTRACKS, C_REQUESTSTATUS_NOREQUEST, "");
+	SetRequestStatus(C_REQUESTTYPE_FAVORITETRACKS, C_REQUESTSTATUS_NOREQUEST, "");
+	SetRequestStatus(C_REQUESTTYPE_CAMPAIGNTRACKS, C_REQUESTSTATUS_NOREQUEST, "");
+	SetRequestStatus(C_REQUESTTYPE_RANDOMTRACKS, C_REQUESTSTATUS_NOREQUEST, "");
+	SetRequestStatus(C_REQUESTTYPE_UPLOADEDTRACKS, C_REQUESTSTATUS_NOREQUEST, "");
+	
+	G_TracksRequestOffset = _Offset;
+	G_TracksRequestLength = _Length;
+}
+
+Void GetBuddiesTracks(Text _LayerName, Integer _Offset, Integer _Length, Text[] _Logins) {
+	G_Requests[C_REQUESTTYPE_BUDDIESTRACKS]["layer"] = _LayerName;
+	
+	G_BuddiesLogins = _Logins;
+	SetRequestStatus(C_REQUESTTYPE_BUDDIESTRACKS, C_REQUESTSTATUS_TOSEND, "");
+	
+	SetRequestStatus(C_REQUESTTYPE_ALLTRACKS, C_REQUESTSTATUS_NOREQUEST, "");
+	SetRequestStatus(C_REQUESTTYPE_FAVORITEAUTHORSTRACKS, C_REQUESTSTATUS_NOREQUEST, "");
+	SetRequestStatus(C_REQUESTTYPE_CAMPAIGNTRACKS, C_REQUESTSTATUS_NOREQUEST, "");
+	SetRequestStatus(C_REQUESTTYPE_RANDOMTRACKS, C_REQUESTSTATUS_NOREQUEST, "");
+	SetRequestStatus(C_REQUESTTYPE_FAVORITETRACKS, C_REQUESTSTATUS_NOREQUEST, "");
+	SetRequestStatus(C_REQUESTTYPE_UPLOADEDTRACKS, C_REQUESTSTATUS_NOREQUEST, "");
+	
+	G_TracksRequestOffset = _Offset;
+	G_TracksRequestLength = _Length;
+}
+
+Void GetUploadedTracks(Text _LayerName, Integer _Offset, Integer _Length) {
+	G_Requests[C_REQUESTTYPE_UPLOADEDTRACKS]["layer"] = _LayerName;
+	SetRequestStatus(C_REQUESTTYPE_UPLOADEDTRACKS, C_REQUESTSTATUS_TOSEND, "");
+	
+	SetRequestStatus(C_REQUESTTYPE_ALLTRACKS, C_REQUESTSTATUS_NOREQUEST, "");
+	SetRequestStatus(C_REQUESTTYPE_BUDDIESTRACKS, C_REQUESTSTATUS_NOREQUEST, "");
+	SetRequestStatus(C_REQUESTTYPE_RANDOMTRACKS, C_REQUESTSTATUS_NOREQUEST, "");
+	SetRequestStatus(C_REQUESTTYPE_CAMPAIGNTRACKS, C_REQUESTSTATUS_NOREQUEST, "");
+	SetRequestStatus(C_REQUESTTYPE_FAVORITETRACKS, C_REQUESTSTATUS_NOREQUEST, "");
+	SetRequestStatus(C_REQUESTTYPE_FAVORITEAUTHORSTRACKS, C_REQUESTSTATUS_NOREQUEST, "");
+	
+	G_TracksRequestOffset = _Offset;
+	G_TracksRequestLength = _Length;
+}
+
+Void SetTracksAsFavorite(Text _LayerName, Text _Body, Boolean _SetFavOrElseRemove) {
+	if ((_SetFavOrElseRemove && G_Requests[C_REQUESTTYPE_SETTRACKASFAVORITE]["status"] != C_REQUESTSTATUS_NOREQUEST) || (!_SetFavOrElseRemove && G_Requests[C_REQUESTTYPE_UNSETTRACKASFAVORITE]["status"] != C_REQUESTSTATUS_NOREQUEST))
+		return;
+
+	if (_SetFavOrElseRemove)
+	{
+		G_Requests[C_REQUESTTYPE_SETTRACKASFAVORITE]["layer"] = _LayerName;
+		SetRequestStatus(C_REQUESTTYPE_SETTRACKASFAVORITE, C_REQUESTSTATUS_TOSEND, "");
+		G_RequestSetTrackAsFavoriteBody = _Body;
+	} else {
+		G_Requests[C_REQUESTTYPE_UNSETTRACKASFAVORITE]["layer"] = _LayerName;
+		SetRequestStatus(C_REQUESTTYPE_UNSETTRACKASFAVORITE, C_REQUESTSTATUS_TOSEND, "");
+		G_RequestUnsetTrackAsFavoriteBody = _Body;
+	}
+}
+
+Void SetAuthorsAsFavorite(Text _LayerName, Text _Author, Text _MapUid, Boolean _SetFavOrElseRemove) {
+	if ((_SetFavOrElseRemove && G_Requests[C_REQUESTTYPE_SETAUTHORASFAVORITE]["status"] != C_REQUESTSTATUS_NOREQUEST) || (!_SetFavOrElseRemove && G_Requests[C_REQUESTTYPE_UNSETAUTHORASFAVORITE]["status"] != C_REQUESTSTATUS_NOREQUEST))
+		return;
+
+	if (_SetFavOrElseRemove)
+	{
+		G_Requests[C_REQUESTTYPE_SETAUTHORASFAVORITE]["layer"] = _LayerName;
+		SetRequestStatus(C_REQUESTTYPE_SETAUTHORASFAVORITE, C_REQUESTSTATUS_TOSEND, "");
+		G_RequestSetAuthorAsFavorite_Author = _Author;
+		G_RequestSetAuthorAsFavorite_MapUid = _MapUid;
+	} else {
+		G_Requests[C_REQUESTTYPE_UNSETAUTHORASFAVORITE]["layer"] = _LayerName;
+		SetRequestStatus(C_REQUESTTYPE_UNSETAUTHORASFAVORITE, C_REQUESTSTATUS_TOSEND, "");
+		G_RequestUnsetAuthorAsFavorite_Author = _Author;
+		G_RequestUnsetAuthorAsFavorite_MapUid = _MapUid;
+	}
+}
+
+Void AddRoomAsFavorite(Text _LayerName, Text _RoomIdOrLogin)
+{
+	if (G_Requests[C_REQUESTTYPE_ADDROOMASFAVORITE]["status"] != C_REQUESTSTATUS_NOREQUEST)
+		return;
+
+	G_Requests[C_REQUESTTYPE_ADDROOMASFAVORITE]["layer"] = _LayerName;
+	G_Requests[C_REQUESTTYPE_ADDROOMASFAVORITE]["roomid"] = _RoomIdOrLogin;
+	SetRequestStatus(C_REQUESTTYPE_ADDROOMASFAVORITE, C_REQUESTSTATUS_TOSEND, "");
+}
+
+Void RemoveRoomFromFavorite(Text _LayerName, Text _RoomIdOrLogin)
+{
+	if (G_Requests[C_REQUESTTYPE_REMOVEROOMFROMFAVORITE]["status"] != C_REQUESTSTATUS_NOREQUEST)
+		return;
+		
+	G_Requests[C_REQUESTTYPE_REMOVEROOMFROMFAVORITE]["layer"] = _LayerName;
+	G_Requests[C_REQUESTTYPE_REMOVEROOMFROMFAVORITE]["roomid"] = _RoomIdOrLogin;
+	SetRequestStatus(C_REQUESTTYPE_REMOVEROOMFROMFAVORITE, C_REQUESTSTATUS_TOSEND, "");
+}
+
+Void IncrementPlayCount(Text _LayerName, Text _Uid, Integer _Plays)
+{
+	G_IncrementPlayCount_Uid = _Uid;
+	G_IncrementPlayCount_Count = _Plays;
+	SetRequestStatus(C_REQUESTTYPE_INCREMENTPLAYCOUNT, C_REQUESTSTATUS_TOSEND, "");
+}
+
+Void IsTrackFavorite(Text _LayerName, Text _TrackUid) {
+	G_IsTrackFavoriteUid 	= _TrackUid;
+	G_IsTrackFavoriteLayer 	= _LayerName;
+	
+	if (G_AreFavoriteTracksUpdated)
+		SendIsTrackFavorite();
+	else
+		G_FavoriteTracksLastUpdate = -1;
+}
+
+Void IsAuthorFavorite(Text _LayerName, Text _AuthorLogin) {
+	G_IsAuthorFavoriteLogin = _AuthorLogin;
+	G_IsAuthorFavoriteLayer = _LayerName;
+	
+	if (G_AreFavoriteAuthorsUpdated)
+		SendIsAuthorFavorite();
+	else
+		G_FavoriteAuthorsLastUpdate = -1;
+}
+
+Void IsRoomFavorite(Text _LayerName, Text _RoomDedicatedLogin) {
+	G_IsRoomFavoriteDedicatedLogin 	= _RoomDedicatedLogin;
+	G_IsRoomFavoriteLayer 	= _LayerName;
+	
+	if (G_AreFavoriteRoomsUpdated)
+		SendIsRoomFavorite();
+	else
+		G_FavoriteRoomsLastUpdate = -1;
+}
+
+Void PublicizeTrack(Text _LayerName, Text _TrackUid) {
+	G_PublicizeTrack_Uid = _TrackUid;
+	G_Requests[C_REQUESTTYPE_PUBLICIZETRACK]["layer"] = _LayerName;
+	SetRequestStatus(C_REQUESTTYPE_PUBLICIZETRACK, C_REQUESTSTATUS_TOSEND, "");
+}
+
+Void ReportTrack(Text _LayerName, Text _TrackUid) {
+	G_ReportTrack_Uid = _TrackUid;
+	G_Requests[C_REQUESTTYPE_REPORTTRACK]["layer"] = _LayerName;
+	SetRequestStatus(C_REQUESTTYPE_REPORTTRACK, C_REQUESTSTATUS_TOSEND, "");
+}
+
+Void VoteTrack(Text _LayerName, Text _TrackUid, Boolean _PlusOrElseMinus) {
+	G_VoteTrack_Uid = _TrackUid;
+	G_VoteTrack_PlusOrElseMinus = _PlusOrElseMinus;
+	G_Requests[C_REQUESTTYPE_VOTETRACK]["layer"] = _LayerName;
+	SetRequestStatus(C_REQUESTTYPE_VOTETRACK, C_REQUESTSTATUS_TOSEND, "");
+}
+
+Void GetTrackInfo(Text _LayerName, Text _TrackUid) {
+	G_TrackInfo_Uid = _TrackUid;
+	G_Requests[C_REQUESTTYPE_TRACKINFO]["layer"] = _LayerName;
+	SetRequestStatus(C_REQUESTTYPE_TRACKINFO, C_REQUESTSTATUS_TOSEND, "");
+}
+
+Void RequestUploadedMapsUids(Text _LayerName) {
+	G_Requests[C_REQUESTTYPE_UPLOADEDTRACKSUIDS]["layer"] = _LayerName;
+	SetRequestStatus(C_REQUESTTYPE_UPLOADEDTRACKSUIDS, C_REQUESTSTATUS_TOSEND, "");
+}
+
+Text[Text][] GetFavoriteTracksArray() {
+	return G_FavoriteTracks;
+}
+
+Text[] GetFavoriteAuthorsArray() {
+	return G_FavoriteAuthors;
+}
+
+////////////////////
+// REQUESTS ANSWERS
+////////////////////
+Void RequestDisplayNames(Integer _RequestType, Text[] _Logins) {
+	if (ManiaPlanet.MasterServer_MainMSUser == Null)
+	{
+		SetRequestStatus(_RequestType, C_REQUESTSTATUS_FAILED, "");
+		return;
+	}
+	if (_Logins.count == 0)
+	{
+		SetRequestStatus(_RequestType, C_REQUESTSTATUS_SUCCEEDED, "");
+		return;
+	}
+	
+	declare CWebServicesTaskResult TaskResult = ManiaPlanet.MasterServer_GetDisplayName(ManiaPlanet.MasterServer_MainMSUser.Id);
+	
+	declare GetDisplayNameTaskResult <=> (TaskResult as CWebServicesTaskResult_GetDisplayNameScriptResult);
+	for (I, 0, _Logins.count - 1)
+	{
+		GetDisplayNameTaskResult.AddLogin(_Logins[I]);
+	}
+	GetDisplayNameTaskResult.StartTask();
+
+	GetDisplayNamesTasks[_RequestType] = TaskResult;
+}
+
+Void SetAllTracksList(Text _RequestResult) {
+	declare CXmlDocument	Doc 			= LiveXml::Manialib_Xml_CreateDocument(_RequestResult);
+	if (Doc == Null)
+		return; //réponse invalide !
+	
+	declare CXmlNode		ResultNode			= Doc.GetFirstChild("result");
+	if (ResultNode == Null) {
+		LiveXml::Manialib_Xml_DestroyDocument(Doc);
+		return; //réponse invalide !
+	}
+	declare Text[Text][]	Result			= LiveXml::Manialib_Xml_NodeToArray2(ResultNode);
+	LiveXml::Manialib_Xml_DestroyDocument(Doc);
+	
+	declare Text[] Logins;
+	for (I, 0, G_TracksRequestLength-1)
+	{
+		if (Result.existskey(I))
+		{
+			if (Result[I].existskey("uploader"))
+				if (Result[I]["uploader"] != C_CAMPAIGNTRACKS_UPLOADER2)
+					Logins.add(Result[I]["uploader"]);
+				else
+					Result[I]["displayname"] = C_CAMPAIGNTRACKS_UPLOADER2;
+			if (!G_AllTracks.existskey(G_TracksRequestOffset + I)) // G_AllTracks.count == G_TracksRequestOffset+I-1
+			{
+				G_AllTracks.add(Result[I]);
+			} else {
+				G_AllTracks[G_TracksRequestOffset+I] = Result[I];
+			}
+		} else if (G_AllTracks.count > G_TracksRequestOffset+I) {
+			declare CountToRemove = G_AllTracks.count-(G_TracksRequestOffset+I);
+			for (I, 0, CountToRemove-1)
+			{
+				G_AllTracks.removekey(G_AllTracks.count-1);
+			}
+		}
+	}
+	
+	RequestDisplayNames(C_REQUESTTYPE_ALLTRACKS, Logins);
+}
+
+Void SetRandomTracksList(Text _RequestResult) {
+	declare CXmlDocument	Doc 			= LiveXml::Manialib_Xml_CreateDocument(_RequestResult);
+	if (Doc == Null)
+		return; //réponse invalide !
+	
+	declare CXmlNode		ResultNode			= Doc.GetFirstChild("result");
+	if (ResultNode == Null) {
+		LiveXml::Manialib_Xml_DestroyDocument(Doc);
+		return; //réponse invalide !
+	}
+	declare Text[Text][]	Result			= LiveXml::Manialib_Xml_NodeToArray2(ResultNode);
+	LiveXml::Manialib_Xml_DestroyDocument(Doc);
+	
+	declare Text[] Logins;
+	for (I, 0, G_TracksRequestLength-1)
+	{
+		if (Result.existskey(I))
+		{
+			if (Result[I].existskey("uploader"))
+				if (Result[I]["uploader"] != C_CAMPAIGNTRACKS_UPLOADER2)
+					Logins.add(Result[I]["uploader"]);
+				else
+					Result[I]["displayname"] = C_CAMPAIGNTRACKS_UPLOADER2;
+			if (!G_RandomTracks.existskey(G_TracksRequestOffset + I)) // G_RandomTracks.count == G_TracksRequestOffset+I-1
+			{
+				G_RandomTracks.add(Result[I]);
+			} else {
+				G_RandomTracks[G_TracksRequestOffset+I] = Result[I];
+			}
+		} else if (G_RandomTracks.count > G_TracksRequestOffset+I) {
+			declare CountToRemove = G_RandomTracks.count-(G_TracksRequestOffset+I);
+			for (I, 0, CountToRemove-1)
+			{
+				G_RandomTracks.removekey(G_RandomTracks.count-1);
+			}
+		}
+	}
+	
+	RequestDisplayNames(C_REQUESTTYPE_RANDOMTRACKS, Logins);
+}
+
+Void SetCampaignTracksList(Text _RequestResult) {
+	declare CXmlDocument	Doc 			= LiveXml::Manialib_Xml_CreateDocument(_RequestResult);
+	if (Doc == Null)
+		return; //réponse invalide !
+	
+	declare CXmlNode		ResultNode			= Doc.GetFirstChild("result");
+	if (ResultNode == Null) {
+		LiveXml::Manialib_Xml_DestroyDocument(Doc);
+		return; //réponse invalide !
+	}
+	declare Text[Text][]	Result			= LiveXml::Manialib_Xml_NodeToArray2(ResultNode);
+	LiveXml::Manialib_Xml_DestroyDocument(Doc);
+	
+	declare Text[] Logins;
+	for (I, 0, G_TracksRequestLength-1)
+	{
+		if (Result.existskey(I))
+		{
+			if (Result[I].existskey("uploader"))
+				if (Result[I]["uploader"] != C_CAMPAIGNTRACKS_UPLOADER2)
+					Logins.add(Result[I]["uploader"]);
+				else
+					Result[I]["displayname"] = C_CAMPAIGNTRACKS_UPLOADER2;
+			if (!G_CampaignTracks.existskey(G_TracksRequestOffset + I)) // G_CampaignTracks.count == G_TracksRequestOffset+I-1
+			{
+				G_CampaignTracks.add(Result[I]);
+			} else {
+				G_CampaignTracks[G_TracksRequestOffset+I] = Result[I];
+			}
+		} else if (G_CampaignTracks.count > G_TracksRequestOffset+I) {
+			declare CountToRemove = G_CampaignTracks.count-(G_TracksRequestOffset+I);
+			for (I, 0, CountToRemove-1)
+			{
+				G_CampaignTracks.removekey(G_CampaignTracks.count-1);
+			}
+		}
+	}
+	
+	RequestDisplayNames(C_REQUESTTYPE_CAMPAIGNTRACKS, Logins);
+}
+
+Void SetFavoriteTracksList(Text _RequestResult) {
+	declare CXmlDocument	Doc 			= LiveXml::Manialib_Xml_CreateDocument(_RequestResult);
+	if (Doc == Null)
+		return; //réponse invalide !
+	
+	declare CXmlNode		ResultNode			= Doc.GetFirstChild("result");
+	if (ResultNode == Null) {
+		LiveXml::Manialib_Xml_DestroyDocument(Doc);	
+		return; //réponse invalide !
+	}
+	declare Text[Text][]	Result			= LiveXml::Manialib_Xml_NodeToArray2(ResultNode);
+	LiveXml::Manialib_Xml_DestroyDocument(Doc);
+	
+	declare Text[] Logins;
+	for (I, 0, G_TracksRequestLength-1)
+	{
+		if (Result.existskey(I))
+		{
+			if (Result[I].existskey("uploader"))
+				if (Result[I]["uploader"] != C_CAMPAIGNTRACKS_UPLOADER2)
+					Logins.add(Result[I]["uploader"]);
+				else
+					Result[I]["displayname"] = C_CAMPAIGNTRACKS_UPLOADER2;
+			if (!G_FavoriteTracks.existskey(G_TracksRequestOffset + I)) // G_FavoriteTracks.count == G_TracksRequestOffset+I-1
+			{
+				G_FavoriteTracks.add(Result[I]);
+			} else {
+				G_FavoriteTracks[G_TracksRequestOffset+I] = Result[I];
+			}
+		} else if (G_FavoriteTracks.count > G_TracksRequestOffset+I) {
+			declare CountToRemove = G_FavoriteTracks.count-(G_TracksRequestOffset+I);
+			for (I, 0, CountToRemove-1)
+			{
+				G_FavoriteTracks.removekey(G_FavoriteTracks.count-1);
+			}
+		}
+	}
+	
+	RequestDisplayNames(C_REQUESTTYPE_FAVORITETRACKS, Logins);
+}
+
+Void SetFavoriteAuthorsTracksList(Text _RequestResult) {
+	declare CXmlDocument	Doc 			= LiveXml::Manialib_Xml_CreateDocument(_RequestResult);
+	if (Doc == Null)
+		return; //réponse invalide !
+	
+	declare CXmlNode		ResultNode			= Doc.GetFirstChild("result");
+	if (ResultNode == Null) {
+		LiveXml::Manialib_Xml_DestroyDocument(Doc);
+		return; //réponse invalide !
+	}
+	declare Text[Text][]	Result			= LiveXml::Manialib_Xml_NodeToArray2(ResultNode);
+	LiveXml::Manialib_Xml_DestroyDocument(Doc);
+	
+	declare Text[] Logins;
+	for (I, 0, G_TracksRequestLength-1)
+	{
+		if (Result.existskey(I))
+		{
+			if (Result[I].existskey("uploader"))
+				if (Result[I]["uploader"] != C_CAMPAIGNTRACKS_UPLOADER2)
+					Logins.add(Result[I]["uploader"]);
+				else
+					Result[I]["displayname"] = C_CAMPAIGNTRACKS_UPLOADER2;
+			if (!G_FavoriteAuthorsTracks.existskey(G_TracksRequestOffset + I)) // G_FavoriteAuthorsTracks.count == G_TracksRequestOffset+I-1
+			{
+				G_FavoriteAuthorsTracks.add(Result[I]);
+			} else {
+				G_FavoriteAuthorsTracks[G_TracksRequestOffset+I] = Result[I];
+			}
+		} else if (G_FavoriteAuthorsTracks.count > G_TracksRequestOffset+I) {
+			declare CountToRemove = G_FavoriteAuthorsTracks.count-(G_TracksRequestOffset+I);
+			for (I, 0, CountToRemove-1)
+			{
+				G_FavoriteAuthorsTracks.removekey(G_FavoriteAuthorsTracks.count-1);
+			}
+		}
+	}
+	
+	RequestDisplayNames(C_REQUESTTYPE_FAVORITEAUTHORSTRACKS, Logins);
+}
+
+Void SetUploadedTracksList(Text _RequestResult) {
+	declare CXmlDocument	Doc 			= LiveXml::Manialib_Xml_CreateDocument(_RequestResult);
+	if (Doc == Null)
+		return; //réponse invalide !
+	
+	declare CXmlNode		ResultNode			= Doc.GetFirstChild("result");
+	if (ResultNode == Null) {
+		LiveXml::Manialib_Xml_DestroyDocument(Doc);
+		return; //réponse invalide !
+	}
+	declare Text[Text][]	Result			= LiveXml::Manialib_Xml_NodeToArray2(ResultNode);
+	LiveXml::Manialib_Xml_DestroyDocument(Doc);
+	
+	for (I, 0, G_TracksRequestLength-1)
+	{
+		if (Result.existskey(I))
+		{
+			if (ManiaPlanet.MasterServer_MainMSUser != Null)
+				Result[I]["displayname"] = ManiaPlanet.MasterServer_MainMSUser.DisplayName;
+			else
+				Result[I]["displayname"] = "";
+			if (!G_UploadedTracks.existskey(G_TracksRequestOffset + I)) // G_UploadedTracks.count == G_TracksRequestOffset+I-1
+			{
+				G_UploadedTracks.add(Result[I]);
+			} else {
+				G_UploadedTracks[G_TracksRequestOffset+I] = Result[I];
+			}
+		} else if (G_UploadedTracks.count > G_TracksRequestOffset+I) {
+			declare CountToRemove = G_UploadedTracks.count-(G_TracksRequestOffset+I);
+			for (I, 0, CountToRemove-1)
+			{
+				G_UploadedTracks.removekey(G_UploadedTracks.count-1);
+			}
+		}
+	}
+}
+
+Void SetBuddiesTracksList(Text _RequestResult) {
+	declare CXmlDocument	Doc 			= LiveXml::Manialib_Xml_CreateDocument(_RequestResult);
+	if (Doc == Null)
+		return; //réponse invalide !
+	
+	declare CXmlNode		ResultNode			= Doc.GetFirstChild("result");
+	if (ResultNode == Null) {
+		LiveXml::Manialib_Xml_DestroyDocument(Doc);
+		return; //réponse invalide !
+	}
+	declare Text[Text][]	Result			= LiveXml::Manialib_Xml_NodeToArray2(ResultNode);
+	LiveXml::Manialib_Xml_DestroyDocument(Doc);
+	
+	declare Text[] Logins;
+	
+	for (I, 0, G_TracksRequestLength-1)
+	{
+		if (Result.existskey(I))
+		{
+			if (Result[I]["uploader"] != C_CAMPAIGNTRACKS_UPLOADER2)
+					Logins.add(Result[I]["uploader"]);
+				else
+					Result[I]["displayname"] = C_CAMPAIGNTRACKS_UPLOADER2;
+			if (!G_BuddiesTracks.existskey(G_TracksRequestOffset + I)) // G_BuddiesTracks.count == G_TracksRequestOffset+I-1
+			{
+				G_BuddiesTracks.add(Result[I]);
+			} else {
+				G_BuddiesTracks[G_TracksRequestOffset+I] = Result[I];
+			}
+		} else if (G_BuddiesTracks.count > G_TracksRequestOffset+I) {
+			declare CountToRemove = G_BuddiesTracks.count-(G_TracksRequestOffset+I);
+			for (I, 0, CountToRemove-1)
+			{
+				G_BuddiesTracks.removekey(G_BuddiesTracks.count-1);
+			}
+		}
+	}
+	
+	RequestDisplayNames(C_REQUESTTYPE_BUDDIESTRACKS, Logins);
+}
+
+Void SetFavoriteAuthorsList(Text _RequestResult) {
+	declare CXmlDocument	Doc 			= LiveXml::Manialib_Xml_CreateDocument(_RequestResult);
+	if (Doc == Null)
+		return; //réponse invalide !
+	
+	declare CXmlNode		Result			= Doc.GetFirstChild("result");
+	if (Result == Null) {
+		LiveXml::Manialib_Xml_DestroyDocument(Doc);
+		return; //réponse invalide !
+	}
+	
+	LiveXml::Manialib_Xml_DestroyDocument(Doc);
+	
+	G_FavoriteAuthors.clear();
+	foreach(Name in G_FavoriteAuthors) {
+		G_FavoriteAuthors.add(Name);
+	}
+	RequestDisplayNames(C_REQUESTTYPE_FAVORITEAUTHORS, G_FavoriteAuthors);
+}
+
+Void SetFavorites(Text _RequestResult) {
+	G_AreFavoriteRoomsUpdated = True;
+	G_AreFavoriteAuthorsUpdated = True;
+	G_AreFavoriteTracksUpdated = True;
+	G_FavoriteRoomsDedicatedLogins.clear();
+	G_FavoriteAuthorsLogins.clear();
+	G_FavoriteTracksUids.clear();
+	
+	declare CXmlDocument	Doc 			= LiveXml::Manialib_Xml_CreateDocument(_RequestResult);
+	if (Doc == Null)
+		return; //réponse invalide !
+	
+	declare CXmlNode		Result			= Doc.GetFirstChild("result");
+	if (Result == Null) {
+		LiveXml::Manialib_Xml_DestroyDocument(Doc);
+		return; //réponse invalide !
+	}
+	
+	declare CXmlNode MapsNode = Result.GetFirstChild("maps");
+	if (MapsNode != Null)
+		foreach (entry in MapsNode.Children)
+			G_FavoriteTracksUids.add(entry.TextContents);
+	
+	declare CXmlNode AuthorsNode = Result.GetFirstChild("authors");
+	if (AuthorsNode != Null)
+		foreach (entry in AuthorsNode.Children)
+			G_FavoriteAuthorsLogins.add(entry.TextContents);
+		
+	declare CXmlNode RoomsNode = Result.GetFirstChild("rooms");
+	if (RoomsNode != Null)
+		foreach (entry in RoomsNode.Children)
+			G_FavoriteRoomsDedicatedLogins.add(entry.TextContents);
+	LiveXml::Manialib_Xml_DestroyDocument(Doc);
+}
+
+Void SetUploadedTracksUids(Text _RequestResult) {
+	G_UploadedTracksUids.clear();
+	declare CXmlDocument	Doc 			= LiveXml::Manialib_Xml_CreateDocument(_RequestResult);
+	if (Doc == Null)
+		return; //réponse invalide !
+	
+	declare CXmlNode		Result			= Doc.GetFirstChild("result");
+	if (Result == Null) {
+		LiveXml::Manialib_Xml_DestroyDocument(Doc);
+		return; //réponse invalide !
+	}
+	
+	foreach (entry in Result.Children)
+		G_UploadedTracksUids.add(entry.TextContents);
+	LiveXml::Manialib_Xml_DestroyDocument(Doc);
+}
+
+Void SetTrackInfo(Text _RequestResult) {
+	G_TrackInfo_Track.clear();
+	declare CXmlDocument	Doc 			= LiveXml::Manialib_Xml_CreateDocument(_RequestResult);
+	if (Doc == Null)
+		return; //réponse invalide !
+	
+	declare CXmlNode		Result			= Doc.GetFirstChild("result");
+	if (Result == Null) {
+		LiveXml::Manialib_Xml_DestroyDocument(Doc);
+		return; //réponse invalide !
+	}
+	
+	G_TrackInfo_Track = LiveXml::Manialib_Xml_NodeToArray(Result);
+	
+	LiveXml::Manialib_Xml_DestroyDocument(Doc);
+}
+
+Void SetError(Integer _RequestType, Integer _StatusCode) {
+	declare Text Message;
+	if (_StatusCode / 100 == 4 || _StatusCode / 100 == 5)
+	{   //erreurs client ou serveur
+		switch(_RequestType)
+		{
+			case C_REQUESTTYPE_ALLTRACKS				: Message = TextLib::GetTranslatedText(_("Error: the tracks could not be retrieved."));
+			case C_REQUESTTYPE_FAVORITETRACKS			: Message = TextLib::GetTranslatedText(_("Error: the tracks could not be retrieved."));
+			case C_REQUESTTYPE_RANDOMTRACKS     		: Message = TextLib::GetTranslatedText(_("Error: the tracks could not be retrieved."));
+			case C_REQUESTTYPE_CAMPAIGNTRACKS     		: Message = TextLib::GetTranslatedText(_("Error: the tracks could not be retrieved."));
+			case C_REQUESTTYPE_BUDDIESTRACKS     		: Message = TextLib::GetTranslatedText(_("Error: the tracks could not be retrieved."));
+			case C_REQUESTTYPE_FAVORITEAUTHORSTRACKS	: Message = TextLib::GetTranslatedText(_("Error: the tracks could not be retrieved."));
+			case C_REQUESTTYPE_UPLOADEDTRACKS     		: Message = TextLib::GetTranslatedText(_("Error: the tracks could not be retrieved."));
+			case C_REQUESTTYPE_SETTRACKASFAVORITE		: Message = TextLib::GetTranslatedText(_("Error: the operation failed."));
+			case C_REQUESTTYPE_UNSETTRACKASFAVORITE		: Message = TextLib::GetTranslatedText(_("Error: the operation failed."));
+			case C_REQUESTTYPE_SETAUTHORASFAVORITE		: Message = TextLib::GetTranslatedText(_("Error: the operation failed."));
+			case C_REQUESTTYPE_UNSETAUTHORASFAVORITE	: Message = TextLib::GetTranslatedText(_("Error: the operation failed."));
+			case C_REQUESTTYPE_PUBLICIZETRACK			: Message = TextLib::GetTranslatedText(_("Error: the operation failed."));
+			case C_REQUESTTYPE_REPORTTRACK				: Message = TextLib::GetTranslatedText(_("Error: the tracks could not be reported."));
+			case C_REQUESTTYPE_VOTETRACK				: Message = TextLib::GetTranslatedText(_("Error: the tracks could not be upvoted."));
+			case C_REQUESTTYPE_ADDROOMASFAVORITE 		: Message = TextLib::GetTranslatedText(_("Error: the operation failed."));
+			case C_REQUESTTYPE_REMOVEROOMFROMFAVORITE 	: Message = TextLib::GetTranslatedText(_("Error: the operation failed."));
+		}
+		Message ^= " "^TextLib::GetTranslatedText(_("The connection to the Trackmania Servers has been lost."))^" "^TextLib::GetTranslatedText(_("Please try again later or visit support.ubi.com"));
+	} else {
+		if (G_DisconnectErrorText != "")
+			Message = G_DisconnectErrorText;
+		else
+			Message = _("The connection to the Trackmania Servers has been lost. Online features will become available once the connection has been re-established.");
+	}	
+	PopUpManager::AddPopUp2(0, Message, "", False);
+}
+
+////////////////////
+// UPDATE
+////////////////////
+Void SendCompletedRequestData(Integer _RequestType) {
+	switch (_RequestType)
+	{
+		case C_REQUESTTYPE_ALLTRACKS 				: SendAllTracksListToUI(C_REQUESTTYPE_ALLTRACKS);
+		case C_REQUESTTYPE_FAVORITETRACKS 			: SendFavoriteTracksListToUI(C_REQUESTTYPE_FAVORITETRACKS);
+		case C_REQUESTTYPE_FAVORITEAUTHORSTRACKS 	: SendFavoriteAuthorsTracksListToUI(C_REQUESTTYPE_FAVORITEAUTHORSTRACKS);
+		case C_REQUESTTYPE_RANDOMTRACKS				: SendRandomTracksListToUI(C_REQUESTTYPE_RANDOMTRACKS);
+		case C_REQUESTTYPE_CAMPAIGNTRACKS			: SendCampaignTracksListToUI(C_REQUESTTYPE_CAMPAIGNTRACKS);
+		case C_REQUESTTYPE_UPLOADEDTRACKS 			: SendUploadedTracksListToUI(C_REQUESTTYPE_UPLOADEDTRACKS);
+		case C_REQUESTTYPE_BUDDIESTRACKS 			: SendBuddiesTracksListToUI(C_REQUESTTYPE_BUDDIESTRACKS);
+		case C_REQUESTTYPE_FAVORITETRACKS 			: SendFavoriteAuthorsListToUI(C_REQUESTTYPE_FAVORITETRACKS);
+		case C_REQUESTTYPE_TRACKINFO 				: SendTrackInfoToUI(C_REQUESTTYPE_TRACKINFO);
+		case C_REQUESTTYPE_GETFAVORITES				: {
+			SendIsTrackFavorite();
+			SendIsAuthorFavorite();
+			SendIsRoomFavorite();
+		}
+		case C_REQUESTTYPE_UPLOADEDTRACKSUIDS		: 
+		{
+			if (G_Requests[C_REQUESTTYPE_UPLOADEDTRACKSUIDS]["status"] == C_REQUESTSTATUS_SUCCEEDED)
+			{
+				if (UserMgr.MainUser != Null && UserMgr.MainUser.PersistentIsReady)
+				{
+					UpdateUploadedTracksUids();
+					ReInitRequest(_RequestType);
+				}
+			} else {
+				ReInitRequest(_RequestType);
+			}
+		}
+	}
+	
+	if (_RequestType != C_REQUESTTYPE_GETFAVORITES)
+		SendFeedbackToUI(_RequestType);
+		
+	if (_RequestType != C_REQUESTTYPE_UPLOADEDTRACKSUIDS)
+		ReInitRequest(_RequestType);
+}
+
+Void RequestRetry(Integer _RequestType) {
+	if	(ManiaPlanet.MasterServer_MainMSUser == Null || ManiaPlanet.MasterServer_MainMSUser.ConnectionStatus != CNetMasterServerUserInfo::EMasterServerConnectionStatus::Connected)
+	{
+		SetRequestStatus(_RequestType, C_REQUESTSTATUS_FAILED, "");
+		return;
+	}
+	
+	if (LiveAuth::Auth_IsWaitingForToken())
+		return;
+
+	switch(_RequestType)
+	{
+		case C_REQUESTTYPE_ALLTRACKS 				: RequestAllTracks();
+		case C_REQUESTTYPE_RANDOMTRACKS				: RequestRandomTracks();
+		case C_REQUESTTYPE_FAVORITETRACKS 			: RequestFavoriteTracks();
+		case C_REQUESTTYPE_FAVORITEAUTHORSTRACKS 	: RequestFavoriteAuthorsTracks();
+		case C_REQUESTTYPE_CAMPAIGNTRACKS 			: RequestCampaignTracks();
+		case C_REQUESTTYPE_UPLOADEDTRACKS 			: RequestUploadedTracks();
+		case C_REQUESTTYPE_BUDDIESTRACKS 			: RequestBuddiesTracks();
+		case C_REQUESTTYPE_SETTRACKASFAVORITE 		: RequestSetTrackAsFavorite();
+		case C_REQUESTTYPE_UNSETTRACKASFAVORITE 	: RequestUnsetTrackAsFavorite();
+		case C_REQUESTTYPE_SETAUTHORASFAVORITE 		: RequestSetAuthorAsFavorite();
+		case C_REQUESTTYPE_UNSETAUTHORASFAVORITE 	: RequestUnsetAuthorAsFavorite();
+		case C_REQUESTTYPE_ADDROOMASFAVORITE		: RequestAddRoomAsFavorite();
+		case C_REQUESTTYPE_REMOVEROOMFROMFAVORITE	: RequestRemoveRoomFromFavorite();
+		case C_REQUESTTYPE_FAVORITEAUTHORS 			: RequestFavoriteAuthors();
+		case C_REQUESTTYPE_GETFAVORITES				: RefreshFavorites();
+		case C_REQUESTTYPE_INCREMENTPLAYCOUNT		: RequestIncrementPlayCount();
+		case C_REQUESTTYPE_PUBLICIZETRACK			: RequestPublicizeTrack();
+		case C_REQUESTTYPE_REPORTTRACK				: RequestReportTrack();
+		case C_REQUESTTYPE_VOTETRACK				: RequestVoteTrack();
+		case C_REQUESTTYPE_TRACKINFO				: RequestTrackInfo();
+		case C_REQUESTTYPE_UPLOADEDTRACKSUIDS		: RequestUploadedTracksUids();
+	}
+}
+
+Void SendDatasToUILoop() {
+	for (I, 0, C_REQUESTSCOUNT-1)
+	{
+		declare Text Status = G_Requests[I]["status"];
+		if ( Status == C_REQUESTSTATUS_SUCCEEDED || Status == C_REQUESTSTATUS_FAILED)
+			SendCompletedRequestData(I);
+		else if (Status == C_REQUESTSTATUS_TOSEND)
+			RequestRetry(I);
+	}
+}
+
+Integer GetRequestTypeFromRequestId(Text _RequestId)
+{
+	for(I, 0, C_REQUESTSCOUNT-1)
+	{
+		if (G_Requests[I]["id"] == _RequestId)
+			return I;
+	}
+	return -1;
+}
+
+Void SetAllTracksDisplayNames(CWebServicesTaskResult_GetDisplayNameScriptResult _TaskResult)
+{
+	for (I, 0, G_AllTracks.count - 1)
+		if (G_AllTracks[I]["uploader"] != C_CAMPAIGNTRACKS_UPLOADER2)
+			G_AllTracks[I]["displayname"] = _TaskResult.GetDisplayName(G_AllTracks[I]["uploader"]);
+}
+
+Void SetRandomTracksDisplayNames(CWebServicesTaskResult_GetDisplayNameScriptResult _TaskResult)
+{
+	for (I, 0, G_RandomTracks.count - 1)
+		if (G_RandomTracks[I]["uploader"] != C_CAMPAIGNTRACKS_UPLOADER2)
+			G_RandomTracks[I]["displayname"] = _TaskResult.GetDisplayName(G_RandomTracks[I]["uploader"]);
+}
+
+Void SetFavoriteTracksDisplayNames(CWebServicesTaskResult_GetDisplayNameScriptResult _TaskResult)
+{
+	for (I, 0, G_FavoriteTracks.count - 1)
+		if (G_FavoriteTracks[I]["uploader"] != C_CAMPAIGNTRACKS_UPLOADER2)
+			G_FavoriteTracks[I]["displayname"] = _TaskResult.GetDisplayName(G_FavoriteTracks[I]["uploader"]);
+}
+
+Void SetFavoriteAuthorsTracksServersDisplayNames(CWebServicesTaskResult_GetDisplayNameScriptResult _TaskResult)
+{
+	for (I, 0, G_FavoriteAuthorsTracks.count - 1)
+		if (G_FavoriteAuthorsTracks[I]["uploader"] != C_CAMPAIGNTRACKS_UPLOADER2)
+			G_FavoriteAuthorsTracks[I]["displayname"] = _TaskResult.GetDisplayName(G_FavoriteAuthorsTracks[I]["uploader"]);
+}
+
+Void SetFavoriteAuthorsDisplayNames(CWebServicesTaskResult_GetDisplayNameScriptResult _TaskResult)
+{
+	for(I, 0, G_FavoriteAuthors.count-1) {
+		G_FavoriteAuthors[I] = _TaskResult.GetDisplayName(G_FavoriteAuthors[I]);
+	}
+}
+
+Void SetBuddiesDisplayNames(CWebServicesTaskResult_GetDisplayNameScriptResult _TaskResult)
+{
+	for (I, 0, G_BuddiesTracks.count-1)
+		if (G_BuddiesTracks[I]["uploader"] != C_CAMPAIGNTRACKS_UPLOADER2)
+			G_BuddiesTracks[I]["displayname"] = _TaskResult.GetDisplayName(G_BuddiesTracks[I]["uploader"]);
+}
+
+Void GetDisplayNamesLoop() {
+	for (I, 0, C_REQUESTTYPE_FAVORITEAUTHORS)
+	{
+		if (GetDisplayNamesTasks.existskey(I) && GetDisplayNamesTasks[I] != Null && !GetDisplayNamesTasks[I].IsProcessing)
+		{
+			declare GetDisplayNameTaskResult <=> (GetDisplayNamesTasks[I] as CWebServicesTaskResult_GetDisplayNameScriptResult);
+			if (G_Requests[I]["status"] == C_REQUESTSTATUS_WAITFORDISPLAYNAMES)
+			{
+				if (GetDisplayNameTaskResult.HasSucceeded)
+				{
+					G_Requests[I]["status"] = C_REQUESTSTATUS_SUCCEEDED;
+					switch (I)
+					{
+						case C_REQUESTTYPE_ALLTRACKS 			: SetAllTracksDisplayNames(GetDisplayNameTaskResult);
+						case C_REQUESTTYPE_FAVORITETRACKS 		: SetFavoriteTracksDisplayNames(GetDisplayNameTaskResult);
+						case C_REQUESTTYPE_FAVORITEAUTHORSTRACKS: SetFavoriteAuthorsTracksServersDisplayNames(GetDisplayNameTaskResult); 
+						case C_REQUESTTYPE_FAVORITEAUTHORS		: SetFavoriteAuthorsDisplayNames(GetDisplayNameTaskResult); 
+						case C_REQUESTTYPE_RANDOMTRACKS			: SetRandomTracksDisplayNames(GetDisplayNameTaskResult);
+						case C_REQUESTTYPE_BUDDIESTRACKS		: SetBuddiesDisplayNames(GetDisplayNameTaskResult); 
+					}
+				} else {
+					TaskMessageErrorController::TaskErrorMessage(GetDisplayNameTaskResult.ErrorType, GetDisplayNameTaskResult.ErrorCode);
+					G_Requests[I]["status"] = C_REQUESTSTATUS_FAILED;
+					switch (I)
+					{
+						case C_REQUESTTYPE_ALLTRACKS 			: G_AllTracks.clear();
+						case C_REQUESTTYPE_RANDOMTRACKS			: G_RandomTracks.clear();
+						case C_REQUESTTYPE_FAVORITETRACKS 		: G_FavoriteTracks.clear();
+						case C_REQUESTTYPE_FAVORITEAUTHORSTRACKS: G_FavoriteAuthorsTracks.clear();
+						case C_REQUESTTYPE_FAVORITEAUTHORS		: G_FavoriteAuthors.clear();
+						case C_REQUESTTYPE_BUDDIESTRACKS		: G_BuddiesTracks.clear();
+					}
+				}
+			}
+			GetDisplayNamesTasks[I] = Null;
+		}
+	}
+}
+
+Void LiveLoop() {
+	if ((ManiaPlanet.MasterServer_MainMSUser != Null) && ManiaPlanet.MasterServer_MainMSUser.ConnectionStatus == CNetMasterServerUserInfo::EMasterServerConnectionStatus::Connected && LiveAuth::Auth_IsReady() && G_Requests[C_REQUESTTYPE_GETFAVORITES]["status"] == C_REQUESTSTATUS_NOREQUEST)
+	{
+		if ((!G_AreFavoriteAuthorsUpdated && (G_FavoriteAuthorsLastUpdate == -1 || G_FavoriteAuthorsLastUpdate + C_IsFavoriteCooldown < Now))
+			|| (!G_AreFavoriteTracksUpdated && (G_FavoriteTracksLastUpdate == -1 || G_FavoriteTracksLastUpdate + C_IsFavoriteCooldown < Now))
+			|| (!G_AreFavoriteRoomsUpdated && (G_FavoriteRoomsLastUpdate == -1 || G_FavoriteRoomsLastUpdate + C_IsFavoriteCooldown < Now)))
+		{
+			G_FavoriteRoomsLastUpdate = Now;
+			G_FavoriteTracksLastUpdate = Now;
+			G_FavoriteAuthorsLastUpdate = Now;
+			SetRequestStatus(C_REQUESTTYPE_GETFAVORITES, C_REQUESTSTATUS_TOSEND, "");
+		}
+	}
+
+	foreach(LiveEvent in LiveEvent::Manialib_Event_PendingEvents()) {
+		declare Text RequestId = LiveEvent[1][0];
+		declare Integer RequestType = GetRequestTypeFromRequestId(RequestId);
+		if (RequestType == -1)
+			continue;
+	
+		switch(LiveEvent[0][0]) {
+			case "Manialib.Http.Success": {
+				G_DisconnectErrorText = "";
+				
+				if (RequestType > C_REQUESTTYPE_FAVORITEAUTHORSTRACKS)
+				{
+					G_Requests[RequestType]["status"] = C_REQUESTSTATUS_SUCCEEDED;
+				}
+				switch(RequestType) {
+					case C_REQUESTTYPE_ALLTRACKS : {
+						if(LiveEvent[1].count < 1)
+							continue;
+						SetAllTracksList(LiveEvent[1][1]);
+						if(GetDisplayNamesTasks.existskey(RequestType) && GetDisplayNamesTasks[RequestType] != Null)
+							G_Requests[RequestType]["status"] = C_REQUESTSTATUS_WAITFORDISPLAYNAMES;
+						else
+							G_Requests[RequestType]["status"] = C_REQUESTSTATUS_SUCCEEDED;
+					}
+					case C_REQUESTTYPE_FAVORITETRACKS : {
+						if(LiveEvent[1].count < 1)
+							continue;						
+						SetFavoriteTracksList(LiveEvent[1][1]);
+						if(GetDisplayNamesTasks.existskey(RequestType) && GetDisplayNamesTasks[RequestType] != Null)
+							G_Requests[RequestType]["status"] = C_REQUESTSTATUS_WAITFORDISPLAYNAMES;
+						else
+							G_Requests[RequestType]["status"] = C_REQUESTSTATUS_SUCCEEDED;
+					}
+					case C_REQUESTTYPE_FAVORITEAUTHORSTRACKS : {
+						if(LiveEvent[1].count < 1)
+							continue;						
+						SetFavoriteAuthorsTracksList(LiveEvent[1][1]);
+						if(GetDisplayNamesTasks.existskey(RequestType) && GetDisplayNamesTasks[RequestType] != Null)
+							G_Requests[RequestType]["status"] = C_REQUESTSTATUS_WAITFORDISPLAYNAMES;
+						else
+							G_Requests[RequestType]["status"] = C_REQUESTSTATUS_SUCCEEDED;
+					}
+					case C_REQUESTTYPE_UPLOADEDTRACKS : {
+						if(LiveEvent[1].count < 1)
+							continue;				
+						SetUploadedTracksList(LiveEvent[1][1]);
+					}
+					case C_REQUESTTYPE_BUDDIESTRACKS : {
+						if(LiveEvent[1].count < 1)
+							continue;				
+						SetBuddiesTracksList(LiveEvent[1][1]);
+						if(GetDisplayNamesTasks.existskey(RequestType) && GetDisplayNamesTasks[RequestType] != Null)
+							G_Requests[RequestType]["status"] = C_REQUESTSTATUS_WAITFORDISPLAYNAMES;
+						else
+							G_Requests[RequestType]["status"] = C_REQUESTSTATUS_SUCCEEDED;
+					}
+					case C_REQUESTTYPE_FAVORITEAUTHORS : {
+						if(LiveEvent[1].count < 1)
+							continue;
+						SetFavoriteAuthorsList(LiveEvent[1][1]);
+						if (GetDisplayNamesTasks.existskey(RequestType) && GetDisplayNamesTasks[RequestType] != Null)
+							G_Requests[RequestType]["status"] = C_REQUESTSTATUS_WAITFORDISPLAYNAMES;
+						else
+							G_Requests[RequestType]["status"] = C_REQUESTSTATUS_SUCCEEDED;
+					}
+					case C_REQUESTTYPE_RANDOMTRACKS : {
+						SetRandomTracksList(LiveEvent[1][1]);
+						if (GetDisplayNamesTasks.existskey(RequestType) && GetDisplayNamesTasks[RequestType] != Null)
+							G_Requests[RequestType]["status"] = C_REQUESTSTATUS_WAITFORDISPLAYNAMES;
+						else
+							G_Requests[RequestType]["status"] = C_REQUESTSTATUS_SUCCEEDED;
+					}
+					case C_REQUESTTYPE_CAMPAIGNTRACKS 			: SetCampaignTracksList(LiveEvent[1][1]);
+					case C_REQUESTTYPE_SETTRACKASFAVORITE		: G_AreFavoriteTracksUpdated 	= False;
+					case C_REQUESTTYPE_UNSETTRACKASFAVORITE		: G_AreFavoriteTracksUpdated 	= False;
+					case C_REQUESTTYPE_SETAUTHORASFAVORITE		: G_AreFavoriteAuthorsUpdated 	= False;
+					case C_REQUESTTYPE_UNSETAUTHORASFAVORITE	: G_AreFavoriteAuthorsUpdated 	= False;
+					case C_REQUESTTYPE_ADDROOMASFAVORITE 		: G_AreFavoriteRoomsUpdated = False;
+					case C_REQUESTTYPE_REMOVEROOMFROMFAVORITE 	: G_AreFavoriteRoomsUpdated = False;
+					case C_REQUESTTYPE_GETFAVORITES 			: SetFavorites(LiveEvent[1][1]);
+					case C_REQUESTTYPE_UPLOADEDTRACKSUIDS		: SetUploadedTracksUids(LiveEvent[1][1]);
+					case C_REQUESTTYPE_TRACKINFO				: SetTrackInfo(LiveEvent[1][1]);
+				}
+			}
+			case "Manialib.Http.Error": {
+				G_Requests[RequestType]["status"] = C_REQUESTSTATUS_FAILED;
+				
+				switch(RequestType) {
+					case C_REQUESTTYPE_ALLTRACKS 				: G_AllTracks.clear();
+					case C_REQUESTTYPE_RANDOMTRACKS				: G_RandomTracks.clear();
+					case C_REQUESTTYPE_CAMPAIGNTRACKS 			: G_CampaignTracks.clear();
+					case C_REQUESTTYPE_FAVORITETRACKS 			: G_FavoriteTracks.clear();
+					case C_REQUESTTYPE_FAVORITEAUTHORSTRACKS 	: G_FavoriteAuthorsTracks.clear();
+					case C_REQUESTTYPE_UPLOADEDTRACKS 			: G_UploadedTracks.clear();
+					case C_REQUESTTYPE_BUDDIESTRACKS 			: G_BuddiesTracks.clear();
+					case C_REQUESTTYPE_FAVORITEAUTHORS 			: G_FavoriteAuthors.clear();
+					case C_REQUESTTYPE_TRACKINFO				: G_TrackInfo_Track.clear();
+					case C_REQUESTTYPE_GETFAVORITES				: {
+						G_AreFavoriteAuthorsUpdated = False;
+						G_AreFavoriteTracksUpdated 	= False;
+						G_AreFavoriteRoomsUpdated 	= False;
+					}
+					case C_REQUESTTYPE_UPLOADEDTRACKSUIDS		: G_UploadedTracksUids.clear();
+				}
+				
+				declare Integer StatusCode = TextLib::ToInteger(LiveEvent[1][3]);
+				
+				if (RequestType != C_REQUESTTYPE_GETFAVORITES && RequestType != C_REQUESTTYPE_UPLOADEDTRACKSUIDS)
+					SetError(RequestType, StatusCode);
+			}
+			case "Manialib.Http.Retry": {
+				G_Requests[RequestType]["status"] = C_REQUESTSTATUS_TOSEND;
+			}
+		}
+	}
+	SendDatasToUILoop();
+	GetDisplayNamesLoop();
+}

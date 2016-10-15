@@ -1,0 +1,90 @@
+/** 
+ *	UILast Device Used
+ */
+#Include "Libs/Nadeo/TMConsole/Colors.Script.txt" 								as Colors
+#Include "Libs/Nadeo/UIPadButtons.Script.txt"									as UIButtons
+// #Include "Libs/Nadeo/TMConsole/Menu/MenuLayers.Script.txt"						as Layers
+ 
+#Const C_ImgBaseManialinks				"file://Media/Manialinks/Nadeo/TMConsole/Images/"
+
+Text GetMl() {
+	declare Text GetMLLastDeviceUsed =
+	"""
+		<script><!--
+		#Const C_Device_Keyboard 		0
+		#Const C_Device_Pad 			1
+		#Const DebugName  "L_LastDeviceUsed"
+		
+		declare Integer G_LastDeviceUsed;
+		{{{UIButtons::GetMLFunctionPcButtons()}}}
+		
+		Integer GetInputDevice() {
+			if (Input.PendingEvents.count > 0) {
+				if(Input.PendingEvents[0].Pad.Type != CInputPad::EPadType::Keyboard) {
+					return C_Device_Pad;
+				} 	
+			}
+			for (I, 0, 200) {
+				if (Input.IsKeyPressed(I)) return C_Device_Keyboard;
+			}
+			return -1;
+		}
+		CInputPad::EPadType GetInputType() {
+			if (Input.PendingEvents.count > 0) {
+				if(Input.PendingEvents[0].Pad.Type != CInputPad::EPadType::Keyboard) {
+					return Input.PendingEvents[0].Pad.Type;
+				}
+			}	
+			for (I, 0, 200) {
+				if (Input.IsKeyPressed(I)) return CInputPad::EPadType::Keyboard;
+			}
+			return CInputPad::EPadType::Generic;
+		}
+		
+		main() {
+			declare netwrite Integer 		Net_LibLastDeviceUsed_LastDeviceUsed 		for UI;
+			declare CInputPad::EPadType 	Net_LibLastDeviceUsed_LastDeviceTypeUsed 	for UI;
+			declare netread 	 Text		Net_ModeName								for UI;
+			declare netwrite	 Boolean 	Net_IsPauseMenuEnabled 						for UI;
+			
+			
+			declare netread Boolean PopupUsed for UI;
+			
+			
+			while(True) {
+				yield;
+				if(GUIPlayer == Null) continue;
+				
+				// log(Now^" "^Net_LibLastDeviceUsed_LastDeviceTypeUsed);
+				if((Net_ModeName == "Rounds Splitscreen" || GUIPlayer.ControllerCount == 2) && !PopupUsed) {
+					foreach(Pad in Input.Pads) {
+						if(Pad.ControllerId == GUIPlayer.ControllerId0) {
+							if(Pad.Type == CInputPad::EPadType::Keyboard) {
+								Net_LibLastDeviceUsed_LastDeviceUsed = C_Device_Keyboard;
+							} else {
+								Net_LibLastDeviceUsed_LastDeviceUsed = C_Device_Pad;
+							}
+							Net_LibLastDeviceUsed_LastDeviceTypeUsed = Pad.Type;
+						}
+					}
+				} else {
+					// log(Now^">YOUYOU");
+					declare Integer InputDevice = GetInputDevice();
+					if(InputDevice != -1) {
+						Net_LibLastDeviceUsed_LastDeviceUsed 		= InputDevice;
+						Net_LibLastDeviceUsed_LastDeviceTypeUsed 	= GetInputType();
+					}
+				}
+			}
+		}
+		--></script>
+	""";
+	return GetMLLastDeviceUsed;
+}
+
+Void Load() 
+{
+	UIButtons::Load();
+	// Layers::Create("LastDeviceUsed", GetMl());
+	// Layers::Attach("LastDeviceUsed");
+}

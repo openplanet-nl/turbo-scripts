@@ -1,0 +1,298 @@
+#Include "Libs/Nadeo/TMConsole/Logger.Script.txt"										as Logger
+#Include "Libs/Nadeo/TMConsole/Menu/MenuLayers.Script.txt"								as Layers
+#Include "Libs/Nadeo/TMConsole/Live/LiveEvent.Script.txt" 								as LiveEvent
+#Include "Libs/Nadeo/TMConsole/Live/LiveHttp.Script.txt" 								as LiveHttp
+#Include "Libs/Nadeo/TMConsole/Live/LiveXml.Script.txt" 								as LiveXml
+
+#Const C_MapsApiUrl "http://preprod.live.nadeo.com/maps-api/"
+
+#Const	C_REQUESTSTATUS_NOREQUEST 		0
+#Const	C_REQUESTSTATUS_WAITING 		1
+#Const	C_REQUESTSTATUS_COMPLETE 		2
+
+#Const C_REQUESTTYPE_NONE				-1
+#Const C_REQUESTTYPE_ALLTRACKS			0
+#Const C_REQUESTTYPE_FILTEREDTRACKS		1
+#Const C_REQUESTTYPE_FAVORITETRACKS		2
+#Const C_REQUESTTYPE_TRACKASFAVORITE	3
+
+#Const C_REQUEST_AUTHORFILTER			"?authors[]="
+#Const C_REQUEST_ENVIROFILTER			"?environment[]="
+#Const C_REQUEST_DURATFILTER			"?duration[]="
+
+declare Text 				G_RequestAllTracksId;
+declare Text				G_RequestFavoriteTracksId;
+declare Text				G_RequestTrackAsFavoriteId;
+declare Integer[Integer]	G_RequestStatus;
+declare Integer				G_RequestType;
+declare Text				G_LayerToSend;
+
+// declare Text[] 				G_TracksListId;
+//External Datas
+declare Text[Text][]		G_AllTracks;
+declare Text[Text][]		G_FavoriteTracks;
+
+//Internal Datas
+declare Text				G_CurTrackId;
+declare Boolean				G_IsFavorite;
+declare Text				G_LinearizedFilters;
+
+// Functions to call in the Handlers
+//-----------------------------------------------------------//
+
+//--------------------//
+//COMMMUNITY TRACKS
+
+//--------------------//
+//Get Tracks
+Void GetAllTracks(Text _LayerName) {
+	G_LayerToSend 				= _LayerName;
+	G_RequestType				= C_REQUESTTYPE_ALLTRACKS;
+}
+
+Text GetLinearizedList(Text[] _List, Text _Offset) {
+	declare Text LinearizedList;
+	for(I, 0, _List.count-1) {
+		if(_List[I] != "") {
+			LinearizedList^= _Offset^_List[I];
+		}
+	}
+	return LinearizedList;
+}
+
+Void GetFilteredTracks(Text _LayerName, Text[] _Authors, Text[] _Environments, Text[] _Durations) {
+	G_LayerToSend 				= _LayerName;
+	G_RequestType				= C_REQUESTTYPE_FILTEREDTRACKS;
+	
+	declare Text LinAuthor 		= GetLinearizedList(_Authors, C_REQUEST_AUTHORFILTER);
+	declare Text LinEnviro 		= GetLinearizedList(_Environments, C_REQUEST_ENVIROFILTER);
+	declare Text LinDuration 	= GetLinearizedList(_Durations, C_REQUEST_DURATFILTER);
+	
+	G_LinearizedFilters = LinAuthor^LinEnviro^LinDuration;
+	log(G_LinearizedFilters);
+}
+
+// Void GetFilteredTracks(Text[] _Authors, Text[] _Environments) {
+	// GetFilteredTracks(_Authors, _Environments, "");
+// }
+
+// Void GetFilteredTracks(Text[] _Authors) {
+	// GetFilteredTracks(_Authors, "");
+// }
+
+// Void GetFilteredTracks() {
+	// GetFilteredTracks("");
+// }
+
+//--------------------//
+//Favorite Tracks
+Void GetFavoriteTracks(Text _LayerName) {
+	G_LayerToSend			= _LayerName;
+	G_RequestType			= C_REQUESTTYPE_FAVORITETRACKS;
+}
+
+Void SetTrackAsFavorite(Text _LayerName, Text _TrackId, Boolean _Favorite) {
+	G_LayerToSend			= _LayerName;
+	G_RequestType			= C_REQUESTTYPE_TRACKASFAVORITE;
+	G_IsFavorite			= _Favorite;
+	G_CurTrackId			= _TrackId;
+}
+
+//--------------------//
+//Manipulate TrackList for Playlist
+// Void NewTrackList() {
+	// G_TracksListId.clear();
+// }
+
+// Void AddTrackToList(Text _TrackId) {
+	// G_TracksListId.add(_TrackId);
+// }
+
+// Void RemoveTrackToList(Text _TrackId) {
+	// G_TracksListId.remove(_TrackId);
+// }
+
+// Text[] GetTracksListId() {
+	// return G_TracksListId;
+// }
+
+//--------------------//
+//WORKSHOP FUNCTIONS
+Void GetUploadedTracks() {
+	// TO DO
+}
+
+Void PublishTrack(Text _TrackId) {
+	//TO DO
+}
+//-----------------------------------------------------------//
+
+Void WarnNotEnoughParamsLive() {
+	log("NOT ENOUGH PARAMS FOR PLAYLIST");
+}
+
+Void WarnNotEnoughParams(CMlAppEvent _Event) {
+	Logger::Warn("[Menucontroller] event "^_Event.CustomEventType^": not enough params ["^_Event.CustomEventData^"]");
+}
+
+Text GetFeedbackText(Boolean _Succeed) {
+	if(G_RequestType == C_REQUESTTYPE_ALLTRACKS) {
+		if(_Succeed) 	return "AllTracksSent";
+		else			return "AllTracksNotSent";
+	} else if(G_RequestType == C_REQUESTTYPE_FAVORITETRACKS) {
+		if(_Succeed) 	return "FavoriteTracksSent";
+		else			return "FavoriteTracksNotSent";
+	} else if(G_RequestType == C_REQUESTTYPE_TRACKASFAVORITE) {
+		if(_Succeed) 	return "TrackAsFavoriteSucceed";
+		else			return "TrackAsFavoriteFailed";
+	}
+	return "";
+}
+
+Void SendFeedbackToUI(Boolean _Succeed) {
+	declare CUILayer LayerToSend = Layers::Get(G_LayerToSend);
+	if(LayerToSend == Null) return;
+	declare Text FeedbackText = GetFeedbackText(_Succeed);
+	LayerCustomEvent(LayerToSend, FeedbackText, [""]);
+}
+
+Void RequestAllTracks() {
+	declare Ident CurId 								= LiveHttp::Manialib_Http_PostAsync(C_MapsApiUrl^"maps", "");
+	G_RequestAllTracksId								= CurId^"";
+	G_RequestStatus[C_REQUESTTYPE_ALLTRACKS] 			= C_REQUESTSTATUS_WAITING;
+}
+
+Void RequestFilteredTracks() {
+	declare Ident CurId 								= LiveHttp::Manialib_Http_PostAsync(C_MapsApiUrl^"maps", "");
+	G_RequestAllTracksId								= CurId^"";
+	G_RequestStatus[C_REQUESTTYPE_ALLTRACKS] 			= C_REQUESTSTATUS_WAITING;
+}
+
+Void RequestFavoriteTracks() {
+	declare Ident CurId 								= LiveHttp::Manialib_Http_GetAsync(C_MapsApiUrl^"me/maps/favorites");
+	G_RequestFavoriteTracksId							= CurId^"";
+	G_RequestStatus[C_REQUESTTYPE_FAVORITETRACKS] 		= C_REQUESTSTATUS_WAITING;
+}
+
+Void RequestTrackAsFavorite() {
+	declare Ident CurId;
+	if(G_IsFavorite) 	CurId = LiveHttp::Manialib_Http_PostAsync(C_MapsApiUrl^"me/maps/favorites/"^G_CurTrackId, "");
+	else 				CurId = LiveHttp::Manialib_Http_PostAsync(C_MapsApiUrl^"me/maps/favorites/"^G_CurTrackId^"/remove", "");
+
+	G_RequestTrackAsFavoriteId							= CurId^"";
+	G_RequestStatus[C_REQUESTTYPE_TRACKASFAVORITE] 		= C_REQUESTSTATUS_WAITING;
+}
+
+Void ReInitRequest() {
+	G_LayerToSend = "";
+	G_RequestType = C_REQUESTTYPE_NONE;
+}
+
+Void ReInitRequestsStatus() {
+	G_RequestStatus[C_REQUESTTYPE_ALLTRACKS] 		= C_REQUESTSTATUS_NOREQUEST;
+	G_RequestStatus[C_REQUESTTYPE_FAVORITETRACKS] 	= C_REQUESTSTATUS_NOREQUEST;
+	G_RequestStatus[C_REQUESTTYPE_TRACKASFAVORITE] 	= C_REQUESTSTATUS_NOREQUEST;
+	G_RequestStatus[C_REQUESTTYPE_FILTEREDTRACKS] 	= C_REQUESTSTATUS_NOREQUEST;
+}
+
+Void Load() {
+	ReInitRequest();
+	ReInitRequestsStatus();
+}
+
+Void SendAllTracksListToUI() {
+	declare CUILayer 		LayerToSend 	= Layers::Get(G_LayerToSend);
+	if(LayerToSend == Null) return;
+	
+	declare Text[Text][] 	RequestedTracks 		for LayerToSend.LocalPage;
+	RequestedTracks									= G_AllTracks;
+}
+
+Void SendFavoriteTracksListToUI() {
+	declare CUILayer 		LayerToSend 	= Layers::Get(G_LayerToSend);
+	if(LayerToSend == Null) return;
+	
+	declare Text[Text][] 	RequestedTracks 		for LayerToSend.LocalPage;
+	RequestedTracks									= G_FavoriteTracks;
+}
+
+Void SetAllTracksList(Text _RequestResult) {
+	declare CXmlDocument	Doc 			= LiveXml::Manialib_Xml_CreateDocument(_RequestResult);
+	G_AllTracks								= LiveXml::Manialib_Xml_NodeToArray2(Doc.GetFirstChild("result"));
+	LiveXml::Manialib_Xml_DestroyDocument(Doc);
+}
+
+Void SetFavoriteTracksList(Text _RequestResult) {
+	declare CXmlDocument	Doc 			= LiveXml::Manialib_Xml_CreateDocument(_RequestResult);
+	G_FavoriteTracks						= LiveXml::Manialib_Xml_NodeToArray2(Doc.GetFirstChild("result"));
+	LiveXml::Manialib_Xml_DestroyDocument(Doc);
+}
+
+Void SendDatasToUILoop() {
+	if(G_RequestType != C_REQUESTTYPE_NONE) {
+		if(G_RequestStatus[G_RequestType] == C_REQUESTSTATUS_COMPLETE) {
+			if(G_RequestType == C_REQUESTTYPE_ALLTRACKS) {
+				SendAllTracksListToUI();
+				SendFeedbackToUI(True);
+				ReInitRequest();
+			} else if(G_RequestType == C_REQUESTTYPE_FAVORITETRACKS) {
+				SendFavoriteTracksListToUI();
+				SendFeedbackToUI(True);
+				ReInitRequest();
+			} else if(G_RequestType == C_REQUESTTYPE_TRACKASFAVORITE) {
+				SendFeedbackToUI(True);
+				ReInitRequest();
+			}
+		} else if(G_RequestStatus[G_RequestType] == C_REQUESTSTATUS_NOREQUEST) {
+			if(G_RequestType == C_REQUESTTYPE_ALLTRACKS) {
+				RequestAllTracks();
+			} else if(G_RequestType == C_REQUESTTYPE_FAVORITETRACKS) {
+				RequestFavoriteTracks();
+			} else if(G_RequestType == C_REQUESTTYPE_TRACKASFAVORITE) {
+				RequestTrackAsFavorite();
+			}
+		}
+	}
+}
+
+Void LiveLoop() {
+	foreach(LiveEvent in LiveEvent::Manialib_Event_PendingEvents()) {
+		switch(LiveEvent[0][0]) {
+			case "Manialib.Http.Success": {
+				declare Text CurRequestId = LiveEvent[1][0];
+				declare Text RequestResult;
+				
+				switch(CurRequestId) {
+					case G_RequestAllTracksId : {
+						if(LiveEvent[1].count < 1) {
+							WarnNotEnoughParamsLive();
+							continue;
+						}
+						declare Text RequestResult = LiveEvent[1][1];
+						SetAllTracksList(RequestResult);
+						G_RequestStatus[C_REQUESTTYPE_ALLTRACKS] = C_REQUESTSTATUS_COMPLETE;
+					}
+					case G_RequestFavoriteTracksId : {
+						if(LiveEvent[1].count < 1) {
+							WarnNotEnoughParamsLive();
+							continue;
+						}
+						
+						declare Text RequestResult = LiveEvent[1][1];
+						SetFavoriteTracksList(RequestResult);
+						G_RequestStatus[C_REQUESTTYPE_FAVORITETRACKS] = C_REQUESTSTATUS_COMPLETE;
+					}
+					case G_RequestTrackAsFavoriteId : {
+						// if(LiveEvent[1].count < 1) {
+							// WarnNotEnoughParamsLive();
+							// continue;
+						// }
+						
+						G_RequestStatus[C_REQUESTTYPE_TRACKASFAVORITE] = C_REQUESTSTATUS_COMPLETE;
+					}
+				}
+			}
+		}
+	}
+	SendDatasToUILoop();
+}

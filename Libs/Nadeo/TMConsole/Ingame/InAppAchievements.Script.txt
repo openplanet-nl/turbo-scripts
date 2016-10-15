@@ -1,0 +1,194 @@
+#Include "MathLib" as MathLib
+// #Include "Libs/Nadeo/Layers2.Script.txt" 						as Layers
+#Include "Libs/Nadeo/TMConsole/Menu/MenuLayers.Script.txt"		as Layers
+#Include "Libs/Nadeo/TMConsole/UbisoftClubPopup.Script.txt"		as UbisoftClubPopup
+
+// MNEMOS
+#Const C_MnemoAwesomeDrift		"OnAwesomeDrift"
+#Const C_MnemoAwesomeJump		"OnAwesomeJump"
+#Const C_MnemoAwesomeSpeed		"OnAwesomeSpeed"
+#Const C_MnemoDistance			"OnDistanceDone"		// TODO FIXME : Ici on a un soucis, apparemment quand on termine une map on n'envoie plus cet EVENT
+#Const C_MnemoAwesomeHeight		"OnAwesomeHeight"
+
+// Stats
+
+// ACHIEVEMENTS CONSTANTS
+#Const C_AwesomeDriftDistance		400
+#Const C_AwesomeJumpDistance		500
+#Const C_AwesomeSpeedLimit			500
+#Const C_AwesomeSpeedRebootLimit	100
+#Const C_DistanceSentThreshold		1000 // distance event sent every 1000m
+
+// TODO : Layer avec popup jolie + reprendre guidelines.
+Void CreateAchievementsEventsLayer() {
+	
+	declare Text MLText = """
+	<frame />
+	<script><!--
+		#Include "MathLib" as ML
+		#Const DebugName "L_IngameAchievements"
+		
+		
+		Void SendAchievementEvent(Text _EventMnemo, Integer _Value) {
+			// log(Now^"> [SendAchievementEvent]"^_EventMnemo^": "^_Value);
+			declare Integer[] Values;
+			Values.add(_Value);
+			AchievementsManager.SendEvent(DataMgr.MenuUserId, _EventMnemo, Values);
+		}
+		
+		
+		Void SendAchievementEvent(Text _EventMnemo, Integer[] _Values) {
+			// log(Now^"> [SendAchievementEvent]"^_EventMnemo^": "^_Values);
+			AchievementsManager.SendEvent(DataMgr.MenuUserId, _EventMnemo, _Values);
+		}
+			
+		
+		main() {
+			declare Boolean AwesomeDriftValid		= True;
+			declare Boolean AwesomeJumpValid		= True;
+			declare Boolean AwesomeSpeedValid		= True;
+			declare Boolean AwesomeHeightValid		= True;
+			declare Integer StackedDistance			= 0;
+			declare Integer RemainingDistance		= 0;
+			
+			// UPLAY
+			
+			declare Integer EnviroIndex = -1;
+			if(Map != Null) {
+				switch(Map.CollectionName) {
+					case "Canyon" 	: EnviroIndex = 0;
+					case "Valley"  	: EnviroIndex = 1;
+					case "Lagoon" 	: EnviroIndex = 2;
+					case "Stadium" 	: EnviroIndex = 3;
+				}
+			}
+			
+			
+			while(True) {
+				yield;
+				if(InputPlayer == Null) continue;
+				
+				/*
+				if(Now > LogNow) {
+					LogNow = Now + 1000;
+					log("Now : "^Now);
+					
+					// log(InputPlayer.SkiddingDistance);
+					// log(InputPlayer.Distance);
+					
+					// log("Position       : "^InputPlayer.Position);
+					// log("Upwardness     : "^InputPlayer.Upwardness);
+					// log("FlyingDuration : "^InputPlayer.FlyingDuration);
+					// log("FlyingDistance : "^InputPlayer.FlyingDistance);
+					
+					log("TotalDistance   = "^ML::FloorInteger(InputPlayer.Distance));
+					log("StackedDistance = "^StackedDistance);
+					
+				}
+				*/
+				
+				foreach(AchievementEvent in AchievementsManager.PendingEvents) {
+					log(AchievementEvent.Type);
+					log(AchievementEvent.Achievement);
+				}
+				
+				if(InputPlayer.Position.Y >= 1200. && AwesomeHeightValid) {
+					SendAchievementEvent("{{{C_MnemoAwesomeHeight}}}", 0);
+					AwesomeHeightValid = False;
+				}
+				
+				// declare Integer DriftDuration 	= 0;
+				declare Integer TotalDistance 		= 0;
+				declare Integer DriftDistance 		= 0;
+				declare Integer JumpDistance 		= 0;
+				declare Integer SpeedValue 			= 0;
+				if (InputPlayer != Null) {
+					TotalDistance 		= ML::FloorInteger(InputPlayer.Distance);
+					DriftDistance 		= ML::FloorInteger(InputPlayer.SkiddingDistance);
+					JumpDistance 		= ML::FloorInteger(InputPlayer.FlyingDistance);
+					SpeedValue 			= InputPlayer.DisplaySpeed;
+				}
+				
+				// On compte la distance parcourue par enviro. Si on ne sait pas de quel enviro il s'agit, on n'envoie rien.
+				if(EnviroIndex >= 0) {
+					RemainingDistance = TotalDistance - StackedDistance;
+					if(RemainingDistance >= {{{C_DistanceSentThreshold}}}) {
+						// on part du principe qu'on ne fera pas plus d'1km entre 2 yield. 
+						// Au pire c'est pas hyper grave, on n'est déjà pas très précis, c'est pour les achievements.
+						// note pour plus tard : compter au moment du endmap, respawn, etc.
+						// pffff... osef, non ?
+						SendAchievementEvent("{{{C_MnemoDistance}}}", [RemainingDistance, EnviroIndex]);
+						StackedDistance		= TotalDistance;
+						RemainingDistance	= 0; // RaZ en cas de téléscopage avec l'event à la fin.
+					}
+				}
+				
+				
+				// DRIFT
+				if(DriftDistance >= {{{C_AwesomeDriftDistance}}} && AwesomeDriftValid) {
+					SendAchievementEvent("{{{C_MnemoAwesomeDrift}}}", 1);
+					AwesomeDriftValid = False;
+				}
+				
+				
+				// re-init drift validation when DriftDistance comes back to zero
+				if(DriftDistance <= 0) {
+					AwesomeDriftValid = True;
+					// InfiniteDriftValid = True;
+				}
+				
+				
+				// JUMP
+				if(JumpDistance >= {{{C_AwesomeJumpDistance}}} && AwesomeJumpValid) {
+					SendAchievementEvent("{{{C_MnemoAwesomeJump}}}", 1);
+					AwesomeJumpValid = False;
+				}
+				// re-init Jump validation when JumpDistance comes back to zero
+				if(JumpDistance <= 0) {
+					AwesomeJumpValid = True;
+				}
+				
+				// SPEED
+				if(SpeedValue >= {{{C_AwesomeSpeedLimit}}} && AwesomeSpeedValid) {
+					SendAchievementEvent("{{{C_MnemoAwesomeSpeed}}}", 1);
+					AwesomeSpeedValid = False;
+				}
+				// re-init Speed validation when SpeedValue comes back under the reboot limit
+				if(SpeedValue < {{{C_AwesomeSpeedRebootLimit}}}) {
+					AwesomeSpeedValid = True;
+				}
+				
+				foreach (Event in RaceEvents) {
+					if((Event.Player == InputPlayer) && (Event.Type ==  CTmRaceClientEvent::EType::Respawn || Event.IsEndRace)) {
+						if(RemainingDistance > 0) {
+							SendAchievementEvent("{{{C_MnemoDistance}}}", [RemainingDistance, EnviroIndex]);
+						}
+						
+						StackedDistance		= TotalDistance;
+					}
+				}
+				
+			}
+		}
+	--></script>
+	""";
+	
+	
+	Layers::Destroy("Achievements");
+	Layers::Create("Achievements", MLText);
+	Layers::Attach("Achievements");
+}
+
+Void CreateUbiClubPopupLayer() {
+	// ça c'est défini à la création de la layer, et utilisé dans UbisoftClubPopup
+	// pour différencier les contextes d'apparition de la popup.
+	declare Text MLText = UbisoftClubPopup::CreateLayer(1);   // 1 = ingame
+	Layers::Destroy("UbiClubPopup");
+	Layers::Create("UbiClubPopup", MLText);
+	Layers::Attach("UbiClubPopup");
+}
+
+Void Load() {
+	CreateAchievementsEventsLayer();
+	CreateUbiClubPopupLayer();
+}

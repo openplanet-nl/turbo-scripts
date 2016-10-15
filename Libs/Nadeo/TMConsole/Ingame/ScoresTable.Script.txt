@@ -1,0 +1,1857 @@
+/**
+ *	ScoreTable Library
+ * 	Especially made for console
+ */
+
+#Const Version				"2015-03-02"
+#Const ScriptName			"ScoresTable.Script.txt"
+
+#Include "TextLib" as TL
+#Include "Libs/Nadeo/Layers2.Script.txt" 							as Layers
+#Include "Libs/Nadeo/TMConsole/Colors.Script.txt" 					as Colors
+#Include "Libs/Nadeo/TMConsole/Volumes.Script.txt" 					as Volumes
+#Include "Libs/Nadeo/TMConsole/FontManager.Script.txt" 				as Font
+#Include "Libs/Nadeo/TMConsole/Ingame/Medals.Script.txt" 			as Medals
+#Include "Libs/Nadeo/TMConsole/Ingame/UI/UIPopupBuilder.Script.txt"	as UIPopupBuilder
+#Include "Libs/Nadeo/UIPadButtons.Script.txt"						as UIButtons
+#Include "Libs/Nadeo/TMConsole/Ingame/UI/UIButtonNamesPopup.Script.txt"	as UIButtonNamesPopup
+
+#Const SoundPath				"file://Media/Sounds/TMConsole/"
+
+#Const IMGPATH										"file://Media/Images/TMConsole/Ingame/"
+// #Const IMG_HOTSEAT									"splitlogo.png"
+#Const IMG_ARCADE									"mode-arcade.png"
+
+#Const SoundOk 					"event-on.wav"
+#Const SoundCancel 				"event-off.wav"
+#Const SoundValidate2 			"event-validate.wav"
+#Const SoundBoardOut 			"intro-woosh2.wav"
+#Const SoundBoardNextLetter		"event-next.wav"
+
+#Const VolumeOk 				-9.
+#Const VolumeCancel 			-6.
+#Const VolumeValidate 			-3.
+#Const VolumeValidate2 			-3.
+#Const VolumeBoardIn 			-3.
+#Const VolumeBoardOut 			-3.
+#Const VolumeBoardSwipe 		-12.
+#Const VolumeBoardNameSwitch	-15.
+#Const VolumeBoardNextLetter	-9.
+#Const VolumeBoardShowLine		-7.5
+
+#Const C_MaxCount_Top 			10
+#Const C_MaxPlayers 			4
+
+#Const C_LayerNameScoresTable 	"LibScoreTable_ScoreTable"
+
+#Const TMC_MEDAL_AUTHOR			0
+#Const TMC_MEDAL_GOLD			1
+#Const TMC_MEDAL_SILVER			2
+#Const TMC_MEDAL_BRONZE			3
+#Const TMC_MEDAL_NONE			4
+#Const TMC_MEDAL_PLAYER			5
+
+#Const TMC_FINALCHOICE_RETRY		1
+#Const TMC_FINALCHOICE_FINISH		2
+
+#Const TMC_DEFAULTTIMERLEFT			3600000
+// #Const TMC_DEFAULTTIMERLEFT			120000
+
+#Const MODE_COLORID_MULTIPLAYER			1
+
+declare Integer	G_LastPositionEntered;
+declare Boolean	G_HasBeenUpdated;
+declare Boolean G_TrackRandom;
+
+// ---------------------------------- //
+// Functions
+// ---------------------------------- //
+
+// ---------------------------------- //
+// Public
+// ---------------------------------- //
+
+// ---------------------------------- //
+/** Return the version number of the script
+ *
+ *	@return		The version number of the script
+ */
+Text GetScriptVersion() {
+	return Version;
+}
+
+// ---------------------------------- //
+/** Return the name of the script
+ *
+ *	@return		The name of the script
+ */
+Text GetScriptName() {
+	return ScriptName;
+}
+
+// ---------------------------------- //
+/// Unload the library
+Void Unload() {
+	Layers::Destroy(C_LayerNameScoresTable);
+}
+
+/*
+Void PlaceMedalsLimits(Integer[Integer] ScoreTable, Integer Index) {
+	declare Integer LastAuthor		= -1;
+	declare Integer LastGold 		= -1;
+	declare Integer LastSilver 		= -1;
+	declare Integer LastBronze 		= -1;
+	
+	for(I, 0, ScoreTable.count-1) {
+		declare Integer Medal = Medals::GetMedalFromTime(ScoreTable[I]);
+		if(Medal == TMC_MEDAL_AUTHOR) {
+			LastAuthor = I;
+		} else if(Medal == TMC_MEDAL_GOLD) {
+			LastGold = I;
+		}else if(Medal == TMC_MEDAL_SILVER) {
+			LastSilver = I;
+		} else if(Medal == TMC_MEDAL_BRONZE) {
+			LastBronze = I;
+		}
+	}
+	
+	if(LastGold < LastAuthor) {
+		LastGold = LastAuthor;
+	}
+	
+	if(LastSilver < LastGold) {
+		LastSilver = LastGold;
+	}
+	
+	if(LastBronze < LastSilver) {
+		LastBronze = LastSilver;
+	}
+	
+	foreach(Player in AllPlayers) {
+		declare UI <=> UIManager.GetUI(Player);
+		declare netwrite		Integer[Integer]	LibTMC_ScoresTable_MedalsLimits1			for UI;
+		declare netwrite		Integer[Integer]	LibTMC_ScoresTable_MedalsLimits2			for UI;
+		declare netwrite		Integer[Integer]	LibTMC_ScoresTable_MedalsLimits3			for UI;
+		declare netwrite		Integer[Integer]	LibTMC_ScoresTable_MedalsLimits4			for UI;
+		
+		switch(Index) {
+			case 1 :  {
+				LibTMC_ScoresTable_MedalsLimits1[TMC_MEDAL_AUTHOR] 		= LastAuthor;
+				LibTMC_ScoresTable_MedalsLimits1[TMC_MEDAL_GOLD] 		= LastGold;
+				LibTMC_ScoresTable_MedalsLimits1[TMC_MEDAL_SILVER] 		= LastSilver;
+				LibTMC_ScoresTable_MedalsLimits1[TMC_MEDAL_BRONZE] 		= LastBronze;	
+			}
+			case 2 :  {
+				LibTMC_ScoresTable_MedalsLimits1[TMC_MEDAL_AUTHOR] 		= LastAuthor;
+				LibTMC_ScoresTable_MedalsLimits1[TMC_MEDAL_GOLD] 		= LastGold;
+				LibTMC_ScoresTable_MedalsLimits1[TMC_MEDAL_SILVER] 		= LastSilver;
+				LibTMC_ScoresTable_MedalsLimits1[TMC_MEDAL_BRONZE] 		= LastBronze;	
+				// LibTMC_ScoresTable_MedalsLimits2[TMC_MEDAL_GOLD] 		= LastGold;
+				// LibTMC_ScoresTable_MedalsLimits2[TMC_MEDAL_SILVER] 		= LastSilver;
+				// LibTMC_ScoresTable_MedalsLimits2[TMC_MEDAL_BRONZE] 		= LastBronze;	
+			}
+			case 3 :  {
+				LibTMC_ScoresTable_MedalsLimits3[TMC_MEDAL_GOLD] 		= LastGold;
+				LibTMC_ScoresTable_MedalsLimits3[TMC_MEDAL_SILVER] 		= LastSilver;
+				LibTMC_ScoresTable_MedalsLimits3[TMC_MEDAL_BRONZE] 		= LastBronze;
+			}
+			case 4 : {
+				LibTMC_ScoresTable_MedalsLimits4[TMC_MEDAL_GOLD] 		= LastGold;
+				LibTMC_ScoresTable_MedalsLimits4[TMC_MEDAL_SILVER] 		= LastSilver;
+				LibTMC_ScoresTable_MedalsLimits4[TMC_MEDAL_BRONZE] 		= LastBronze;
+			}
+		}
+	}
+}
+*/
+
+Void SetIsTrackRandom(Boolean _TrackRandom) {
+	G_TrackRandom = _TrackRandom;
+}
+
+Void SendMedalsToML(Integer[Integer] _ScoreTable, Integer _Index) {
+	foreach(Player in AllPlayers) {
+		declare UI <=> UIManager.GetUI(Player);
+		declare netwrite Integer[] 	Net_ScoresTableMenuMedal 			for UI;
+		declare netwrite Integer[] 	Net_ScoresTableMenuMedal_2Player 			for UI;
+	
+		declare Integer[] Medals;
+		
+		for(I, 0, 9) {
+			declare Integer CurMedal = TMC_MEDAL_NONE;
+			if(!G_TrackRandom) {
+				if(_ScoreTable.existskey(I)) {
+					CurMedal = Medals::GetMedalFromTime(_ScoreTable[I]);	
+				}
+			}
+			Medals.add(CurMedal);
+		}
+		
+		if(_Index == 1 || _Index == 0) {
+			Net_ScoresTableMenuMedal = Medals;
+		} else if(_Index == 2) {
+			Net_ScoresTableMenuMedal = Medals;
+			// Net_ScoresTableMenuMedal_2Player = Medals;
+		}
+	}
+}
+
+Void SendNamesToML(Text[Integer] _Name, Integer _Index) {
+	
+	declare 		Text[]		TopNameUsed;
+	
+	for(Count, 0, 9) {
+		if(Count <= _Name.count-1) {
+			TopNameUsed.add(_Name[Count]);
+		} else {
+			if(_Index == 0 || _Index == 1) {
+				TopNameUsed.add("---");
+			} else if(_Index == 2) {
+				TopNameUsed.add("---");
+				// TopNameUsed.add("--- $06f+ $fff---");
+			} else if(_Index == 3) {
+				TopNameUsed.add("--- $06f+ $fff--- $06f+ $fff---");
+			} else if(_Index == 4) {
+				TopNameUsed.add("--- $06f+ $fff--- $06f+ $fff--- $06f+ $fff---");
+			}
+		}
+	}
+	
+	foreach(Player in AllPlayers) {
+		declare UI <=> UIManager.GetUI(Player);
+		
+		if(_Index == 1) {
+			declare netwrite Text[] 	Net_ScoresTableMenuName 	for UI;
+			Net_ScoresTableMenuName 	= TopNameUsed;
+			
+			declare netwrite Text[] 	LibTMC_ScoresTable_Top1Names 	for UI;
+			LibTMC_ScoresTable_Top1Names 		= TopNameUsed;
+		} else if(_Index == 2) {
+		
+			declare netwrite Text[] 	Net_ScoresTableMenuName 	for UI;
+			Net_ScoresTableMenuName 	= TopNameUsed;
+			declare netwrite Text[] 	LibTMC_ScoresTable_Top1Names 	for UI;
+			LibTMC_ScoresTable_Top1Names 		= TopNameUsed;
+		
+			// declare netwrite Text[] 	Net_ScoresTableMenuName_2Player 	for UI;
+			// Net_ScoresTableMenuName_2Player 	= TopNameUsed;
+			
+			// declare netwrite Text[] 	LibTMC_ScoresTable_Top2Names 	for UI;
+			// LibTMC_ScoresTable_Top2Names 		= TopNameUsed;
+		} else if(_Index == 3) {
+			declare netwrite Text[] 	LibTMC_ScoresTable_Top3Names 	for UI;
+			LibTMC_ScoresTable_Top3Names 		= TopNameUsed;
+		} else if(_Index == 4) {
+			declare netwrite Text[] 	LibTMC_ScoresTable_Top4Names 	for UI;
+			LibTMC_ScoresTable_Top4Names 		= TopNameUsed;
+		}
+	}
+}
+
+Void SendScoresToML(Integer[Integer] _Score, Integer _Index) {
+	
+	declare 		Integer[]	TopScoreUsed;
+	declare 		Text[]		TopNameUsed;
+	
+	for(Count, 0, 9) {
+		if(Count <= _Score.count-1) {
+			TopScoreUsed.add(_Score[Count]);
+		} else {
+			TopScoreUsed.add(0);
+		}
+	}
+	
+	foreach(Player in AllPlayers) {
+		declare UI <=> UIManager.GetUI(Player);
+		
+		if(_Index == 1) {
+			declare netwrite Integer[] 	Net_ScoresTableMenuTime 	for UI;
+			Net_ScoresTableMenuTime 	= TopScoreUsed;
+			
+			declare netwrite Integer[] 	LibTMC_ScoresTable_Top1Scores	 	for UI;
+			LibTMC_ScoresTable_Top1Scores 	= TopScoreUsed;
+		} else if(_Index == 2) {
+			declare netwrite Integer[] 	Net_ScoresTableMenuTime 	for UI;
+			Net_ScoresTableMenuTime 	= TopScoreUsed;
+			
+			declare netwrite Integer[] 	LibTMC_ScoresTable_Top1Scores	 	for UI;
+			LibTMC_ScoresTable_Top1Scores 	= TopScoreUsed;
+			
+			// declare netwrite Integer[] 	Net_ScoresTableMenuTime_2Player 	for UI;
+			// Net_ScoresTableMenuTime_2Player 	= TopScoreUsed;
+			
+			// declare netwrite Integer[] 	LibTMC_ScoresTable_Top2Scores	 	for UI;
+			// LibTMC_ScoresTable_Top2Scores 	= TopScoreUsed;
+		} else if(_Index == 3) {
+			declare netwrite Integer[] 	LibTMC_ScoresTable_Top3Scores 	for UI;
+			LibTMC_ScoresTable_Top3Scores 	= TopScoreUsed;
+		} else if(_Index == 4) {
+			declare netwrite Integer[] 	LibTMC_ScoresTable_Top4Scores 	for UI;
+			LibTMC_ScoresTable_Top4Scores 	= TopScoreUsed;
+		}
+	}
+}
+
+Void SendTablesToML(Integer[Integer] _Score, Text[Integer] _Name, Integer _Index) {
+	SendScoresToML(_Score, _Index);
+	SendNamesToML(_Name, _Index);
+	SendMedalsToML(_Score, _Index);
+	// if(!G_TrackRandom) {
+		
+	// }
+	// PlaceMedalsLimits(_Score, _Index);
+}
+
+Void InitScoreTable(Integer[Integer] _Score, Text[Integer] _Names, Integer[Integer] _TimerLeft) {
+	declare  		Integer[Integer] 	LibTMC_ScoresTable_TopScores1OnMap 			for Map;
+	declare  		Text[Integer] 		LibTMC_ScoresTable_TopNames1OnMap 			for Map;
+	declare  		Integer[Integer] 	LibTMC_ScoresTable_TopTimerLeft1OnMap 		for Map;
+	LibTMC_ScoresTable_TopScores1OnMap.clear();
+	LibTMC_ScoresTable_TopNames1OnMap.clear();
+	LibTMC_ScoresTable_TopTimerLeft1OnMap.clear();
+	if(_Score.count > 0 && _Names.count > 0 && _TimerLeft.count > 0) {
+		LibTMC_ScoresTable_TopScores1OnMap 		= _Score;
+		LibTMC_ScoresTable_TopNames1OnMap 		= _Names;
+		LibTMC_ScoresTable_TopTimerLeft1OnMap 	= _TimerLeft;
+	}
+	SendTablesToML(LibTMC_ScoresTable_TopScores1OnMap, LibTMC_ScoresTable_TopNames1OnMap, 1);
+}
+
+Void InitScoreTable() {
+	declare Integer[Integer] 		DefaultScore;
+	declare Text[Integer] 			DefaultNames;
+	declare Integer[Integer] 		DefaultTimer;
+	
+	InitScoreTable(DefaultScore, DefaultNames, DefaultTimer);
+}
+
+/*
+Void LoadDefaultScoreTable(Integer[Integer] _DefaultScore) {
+	declare  		Integer[Integer] 	LibTMC_ScoresTable_TopScores1OnMap 			for Map;
+	declare  		Text[Integer] 		LibTMC_ScoresTable_TopNames1OnMap 			for Map;
+	declare  		Integer[Integer] 	LibTMC_ScoresTable_TopTimerLeft1OnMap 		for Map;
+	
+	declare  		Integer[Integer] 	LibTMC_ScoresTable_TopScores2OnMap 			for Map;
+	declare  		Text[Integer] 		LibTMC_ScoresTable_TopNames2OnMap 			for Map;
+	declare  		Integer[Integer] 	LibTMC_ScoresTable_TopScores3OnMap 			for Map;
+	declare  		Text[Integer] 		LibTMC_ScoresTable_TopNames3OnMap 			for Map;
+	declare  		Integer[Integer] 	LibTMC_ScoresTable_TopScores4OnMap 			for Map;
+	declare  		Text[Integer] 		LibTMC_ScoresTable_TopNames4OnMap 			for Map;
+	
+	// log(LibTMC_ScoresTable_TopScores1OnMap);
+	// LibTMC_ScoresTable_TopScores1OnMap.clear();
+	// LibTMC_ScoresTable_TopNames1OnMap.clear();
+	// LibTMC_ScoresTable_TopScores2OnMap.clear();
+	// LibTMC_ScoresTable_TopNames2OnMap.clear();
+	// LibTMC_ScoresTable_TopScores3OnMap.clear();
+	// LibTMC_ScoresTable_TopNames3OnMap.clear();
+	// LibTMC_ScoresTable_TopScores4OnMap.clear();
+	// LibTMC_ScoresTable_TopNames4OnMap.clear();
+	
+	/*
+	if(!LibTMC_ScoresTable_TopScores1OnMap.existskey(TMC_MEDAL_GOLD) && _DefaultScore.existskey(TMC_MEDAL_GOLD)) {
+		LibTMC_ScoresTable_TopScores1OnMap[TMC_MEDAL_GOLD-1] = _DefaultScore[TMC_MEDAL_GOLD];
+		LibTMC_ScoresTable_TopNames1OnMap[TMC_MEDAL_GOLD-1] = "GOL";
+		LibTMC_ScoresTable_TopScores1OnMap[TMC_MEDAL_SILVER-1] = _DefaultScore[TMC_MEDAL_SILVER];
+		LibTMC_ScoresTable_TopNames1OnMap[TMC_MEDAL_SILVER-1] = "SIL";
+		LibTMC_ScoresTable_TopScores1OnMap[TMC_MEDAL_BRONZE-1] = _DefaultScore[TMC_MEDAL_BRONZE];
+		LibTMC_ScoresTable_TopNames1OnMap[TMC_MEDAL_BRONZE-1] = "BRO";
+	}
+	
+	if(!LibTMC_ScoresTable_TopScores2OnMap.existskey(TMC_MEDAL_GOLD) && _DefaultScore.existskey(TMC_MEDAL_GOLD)) {
+		LibTMC_ScoresTable_TopScores2OnMap[TMC_MEDAL_GOLD-1] = _DefaultScore[TMC_MEDAL_GOLD-1];
+		LibTMC_ScoresTable_TopNames2OnMap[TMC_MEDAL_GOLD-1] = "GOL $06f+ $fffGOL";
+		LibTMC_ScoresTable_TopScores2OnMap[TMC_MEDAL_SILVER-1] = _DefaultScore[TMC_MEDAL_SILVER-1];
+		LibTMC_ScoresTable_TopNames2OnMap[TMC_MEDAL_SILVER-1] = "SIL $06f+ $fffSIL";
+		LibTMC_ScoresTable_TopScores2OnMap[TMC_MEDAL_BRONZE-1] = _DefaultScore[TMC_MEDAL_BRONZE-1];
+		LibTMC_ScoresTable_TopNames2OnMap[TMC_MEDAL_BRONZE-1] = "BRO $06f+ $fffBRO";
+	}
+	
+	if(!LibTMC_ScoresTable_TopScores3OnMap.existskey(TMC_MEDAL_GOLD) && _DefaultScore.existskey(TMC_MEDAL_GOLD)) {
+		LibTMC_ScoresTable_TopScores3OnMap[TMC_MEDAL_GOLD-1] = _DefaultScore[TMC_MEDAL_GOLD-1];
+		LibTMC_ScoresTable_TopNames3OnMap[TMC_MEDAL_GOLD-1] = "GOL $06f+ $fffGOL $06f+ $fffGOL";
+		LibTMC_ScoresTable_TopScores3OnMap[TMC_MEDAL_SILVER-1] = _DefaultScore[TMC_MEDAL_SILVER-1];
+		LibTMC_ScoresTable_TopNames3OnMap[TMC_MEDAL_SILVER-1] = "SIL $06f+ $fffSIL $06f+ $fffSIL";
+		LibTMC_ScoresTable_TopScores3OnMap[TMC_MEDAL_BRONZE-1] = _DefaultScore[TMC_MEDAL_BRONZE-1];
+		LibTMC_ScoresTable_TopNames3OnMap[TMC_MEDAL_BRONZE-1] = "BRO $06f+ $fffBRO $06f+ $fffBRO";
+	}
+	
+	if(!LibTMC_ScoresTable_TopScores4OnMap.existskey(TMC_MEDAL_GOLD) && _DefaultScore.existskey(TMC_MEDAL_GOLD)) {
+		LibTMC_ScoresTable_TopScores4OnMap[TMC_MEDAL_GOLD-1] = _DefaultScore[TMC_MEDAL_GOLD];
+		LibTMC_ScoresTable_TopNames4OnMap[TMC_MEDAL_GOLD-1] = "GOL $06f+ $fffGOL $06f+ $fffGOL $06f+ $fffGOL";
+		LibTMC_ScoresTable_TopScores4OnMap[TMC_MEDAL_SILVER-1] = _DefaultScore[TMC_MEDAL_SILVER];
+		LibTMC_ScoresTable_TopNames4OnMap[TMC_MEDAL_SILVER-1] = "SIL $06f+ $fffSIL $06f+ $fffSIL $06f+ $fffSIL";
+		LibTMC_ScoresTable_TopScores4OnMap[TMC_MEDAL_BRONZE-1] = _DefaultScore[TMC_MEDAL_BRONZE];
+		LibTMC_ScoresTable_TopNames4OnMap[TMC_MEDAL_BRONZE-1] = "BRO $06f+ $fffBRO $06f+ $fffBRO $06f+ $fffBRO";
+	}
+
+
+	SendTablesToML(LibTMC_ScoresTable_TopScores1OnMap, LibTMC_ScoresTable_TopNames1OnMap, 1);
+	// SendTablesToML(LibTMC_ScoresTable_TopScores2OnMap, LibTMC_ScoresTable_TopNames2OnMap, 2);
+	// SendTablesToML(LibTMC_ScoresTable_TopScores3OnMap, LibTMC_ScoresTable_TopNames3OnMap, 3);
+	// SendTablesToML(LibTMC_ScoresTable_TopScores4OnMap, LibTMC_ScoresTable_TopNames4OnMap, 4);
+}
+*/
+
+// ---------------------------------- //
+/// Load the library
+Void Load(Boolean _PlayerWearHmd) {
+	Unload();
+	UIButtons::Load();
+	
+	foreach(Player in AllPlayers) {
+		declare UI <=> UIManager.GetUI(Player);
+		declare netwrite Integer		LibTMC_ScoresTable_RoundTrigger				for UI;
+		declare netwrite Boolean 		LibTMC_ScoresTable_Recap 					for UI;
+		declare netwrite Integer 		LibTMC_ScoresTable_NewScoreTrigger 			for UI;
+		declare netwrite Integer		LibTMC_ScoresTable_NewScoreIndex 			for UI;
+		declare netwrite Integer[Integer] LibTMC_ScoreTable_MapMedalsTimes			for UI;
+		LibTMC_ScoresTable_RoundTrigger 		= 0;
+		LibTMC_ScoresTable_Recap 				= False;
+		LibTMC_ScoresTable_NewScoreIndex 		= -1;
+		LibTMC_ScoresTable_NewScoreTrigger 		= 0;
+		LibTMC_ScoreTable_MapMedalsTimes 		= Medals::GetTimesOnMap();
+		
+		// SCORES TABLE		
+		declare IMGSelect 	= UIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Select);
+		declare IMGCancel 	= UIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Cancel);
+		declare TXTSelect 	= UIButtonNamesPopup::GetSelectText();
+		declare TXTPlay 	= UIButtonNamesPopup::GetPlayText();
+		declare TXTErase 	= UIButtonNamesPopup::GetEraseText();
+		
+		declare netwrite Text[] 	Net_ScoresTableInputs 						for UI;
+		declare netwrite Text[] 	Net_StandardInputs 							for UI;
+		declare netwrite Integer[] 	Net_ScoresTableMenuRanks 					for UI;
+		declare netwrite Text[] 	Net_ScoresTableMenuName 					for UI;
+		declare netwrite Integer[] 	Net_ScoresTableMenuTime 					for UI;
+		declare netwrite Integer[] 	Net_ScoresTableMenuMedal 					for UI;
+		declare netwrite Integer 	Net_ScoresTableMenuSelectedPlayer 			for UI;
+		declare netwrite Text 		Net_ScoresTableMenuTitle 					for UI;
+		declare netwrite Text 		Net_ScoresTableMenuSubtitle					for UI;
+		
+		declare netwrite Text 		Net_PlayerSelectionMenuTitle				for UI;
+		declare netwrite Text 		Net_PlayerSelectionMenuSubtitle				for UI;
+		
+		declare netwrite Text 		Net_WriteNameMenuTitle						for UI;
+		declare netwrite Text 		Net_WriteNameMenuSubtitle					for UI;
+		declare netwrite Text[] 	Net_WriteNameInputs 						for UI;
+		
+		// declare netwrite Integer[] 	Net_ScoresTableHighlighted 					for UI;
+		
+		// Net_ScoresTableHighlighted[0]		= 0;
+		// Net_ScoresTableHighlighted[1]		= 1;
+		// Net_ScoresTableHighlighted[2]		= 2;
+		
+		Net_PlayerSelectionMenuTitle 		= IMGPATH^IMG_ARCADE;
+		Net_PlayerSelectionMenuSubtitle 	= _("Make it count! Beat the top 10!");
+		
+		Net_ScoresTableInputs 	= [IMGSelect, TXTPlay];
+		Net_StandardInputs 		= [IMGSelect, TXTSelect];
+		Net_WriteNameInputs		= [IMGSelect, TXTSelect, IMGCancel, TXTErase];
+		
+		for(I, 0, C_MaxCount_Top-1) 
+		{
+			Net_ScoresTableMenuRanks.add(I + 1);
+			Net_ScoresTableMenuName.add("PLAYER "^I);
+			Net_ScoresTableMenuTime.add(50000);
+			Net_ScoresTableMenuMedal.add(1);
+		}
+		
+		Net_ScoresTableMenuSelectedPlayer 	=  0;
+		Net_ScoresTableMenuTitle 			= IMGPATH^IMG_ARCADE;
+		//L16N Slogan for Arcade mode in prompter
+		Net_ScoresTableMenuSubtitle			= _("Make it count! Beat the top 10!");
+		
+		//L16N In Arcade mode, in a prompter saying that the player should write his name in the scores table
+		Net_WriteNameMenuTitle				= IMGPATH^IMG_ARCADE;
+		Net_WriteNameMenuSubtitle			= _("Write your name in the scores table!");
+		
+		declare netwrite Text 		Net_NameEditColorText		for UI;
+		declare netwrite Vec3 		Net_NameEditColor			for UI;
+		
+		declare ColorGreenMaster	= Colors::GetColor("GreenMaster");
+		
+		Net_NameEditColorText 		= _("Please enter your name:");
+		Net_NameEditColor			= ColorGreenMaster;
+	}
+	
+	declare InputUpdate					= "Net_ScoresTableInputs";
+	declare RanksParam					= "Small Medal";
+	declare RanksUpdateValues_1Player 	= "Net_ScoresTableMenuRanks Net_ScoresTableMenuName Net_ScoresTableMenuTime Net_ScoresTableMenuMedal Net_ScoresTableMenuSelectedPlayer";
+	declare ColorMode 					= Colors::GetModeColorName(MODE_COLORID_MULTIPLAYER);
+	declare TitleParam					= "ColorText "^ColorMode;
+	declare Vec3 		LayerPos 		= <-85., 5., 31.>;
+	
+	// if(_PlayerWearHmd) {
+		// LayerPos						= <0., 5., 31.>;
+	// }
+	
+	// log(LayerPos);
+	
+	declare Text[][] 	LayersContent;
+	LayersContent.add(["Title", 	"MedalSelec", 	IMGPATH^IMG_ARCADE, 	"2",	"", TitleParam, "Net_ScoresTableMenuTitle Net_ScoresTableMenuSubtitle"]);
+	LayersContent.add(["Space", 	"", 		  	"", 					"1",	"", "", ""]);
+	for(I, 0, C_MaxCount_Top-1) LayersContent.add(["Rank", "Player"^I, "Player"^I, "1", "", RanksParam, RanksUpdateValues_1Player]);
+	LayersContent.add(["Space", 	"",		 	"", 					"1",	"", "", ""]);
+	LayersContent.add(["Input", 	"Input", 		"", 					"1",	"", "", InputUpdate]);
+	
+	UIPopupBuilder::CreateLayer(
+		"Layer_TMC_ScoresTable_Result",
+		LayerPos,
+		LayersContent
+	);
+	
+	InputUpdate	= "Net_StandardInputs";
+	LayersContent.clear();
+	LayersContent.add(["Title", 	"MedalSelec", 	IMGPATH^IMG_ARCADE, 	"2",	"", TitleParam, "Net_PlayerSelectionMenuTitle Net_PlayerSelectionMenuSubtitle"]);
+	LayersContent.add(["Space", 	"", 		  	"", 					"1",	"", "", ""]);
+	LayersContent.add(["Label", 	"Info",			_("Driver mode for the game?"), 		"1",	"", 	"", ""]);
+	LayersContent.add(["Button", "Solo", 			_("Solo"), 					"1",	"Net_PlayerNbChoice = 1;", 	"", ""]);
+	LayersContent.add(["Button", "Double_Driver", 	"Double Driver", 		"1",	"Net_PlayerNbChoice = 2;", 	"", ""]);
+	LayersContent.add(["Space", 	"",		 	"", 					"1",	"", "", ""]);
+	LayersContent.add(["Input", 	"Input", 		"", 					"1",	"", "", InputUpdate]);
+	
+	declare Text LayerBeforeWhile = 
+	""" 
+		declare netwrite Integer Net_PlayerNbChoice for UI;
+	""";
+	
+	declare Text LayerWhenShown = """
+			Net_PlayerNbChoice = -1;
+		""";
+	
+	UIPopupBuilder::CreateLayer(
+		"Layer_TMC_ScoresTable_PlayerSelect", 
+		LayerPos,
+		LayersContent,
+		LayerBeforeWhile,
+		LayerWhenShown,
+		""
+	);
+	
+	LayersContent.clear();
+	LayersContent.add(["Custom", 	"", 		"", 					"0",	"", "", ""]);
+	LayerBeforeWhile = 
+	""" 
+		declare netwrite Integer Net_PlayerNbChoice for UI;
+	""";
+	LayerWhenShown = """
+		Net_PlayerNbChoice = 1;
+	""";
+	
+	UIPopupBuilder::CreateLayer(
+		"Layer_TMC_ScoresTable_PlayerSelectDefault", 
+		LayerPos,
+		LayersContent,
+		LayerBeforeWhile,
+		LayerWhenShown,
+		""
+	);
+	
+	declare ColorXmlWhite 	 = Colors::GetColorXml	("White");
+	declare ColorXmlGrey 	 = Colors::GetColorXml	("Grey");
+	declare FontMain 		 = Font	::GetFontName	("Main");
+	declare SizeX 			 = UIPopupBuilder::GetSize().X;
+	declare SizeY 			 = UIPopupBuilder::GetSize().Y;
+	declare PosXNames		 = SizeX * 0.2;
+	declare TextSizeMed 	 = 8;
+	declare TextSizeBig 	 = 16;
+	declare MLXml_BigName 	 = """
+	<label id="Label_BigName" posn="{{{SizeX*0.5}}} 	{{{-SizeY*0.83}}}	.4" sizen="{{{SizeX-10}}} 	{{{SizeY}}}" valign="center" halign="center" textfont="{{{FontMain}}}" textsize="{{{TextSizeBig}}}" textcolor="{{{ColorXmlWhite}}}" text="AAA" /> 
+	<frame id="Frame_BigName2players">
+		<label id="Label_BigName1" posn="{{{SizeX*0.5 - PosXNames}}} 	{{{-SizeY*0.83}}}	.4" sizen="{{{SizeX-10}}} 	{{{SizeY}}}" valign="center" halign="center" textfont="{{{FontMain}}}" textsize="{{{TextSizeBig}}}" textcolor="{{{ColorXmlWhite}}}" text="AAA" /> 
+		<label id="Label_BigName2" posn="{{{SizeX*0.5 + PosXNames}}} 	{{{-SizeY*0.83}}}	.4" sizen="{{{SizeX-10}}} 	{{{SizeY}}}" valign="center" halign="center" textfont="{{{FontMain}}}" textsize="{{{TextSizeBig}}}" textcolor="{{{ColorXmlWhite}}}" text="AAA" /> 
+	</frame>	
+	""";
+	declare MLXml_NameEditor = """
+	<frame id="Frame_NameEdit" posn="0. 0.5">
+		<label id="Label_NameEdit1" posn="{{{SizeX*0.5}}} 	{{{-SizeY*0.5}}}	.4" sizen="{{{SizeX-10}}} 	{{{SizeY}}}" valign="center" halign="center" textfont="{{{FontMain}}}" textsize="{{{TextSizeMed}}}" textcolor="{{{ColorXmlGrey}}}" text="ABCDEFGHIJKLM" /> 
+		<label id="Label_NameEdit2" posn="{{{SizeX*0.5}}} 	{{{-SizeY*1.5}}}	.4" sizen="{{{SizeX-10}}} 	{{{SizeY}}}" valign="center" halign="center" textfont="{{{FontMain}}}" textsize="{{{TextSizeMed}}}" textcolor="{{{ColorXmlGrey}}}" text="NOPQRSTUVWXYZ" /> 
+		<label id="Label_NameEdit3" posn="{{{SizeX*0.5}}} 	{{{-SizeY*2.5}}}	.4" sizen="{{{SizeX-10}}} 	{{{SizeY}}}" valign="center" halign="center" textfont="{{{FontMain}}}" textsize="{{{TextSizeMed}}}" textcolor="{{{ColorXmlGrey}}}" text="0123456789" /> 
+	</frame>	
+	""";
+	
+	declare MLScriptFunctions = """
+	
+	Text GetNameProtected(Text[] _TheName, Integer _NameLettersCount)
+	{
+		declare Text		Name = "";
+		declare Integer 	NbCharsOftheName = _TheName.count;
+		
+		for(I, 0, _NameLettersCount-1)
+		{
+			if(I >= NbCharsOftheName)	Name ^= " ";
+			else						Name ^= _TheName[I];
+		}
+		
+		/*
+		Name = TL::Trim(Name);
+		
+		if(Name == "")
+		{
+			for(I, 0, _NameLettersCount-1) Name ^= " ";
+		}
+		*/
+		
+		return Name;
+	}
+		
+	Void AnimSwitchName(CMlLabel _Label, Real _PosX)
+	{
+		declare Pos 	= <_PosX, _Label.RelativePosition.Y, _Label.RelativePosition.Z>;
+		declare Offset 	= 8;
+		declare Time1 	= 10;
+		declare Time2 	= 350;
+		
+		LibManialink_AnimStop			(_Label);
+		LibManialink_SetTargetPosition	(_Label, <Pos.X+Offset, Pos.Y, Pos.Z>);
+		LibManialink_PresetAnim			(_Label, Time1, "Linear");
+		LibManialink_SetTargetPosition	(_Label, Pos);
+		LibManialink_PresetAnimInsert	(_Label, Time1+1, Time2, "ElasticOut");
+		
+		Audio.PlaySoundEvent("{{{SoundPath^SoundBoardOut}}}", {{{Volumes::GetVolumedB("MenuSwitch")}}});
+	}
+	""";
+	
+	declare MLScriptInit = """
+	declare netwrite 	Integer[] 	LibTMC_PairingPads_PadsPlaying 				for UI;
+	declare netwrite 	Integer 	LibTMC_ScoresTable_NewNameTrigger 			for UI;
+	declare netwrite 	Text 		LibTMC_ScoresTable_NewName 					for UI;
+	declare netwrite	Boolean		LibTMC_ScoresTable_ScoreWritten				for UI;
+	declare netwrite	Boolean		LibTMC_PlayerManager_GameStarted 			for UI;
+	LibTMC_ScoresTable_ScoreWritten 	= False;
+
+	declare AddLetter 					= False;
+	declare ForceValidate 				= False;
+	declare ForceAddLetterOnValidate 	= False;
+	declare NameLettersCount 			= 4;
+	
+	declare Text[][] Letters = [
+		["A","B","C","D","E","F","G","H","I","J","K","L","M", "_"],
+		["N","O","P","Q","R","S","T","U","V","W","X","Y","Z"],
+		["0","1","2","3","4","5","6","7","8","9"]
+	];
+	declare Integer[] 		TheRowIndexForPad 					= [0,0,0];
+	declare Integer[] 		TheLetterIndexForPad 				= [0,0];
+	declare Text[][] 		TheNameForPad 						= [Text[], Text[]];
+	
+	declare	Text[][]		NameSuggestionsLibrary;
+	declare Integer[] 		NameSuggestionIndexForPad 		= [-1,-1];
+	
+	declare Text[]			DefaultName;
+	for(I, 0, NameLettersCount-2) DefaultName.add("A");
+	
+	NameSuggestionsLibrary.add(DefaultName);
+
+	TheNameForPad[0] = DefaultName;
+	declare Frame_BigName2players 	<=> ((Page.MainFrame.GetFirstChild("Frame_BigName2players")) 	as CMlFrame);
+	declare Label_BigName 			<=> ((Page.MainFrame.GetFirstChild("Label_BigName")) 			as CMlLabel);
+	
+	declare CMlLabel[] Label_NameEdit;
+	Label_NameEdit.add((Page.MainFrame.GetFirstChild("Label_NameEdit1") as CMlLabel));
+	Label_NameEdit.add((Page.MainFrame.GetFirstChild("Label_NameEdit2") as CMlLabel));
+	Label_NameEdit.add((Page.MainFrame.GetFirstChild("Label_NameEdit3") as CMlLabel));
+	
+	declare CMlLabel[] Label_BigName2Players;
+	Label_BigName2Players.add((Page.MainFrame.GetFirstChild("Label_BigName1") as CMlLabel));
+	Label_BigName2Players.add((Page.MainFrame.GetFirstChild("Label_BigName2") as CMlLabel));
+	
+	declare RowCount 		= Letters.count;
+	declare LettersCount 	= [Letters[0].count, Letters[1].count, Letters[2].count];
+	declare CanUpdate		= True;
+	declare NeedInit		= False;
+	declare Integer[] PadsReady;
+	""";
+	
+	declare MLScriptLoop = """
+	declare PadsCount = LibTMC_PairingPads_PadsPlaying.count;
+	
+	if(CanUpdate)
+	{
+		declare TheBigName = ["", ""];
+		for(PadIndex, 0, PadsCount-1)
+		{
+			for(I, 0, NameLettersCount-1)
+			{
+				if(TheNameForPad[PadIndex].existskey(I)) 		TheBigName[PadIndex] ^= "$fff"^TheNameForPad[PadIndex][I]^"$z";
+				else if(I > TheNameForPad[PadIndex].count)		TheBigName[PadIndex] ^= "$fff"^"-"^"$z";
+				else
+				{
+					if(PadsCount > 1 && TheNameForPad[PadIndex].count < NameLettersCount)
+					{
+						if(PadIndex == 0) 	TheBigName[PadIndex] ^= "$f45";
+						else				TheBigName[PadIndex] ^= "$0ff";
+					}
+					else
+					{
+						TheBigName[PadIndex] ^= "$f45";
+					}
+
+					if(TheRowIndexForPad[PadIndex] < 0) {
+						TheRowIndexForPad[PadIndex] = 2;
+					}
+					
+					if(TheLetterIndexForPad[PadIndex] < 0) {
+						TheLetterIndexForPad[PadIndex] = 0;
+					}
+					TheBigName[PadIndex] ^= Letters[TheRowIndexForPad[PadIndex]][TheLetterIndexForPad[PadIndex]]^"$z";
+				}
+			}
+		}
+		
+		foreach(I => Row in Letters)
+		{
+			declare RowValue = "";
+			foreach(J => Letter in Row)
+			{
+				if(TheRowIndexForPad[0] == I && TheLetterIndexForPad[0] == J || TheRowIndexForPad[1] == I && TheLetterIndexForPad[1] == J)
+				{
+					if(PadsCount > 1 && TheRowIndexForPad[0] == I && TheLetterIndexForPad[0] == J && TheRowIndexForPad[1] == I && TheLetterIndexForPad[1] == J)
+					{
+						RowValue ^= "$fff"^Letter^"$z";
+					}
+					else
+					{
+						if(PadsCount > 1)
+						{
+							if(TheRowIndexForPad[0] == I && TheLetterIndexForPad[0] == J) 	RowValue ^= "$f45";
+							else 															RowValue ^= "$0ff";
+						}
+						else
+						{
+							if(TheRowIndexForPad[0] == I && TheLetterIndexForPad[0] == J) 	RowValue ^= "$f45";
+						}
+						RowValue ^= Letter^"$z";
+					}
+				}			
+				else
+				{
+					RowValue ^= Letter;
+				}
+			}
+			Label_NameEdit[I].Value = RowValue;
+		}
+		
+		if(PadsCount > 1)
+		{
+			Label_BigName			.Visible = False;
+			Frame_BigName2players	.Visible = True;
+			foreach(I => Label in Label_BigName2Players) Label.Value = TheBigName[I];
+		}
+		else
+		{
+			Label_BigName			.Value 		= TheBigName[0];
+			Label_BigName			.Visible 	= True;
+			Frame_BigName2players	.Visible 	= False;
+		}
+	}
+	
+	if(IsMenuNavigationForeground && PageIsVisible) 
+	{
+		declare Up 			= False;
+		declare Down 		= False;
+		declare Left 		= False;
+		declare Right 		= False;
+		declare PageUp 		= False;
+		declare PageDown 	= False;
+		declare Select		= False;
+		declare Cancel		= False;
+		declare Menu		= False;
+		declare PadI 		= -1;
+		declare Text KeyPressed	= ""; 
+		
+		//Get events according pads nb
+		if(LibTMC_PairingPads_PadsPlaying.count == 1) {
+			PadI = 0;
+			foreach(Event in PendingEvents)
+			{
+				// KeyPressed = Event.KeyName;
+				switch(Event.Type)
+				{
+					case CMlEvent::Type::MenuNavigation :
+					{
+						switch (Event.MenuNavAction)
+						{
+							case CMlEvent::EMenuNavAction::Select :
+							{
+								Select = True;
+							}
+							case CMlEvent::EMenuNavAction::Cancel :
+							{
+								Cancel = True;
+							}
+							case CMlEvent::EMenuNavAction::Up :
+							{
+								Up = True;
+							}
+							
+							case CMlEvent::EMenuNavAction::Down :
+							{
+								Down = True;
+							}
+							
+							case CMlEvent::EMenuNavAction::Left :
+							{
+								Left = True;
+							}
+							
+							case CMlEvent::EMenuNavAction::Right :
+							{
+								Right = True;
+							}
+							case CMlEvent::EMenuNavAction::AppMenu :
+							{
+								ShowInGameMenu();
+							}
+							case CMlEvent::EMenuNavAction::PageUp :
+							{
+								PageUp = True;
+							}
+							case CMlEvent::EMenuNavAction::PageDown :
+							{
+								PageDown = True;
+							}
+						}
+					}
+				}
+			}
+			
+		} else if(LibTMC_PairingPads_PadsPlaying.count == 2) {
+			foreach(PadIndex => Pad in Input.Pads)
+			{
+				foreach(Button in Input.Pads[PadIndex].ButtonEvents) {
+					Up 			= Button == CInputScriptPad::EButton::Up || Button == CInputScriptPad::EButton::LeftStick_Up;
+					Down 		= Button == CInputScriptPad::EButton::Down  || Button == CInputScriptPad::EButton::LeftStick_Down;
+					Left 		= Button == CInputScriptPad::EButton::Left  || Button == CInputScriptPad::EButton::LeftStick_Left;
+					Right 		= Button == CInputScriptPad::EButton::Right  || Button == CInputScriptPad::EButton::LeftStick_Right;
+					PageUp		= Button == CInputScriptPad::EButton::L1;
+					PageDown	= Button == CInputScriptPad::EButton::R1;
+					Select		= Button == CInputScriptPad::EButton::A;
+					Cancel		= Button == CInputScriptPad::EButton::B;
+					Menu		= Button == CInputScriptPad::EButton::Menu;
+					PadI = LibTMC_PairingPads_PadsPlaying.keyof(Pad.ControllerId);
+				}
+			}
+		}
+
+		if(PadI != -1) {
+			if(PageDown || PageUp)
+			{
+				if(PageDown) 
+				{
+					if(NameSuggestionsLibrary.existskey(NameSuggestionIndexForPad[PadI] + 1)) 	
+						NameSuggestionIndexForPad[PadI] += 1; 
+				}
+				else
+				if(PageUp) 
+				{
+					if(NameSuggestionIndexForPad.existskey(PadI))
+					{
+						if(NameSuggestionIndexForPad[PadI] <  0)	NameSuggestionIndexForPad[PadI]  = 0;
+						if(NameSuggestionIndexForPad[PadI] >  0)	NameSuggestionIndexForPad[PadI] -= 1;
+					}
+				}
+				
+				// SECURITY IF NAME ENDS WITH EMPTY LETTERS " "
+				declare LastKey 			= NameSuggestionsLibrary.count-1 - NameSuggestionIndexForPad[PadI];
+				declare NameSuggestion 		= NameSuggestionsLibrary[LastKey];
+
+				// SET THE NAME TO THE SUGGESTION
+				TheNameForPad[PadI] = NameSuggestion;
+				
+				// LOCATING THE LETTER IN THE KEYBOARD
+				declare IndexToRemove 		= TheNameForPad[PadI].count-1;
+				declare LetterToFind 		= TheNameForPad[PadI][IndexToRemove];
+				if(LetterToFind == " ") LetterToFind = "_";
+				declare RowIndexToFind		= 0;
+				declare LetterIndexToFind	= 0;
+				
+				LetterIndexToFind = Letters[RowIndexToFind].keyof(LetterToFind);
+				if(LetterIndexToFind == -1)
+				{
+					RowIndexToFind += 1;
+					LetterIndexToFind = Letters[RowIndexToFind].keyof(LetterToFind);
+				}
+				if(LetterIndexToFind < 0) LetterIndexToFind = 0;
+				
+				// SET THE EDIT CURSOR ONE LETTER BEFORE
+				if(TheNameForPad[PadI].count >= 4) 
+				{
+					TheNameForPad[PadI].removekey(IndexToRemove);
+					ForceAddLetterOnValidate = True;
+				}
+				
+				// SET THE SELECTED LETTER ON THE KEYBOARD TO THE LAST LETTER OF THE SUGGESTION
+				TheRowIndexForPad[PadI]  	= RowIndexToFind;
+				TheLetterIndexForPad[PadI] 	= LetterIndexToFind;
+				
+				// ANIM
+				declare Label 	= Label_BigName;
+				declare PosX 	= {{{SizeX*0.5}}};
+				
+				if(PadsCount > 1) 
+				{
+					Label = Label_BigName2Players[PadI];
+					if(PadI == 0) 	PosX = {{{SizeX*0.5 - PosXNames}}};
+					else 			PosX = {{{SizeX*0.5 + PosXNames}}};
+				}
+				
+				AnimSwitchName(Label, PosX);
+			}
+			else
+			if(Up || Down || Left || Right) 
+			{
+				if(Up || Down)
+				{
+					if(Up) 
+						TheRowIndexForPad[PadI] = (TheRowIndexForPad[PadI] - 1) % RowCount;
+					else
+					if(Down)  
+						TheRowIndexForPad[PadI] = (TheRowIndexForPad[PadI] + 1) % RowCount;
+
+					if (TheRowIndexForPad[PadI] < 0)
+						TheRowIndexForPad[PadI] = 2;
+					
+					declare RowI = TheRowIndexForPad[PadI];
+
+					if(RowI < 0)
+						RowI = 2;
+						
+					if(!Letters[RowI].existskey(TheLetterIndexForPad[PadI])) TheLetterIndexForPad[PadI] = Letters[RowI].count-1;
+				}
+				else
+				if(Left) 
+				{
+					if(TheRowIndexForPad[PadI] != -1) {
+						TheLetterIndexForPad[PadI] = (TheLetterIndexForPad[PadI] - 1 + LettersCount[TheRowIndexForPad[PadI]]) % LettersCount[TheRowIndexForPad[PadI]];	
+					}
+				}
+				else
+				if(Right) 
+				{
+					if(TheRowIndexForPad[PadI] != -1) {
+						TheLetterIndexForPad[PadI] = (TheLetterIndexForPad[PadI] + 1) % LettersCount[TheRowIndexForPad[PadI]];
+					}
+				}
+				Audio.PlaySoundEvent("{{{SoundPath^SoundBoardNextLetter}}}", {{{Volumes::GetVolumedB("MenuMove")}}});	
+				ForceAddLetterOnValidate = False;
+			}
+			else
+			if(Select) 
+			{
+				AddLetter = True;
+			}
+			else
+			if(Cancel) 
+			{
+				declare IndexToRemove = TheNameForPad[PadI].count-1;
+				if(TheNameForPad[PadI].removekey(IndexToRemove)) 
+					Audio.PlaySoundEvent("{{{SoundPath^SoundCancel}}}", {{{Volumes::GetVolumedB("RemoveLetter")}}});
+				PadsReady.remove(PadI);	
+				ForceAddLetterOnValidate = False;
+			}
+			else
+			if(Menu) 
+			{
+				if(ForceAddLetterOnValidate) 
+				{
+					ForceAddLetterOnValidate 	= False;						
+					AddLetter 					= True;
+				}
+				else
+				{
+					ForceValidate = True;
+				}
+			}
+			if(AddLetter)
+			{
+				AddLetter = False;
+				if(TheNameForPad[PadI].count < NameLettersCount)
+				{
+					declare TheLetter = Letters[TheRowIndexForPad[PadI]][TheLetterIndexForPad[PadI]];
+					if(TheLetter == "_") TheLetter = " ";
+					
+					TheNameForPad[PadI].add(TheLetter);
+				} 
+			
+				if(TheNameForPad[PadI].count == NameLettersCount && !PadsReady.exists(PadI))
+				{
+					PadsReady.add(PadI);
+					Audio.PlaySoundEvent("{{{SoundPath^SoundValidate2}}}", {{{Volumes::GetVolumedB("MenuClick")}}});	
+				}
+				else
+				{
+					Audio.PlaySoundEvent("{{{SoundPath^SoundOk}}}", {{{Volumes::GetVolumedB("AddLetter")}}});	
+				}
+			}
+			if(ForceValidate)
+			{
+				ForceValidate = False;
+				
+				declare CurrentLettersCount = TheNameForPad[PadI].count;
+				
+				if(CurrentLettersCount > 0)
+				{
+					for(I, CurrentLettersCount-1, NameLettersCount-1)
+					{
+						TheNameForPad[PadI].add(" ");
+					}
+				}
+				else
+				{
+					for(I, 0, NameLettersCount-1)
+					{
+						TheNameForPad[PadI].add("A");
+					}
+				}
+				PadsReady.add(PadI);
+				Audio.PlaySoundEvent("{{{SoundPath^SoundValidate2}}}", {{{Volumes::GetVolumedB("MenuClick")}}});
+			}
+		}
+		if(PadsReady.count == PadsCount || NeedInit)
+		{
+			if(!NeedInit)
+			{
+				LibTMC_ScoresTable_NewName = GetNameProtected(TheNameForPad[0], NameLettersCount);
+				if(PadsCount > 1)
+				{
+					declare Name2 = GetNameProtected(TheNameForPad[1], NameLettersCount);
+					LibTMC_ScoresTable_NewName ^= " + " ^ Name2;
+				}
+				foreach(I => Name in TheNameForPad) 
+				{
+					declare MaxNames = LibTMC_PairingPads_PadsPlaying.count-1;
+					if(I <= MaxNames) 
+					{
+						// REMOVING NAME IF ALLREADY IN "NameSuggestionsLibrary" ARRAY
+						declare Integer[] 	KeysToRemove 		= GetKeysToRemove_AlreadyExistingElements(NameSuggestionsLibrary, Name);
+						declare Integer 	KeysToRemoveCount 	= KeysToRemove.count;
+						if(KeysToRemoveCount > 0)
+						{
+							declare LastKey = KeysToRemoveCount-1;
+							for(I, 0, LastKey) 
+							{
+								declare J = LastKey-I;
+								declare IndexToRemove = KeysToRemove[J];
+								if(NameSuggestionsLibrary.existskey(IndexToRemove)) NameSuggestionsLibrary.removekey(IndexToRemove);
+							}
+						}
+						// ADDING NAME AGAIN TO MAKE THIS NAME THE LATEST ONE USED
+						NameSuggestionsLibrary.add(Name);
+					}
+				}			
+			}
+			PadsReady.clear();
+			NameSuggestionIndexForPad 			= [-1,-1];
+			TheNameForPad 						= [Text[], Text[]];
+			// TheNameForPad[0]					= DefaultName;
+			TheRowIndexForPad 					= [0,0];
+			TheLetterIndexForPad 				= [0,0];
+			
+			if(!NeedInit)
+			{			
+				CanUpdate 							= False;
+				LibTMC_ScoresTable_NewNameTrigger 	= Now;
+				LibTMC_ScoresTable_ScoreWritten 	= True;
+			}
+			NeedInit 							= False;
+		}
+		declare Label_Info2 <=> (Page.MainFrame.GetFirstChild("Label_Info2") as CMlLabel);
+		Label_Info2.Value = TL::Compose(_("%1 - %2: select previous names"), GetL1ButtonName(), GetR1ButtonName());
+	}
+	""";
+	
+	// LayerPos = <-85., 5., 31.>;
+	//L16N in a popup, choose a name preregistered with this button. Has to remain short.
+	
+	
+	declare Text SelectPreviousName = TL::Compose(_("%1 - %2: select previous names"), UIButtons::GetL1ButtonName(), UIButtons::GetR1ButtonName());
+	InputUpdate = "Net_WriteNameInputs";
+	LayersContent.clear();
+	LayersContent.add(["Title", 	"Title", 	  IMGPATH^IMG_ARCADE, 		"2",	"", TitleParam, "Net_WriteNameMenuTitle Net_WriteNameMenuSubtitle"]);
+	LayersContent.add(["Space", 	"", 		  	"", 					"2",	"", "", ""]);
+	LayersContent.add(["Label", 	"Results1",	  	"", 					"1",	"", "", "Net_ScoresTable_NameEdit_CongratMessage1"]);
+	LayersContent.add(["Label", 	"Results2",	  	"", 					"1",	"", "", "Net_ScoresTable_NameEdit_CongratMessage2"]);
+	LayersContent.add(["Color", 	"Info",		  	"", 					"1",	"", "Black", "Net_NameEditColorText Net_NameEditColor"]);
+	LayersContent.add(["Custom", 	"Name",		  	MLXml_BigName, 			"2",	"", "Fg Bg", ""]);
+	LayersContent.add(["Custom", 	"Edit",		  	MLXml_NameEditor,		"3",	"", "Bg2", ""]);
+
+	LayersContent.add(["Label", 	"Info2",	  	SelectPreviousName, 	"1",	"", "Dark", ""]);
+	LayersContent.add(["Custom", 	"",	  	 		"", 					"1",	"", "Bg2", ""]);
+	LayersContent.add(["Space", 	"", 		 	"", 					"1",	"", "", ""]);
+	LayersContent.add(["Input", 	"Input", 		"", 					"1",	"", "", InputUpdate]);
+	
+	UIPopupBuilder::CreateLayer(
+		"Layer_TMC_ScoresTable_NameEdit", 
+		"CustomStartButton",
+		LayerPos,
+		LayersContent, 
+		MLScriptFunctions, 
+		MLScriptInit, 
+		"""
+		CanUpdate 	= True;
+		NeedInit 	= True;
+		LibTMC_ScoresTable_ScoreWritten = False;
+		""",
+		MLScriptLoop
+	);
+	
+	//Construct Pop Retry
+	// LayerPos = <-85., 5., 31.>;
+	LayersContent.clear();
+	/*
+	foreach(Player in AllPlayers) {
+		declare UI <=> UIManager.GetUI(Player);
+		declare netwrite Text 	Net_ScoresTable_Result_Title			for UI;
+		declare netwrite Text 	Net_ScoresTable_Result_Subtitle			for UI;
+		
+		declare netwrite Integer[] 	Net_ScoresTable_Result_Ranks 			for UI;
+		declare netwrite Text[] 	Net_ScoresTable_Result_Names 			for UI;
+		declare netwrite Integer[] 	Net_ScoresTable_Result_BestRankTime 	for UI;
+		// declare netwrite Integer[] 	Net_ScoresTable_Result_Medals 			for UI;
+		declare netwrite Integer 	Net_ScoresTable_Result_Selected 		for UI;
+		// Net_ScoresTable_Result_Medals.add(5);
+		// Net_ScoresTable_Result_Medals.add(5);
+		// Net_ScoresTable_Result_Names.add("Your best rank");
+		// Net_ScoresTable_Result_Names.add("Your best time");
+		Net_ScoresTable_Result_Title		= "Arcade"; 
+		Net_ScoresTable_Result_Subtitle 	= _("Your best performance");
+	}
+	
+	// Net_ScoresTable_Result_Ranks.clear();
+	// Net_ScoresTable_Result_Ranks.add(0);
+	// Net_ScoresTable_Result_Ranks.add(0);
+
+	declare RanksParamBestRank					= "Small";
+	// declare RanksParamBestTime					= "Small NoRank";
+	declare RanksUpdateValues 					= "Net_ScoresTable_Result_Ranks Net_ScoresTable_Result_Names Net_ScoresTable_Result_BestRankTime Net_ScoresTable_Result_Medals Net_ScoresTable_Result_Selected";
+	// for(I, 0, 1) LayersContent.add(["Rank", "Player"^I, "Player"^I, "1", "", RanksParam, RanksUpdateValues]);
+	
+	LayersContent.add(["Title", 	"Title", 	 IMGPATH^IMG_ARCADE, 		"2",	"", TitleParam, "Net_ScoresTable_Result_Title Net_ScoresTable_Result_Subtitle"]);
+	LayersContent.add(["Space", 	"", 		 	"", 					"1",	"", "", ""]);
+	LayersContent.add(["Rank", 		"BestPerformance", "BestRank", "1", "", RanksParamBestRank, RanksUpdateValues]);
+	LayersContent.add(["Label", 	"Results3",	  	"", 					"1",	"", "", "Net_ScoresTable_Credit"]);
+	// LayersContent.add(["Rank", "BestTime", "BestTime", "1", "", RanksParamBestTime, RanksUpdateValues]);
+	
+	// LayersContent.add(["Label", 	"Results1",	  	"", 					"1",	"", "", "Net_ScoresTable_NameEdit_CongratMessage1"]);
+	// LayersContent.add(["Label", 	"Results2",	  	"", 					"1",	"", "", "Net_ScoresTable_NameEdit_CongratMessage2"]);
+	LayersContent.add(["Space", 	"", 		 	"", 					"1",	"", "", ""]);
+	
+	LayersContent.add(["Button", 	"Retry", 			"Get better", 		"1",	"Net_PlayerFinalChoice = "^TMC_FINALCHOICE_RETRY^";", 	"", ""]);
+	LayersContent.add(["Button", 	"Finish", 			"Finish",				"1", 	"Net_PlayerFinalChoice = "^TMC_FINALCHOICE_FINISH^";", 	"", ""]);
+	LayersContent.add(["Input", 	"Input", 		"", 					"1",	"", "", InputUpdate]);
+	
+	LayerBeforeWhile = 
+	"""
+		declare netwrite Integer Net_PlayerFinalChoice for UI;
+	""";
+	
+	LayerWhenShown = """Net_PlayerFinalChoice = 0;""";
+
+	UIPopupBuilder::CreateLayer(
+		"Layer_TMC_ScoresTable_FinalChoice", 
+		LayerPos,
+		LayersContent,
+		LayerBeforeWhile,
+		LayerWhenShown,
+		""
+	);
+	
+	
+	LayerPos = <-85., 15., 30.>;
+	LayersContent.clear();
+	LayersContent.add(["Title", 	"Title", 		IMGPATH^IMG_ARCADE, 				"2",	"", TitleParam, ""]);
+	LayersContent.add(["Space", 	"", 		  	"", 							"1",	"", "", ""]);
+	LayersContent.add(["Label", 	"Status1", 		_("Credits:"), 	"1",	"", "", "Net_ScoresTable_Credit"]);
+	LayersContent.add(["Input", 	"Input", 		"", 					"1",	"", "", InputUpdate]);
+	
+	UIPopupBuilder::CreateLayer(
+		"Layer_TMC_ScoresTable_GameStatus",
+		LayerPos,
+		LayersContent
+	);
+	*/
+	Layers::SetVisibility("Layer_TMC_ScoresTable", 				False);
+	Layers::SetVisibility("Layer_TMC_ScoresTable_Result", 		False);
+	Layers::SetVisibility("Layer_TMC_ScoresTable_PlayerSelect", 		False);
+	Layers::SetVisibility("Layer_TMC_ScoresTable_PlayerSelectDefault", 		False);
+	// Layers::SetVisibility("Layer_TMC_ScoresTable_2Player",	 	False);
+	Layers::SetVisibility("Layer_TMC_ScoresTable_NameEdit", 	False);
+	// Layers::SetVisibility("Layer_TMC_ScoresTable_FinalChoice", 	False);
+	// Layers::SetVisibility("Layer_TMC_ScoresTable_GameStatus", 	False);
+	
+	LayersContent.clear();
+}
+
+// ---------------------------------- //
+/// To re-attach layers in case of UI ResetAll
+Void Attach() {
+	Layers::Attach(C_LayerNameScoresTable);
+}
+
+Integer[Integer] GetTopScores(Integer _NbPlayer) {
+	declare  		Integer[Integer] 	LibTMC_ScoresTable_TopScores1OnMap 			for Map;
+	declare  		Integer[Integer] 	LibTMC_ScoresTable_TopScores2OnMap 			for Map;
+	declare  		Integer[Integer] 	LibTMC_ScoresTable_TopScores3OnMap 			for Map;
+	declare  		Integer[Integer] 	LibTMC_ScoresTable_TopScores4OnMap 			for Map;
+
+	if(_NbPlayer == 1) {
+		return LibTMC_ScoresTable_TopScores1OnMap;
+		
+	} else if(_NbPlayer == 2) {
+		// return LibTMC_ScoresTable_TopScores2OnMap;
+		return LibTMC_ScoresTable_TopScores1OnMap;
+	} else if(_NbPlayer == 3) {
+		return LibTMC_ScoresTable_TopScores3OnMap;
+	} else if(_NbPlayer == 4) {
+		return LibTMC_ScoresTable_TopScores4OnMap;
+	}
+	
+	return Integer[Integer];
+}
+
+Void SetTopScores(Integer _NbPlayer, Integer[Integer] _Scores) {
+	declare  		Integer[Integer] 	LibTMC_ScoresTable_TopScores1OnMap 			for Map;
+	declare  		Integer[Integer] 	LibTMC_ScoresTable_TopScores2OnMap 			for Map;
+	declare  		Integer[Integer] 	LibTMC_ScoresTable_TopScores3OnMap 			for Map;
+	declare  		Integer[Integer] 	LibTMC_ScoresTable_TopScores4OnMap 			for Map;
+
+	if(_NbPlayer == 1) {
+		LibTMC_ScoresTable_TopScores1OnMap = _Scores;
+	} else if(_NbPlayer == 2) {
+		LibTMC_ScoresTable_TopScores1OnMap = _Scores;
+	} else if(_NbPlayer == 3) {
+		LibTMC_ScoresTable_TopScores3OnMap = _Scores;
+	} else if(_NbPlayer == 4) {
+		LibTMC_ScoresTable_TopScores4OnMap = _Scores;
+	}
+}
+
+Text[Integer] GetTopNames(Integer _NbPlayer) {
+	declare  		Text[Integer] 		LibTMC_ScoresTable_TopNames1OnMap 			for Map;
+	declare  		Text[Integer] 		LibTMC_ScoresTable_TopNames2OnMap 			for Map;
+	declare  		Text[Integer] 		LibTMC_ScoresTable_TopNames3OnMap 			for Map;
+	declare  		Text[Integer] 		LibTMC_ScoresTable_TopNames4OnMap 			for Map;
+
+	return LibTMC_ScoresTable_TopNames1OnMap;
+	
+	if(_NbPlayer == 1) {
+		return LibTMC_ScoresTable_TopNames1OnMap;
+	} else if(_NbPlayer == 2) {
+		return LibTMC_ScoresTable_TopNames1OnMap;
+	} else if(_NbPlayer == 3) {
+		return LibTMC_ScoresTable_TopNames3OnMap;
+	} else if(_NbPlayer == 4) {
+		return LibTMC_ScoresTable_TopNames4OnMap;
+	}
+	
+	return Text[Integer];
+}
+
+Void SetTopNames(Integer _NbPlayer, Text[Integer] _Names) {
+	declare  		Text[Integer] 		LibTMC_ScoresTable_TopNames1OnMap 			for Map;
+	declare  		Text[Integer] 		LibTMC_ScoresTable_TopNames2OnMap 			for Map;
+	declare  		Text[Integer] 		LibTMC_ScoresTable_TopNames3OnMap 			for Map;
+	declare  		Text[Integer] 		LibTMC_ScoresTable_TopNames4OnMap 			for Map;
+
+	if(_NbPlayer == 1) {
+		LibTMC_ScoresTable_TopNames1OnMap = _Names;
+	} else if(_NbPlayer == 2) {
+		LibTMC_ScoresTable_TopNames1OnMap = _Names;
+	} else if(_NbPlayer == 3) {
+		LibTMC_ScoresTable_TopNames3OnMap = _Names;
+	} else if(_NbPlayer == 4) {
+		LibTMC_ScoresTable_TopNames4OnMap = _Names;
+	}
+}
+
+Integer[Integer] GetTopTimerLeft() {
+	declare Integer[Integer] LibTMC_ScoresTable_TopTimerLeft1OnMap for Map;
+	// log("GET TIMER LEFT: "^LibTMC_ScoresTable_TopTimerLeft1OnMap);
+	return LibTMC_ScoresTable_TopTimerLeft1OnMap;
+}
+
+Void SetTopTimerLeft(Integer[Integer] _TopTimerLeft) {
+	declare Integer[Integer] LibTMC_ScoresTable_TopTimerLeft1OnMap for Map;
+	LibTMC_ScoresTable_TopTimerLeft1OnMap = _TopTimerLeft;
+	// log("SET TIMER LEFT: "^LibTMC_ScoresTable_TopTimerLeft1OnMap);
+}
+
+Void SetRecap() {
+	foreach(Player in AllPlayers) {
+		declare UI <=> UIManager.GetUI(Player);
+		declare netwrite Boolean LibTMC_ScoresTable_Recap for UI;
+		LibTMC_ScoresTable_Recap = True;
+	}
+}
+
+Integer GetNbPlayersLastRace() {
+	foreach(Player in AllPlayers) {
+		declare UI <=> UIManager.GetUI(Player);
+		// declare netread 	Integer[] 	LibTMC_PairingPads_PadsPlaying 				for UI;
+		declare netwrite 	Integer[] 	LibTMC_PairingPads_PadsPlaying 		for UI;
+		if(LibTMC_PairingPads_PadsPlaying.count != 0) {
+			return LibTMC_PairingPads_PadsPlaying.count;
+		} else {
+			return 1;
+		}
+	}
+	return 0;
+}
+
+Integer SimulateNewScorePosition(Integer _NewScore) {
+	declare Integer NbPad = GetNbPlayersLastRace();
+	
+	declare 		Integer[Integer]	TopScoreUsed;
+	declare 		Text[Integer]		TopNameUsed;
+	TopScoreUsed 	= GetTopScores(NbPad);
+	declare Integer IndexForScore = -1;
+	for(Count, 0, TopScoreUsed.count) {
+		if(TopScoreUsed.existskey(Count)) {
+			if(_NewScore <= TopScoreUsed[Count]) {
+				IndexForScore = Count;
+				break;
+			}
+		} else {
+			IndexForScore = Count;
+			break;
+		}
+	}
+	return IndexForScore;
+}
+
+Integer NewScore(Integer _NewScore) {
+	declare Integer NbPad = GetNbPlayersLastRace();
+	
+	declare 		Integer[Integer]	TopScoreUsed;
+	declare 		Text[Integer]		TopNameUsed;
+	declare			Integer[Integer]	TopTimerUsed;
+	
+	TopScoreUsed 	= GetTopScores(NbPad);
+	TopNameUsed		= GetTopNames(NbPad);
+	TopTimerUsed	= GetTopTimerLeft();
+	
+	declare Integer NbTopScoreUsed 	= TopScoreUsed.count;
+
+	// log(TopScoreUsed.count^TopNameUsed.count^TopTimerUsed.count);
+	/*
+	if((NbTopScoreUsed != NbTopNameUsed || NbTopScoreUsed != NbTopTimerUsed || NbTopNameUsed != NbTopTimerUsed)) {
+		log(NbTopScoreUsed^"-"^NbTopNameUsed^"-"^NbTopTimerUsed);
+		
+		// HACK : synchronise les tableaux
+		// TODO : comprendre pourquoi il manque des éléments
+		foreach(Index => Value in TopScoreUsed) {
+			if(!TopNameUsed.existskey(Index)) TopNameUsed[Index] = "NADE"; // GRUI
+			if(!TopTimerUsed.existskey(Index)) TopTimerUsed[Index] = 30000; // GRUI
+		}
+		
+		NbTopNameUsed	= TopNameUsed.count;
+		NbTopTimerUsed 	= TopTimerUsed.count;
+	}
+	*/
+	
+	declare Text 	DefaultName = "---";
+	for(I, 2, NbPad) {
+		DefaultName ^= "$06f + $fff---";
+	}
+	
+	declare Integer IndexForScore = -1;
+
+	if(NbTopScoreUsed <= 0) {
+		IndexForScore = 0;
+		TopScoreUsed[IndexForScore] 	= _NewScore;
+		TopNameUsed[IndexForScore] 		= DefaultName;
+		TopTimerUsed[IndexForScore] 	= TMC_DEFAULTTIMERLEFT;
+	} else {
+		for(Count, 0, NbTopScoreUsed) {
+			if(TopScoreUsed.existskey(Count)) {
+				if(_NewScore <= TopScoreUsed[Count]) {
+					IndexForScore = Count;
+					break;
+				}
+			} else {
+				IndexForScore = Count;
+				break;
+			}
+		}
+
+		if(IndexForScore < 10) {
+			if(IndexForScore < NbTopScoreUsed) {
+				declare Integer J = NbTopScoreUsed;
+				
+				while(J > IndexForScore) {
+					TopScoreUsed[J] 	= TopScoreUsed[J-1];
+					TopNameUsed[J] 		= TopNameUsed[J-1];
+					TopTimerUsed[J]		= TopTimerUsed[J-1];
+					J -= 1;
+				}
+			}
+			
+			TopScoreUsed[IndexForScore] 	= _NewScore;
+			TopNameUsed[IndexForScore] 		= DefaultName;
+			TopTimerUsed[IndexForScore] 	= TMC_DEFAULTTIMERLEFT;
+		} else {
+			IndexForScore = -1;
+		}
+	}
+
+	SetTopScores(NbPad, TopScoreUsed);
+	SetTopNames(NbPad, TopNameUsed);
+	SetTopTimerLeft(TopTimerUsed);
+	
+	// log(TopTimerUsed);
+	
+	SendTablesToML(TopScoreUsed, TopNameUsed, NbPad);
+	
+	return IndexForScore;
+}
+
+Void HideScoreTable() 
+{
+	Layers::SetVisibility("Layer_TMC_ScoresTable", False);
+	// Layers::SetVisibility("Layer_TMC_ScoresTable_2Player", False);
+}
+
+// Integer GetScoreTrigger() {
+
+	// foreach(Player in AllPlayers) {
+		// declare UI <=> UIManager.GetUI(Player);
+		// declare netwrite Integer LibTMC_ScoresTable_NewScoreTrigger for UI;
+		// return LibTMC_ScoresTable_NewScoreTrigger;
+	// }
+	// return 0;
+// }
+
+Void UpdatePlayerResult() {
+	foreach(Player in AllPlayers) {
+		declare UI <=> UIManager.GetUI(Player);
+		declare netwrite Text 	 Net_ScoresTable_NameEdit_CongratMessage1 	for UI;
+		declare netwrite Text 	 Net_ScoresTable_NameEdit_CongratMessage2 	for UI;
+		
+	}
+}
+
+Void WriteCongratMessage(Integer _Position) {
+	foreach(Player in AllPlayers) {
+		declare UI <=> UIManager.GetUI(Player);
+		declare netwrite Text 	 Net_ScoresTable_NameEdit_CongratMessage1 	for UI;
+		declare netwrite Text 	 Net_ScoresTable_NameEdit_CongratMessage2 	for UI;
+		
+		if( _Position < 0) {
+			Net_ScoresTable_NameEdit_CongratMessage1 = _("Try again!");
+			Net_ScoresTable_NameEdit_CongratMessage2 = _("You can do better.");
+		} else if(_Position < 10) {
+			Net_ScoresTable_NameEdit_CongratMessage1 = _("Congrats!");
+			// Net_ScoresTable_NameEdit_CongratMessage2 = "You reached the "^_Position+1^"th place.";
+			
+			switch(_Position) {
+				//L16N the player has reach a rank in the scores table
+				case 0	:	Net_ScoresTable_NameEdit_CongratMessage2 = _("You reached the 1st place.");
+				case 1	:	Net_ScoresTable_NameEdit_CongratMessage2 = _("You reached the 2nd place.");
+				case 2	:	Net_ScoresTable_NameEdit_CongratMessage2 = _("You reached the 3rd place.");
+				default	:	Net_ScoresTable_NameEdit_CongratMessage2 = TL::Compose(_("You reached the %1th place."), ""^_Position+1);
+			}
+		} else {
+			Net_ScoresTable_NameEdit_CongratMessage1 = _("Not so bad...");
+			Net_ScoresTable_NameEdit_CongratMessage2 = _("But you can do better.");
+		}
+	}
+}
+
+Integer SimulateNewScore(Integer _NewScore) {
+	declare Integer Position = SimulateNewScorePosition(_NewScore);
+	// WriteCongratMessage(Position);
+	
+	
+	
+	return Position;
+}
+
+Void UpdateResultPlayer(Integer _BestRank, Integer _BestTime, Boolean _IsDoubleDriver) {
+	foreach(Player in AllPlayers) {
+		declare UI <=> UIManager.GetUI(Player);
+		declare netwrite Integer[] 	Net_ScoresTable_Result_Ranks 			for UI;
+		declare netwrite Text[] 	Net_ScoresTable_Result_Names 			for UI;
+		declare netwrite Integer[] 	Net_ScoresTable_Result_BestRankTime 	for UI;
+		declare netwrite Integer[] 	Net_ScoresTable_Result_Medals 			for UI;
+		declare netwrite Integer 	Net_ScoresTable_Result_Selected 		for UI;
+		
+		Net_ScoresTable_Result_Names.clear();
+		Net_ScoresTable_Result_Ranks.clear();		
+		Net_ScoresTable_Result_BestRankTime.clear();
+		Net_ScoresTable_Result_Medals.clear();
+		Net_ScoresTable_Result_Selected = 0;
+		
+		
+		if (_BestRank > -1 && _BestRank < 10) {
+			declare Integer Rank;
+			Rank = _BestRank+1;
+			Net_ScoresTable_Result_Ranks.add(Rank);
+			Net_ScoresTable_Result_Selected = Rank;
+		}
+		// log("Best rank is: "^_BestRank);
+		// log("Race result Rank array : "^Net_ScoresTable_Result_Ranks);
+		declare Text PlayersName = "";
+		
+		if(!_IsDoubleDriver) {
+			PlayersName = "Player";
+		} else {
+			PlayersName = "Player + Player";
+		}
+		
+		
+		Net_ScoresTable_Result_Names.add(PlayersName);
+		Net_ScoresTable_Result_BestRankTime.add(_BestTime);
+		Net_ScoresTable_Result_Medals.add(5);
+	}
+}
+
+Integer WriteNewScore(Integer _NewScore) {
+	declare Integer NewScoreIndex = NewScore(_NewScore);
+	G_LastPositionEntered = NewScoreIndex;
+	foreach(Player in AllPlayers) {
+		declare UI <=> UIManager.GetUI(Player);
+		declare netwrite Integer LibTMC_ScoresTable_NewScoreIndex 			for UI;
+		declare netwrite Integer LibTMC_ScoresTable_NewScoreTrigger 		for UI;
+		declare netwrite Integer Net_ScoresTableMenuSelectedPlayer 	for UI;
+		declare netwrite Integer Net_ScoresTableMenuSelectedPlayer_2Player 	for UI;
+		
+		// WriteCongratMessage(NewScoreIndex);
+		
+		LibTMC_ScoresTable_NewScoreIndex 	= NewScoreIndex;
+		Layers::SetVisibility("Layer_TMC_ScoresTable_NameEdit", 	True);
+
+		// declare Integer NbPlayers = GetNbPlayersLastRace();
+		// if(NbPlayers == 1) {
+			// Net_ScoresTableMenuSelectedPlayer = NewScoreIndex+1;
+		// } else if(NbPlayers == 2) {
+			// Net_ScoresTableMenuSelectedPlayer = NewScoreIndex+1;
+		// }
+	}
+	
+	return NewScoreIndex;
+}
+
+Text GetGhostNameToLoad(Integer _Index, Integer _NbPlayer) {
+	declare  		Text[Integer] 		LibTMC_ScoresTable_TopNames1OnMap 			for Map;
+	declare  		Text[Integer] 		LibTMC_ScoresTable_TopNames2OnMap 			for Map;
+	declare  		Text[Integer] 		LibTMC_ScoresTable_TopNames3OnMap 			for Map;
+	declare  		Text[Integer] 		LibTMC_ScoresTable_TopNames4OnMap 			for Map;
+	
+	declare Text GhostName = "";
+	if(_NbPlayer == 1 && LibTMC_ScoresTable_TopNames1OnMap.existskey(_Index-1)) {
+		
+		GhostName = LibTMC_ScoresTable_TopNames1OnMap[_Index-1];
+	} else if(_NbPlayer == 2 && LibTMC_ScoresTable_TopNames2OnMap.existskey(_Index-1)) {
+		declare Text[] NameSplited = TL::Split(" ", LibTMC_ScoresTable_TopNames2OnMap[_Index-1]);
+		GhostName = NameSplited[0];
+	} else if(_NbPlayer == 3 && LibTMC_ScoresTable_TopNames3OnMap.existskey(_Index-1)) {
+		declare Text[] NameSplited = TL::Split(LibTMC_ScoresTable_TopNames3OnMap[_Index-1], " ");
+		GhostName = NameSplited[0];
+	} else if(_NbPlayer == 4 && LibTMC_ScoresTable_TopNames4OnMap.existskey(_Index-1)) {
+		declare Text[] NameSplited = TL::Split(LibTMC_ScoresTable_TopNames4OnMap[_Index-1], " ");
+		GhostName = NameSplited[0];
+	}
+	if(GhostName != "") {
+	}
+	return GhostName;
+}
+
+Void WriteName(Boolean _DefaultName) {
+	declare Text[Integer] TopNamesUsed;
+	foreach(Player in AllPlayers) {
+		declare UI <=> UIManager.GetUI(Player);
+		declare netread 	Integer 	LibTMC_ScoresTable_NewNameTrigger 			for UI;
+		declare netread 	Text 		LibTMC_ScoresTable_NewName 					for UI;
+		declare  			Integer 	LibTMC_ScoresTable_PreviousNewNameTrigger 	for UI;
+		declare netwrite 	Integer 	LibTMC_ScoresTable_NewScoreIndex 			for UI;
+		declare netwrite 	Integer[] 	LibTMC_PairingPads_PadsPlaying 				for UI;
+		// log(LibTMC_ScoresTable_NewName);
+		TopNamesUsed = GetTopNames(1);
+		if(TopNamesUsed.existskey(LibTMC_ScoresTable_NewScoreIndex)) {
+			if(!_DefaultName) {
+				TopNamesUsed[LibTMC_ScoresTable_NewScoreIndex] 	= LibTMC_ScoresTable_NewName;
+			} else {
+				declare Text NameTableScore;
+				if(LibTMC_PairingPads_PadsPlaying.count == 1) {
+					NameTableScore = "????";
+				} else if(LibTMC_PairingPads_PadsPlaying.count == 2) {
+					NameTableScore = "???? $06f + $fff ????";
+				}
+					
+				TopNamesUsed[LibTMC_ScoresTable_NewScoreIndex] 	= NameTableScore;
+			}
+			log(TopNamesUsed);
+			SetTopNames(1, TopNamesUsed);
+		}
+		SendNamesToML(TopNamesUsed, 1);
+		LibTMC_ScoresTable_PreviousNewNameTrigger 	= LibTMC_ScoresTable_NewNameTrigger;
+		LibTMC_ScoresTable_NewScoreIndex 			= -1;
+	}
+}
+
+Void ShowNbScoreTable(Integer _Nb) {
+	foreach(Player in AllPlayers) {
+		declare UI <=> UIManager.GetUI(Player);
+		declare netwrite	Integer		LibTMC_ScoresTable_RoundTrigger				for UI;
+		declare netwrite	Integer		LibTMC_ScoresTable_NbStToShow				for UI;
+		LibTMC_ScoresTable_RoundTrigger = Now;
+		LibTMC_ScoresTable_NbStToShow = _Nb;
+	}
+}
+
+Void LoadScoreTableFromNbPlayer(Integer _IndexTable) {
+
+	Layers::SetVisibility("Layer_TMC_ScoresTable", True);
+
+	
+	// if(_IndexTable == 0 || _IndexTable == 1) {
+		
+		// Layers::SetVisibility("Layer_TMC_ScoresTable_2Player", False);
+	// } else if(_IndexTable == 2) {
+		// Layers::SetVisibility("Layer_TMC_ScoresTable", False);
+		// Layers::SetVisibility("Layer_TMC_ScoresTable_2Player", True);
+	// }
+}
+
+// ---------------------------------- //
+/** Function description
+ *	@param	_Integer		_NewScore
+ */
+Void ShowScoreTable() {
+	
+	foreach(Player in AllPlayers) {
+		declare UI <=> UIManager.GetUI(Player);
+		declare netwrite Integer LibTMC_ScoresTable_NewScoreIndex 	for UI;
+		declare netwrite Integer LibTMC_ScoresTable_NewScoreTrigger for UI;
+		declare netwrite Boolean LibTMC_ScoresTable_Recap 			for UI;
+		
+		LibTMC_ScoresTable_NewScoreIndex 	= -1;
+		LibTMC_ScoresTable_NewScoreTrigger 	= Now;
+		LibTMC_ScoresTable_Recap 			= False;
+	}
+	
+	
+	foreach(Player in AllPlayers) {
+		declare UI <=> UIManager.GetUI(Player);
+		declare 			Integer		LibTMC_NbPlayers				for UI;
+		LoadScoreTableFromNbPlayer(1);
+		// LoadScoreTableFromNbPlayer(1);
+	}	
+}
+
+Void ScoreTableLoop() {
+	foreach(Player in AllPlayers) {
+		declare UI <=> UIManager.GetUI(Player);
+		declare netread 	Integer[] 	LibTMC_PairingPads_PadsPlaying 	for UI;
+		declare 			Integer		LibTMC_NbPlayers				for UI;
+		declare netread 	Integer 	Net_PlayerNbChoice 				for UI;
+		
+		if(LibTMC_PairingPads_PadsPlaying.count != LibTMC_NbPlayers) {
+			LibTMC_NbPlayers = LibTMC_PairingPads_PadsPlaying.count;
+			LoadScoreTableFromNbPlayer(1);
+		}
+	}
+}
+
+Boolean ScoreWritten() {
+	declare Boolean IsScoreWritten = False;
+	foreach(Player in AllPlayers) {
+		declare UI <=> UIManager.GetUI(Player);
+		declare netread	Boolean		LibTMC_ScoresTable_ScoreWritten				for UI;
+		IsScoreWritten = LibTMC_ScoresTable_ScoreWritten;
+	}
+	return IsScoreWritten;
+}
+
+Integer GetNbPlayerChosen() 
+{
+	foreach(Player in AllPlayers) {
+		declare UI <=> UIManager.GetUI(Player);
+		declare netread Integer Net_PlayerNbChoice for UI;
+		return Net_PlayerNbChoice;
+	}
+	return -1;
+}
+
+Void SetNbPlayer() {
+	
+}
+
+Boolean IsScoreTableShown() {
+	return Layers::IsVisible("Layer_TMC_ScoresTable");
+}
+
+Void ShowPlayerSelec(Boolean _Show) {
+	//If nb players has changed during pad selection
+	Layers::SetVisibility("Layer_TMC_ScoresTable_PlayerSelect", _Show);
+	
+	/*
+	if(!_Show) {
+		Layers::SetVisibility("Layer_TMC_ScoresTable_PlayerSelect", _Show);
+		Layers::SetVisibility("Layer_TMC_ScoresTable_PlayerSelectDefault", _Show);
+	}
+	if(Input.Pads.count > 1) {
+		Layers::SetVisibility("Layer_TMC_ScoresTable_PlayerSelect", _Show);
+	} else {
+		Layers::SetVisibility("Layer_TMC_ScoresTable_PlayerSelectDefault", _Show);
+	}
+	*/
+}
+
+Boolean IsPlayerSelectShown() {
+	if(Input.Pads.count > 1) {
+		return Layers::IsVisible("Layer_TMC_ScoresTable_PlayerSelect");
+	} else {
+		return Layers::IsVisible("Layer_TMC_ScoresTable_PlayerSelectDefault");
+	}
+	return False;
+}
+
+Integer GetPlayerFinalChoice() {
+	foreach(Player in AllPlayers) {
+		declare UI <=> UIManager.GetUI(Player);
+		declare netread Integer Net_PlayerFinalChoice for UI;
+		return Net_PlayerFinalChoice;
+	}
+	return -1;
+}
+
+Void ShowRemainingCreditPopup(Boolean _Show) {
+	Layers::SetVisibility("Layer_TMC_ScoresTable_GameStatus", _Show);
+}
+
+Void ShowFinalChoicePopUp(Boolean _Show) {
+	Layers::SetVisibility("Layer_TMC_ScoresTable_FinalChoice", 	_Show);
+}
+
+Void ShowScoreTableResult(Boolean _Show) {
+	Layers::SetVisibility("Layer_TMC_ScoresTable_Result", _Show);
+}
+
+Boolean IsScoreTableResultShown() {
+	return Layers::IsVisible("Layer_TMC_ScoresTable_Result");
+}
+
+Boolean GetScoreTableResultAnswer()
+{
+	foreach(Player in Players) {
+		declare UI <=> UIManager.GetUI(Player);
+		declare netread Integer Net_Layer_TMC_ScoresTable_Result_PopupUpdate 	for UI;
+		declare 		Integer Prev_Layer_TMC_ScoresTable_Result_PopupUpdate 	for UI;
+
+		if(Prev_Layer_TMC_ScoresTable_Result_PopupUpdate != Net_Layer_TMC_ScoresTable_Result_PopupUpdate) {
+			Prev_Layer_TMC_ScoresTable_Result_PopupUpdate = Net_Layer_TMC_ScoresTable_Result_PopupUpdate;
+			return True;
+		}
+	}
+	return False;
+}
+
+Boolean IsFinalChoiceShown() {
+	return Layers::IsVisible("Layer_TMC_ScoresTable_FinalChoice");
+}
+
+Void UpdateCredits(Integer _Credits) {
+	foreach(Player in AllPlayers) {
+		declare UI <=> UIManager.GetUI(Player);
+		declare netwrite Text Net_ScoresTable_Credit for UI;
+		Net_ScoresTable_Credit = "Credits: "^_Credits;
+	}		
+}
+
+Void HideSetName() {
+	Layers::SetVisibility("Layer_TMC_ScoresTable_NameEdit", 	False);
+}
+
+Boolean GetPopUpAnswer()
+{
+	foreach(Player in Players) {
+		declare UI <=> UIManager.GetUI(Player);
+		declare netread Integer Net_Layer_TMC_ScoresTable_GameStatus_PopupUpdate 	for UI;
+		declare 		Integer Prev_Layer_TMC_ScoresTable_GameStatus_PopupUpdate 	for UI;
+
+		if(Prev_Layer_TMC_ScoresTable_GameStatus_PopupUpdate != Net_Layer_TMC_ScoresTable_GameStatus_PopupUpdate) {
+			Prev_Layer_TMC_ScoresTable_GameStatus_PopupUpdate = Net_Layer_TMC_ScoresTable_GameStatus_PopupUpdate;
+			return True;
+		}
+	}
+	return False;
+}
+
+Void SetTableScoreTimerUpdated(Boolean _Show) {
+	G_HasBeenUpdated = _Show;
+}
+
+Text GetPlayerName(Integer _Index) {
+	declare	Text[Integer] LibTMC_ScoresTable_TopNames1OnMap for Map;
+	return LibTMC_ScoresTable_TopNames1OnMap[_Index];
+}
+
+Integer GetPlayerScore(Integer _Index) {
+	declare	Integer[Integer] LibTMC_ScoresTable_TopScores1OnMap for Map;
+	return LibTMC_ScoresTable_TopScores1OnMap[_Index];
+}
+
+Integer GetPlayerTimerLeft(Integer _Index) {
+	declare	Integer[Integer] LibTMC_ScoresTable_TopTimerLeft1OnMap for Map;
+	return LibTMC_ScoresTable_TopTimerLeft1OnMap[_Index];
+}
+
+Integer[] UpdateTableScoresTimer(Integer _TimeToSubstract) {
+	declare Integer[] IndexGhostsToRemove;
+	
+	// log("G_HasBeenUpdated: "^G_HasBeenUpdated);
+	if(!G_HasBeenUpdated) {
+		// log("UPDATE TIMER PLAYER: "^_TimeToSubstract);
+		declare 		Integer[Integer]	TopScoreUsed;
+		declare 		Text[Integer]		TopNameUsed;
+		declare			Integer[Integer]	TopTimerUsed;
+		
+		TopScoreUsed 	= GetTopScores(1);
+		TopNameUsed		= GetTopNames(1);
+		TopTimerUsed	= GetTopTimerLeft();
+		// log("TOP TIMER USED: "^TopTimerUsed);
+		for(I, 0, TopScoreUsed.count-1) {
+			if(I != G_LastPositionEntered) {
+				TopTimerUsed[I] -= _TimeToSubstract;
+				// log("PLAYER: "^I^" ENERGY LEFT: "^TopTimerUsed[I]);
+			}
+		}
+
+		declare Integer I 				= 0;
+		declare Integer TopScoreSize 	= TopScoreUsed.count-1;
+		while(I <= TopScoreSize) {
+			if(TopTimerUsed[I] <= 0 && I != G_LastPositionEntered) {
+				// log("PLAYER:"^I^" ENERGY:"^TopTimerUsed[I]^" HAS TO BE REMOVED");
+				//Sub the score from the table
+				for(J, I, TopScoreUsed.count-1) {
+					//Replace
+					if(J < TopScoreUsed.count-1) {
+						TopScoreUsed[J] 	= TopScoreUsed[J+1];
+						TopNameUsed[J] 		= TopNameUsed[J+1];
+						TopTimerUsed[J]		= TopTimerUsed[J+1];
+					} else {
+						//Or erase
+						
+						TopScoreUsed		.removekey(J);
+						TopNameUsed			.removekey(J);
+						TopTimerUsed		.removekey(J);
+					}
+				}
+				IndexGhostsToRemove.add(I);
+				TopScoreSize = TopScoreUsed.count-1;
+			}
+			I += 1;
+		}
+		
+		SetTopScores(1, TopScoreUsed);
+		SetTopNames(1, TopNameUsed);
+		SetTopTimerLeft(TopTimerUsed);
+		
+		SendTablesToML(TopScoreUsed, TopNameUsed, 1);
+		G_HasBeenUpdated = True;
+	}
+	
+	return IndexGhostsToRemove;
+}

@@ -1,0 +1,304 @@
+#RequireContext CManiaplanetPlugin
+
+#Include "TextLib" as TextLib
+#Include "Libs/Nadeo/TMConsole/Logger.Script.txt" as Logger
+
+#Const InterfaceName	"TrackingPlugin"
+
+#Const C_PlayStartRace	"Race"
+
+#Const C_PlayStopFinished	"Finished"
+#Const C_PlayStopRestart	"Restart"
+
+declare Text G_PrevLoggedUserLogin;
+declare Text G_Mode;
+declare Text G_MapName;
+declare Boolean G_PrevHasUplayProfile;
+declare Boolean G_UplaySynchroDone;
+declare CNetMasterServerUserInfo::EMasterServerConnectionStatus G_PrevConnectionStatus;
+
+Boolean NotEnoughParams(CManiaAppEvent _Event, Integer _NbParams) {	
+	if(_Event.ExternalEventData.count < _NbParams) {
+		Logger::Warn("TrackingPlugin: not enough data for event "^_Event.ExternalEventType^" - "^_NbParams^" params expected, received "^_Event.ExternalEventData);
+		return True;
+	}
+	return False;
+}
+
+Void PlayStartRace() {
+	// Logger::Log("[TrackingPlugin][PlayStartRace]  DataMgr.MenuUserId: "^DataMgr.MenuUserId);
+	ManiaPlanet.MasterServer_Tracking_ContextPlayStart( DataMgr.MenuUserId, C_PlayStartRace );
+}
+
+Void PlayStopFinished(Integer _RaceTime) {
+	// Logger::Log("[TrackingPlugin][PlayStopFinished]  DataMgr.MenuUserId: "^DataMgr.MenuUserId);
+	ManiaPlanet.MasterServer_Tracking_ContextPlayStop( DataMgr.MenuUserId, C_PlayStartRace, C_PlayStopFinished, _RaceTime );
+}
+
+Void PlayStopRestart(Integer _RaceTime) {
+	// Logger::Log("[TrackingPlugin][PlayStopRestart]  DataMgr.MenuUserId: "^DataMgr.MenuUserId);
+	ManiaPlanet.MasterServer_Tracking_ContextPlayStop( DataMgr.MenuUserId, C_PlayStartRace, C_PlayStopRestart, _RaceTime );
+}
+
+
+Void PlayerRespawn(Integer _RaceTime) {
+	// Logger::Log("[TrackingPlugin][PlayerRespawn]  DataMgr.MenuUserId: "^DataMgr.MenuUserId^", _RaceTime: "^_RaceTime);
+	ManiaPlanet.MasterServer_Tracking_PlayerRespawn( DataMgr.MenuUserId, _RaceTime);
+}
+
+Void MedalUnlock(Integer _MedalType) {
+	// Logger::Log("[TrackingPlugin][MasterServer_Tracking_MedalEarned]  DataMgr.MenuUserId: "^DataMgr.MenuUserId^", _MedalType: "^_MedalType);
+	ManiaPlanet.MasterServer_Tracking_MedalUnlock(DataMgr.MenuUserId, _MedalType);
+}
+
+Void StartModeContext(Text _GameMode) {
+	if(_GameMode == G_Mode) return; // mode déjà lancé.
+	
+	// Logger::Log("[TrackingPlugin][MasterServer_Tracking_ContextGameModeStart]  DataMgr.MenuUserId: "^DataMgr.MenuUserId^", _GameMode: "^_GameMode);
+	G_Mode = _GameMode;
+	ManiaPlanet.MasterServer_Tracking_ContextGameModeStart(DataMgr.MenuUserId, G_Mode);
+}
+
+Void StopModeContext() {
+	if(G_Mode != "") {
+		// Logger::Log("[TrackingPlugin][MasterServer_Tracking_ContextGameModeStop]  DataMgr.MenuUserId: "^DataMgr.MenuUserId^", G_Mode: "^G_Mode);
+		ManiaPlanet.MasterServer_Tracking_ContextGameModeStop(DataMgr.MenuUserId, G_Mode);
+		G_Mode = "";
+	}
+}
+
+Void StartMapContext(Text _MapName, Text _Enviro) {
+	// Logger::Log("[TrackingPlugin][MasterServer_Tracking_ContextMapStart]  DataMgr.MenuUserId: "^DataMgr.MenuUserId^", _MapName: "^_MapName^", _Enviro: "^_Enviro);
+	G_MapName = _MapName;
+	ManiaPlanet.MasterServer_Tracking_ContextMapStart(DataMgr.MenuUserId, G_MapName, _Enviro);
+}
+
+Void StopMapContext() {
+	if(G_MapName != "") {
+		// Logger::Log("[TrackingPlugin][MasterServer_Tracking_ContextMapStop]  DataMgr.MenuUserId: "^DataMgr.MenuUserId^", G_MapName: "^G_MapName);
+		ManiaPlanet.MasterServer_Tracking_ContextMapStop(DataMgr.MenuUserId, G_MapName);
+		G_MapName = "";
+	}
+}
+
+Void InformProgression(Text _ProgressionLevel) {
+	// Logger::Log("[TrackingPlugin][MasterServer_Tracking_PlayerProgressionMap]  DataMgr.MenuUserId: "^DataMgr.MenuUserId^", _ProgressionLevel: "^_ProgressionLevel);
+	ManiaPlanet.MasterServer_Tracking_PlayerProgressionMap(DataMgr.MenuUserId, _ProgressionLevel);
+}
+
+Void TrackCampaign(Integer _PlayedMapCount,Integer _BronzeMedalCount,Integer _SilverMedalCount,Integer _GoldMedalCount,Integer _AuthorMedalCount,Integer _MaxDifficultyLevel) {
+	// Logger::Log("[TrackingPlugin][MasterServer_Tracking_StatCampaign]  DataMgr.MenuUserId: "^DataMgr.MenuUserId^", _PlayedMapCount, _BronzeMedalCount, _SilverMedalCount, _GoldMedalCount, _AuthorMedalCount, _MaxDifficultyLevel: "^_PlayedMapCount^", "^_BronzeMedalCount^", "^_SilverMedalCount^", "^_GoldMedalCount^", "^_AuthorMedalCount^", "^_MaxDifficultyLevel);
+	ManiaPlanet.MasterServer_Tracking_StatCampaign(DataMgr.MenuUserId, _PlayedMapCount, _BronzeMedalCount, _SilverMedalCount, _GoldMedalCount, _AuthorMedalCount, _MaxDifficultyLevel);
+}
+
+
+Void DebugUberLog() {
+	declare Integer G_NextTimerLog for LocalUser = 0;
+	if(Now > G_NextTimerLog) {
+		G_NextTimerLog = Now + 5000;
+		
+		Logger::Log(" === UplayActionsLoop ==============================================================================");
+		Logger::Log("UserMgr.MainUser                                         :"^UserMgr.MainUser);
+		if(  UserMgr.MainUser != Null) {
+		Logger::Log("UserMgr.MainUser.PersistentIsReady                       :"^UserMgr.MainUser.PersistentIsReady);
+		}
+		
+		Logger::Log("ManiaPlanet.MasterServer_MainMSUser                      :"^ManiaPlanet.MasterServer_MainMSUser);
+		if(  ManiaPlanet.MasterServer_MainMSUser != Null) {
+		Logger::Log("ManiaPlanet.MasterServer_MainMSUser.ConnectionStatus     :"^ManiaPlanet.MasterServer_MainMSUser.ConnectionStatus);
+		Logger::Log("ManiaPlanet.MasterServer_MainMSUser.HasUplayProfile      :"^ManiaPlanet.MasterServer_MainMSUser.HasUplayProfile);
+		}
+	}
+}
+
+Void UplayActionsLoop() {
+	// Logger::Log(" == UplayActionsLoop == ");
+	
+	// DebugUberLog();
+	
+	if(  UserMgr.MainUser == Null) return;
+	if(! UserMgr.MainUser.PersistentIsReady) return;
+	if(  ManiaPlanet.MasterServer_MainMSUser == Null) return;
+	
+	if(  ManiaPlanet.MasterServer_MainMSUser.ConnectionStatus != CNetMasterServerUserInfo::EMasterServerConnectionStatus::Connected ) return;
+	if(! ManiaPlanet.MasterServer_MainMSUser.HasUplayProfile) return;
+	
+	// HACK if needed
+	// G_UplaySynchroDone = False;return;
+	
+	if(G_PrevConnectionStatus != ManiaPlanet.MasterServer_MainMSUser.ConnectionStatus) {
+		G_PrevConnectionStatus = ManiaPlanet.MasterServer_MainMSUser.ConnectionStatus;
+		G_UplaySynchroDone = False;
+		Logger::Log("[UplayActionsLoop] G_PrevConnectionStatus change");
+	}
+	
+	if(G_PrevHasUplayProfile !=  ManiaPlanet.MasterServer_MainMSUser.HasUplayProfile) {
+		G_PrevHasUplayProfile = ManiaPlanet.MasterServer_MainMSUser.HasUplayProfile; // True by construction
+		G_UplaySynchroDone = False;
+		Logger::Log("[UplayActionsLoop] G_PrevHasUplayProfile change");
+	}
+	
+	if(G_UplaySynchroDone) return;
+	
+	
+	
+	declare persistent 	Text[] 	UplayActionsDone 	for UserMgr.MainUser;
+	
+	
+	// HACK
+	// UplayActionsDone.add("137");
+	// UserMgr.MainUser.PersistentSave();
+	// G_UplaySynchroDone = True;
+	// return;
+	
+	// pour forcer le vidage du tableau des actions faites
+	// UplayActionsDone = Text[];
+	// UserMgr.MainUser.PersistentSave();
+	// G_UplaySynchroDone = True;
+	// return;
+	
+	foreach(ActionID in UplayActionsDone) {
+		if(!ManiaPlanet.AchievementsManager.MasterServer_IsUplayActionCompleted(DataMgr.MenuUserId, ActionID)) {
+			ManiaPlanet.AchievementsManager.MasterServer_UplayCompleteAction(DataMgr.MenuUserId, ActionID);
+			Logger::Log("[UplayActionsLoop]    Synchronizing Local->Ubi for Action "^ActionID);
+		}
+	}
+	// Logger::Log("Uplay Actions Synchro Local->Ubi Done: "^ManiaPlanet.AchievementsManager.MasterServer_UplayActions);
+	
+	declare Boolean SomethingToSave = False;
+	foreach(UbiAction in ManiaPlanet.AchievementsManager.MasterServer_UplayActions) {
+		declare Text UbiActionID = UbiAction.ActionId;
+		declare Boolean HasUplayAction = ManiaPlanet.AchievementsManager.MasterServer_IsUplayActionCompleted(DataMgr.MenuUserId, UbiActionID);
+		if(HasUplayAction && !UplayActionsDone.exists(UbiActionID)) {
+			UplayActionsDone.add(UbiActionID);
+			SomethingToSave = True;
+			Logger::Log("[UplayActionsLoop]    Synchronizing Ubi->Local for Action "^UbiActionID);
+		}
+	}
+	if(SomethingToSave) {
+		// Logger::Log("[UplayActionsLoop] SomethingToSave");
+		UserMgr.MainUser.PersistentSave();
+	}
+	
+	Logger::Log("[UplayActionsLoop] Uplay Actions Synchronized : "^UplayActionsDone);
+	G_UplaySynchroDone = True;
+}
+
+Void CheckCurrentUser() {
+	if(ManiaPlanet.MasterServer_MainMSUser == Null) return;
+	if(G_PrevLoggedUserLogin == ManiaPlanet.MasterServer_MainMSUser.Login) return;
+	Logger::Log("CurrentUser Change: "^ManiaPlanet.MasterServer_MainMSUser.Login);
+	
+	G_PrevLoggedUserLogin = ManiaPlanet.MasterServer_MainMSUser.Login;
+	
+	G_Mode = "";
+	G_MapName = "";
+	G_PrevHasUplayProfile = False;
+	G_PrevConnectionStatus = CNetMasterServerUserInfo::EMasterServerConnectionStatus::NotConnected;
+	G_UplaySynchroDone = False;
+}
+
+main() 
+{
+	Logger::Log("[TrackingPlugin] Load ok");
+	
+	G_Mode = "";
+	G_MapName = "";
+	G_PrevHasUplayProfile = False;
+	G_PrevConnectionStatus = CNetMasterServerUserInfo::EMasterServerConnectionStatus::NotConnected;
+	G_UplaySynchroDone = False;
+	
+	while(True) 
+	{
+		yield;
+		
+		CheckCurrentUser();
+		UplayActionsLoop();
+		
+		foreach(Event in PendingEvents)
+		{
+			if(Event.Type == CManiaAppEvent::EType::ExternalCustomEvent)
+			{
+				if(Event.ExternalEventType == "Tracking_PlayerRespawn") 
+				{
+					if(NotEnoughParams(Event, 1)) continue;
+					declare Integer RaceTime = TextLib::ToInteger( Event.ExternalEventData[0] );
+					
+					if(RaceTime >= 0) 	PlayerRespawn(RaceTime);
+					else 				Logger::Warn("[TrackingPlugin] error: bad race time "^Event.ExternalEventData[0]);
+				}
+				else if(Event.ExternalEventType == "Tracking_PlayStartRace") 
+				{
+					PlayStartRace();
+				}
+				else if(Event.ExternalEventType == "Tracking_PlayStopRestart") 
+				{
+					if(NotEnoughParams(Event, 1)) continue;
+					declare Integer RaceTime = TextLib::ToInteger( Event.ExternalEventData[0] );
+					
+					if(RaceTime >= 0) 	PlayStopRestart(RaceTime);
+					else 				Logger::Warn("[TrackingPlugin] error: bad race time "^Event.ExternalEventData[0]);
+				}
+				else if(Event.ExternalEventType == "Tracking_PlayStopFinished") 
+				{
+					if(NotEnoughParams(Event, 1)) continue;
+					declare Integer RaceTime = TextLib::ToInteger( Event.ExternalEventData[0] );
+					
+					if(RaceTime >= 0) 	PlayStopFinished(RaceTime);
+					else 				Logger::Warn("[TrackingPlugin] error: bad race time "^Event.ExternalEventData[0]);
+				}
+				else if(Event.ExternalEventType == "Tracking_MedalUnlock") 
+				{
+					if(NotEnoughParams(Event, 1)) continue;
+					declare Integer MedalType = TextLib::ToInteger( Event.ExternalEventData[0] );
+					
+					if(MedalType >= 0) 	MedalUnlock(MedalType);
+					else 				Logger::Warn("[TrackingPlugin] error: bad medal type "^Event.ExternalEventData[0]);
+				}
+				else if(Event.ExternalEventType == "Tracking_StartMode") 
+				{
+					if(NotEnoughParams(Event, 1)) continue;
+					declare Text GameMode = Event.ExternalEventData[0];
+					
+					StartModeContext(GameMode);
+				}
+				else if(Event.ExternalEventType == "Tracking_StopMode") 
+				{
+					StopModeContext();
+				}
+				else if(Event.ExternalEventType == "Tracking_StartMap") 
+				{
+					if(NotEnoughParams(Event, 2)) continue;
+					declare Text MapName = Event.ExternalEventData[0];
+					declare Text MapEnviro = Event.ExternalEventData[1];
+					
+					StartMapContext(MapName, MapEnviro);
+				}
+				else if(Event.ExternalEventType == "Tracking_StopMap") 
+				{
+					StopMapContext();
+				}
+				else if(Event.ExternalEventType == "Tracking_Progression")
+				{
+					if(NotEnoughParams(Event, 1)) continue;
+					declare Text ProgressionLevel = Event.ExternalEventData[0];
+					
+					InformProgression(ProgressionLevel);
+				}
+				else if(Event.ExternalEventType == "Tracking_StartCampaign")
+				{
+					if(NotEnoughParams(Event, 6)) continue;
+					
+					declare Integer PlayedMapCount 		= TextLib::ToInteger(Event.ExternalEventData[0]);
+					declare Integer BronzeMedalCount	= TextLib::ToInteger(Event.ExternalEventData[1]);
+					declare Integer SilverMedalCount 	= TextLib::ToInteger(Event.ExternalEventData[2]);
+					declare Integer GoldMedalCount 		= TextLib::ToInteger(Event.ExternalEventData[3]);
+					declare Integer AuthorMedalCount 	= TextLib::ToInteger(Event.ExternalEventData[4]);
+					declare Integer MaxDifficultyLevel 	= TextLib::ToInteger(Event.ExternalEventData[5]);
+					
+					TrackCampaign(PlayedMapCount, BronzeMedalCount, SilverMedalCount, GoldMedalCount, AuthorMedalCount, MaxDifficultyLevel);
+				}
+			}
+		}
+	}
+}

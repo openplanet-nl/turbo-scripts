@@ -1,0 +1,549 @@
+/**
+ *	ScoreTable Library
+ * 	Especially made for console
+ */
+
+#Const Version		"2014-07-17"
+#Const ScriptName	"ScoresTable.Script.txt"
+
+#Include "MathLib" as ML
+
+#Include "Libs/Nadeo/Layers2.Script.txt" 				as Layers
+#Include "Libs/Nadeo/Manialink2.Script.txt"				as Manialink
+#Include "Libs/Nadeo/TMConsole/HSVColors.Script.txt" 	as Hue
+#Include "Libs/Nadeo/TMConsole/FontManager.Script.txt" 	as Font
+#Include "Libs/Nadeo/TMConsole/Colors.Script.txt" 		as Colors
+
+#Const ImgSrc									"file://Media/Images/TMConsole/Ingame/"
+
+#Const C_LibTMC_Symbiose_LayerInputFeedbacks	"LibSymbiose_InputFeedbacks"
+
+#Const C_OpacityTresh	0.33
+
+declare Ident G_ThePlayer;
+
+// ---------------------------------- //
+// Functions
+// ---------------------------------- //
+
+// ---------------------------------- //
+// Private
+// ---------------------------------- //
+
+
+Void Private_CreateLayerInputFeedbacksCircle() 
+{
+
+	declare Text 	LayerName 			= C_LibTMC_Symbiose_LayerInputFeedbacks;
+	
+	declare Integer MaxPlayers			= 2;
+	
+	declare ColorYellow					= Colors::GetColor		("Yellow");
+	declare ColorPinkRed 				= Colors::GetColor		("PinkRed");
+	declare ColorCyan2 					= Colors::GetColor		("Cyan2");
+	declare ColorHexaPinkRed 			= Colors::GetColorHexa	("PinkRed");
+	declare FontMain 					= Font	::GetFontName	("Main");
+
+	declare ColorConflict 				= ColorYellow;
+	
+	declare Integer TextSizeSmall2 		= 3;
+	
+	declare Real 	SizeX_Quads			= 152.;
+	declare Real 	SizeRatio_Quads		= 0.98;
+	
+	
+	declare Real 	PosX_Frame			= 0.;
+	declare Real 	PosY_FrameHidden	= 0.;
+	
+	declare Real 	PosXDrivers 		= 67.5;
+	
+	declare Real 	SizeDriver			= 17.5;
+	
+	declare Text 	MLText = """
+	
+	<framemodel id="Framemodel_Driver">
+		<label 	id="Label_Driver" 	posn="0 {{{-SizeDriver*0.5-1.}}} .2" 	sizen="100 10" 	valign="top" halign="center" 	textsize="{{{TextSizeSmall2}}}" 	textcolor="{{{ColorHexaPinkRed}}}" 	textfont="{{{FontMain}}}" text="DRIVER 1" />
+		<quad 	id="Quad_Accel" 	posn="0 0 .1" 	sizen="{{{SizeDriver}}} {{{SizeDriver*0.5}}}" 	valign="bottom"	halign="center"	image="{{{ImgSrc}}}dd-accel.dds" />
+		<quad 	id="Quad_Brake" 	posn="0 0 .1" 	sizen="{{{SizeDriver}}} {{{SizeDriver*0.5}}}" 	valign="top"	halign="center"	image="{{{ImgSrc}}}dd-brake.dds" />
+		<quad 	id="Quad_Bg" 		posn="0 0 .1" 	sizen="{{{SizeDriver}}} {{{SizeDriver}}}" 		valign="center"	halign="center"	image="{{{ImgSrc}}}dd-bg.dds" />
+	</framemodel>
+	
+	<frame id="Frame_Drivers" posn="0.	{{{-67.5}}}"	hidden="1" >
+		<frameinstance id="Frame_Driver0" posn="{{{-PosXDrivers}}} 	0.	.2" modelid="Framemodel_Driver" />
+		<frameinstance id="Frame_Driver1" posn="{{{ PosXDrivers}}} 	0.	.2" modelid="Framemodel_Driver" />
+	</frame>
+	
+	<frame 		id="Frame_Inputs" posn="{{{PosX_Frame}}} {{{PosY_FrameHidden}}} 1" >
+		<frame 	id="Frame_Angles">
+		""";	
+		for(I, 0, MaxPlayers-1)
+		{ 
+			declare SizeX = SizeX_Quads * ML::Pow(SizeRatio_Quads,I*1.);
+			MLText ^= """ <quad id="Quad_Player{{{I}}}" posn="0 0 0.1" 	sizen="{{{SizeX}}} {{{SizeX*0.5}}}" image="{{{ImgSrc}}}circle-half.dds" halign="center"	valign="bottom" opacity="0." hidden="True" colorize="1aF"/> """;		
+		}
+		
+		MLText ^= 
+		"""	
+		</frame>
+		
+		<frame	id="Frame_Stop"	  posn="0 -0" hidden="1">
+		""";
+		for(I, 0, MaxPlayers-1)
+		{
+			declare SizeX = SizeX_Quads * ML::Pow(SizeRatio_Quads,I*1.);
+			MLText ^= """ <quad id="Quad_Stop{{{I}}}" posn="0 0 0.1" 	sizen="{{{SizeX}}} {{{SizeX*0.5}}}" image="{{{ImgSrc}}}circle-half-noarrow.dds" halign="center"	valign="bottom" opacity="1." hidden="0" colorize="1aF" rot="180" /> """;		
+		}
+		MLText ^= 
+		"""	
+		</frame>
+	</frame>
+	
+	<script><!--
+		
+		{{{Manialink::GetIncludes()}}}
+		#Const TMC_MANAGER_ON		0
+		#Const TMC_MANAGER_OFF		1
+		#Const TMC_MANAGER_FINAL 	2
+		#Const DebugName  			"L_Symbiose"
+		{{{Manialink::Load()}}}
+		{{{Hue::MLHSVColors()}}}
+		
+		CInputPad GetPadFromControllerId(Integer _ControllerId) {
+			declare CInputPad CurPad;
+			foreach(Pad in Input.Pads) {
+				if(Pad.ControllerId == _ControllerId) {
+					CurPad <=> Pad;
+					// log(Now^"> FOUND Pad controller id: "^Pad.ControllerId);
+					break;
+				}
+			}
+			// log(Now^"> Cur Pad controller id: "^CurPad.ControllerId);
+			return CurPad;
+		}
+				
+		main() {
+		
+			declare Frame_Driver0 	<=> (Page.MainFrame.GetFirstChild("Frame_Driver0") 	as CMlFrame);
+			declare Label_Driver0 	<=> (Frame_Driver0 .GetFirstChild("Label_Driver") 	as CMlLabel);
+			declare	Quad_Accel0 	<=> (Frame_Driver0 .GetFirstChild("Quad_Accel") 	as CMlQuad);
+			declare Quad_Brake0 	<=> (Frame_Driver0 .GetFirstChild("Quad_Brake") 	as CMlQuad);
+			declare Quad_Bg0 		<=> (Frame_Driver0 .GetFirstChild("Quad_Bg") 		as CMlQuad);
+			
+			declare Frame_Driver1 	<=> (Page.MainFrame.GetFirstChild("Frame_Driver1") 	as CMlFrame);
+			declare Label_Driver1 	<=> (Frame_Driver1 .GetFirstChild("Label_Driver") 	as CMlLabel);
+			declare	Quad_Accel1 	<=> (Frame_Driver1 .GetFirstChild("Quad_Accel") 	as CMlQuad);
+			declare Quad_Brake1 	<=> (Frame_Driver1 .GetFirstChild("Quad_Brake") 	as CMlQuad);
+			declare Quad_Bg1 		<=> (Frame_Driver1 .GetFirstChild("Quad_Bg") 		as CMlQuad);
+			
+			declare Frame_Drivers 	<=> (Page.MainFrame.GetFirstChild("Frame_Drivers") 	as CMlFrame);
+			declare Frame_Inputs 	<=> (Page.MainFrame.GetFirstChild("Frame_Inputs") 	as CMlFrame);
+			declare Frame_Angles 	<=> (Page.MainFrame.GetFirstChild("Frame_Angles") 	as CMlFrame);
+			declare Frame_Stop 		<=> (Page.MainFrame.GetFirstChild("Frame_Stop") 	as CMlFrame);
+			
+			declare CMlQuad[] 		Quad_Player;
+			declare CMlQuad[] 		Quad_Stop;
+			
+			for(I, 0, {{{MaxPlayers-1}}}) 
+			{
+				Quad_Player			.add((Frame_Angles		.GetFirstChild("Quad_Player"^I) 		as CMlQuad)	 );
+				Quad_Stop			.add((Frame_Stop		.GetFirstChild("Quad_Stop"^I) 			as CMlQuad)	 );
+			}		
+			
+			declare Vec3 	ColorP0 	=  {{{ColorCyan2}}};
+			declare Vec3 	ColorP1 	= {{{ColorPinkRed}}};
+			declare Vec3 	ColorP2 	= < 0.5, 1., 0.1 >;
+			declare Vec3 	ColorP3 	= < 0.1, 1., 0.5 >;
+			declare Vec3[] 	Colors 		= [ColorP0, ColorP1, ColorP2, ColorP3];
+
+			foreach(Quad in Quad_Player) 	Quad.Blend = CMlQuad::EBlendMode::Add;
+			foreach(Quad in Quad_Stop) 		Quad.Blend = CMlQuad::EBlendMode::Add;
+
+			Label_Driver0	.Blend		= CMlLabel::EBlendMode::Add;
+			Label_Driver1	.Blend 		= CMlLabel::EBlendMode::Add;
+			Label_Driver0	.TextColor 	= ColorP0;
+			Label_Driver1	.TextColor 	= ColorP1;
+			Label_Driver0	.Value 		= "DRIVER 1";
+			Label_Driver1	.Value 		= "DRIVER 2";
+			
+			declare Labels_Driver 		= [Label_Driver0, Label_Driver1];
+			declare Quads_Accel 		= [Quad_Accel0, Quad_Accel1];
+			declare Quads_Brake 		= [Quad_Brake0, Quad_Brake1];
+			declare Quads_Bg 			= [Quad_Bg0, Quad_Bg1];
+			declare Quads_Driver0 		= [Quad_Accel0, Quad_Brake0, Quad_Bg0];
+			declare Quads_Driver1 		= [Quad_Accel1, Quad_Brake1, Quad_Bg1];
+			
+			foreach(Quad in Quads_Driver0) 
+			{
+				Quad.Blend 				= CMlQuad::EBlendMode::Add;
+				Quad.Colorize 			= ColorP0;
+			}
+			foreach(Quad in Quads_Driver1) 
+			{
+				Quad.Blend 				= CMlQuad::EBlendMode::Add;
+				Quad.Colorize 			= ColorP1;
+			}
+			
+			declare netread 	Boolean 	Net_SymbioseActive 							for UI;
+					
+			declare Boolean	IsThereConflict;
+			declare	Integer TimestampConflict;
+			
+			declare	Integer TimestampVisibility;
+			declare Boolean IsCoop;
+			declare Boolean UpdateAlternate;
+			declare netwrite Integer[] 			LibTMC_PairingPads_PadsPlaying 				for UI;
+			
+			foreach(I => Quad in Quad_Stop) Quad.Colorize = Colors[I];
+			
+			
+			
+			while(True) 
+			{
+				yield;
+				
+				if(InputPlayer == Null) continue;
+				UpdateAlternate = !UpdateAlternate;
+				// log(LibTMC_PairingPads_PadsPlaying);
+				if(Now > TimestampVisibility + 500)
+				{
+					TimestampVisibility 	= Now;
+					IsCoop 					= InputPlayer.ControllerCount > 1;
+				}
+				
+				// log(Now^">Menu Navigation "^IsMenuNavigationForeground^" Symbiose active "^Net_SymbioseActive^" Is coop "^IsCoop);
+				if(IsMenuNavigationForeground && Net_SymbioseActive && IsCoop) 
+				{
+					if(UpdateAlternate) // UPDATE : A-SIDE
+					{
+						Frame_Inputs.Visible = True;
+						Frame_Drivers.Visible = True;
+						// CHECK IF THERE IS A CONFLICT
+						
+						if(Now > TimestampConflict + 250)
+						{
+							TimestampConflict 	= Now;
+							
+							declare Forward 	= False;
+							declare Backward 	= False;
+							declare Left 		= False;
+							declare Right 		= False;
+							
+							foreach(I => Pad in Input.Pads) 
+							{
+								if(Input.Pads.existskey(I) && LibTMC_PairingPads_PadsPlaying.exists(Input.Pads[I].ControllerId)) 
+								{
+									declare Tresh =  0.90;
+									if(Pad.R2 > 0 || Pad.X > 0) 				Forward 	= True;
+									if(Pad.L2 > 0 || Pad.A > 0) 				Backward 	= True;	
+									if(Pad.LeftStickX < -Tresh) 							Left 		= True;
+									if(Pad.LeftStickX >  Tresh)  							Right 		= True;  
+								}
+							}
+							IsThereConflict = Forward && Backward || Left && Right;
+						}
+					}
+
+					foreach(I => Quad in Quad_Player) 
+					{
+						declare QuadStop 	= Quad_Stop[I];
+						declare QuadAccel 	= Quads_Accel[I];
+						declare QuadBrake 	= Quads_Brake[I];
+						declare QuadBg 		= Quads_Bg[I];
+						declare LabelDriver	= Labels_Driver[I];
+						
+						
+						declare CInputPad 	CurPad;
+						declare Integer 	CurPadControllerId;
+						if(LibTMC_PairingPads_PadsPlaying.existskey(I)) {
+							CurPadControllerId = LibTMC_PairingPads_PadsPlaying[I];
+							CurPad <=> GetPadFromControllerId(CurPadControllerId);
+						}
+						
+						// GET ANGLE VALUE FROM PAD INPUT BEHAVIOR
+						
+						declare Real 	Rot 			for Quad;
+						declare Integer LatestRotCheck	for Quad;
+						
+						declare Boolean Forward			for Quad;
+						declare Boolean Backward		for Quad;
+						declare Boolean Left			for Quad;
+						declare Boolean Right			for Quad;
+						
+						if(UpdateAlternate) // UPDATE : A-SIDE
+						{
+							if(Now > LatestRotCheck + 90)
+							{
+								// log(CurPad.ControllerId);
+								LatestRotCheck = Now;
+								if(CurPad != Null) 
+								{
+									declare Tresh 				=  0.15;
+									declare AngleWidth 			=  45.;
+									
+									declare LeftStickX			= CurPad.LeftStickX;
+									
+									declare AngleWidthRatio 	= AngleWidth * ML::Abs(LeftStickX);
+									declare AngleCorrection 	= AngleWidth - AngleWidthRatio;
+									
+									Forward 					= CurPad.R2 > 0 || CurPad.X > 0;
+									Backward 					= CurPad.L2 > 0 || CurPad.A > 0;
+									
+									Left 						= LeftStickX < -Tresh || CurPad.Left > 0;
+									Right 						= LeftStickX >  Tresh || CurPad.Right > 0;
+									
+									if(CurPad.Left == 0 && CurPad.Right == 0) {
+										AngleCorrection 	= AngleWidth - AngleWidthRatio;
+									} else {
+										AngleCorrection 	= 0.;
+									}
+									
+									if	   (Forward  && Left)  	Rot =  -(45.  - AngleCorrection);
+									else if(Forward  && Right) 	Rot =    45.  - AngleCorrection ;
+									else if(Backward && Left)  	Rot =  -(135. - AngleCorrection);
+									else if(Backward && Right) 	Rot =    135. - AngleCorrection ;
+									else if(Left) 		  		Rot =  -(90.  - AngleCorrection);
+									else if(Right)  	  		Rot =    90.  - AngleCorrection ;
+									else if(Forward)  	 		Rot =    0.;
+									else if(Backward) 	 		Rot =    180.;
+									
+									
+									
+									if(Backward)
+									{
+										declare CurrentRotation = Quad.RelativeRotation;
+										if(ML::Abs(CurrentRotation - Rot) > 179 && CurrentRotation != 0 && Rot != 0) 
+										{ 
+											declare 		X =  1.;
+											if(Rot > 0) 	X = -1.;
+											
+											Rot = (360 - ML::Abs(Rot)) * X;
+										}
+									}
+									// log(Rot);
+								}
+							}
+							// if(Quad.Opacity < {{{C_OpacityTresh}}}) Quad.RelativeRotation = Rot;
+						}
+						else // UPDATE : B-SIDE
+						{
+							
+							// SET QUADS TO RED IF CONFLICT (ELSE => PLAYER COLOR)
+							
+							declare Vec3 Color;
+							
+							if(IsThereConflict) Color 	= {{{ColorConflict}}};
+							else  				Color 	= Colors[I];
+							
+							Quad		.Colorize 		= Color;
+							QuadStop	.Colorize 		= Color;
+							QuadAccel	.Colorize 		= Color;
+							QuadBrake	.Colorize 		= Color;
+							QuadBg		.Colorize 		= Color;
+							LabelDriver	.TextColor		= Color;
+						
+						
+						
+							/////////////////////////////////////////////
+							// CIRCLES                                   
+							
+							declare Boolean IsInputActive;
+							
+							if(CurPad != Null) 
+							{
+								declare Tresh 				=  0.18;
+								declare InputX 				=  ML::Abs(CurPad.LeftStickX);
+								if(InputX < Tresh) InputX 	=  0.;
+								
+								declare Activity 			= CurPad.X + CurPad.A + CurPad.R2 + CurPad.L2 + InputX + CurPad.Left + CurPad.Right;
+								IsInputActive 				= Activity != 0;
+							}
+							
+							
+							
+							// VISIBILITY (FADE IN/OUT)
+							
+							declare Boolean	PrevAngleVisibility for Quad;
+							declare Integer	LatestShowChange for Quad;
+							
+							if (PrevAngleVisibility != IsInputActive) 
+							{
+								PrevAngleVisibility 	=  IsInputActive;  
+								LatestShowChange 		=  Now;
+							}
+							
+						
+							declare Real CurrTime = (Now - LatestShowChange)*1.;
+							declare Real FadeTime = 100.;
+							declare Real QuadOpacity; 
+							
+							if(IsInputActive)  	QuadOpacity = AL::Ease("Linear", CurrTime, 0.,  1., FadeTime);
+							else	  			QuadOpacity = AL::Ease("Linear", CurrTime, 1., -1., FadeTime);
+							
+							Quad.Visible = QuadOpacity > 0.;
+							Quad.Opacity = QuadOpacity;
+							
+							
+							// TRANSITION ANIMATION ONLY IF ALLREADY VISIBLE
+							if(IsInputActive && Quad.RelativeRotation != Rot)
+							{
+								declare Real PrevAngleRotation for Quad;
+								
+								if(PrevAngleRotation != Rot) 
+								{
+									LibManialink_AnimStop			(Quad);
+									LibManialink_SetTargetRotation	(Quad, Rot);
+									LibManialink_PresetAnim			(Quad, 400, "EaseOutBack");
+								}
+								PrevAngleRotation = Rot;
+							}
+							else
+							{
+								Quad.RelativeRotation = Rot;
+							}
+							
+							
+							
+							////////////////////////////////////
+							// DRIVER FRAMES (BRAKE / ACCEL)    
+							
+							declare Qd_Accel = Quads_Accel[I];
+							declare Qd_Brake = Quads_Brake[I];
+							
+							declare Boolean	PrevForward 		for Qd_Accel;
+							declare Integer	LatestForwardHide 	for Qd_Accel;
+							
+							declare Boolean	PrevBackward 		for Qd_Brake;
+							declare Integer	LatestBackwardHide 	for Qd_Brake;
+							
+							if(PrevForward != Forward)
+							{
+								PrevForward = Forward;
+								if(!Forward)  LatestForwardHide  = Now;
+							}
+							
+							if(PrevBackward != Backward)
+							{
+								PrevBackward = Backward;
+								if(!Backward) LatestBackwardHide = Now;
+							}
+							
+							declare FadeOutTime = 250.;
+							declare MinOpacity 	= 0.1;
+							declare MaxOpacity 	= 1.;
+							declare Change 		= -(MaxOpacity-MinOpacity);
+							declare Easing		= "ExpOut";
+							
+							if(Forward) 	
+								Quads_Accel[I].Opacity 	= 1.;
+							else 
+							{
+								declare Real CurrTime 	= (Now - LatestForwardHide)*1.;
+								declare Opacity 		= AL::Ease(Easing, CurrTime, MaxOpacity, Change, FadeOutTime);
+								Quads_Accel[I].Opacity 	= Opacity;
+							}			
+							
+							if(Backward) 	
+								Quads_Brake[I].Opacity 	= 1.;
+							else 
+							{
+								declare Real CurrTime 	= (Now - LatestBackwardHide)*1.;
+								declare Opacity 		= AL::Ease(Easing, CurrTime, MaxOpacity, Change, FadeOutTime);
+								Quads_Brake[I].Opacity 	= Opacity;
+							}						
+						}
+					}
+				} 
+				else
+				{
+					Frame_Inputs	.Visible = False;
+					Frame_Drivers	.Visible = False;
+				}
+				
+				///////////////////////////////////
+				// REQUIRED
+				
+				LibManialink_AnimLoop();
+			}
+		}
+	
+	--></script>
+	""";
+	
+	Layers::Create(LayerName, MLText);
+	Layers::Attach(LayerName);
+}
+
+// ---------------------------------- //
+// Public
+// ---------------------------------- //
+Void SetSymbioseOn() 
+{
+	declare UI <=> UIManager.GetUI(Players[G_ThePlayer]);
+	declare netwrite Boolean Net_SymbioseActive for UI;
+	Net_SymbioseActive = True;
+}
+
+Void SetSymbioseOff() 
+{
+	declare UI <=> UIManager.GetUI(Players[G_ThePlayer]);
+	declare netwrite Boolean Net_SymbioseActive for UI;
+	Net_SymbioseActive = False;
+}
+
+
+// ---------------------------------- //
+/** Return the version number of the script
+ *
+ *	@return		The version number of the script
+ */
+Text GetScriptVersion() 
+{
+	return Version;
+}
+
+// ---------------------------------- //
+/** Return the name of the script
+ *
+ *	@return		The name of the script
+ */
+Text GetScriptName() 
+{
+	return ScriptName;
+}
+
+
+
+// ---------------------------------- //
+/// Unload the library
+Void Unload() 
+{
+	Layers::Destroy(C_LibTMC_Symbiose_LayerInputFeedbacks);
+}
+
+
+
+
+// ---------------------------------- //
+/// Load the library
+Void Load(Ident _Player) 
+{
+	Unload();
+	G_ThePlayer = _Player;
+	SetSymbioseOff();
+	Private_CreateLayerInputFeedbacksCircle();
+}
+
+// ---------------------------------- //
+/// To re-attach layers in case of UI ResetAll
+Void Attach() 
+{
+	Layers::Attach(C_LibTMC_Symbiose_LayerInputFeedbacks);
+}
+
+
+
+// ---------------------------------- //
+/// Needed in the mode loop to function properly
+// Void Loop() { 
+	
+// }

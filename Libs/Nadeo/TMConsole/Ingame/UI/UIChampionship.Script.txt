@@ -1,0 +1,450 @@
+/** 
+ *	In-Game UI library
+ */
+#Include "TextLib" as TL
+	
+#Include "Libs/Nadeo/Layers2.Script.txt" 										as Layers
+#Include "Libs/Nadeo/TMConsole/FontManager.Script.txt"							as Font
+#Include "Libs/Nadeo/TMConsole/Ingame/UI/UIPopupBuilder.Script.txt"				as UIPopupBuilder
+#Include "Libs/Nadeo/TMConsole/Ingame/UI/UIButtonNamesPopup.Script.txt"			as UIButtonNamesPopup
+// #Include "Libs/Nadeo/TMConsole/Ingame/UI/UIOnlineManageFavorite.Script.txt"		as UIOMF
+#Include "Libs/Nadeo/TMConsole/Colors.Script.txt" 								as Colors
+#Include "Libs/Nadeo/UIPadButtons.Script.txt"									as UIButtons
+// #Include "Libs/Nadeo/TMConsole/Live/LiveEvent.Script.txt" 						as LiveEvent
+// #Include "Libs/Nadeo/TMConsole/Live/LiveHelpers.Script.txt" 					as LiveHelpers
+// #Include "Libs/Nadeo/TMConsole/Live/LiveHttp.Script.txt" 						as LiveHttp
+// #Include "Libs/Nadeo/TMConsole/Live/LiveAuth.Script.txt"						as LiveAuth
+
+#Const Version		"2015-03-02"
+#Const ScriptName	"UIArcade.Script.txt"
+
+#Const IMGPATH							"file://Media/Images/TMConsole/Ingame/"
+#Const IMG_INSERTCOIN					"insert-coin.dds"
+
+//////////////////////////////////////////
+// NON-SETTINGS CONST
+#Const C_LAYERNAME_CREDITS 				"Layer_CreditsStatus"
+#Const C_LAYERNAME_READY				"Layer_Ready"
+#Const C_LAYERNAME_PLAYERSVOTE			"Layer_PlayersVote"
+#Const C_LAYERNAME_CHANGETRACK			"Layer_ChangeTrack"
+
+#Const C_CHALLENGE_YES				1
+#Const C_CHALLENGE_NO				0
+
+#Const TMC_TRAIN_UNPUBLISHED		0
+#Const TMC_TRAIN_PUBLISHED			1
+#Const TMC_RACE						2
+#Const TMC_VALIDATION				3
+
+#Const MODE_COLORID_MULTIPLAYER			1
+
+declare Text 	G_FontMain;
+declare Text 	G_FontChrono;
+
+Void SetTrackAsFavorite(Boolean _AddToFavorite) {
+	//Recuperer l'id de la track
+	// log(Playground.Map.MapInfo.MapUid);
+	// TrackController::SetTracksAsFavorite("LiveEventFeedbackML", Playground.Map.MapInfo.MapUid, _AddToFavorite);
+}
+
+Void ConstructCreditsStatus() 
+{	
+	G_FontMain 					= Font::GetFontName("Main");
+	declare SizeX = 50.;
+	declare MarginX = 0;
+	declare MarginY = 10;
+	
+	declare Text ML =
+	
+	"""
+	
+	<frame id="Frame_CreditsStatus" posn="{{{-155+SizeX/2. - MarginX}}} {{{-90 + MarginY}}} 6." hidden="0">
+	
+		<quad id="Quad_Credits" 
+		posn="0 0 .1" 
+		sizen="{{{SizeX}}} {{{SizeX/2.}}}" 
+		valign="bottom" 
+		halign="center" 
+		bgcolor="0f0" 
+		image="{{{IMGPATH^IMG_INSERTCOIN}}}"
+		hidden="1"
+		/>	
+		
+		<label id="Label_Credits" 
+		posn="0 0 .2"
+		sizen="320 180" 
+		valign="top" 
+		halign="center" 
+		textfont="{{{G_FontMain}}}"
+		textsize="5"
+		text="CREDITS: 8"
+		textprefix="$t"
+		/>
+		
+	</frame>
+	
+	<script><!--
+	#Include "MathLib" as ML
+	#Include "TextLib" as TL
+	#Include "AnimLib" as AL
+	
+	#Const DebugName  "L_CreditsStatus"
+	
+	#Const C_AnimScale_Easing 	 "ElasticOut"
+	#Const C_AnimScale_Duration  500.
+	#Const C_AnimScale_Strength  0.5
+	
+	main() 
+	{
+		declare	netread Integer Net_Credits_Count	for UI;		
+		declare Prev_Credits_Count 	= 0;
+		declare Prev_PageIsVisible 	= PageIsVisible;
+		declare TriggerScale 		= Now;
+		
+		declare Frame_CreditsStatus	<=> (Page.MainFrame.GetFirstChild("Frame_CreditsStatus") 	as CMlFrame);
+		declare Label_Credits 		<=> (Page.MainFrame.GetFirstChild("Label_Credits") 			as CMlLabel);
+		
+		while(True) 
+		{
+			yield;
+
+			if(Prev_PageIsVisible != PageIsVisible)
+			{
+				Prev_PageIsVisible = PageIsVisible;
+				TriggerScale 	= Now;
+			}
+			
+			
+			if(Prev_Credits_Count != Net_Credits_Count)
+			{
+				Prev_Credits_Count 	= Net_Credits_Count;
+				TriggerScale		= Now;
+				if(Net_Credits_Count != -1) {
+					//L16N the number of credits for the player. Credits is like in classic arcade game, a game to be played. %1 is the number remaining
+					Label_Credits.Value = TL::Compose(_("Credits: %1"), ""^Net_Credits_Count);
+				} else {
+					Label_Credits.Value = _("Credits: Infinite");
+				}
+			}
+			
+			// if(!PageIsVisible) continue;
+			Frame_CreditsStatus.Scale = AL::Ease(
+				C_AnimScale_Easing, 
+				Now-TriggerScale*1., 
+				1.-C_AnimScale_Strength, 
+				C_AnimScale_Strength, 
+				C_AnimScale_Duration
+			);
+		}
+	}
+	--></script>
+	""";
+	
+	Layers::Create(C_LAYERNAME_CREDITS, ML);
+	Layers::Attach(C_LAYERNAME_CREDITS);
+	// Layers::SetVisibility(C_LAYERNAME_CREDITS, False);
+}
+
+Void SetVisibilityCredit(Boolean _Visible) {
+	Layers::SetVisibility(C_LAYERNAME_CREDITS, _Visible);
+}
+
+Void SetVisibilityReady(Boolean _Visible) {
+	Layers::SetVisibility(C_LAYERNAME_READY, _Visible);
+}
+
+Void SetVisibilityPlayersVote(Boolean _Visible) {
+	Layers::SetVisibility(C_LAYERNAME_PLAYERSVOTE, _Visible);
+}
+
+Void SetVisibilityPlayersTrackChoice(Boolean _Visible) {
+	Layers::SetVisibility(C_LAYERNAME_CHANGETRACK, _Visible);
+}
+
+Boolean GetPopUpAnswer()
+{
+	declare UI <=> UIManager.GetUI(Players[0]);
+	declare netread Boolean Net_Layer_Ready_PopupChoice 	for UI;
+	declare netread Integer Net_Layer_Ready_PopupUpdate 	for UI;
+	declare 		Integer Prev_Layer_Ready_PopupUpdate 	for UI;
+	if(Prev_Layer_Ready_PopupUpdate != Net_Layer_Ready_PopupUpdate)
+	{
+		Prev_Layer_Ready_PopupUpdate = Net_Layer_Ready_PopupUpdate;
+		Layers::SetVisibility(C_LAYERNAME_READY, False);
+		return True;
+	}
+	return False;
+}
+
+Integer GetVoteChoice() {
+	declare UI <=> UIManager.GetUI(Players[0]);
+	declare netread Integer Net_PlayerVoteChoice for UI;
+	return Net_PlayerVoteChoice;
+}
+
+Integer GetTrackChoice() {
+	declare UI <=> UIManager.GetUI(Players[0]);
+	declare netread Integer Net_PlayerTrackChoice for UI;
+	return Net_PlayerTrackChoice;
+}
+
+Boolean PlayerWantsToQuit() 
+{
+	declare UI <=> UIManager.GetUI(Players[0]);
+	declare netread Integer 	Net_PlayerWantsToQuitUpdate for UI;
+	declare netwrite Integer 	Pre_PlayerWantsToQuitUpdate for UI;
+	
+	if(Pre_PlayerWantsToQuitUpdate != Net_PlayerWantsToQuitUpdate) {
+		Pre_PlayerWantsToQuitUpdate = Net_PlayerWantsToQuitUpdate;
+		return True;
+	}
+	return False;
+}
+
+Void ConstructPauseMenu() {
+	UIButtons::Load();
+	G_FontMain 					= Font::GetFontName("Main");
+	declare IMGSelect 	= UIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Select);
+	declare IMGCancel 	= UIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Cancel);
+	declare TXTSelect 	= UIButtonNamesPopup::GetSelectText();
+	declare TXTCancel 	= UIButtonNamesPopup::GetBackText();
+	foreach(Player in AllPlayers) 
+	{
+		declare UI <=> UIManager.GetUI(Player);
+		if(UI == Null) return;
+		declare netwrite Text[] Net_PauseMenuInputs for UI;
+		Net_PauseMenuInputs =  [IMGSelect, TXTSelect, IMGCancel, TXTCancel];
+	}
+	G_FontChrono 				= Font::GetFontName("Chrono");
+	////////////////////////////////////////
+	// CREATE PAUSE LAYER               
+	declare ColorMode 	= Colors::GetModeColorName(MODE_COLORID_MULTIPLAYER);
+	declare TitleParam	= "ColorText "^ColorMode;
+	declare ColorWhite 			= Colors::GetColor("White");
+	declare Text LayerName		= "Menu";
+	declare Vec3 LayerPos		= <-85., 15., 33.>;
+	declare Text[][] LayerContent 	= 
+	[
+		["Title", 	"Pause", 			_("Pause"), 					"2",	"", "ColorText "^ColorMode, "Net_MenuTitle Net_MenuSubtitle"], 
+		["Space", 	"", 			  	"", 							"1",	"", "", ""],
+		//L16N In pause menu. Resume the game.
+		["Button", 	"Resume", 			_("Resume"), 					"1",	"CloseInGameMenu(CMlScriptIngame::EInGameMenuResult::Resume);", "", ""],
+		//L16N In pause menu. Allows the player to go to a menu where he can add and remove content from his favorite
+		["Button", 	"ManageFavorite", 	_("Favorite and report"), 		"1",	"Net_PlayerWantsToManageFavoriteUpdate += 1; CloseInGameMenu(CMlScriptIngame::EInGameMenuResult::Resume);", "", ""],
+		//L16N In pause menu. Quit the game
+		["Button", 	"Quit", 			_("Quit"), 						"1",	"""Net_PlayerWantsToQuitUpdate += 1; CloseInGameMenu(CMlScriptIngame::EInGameMenuResult::Resume);""", "", ""],
+		["Space", 	"", 		  		"", 							"1",	"", "", ""],
+		["Input", 	"Input", 			"", 							"1",	"", "", "Net_PauseMenuInputs"]
+	];
+	declare Text LayerBeforeWhile = 
+	""" 
+		declare netwrite Integer 	Net_PlayerHasGiveUpUpdate 					for UI;
+		declare netwrite Integer 	Net_PlayerWantsToQuitUpdate 				for UI;
+		declare netwrite Integer 	Net_PlayerWantsToManageFavoriteUpdate 		for UI;
+		declare netread Boolean 	Net_IsUgcTrack 								for UI;
+		declare netread Integer 	Net_GamePhase 								for UI;
+	""";
+	
+	declare Text LayerWhenShown =
+	"""
+	
+	""";
+	
+	declare Text LayerWhenLoop =
+	"""
+		if(Net_IsUgcTrack) {
+				declare CMlLabel 	Label_ManageFavorite 				<=> (Page.MainFrame.GetFirstChild("Label_ManageFavorite") as CMlLabel);
+				declare CMlQuad 	Button_ManageFavorite 				<=> (Page.MainFrame.GetFirstChild("Button_ManageFavorite") as CMlQuad);
+				
+				Label_ManageFavorite.TextColor = {{{ColorWhite}}};
+				Button_ManageFavorite.Show();
+			}
+	""";
+	
+	UIPopupBuilder::CreateLayer(
+		LayerName, 
+		"IngameMenu",
+		LayerPos,
+		LayerContent,
+		"",
+		LayerBeforeWhile,
+		LayerWhenShown,
+		LayerWhenLoop
+	);
+
+}
+
+Void ConstructConfirmChangeTrackPopup() {
+	declare UI <=> UIManager.GetUI(Players[0]);
+	declare netwrite Text 		Net_ChangeTrackTitle			for UI;
+	declare netwrite Text 		Net_ChangeTrackSubtitle			for UI;
+	declare netwrite Text[] 	Net_ChangeTrackInputs			for UI;
+	
+	declare IMGSelect 		= UIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Select);
+	// declare IMGCancel 		= UIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Cancel);
+	declare TXTSelect 		= UIButtonNamesPopup::GetSelectText();
+	// declare TXTCancel 		= _("Back");
+
+	Net_ChangeTrackInputs 	= [IMGSelect, TXTSelect];
+	
+	Net_ChangeTrackTitle 	= _("Challenge");
+	Net_ChangeTrackSubtitle = "";
+	
+	declare ColorMode 		= Colors::GetModeColorName(MODE_COLORID_MULTIPLAYER);
+	declare TitleParam		= "ColorText "^ColorMode;
+	declare Vec3 LayerPosition = <-85., 15., 30.>;
+	declare Text[][] LayersContent;
+	LayersContent.clear();
+	LayersContent = 
+	[
+		["Title",  "Title", 		"", 							"2",	"", TitleParam, "Net_ChangeTrackTitle Net_ChangeTrackSubtitle"],
+		["Space",  "", 		  	"", 							"1",	"", "", ""],
+		//L16N In a popup, propose to the player if he wants to keep playing on this track
+		["Label",  "Results1",	_("Keep playing on this track?"), 			"1",	"", "", ""],
+		//L16N In a popup, allows the player to confirm his choice
+		["Button", "Yes", 		_("Yes"), "1",					"Net_PlayerTrackChoice = "^C_CHALLENGE_YES^";", "", ""],
+		//L16N In a popup, allows the player to confirm his choice
+		["Button", "No", 		_("No"),  "1",					"Net_PlayerTrackChoice = "^C_CHALLENGE_NO^";", "", ""],
+		["Space",  "", 		  	"", 							"1",	"", "", ""],
+		["Input",  "Input", 		"", 							"1",	"", "", "Net_ChangeTrackInputs"]
+	];
+	
+	declare LayerBeforeWhile = 
+	""" 
+		declare netwrite Integer Net_PlayerTrackChoice 	for UI;
+	""";
+	
+	declare LayerWhenShown = """ 
+		Net_PlayerTrackChoice = -1;
+	""";
+	
+	UIPopupBuilder::CreateLayer(
+		C_LAYERNAME_CHANGETRACK, 
+		LayerPosition,
+		LayersContent, 
+		LayerBeforeWhile, 
+		LayerWhenShown,
+		""
+	);
+	SetVisibilityPlayersTrackChoice(False);
+}
+
+Void ConstructVotePopup() {
+	declare UI <=> UIManager.GetUI(Players[0]);
+	declare netwrite Text 		Net_VotePopupTitle			for UI;
+	declare netwrite Text 		Net_VotePopupSubtitle		for UI;
+	declare netwrite Text[] 	Net_VotePopupInputs			for UI;
+	
+	declare IMGSelect 		= UIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Select);
+	// declare IMGCancel 		= UIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Cancel);
+	declare TXTSelect 		= UIButtonNamesPopup::GetSelectText();
+	// declare TXTCancel 		= _("Back");
+
+	Net_VotePopupInputs 	= [IMGSelect, TXTSelect];
+	
+	Net_VotePopupTitle 		= UIButtonNamesPopup::GetRateChallengeTitle();
+	Net_VotePopupSubtitle 	= "";
+	
+	declare ColorMode 		= Colors::GetModeColorName(0);
+	declare TitleParam		= "ColorText "^ColorMode;
+	declare Vec3 LayerPosition = <0., 15., 60.>;
+	declare Text[][] LayersContent;
+	LayersContent.clear();
+	LayersContent = 
+	[
+		["Title", "Title", 		"", 							"2",	"", TitleParam, "Net_VotePopupTitle Net_VotePopupSubtitle"],
+		["Space", "", 		  	"", 							"1",	"", "", ""],
+		//L16N propose to vote for this challenge. Challenge is a Game mode, shouldn't be translated
+		["Button", 	"Yes", 				UIButtonNamesPopup::GetLikeChallengeText(), 		"1",					"Net_PlayerVoteChoice = 1;", "", ""],
+		["Button", 	"Indifferent", 		UIButtonNamesPopup::GetIndifferentChallengeText(),  "1",					"Net_PlayerVoteChoice = 0;", "", ""],
+		["Button", 	"No", 				UIButtonNamesPopup::GetDislikeChallengeText(),  	"1",					"Net_PlayerVoteChoice = -1;", "", ""],
+		["Space", "", 		  	"", 							"1",	"", "", ""],
+		["Input", "Input", 		"", 							"1",	"", "", "Net_VotePopupInputs"]
+	];
+	
+	declare LayerBeforeWhile = 
+	""" 
+		declare netwrite Integer Net_PlayerVoteChoice 	for UI;
+	""";
+	declare LayerWhenShown = """ 
+		Net_PlayerVoteChoice = -2;
+	""";
+	
+	UIPopupBuilder::CreateLayer(
+		C_LAYERNAME_PLAYERSVOTE, 
+		LayerPosition,
+		LayersContent, 
+		LayerBeforeWhile, 
+		LayerWhenShown,
+		""
+	);
+	SetVisibilityPlayersVote(False);
+}
+
+Void ConstructMainPopups() {
+	declare UI <=> UIManager.GetUI(Players[0]);
+	declare netwrite Text 		Net_MenuStatusTitle			for UI;
+	declare netwrite Text 		Net_MenuStatusSubtitle		for UI;
+	declare netwrite Text[] 	Net_MenuStatusInputs		for UI;
+	
+	declare IMGSelect 		= UIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Select);
+	// declare IMGCancel 		= UIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Cancel);
+	declare TXTSelect 		= UIButtonNamesPopup::GetGoText();
+	// declare TXTTry 			= _("Try Again");
+	// declare TXTCancel 		= _("Back");
+
+	Net_MenuStatusInputs 	= [IMGSelect, TXTSelect];
+	
+	Net_MenuStatusTitle 	= "Challenge";
+	Net_MenuStatusSubtitle 	= "";
+	
+	declare ColorMode 		= Colors::GetModeColorName(MODE_COLORID_MULTIPLAYER);
+	declare TitleParam		= "ColorText "^ColorMode;
+	declare Vec3 LayerPosition = <-85., 15., 30.>;
+	declare Text[][] LayersContent;
+	LayersContent.clear();
+	LayersContent = 
+	[
+		["Title", "Title", 		"", 				"2",	"", TitleParam, "Net_MenuStatusTitle Net_MenuStatusSubtitle"],
+		["Space", "", 		  	"", 							"1",	"", "", ""],
+		//L16N in a popup, ask the player if he's ready to start the race. He confirms with a "Go" button
+		["Label", "Results1",	_("Are you ready?"), 					"1",	"", "", ""],
+		["Space", "", 		  	"", 							"1",	"", "", ""],
+		["Input", "Input", 		"", 					"1",	"", "", "Net_MenuStatusInputs"]
+	];
+	
+	declare LayerBeforeWhile = 
+	""" 
+	""";
+	declare LayerWhenShown = """ """;
+	
+	UIPopupBuilder::CreateLayer(
+		C_LAYERNAME_READY, 
+		LayerPosition,
+		LayersContent, 
+		LayerBeforeWhile, 
+		LayerWhenShown,
+		""
+	);
+}
+
+Void SetChangeTrackFocusButton(Integer _IndexButton) {
+	UIPopupBuilder::SetDefaultFocusedButton(C_LAYERNAME_CHANGETRACK, _IndexButton);
+}
+
+Void SetVoteFocusButton(Integer _IndexButton) {
+	UIPopupBuilder::SetDefaultFocusedButton(C_LAYERNAME_PLAYERSVOTE, _IndexButton);
+}
+
+Void Load(Integer _GameContext) 
+{
+	if(_GameContext == TMC_RACE || _GameContext == TMC_VALIDATION) {
+		ConstructCreditsStatus();
+	}
+	ConstructPauseMenu();
+	ConstructVotePopup();
+	ConstructConfirmChangeTrackPopup();
+	// TrackController::Load();
+	ConstructMainPopups();
+	SetVisibilityReady(False);
+}

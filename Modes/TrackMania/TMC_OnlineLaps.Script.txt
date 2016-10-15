@@ -1,0 +1,749 @@
+/**
+ *	Laps mode
+ */
+
+#Extends "Modes/TrackMania/TMC_ModeBase.Script.txt"
+
+#Const  CompatibleMapTypes  "RaceCE,Race"
+#Const	Version		"2014-07-02"
+#Const	ScriptName	"Laps.Script.txt"
+
+#Include "Libs/Nadeo/TMConsole/Ingame/Game_Online.Script.txt" 				as Game
+#Include "Libs/Nadeo/TMConsole/Colors.Script.txt" 							as Colors
+#Include "Libs/Nadeo/TMConsole/Ingame/IngameTempQuestion.Script.txt" 		as IngameTempQuestion
+#Include "Libs/Nadeo/TMConsole/Ingame/FlavourText.Script.txt" 				as FlavourText
+#Include "Libs/Nadeo/TMConsole/Ingame/RewardScreens.Script.txt" 			as RewardScreens
+#Include "Libs/Nadeo/TMConsole/Ingame/IngameTempQuestion.Script.txt" 		as IngameTempQuestion
+#Include "Libs/Nadeo/TMConsole/Ingame/Medals.Script.txt" 					as Medals
+
+#Include "MathLib" as ML
+
+// ---------------------------------- //
+// Settings
+// ---------------------------------- //
+#Setting S_TimeLimit		0	as _("Time limit :")
+#Setting S_ForceLapsNb		3	as _("Number of Laps :")
+#Setting S_FinishTimeout	-1	as _("Finish timeout :")
+#Setting S_ApiKey			""	as "<hidden>" ///< Live api key
+#Setting S_IsStuntMode		False	as _("Stunt mode")
+
+#Const C_GAMEPHASE_CHALLENGE		3
+#Const C_GAMEPHASE_PREPARATION		0
+#Const C_GAMEPHASE_GAME				1
+#Const C_GAMEPHASE_POSTGAME			2
+#Const C_GAMEPHASE_OUTRO			4
+
+#Const TMC_TEMPQUESTION_LIKEMAP			0
+#Const TMC_TEMPQUESTION_ADDMAP			1
+#Const TMC_TEMPQUESTION_ADDROOM			2
+#Const TMC_TEMPQUESTION_LIKECHALLENGE	3
+
+#Const TMC_TEMPQUESTION_OFF 			0
+#Const TMC_TEMPQUESTION_VOTING 			1
+#Const TMC_TEMPQUESTION_RESULT 			2
+
+#Const C_PLAYERCHOICE_RACE				1
+#Const C_PLAYERCHOICE_RIDE				2
+
+#Const TMC_MEDAL_AUTHOR					0
+#Const TMC_MEDAL_GOLD					1
+#Const TMC_MEDAL_SILVER					2
+#Const TMC_MEDAL_BRONZE					3
+#Const TMC_MEDAL_PLAYER					4
+#Const TMC_MEDAL_NONE					5
+#Const TMC_MEDAL_ANOTHERPLAYER			6
+
+#Const C_SpawnStatus_Racing			1	///< The player is currently racing
+#Const C_SpawnStatus_Waiting		2	///< The player is winting to be spawned
+#Const C_SpawnStatus_Outro			3	///< The player is watching the outro sequence
+#Const C_SpawnStatus_Browsing		4   ///< The player is browsing the score table
+
+// ---------------------------------- //
+// Constants
+// ---------------------------------- //
+#Const C_NbBots 0
+
+// ---------------------------------- //
+// Globales
+// ---------------------------------- //
+declare Integer G_NbPlayersReachedLine;
+declare Integer G_NbPlayersGiveUp;
+declare Boolean	G_OnePlayerHasRaced;
+
+// declare Integer G_NbLapsAsResq
+
+// ---------------------------------- //
+// Extend
+// ---------------------------------- //
+***LogVersion***
+***
+MB_LogVersion(ScriptName, Version);
+// MB_LogVersion(UI::GetScriptName(), UI::GetScriptVersion());
+***
+
+***InitServer***
+***
+declare Integer PrevTimeLimit;
+declare Integer StartTime;
+declare Text PrevMapUid;
+***
+
+***StartServer***
+***
+// ---------------------------------- //
+// Initialize mode
+UiLaps = True;
+PrevTimeLimit = S_TimeLimit;
+SetLapsNb(S_ForceLapsNb, StartTime);
+StartTime = -1;
+
+// ---------------------------------- //
+// Initialize UI
+// UiLaps = True;
+// UI::Load(["TimeGap", "Chrono", "CheckpointTime", "PrevBestTime"]);
+// UI::DisplayTimeDiff(False);
+
+// ---------------------------------- //
+// Create scores table
+// ST2::SetStyle("LibST_TMBaseSolo");
+// ST2::SetModeIcon("Icons128x32_1|RT_Laps");
+// ST2::CreateCol("LibST_TMCheckpoints", "", "0", 3., 60.);
+// ST2::CreateCol("LibST_TMBestTime", "", "--:--.---", 8., 70.);
+// ST2::SetColTextAlign("LibST_TMBestTime", CMlControl::AlignHorizontal::Right);
+// ST2::SetColTextSize("LibST_TMCheckpoints", 1.5);
+// ST2::SetColTextSize("LibST_TMBestTime", 2.);
+// MB_SetScoresTableStyleFromXml(S_ScoresTableStylePath);
+// ST2::Build("TM");
+***
+
+***InitMap***
+***
+declare FirstFinish = True;
+SetLapsNb(S_ForceLapsNb, StartTime);
+Scores_Clear();
+***
+
+***BeforeLoadMap***
+***
+declare Integer FakeVariable = 3;
+ClientManiaAppUrl = "file://Media/Manialinks/Nadeo/TMConsole/Ingame/UIOnlineManiaApp.Script.txt";
+***
+
+***StartMap***
+***
+
+
+declare netwrite Text	Net_ModeName			for Teams[0];
+Net_ModeName = "OnlineLaps";
+
+declare netwrite Integer Net_NbCheckpoints for Teams[0];
+Net_NbCheckpoints = MapCheckpointPos.count+MapFinishLinePos.count;
+
+// ---------------------------------- //
+// Layers
+Game::Load(This, "OnlineLaps");
+Game::SetNbLaps(S_ForceLapsNb);
+Game::SetNbPadsNeeded(1);
+
+UIManager.HoldLoadingScreen = False;
+
+if (PrevMapUid != Map.MapInfo.MapUid) PrevMapUid = Map.MapInfo.MapUid;
+else Game::ForceLikeDislikeUpdate();
+
+// ---------------------------------- //
+// Initialize map
+MB_Ladder_OpenMatch_All();
+Users_SetNbFakeUsers (C_NbBots, 0);
+
+// ---------------------------------- //
+// Warm up
+declare ObjectiveNbLaps = Map.TMObjective_NbLaps;
+if (ObjectiveNbLaps <= 0 || !Map.TMObjective_IsLapRace) ObjectiveNbLaps = 1;
+declare MaxTime = (Map.TMObjective_AuthorTime / ObjectiveNbLaps) * S_WarmUpDuration;
+declare WarmUpTimeLimit = Now + 3000 + MaxTime + (MaxTime / 6);
+MB_WarmUp(WarmUpTimeLimit);
+
+// ---------------------------------- //
+// Initialize race
+StartTime = Now + 3000;
+SetTimeLimit(StartTime);
+UIManager.UIAll.UISequence = CUIConfig::EUISequence::Playing;
+
+CutOffTimeLimit 		= -1;
+G_NbPlayersReachedLine 	= 0;
+G_NbPlayersGiveUp		= 0;
+
+// ---------------------------------- //
+// Initialize scores
+foreach (Score in Scores) {
+	declare CanSpawn for Score = True;
+	CanSpawn = True;
+}
+
+foreach(Player in AllPlayers) {
+	declare UI <=> UIManager.GetUI(Player);
+	declare netwrite Boolean Net_HasPlayedOnce for Player = False;
+	Net_HasPlayedOnce = False;
+	declare netwrite Integer RespawnAsLap for UI;
+	RespawnAsLap = 0;
+	declare netwrite Integer 			NbCheckpoints 			for Player.Score = 0;
+	declare netwrite Integer[Integer] 	CustomTimeCheckpoint 	for Player.Score;
+	NbCheckpoints = 0;
+	CustomTimeCheckpoint.clear();
+	CustomTimeCheckpoint[0] = 0;
+	Game::SetGamePhase(Player, C_GAMEPHASE_GAME);
+	
+	if(S_IsStuntMode && !Player.EnableStuntMode) {
+		SetPlayerStuntMode(Player);
+	}
+}
+
+// ---------------------------------- //
+// Spawn players for the race
+foreach (Player in Players) {
+	declare ModeOL_HasTimeToSpawn for Player = True;
+	ModeOL_HasTimeToSpawn = True;
+
+	if (Player.Score == Null) continue;
+	
+	declare CanSpawn for Player.Score = True;
+	if(Game::IsPlayerBrowseScoresTable(Player)) {
+		Game::HideScoresTable(Player);
+		Game::SetInputAvailableScoresTable(Player, False);
+	}
+	CanSpawn = False;
+
+	if(S_IsStuntMode && !Player.EnableStuntMode) {
+		SetPlayerStuntMode(Player);
+	}
+	
+	Game::StartRace(Player, StartTime);
+
+	declare TimeBeforeSpec for Player = Now;
+	TimeBeforeSpec = -1;
+
+	SetOpponentForUI(Player, TMC_MEDAL_PLAYER);
+	declare netwrite Boolean Net_HasPlayedOnce for Player = False;
+	Net_HasPlayedOnce = True;
+}
+
+G_OnePlayerHasRaced = False;
+
+***
+
+// ***WarmUp***
+// ***
+// if (S_WarmUpDuration > 0) {		
+	// WarmUp::Begin();
+	// WarmUp::SetProgression(1, 1);
+	// CutOffTimeLimit = _TimeLimit;
+	
+	// while (Now < CutOffTimeLimit && !WarmUp::Stop() && !ServerShutdownRequested && !MatchEndRequested) {
+		// MB_Yield();
+		// WarmUp::Loop();
+		// WarmUp::ManageEvents();
+	// }
+	// WarmUp::End();
+	
+	// UIManager.UIAll.BigMessage = _("End of warmup, match starting...");
+	// UIManager.UIAll.UISequence = CUIConfig::EUISequence::EndRound;
+	// CutOffTimeLimit = Now + 4000;
+	// while (Now < CutOffTimeLimit && !ServerShutdownRequested && !MatchEndRequested) {
+		// MB_Yield();
+	// }
+	// CutOffTimeLimit = -1;
+	// UIManager.UIAll.BigMessage = "";
+	// UIManager.UIAll.UISequence = CUIConfig::EUISequence::Playing;
+// }
+// ***
+
+***PlayLoop***
+***
+
+Game::Loop();
+CheckOnePlayerHasRaced();
+
+// ---------------------------------- //
+// Update the map duration setting
+if (PrevTimeLimit != S_TimeLimit) {
+	PrevTimeLimit = S_TimeLimit;
+	SetTimeLimit(StartTime);
+}
+
+// ---------------------------------- //
+// Spawn players joining during the race
+/*
+foreach (Player in Players) {
+	if (Player.Score == Null) continue;
+	
+	declare CanSpawn for Player.Score = True;
+	if (Game::IsWaiting(Player) && CanSpawn) {
+		Game::StartRace(Player, StartTime);
+		CanSpawn = False;
+	}
+}
+*/
+
+// ---------------------------------- //
+// Spawn players for the race
+foreach (Player in Players) {
+	if (Player.Score == Null) continue;
+	declare CanSpawn  for Player.Score = True;
+	
+	if(CanSpawn && Game::IsWaiting(Player)) {
+		declare ModeOL_HasTimeToSpawn for Player = True;
+		if (ModeOL_HasTimeToSpawn) {
+		if(Game::IsPlayerBrowseScoresTable(Player)) {
+			Game::HideScoresTable(Player);
+			Game::SetInputAvailableScoresTable(Player, False);
+		}
+		CanSpawn = False;
+
+		if(S_IsStuntMode && !Player.EnableStuntMode) {
+			SetPlayerStuntMode(Player);
+		}
+
+		Game::StartRace(Player, StartTime);
+
+		declare TimeBeforeSpec for Player = Now;
+		TimeBeforeSpec = -1;
+
+		SetOpponentForUI(Player, TMC_MEDAL_PLAYER);
+		declare netwrite Boolean Net_HasPlayedOnce for Player = False;
+		Net_HasPlayedOnce = True;
+		}
+	} else if (!CanSpawn && Game::IsWaiting(Player)) {
+		declare TimeBeforeSpec for Player = Now;
+		if (TimeBeforeSpec >= 0 && Now >= TimeBeforeSpec) {
+			TimeBeforeSpec = -1;
+			Game::HideReward(Player);
+		}
+ 	}
+}
+
+foreach (Event in PendingEvents) {
+	PassOn(Event);
+	
+	// ---------------------------------- //
+	// Waypoint
+	if (Event.Type == CTmModeEvent::EType::WayPoint) {
+		// declare netwrite Integer 			RespawnAsLap 			for UI;
+		// declare netwrite Integer[Integer]	CustomRaceTime			for Event.Player.Score;
+		declare netwrite Integer 			NbCheckpoints 			for Event.Player.Score = 0;
+		declare netwrite Integer[Integer] 	CustomTimeCheckpoint 	for Event.Player.Score;
+		declare CanSpawn  for Event.Player.Score = True;
+		
+		if (Event.IsEndRace) {
+			declare Boolean IsEndRace = True;
+			// IsEndRace
+			
+			/*
+			if(Map.TMObjective_IsLapRace) {
+				IsEndRace = True;
+			} else {
+				RespawnAsLap += 1;
+				
+				if(RespawnAsLap == S_ForceLapsNb) {
+					IsEndRace = True;
+				} else if(RespawnAsLap < S_ForceLapsNb) {
+					Game::WaitRace(Event.Player);
+					CanSpawn = True;
+					CustomRaceTime[RespawnAsLap] = Event.Player.CurRace.Time;
+					
+					if (Event.Player.Score.BestRace.Compare(Event.Player.CurRace, CTmResult::ETmRaceResultCriteria::Time) <= 0) {
+						Event.Player.Score.BestRace = Event.Player.CurRace;
+					}
+				}
+			}
+			*/
+			
+			if(IsEndRace) {
+				if (Event.Player.Score !=  Null) Event.Player.Score.PrevRace = Event.Player.CurRace;
+				Game::EndRace(Event.Player);
+				RewardScreenEndRace(Event.Player);
+				G_NbPlayersReachedLine += 1;
+				
+				// ---------------------------------- //
+				// Start the countdown if it's the first player to finish
+				if (FirstFinish) {
+					FirstFinish = False;
+					CutOffTimeLimit = GetFinishTimeout();
+				}
+			}
+		}
+		
+		if (Event.Player.Score !=  Null) {
+			Event.Player.Score.BestRace = Event.Player.CurRace;
+			
+			// ---------------------------------- //
+			// Save the best lap time
+			if (Event.IsEndLap) {
+				if (Event.Player.Score.BestLap.Compare(Event.Player.CurLap, CTmResult::ETmRaceResultCriteria::Time) <= 0) {
+					Event.Player.Score.BestLap = Event.Player.CurLap;
+				}
+			}
+		}
+		
+		Scores_Sort(CTmMode::ETmScoreSortOrder::BestRace_CheckpointsProgress);
+		NbCheckpoints += 1;
+		CustomTimeCheckpoint[CustomTimeCheckpoint.count-1] = Event.Player.CurRace.Time;
+		
+	}
+	// ---------------------------------- //
+	// GiveUp
+	else if (Event.Type == CTmModeEvent::EType::GiveUp) {
+		if(Game::IsRacing(Event.Player)) {
+			Game::WaitRace(Event.Player);
+			RewardScreenGiveUp(Event.Player);
+			G_NbPlayersGiveUp += 1;
+			SetOpponentForUI(Event.Player, TMC_MEDAL_NONE);
+
+			if (Event.Player != Null) {
+				declare TimeBeforeSpec for Event.Player = Now;
+				TimeBeforeSpec = Now + 3000;
+			}
+		}
+	}
+	
+	// ---------------------------------- //
+	// On player added
+	else if(Event.Type == CTmModeEvent::EType::OnPlayerAdded) {
+		Game::SetInputAvailableScoresTable(Event.Player, False);
+		Game::SetGamePhase(Event.Player, C_GAMEPHASE_GAME);
+		Game::WaitRace(Event.Player);
+		Game::FlushPlayerEvent(Event.Player);
+		declare netwrite Integer 			NbCheckpoints 			for Event.Player.Score = 0;
+		declare netwrite Integer[Integer] 	CustomTimeCheckpoint 	for Event.Player.Score;
+		CustomTimeCheckpoint.clear();
+		CustomTimeCheckpoint[0] = 0;
+		NbCheckpoints 				= 0;
+		Game::SendOnPlayerAdded(Event.Player.User.Name);
+		
+		declare CanSpawn for Event.Player.Score = True;
+		CanSpawn = True;
+		if(S_IsStuntMode && !Event.Player.EnableStuntMode) {
+			SetPlayerStuntMode(Event.Player);
+		}
+
+		if (Event.Player != Null) {
+			declare ModeOL_HasTimeToSpawn for Event.Player = True;
+			ModeOL_HasTimeToSpawn = (CutOffTimeLimit < 0);
+	}
+	}
+}
+
+// ---------------------------------- //
+// End the map 
+// If All players finished
+if (Players.count > 0 && PlayersRacing.count <= 0 && G_OnePlayerHasRaced) {
+	MB_StopMap = True;
+}
+// If time limit is reached
+if (CutOffTimeLimit > 0 && Now >= CutOffTimeLimit) MB_StopMap = True;
+
+if(MB_StopMap) {
+	CutOffTimeLimit = 0;
+	
+	Game::WaitTime(5000);
+	
+	// ---------------------------------- //
+	// Close ladder
+	// Do not grant LP if the map was skipped
+	if (CutOffTimeLimit < 0 || Now >= CutOffTimeLimit) {
+		Ladder_ComputeRank(CTmMode::ETmScoreSortOrder::BestRace_CheckpointsProgress);
+		MB_Ladder_CloseMatch();
+	} else {
+		MB_Ladder_CancelMatch();	
+	}
+
+	foreach(Player in AllPlayers) {
+		Game::SetGamePhase(Player, C_GAMEPHASE_POSTGAME);
+	}
+	//Hide previous score table
+	foreach(Player in AllPlayers) {
+		declare Integer Status = Game::GetPlayerStatus(Player);
+		if(Status == C_SpawnStatus_Outro) {
+			Game::HideReward(Player);
+		}
+		
+		if(Game::IsPlayerBrowseScoresTable(Player)) {
+			Game::HideScoresTable(Player);
+		}
+		
+		SetOpponentForUI(Player, TMC_MEDAL_NONE);
+	}
+	
+	//See which player will see end sequence
+		foreach(Player in AllPlayers) {
+		declare Boolean SeeEndSequence for Player = False;
+		declare netwrite Boolean Net_HasPlayedOnce for Player = False;
+		if(Net_HasPlayedOnce) {
+			SeeEndSequence = True;
+		} else {
+			SeeEndSequence = False;		
+		}
+	}
+	
+	declare Text RewardUrl = RewardScreens::GetScreenOnline();
+	declare Vec3 TextColor = <0.0, 0.0, 0.0>;
+	
+	// ---------------------------------- //
+	// Score table
+	//If players does not see end sequence, display scores table leaderboard
+	foreach(Player in AllPlayers) {
+		declare Boolean SeeEndSequence for Player = False;
+		if(!SeeEndSequence) {
+			Game::ShowReward(Player, "", "", "", "to continue", RewardUrl, TextColor, "", False);
+			Game::SetInputAvailableScoresTable(Player, False);
+			Game::DisplayScoresTable(Player);
+		}
+	}
+
+	Scores_Sort(CTmMode::ETmScoreSortOrder::BestRace_CheckpointsProgress);
+	
+	foreach(Player in AllPlayers) {
+		declare Boolean SeeEndSequence for Player = False;
+		if(SeeEndSequence) {
+			Game::ShowReward(Player, "", "", "", "to continue", RewardUrl, TextColor, "", False);
+		}
+	}
+	
+	//If players does not see end sequence, display scores table leaderboard
+	foreach(Player in AllPlayers) {
+		declare Boolean SeeEndSequence for Player = False;
+		if(!SeeEndSequence) {
+			Game::SetInputAvailableScoresTable(Player, False);
+			Game::DisplayScoresTable(Player);
+		}
+	}
+	
+	foreach (Player in AllPlayers) {
+		declare UI <=> UIManager.GetUI(Player);
+		if (UI != Null) UI.UISequence = CUIConfig::EUISequence::None;
+		Game::WaitRace(Player);
+		// Game::SetReplayMusic(Player);
+
+		declare Boolean SeeEndSequence for Player = False;
+		if(SeeEndSequence) {
+			Game::SetInputAvailableScoresTable(Player, False);
+			Game::DisplayScoresTable(Player);
+		}
+	}
+			
+	Game::WaitTime(3000);
+	
+	foreach(Player in AllPlayers) {
+		declare Boolean SeeEndSequence for Player = False;
+		if(SeeEndSequence) {
+			Game::HideScoresTable(Player);
+		}
+	}
+	
+	Game::WaitTime(500);
+	
+	RewardScreenEndMap();
+	
+	// if(!S_IsShowcase) {
+		
+	// }
+	CutOffTimeLimit = -1;
+	Game::RankingSequence();
+	foreach(Player in AllPlayers) {
+		Game::HideReward(Player);
+	}
+	Game::WaitTime(100);
+	Game::PodiumSequence();
+	
+	UIManager.UIAll.UISequence = CUIConfig::EUISequence::Playing;
+	foreach (Player in AllPlayers) {
+		Game::SetStopMusic(Player);
+	}
+	
+	/*
+	Game::WaitTime(2000);
+	
+	RewardScreenEndMap();
+	Game::WaitTime(3000);
+	Game::WaitRaceAll();
+	
+	Game::RankingSequence();
+	
+	foreach(Player in AllPlayers) {
+		declare Boolean SeeEndSequence for Player = False;
+		if(SeeEndSequence) {
+			Game::ShowReward(Player, "", "", "", "to continue", RewardUrl, TextColor, "", False);
+		}
+	}
+
+	Game::WaitTime(500);
+	
+	IngameTempQuestion::StartTempQuestion(TMC_TEMPQUESTION_LIKEMAP);
+	while(IngameTempQuestion::GetTempQuestionState() != TMC_TEMPQUESTION_OFF) {
+		yield;
+		Game::Loop();
+		IngameTempQuestion::TempQuestionLoop();
+	}
+	
+	Game::WaitTime(500);
+	Game::PodiumSequence();
+	*/
+	Game::SendTrackIncrementPlayerCount(S_ApiKey);
+}
+***
+
+***EndMap***
+***
+Game::WaitRaceAll();
+// CutOffTimeLimit = -1;
+
+// ---------------------------------- //
+// Close ladder
+// Ladder_ComputeRank(CTmMode::ETmScoreSortOrder::BestRace_CheckpointsProgress);
+// MB_Ladder_CloseMatch();
+
+// Scores_Sort(CTmMode::ETmScoreSortOrder::BestRace_CheckpointsProgress);
+// if (Scores.existskey(0) &&  Scores[0].BestRace.Time > 0) {
+	// MB_VictoryMessage = TL::Compose(_("$<%1$> wins the map!"), Scores[0].User.Name);
+// }
+***
+
+// ***EndServer***
+// ***
+// UI::Unload();
+// ***
+
+// ---------------------------------- //
+// Functions
+// ---------------------------------- //
+Void CheckOnePlayerHasRaced() {
+	if(Players.count >= 1 && PlayersRacing.count >= 1) {
+		G_OnePlayerHasRaced = True;
+	}
+}
+
+Void SetPlayerStuntMode(CTmPlayer _Player) {
+	declare UI <=> UIManager.GetUI(_Player);
+	declare netwrite Boolean Net_IsStuntMode for UI;
+	Net_IsStuntMode = True;
+	_Player.EnableStuntMode = True;
+	_Player.EnableOnlineMode = True;
+}
+
+Void SetOpponentForUI(CTmPlayer _Player, Integer _OpponentType) {
+	declare Integer[] PlayerCpTime;
+	if(_Player.Score.BestRace.Checkpoints.count != 0 && _OpponentType != TMC_MEDAL_NONE) {
+		foreach(Cp in _Player.Score.BestRace.Checkpoints) PlayerCpTime.add(Cp);
+		Game::SetOpponent(_Player, _OpponentType, PlayerCpTime);
+		declare Text OpponentName = Medals::GetMedalName(TMC_MEDAL_PLAYER);
+		Game::SetOpponentName(OpponentName);
+	} else {
+		Game::SetOpponent(_Player, TMC_MEDAL_NONE, Integer[]);
+	}
+}
+
+/** Get the time left to the players to finish the map after the first player
+ *
+ *	@return 		The time left in ms
+ */
+Integer GetFinishTimeout() {
+	declare FinishTimeout = 0;
+	
+	if (S_FinishTimeout >= 0) {
+		FinishTimeout = S_FinishTimeout * 1000;
+	} else {
+		declare ObjectiveNbLaps = Map.TMObjective_NbLaps;
+		if (ObjectiveNbLaps <= 0 || !Map.TMObjective_IsLapRace) ObjectiveNbLaps = 1;
+		FinishTimeout = 5000 + (((Map.TMObjective_AuthorTime / ObjectiveNbLaps) * NbLaps) / 6);
+	}
+	
+	return Now + FinishTimeout;
+}
+
+// ---------------------------------- //
+/** Set the time limit
+ *
+ *	@param	_StartTime	The time at which the race started
+ */
+Void SetTimeLimit(Integer _StartTime) {
+	// User define time limit with a setting
+	if (S_TimeLimit > 0) {
+		CutOffTimeLimit = _StartTime + (S_TimeLimit * 1000);
+	} 
+	// No time limit
+	else if (S_TimeLimit == 0) {
+		CutOffTimeLimit = -1;
+	} 
+	// Time limit auto adjusted
+	else {
+		declare ObjectiveNbLaps = Map.TMObjective_NbLaps;
+		if (ObjectiveNbLaps <= 0) ObjectiveNbLaps = 1;
+		declare TimePerLap = ML::NearestInteger((Map.TMObjective_BronzeTime + (Map.TMObjective_BronzeTime * 0.1)) / ObjectiveNbLaps);
+		CutOffTimeLimit = _StartTime + (TimePerLap * NbLaps);
+	}
+}
+
+// ---------------------------------- //
+/** Set the number of laps 
+ *
+ *	@param _LapsNb	The number of laps
+ *	@param _StartTime	The time at which the race started
+ */
+Void SetLapsNb(Integer _LapsNb, Integer _StartTime) {
+	MB_SetLapsNb(_LapsNb);
+	SetTimeLimit(_StartTime);
+	
+	// ST2::SetFooterText(TL::Compose("%1 "^NbLaps, _("Number of Laps :")));
+}
+
+// ---------------------------------- //
+/** Display the final screen
+ *
+ *	@return		True if it is the case, false otherwise
+ */
+Void RewardScreenEndRace(CTmPlayer _Player) {
+	declare Text 	RankMessage 	= Game::GetRankMessage(G_NbPlayersReachedLine);
+	declare Text 	Subtitle2		= FlavourText::GetOnlineLapsDefaultSubtitle();
+	declare Text 	RewardUrl		= RewardScreens::GetScreenOnline();
+	declare Vec3 	TextColor 		= Colors::GetColor("White");
+	
+	Game::ShowReward(_Player, _("Congrats!"), RankMessage, Subtitle2, "", RewardUrl, TextColor, "+", False); 
+}
+
+Void RewardScreenGiveUp(CTmPlayer _Player) {
+	declare Text 	Title 			= FlavourText::GetOnlineBadTitle();
+	declare Text 	Subtitle		= FlavourText::GetRoundsNotFinishedRace();
+	declare Text 	Subtitle2		= FlavourText::GetOnlineLapsDefaultSubtitle();
+	declare Text 	RewardUrl		= RewardScreens::GetScreenOnline();
+	declare Vec3 	TextColor 		= Colors::GetColor("White");
+	Game::ShowReward(_Player, Title, Subtitle, Subtitle2, "", RewardUrl, TextColor, "-", False);
+}
+
+Void RewardScreenEndMap() {
+	// ---------------------------------- //
+	// Game Reward
+	foreach(Player in AllPlayers) {
+		declare Boolean SeeEndSequence for Player = False;
+		if(SeeEndSequence) {
+			declare Integer PlayerPosition 	= Game::GetPlayerPosition(Player);
+			declare Text	Title			= FlavourText::GetCampaignBronzeTitle();
+			
+			declare Real 	GoodPart 		= Players.count*1.0/2.0;
+			declare Integer GoodPartInt 	= ML::FloorInteger(GoodPart);
+			
+			if(PlayerPosition == 0) {
+				Title = FlavourText::GetOnlineWinnerTitle();
+			} else if(PlayerPosition <= GoodPartInt){
+				Title = FlavourText::GetOnlineGoodTitle();
+			} else {
+				Title = FlavourText::GetOnlineBadTitle();
+			}
+			
+			declare Text 	RankMessage 	= Game::GetRankMessage(PlayerPosition);
+			// declare Text 	Subtitle2		= FlavourText::GetOnlineLapsDefaultSubtitle();
+			declare Text 	Subtitle2		= "";
+			declare Text 	RewardUrl		= RewardScreens::GetScreenOnline();
+			declare Vec3 	TextColor 		= Colors::GetColor("White");
+			Game::ShowReward(Player, Title, RankMessage, Subtitle2, "", RewardUrl, TextColor, "ONLINERANKING", False);
+		}
+	}
+}

@@ -1,0 +1,206 @@
+#Include "TextLib"			as TextLib
+#Include "Libs/Nadeo/TMConsole/Menu/MenuLayers.Script.txt"								as Layers
+#Include "Libs/Nadeo/TMConsole/Logger.Script.txt"										as Logger
+#Include "Libs/Nadeo/TMConsole/PopUpManager.Script.txt"									as PopUpManager
+#Include "Libs/Nadeo/TMConsole/Menu/Controller/ServerController.Script.txt" 			as ServerController
+#Include "Libs/Nadeo/TMConsole/Menu/Controller/UserController.Script.txt" 				as UserController
+#Include "Libs/Nadeo/TMConsole/MenuColor.Script.txt"		   							as MenuColor
+	
+declare Integer G_EditedRoomIndex;
+
+declare Boolean G_MustSendRoomData;
+declare Text 	G_RoomDataToSend;
+declare Boolean G_MustDeleteRoom;
+
+Void WarnNotEnoughParams(CMlAppEvent _Event) {
+	Logger::Warn("[Menucontroller] event "^_Event.CustomEventType^": not enough params ["^_Event.CustomEventData^"]");
+}
+
+Void SetEditedRoomIndex(Integer _Index)
+{
+	log("SetRoomIndex"^_Index);
+	G_EditedRoomIndex = _Index;
+	
+	declare CUILayer RoomManager = Layers::Get("RoomManager");
+	declare Boolean IsNewRoom for RoomManager.LocalPage;
+	IsNewRoom = (_Index == -1);
+	
+	if (IsNewRoom)
+		ServerController::GetCanCreateRooms("RoomManager");
+}
+
+Void SendEditedTrackListToRoomManager(Text _Style, Text _Duration)
+{
+	declare CUILayer RoomManager = Layers::Get("RoomManager");
+	declare CUILayer RoomPlaylist = Layers::Get("RoomPlaylist");
+	
+	declare Text[Text][] RequestedRoomMaps for RoomManager.LocalPage;
+	declare Text[Text][] TrackList for RoomPlaylist.LocalPage;
+
+	RequestedRoomMaps = TrackList;
+	
+	LayerCustomEvent(RoomManager, "TrackListSent", [_Style, _Duration]);
+}
+
+Void RequestRoomData() {
+	ServerController::GetRoom("RoomManager", G_EditedRoomIndex);
+}
+
+Void RequestDeleteRoom()
+{
+	if (G_EditedRoomIndex == -1)
+	{
+		declare CUILayer RoomManager = Layers::Get("RoomManager");
+		LayerCustomEvent(RoomManager, "Request_DeleteRoom_Failure", Text[]);
+		return;
+	}
+	if(ManiaPlanet.MasterServer_MainMSUser == Null) return;
+	
+	ManiaPlanet.Authentication_GetToken(ManiaPlanet.MasterServer_MainMSUser.Id, "nadeolive");
+	wait(ManiaPlanet.Authentication_GetTokenResponseReceived);
+	if (ManiaPlanet.Authentication_ErrorCode != 0)
+	{
+		PopUpManager::AddPopUp2(0, TextLib::GetTranslatedText(_("The connection to the Trackmania Servers failed. "))^TextLib::GetTranslatedText(_("Please try again later or visit support.ubi.com")), "Ok", False);
+		declare CUILayer RoomManager = Layers::Get("RoomManager");
+		LayerCustomEvent(RoomManager, "Request_DeleteRoom_Failure", Text[]);
+	} else {
+		ServerController::DeleteRoom("RoomManager", G_EditedRoomIndex, ManiaPlanet.Authentication_Token);
+	}
+}
+
+Void RequestServerOnlineStatus() {
+	ServerController::GetServerOnlineStatus("RoomManager", G_EditedRoomIndex);
+}
+
+Void SendRoomData() {
+	
+	if (G_EditedRoomIndex == -1)
+	{
+		if(ManiaPlanet.MasterServer_MainMSUser == Null) return;
+		
+		ManiaPlanet.Authentication_GetToken(ManiaPlanet.MasterServer_MainMSUser.Id, "nadeolive");
+		wait(ManiaPlanet.Authentication_GetTokenResponseReceived);	
+		if (ManiaPlanet.Authentication_ErrorCode != 0)
+		{
+			PopUpManager::AddPopUp2(0, TextLib::GetTranslatedText(_("The connection to the Trackmania Servers failed. "))^TextLib::GetTranslatedText(_("Please try again later or visit support.ubi.com")), "Ok", False);
+			declare CUILayer RoomManager = Layers::Get("RoomManager");
+			LayerCustomEvent(RoomManager, "Request_CreateRoom_Failure", Text[]);
+		} else {
+			ServerController::CreateRoom("RoomManager", G_RoomDataToSend^", \"token\":\""^ManiaPlanet.Authentication_Token^"\"}");
+		}
+	} else
+		ServerController::UpdateRoom("RoomManager", G_EditedRoomIndex, G_RoomDataToSend^"}");
+	G_RoomDataToSend = "";
+}
+
+Void RequestBack()
+{	//décommenter le code pour désactiver le popup "do you want to save ?" si la room est déjà créée
+	//if (G_EditedRoomIndex == -1)
+		declare Text TitleColor = TextLib::ColorToText(MenuColor::GetMenuColor(0));
+		PopUpManager::AddAskYesNo2(_("Do you want to save your room ?"),_("Online - Room Manager"), TitleColor, "RoomManager_Save");
+	/*else {
+		declare CUILayer RoomManager = Layers::Get("RoomManager");
+		LayerCustomEvent(RoomManager, "Quit", ["False"]);
+	}*/
+}
+
+Void Loop() {
+	if (G_MustSendRoomData)
+	{
+		G_MustSendRoomData = False;
+		SendRoomData();
+	}
+	
+	if (G_MustDeleteRoom)
+	{
+		G_MustDeleteRoom = False;
+		RequestDeleteRoom();
+	}
+
+	foreach(Event in PendingEvents) {
+		if(Event.Type != CMlAppEvent::EType::LayerCustomEvent) continue;
+		switch(Event.CustomEventType) {
+			case "RequestRoomData" : {
+				RequestRoomData();
+			}
+			case "SendRoomData" : {
+				log("SendRoomData");
+				if (Event.CustomEventData.count < 1)
+					WarnNotEnoughParams(Event);
+				else {
+					G_RoomDataToSend = Event.CustomEventData[0];
+					G_MustSendRoomData = True;
+				}
+			}
+			case "SendTracklistToRoomManager" : {
+				SendEditedTrackListToRoomManager(Event.CustomEventData[0], Event.CustomEventData[1]);
+			}
+			case "RequestBack" : {
+				RequestBack();
+			}
+			case "RoomManager_Save_AskYesNo" : {
+				if (Event.CustomEventData.count < 1)
+					WarnNotEnoughParams(Event);
+				else {
+					declare CUILayer RoomManager = Layers::Get("RoomManager");
+					LayerCustomEvent(RoomManager, "Quit", [Event.CustomEventData[0]]);
+				}
+			}
+			case "RoomManager_DeleteRoom_AskYesNo" : {
+				if (Event.CustomEventData.count < 1)
+					WarnNotEnoughParams(Event);
+				else {
+					if (Event.CustomEventData[0] == "True")
+						G_MustDeleteRoom = True;
+					else {
+						declare CUILayer RoomManager = Layers::Get("RoomManager");
+						LayerCustomEvent(RoomManager, "DeletionAborted", Text[]);
+					}
+				}
+			}
+			case "RequestDeleteRoom" : {
+				declare Text TitleColor = TextLib::ColorToText(MenuColor::GetMenuColor(0));
+				PopUpManager::AddAskYesNo2(_("Do you want to delete your room ?"),_("Online - Room Manager"), TitleColor, "RoomManager_DeleteRoom");
+			}
+			case "RequestMapsThumbnails" : {
+				ServerController::GetMapsThumbnails("RoomManager", TextLib::Split(";", Event.CustomEventData[0]));
+			}
+			case "SetEditedRoomIndex" : {
+				if (Event.CustomEventData.count < 1)
+					WarnNotEnoughParams(Event);
+				else {
+					declare RoomIndex = TextLib::ToInteger(Event.CustomEventData[0]);
+					SetEditedRoomIndex(RoomIndex);
+					log("ReceivedEditedRoomIndex"^RoomIndex);
+				}
+			}
+			case "RequestServerOnlineStatus" : {
+				RequestServerOnlineStatus();
+			}
+			case "RequestMenuUserDisplayName" : {
+				UserController::Layer_GetMenuUserDisplayName("RoomManager");
+			}
+			case "PopUp_EmptyTracklist" : {
+				PopUpManager::AddPopUp2(0, TextLib::Compose(_("You cannot %1 a room with an empty traklist"), _("|Infinitive|save")), "Ok", False);
+			}
+			case "PopUpPasswordLengthInvalid" : {
+				PopUpManager::AddPopUp2(0, _("Room passwords must be 4 to 16 chars long."), "Ok", False);
+			}
+			case "PopUpCantModifyLive" : {
+				PopUpManager::AddPopUp2(0, TextLib::Compose(_("You cannot modify %1 once the room has been created."), Event.CustomEventData[0]), "Ok", False);
+			}
+			case "PopUpEchelonRestriction" : {
+				PopUpManager::AddPopUp2(0, _("Warning : creating a room with a minimum echelon greater than zero will prevent some players from joining it."), "Ok", False);
+			}
+			case "PopUpEchelonHighLevel" : {
+				PopUpManager::AddPopUp2(0, _("Warning : rooms created with a minimum echelon greater than five can follow some rules made to improve the quality of the competition at high level. Your server requested echelon may be allowed accordingly to these rules and the maximum number of rooms required for each requested echelon."), "Ok", False);
+			}
+			case "PopUpEchelonRestrictionHighLevel" : {
+				PopUpManager::AddPopUp2(0, TextLib::Compose("%1 %2", _("Warning : creating a room with a minimum echelon greater than zero will prevent some players from joining it."), _("Moreover, rooms created with a minimum echelon greater than five can follow some rules made to improve the quality of the competition at high level. Your server requested echelon may be allowed accordingly to these rules and the maximum number of rooms required for each requested echelon.")), "Ok", False);
+			}
+			case "SetLiveStreamingEnabled" : {
+				ManiaPlanet.IsLiveStreamingEnabled = (Event.CustomEventData[0] == "True");
+			}
+		}
+	}
+}

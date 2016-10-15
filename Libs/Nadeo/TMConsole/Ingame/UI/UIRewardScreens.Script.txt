@@ -1,0 +1,1204 @@
+/**
+ * Ce script contient les chemins vers les images de Reward Screen
+ **/
+#Const ScriptName			"FlavourText.Script.txt"
+
+#Include "MathLib" as MathLib
+#Include "TextLib" as TextLib
+
+#Include "Libs/Nadeo/TMConsole/FontManager.Script.txt" 				as Font
+#Include "Libs/Nadeo/TMConsole/Volumes.Script.txt" 					as Volumes
+#Include "Libs/Nadeo/UIPadButtons.Script.txt"						as UIButtons
+#Include "Libs/Nadeo/Layers2.Script.txt" 							as Layers
+#Include "Libs/Nadeo/TMConsole/Ingame/UI/UIEchelon.Script.txt" 		as UIEchelon
+
+#Const C_LAYERNAME_REWARDS					"UI_Rewards"
+#Const IMG_REWARD_TRANSITION				"rewards-transition.dds"
+#Const SOUNDPATH							"file://Media/Sounds/TMConsole/"
+#Const SOUNDPATHECHELON						"file://Media/Sounds/TMConsole/Echelons/"
+#Const IMGPATH								"file://Media/Images/TMConsole/Ingame/"
+#Const VIDEOPATH							"file://Media/Manialinks/Nadeo/TMConsole/Video/"
+#Const VIDEO_SMOKECENTER					"fxtray.webm"
+
+#Const SOUND_VOICE_CHECKPOINT_YES			"Voices/voice-checkpoint-yes-"
+#Const SOUND_VOICE_CHECKPOINT_NO			"Voices/voice-checkpoint-no-"
+
+#Const C_REWARDS_TRANSITION_SIZE_X			1012.5
+#Const C_REWARDS_TEXT_INTERVAL				-0.13
+#Const C_REWARDS_BUTTON_SIZE_X				10
+#Const C_REWARDS_PRESSTOCONTINUE_INTERVAL	1
+#Const C_REWARDS_PRESSTOCONTINUE_POSY		-75
+
+#Const C_COMMENTARIES_MAXCOUNT_ENDRACE_YES 	18
+#Const C_COMMENTARIES_MAXCOUNT_ENDRACE_NO 	37
+#Const C_SPEED_ANIM_BLINKSPEED				0.0125
+
+#Const C_DELAY_ENDRACE						0
+
+#Const SOUND_CROWD_YES						"checkpoint-crowd-yes.ogg"
+#Const SOUND_CROWD_NO						"checkpoint-crowd-no.ogg"
+
+#Const SOUND_ENDRACE_YES 					"endrace-yes.wav"
+#Const SOUND_ENDRACE_NO						"endrace-no.wav"
+
+#Const SOUND_UNLOCK							"SFX_UI_UnlockSomething_v2.wav"
+
+#Const SOUND_ENDRACE_FLAME					"SFX_UI_RegimeSmoke.wav"
+#Const SOUND_ENDRACE_ECHELON0				"SFX_UI_Echelon0.ogg"
+#Const SOUND_ENDRACE_ECHELON1				"SFX_UI_Echelon1.ogg"
+#Const SOUND_ENDRACE_ECHELON2				"SFX_UI_Echelon2.ogg"
+#Const SOUND_ENDRACE_ECHELON3				"SFX_UI_Echelon3.ogg"
+#Const SOUND_ENDRACE_ECHELON4				"SFX_UI_Echelon4.ogg"
+#Const SOUND_ENDRACE_ECHELON5				"SFX_UI_Echelon5.ogg"
+#Const SOUND_ENDRACE_ECHELON6				"SFX_UI_Echelon6.ogg"
+#Const SOUND_ENDRACE_ECHELON7				"SFX_UI_Echelon7.ogg"
+#Const SOUND_ENDRACE_ECHELON8				"SFX_UI_Echelon8.ogg"
+#Const SOUND_ENDRACE_ECHELON9				"SFX_UI_Echelon9.ogg"
+#Const SOUND_SELECT							"event-validate.wav"
+
+declare Text 	G_FontMain;
+Text Private_GetRewardsSplitscreen() 
+{
+	declare IMGSelect = UIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Select);
+
+	declare Text ML =
+
+	"""
+	<frame id="Clip_InfoBigRanking" posn="0. 0. 0" clip="True" clipposn="0. 0." clipsizen="320 180" hidden="0" >
+		<frame id="Frame_Reward" posn="0 0 35." hidden="1" scale="1.0">
+		
+			<quad id="Quad_Image" 
+			posn="0 0 .2" 
+			sizen="320 180" 
+			valign="center" 
+			halign="center" 
+			bgcolor="000" 
+			image=""
+			/>	
+			
+			<quad id="Quad_Transition" 
+			posn="0 0 .1" 
+			sizen="{{{C_REWARDS_TRANSITION_SIZE_X}}} 180" 
+			valign="center" 
+			halign="left" 
+			bgcolor="000" 
+			image="{{{IMGPATH^IMG_REWARD_TRANSITION}}}"
+			/>
+
+			<frame posn="0. -8." scale="0.6">
+			
+				<label id="Label_Title" 
+				posn="0 15.0 .5"
+				sizen="320 180" 
+				valign="bottom" 
+				halign="center" 
+				textfont="{{{G_FontMain}}}"
+				textsize="16"
+				text=""
+				autonewline="1"
+				linespacing="0.8"
+				textprefix="$t"
+				/>
+				
+				<label id="Label_Title2" 
+				posn="0 {{{C_REWARDS_TEXT_INTERVAL}}} .5"
+				sizen="800 180" 
+				valign="bottom" 
+				halign="center" 
+				textfont="{{{G_FontMain}}}"
+				textsize="16"
+				text=""
+				autonewline="1"
+				linespacing="0.8"
+				textprefix="$t"
+				/>
+				
+				<label id="Label_Subtitle" 
+				posn="0 {{{-3.0*C_REWARDS_TEXT_INTERVAL}}} .5"
+				sizen="320 180" 
+				valign="top" 
+				halign="center" 
+				textfont="{{{G_FontMain}}}"
+				textsize="6.0"
+				text=""
+				textprefix="$t"
+				/>
+				
+			</frame>	
+				
+			<frame id="Frame_PressToContinue">
+			
+				<quad id="Quad_PressToContinueButton" 
+				posn="{{{-C_REWARDS_PRESSTOCONTINUE_INTERVAL}}} {{{C_REWARDS_PRESSTOCONTINUE_POSY-1.}}} .5" 
+				sizen="{{{C_REWARDS_BUTTON_SIZE_X}}} {{{C_REWARDS_BUTTON_SIZE_X}}}" 
+				valign="center" 
+				halign="right" 
+				bgcolor="0f0" 
+				image="{{{IMGSelect}}}"
+				textprefix="$t"
+				/>	
+				
+				<label id="Label_PressToContinue" 
+				posn="{{{C_REWARDS_PRESSTOCONTINUE_INTERVAL}}} {{{C_REWARDS_PRESSTOCONTINUE_POSY}}} .5"
+				sizen="320 180" 
+				valign="center" 
+				halign="left" 
+				textfont="{{{G_FontMain}}}"
+				textsize="6"
+				text=""
+				hidden="1"
+				textprefix="$t"
+				/>
+				
+			</frame>
+			
+		</frame>
+	</frame>
+	<script><!--
+	#Include "MathLib" as ML
+	#Include "TextLib" as TL
+	#Include "AnimLib" as AL
+	
+	#Const DebugName  "L_RewardScreens1"
+
+	#Const C_AnimTransition_Easing 		"Linear"
+	#Const C_AnimTransition_Duration 	500.
+	
+	#Const C_AnimText_Easing 			"ExpOut"
+	#Const C_AnimText_Duration 			650.
+	#Const C_AnimText_DelayShow 		400.
+	#Const C_AnimText_DelayHide 		150.
+	#Const C_AnimText_Offset 			450.
+	
+	{{{Volumes::GetPlayVoiceSoundML()}}}
+	
+	main() 
+	{
+		declare	netwrite Integer Net_Reward_TriggerPressedContinueSplit for UI;
+		
+		declare	netread Integer Net_Reward_TriggerShowSplit 	for UI;
+		declare	netread Integer Net_Reward_TriggerHideSplit 	for UI;
+		declare	netread Text 	Net_Reward_TitleSplit 			for UI;
+		declare	netread Text 	Net_Reward_TitleSplit2 			for UI;
+		declare	netread Text 	Net_Reward_SubTitleSplit 		for UI;
+		declare	netread Text 	Net_Reward_ButtonActionSplit	for UI;
+		declare	netread Text 	Net_Reward_ImageUrlSplit 		for UI;
+		declare	netread Text 	Net_Reward_VideoUrlSplit 		for UI;
+		declare	netread Vec3 	Net_Reward_TextColorSplit		for UI;
+		declare	netread Text 	Net_Reward_IsPositiveSplit		for UI;
+		declare netread Boolean Net_Reward_ShowContinueSplit 	for UI;
+		declare netread Text	Net_ModeName					for UI;
+		
+		// declare TimerButton					= 0;
+		declare Prev_Reward_TriggerShow 	= Net_Reward_TriggerShowSplit;
+		declare Prev_Reward_TriggerHide 	= Net_Reward_TriggerHideSplit;
+		declare TriggerShow 				= -1;
+		declare TriggerHide 				= -1;
+		declare DesiredVisible 				= False;
+		declare PrevDesiredVisible 			= DesiredVisible;
+		declare Pre_Reward_ImageUrl			= "";
+		
+		declare Frame_Reward 				<=> (Page.MainFrame.GetFirstChild("Frame_Reward") 				as CMlFrame);
+		declare Frame_PressToContinue 		<=> (Frame_Reward.GetFirstChild("Frame_PressToContinue") 		as CMlFrame);
+		declare Quad_Image 					<=> (Frame_Reward.GetFirstChild("Quad_Image") 					as CMlQuad);
+		declare Quad_Transition 			<=> (Frame_Reward.GetFirstChild("Quad_Transition") 				as CMlQuad);
+		declare Quad_PressToContinueButton 	<=> (Frame_Reward.GetFirstChild("Quad_PressToContinueButton") 	as CMlQuad);
+		declare Label_Title 				<=> (Frame_Reward.GetFirstChild("Label_Title") 					as CMlLabel);
+		declare Label_Title2 				<=> (Frame_Reward.GetFirstChild("Label_Title2") 				as CMlLabel);
+		declare Label_Subtitle 				<=> (Frame_Reward.GetFirstChild("Label_Subtitle") 				as CMlLabel);
+		declare Label_PressToContinue 		<=> (Frame_Reward.GetFirstChild("Label_PressToContinue") 		as CMlLabel);
+		
+		declare ColorisableLabels = [Label_Title, Label_Title2];
+		
+		declare Integer FirstAnimDuration = 500;
+		declare Boolean HasImageChanged	= False;
+
+		declare CAudioSource[] M_SoundsEndRaceYes;
+		declare CAudioSource[] M_SoundsEndRaceNo;
+		
+		
+		for(I, 1, {{{C_COMMENTARIES_MAXCOUNT_ENDRACE_YES}}})
+			M_SoundsEndRaceYes	.add(Audio.CreateSound("{{{SOUNDPATH}}}{{{SOUND_VOICE_CHECKPOINT_YES}}}"^I^".wav", {{{Volumes::GetVolumedB("VoiceCommentaries")}}}, False, False, False));
+		for(I, 1, {{{C_COMMENTARIES_MAXCOUNT_ENDRACE_NO}}})
+			M_SoundsEndRaceNo	.add(Audio.CreateSound("{{{SOUNDPATH}}}{{{SOUND_VOICE_CHECKPOINT_NO}}}" ^I^".wav", {{{Volumes::GetVolumedB("VoiceCommentaries")}}}, False, False, False));
+		
+		declare M_SoundCrowdNo 		= Audio.CreateSound("{{{SOUNDPATH}}}{{{SOUND_CROWD_NO}}}", {{{Volumes::GetVolumedB("CrowdNo")}}}, False, False, False);	
+		declare M_SoundCrowdYes 	= Audio.CreateSound("{{{SOUNDPATH}}}{{{SOUND_CROWD_YES}}}", {{{Volumes::GetVolumedB("CrowdYes")}}}, False, False, False);	
+		
+		declare UI_LibRS_IsVisible for UI = False;
+		UI_LibRS_IsVisible = False;
+		
+		while(True) 
+		{
+			yield;
+			
+			if(Prev_Reward_TriggerShow != Net_Reward_TriggerShowSplit)
+			{
+				Prev_Reward_TriggerShow = Net_Reward_TriggerShowSplit;
+				TriggerShow 	= Now;
+				DesiredVisible 	= True;
+				
+				if(Pre_Reward_ImageUrl != Net_Reward_ImageUrlSplit) {
+					HasImageChanged = True;
+					Pre_Reward_ImageUrl = Net_Reward_ImageUrlSplit;
+				}
+				
+				if(HasImageChanged)
+					Quad_Image				.ImageUrl 	= Net_Reward_ImageUrlSplit;
+				
+				Label_Title				.Value 		= Net_Reward_TitleSplit;
+				Label_Title2			.Value		= Net_Reward_TitleSplit2;
+				Label_Subtitle			.Value 		= Net_Reward_SubTitleSplit;
+				Label_PressToContinue	.Value		= Net_Reward_ButtonActionSplit;
+				
+				Frame_PressToContinue	.RelativePosition.X = 150.;
+					
+				
+				foreach(Label in ColorisableLabels)
+					Label.TextColor = Net_Reward_TextColorSplit;
+					
+				if(Net_Reward_IsPositiveSplit != "")
+				{
+					declare IsAhead = Net_Reward_IsPositiveSplit == "1" || Net_Reward_IsPositiveSplit == "+" || TL::Find("pos", Net_Reward_IsPositiveSplit, False, False);
+					declare CAudioSource SoundVoice;
+					declare CAudioSource SoundCrowd;
+					if(IsAhead)
+					{
+						Audio.PlaySoundEvent("{{{SOUNDPATH ^ SOUND_ENDRACE_YES}}}", {{{Volumes::GetVolumedB("EndRaceYes")}}},	{{{C_DELAY_ENDRACE}}});
+						SoundVoice = M_SoundsEndRaceYes[ML::Rand(0, M_SoundsEndRaceYes.count-1)];
+						SoundCrowd = M_SoundCrowdYes;
+					}
+					else
+					{
+						Audio.PlaySoundEvent("{{{SOUNDPATH ^ SOUND_ENDRACE_NO}}}", 	{{{Volumes::GetVolumedB("EndRaceNo")}}}, 	{{{C_DELAY_ENDRACE}}});
+						SoundVoice = M_SoundsEndRaceNo[ML::Rand(0, M_SoundsEndRaceNo.count-1)];	
+						SoundCrowd = M_SoundCrowdNo;
+					}
+					
+					if(Net_Reward_TitleSplit != "") {
+						if(Net_ModeName == "HotSeat" || Net_ModeName == "Rounds Splitscreen") {
+							PlayVoiceSound(SoundCrowd);
+						} else {
+							PlayVoiceSound(SoundVoice, {{{Volumes::GetVolumedB("VoiceCommentaries")}}}, {{{C_DELAY_ENDRACE + 1000}}});
+							PlayVoiceSound(SoundCrowd);
+						}
+					}
+				}
+			}
+			
+			if(Prev_Reward_TriggerHide != Net_Reward_TriggerHideSplit)
+			{
+				Prev_Reward_TriggerHide = Net_Reward_TriggerHideSplit;
+				TriggerHide 		= Now;
+				DesiredVisible 		= False;
+				HasImageChanged 	= False;
+				Pre_Reward_ImageUrl = "";
+			}
+			
+			if(PrevDesiredVisible != DesiredVisible)
+			{
+				PrevDesiredVisible = DesiredVisible;
+				//If not transition
+				if(DesiredVisible) {
+					if(Net_Reward_TitleSplit != "" && Net_Reward_ShowContinueSplit) {
+						EnableMenuNavigation(True, False, Null, 60);
+					}
+				} else {
+					EnableMenuNavigation(False, False, Null, 60);
+				}
+
+				UI_LibRS_IsVisible = DesiredVisible;
+			}
+
+			if(DesiredVisible)
+			{
+				// EnableMenuNavigation(True, False, Null, 60);
+				Frame_Reward.Show();
+				// if(FirstAnimDuration > 0) {
+					
+					// FirstAnimDuration -= Period;
+				// }
+				
+				Quad_Transition.RelativePosition.X = AL::Ease(
+					C_AnimTransition_Easing, 
+					Now-TriggerShow*1., 
+					160., 
+					{{{-C_REWARDS_TRANSITION_SIZE_X/2.-170.}}}, 
+					C_AnimTransition_Duration
+				);
+				
+				Label_Title.RelativePosition.X = AL::Ease(
+					C_AnimText_Easing, 
+					Now-(TriggerShow+C_AnimText_DelayShow)*1., 
+					C_AnimText_Offset, 
+					-C_AnimText_Offset, 
+					C_AnimText_Duration
+				);
+				
+				Label_Title2.RelativePosition.X = AL::Ease(
+					C_AnimText_Easing, 
+					Now-(TriggerShow+C_AnimText_DelayShow)*1., 
+					C_AnimText_Offset, 
+					-C_AnimText_Offset, 
+					C_AnimText_Duration
+				);
+				
+				Label_Subtitle.RelativePosition.X = AL::Ease(
+					C_AnimText_Easing, 
+					Now-(TriggerShow+C_AnimText_DelayShow)*1., 
+					-C_AnimText_Offset, 
+					C_AnimText_Offset, 
+					C_AnimText_Duration
+				);
+				
+				if(HasImageChanged) {
+					Quad_Image.Opacity = AL::Ease(
+						C_AnimText_Easing, 
+						Now-(TriggerShow+C_AnimText_DelayShow)*1., 
+						0., 
+						1., 
+						C_AnimText_Duration
+					);
+				}
+
+				foreach(Event in PendingEvents)
+				{
+					if(Event.Type 			== CMlEvent::Type::MenuNavigation 
+					&&(Event.MenuNavAction 	== CMlEvent::EMenuNavAction::Select
+					|| Event.MenuNavAction 	== CMlEvent::EMenuNavAction::Cancel
+					|| Event.MenuNavAction 	== CMlEvent::EMenuNavAction::AppMenu 
+					))
+					{
+						Net_Reward_TriggerPressedContinueSplit = Now;
+						HasImageChanged 	= False;
+					}
+				}
+			}
+			else
+			{
+				// FirstAnimDuration = 500;
+				Quad_Transition.RelativePosition.X = AL::Ease(
+					C_AnimTransition_Easing, 
+					Now-(TriggerHide+C_AnimText_DelayHide)*1., 
+					{{{-C_REWARDS_TRANSITION_SIZE_X/2.}}}, 
+					{{{C_REWARDS_TRANSITION_SIZE_X/2.+160.}}}, 
+					C_AnimTransition_Duration
+				);
+				
+				Label_Title.RelativePosition.X = AL::Ease(
+					C_AnimText_Easing, 
+					Now-TriggerHide*1., 
+					0., 
+					C_AnimText_Offset, 
+					C_AnimText_Duration
+				);
+				
+				Label_Title2.RelativePosition.X = AL::Ease(
+					C_AnimText_Easing, 
+					Now-TriggerHide*1.,
+					0.,
+					C_AnimText_Offset,
+					C_AnimText_Duration
+				);
+				
+				Label_Subtitle.RelativePosition.X = AL::Ease(
+					C_AnimText_Easing, 
+					Now-TriggerHide*1., 
+					0., 
+					-C_AnimText_Offset, 
+					C_AnimText_Duration
+				);
+				
+				Quad_Image.Opacity = AL::Ease(
+					C_AnimText_Easing, 
+					Now-(TriggerShow+C_AnimText_DelayShow)*1., 
+					1., 
+					-1., 
+					C_AnimText_Duration
+				);
+				
+			}
+			
+			declare AnimTime = TriggerShow+C_AnimText_DelayShow+C_AnimText_Duration;
+			declare AnimDone = Now >= AnimTime;
+			
+			if(DesiredVisible) {
+				if(!AnimDone) {
+					Frame_Reward				.Visible = True;
+				}
+			} else {
+				if(AnimDone) {
+					Frame_Reward				.Visible = False;
+				}
+			}
+			Frame_PressToContinue		.Visible = AnimDone && DesiredVisible && Net_Reward_ShowContinueSplit;
+			Quad_PressToContinueButton	.Visible = Label_PressToContinue.Value != "";
+				
+			// if(AnimDone)
+			// {
+				// declare PressToContinueOpacity = 0.5 + ML::Sin(Now*0.005)/2.;
+				// Label_PressToContinue		.Opacity = PressToContinueOpacity;
+				// Quad_PressToContinueButton	.Opacity = PressToContinueOpacity;
+			// }
+		}
+	}
+	--></script>
+	""";
+	
+	
+	return ML;
+	
+}
+
+Text Private_GetRewards(Integer _NbPlayers) 
+{
+	declare IMGSelect = UIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Select);
+	
+	declare Integer ClipSizenX 		= 320;
+	declare Integer ClipSizenY 		= 180;
+	declare Real	Scale			= 1.0;
+	declare Real 	BigTextSize		= 16.;
+	declare Real 	TextSize		= 6.;
+	
+	declare Real	TitlePosy			= 15.0;
+	declare Real	SubtitlePosy		= -0.13;
+	declare Real	Subtitle2Posy		= 0.39;
+
+	
+	if(_NbPlayers == 2) {
+		ClipSizenX = ClipSizenX/2;
+		Scale = 1.0;
+		BigTextSize = 8.;
+		TextSize 	= 4.;
+		
+		TitlePosy		= 12.0;
+		SubtitlePosy	= 3.13;
+		Subtitle2Posy	= 3.13;
+	} else if(_NbPlayers >= 3) {
+		ClipSizenX = ClipSizenX/2;
+		ClipSizenY = ClipSizenY/2;
+		Scale = 0.5;
+	}
+	
+	declare Text ML =
+	"""
+	<frame id="Clip_InfoBigRanking" posn="0. 0. 0" clip="True" clipposn="0. 0." clipsizen="{{{ClipSizenX}}} {{{ClipSizenY}}}" hidden="0" >
+		<frame id="Frame_Reward" posn="0 0 29." hidden="1" scale="{{{Scale}}}">
+		
+			<quad id="Quad_Image" 
+			posn="0 0 .2" 
+			sizen="320 180" 
+			valign="center" 
+			halign="center" 
+			bgcolor="000" 
+			image=""
+			/>	
+			
+			<quad id="Quad_Transition" 
+			posn="0 0 .1" 
+			sizen="{{{C_REWARDS_TRANSITION_SIZE_X}}} 180" 
+			valign="center" 
+			halign="left" 
+			bgcolor="000" 
+			image="{{{IMGPATH^IMG_REWARD_TRANSITION}}}"
+			/>	
+			
+			<quad id="Quad_Smoke" halign="center" valign="center" hidden="1"
+				sizen="320 180" scale="1." image="{{{VIDEOPATH^VIDEO_SMOKECENTER}}}" posn="0 0 0.4"
+			/>
+			
+			<frame posn="0. -8." scale="0.6">
+			
+				<label id="Label_Title" 
+				posn="0 {{{TitlePosy}}} .5"
+				sizen="320 180" 
+				valign="bottom" 
+				halign="center" 
+				textfont="{{{G_FontMain}}}"
+				textsize="{{{BigTextSize}}}"
+				text=""
+				autonewline="1"
+				linespacing="0.8"
+				textprefix="$t"
+				/>
+				
+				<label id="Label_Title2" 
+				posn="0 {{{SubtitlePosy}}} .5"
+				sizen="450 180" 
+				valign="bottom" 
+				halign="center" 
+				textfont="{{{G_FontMain}}}"
+				textsize="{{{BigTextSize}}}"
+				text=""
+				autonewline="0"
+				linespacing="0.8"
+				textprefix="$t"
+				/>
+				
+				<label id="Label_Subtitle" 
+				posn="0 {{{Subtitle2Posy}}} .5"
+				sizen="320 180" 
+				valign="top" 
+				halign="center" 
+				textfont="{{{G_FontMain}}}"
+				textsize="{{{TextSize}}}"
+				text=""
+				textprefix="$t"
+				/>
+				
+			</frame>	
+				
+			<frame id="Frame_PressToContinue">
+			
+				<quad id="Quad_PressToContinueButton" 
+				posn="{{{-C_REWARDS_PRESSTOCONTINUE_INTERVAL}}} {{{C_REWARDS_PRESSTOCONTINUE_POSY-1.}}} .5" 
+				sizen="{{{C_REWARDS_BUTTON_SIZE_X}}} {{{C_REWARDS_BUTTON_SIZE_X}}}" 
+				valign="center" 
+				halign="right" 
+				bgcolor="0f0" 
+				image="{{{IMGSelect}}}"
+				textprefix="$t"
+				/>	
+				
+				<label id="Label_PressToContinue" 
+				posn="{{{C_REWARDS_PRESSTOCONTINUE_INTERVAL}}} {{{C_REWARDS_PRESSTOCONTINUE_POSY}}} .5"
+				sizen="320 180" 
+				valign="center" 
+				halign="left" 
+				textfont="{{{G_FontMain}}}"
+				textsize="6"
+				text=""
+				hidden="1"
+				textprefix="$t"
+				/>
+				
+			</frame>
+			
+		</frame>
+	</frame>
+	
+	<script><!--
+	#Include "MathLib" as ML
+	#Include "AnimLib" as AL
+	
+	#Const DebugName  "L_RewardScreens2"
+
+	#Const C_AnimTransition_Easing 		"Linear"
+	#Const C_AnimTransition_Duration 	500.
+	
+	#Const C_AnimText_Easing 			"ExpOut"
+	#Const C_AnimText_Duration 			650.
+	#Const C_AnimText_DelayShow 		400.
+	#Const C_AnimText_DelayHide 		150.
+	#Const C_AnimText_Offset 			450.
+	
+	#Const C_Device_Keyboard 	0
+	#Const C_Device_Pad 		1
+	
+	declare Integer G_LastDeviceUsed;
+	
+	{{{Volumes::GetPlayVoiceSoundML()}}}
+	{{{UIButtons::GetMLFunctionPcButtons()}}}
+	{{{UIEchelon::GetMLEchelonFunctions()}}}
+	
+	Void StopVideoQuad(CMlQuad _Quad) 
+	{
+		_Quad.Hide();
+		_Quad.Video_Rewind();
+		_Quad.Video_IsPlaying = False;
+	}
+
+	Void PlayVideoQuad(CMlQuad _Quad, Integer _Duration) 
+	{
+		StopVideoQuad(_Quad);
+		_Quad.Video_IsPlaying = False;
+		_Quad.Video_Rewind();
+		_Quad.Show();
+		_Quad.Video_IsPlaying = True;
+		_Quad.Video_IsLooping = False;	
+		// log("Put video on playing");
+		// declare Integer ForQuad_Video_LastPlayedTrigger for _Quad;
+		// declare Integer ForQuad_Video_Duration 			for _Quad;
+		// ForQuad_Video_Duration 			= _Duration;
+		// ForQuad_Video_LastPlayedTrigger = Now;
+	}
+	
+	main() 
+	{
+		declare	netwrite Integer Net_Reward_TriggerPressedContinue for UI;
+		
+		declare	netread Integer Net_Reward_TriggerShow 	for UI;
+		declare	netread Integer Net_Reward_TriggerHide 	for UI;
+		declare	netread Text 	Net_Reward_Title 		for UI;
+		declare	netread Text 	Net_Reward_Title2 		for UI;
+		declare	netread Text 	Net_Reward_SubTitle 	for UI;
+		declare	netread Text 	Net_Reward_ButtonAction	for UI;
+		declare	netread Text 	Net_Reward_ImageUrl 	for UI;
+		declare	netread Text 	Net_Reward_VideoUrl 	for UI;
+		declare	netread Vec3 	Net_Reward_TextColor	for UI;
+		declare	netread Text 	Net_Reward_Status		for UI;
+		declare netread Boolean Net_Reward_ShowContinue for UI;
+		declare netread Text	Net_ModeName			for UI;
+		declare netwrite Integer	Net_PlayerEchelon	for UI;
+		
+		declare Integer Net_Reward_TriggerEchelon for UI;
+		declare Text	Net_Reward_ImageEchelon for UI;
+		declare Pre_Reward_TriggerEchelon = Net_Reward_TriggerEchelon;
+		
+		declare netwrite Integer Net_LibLastDeviceUsed_LastDeviceUsed for UI;
+		
+		// declare TimerButton					= 0;
+		declare Prev_Reward_TriggerShow 	= Net_Reward_TriggerShow;
+		
+		declare Prev_Reward_TriggerHide 	= Net_Reward_TriggerHide;
+		declare TriggerTime 				= -1;
+		declare DesiredVisible 				= False;
+		declare TransitionFromGameDone		= False;
+		declare PrevDesiredVisible 			= DesiredVisible;
+		declare Pre_Reward_ImageUrl			= "";
+		
+		declare Frame_Reward 				<=> (Page.MainFrame.GetFirstChild("Frame_Reward") 				as CMlFrame);
+		declare Frame_PressToContinue 		<=> (Frame_Reward.GetFirstChild("Frame_PressToContinue") 		as CMlFrame);
+		declare Quad_Image 					<=> (Frame_Reward.GetFirstChild("Quad_Image") 					as CMlQuad);
+		declare Quad_Transition 			<=> (Frame_Reward.GetFirstChild("Quad_Transition") 				as CMlQuad);
+		declare Quad_PressToContinueButton 	<=> (Frame_Reward.GetFirstChild("Quad_PressToContinueButton") 	as CMlQuad);
+		declare Label_Title 				<=> (Frame_Reward.GetFirstChild("Label_Title") 					as CMlLabel);
+		declare Label_Title2 				<=> (Frame_Reward.GetFirstChild("Label_Title2") 				as CMlLabel);
+		declare Label_Subtitle 				<=> (Frame_Reward.GetFirstChild("Label_Subtitle") 				as CMlLabel);
+		declare Label_PressToContinue 		<=> (Frame_Reward.GetFirstChild("Label_PressToContinue") 		as CMlLabel);
+		declare Quad_Smoke 					<=> (Page.GetFirstChild("Quad_Smoke") 							as CMlQuad);
+		Quad_Smoke.Blend = CMlQuad::EBlendMode::Add;
+		StopVideoQuad(Quad_Smoke);
+		
+		declare ColorisableLabels = [Label_Title, Label_Title2];
+		
+		declare Boolean HasImageChanged	= False;
+		
+		declare Boolean LaunchNewEchelon		= False;
+		declare Integer CurEchelon = GetEchelonPlayerIndex(InputPlayer);
+		/*
+		declare CAudioSource[] M_SoundsEndRaceYes;
+		declare CAudioSource[] M_SoundsEndRaceNo;
+		for(I, 1, {{{C_COMMENTARIES_MAXCOUNT_ENDRACE_YES}}})
+			M_SoundsEndRaceYes	.add(Audio.CreateSound("{{{SOUNDPATH}}}{{{SOUND_VOICE_CHECKPOINT_YES}}}"^I^".wav", {{{Volumes::GetVolumedB("VoiceCommentaries")}}}, False, False, False));
+		
+		for(I, 1, {{{C_COMMENTARIES_MAXCOUNT_ENDRACE_NO}}})
+			M_SoundsEndRaceNo	.add(Audio.CreateSound("{{{SOUNDPATH}}}{{{SOUND_VOICE_CHECKPOINT_NO}}}" ^I^".wav", {{{Volumes::GetVolumedB("VoiceCommentaries")}}}, False, False, False));
+		*/
+		
+		declare M_SoundCrowdNo 		= Audio.CreateSound("{{{SOUNDPATH}}}{{{SOUND_CROWD_NO}}}", {{{Volumes::GetVolumedB("CrowdNo")}}}, False, False, False);	
+		declare M_SoundCrowdYes 	= Audio.CreateSound("{{{SOUNDPATH}}}{{{SOUND_CROWD_YES}}}", {{{Volumes::GetVolumedB("CrowdYes")}}}, False, False, False);	
+		declare M_SoundFXUnlock 	= Audio.CreateSound("{{{SOUNDPATH ^ SOUND_UNLOCK}}}", {{{Volumes::GetVolumedB("UnlockSomething")}}}, False, False, False);
+		declare M_SoundFXNegative 	= Audio.CreateSound("{{{SOUNDPATH ^ SOUND_ENDRACE_NO}}}", {{{Volumes::GetVolumedB("EndRaceNo")}}}, False, False, False);
+		declare CAudioSource[] M_SoundFXEchelon;
+		
+		M_SoundFXEchelon.add(Audio.CreateSound("{{{SOUNDPATHECHELON ^ SOUND_ENDRACE_ECHELON0}}}", {{{Volumes::GetVolumedB("WonEchelon")}}}, False, False, False));
+		M_SoundFXEchelon.add(Audio.CreateSound("{{{SOUNDPATHECHELON ^ SOUND_ENDRACE_ECHELON1}}}", {{{Volumes::GetVolumedB("WonEchelon")}}}, False, False, False));
+		M_SoundFXEchelon.add(Audio.CreateSound("{{{SOUNDPATHECHELON ^ SOUND_ENDRACE_ECHELON2}}}", {{{Volumes::GetVolumedB("WonEchelon")}}}, False, False, False));
+		M_SoundFXEchelon.add(Audio.CreateSound("{{{SOUNDPATHECHELON ^ SOUND_ENDRACE_ECHELON3}}}", {{{Volumes::GetVolumedB("WonEchelon")}}}, False, False, False));
+		M_SoundFXEchelon.add(Audio.CreateSound("{{{SOUNDPATHECHELON ^ SOUND_ENDRACE_ECHELON4}}}", {{{Volumes::GetVolumedB("WonEchelon")}}}, False, False, False));
+		M_SoundFXEchelon.add(Audio.CreateSound("{{{SOUNDPATHECHELON ^ SOUND_ENDRACE_ECHELON5}}}", {{{Volumes::GetVolumedB("WonEchelon")}}}, False, False, False));
+		M_SoundFXEchelon.add(Audio.CreateSound("{{{SOUNDPATHECHELON ^ SOUND_ENDRACE_ECHELON6}}}", {{{Volumes::GetVolumedB("WonEchelon")}}}, False, False, False));
+		M_SoundFXEchelon.add(Audio.CreateSound("{{{SOUNDPATHECHELON ^ SOUND_ENDRACE_ECHELON7}}}", {{{Volumes::GetVolumedB("WonEchelon")}}}, False, False, False));
+		M_SoundFXEchelon.add(Audio.CreateSound("{{{SOUNDPATHECHELON ^ SOUND_ENDRACE_ECHELON8}}}", {{{Volumes::GetVolumedB("WonEchelon")}}}, False, False, False));
+		M_SoundFXEchelon.add(Audio.CreateSound("{{{SOUNDPATHECHELON ^ SOUND_ENDRACE_ECHELON9}}}", {{{Volumes::GetVolumedB("WonEchelon")}}}, False, False, False));
+		
+		declare Boolean VideoHasBeenPlayed 	= False;
+		declare Integer TimerMax			= 250;
+		declare Integer TimerBeforeVideo 	= TimerMax+1;
+
+		declare UI_LibRS_IsVisible for UI = False;
+		UI_LibRS_IsVisible = False;
+		
+		while(True) 
+		{
+			yield;
+			/*
+			if(Net_LibLastDeviceUsed_LastDeviceUsed == C_Device_Keyboard) {
+				Quad_PressToContinueButton.ImageUrl = GetPcImageForButton("{{{IMGSelect}}}");
+			} else if(Net_LibLastDeviceUsed_LastDeviceUsed == C_Device_Pad) {
+				Quad_PressToContinueButton.ImageUrl = "{{{IMGSelect}}}";
+			}
+			*/
+			
+			Quad_PressToContinueButton.ImageUrl = GetImageForButton("{{{IMGSelect}}}");
+			
+			if(Net_Reward_TriggerEchelon != Pre_Reward_TriggerEchelon) {
+				LaunchNewEchelon = True;
+				Pre_Reward_TriggerEchelon = Net_Reward_TriggerEchelon;
+			}
+			
+			if(LaunchNewEchelon) {
+				Quad_Image				.ImageUrl 	= Net_Reward_ImageEchelon;
+				Label_Title				.Value 		= "";
+				Label_Title2			.Value		= "";
+				Label_Subtitle			.Value 		= "";
+				Label_Subtitle.Opacity = 1.0;
+				Label_PressToContinue	.Value		= "";
+				TriggerTime 	= Now;
+				DesiredVisible 	= True;
+				LaunchNewEchelon = False;
+				CurEchelon = GetEchelonPlayerIndex(InputPlayer);
+				if(M_SoundFXEchelon.existskey(CurEchelon)) {
+					M_SoundFXEchelon[CurEchelon].Play();
+				}
+			}
+			
+			if(Prev_Reward_TriggerShow != Net_Reward_TriggerShow)
+			{
+				
+				// log(Net_Reward_TriggerShow^" "^Prev_Reward_TriggerShow);
+				log(Now^" [MANIALINK REWARD] TRIGGER SHOW: "^GameTime);
+				Prev_Reward_TriggerShow = Net_Reward_TriggerShow;
+				TriggerTime 	= Now;
+				DesiredVisible 	= True;
+				
+				if(Pre_Reward_ImageUrl != Net_Reward_ImageUrl) {
+					HasImageChanged = True;
+					Pre_Reward_ImageUrl = Net_Reward_ImageUrl;
+				} else {
+					HasImageChanged = False;
+				}
+					
+				Quad_Image				.ImageUrl 	= Net_Reward_ImageUrl;
+				Label_Title				.Value 		= Net_Reward_Title;
+				Label_Title2			.Value		= Net_Reward_Title2;
+				Label_Subtitle			.Value 		= Net_Reward_SubTitle;
+				Label_Subtitle.Opacity = 1.0;
+				Label_PressToContinue	.Value		= Net_Reward_ButtonAction;
+				
+				Frame_PressToContinue	.RelativePosition.X = 150.;
+								
+				
+				foreach(Label in ColorisableLabels)
+					Label.TextColor = Net_Reward_TextColor;
+				
+				//Status positive or negative
+				if(Net_Reward_Status != "")
+				{
+					if(Net_Reward_Status == "+") {
+						if(Net_ModeName == "Rounds Splitscreen") {
+							Audio.PlaySoundEvent("{{{SOUNDPATH ^ SOUND_ENDRACE_YES}}}", {{{Volumes::GetVolumedB("EndRaceYes")}}},	{{{C_DELAY_ENDRACE}}});
+						} else {
+							PlayVoiceSound(M_SoundCrowdYes, {{{Volumes::GetVolumedB("CrowdYes")}}}, 0);
+						}
+						TimerBeforeVideo = TimerMax;
+							
+					} else if(Net_Reward_Status == "-"){
+						if(Net_ModeName != "Rounds Splitscreen") {
+							PlayVoiceSound(M_SoundCrowdNo, {{{Volumes::GetVolumedB("CrowdNo")}}}, 0);
+							M_SoundFXNegative.Play();
+						} else {
+							M_SoundFXNegative.Play();
+						}
+						
+					} else if(Net_Reward_Status == "UNLOCK") {
+						M_SoundFXUnlock.Play();
+					} else if(Net_Reward_Status == "ECHELON") {
+						// M_SoundFXEchelon.Play();
+					} else if(Net_Reward_Status == "RANKING") {
+						
+					} else if(Net_Reward_Status == "ONLINERANKING") {
+						Label_Title.RelativePosition.Y 		= {{{TitlePosy}}} + 30.;
+						Label_Title2.RelativePosition.Y 	= {{{SubtitlePosy}}} + 30.;
+						Label_Subtitle.RelativePosition.Y 	= {{{Subtitle2Posy}}} + 30.;
+						
+						if(Net_ModeName == "Rounds Splitscreen") {
+							Audio.PlaySoundEvent("{{{SOUNDPATH ^ SOUND_ENDRACE_YES}}}", {{{Volumes::GetVolumedB("EndRaceYes")}}},	{{{C_DELAY_ENDRACE}}});
+						} else {
+							PlayVoiceSound(M_SoundCrowdYes, {{{Volumes::GetVolumedB("CrowdYes")}}}, 0);
+						}
+						TimerBeforeVideo = TimerMax;
+					} else if(Net_Reward_Status == "LOCALRANKING") {
+					
+						Label_Title.RelativePosition.Y 		= {{{TitlePosy}}} 		+ 0.;
+						Label_Title2.RelativePosition.Y 	= {{{SubtitlePosy}}} 	+ 0.;
+						Label_Subtitle.RelativePosition.Y 	= {{{Subtitle2Posy}}} 	+ 0.;
+						
+						if(Net_ModeName == "Rounds Splitscreen") {
+							Audio.PlaySoundEvent("{{{SOUNDPATH ^ SOUND_ENDRACE_YES}}}", {{{Volumes::GetVolumedB("EndRaceYes")}}},	{{{C_DELAY_ENDRACE}}});
+						} else {
+							PlayVoiceSound(M_SoundCrowdYes, {{{Volumes::GetVolumedB("CrowdYes")}}}, 0);
+						}
+						TimerBeforeVideo = TimerMax;
+					}
+					
+					if(Net_Reward_Status != "ONLINERANKING" && Net_Reward_Status != "LOCALRANKING") {
+						Label_Title.RelativePosition.Y 		= {{{TitlePosy}}};
+						Label_Title2.RelativePosition.Y 	= {{{SubtitlePosy}}};
+					}
+				}
+				//Status neutral
+				else {
+					
+				}
+				
+				VideoHasBeenPlayed = False;
+			}
+			
+			if(Prev_Reward_TriggerHide != Net_Reward_TriggerHide)
+			{
+				Prev_Reward_TriggerHide = Net_Reward_TriggerHide;
+				TriggerTime 			= Now;
+				DesiredVisible 			= False;
+				HasImageChanged 		= False;
+				TransitionFromGameDone 	= False;
+				Pre_Reward_ImageUrl 	= "";
+			}
+			
+			if(PrevDesiredVisible != DesiredVisible)
+			{
+				PrevDesiredVisible = DesiredVisible;
+				if(DesiredVisible) {
+					if ({{{_NbPlayers==1}}}) {		
+						Audio.LimitSceneSoundVolumedB 	= -100.; // HACK: ne coupe pas le son en splitscreen car il peut y avoit ce layer affiché sur certains ecrans pendant que la course se déroule sur les autres. ==> faudrait faire la gestion dans le gestionnaire de tous les ecrans qui sait ou on en est.
+						// Audio.LimitMusicVolumedB 		= -100.;
+					}
+					if(Net_Reward_Title != "") {
+						Quad_Smoke.Colorize = Net_Reward_TextColor;
+						if(Net_Reward_ShowContinue) {
+							EnableMenuNavigation(True, False, Null, 35);
+						}
+					}
+				} else {
+					Audio.LimitSceneSoundVolumedB = 0.;
+					EnableMenuNavigation(False, False, Null, 35);
+					
+					if(Net_ModeName != "Rounds Splitscreen") {
+						StopVideoQuad(Quad_Smoke);
+					}
+				}
+
+				UI_LibRS_IsVisible = DesiredVisible;
+			}
+
+			declare AnimTime = TriggerTime+C_AnimText_DelayShow+C_AnimText_Duration;
+			declare AnimDone = Now >= AnimTime;
+			
+			if(DesiredVisible && AnimDone) {
+				TransitionFromGameDone = True;
+				declare netwrite Text		Net_Reward_DiffRank					for UI;
+				if(Net_Reward_Status == "RANKING") {
+					if(Net_Reward_DiffRank != "") {
+						Label_Subtitle.Value = Net_Reward_DiffRank;
+					}
+				}
+			}
+			
+			if(TimerBeforeVideo > 0 && TimerBeforeVideo <= TimerMax) {
+				TimerBeforeVideo -= Period;
+			} else if(TimerBeforeVideo <= 0){
+				TimerBeforeVideo = TimerMax+1;
+				if(!Quad_Smoke.Video_IsPlaying && Net_ModeName != "Rounds Splitscreen") {
+					Quad_Smoke.Colorize = Net_Reward_TextColor;
+					Audio.PlaySoundEvent("{{{SOUNDPATH ^ SOUND_ENDRACE_FLAME}}}", {{{Volumes::GetVolumedB("RewardFlame")}}});
+					PlayVideoQuad(Quad_Smoke, 3000);
+				}
+			}
+
+			if(DesiredVisible && !AnimDone)
+			{
+				Frame_Reward.Show();
+				
+				if(!TransitionFromGameDone) {
+					Quad_Transition.RelativePosition.X = AL::Ease(
+						C_AnimTransition_Easing, 
+						Now-TriggerTime*1., 
+						160., 
+						{{{-C_REWARDS_TRANSITION_SIZE_X/2.-170.}}}, 
+						C_AnimTransition_Duration
+					);
+				}
+				
+				Label_Title.RelativePosition.X = AL::Ease(
+					C_AnimText_Easing, 
+					Now-(TriggerTime+C_AnimText_DelayShow)*1., 
+					C_AnimText_Offset, 
+					-C_AnimText_Offset, 
+					C_AnimText_Duration
+				);
+				
+				Label_Title2.RelativePosition.X = AL::Ease(
+					C_AnimText_Easing, 
+					Now-(TriggerTime+C_AnimText_DelayShow)*1., 
+					C_AnimText_Offset, 
+					-C_AnimText_Offset, 
+					C_AnimText_Duration
+				);
+				
+				Label_Subtitle.RelativePosition.X = AL::Ease(
+					C_AnimText_Easing, 
+					Now-(TriggerTime+C_AnimText_DelayShow)*1., 
+					-C_AnimText_Offset, 
+					C_AnimText_Offset, 
+					C_AnimText_Duration
+				);
+				
+				if(HasImageChanged) {
+					Quad_Image.Opacity = AL::Ease(
+						C_AnimText_Easing, 
+						Now-(TriggerTime+C_AnimText_DelayShow)*1., 
+						0., 
+						1., 
+						C_AnimText_Duration
+					);
+				}
+			}
+			
+			if(!DesiredVisible && !AnimDone)
+			{
+				
+				Quad_Transition.RelativePosition.X = AL::Ease(
+					C_AnimTransition_Easing, 
+					Now-(TriggerTime+C_AnimText_DelayHide)*1., 
+					{{{-C_REWARDS_TRANSITION_SIZE_X/2.}}}, 
+					{{{C_REWARDS_TRANSITION_SIZE_X/2.+160.}}}, 
+					C_AnimTransition_Duration
+				);
+				
+				Label_Title.RelativePosition.X = AL::Ease(
+					C_AnimText_Easing, 
+					Now-TriggerTime*1., 
+					0., 
+					C_AnimText_Offset, 
+					C_AnimText_Duration
+				);
+				
+				Label_Title2.RelativePosition.X = AL::Ease(
+					C_AnimText_Easing, 
+					Now-TriggerTime*1.,
+					0.,
+					C_AnimText_Offset,
+					C_AnimText_Duration
+				);
+				
+				Label_Subtitle.RelativePosition.X = AL::Ease(
+					C_AnimText_Easing, 
+					Now-TriggerTime*1., 
+					0., 
+					-C_AnimText_Offset, 
+					C_AnimText_Duration
+				);
+				
+				Quad_Image.Opacity = AL::Ease(
+					C_AnimText_Easing, 
+					Now-(TriggerTime+C_AnimText_DelayShow)*1., 
+					1., 
+					-1., 
+					C_AnimText_Duration
+				);
+			}
+
+			Frame_PressToContinue		.Visible = AnimDone && DesiredVisible && Net_Reward_ShowContinue;
+			Quad_PressToContinueButton	.Visible = Label_PressToContinue.Value != "";
+			
+			if(DesiredVisible) {
+				if(!AnimDone) {
+					Frame_Reward				.Visible = True;
+				}
+			} else {
+				if(AnimDone) {
+					Frame_Reward				.Visible = False;
+				}
+			}
+			
+			// log(AnimTime - 500);
+			if(Now >= (AnimTime - 500) && DesiredVisible) {
+				Label_Subtitle.Opacity = 0.5 + 0.5 * ML::Sin(Now*{{{C_SPEED_ANIM_BLINKSPEED}}});
+				if(Net_Reward_ShowContinue) {
+					foreach(Event in PendingEvents)
+					{
+						if(Event.Type 			== CMlEvent::Type::MenuNavigation 
+						&&(Event.MenuNavAction 	== CMlEvent::EMenuNavAction::Select
+						))
+						{
+							
+							
+							Quad_Image				.ImageUrl 	= "";
+							Label_Title				.Value 		= "";
+							Label_Title2			.Value		= "";
+							Label_Subtitle			.Value 		= "";
+							Label_Subtitle.Opacity = 1.0;
+							Label_PressToContinue	.Value		= "";
+							Net_Reward_TriggerPressedContinue += 1;
+							
+							StopVideoQuad(Quad_Smoke);
+							
+							HasImageChanged 	= False;
+							Audio.PlaySoundEvent("{{{SOUNDPATH ^ SOUND_SELECT}}}", {{{Volumes::GetVolumedB("MenuClick")}}}, 0);
+							
+							if(Net_Reward_Status != "")
+							{
+								if(Net_Reward_Status == "+" || Net_Reward_Status == "UP") {
+									M_SoundCrowdYes.Stop();
+								} else if(Net_Reward_Status == "-"){
+									M_SoundCrowdNo.Stop();
+									M_SoundFXNegative.Stop();
+								} else if(Net_Reward_Status == "UNLOCK") {
+									M_SoundFXUnlock.Stop();
+								} else if(Net_Reward_Status == "ECHELON") {
+									// M_SoundFXEchelon.Stop();
+								} else if(Net_Reward_Status == "UP") {
+									
+								} else if(Net_Reward_Status == "VERYUP") {
+									
+								}
+							}
+							
+						}
+						if(Event.MenuNavAction == CMlEvent::EMenuNavAction::AppMenu)
+						{
+							ShowInGameMenu();
+						}
+					}
+				}
+			}
+		}
+	}
+	--></script>
+	""";
+
+	return ML;
+}
+
+Void FlushRewardAnswer(CTmPlayer _Player) {
+	declare UI <=> UIManager.GetUI(_Player);
+	if(UI == Null) return;
+	declare	netread 	Integer Net_Reward_TriggerPressedContinue for UI;
+	declare	 			Integer Pre_Reward_TriggerPressedContinue for UI;
+	Pre_Reward_TriggerPressedContinue = Net_Reward_TriggerPressedContinue;
+}
+
+Boolean GetRewardAnswer(CTmPlayer _Player) {
+	declare UI <=> UIManager.GetUI(_Player);
+	if(UI == Null) return False;
+	declare	netread 	Integer Net_Reward_TriggerPressedContinue for UI;
+	declare	 			Integer Pre_Reward_TriggerPressedContinue for UI;
+	if(Pre_Reward_TriggerPressedContinue != Net_Reward_TriggerPressedContinue) {
+		// log("Reward Anwser update: "^Pre_Reward_TriggerPressedContinue^" "^Net_Reward_TriggerPressedContinue);
+		Pre_Reward_TriggerPressedContinue = Net_Reward_TriggerPressedContinue;
+		return True;
+	}
+	return False;
+}
+
+Boolean GetRewardAnswerSplit(CTmPlayer _Player) {
+	declare UI <=> UIManager.GetUI(_Player);
+	if(UI == Null) return False;
+	declare	netread 	Integer Net_Reward_TriggerPressedContinueSplit for UI;
+	declare	 			Integer Pre_Reward_TriggerPressedContinueSplit for UI;
+	if(Pre_Reward_TriggerPressedContinueSplit != Net_Reward_TriggerPressedContinueSplit) {
+		// log("Reward Anwser update: "^Pre_Reward_TriggerPressedContinue^" "^Net_Reward_TriggerPressedContinue);
+		Pre_Reward_TriggerPressedContinueSplit = Net_Reward_TriggerPressedContinueSplit;
+		return True;
+	}
+	return False;
+}
+
+Void ShowRewardSplit(CTmPlayer _Player, Text _Title, Text _Title2, Text _SubTitle, Text _ButtonAction, Text _ImageUrl, Vec3 _TextColor, Text _IsPositive, Boolean _ShowContinue)
+{
+	declare UI <=> UIManager.GetUI(_Player);
+	if(UI == Null) return;
+	declare	netwrite Integer 	Net_Reward_TriggerShowSplit 	for UI;
+	declare	netwrite Text 		Net_Reward_TitleSplit 			for UI;
+	declare	netwrite Text 		Net_Reward_TitleSplit2 			for UI;
+	declare	netwrite Text 		Net_Reward_SubTitleSplit 		for UI;
+	declare	netwrite Text 		Net_Reward_ButtonActionSplit	for UI;
+	declare	netwrite Text 		Net_Reward_ImageUrlSplit 		for UI;
+	declare	netwrite Vec3 		Net_Reward_TextColorSplit		for UI;
+	declare	netwrite Text 		Net_Reward_IsPositiveSplit		for UI;
+	declare netwrite Boolean	Net_Reward_ShowContinueSplit	for UI;
+	
+	Net_Reward_TitleSplit 			= _Title;
+	Net_Reward_TitleSplit2 			= _Title2;
+	Net_Reward_SubTitleSplit 		= _SubTitle;
+	Net_Reward_ButtonActionSplit 	= _ButtonAction;
+	Net_Reward_ImageUrlSplit 		= _ImageUrl;
+	Net_Reward_TextColorSplit 		= _TextColor;
+	Net_Reward_IsPositiveSplit 		= _IsPositive;
+	Net_Reward_TriggerShowSplit 	+= 1;
+	Net_Reward_ShowContinueSplit	= _ShowContinue;
+}
+
+Void ShowRewardSplit(CTmPlayer _Player, Text _Title, Text _Title2, Text _SubTitle, Text _ButtonAction, Text _ImageUrl, Vec3 _TextColor)
+{
+	ShowRewardSplit(_Player, _Title, _Title2, _SubTitle, _ButtonAction, _ImageUrl, _TextColor, "", True);
+}
+
+Void HideRewardSplit(CTmPlayer _Player)
+{
+	declare UI <=> UIManager.GetUI(_Player);
+	if(UI == Null) return;
+	declare	netwrite Integer 	Net_Reward_TriggerHideSplit	for UI;
+	Net_Reward_TriggerHideSplit 	+= 1;
+}
+
+Void ShowReward(CTmPlayer _Player, Text _Title, Text _Title2, Text _SubTitle, Text _ButtonAction, Text _ImageUrl, Vec3 _TextColor, Text _Status, Boolean _ShowContinue)
+{
+	declare UI <=> UIManager.GetUI(_Player);
+	if(UI == Null) return;
+	declare	netwrite Integer 	Net_Reward_TriggerShow 	for UI;
+	declare	netwrite Text 		Net_Reward_Title 		for UI;
+	declare	netwrite Text 		Net_Reward_Title2 		for UI;
+	declare	netwrite Text 		Net_Reward_SubTitle 	for UI;
+	declare	netwrite Text 		Net_Reward_ButtonAction	for UI;
+	declare	netwrite Text 		Net_Reward_ImageUrl 	for UI;
+	declare	netwrite Vec3 		Net_Reward_TextColor	for UI;
+	declare	netwrite Text 		Net_Reward_Status		for UI;
+	declare netwrite Boolean	Net_Reward_ShowContinue for UI;
+	
+	Net_Reward_Title 		= _Title;
+	Net_Reward_Title2 		= _Title2;
+	Net_Reward_SubTitle 	= _SubTitle;
+	Net_Reward_ButtonAction = _ButtonAction;
+	Net_Reward_ImageUrl 	= _ImageUrl;
+	Net_Reward_TextColor 	= _TextColor;
+	Net_Reward_Status 		= _Status;
+	Net_Reward_TriggerShow 	+= 1;
+	// log("SHOW REWARD");
+	Net_Reward_ShowContinue	= _ShowContinue;
+	FlushRewardAnswer(_Player);
+}
+
+Void ShowReward(CTmPlayer _Player, Text _Title, Text _Title2, Text _SubTitle, Text _ButtonAction, Text _ImageUrl, Vec3 _TextColor)
+{
+	ShowReward(_Player, _Title, _Title2, _SubTitle, _ButtonAction, _ImageUrl, _TextColor, "", True);
+}
+
+Void HideReward(CTmPlayer _Player)
+{
+	declare UI <=> UIManager.GetUI(_Player);
+	if(UI == Null) return;
+	
+	declare	netwrite Integer 	Net_Reward_TriggerHide	for UI;
+	Net_Reward_TriggerHide 	+= 1;
+}
+
+Void ShowTransition(CTmPlayer _Player)
+{
+	ShowReward(_Player, "", "", "", "", "", <0.,0.,0.>, "", False);
+}
+
+Void HideTransition(CTmPlayer _Player)
+{
+	HideReward(_Player);
+}
+
+Void Load(Text _ModeName) {
+	G_FontMain = Font::GetFontName("Main");
+	if(_ModeName == "Rounds Splitscreen") {
+		foreach(Player in Players) 
+		{
+			declare UI <=> UIManager.GetUI(Player);
+			declare Reward 		<=> UIManager.UILayerCreate();
+			Reward.ManialinkPage = Private_GetRewards(Players.count);
+			UI.UILayers.add(Reward);
+			FlushRewardAnswer(Player);
+		}
+		Layers::Create(C_LAYERNAME_REWARDS^"Split", Private_GetRewardsSplitscreen());
+		Layers::Attach(C_LAYERNAME_REWARDS^"Split");
+	} else {
+		Layers::Create(C_LAYERNAME_REWARDS, Private_GetRewards(1));
+		Layers::Attach(C_LAYERNAME_REWARDS);
+	}
+}

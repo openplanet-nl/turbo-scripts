@@ -1,0 +1,1362 @@
+/*
+###########
+### DOC ###
+
+
+
+ELEMENT TYPES LIST :
+
+- Title
+- Medal
+- Input
+- Color
+- Switch
+- Image
+- Label
+- Button
+- Rank
+- Compare
+- Custom
+
+
+
+PARAMS :
+
+- Title		: ColorBg ColorText {{{ColorNameForBg}}}
+- Medal 	: ---
+- Input 	: ---
+- Color 	: Dark {{{ColorNameForBg}}}
+- Switch 	: L1 R1 {{{ColorNameForBg}}}
+- Image     : ---
+- Label 	: Bg3 Dark Right Big {{{ColorNameForText}}}
+- Button 	: {{{ColorNameForBg}}}
+- Rank 		: Button NoRank SmallRank Medal {{{ColorNameForBg}}}
+- Compare	: Button
+- Custom 	: Bg Bg2 Bg3 Fg
+
+Replace {{{ColorNameForBg}}} by a color from the Colors Lib
+
+
+
+SPECIAL NETWRITE :
+
+declare netwrite Integer[] Net_HiddenItemsForLayer_Menu for UI;
+Use this Netwrite to hide elements of a layer. Add/Remove the index of the element you want to hide.
+
+	
+	
+DETAILS (WIP) :
+
+- Rank 
+Add "ColorBg"   + " " + {{{ColorName}}} to set BgColor
+Add "ColorText" + " " + {{{ColorName}}} to set TextColor
+
+- Rank 
+Add "Small" in Param string to get a smaller RankSize (Example for Ranks from 1 to 10 in local mode)
+Add "Button" in Param string to transform Rank item in a clickable button
+Add "NoRank" in Param string to hide the Rank count on the left (you need to remove the ValueRank from the Update string)
+
+- Bg3 is the background without transparency, with small circles (trame de fond, ex dans menus)
+
+*/
+
+
+#Include "TextLib" 										as TL
+#Include "Libs/Nadeo/UIPadButtons.Script.txt"			as UIButtons
+#Include "Libs/Nadeo/TMConsole/FontManager.Script.txt" 	as Font
+#Include "Libs/Nadeo/TMConsole/Colors.Script.txt" 		as Colors
+#Include "Libs/Nadeo/TMConsole/Volumes.Script.txt" 		as Volumes
+
+#Const ScriptName				"UIXmlBuilder.Script.txt"
+
+#Const ImgPath					"file://Media/Images/TMConsole/Ingame/"
+#Const VideoPath				"file://Media/Manialinks/Nadeo/TMConsole/Video/"
+#Const SoundPath				"file://Media/Sounds/TMConsole/"
+
+#Const SoundShowLine			"event-menushowline.wav"
+
+#Const C_ImgBgBig				"slot-big-bg.dds"
+#Const C_ImgBgSmall				"slot-small-bg.dds"
+#Const C_ImgBg	   				"slot-medium-bg.dds"
+#Const C_ImgFg	   				"slot-medium-fg.dds"
+#Const C_ImgFgBig	   			"slot-big-fg.dds"
+#Const C_ImgBgLine	   			"menu-bg-1.dds"
+#Const C_ImgBgLine2	   			"menu-bg-2.dds"
+#Const C_ImgArrowSmall	   		"arrow-small.dds"
+
+#Const C_ImgMedalSmallBronze	"medalsmall-bronze.dds"
+#Const C_ImgMedalSmallSilver	"medalsmall-silver.dds"
+#Const C_ImgMedalSmallGold		"medalsmall-gold.dds"
+#Const C_ImgMedalSmallAuthor	"medalsmall-author.dds"
+
+#Const C_ImgMedalBronze			"medal-bronze.dds"
+#Const C_ImgMedalSilver			"medal-silver.dds"
+#Const C_ImgMedalGold			"medal-gold.dds"
+#Const C_ImgMedalAuthor			"medal-author.dds"
+#Const C_ImgMedalBg				"medal-empty.dds"
+
+#Const C_ImgMedalBronzeJoker	"medal-bronze-joker.dds"
+#Const C_ImgMedalSilverJoker	"medal-silver-joker.dds"
+#Const C_ImgMedalGoldJoker		"medal-gold-joker.dds"
+// #Const C_ImgMedalAuthor			"medal-author.dds"
+// #Const C_ImgMedalBg				"medal-empty.dds"
+
+#Const C_SoundMedalBronze		"medal-bronze.wav"
+#Const C_SoundMedalSilver		"medal-silver.wav"
+#Const C_SoundMedalGold			"medal-gold.wav"
+#Const C_SoundMedalAuthor		"medal-author.wav"
+
+#Const C_SoundVoiceMedalBronze	"voice-medal-bronze.wav"
+#Const C_SoundVoiceMedalSilver	"voice-medal-silver.wav"
+#Const C_SoundVoiceMedalGold	"voice-medal-gold.wav"
+#Const C_SoundVoiceMedalAuthor	"voice-medal-author.wav"
+
+#Const C_VideoMedalGlowBronze	"video_medal_glow_bronze.webm"
+#Const C_VideoMedalGlowSilver	"video_medal_glow_silver.webm"
+#Const C_VideoMedalGlowGold		"video_medal_glow_gold.webm"
+
+#Const C_TYPE 	0
+#Const C_NAME 	1
+#Const C_TEXT 	2
+#Const C_SIZE 	3
+#Const C_CODE 	4
+#Const C_PARAM 	5
+#Const C_UPDATE 6
+
+#Const C_SIZEX  120.
+#Const C_RATIO 	12.962
+#Const C_SCALE 	0.9
+
+#Const AlignTl				""" valign="top" 	halign="left" """
+#Const AlignTr				""" valign="top" 	halign="right" """
+#Const AlignTc				""" valign="top" 	halign="center" """
+#Const AlignCl				""" valign="center" halign="left" """
+#Const AlignCr				""" valign="center" halign="right" """
+#Const AlignCc				""" valign="center" halign="center" """
+#Const AlignC2r				""" valign="center2" halign="right" """
+#Const AlignC2c				""" valign="center2" halign="center" """
+
+#Const CapsLock				""" textprefix="$t" """
+
+
+
+Vec2 GetSize(Boolean _AfterScale)
+{
+	if(_AfterScale) return <C_SCALE * C_SIZEX, C_SCALE * C_SIZEX/C_RATIO>;
+	return <C_SIZEX, C_SIZEX/C_RATIO>;
+}
+
+Vec2 GetSize()
+{
+	return GetSize(False);
+}
+
+Text GetConst()
+{
+	declare ML =
+	"""
+	#Const TMC_MEDAL_AUTHOR					0
+	#Const TMC_MEDAL_GOLD					1
+	#Const TMC_MEDAL_SILVER					2
+	#Const TMC_MEDAL_BRONZE					3
+	#Const TMC_MEDAL_PLAYER					4
+	#Const TMC_MEDAL_NONE					5
+	#Const TMC_MEDAL_ANOTHERPLAYER			6
+	""";
+	
+	return ML;
+}
+
+Text GetMLFunctions()
+{
+	declare ML =
+	"""
+	Text GetMedalToText(Integer _Medal)
+	{
+		declare MedalToText = "";
+		switch(_Medal)
+		{
+			case TMC_MEDAL_AUTHOR 	: MedalToText = _("Trackmaster Medal");
+			case TMC_MEDAL_GOLD 	: MedalToText = _("Gold Medal");
+			case TMC_MEDAL_SILVER 	: MedalToText = _("Silver Medal");
+			case TMC_MEDAL_BRONZE 	: MedalToText = _("Bronze Medal");
+			case TMC_MEDAL_NONE 	: MedalToText = _("Drive alone");
+			case TMC_MEDAL_PLAYER 	: MedalToText = _("Player");
+		}
+		
+		return MedalToText;
+	}
+
+	Text GetMedalStyle(Integer _Medal)
+	{
+		declare MedalStyle = "";
+		switch(_Medal)
+		{
+			case TMC_MEDAL_AUTHOR 	: MedalStyle = "MedalNadeo";
+			case TMC_MEDAL_GOLD 	: MedalStyle = "MedalGold";
+			case TMC_MEDAL_SILVER 	: MedalStyle = "MedalSilver";
+			case TMC_MEDAL_BRONZE 	: MedalStyle = "MedalBronze";
+			case TMC_MEDAL_NONE 	: MedalStyle = "MedalSlot";
+			case TMC_MEDAL_PLAYER 	: MedalStyle = "MedalSlot";
+		}
+		
+		return MedalStyle;
+	}
+	
+	Text GetMedalUrlSmall(Integer _Medal)
+	{
+		declare MedalFile 	= "";
+		switch(_Medal)
+		{
+			case TMC_MEDAL_AUTHOR 	: MedalFile = "{{{C_ImgMedalSmallAuthor}}}";
+			case TMC_MEDAL_GOLD 	: MedalFile = "{{{C_ImgMedalSmallGold}}}";
+			case TMC_MEDAL_SILVER 	: MedalFile = "{{{C_ImgMedalSmallSilver}}}";
+			case TMC_MEDAL_BRONZE 	: MedalFile = "{{{C_ImgMedalSmallBronze}}}";
+			case TMC_MEDAL_NONE 	: MedalFile = "";
+			case TMC_MEDAL_PLAYER 	: MedalFile = "";
+		}
+		
+		if(MedalFile == "") return "";
+		
+		return "{{{ImgPath}}}" ^ MedalFile;
+	}
+	
+	Text GetMedalUrl(Integer _Medal)
+	{
+		declare MedalFile 	= "";
+		switch(_Medal)
+		{
+			case TMC_MEDAL_AUTHOR 	: MedalFile = "{{{C_ImgMedalAuthor}}}";
+			case TMC_MEDAL_GOLD 	: MedalFile = "{{{C_ImgMedalGold}}}";
+			case TMC_MEDAL_SILVER 	: MedalFile = "{{{C_ImgMedalSilver}}}";
+			case TMC_MEDAL_BRONZE 	: MedalFile = "{{{C_ImgMedalBronze}}}";
+			case TMC_MEDAL_NONE 	: MedalFile = "";
+			case TMC_MEDAL_PLAYER 	: MedalFile = "";
+		}
+		
+		if(MedalFile == "") return "";
+		
+		return "{{{ImgPath}}}" ^ MedalFile;
+	}
+	
+	Text GetMedalSoundUrl(Integer _Medal)
+	{
+		declare MedalFile 	= "";
+		switch(_Medal)
+		{
+			case TMC_MEDAL_AUTHOR 	: MedalFile = "{{{C_SoundMedalAuthor}}}";
+			case TMC_MEDAL_GOLD 	: MedalFile = "{{{C_SoundMedalGold}}}";
+			case TMC_MEDAL_SILVER 	: MedalFile = "{{{C_SoundMedalSilver}}}";
+			case TMC_MEDAL_BRONZE 	: MedalFile = "{{{C_SoundMedalBronze}}}";
+			case TMC_MEDAL_NONE 	: MedalFile = "";
+			case TMC_MEDAL_PLAYER 	: MedalFile = "";
+		}
+		
+		if(MedalFile == "") return "";
+		
+		return "{{{SoundPath}}}" ^ MedalFile;
+	}
+	
+	Text GetMedalVoiceUrl(Integer _Medal)
+	{
+		declare MedalFile 	= "";
+		switch(_Medal)
+		{
+			case TMC_MEDAL_AUTHOR 	: MedalFile = "{{{C_SoundVoiceMedalAuthor}}}";
+			case TMC_MEDAL_GOLD 	: MedalFile = "{{{C_SoundVoiceMedalGold}}}";
+			case TMC_MEDAL_SILVER 	: MedalFile = "{{{C_SoundVoiceMedalSilver}}}";
+			case TMC_MEDAL_BRONZE 	: MedalFile = "{{{C_SoundVoiceMedalBronze}}}";
+			case TMC_MEDAL_NONE 	: MedalFile = ""; 
+			case TMC_MEDAL_PLAYER 	: MedalFile = "";
+		}
+		
+		if(MedalFile == "") return "";
+		
+		return "{{{SoundPath}}}Voices/" ^ MedalFile;
+	}
+
+	Vec3 GetColorFromParam(Text _Param)
+	{
+		declare Vec3 Color;
+		switch(_Param)
+		{
+	""";
+	foreach(Color in Colors::GetColorList()) 
+		ML ^= """ 
+			case "{{{Color}}}" : Color = {{{Colors::GetColor(Color)}}}; """;
+		ML ^= """
+		}
+		
+		return Color;
+	}
+	""";
+	
+	return ML;
+}
+
+
+
+// BUILDER
+
+Text GetXml(Text _LayerName, Text[][] _Elements, Real _Scale, Vec3 _Pos, Real _TitleSizeAdd)
+{
+	declare Text MLText;
+	
+	declare Text IMGL1  			= UIButtons::GetImage(CManiaAppEvent::EMenuNavAction::PageDown);
+	declare Text IMGR1  			= UIButtons::GetImage(CManiaAppEvent::EMenuNavAction::PageUp);
+	
+	declare Text IMGBgSmall  		= ImgPath ^ C_ImgBgSmall;
+	declare Text IMGBgBig  			= ImgPath ^ C_ImgBgBig;
+	declare Text IMGBg  			= ImgPath ^ C_ImgBg;
+	declare Text IMGBg2  			= ImgPath ^ C_ImgBgLine2;
+	declare Text IMGFg  			= ImgPath ^ C_ImgFg;
+	declare Text IMGFgBig  			= ImgPath ^ C_ImgFgBig;
+	declare Text IMGArrowSmall		= ImgPath ^ C_ImgArrowSmall;
+	
+	declare Text IMGMedBronze  		= ImgPath ^ C_ImgMedalBronze;
+	declare Text IMGMedSilver  		= ImgPath ^ C_ImgMedalSilver;
+	declare Text IMGMedGold  		= ImgPath ^ C_ImgMedalGold;
+	declare Text IMGMedAuthor  		= ImgPath ^ C_ImgMedalAuthor;
+	declare Text IMGMedBg  			= ImgPath ^ C_ImgMedalBg;
+	
+	declare Text IMGMedBronzeJoker	= ImgPath ^ C_ImgMedalBronzeJoker;
+	declare Text IMGMedSilverJoker	= ImgPath ^ C_ImgMedalSilverJoker;
+	declare Text IMGMedGoldJoker	= ImgPath ^ C_ImgMedalGoldJoker;
+	
+	declare Real TheScale			= C_SCALE * _Scale;
+	
+	declare Real SizeX 				= GetSize().X;
+	declare Real SizeY 				= GetSize().Y;
+	declare Real Separator 			= SizeY * 0.095;
+	
+	declare Boolean HasButton		= False;
+	
+	declare Integer TotalRowCount 	= 0;
+	foreach(Element in _Elements) 
+	{
+		declare TheSize = TL::ToInteger(Element[C_SIZE]);
+		declare TheType = Element[C_TYPE];
+		if(TheType == "Medal" || TheType == "Selector") 
+			TheSize = 4;
+		TotalRowCount += TheSize;
+	}
+	declare Real TotalSizeY 		= TotalRowCount * SizeY;
+	
+	declare Real PosX 				= -(SizeX * TheScale * 0.5) 		+ _Pos.X;
+	declare Real PosY 				=  (TotalSizeY * TheScale * 0.5) 	+ _Pos.Y;
+	declare Real PosZ 				=  _Pos.Z;
+	
+	declare Integer TextSizeSmall 	= 3;
+	declare Integer TextSizeSmall2 	= 4;
+	declare Integer TextSizeMedium 	= 5;
+	declare Integer TextSizeBig 	= 13;	
+	declare Integer TextSizeVeryBig = 27;	
+	
+	MLText ^= """ 
+
+	<quad 	posn="0 0 33" sizen="320 180" bgcolor="fff" {{{AlignCc}}} opacity="0.33" hidden="1" />
+	
+	<frame id="Frame_{{{_LayerName}}}"	posn="{{{PosX}}} {{{PosY}}} {{{PosZ}}}" scale="{{{TheScale}}}">
+		<quad  id="Button_Back" 		scriptevents="1" hidden="1" />
+		<frame id="Frame_Bg"			posn="0 0 1">
+	""";
+	
+	for(I, 0, TotalRowCount-1) MLText ^= """ <quad posn="0 {{{-SizeY*I}}} .0" sizen="{{{SizeX}}} {{{SizeY}}}" {{{AlignTl}}} image="{{{ImgPath}}}{{{C_ImgBgLine}}}" /> """;
+	
+	MLText ^= """</frame>""";
+	
+	
+	
+	//-------------------------------------------------
+	// BUILD MANIALINK ITEMS                           
+	
+	declare ColorXmlWhite 			= Colors::GetColorXml("White");
+	declare ColorXmlBlack 			= Colors::GetColorXml("Black");
+	declare ColorXmlGrey 			= Colors::GetColorXml("Grey");
+	declare ColorXmlYellow			= Colors::GetColorXml("Yellow");
+	declare ColorXmlRed 			= Colors::GetColorXml("Red");
+	
+	declare FontTitle 				= Font::GetFontName("Title");
+	declare FontMain 				= Font::GetFontName("Main");
+	declare FontMainSmall 			= Font::GetFontName("MainSmall");
+	declare FontMainSmall2 			= Font::GetFontName("MainSmall2");
+	declare FontNumberBig			= Font::GetFontName("NumberBig");
+	
+	declare Pos = 0.;
+		
+	foreach(I => Element in _Elements)
+	{
+		declare TheName 		= Element[C_NAME];
+		declare TheType 		= Element[C_TYPE];
+		// declare TheText 		= TL::ToUpperCase(Element[C_TEXT]);
+		declare TheText 		= Element[C_TEXT];
+		declare TheTextCustom	= Element[C_TEXT];
+		declare TheParam 		= Element[C_PARAM];
+		declare TheSize 		= TL::ToInteger(Element[C_SIZE]);
+		if(TheType == "Medal" || TheType == "Selector") 
+			TheSize = 4;
+		declare TheSizeY 		= SizeY * TheSize;
+		declare TheSizeYQuad 	= TheSizeY-Separator;
+		declare TheCenterY		= -TheSizeY * 0.5 + 0.5;
+		declare TheCenterY3		= TheCenterY - 0.5;
+		declare LabelPosX		= 4.5;
+		declare IsColorBg		= TL::Find("ColorBg", 	TheParam, True, True);
+		declare IsColorText		= TL::Find("ColorText", TheParam, True, True);
+		
+		
+		declare ColorToApply = ColorXmlGrey;
+	
+		if(TheType == "Switch" || TheType == "Label") 
+			ColorToApply = ColorXmlYellow;
+			
+		if(TheType == "Button" || TheType == "Rank" || TheType == "Selector" || TheType == "Notification" || TheType == "Compare" || TheType == "Input") ColorToApply = ColorXmlRed;
+		
+		if(TheType == "Title" || TheType == "Color" || TheType == "Button" || TheType == "Rank" || TheType == "Selector" || TheType == "Gauge" || TheType == "Switch" || TheType == "Notification" || TheType == "Label")
+		{
+			foreach(Color in Colors::GetColorList()) 
+				if(TL::Find(Color, TheParam, True, True)) 
+					ColorToApply = Colors::GetColorXml(Color);
+		}
+				
+		// CARD MODELS
+		
+		declare ML_BgSmall 		= """<quad 	posn="0.  	{{{-Separator}}}			.1"  	sizen="{{{SizeX}}} 		{{{TheSizeYQuad}}}" 	{{{AlignTl}}} image="{{{IMGBgSmall}}}" /> """;
+		declare ML_BgMed 		= """<quad 	posn="0.  	{{{-Separator}}}			.1"  	sizen="{{{SizeX}}} 		{{{TheSizeYQuad}}}" 	{{{AlignTl}}} image="{{{IMGBg}}}" /> """;
+		declare ML_Bg2 			= """<quad 	posn="0.  	{{{-Separator}}}			.1"  	sizen="{{{SizeX}}} 		{{{TheSizeYQuad}}}"  	{{{AlignTl}}} bgcolor="{{{ColorXmlBlack}}}"  /> """;
+		declare ML_Fg 			= """<quad 	posn="0.  	{{{-Separator}}}			2."  	sizen="{{{SizeX}}} 		{{{TheSizeYQuad}}}" 	{{{AlignTl}}} image="{{{IMGFg}}}" /> """;
+		declare ML_ButtonBg		= """<quad 	id="Button_{{{TheName}}}" 	posn="0. {{{-Separator}}} .2"  	sizen="{{{SizeX}}} 	{{{TheSizeYQuad}}}" 	{{{AlignTl}}} bgcolor="{{{ColorToApply}}}" scriptevents="1" /> """;
+		declare ML_ColorBg		= """<quad 	id="Quad_{{{TheName}}}" 	posn="0. {{{-Separator}}} .2"  	sizen="{{{SizeX}}} 	{{{TheSizeYQuad}}}"  	{{{AlignTl}}} bgcolor="{{{ColorToApply}}}"  />""";
+
+		declare ML_Bg3Style		= """ sizen="{{{SizeX}}} {{{SizeY}}}" {{{AlignTl}}} image="{{{IMGBg2}}}" """;
+
+		
+		MLText ^= """ <frame id="Frame_{{{TheName}}}" posn="0 {{{-Pos}}} 1"> """;
+		
+		switch(TheType)
+		{
+			case "Title" : 
+			{
+				declare Margins			= 3.5;
+				declare SizeXSubTitle	= SizeX * 0.3;
+				declare SizeXTitle		= SizeX - SizeXSubTitle - Margins * 2. + _TitleSizeAdd;
+				declare SizeYTitle		= TheSizeY * 0.99;
+				
+				declare PosXTitle 		= Margins;
+				declare PosXSubtitle 	= SizeX - PosXTitle - SizeXSubTitle / 2.;
+				
+				declare PosYTitle 		= TheCenterY + 1.;
+				declare PosYTitleQuad 	= -TheSizeY / 2.;
+				declare PosYSubtitle 	= - 0.29 * TheSizeY;
+				declare PosXQuads		= SizeXSubTitle / 2. - 1.5;
+				declare PosYQuads		= -0.75;
+				
+				
+				declare StyleTitle 	  	 = """ textcolor="{{{ColorXmlWhite}}}" """;
+				declare StyleSubTitle 	 = """ textcolor="{{{ColorXmlYellow}}}" """;
+				if(IsColorText) 
+				{
+					StyleTitle 		 	 = """ textcolor="{{{ColorToApply}}}" """;
+					StyleSubTitle 		 = StyleTitle;
+				}
+				
+				
+				declare StyleQuads 	 	 = """ sizen="6 6"  rot="15" """;
+				if(IsColorBg) 	
+					StyleQuads 			^= """ bgcolor="{{{ColorToApply}}}" """;
+				else 			
+					StyleQuads 			^= """ bgcolor="000" """;
+				
+				
+				MLText ^= ML_BgMed;
+				
+				if(IsColorBg) 
+					MLText ^= """<quad posn="0. {{{-Separator}}} .2"  	sizen="{{{SizeX}}} 	{{{TheSizeYQuad}}}" {{{AlignTl}}} bgcolor="{{{ColorToApply}}}" />""";
+				
+				
+				// IMAGE TITLE FEATURE
+				
+				declare TitleText 		= TheText;
+				declare TitleImage 		= "";
+				declare ImageColorize 	= "";
+				declare TextLength 		= TL::Length(TheText);
+				if(TextLength > 4)
+				{
+					declare Ext = TL::ToLowerCase(TL::SubString(TheText, TextLength-4, TextLength));
+					if(Ext == ".dds" || Ext == ".png")
+					{
+						TitleText = "";
+						TitleImage = TheText;
+						if(IsColorText)
+							ImageColorize = """ colorize="{{{ColorToApply}}}" """;
+					}
+				}
+				
+				
+				// ML
+				
+				MLText ^= """ 
+						<quad 	id="Quad_Title{{{TheName}}}" 			posn="{{{PosXTitle}}} 		{{{PosYTitleQuad}}} .3" 	sizen="		{{{SizeXTitle}}} 		{{{SizeYTitle}}}" 	{{{AlignCl}}} 	image="{{{TitleImage}}}" keepratio="Fit" {{{ImageColorize}}} />
+						<label 	id="Label_Title{{{TheName}}}" 			posn="{{{PosXTitle}}} 		{{{PosYTitle}}}		2." 	sizen="		{{{SizeXTitle}}} 		{{{TheSizeY}}}" 	{{{AlignCl}}} 	textsize="{{{TextSizeBig}}}" 		{{{StyleTitle}}} 	textfont="{{{FontTitle}}}" 	text="{{{TitleText}}}" translate="1" {{{CapsLock}}} />
+						<frame 	id="Frame_Subtitle{{{TheName}}}" 		posn="{{{PosXSubtitle}}}  	{{{PosYSubtitle}}}	.3" 	clipsizen="	{{{SizeXSubTitle}}} 	{{{TheSizeY}}}" 	clip="True" > 
+							<label 	id="Label_Subtitle{{{TheName}}}" 	posn="0. 0. .3" 										sizen="		{{{SizeX}}} 			{{{TheSizeY}}}" 	{{{AlignCc}}} 	textsize="{{{TextSizeMedium}}}" 	{{{StyleSubTitle}}} textfont="{{{FontMain}}}" 	text="" translate="1" {{{CapsLock}}} />
+							<quad	posn="{{{-PosXQuads}}}  {{{PosYQuads}}} .8" {{{AlignCr}}} {{{StyleQuads}}} />
+							<quad	posn="{{{ PosXQuads}}}  {{{PosYQuads}}} .8" {{{AlignCl}}} {{{StyleQuads}}} />
+						</frame>
+				""";
+				MLText ^= ML_Fg;
+			}
+			
+			
+			
+			case "Button" : 
+			{
+				HasButton = True;
+				if(TheSize == 1) 	MLText ^= ML_BgSmall;
+				else 				MLText ^= ML_BgMed;
+				
+				MLText ^= ML_ButtonBg;
+				MLText ^= """ <label 	id="Label_{{{TheName}}}" 		posn="{{{LabelPosX}}}  	{{{TheCenterY}}}	.3" 	sizen="{{{SizeX-10}}}	{{{TheSizeY}}}" 			{{{AlignCl}}} textcolor="{{{ColorXmlWhite}}}" textfont="{{{FontMain}}}" textsize="{{{TextSizeMedium}}}" text="{{{TheText}}}" translate="1" {{{CapsLock}}} />
+				""";
+				MLText ^= ML_Fg;
+			}
+			
+			
+			
+			case "Notification" : 
+			{
+				declare ImgSize 	= TheSizeY * 0.8;
+				
+				declare Borders 	= (TheSizeY - ImgSize) * 0.5;
+				declare NotifSizeX 	= SizeX - ImgSize - Borders * 3;
+				
+				declare ImgPosX 	= Borders;
+				declare NotifPosX 	= Borders * 2 + ImgSize;
+				
+				if(TheSize == 1) 	MLText ^= ML_BgSmall;
+				else 				MLText ^= ML_BgMed;
+				
+				MLText ^= ML_ButtonBg;
+				MLText ^= """ 
+				<quad 	id="Quad_{{{TheName}}}" 		posn="{{{ImgPosX}}}  	{{{-Borders}}}		.3" 	sizen="{{{ImgSize}}}	{{{ImgSize}}}" 		{{{AlignTl}}} bgcolor="09f" />
+				<label 	id="Label_{{{TheName}}}" 		posn="{{{NotifPosX}}}  	{{{-Borders-0.75}}}	.3" 	sizen="{{{NotifSizeX}}}	{{{TheSizeY}}}" 	{{{AlignTl}}} textcolor="{{{ColorXmlWhite}}}" textfont="{{{FontMain}}}" textsize="{{{TextSizeMedium}}}" text="{{{TheText}}}" autonewline="1" maxline="2" translate="1" {{{CapsLock}}} />
+				""";
+				MLText ^= ML_Fg;
+			}
+
+			case "Rank" : 
+			{
+				if(TheSize == 1) 	MLText ^= ML_BgSmall;
+				else 				MLText ^= ML_BgMed;
+				
+				declare IsButton 		= TL::Find("Button", 	TheParam, True, True);
+				declare IsNoRank 		= TL::Find("NoRank", 	TheParam, True, True);
+				declare IsSmall 		= TL::Find("Small", 	TheParam, True, True) || TL::Find("SmallRank", 	TheParam, True, True);
+				declare IsMedal 		= TL::Find("Medal", 	TheParam, True, True);
+				
+				declare SizeXRank 		= SizeX * 0.15;
+				
+				//CB Gros hack : on veut juste que les noms soient plus petits pour le record center in game
+				declare SizeXName 		= SizeX * 0.60;
+				if(_LayerName == "TMC_Lib_CampaignFriendsRecord") SizeXName = SizeX * 0.35;
+				declare SizeXTime 		= SizeX * 0.25;
+				declare SizeXMedal 		= TheSizeYQuad * 2.704;
+				declare Margins			= 1.;
+				declare Style1			= """ textcolor="{{{ColorXmlWhite}}}" textfont="{{{FontMainSmall}}}" 	textsize="{{{TextSizeMedium}}}" """;
+				declare Style2			= """ textcolor="{{{ColorXmlWhite}}}" textfont="{{{FontMain}}}" 		textsize="{{{TextSizeMedium}}}" """;
+				
+				
+				
+				declare MedalVisibility	= "";
+				if(IsMedal) 
+				{
+					MedalVisibility 	= """ hidden="1" """;
+				}
+				
+				declare RankVisibility 	= "";
+				if(IsNoRank)
+				{
+					SizeXName 		   += SizeXRank;
+					SizeXRank  		 	= 0.;
+					RankVisibility 	 	= """ hidden="1" """;
+					Margins			 	= LabelPosX;
+				}
+				
+				if(IsSmall && !IsNoRank) SizeXRank = SizeX * 0.07;
+				
+				declare PosXRank 		= Margins + SizeXRank * 0.5;
+				declare PosXName 		= Margins + SizeXRank;
+				declare PosXTime 		= SizeX - Margins;
+				declare PosXMedal 		= 0.75 * SizeX - SizeXMedal * 0.5;
+				
+				
+				
+				if(IsButton)
+				{
+					MLText ^= ML_ButtonBg;
+				} 
+				
+				MLText ^= """
+						<label 	id="Label_Rank_{{{TheName}}}" 		posn="{{{PosXRank}}}  	{{{TheCenterY}}}	.4" 	sizen="{{{SizeXRank}}}	{{{TheSizeY}}}" 	 	{{{AlignCc}}} 	{{{Style1}}} text="-" {{{RankVisibility}}} translate="1" {{{CapsLock}}} />
+						<label 	id="Label_Name_{{{TheName}}}" 		posn="{{{PosXName}}}  	{{{TheCenterY}}}	.4"  	sizen="{{{SizeXName}}}	{{{TheSizeY}}}"  		{{{AlignCl}}} 	{{{Style2}}} text="PLAYER" translate="1" {{{CapsLock}}} />
+						<label 	id="Label_Time_{{{TheName}}}" 		posn="{{{PosXTime}}}  	{{{TheCenterY}}}	.4"  	sizen="{{{SizeXTime}}}	{{{TheSizeY}}}"  		{{{AlignCr}}} 	{{{Style1}}} text="--:--.--" translate="1" {{{CapsLock}}} />
+						<quad 	id="Quad_RankColor_{{{TheName}}}" 	posn="0.  				{{{-Separator}}}	.2"  	sizen="{{{SizeX}}} 		{{{TheSizeYQuad}}}"  	{{{AlignTl}}} 	bgcolor="{{{ColorToApply}}}"   hidden="1" />
+						<quad 	id="Quad_Medal_{{{TheName}}}" 		posn="{{{PosXMedal}}}  	{{{-Separator}}}	.3"  	sizen="{{{SizeXMedal}}}	{{{TheSizeYQuad}}}"  	{{{AlignTc}}} 	bgcolor="0f0" {{{MedalVisibility}}} />
+				""";
+				
+				if(_LayerName == "TMC_Lib_CampaignFriendsRecord") {
+					MLText ^= """
+						<label 	id="Label_PlayerRecordCount_{{{TheName}}}" 			posn="{{{PosXMedal-4.0}}}  		{{{TheCenterY}}}	.4"  	sizen="{{{SizeXMedal}}}	{{{TheSizeY}}}"  			{{{AlignCc}}} 	{{{Style1}}} text="" translate="1" {{{CapsLock}}} />
+						<label 	id="Label_Tiret_{{{TheName}}}" 						posn="{{{PosXMedal+3.0}}}  	{{{TheCenterY}}}	.4"  	sizen="{{{SizeXMedal}}}	{{{TheSizeY}}}"  		{{{AlignCc}}} 	{{{Style1}}} text="-" translate="1" {{{CapsLock}}} />
+						<label 	id="Label_OpponentRecordCount_{{{TheName}}}" 		posn="{{{PosXMedal+10.0}}}  	{{{TheCenterY}}}	.4"  	sizen="{{{SizeXMedal}}}	{{{TheSizeY}}}"  		{{{AlignCc}}} 	{{{Style1}}} text="" translate="1" {{{CapsLock}}} />
+					""";
+				}
+				
+				MLText ^= ML_Fg;
+			}
+			
+			
+			
+			case "Compare" : 
+			{
+				if(TheSize == 1) 	MLText ^= ML_BgSmall;
+				else 				MLText ^= ML_BgMed;
+				
+				declare IsButton 		= TL::Find("Button", 	TheParam, True, True);
+				
+				declare SizeXName 		= SizeX * 0.51;
+				declare SizeXTime 		= SizeX * 0.2;
+				declare Margins			= LabelPosX;
+				declare TextStyle		= """ textcolor="{{{ColorXmlWhite}}}" textsize="{{{TextSizeMedium}}}" """;
+				
+				declare PosXName 		= Margins;
+				declare PosXScore 		= SizeX - Margins - 4;
+				declare PosXSeparator	= PosXScore - 7.;
+				declare PosXMyScore		= PosXScore - 14.;
+				declare PosXTime		= PosXScore - 31.;
+				
+				
+				
+				if(IsButton)
+				{
+					MLText ^= ML_ButtonBg;
+				}
+				
+				MLText ^= """
+						<label 	id="Label_Name_{{{TheName}}}" 			posn="{{{PosXName}}}  		{{{TheCenterY}}}	.4"  	sizen="{{{SizeXName}}}	{{{TheSizeY}}}"  		{{{AlignCl}}} 	textfont="{{{FontMain}}}"  		translate="1" {{{TextStyle}}}	text="PLAYER" {{{CapsLock}}} />
+						<label 	id="Label_Time_{{{TheName}}}" 			posn="{{{PosXTime}}} 		{{{TheCenterY}}}	.4"  	sizen="{{{SizeXTime}}}	{{{TheSizeY}}}"  		{{{AlignCc}}}  	textfont="{{{FontMainSmall}}}" 	translate="1" textcolor="{{{ColorXmlWhite}}}" textsize="{{{TextSizeSmall}}}" opacity="0.66" 	text="2mn ago" />
+						<label 	id="Label_Score_{{{TheName}}}" 			posn="{{{PosXScore}}} 		{{{TheCenterY}}}	.4"  	sizen="{{{SizeXTime}}}	{{{TheSizeY}}}"  		{{{AlignCc}}} 	textfont="{{{FontMainSmall}}}" 	translate="1" {{{TextStyle}}}	text="124" 	{{{CapsLock}}} />
+						<label 	id="Label_Separator_{{{TheName}}}" 		posn="{{{PosXSeparator}}} 	{{{TheCenterY}}}	.4"  	sizen="{{{SizeXTime}}}	{{{TheSizeY}}}"  		{{{AlignCc}}} 	textfont="{{{FontMainSmall}}}" 	translate="1" {{{TextStyle}}}	text="-" 	{{{CapsLock}}} />
+						<label 	id="Label_MyScore_{{{TheName}}}" 		posn="{{{PosXMyScore}}} 	{{{TheCenterY}}}	.4"  	sizen="{{{SizeXTime}}}	{{{TheSizeY}}}"  		{{{AlignCc}}}  	textfont="{{{FontMainSmall}}}" 	translate="1" textcolor="{{{ColorXmlYellow}}}" textsize="{{{TextSizeMedium}}}" 	text="124" 	{{{CapsLock}}} />
+						<quad 	id="Quad_RankColor_{{{TheName}}}" 		posn="0.  					{{{-Separator}}}	.2"  	sizen="{{{SizeX}}} 		{{{TheSizeYQuad}}}"  	{{{AlignTl}}} 	bgcolor="{{{ColorToApply}}}"   	hidden="1" />
+						
+				""";
+				MLText ^= ML_Fg;
+				//MLText ^= """<quad 	id="MouseInput_{{{TheName}}}" 			posn="0.  					{{{-Separator}}}	10."  	sizen="{{{SizeX}}} 		{{{TheSizeYQuad}}}"  	{{{AlignTl}}} 	bgcolor="{{{ColorToApply}}}"	 scriptevents="1" hidden="1" />""";
+			}
+			
+			
+			
+			case "Medal" : 
+			{
+				declare SeparatorX		= 0.25;
+				declare VideoSizeRatio	= 5.35;
+				declare PosYVideo		= 27. - Separator;
+				declare TheSizeYBg 		= SizeY * 4 - Separator;
+				declare TheSizeXMedal 	= SizeX / 3. - SeparatorX;
+				declare TheSizeXVideo 	= TheSizeXMedal * VideoSizeRatio;
+				declare TheSizeXBig 	= TheSizeXMedal * 2 + 0.;
+				
+				declare PosXGoldBg		= (SizeX / 3.) * 2;
+				
+				declare PosXMedal		= (SizeX / 3.) * 0.5 + SeparatorX;
+				declare PosXGold		= PosXGoldBg + PosXMedal;
+				
+				declare MapNameTextSizeSign	= 7;
+				declare MapNameTextSizeName	= 23;
+
+				declare Text[][] Medals;
+				Medals.add(["Bronze",	IMGMedBronze, 	C_VideoMedalGlowBronze]);
+				Medals.add(["Silver",	IMGMedSilver, 	C_VideoMedalGlowSilver]);
+				Medals.add(["Gold",		IMGMedGold, 	C_VideoMedalGlowGold]);
+				Medals.add(["Author",	IMGMedAuthor, 	C_VideoMedalGlowGold]);
+				Medals.add(["BronzeJoker",	IMGMedBronzeJoker, 	C_VideoMedalGlowBronze]);
+				Medals.add(["SilverJoker",	IMGMedSilverJoker, 	C_VideoMedalGlowSilver]);
+				Medals.add(["GoldJoker",	IMGMedGoldJoker, 	C_VideoMedalGlowGold]);
+
+				MLText ^= """ 
+					<frame posn="{{{-SeparatorX-0.1}}} 0. 3">	
+				""";
+				
+				foreach(I => Medal in Medals)
+				{
+					MLText ^= """ 
+						<frame	id="Frame_{{{Medal[0]}}}{{{TheName}}}" posn="0. 0. {{{I}}}" hidden="1">	
+							<quad 	id="Quad_{{{Medal[0]}}}Bg{{{TheName}}}" 	posn="{{{PosXGold}}} 		{{{-Separator}}}	.1"  	sizen="{{{TheSizeXMedal}}} 		{{{TheSizeYBg}}}" 		{{{AlignTc}}} 	image="{{{IMGBgBig}}}" />
+							<quad 	id="Quad_{{{Medal[0]}}}Empty{{{TheName}}}" 	posn="{{{PosXGold}}}	 	{{{-Separator}}}	.2"  	sizen="{{{TheSizeYBg}}} 		{{{TheSizeYBg}}}" 		{{{AlignTc}}} 	image="{{{IMGMedBg}}}" />
+							<quad 	id="Quad_{{{Medal[0]}}}{{{TheName}}}" 		posn="{{{PosXGold}}}		{{{-Separator}}}	.3"  	sizen="{{{TheSizeYBg}}} 		{{{TheSizeYBg}}}" 		{{{AlignTc}}} 	image="{{{Medal[1]}}}" />
+							<quad 	id="Quad_{{{Medal[0]}}}Fg{{{TheName}}}" 	posn="{{{PosXGold}}}   		{{{-Separator}}}	.7"  	sizen="{{{TheSizeXMedal}}} 		{{{TheSizeYBg}}}" 		{{{AlignTc}}} 	image="{{{IMGFgBig}}}" />
+							<quad 	id="Quad_{{{Medal[0]}}}Video{{{TheName}}}" 	posn="{{{PosXGold-0.5}}} 	{{{PosYVideo}}}		.8"  	sizen="{{{TheSizeXVideo}}} 		{{{TheSizeXVideo}}}" 	{{{AlignTc}}} 	image="{{{VideoPath^Medal[2]}}}" hidden="1" />
+						</frame>
+					""";
+				}
+				
+				MLText ^= """ 
+					</frame>	
+				""";
+	
+				MLText ^= """ 
+						<frame	id="Frame_MapName{{{TheName}}}" posn="0. {{{-Separator}}} 0." >	
+							<label 	id="Label_NumberSign{{{TheName}}}" 			posn="{{{LabelPosX-1.5}}}	 -1.5 	  				3.4"	translate="1" textsize="{{{MapNameTextSizeSign}}}"   textfont="{{{FontMain}}}"  text="#" textcolor="{{{Colors::GetColorXml("White")}}}" {{{CapsLock}}} />
+							<label 	id="Label_MapName{{{TheName}}}"				posn="{{{LabelPosX-2.}}}	 {{{TheCenterY+4.5}}} 	3.3" 	translate="1" textsize="{{{MapNameTextSizeName}}}"   textfont="{{{FontNumberBig}}}" {{{AlignCl}}} text="61" textcolor="{{{Colors::GetColorXml("Green")}}}" {{{CapsLock}}} />
+							
+							<frame id="Frame_Clip{{{TheName}}}" posn="{{{SizeX * 2 / 6.}}} {{{-TheSizeY+9.}}}" clip="True" clipposn="-0.5 0" clipsizen="{{{TheSizeXBig*0.85}}} 20">
+								<label 	id="Label_{{{TheName}}}" 				posn="0 0 3.2" 		sizen="640 	{{{TheSizeY}}}" {{{AlignCc}}} translate="1" textfont="{{{FontMain}}}" textsize="{{{TextSizeMedium}}}"  textcolor="{{{Colors::GetColorXml("White")}}}" text="CANYON GRAND DRIFT RED SERIES, TRY HARDER" {{{CapsLock}}} /> 
+							</frame>
+							
+							<quad 	id="Quad_MapNameBg{{{TheName}}}" 		posn="0 0 3.1"  	sizen="{{{TheSizeXBig}}} 		{{{TheSizeYBg}}}" 		{{{AlignTl}}} 	image="{{{IMGBgBig}}}" />
+							<quad 	id="Quad_MapNameFg{{{TheName}}}" 		posn="0 0 4.1"  	sizen="{{{TheSizeXBig}}} 		{{{TheSizeYBg}}}" 		{{{AlignTl}}} 	image="{{{IMGFgBig}}}" />
+						</frame>
+				""";
+			}
+			
+			
+			
+			case "Selector" : 
+			{
+				declare SeparatorX		= 0.25;
+				declare TheSizeYBg 		= SizeY * 4 - Separator;
+				declare TheSizeXElement = SizeX / 3. - SeparatorX;
+				declare ArrowSize 		= 6;
+				declare ArrowOffsetY	= ArrowSize/4. + 3.5;
+				declare ArrowUpPosY 	= -Separator - ArrowOffsetY;
+				declare ArrowDownPosY 	= -SizeY * 4 + ArrowOffsetY;
+				
+				
+				declare PosYLabel		= - (Separator  + TheSizeYQuad * 0.5);
+				
+				declare ArrowStyle 		= """ sizen="{{{ArrowSize}}} {{{ArrowSize}}}" {{{AlignCc}}} 	image="{{{IMGArrowSmall}}}" colorize="{{{ColorXmlBlack}}}" opacity="0.75" """;
+				declare LabelStyle 		= """ posn="{{{TheSizeXElement/2.}}} 	{{{PosYLabel}}}		.4" {{{AlignC2c}}} textfont="{{{FontMain}}}" textsize="{{{TextSizeVeryBig}}}" textcolor="{{{ColorXmlWhite}}}" text="8" {{{CapsLock}}} translate="1" """;
+				
+				MLText ^= """ 
+							<quad 	id="Quad_SelectorBg{{{TheName}}}" 			posn="0.  					 	{{{-Separator}}}	.1"  	sizen="{{{TheSizeXElement}}} 		{{{TheSizeYBg}}}" 	{{{AlignTl}}} 	image="{{{IMGBgBig}}}" />
+							<quad 	id="Quad_SelectorButton{{{TheName}}}" 		posn="0.  					 	{{{-Separator}}}	.2"  	sizen="{{{TheSizeXElement}}} 		{{{TheSizeYBg}}}" 	{{{AlignTl}}} 	bgcolor="{{{ColorToApply}}}"  opacity="0.75"/>
+							<frame posn="0. 1.5">
+								<frame hidden="0">
+									<quad 	id="Quad_SelectorArrowUp{{{TheName}}}" 		posn="{{{TheSizeXElement/2.}}} 	{{{ArrowUpPosY}}}	.3"  	{{{ArrowStyle}}} />
+									<quad 	id="Quad_SelectorArrowDown{{{TheName}}}" 	posn="{{{TheSizeXElement/2.}}} 	{{{ArrowDownPosY}}}	.3"  	{{{ArrowStyle}}} rot="180" hidden="1"/>
+								</frame>
+								<frame clip="True" clipposn="{{{TheSizeXElement/2.}}} {{{PosYLabel}}}" clipsizen="{{{TheSizeXElement}}} {{{TheSizeYBg*0.95}}}">
+									<label 	id="Label_Selector0{{{TheName}}}" 	{{{LabelStyle}}} />
+									<label 	id="Label_Selector1{{{TheName}}}" 	{{{LabelStyle}}} />
+									<label 	id="Label_Selector2{{{TheName}}}" 	{{{LabelStyle}}} />
+								</frame>
+							</frame>
+							<quad 	id="Quad_SelectorFg{{{TheName}}}" 			posn="0.  					 	{{{-Separator}}}	1."  	sizen="{{{TheSizeXElement}}} 		{{{TheSizeYBg}}}" 	{{{AlignTl}}} 	image="{{{IMGFgBig}}}" />
+				""";
+			}
+			
+			
+			
+			case "Input" : 
+			{
+				declare TheSizeXInput 	= 0.4666667 * SizeX;
+				declare MarginButton 	= 1.;
+				declare SizeXButton		= TheSizeYQuad 	- MarginButton * 0.5;
+				declare PosXButtonLeft	= TheSizeXInput - MarginButton;
+				declare PosXButtonRight	= SizeX 		- MarginButton;
+				declare PosYLabel		= - (Separator  + TheSizeYQuad * 0.5);
+				declare PosYButton		= PosYLabel - 0.05;
+				
+				declare SizeXLabel		= TheSizeXInput 	- SizeXButton - MarginButton * 2.;
+				declare PosXLabelLeft	= PosXButtonLeft 	- SizeXButton - MarginButton;
+				declare PosXLabelRight	= PosXButtonRight 	- SizeXButton - MarginButton;
+				
+				declare Text[][] Inputs;
+				Inputs.add(["Left",	 "0",		""^PosXButtonLeft, 	""^PosXLabelLeft, 	""^AlignTl]);
+				Inputs.add(["Right", ""^SizeX ,	""^PosXButtonRight, ""^PosXLabelRight, 	""^AlignTr]);
+				
+				foreach(Input in Inputs)
+				{
+					// log(Input[0]);
+					MLText ^= """ 
+						<frame		id="Frame_{{{Input[0]}}}{{{TheName}}}">
+							<quad 	id="Quad_{{{Input[0]}}}Bg{{{TheName}}}" 		posn="{{{Input[1]}}}  	{{{-Separator}}}	.1"  	sizen="{{{TheSizeXInput}}} 		{{{TheSizeYQuad}}}" 	{{{Input[4]}}} 	image="{{{IMGBgSmall}}}" />
+							<quad 	id="Quad_{{{Input[0]}}}Light{{{TheName}}}" 		posn="{{{Input[1]}}}  	{{{-Separator}}}	.2"  	sizen="{{{TheSizeXInput}}} 		{{{TheSizeYQuad}}}" 	{{{Input[4]}}} 	bgcolor="{{{ColorXmlRed}}}" hidden="1"/>
+							<quad 	id="Quad_{{{Input[0]}}}Input{{{TheName}}}" 		posn="{{{Input[2]}}}	{{{PosYButton}}}	.3"  	sizen="{{{SizeXButton}}} 		{{{SizeXButton}}}" 		{{{AlignCr}}} 	 />
+							<label 	id="Label_{{{Input[0]}}}Input{{{TheName}}}" 	posn="{{{Input[3]}}}  	{{{PosYLabel}}}		.4"  	sizen="{{{SizeXLabel}}} 		{{{SizeXButton}}}" 		{{{AlignC2r}}} 	textfont="{{{FontMainSmall2}}}" textsize="{{{TextSizeMedium}}}" textcolor="{{{ColorXmlWhite}}}" translate="1" {{{CapsLock}}}/>
+							<quad 	id="Quad_{{{Input[0]}}}Fg{{{TheName}}}" 		posn="{{{Input[1]}}}  	{{{-Separator}}}	1."  	sizen="{{{TheSizeXInput}}} 		{{{TheSizeYQuad}}}" 	{{{Input[4]}}} 	image="{{{IMGFg}}}" />
+						
+					""" ;
+					
+					MLText ^= """ 
+						
+					""";
+					
+					/*
+					if(True)
+					{
+						//MLText ^= ML_ButtonBg;
+					}
+					*/
+					
+					MLText ^= """ 
+						</frame>	
+					""";
+				}
+			}
+
+			case "Gauge" : 
+			{
+				declare IsDark 			= TL::Find("Dark", TheParam, True, True);
+				
+				declare TextSize = TextSizeBig;
+				if(TheSize == 1) TextSize = TextSizeMedium;
+				
+				declare TextStyle 		= """ posn="{{{LabelPosX}}} 		{{{TheCenterY}}} .2" sizen="{{{SizeX-10}}} {{{TheSizeY}}}" {{{AlignCl}}} textsize="{{{TextSizeMedium}}}" text="{{{TheText}}}" translate="1" {{{CapsLock}}} """;
+				declare TextStyleRatio 	= """ posn="{{{SizeX-LabelPosX}}} 	{{{TheCenterY}}} .2" sizen="{{{SizeX-10}}} {{{TheSizeY}}}" {{{AlignCr}}} textsize="{{{TextSize}}}" text="99%" textfont="{{{FontMain}}}" translate="1" {{{CapsLock}}} """;
+				MLText ^= ML_Bg2;
+				MLText ^= ML_ColorBg;
+				if(IsDark)
+				{
+					MLText ^= """ 
+					<label id="Label_Ratio{{{TheName}}}" 	textcolor="{{{ColorXmlBlack}}}"	{{{TextStyleRatio}}}   />
+					<label id="Label_{{{TheName}}}" 		textcolor="{{{ColorXmlBlack}}}"	{{{TextStyle}}} textfont="{{{FontMainSmall2}}}" />""";
+				} 	
+				else
+				{
+					MLText ^= """ 
+					<label id="Label_Ratio{{{TheName}}}" 	textcolor="{{{ColorXmlWhite}}}"	{{{TextStyleRatio}}} {{{CapsLock}}} />
+					<label id="Label_{{{TheName}}}" 		textcolor="{{{ColorXmlWhite}}}"	{{{TextStyle}}} textfont="{{{FontMain}}}" />""";
+				}
+				MLText ^= ML_Fg;
+			}
+			
+			
+			
+			case "Color" : 
+			{
+				declare IsBlack 	= TL::Find("Black", TheParam, True, True) || TL::Find("Dark", TheParam, True, True);
+				declare TextStyle	= """ posn="{{{LabelPosX}}} {{{TheCenterY}}} .2" sizen="{{{SizeX-10}}} {{{TheSizeY}}}" {{{AlignCl}}} textsize="{{{TextSizeMedium}}}" text="{{{TheText}}}" translate="1" {{{CapsLock}}} """;
+				MLText ^= ML_ColorBg;
+				if(IsBlack) MLText ^= """ <label id="Label_{{{TheName}}}" {{{TextStyle}}} textfont="{{{FontMainSmall2}}}" 	textcolor="{{{ColorXmlBlack}}}" />""";
+				else 		MLText ^= """ <label id="Label_{{{TheName}}}" {{{TextStyle}}} textfont="{{{FontMain}}}" 		textcolor="{{{ColorXmlWhite}}}" />""";
+				MLText ^= ML_Fg;
+			}
+			
+			
+			
+			case "Switch" : 
+			{
+				declare IsL1 		= TL::Find("L1", TheParam, True, True);
+				declare IsR1 		= TL::Find("R1", TheParam, True, True);
+				declare IsL1R1		= IsL1 && IsR1;
+				
+				declare MarginX 	= 0.5;
+				declare ButtonSizeY	= TheSizeY -2.5;
+				declare ButtonSizeX	= ButtonSizeY * 2;
+				declare ButtonPosX 	= SizeX - MarginX;
+				declare Button2PosX = ButtonPosX - ButtonSizeX - MarginX;
+				declare ButtonPos 	= """ posn="{{{ButtonPosX}}} 	{{{TheCenterY3}}}   .3" """;
+				declare ButtonPos2 	= """ posn="{{{Button2PosX}}} 	{{{TheCenterY3}}}   .3" """;
+				declare ButtonStyle = """ sizen="{{{ButtonSizeX}}} 	{{{ButtonSizeY}}}"	{{{AlignCr}}} """;
+				
+				MLText ^= ML_ColorBg;
+				MLText ^= """<label 	id="Label_{{{TheName}}}" 	posn="{{{LabelPosX}}} 	{{{TheCenterY}}}   	.2" 	sizen="{{{SizeX-10}}} 	{{{TheSizeY}}}"			{{{AlignCl}}} textfont="{{{FontMainSmall2}}}" 	textsize="{{{TextSizeMedium}}}" textcolor="{{{ColorXmlBlack}}}" text="{{{TheText}}}" translate="1" {{{CapsLock}}} />""";
+				
+				if(IsL1R1)
+				{
+					MLText ^= """
+					<quad {{{ButtonPos}}}  {{{ButtonStyle}}} image="{{{IMGR1}}}" keepratio="Fit" id="Quad_Up" />
+					<quad {{{ButtonPos2}}} {{{ButtonStyle}}} image="{{{IMGL1}}}" keepratio="Fit" id="Quad_Down" />
+					""";
+				} 
+				else 
+				if(IsL1)
+				{
+					MLText ^= """
+					<quad {{{ButtonPos}}} {{{ButtonStyle}}} image="{{{IMGL1}}}" keepratio="Fit" />
+					""";
+				}
+				else 
+				if(IsR1)
+				{
+					MLText ^= """
+					<quad {{{ButtonPos}}} {{{ButtonStyle}}} image="{{{IMGR1}}}" keepratio="Fit" />
+					""";
+				}
+				MLText ^= ML_Fg;
+			}
+			
+			
+			
+			case "Image" : 
+			{
+				if(TheSize == 1) 	MLText ^= ML_BgSmall;
+				else 				MLText ^= ML_BgMed;
+				MLText ^= """ 
+						<quad 	id="Quad_{{{TheName}}}" 		posn="0.  				{{{-Separator}}}		.1"  	sizen="{{{SizeX}}} 		{{{TheSizeYQuad}}}" 	{{{AlignTl}}} image="{{{TheText}}}" />
+				""";
+			}
+			
+			
+			
+			case "Label" : 
+			{
+				declare IsRight	       = TL::Find("Right"      , TheParam, True, True);
+				declare IsBig	       = TL::Find("Big"        , TheParam, True, True);
+				declare IsDark 	       = TL::Find("Dark"       , TheParam, True, True);
+				declare HasBg3 	       = TL::Find("Bg3"        , TheParam, True, True);
+				declare HasRoll        = TL::Find("Roll"       , TheParam, True, True);
+				declare HasAutoNewLine = TL::Find("AutoNewLine", TheParam, True, True);
+				declare IsSmall        = TL::Find("Small"      , TheParam, True, True);
+				declare IsWhite        = TL::Find("White"      , TheParam, True, True);
+
+				declare Real AjustPosY = 0.5;
+				
+				declare AlignText = AlignCl;
+				if(IsRight && !HasRoll)
+				{
+					AlignText = AlignCr;
+					LabelPosX = SizeX - LabelPosX;
+				}
+					
+				declare StyleText = "";
+				if(IsSmall)
+					StyleText = """ textsize="{{{TextSizeSmall2}}}" """;
+				else
+					StyleText = """ textsize="{{{TextSizeMedium}}}" {{{CapsLock}}} """;
+
+				if(IsDark)
+					StyleText ^= """ textcolor="{{{ColorXmlGrey}}}" """;
+				else if(IsWhite)
+					StyleText ^= """ textcolor="{{{ColorXmlWhite}}}" """;
+				else
+					StyleText ^= """ textcolor="{{{ColorToApply}}}" """;
+				
+				if(IsBig)
+					StyleText ^= """ textfont="{{{FontMain}}}" """;
+				else
+					StyleText ^= """ textfont="{{{FontMainSmall2}}}" """;
+					
+				if(HasBg3)
+					for(I, 0, TheSize-1)
+						MLText ^= """ <quad posn="0.  	{{{-I*SizeY}}}	.2" {{{ML_Bg3Style}}} />""";
+				else
+					MLText ^= ML_Bg2;
+				
+				if(HasAutoNewLine)
+				{
+					AlignText  = AlignTl;
+					LabelPosX -= 3.;
+					AjustPosY  = 2.5;
+					StyleText ^= """ autonewline="1" maxline="5" linespacing="1.55" """;
+				}
+
+				if(HasRoll)	
+				{
+					MLText ^= """ 
+							<frame id="Frame_Clip{{{TheName}}}" 	posn="{{{SizeX/2.-0.5}}} 	{{{-SizeY * 0.5 + AjustPosY}}}	 .3"    clipsizen="{{{SizeX*0.991}}} 	{{{TheSizeY*2.}}}"  clip="True" > 
+								<label id="Label_{{{TheName}}}" 	posn="0. 0.	 .2" 	sizen="{{{SizeX-10}}} 	{{{TheSizeY}}}" {{{AlignCc}}} {{{StyleText}}} text="{{{TheText}}}" translate="1" /> 
+							</frame>
+					""";	
+				}
+				else
+				{
+					MLText ^= """ 
+								<label id="Label_{{{TheName}}}" 	posn="{{{LabelPosX}}} 	{{{-SizeY * 0.5 + AjustPosY}}}	 .2" 	sizen="{{{SizeX-6}}} 	{{{TheSizeY}}}" {{{AlignText}}} {{{StyleText}}} text="{{{TheText}}}" translate="1" /> 
+					""";
+				}
+				
+				// KIND OF HACK TO CUSTOMIZE LABELS
+				MLText ^= """{{{Element[C_CODE]}}}""";
+			}
+			
+			
+			
+			case "Custom" : 
+			{
+				declare HasBg 	= TL::Find("Bg", 	TheParam, True, True);
+				declare HasBg2 	= TL::Find("Bg2", 	TheParam, True, True);
+				declare HasBg3 	= TL::Find("Bg3", 	TheParam, True, True);
+				declare HasFg 	= TL::Find("Fg", 	TheParam, True, True);
+				
+				if		(HasFg) 				MLText ^= ML_Fg;
+				if		(HasBg && TheSize == 1) MLText ^= ML_BgSmall;
+				else if	(HasBg) 				MLText ^= ML_BgMed;
+				if		(HasBg2)				MLText ^= ML_Bg2;
+				if		(HasBg3)
+					for(I, 0, TheSize-1)
+						MLText ^= """ <quad posn="0.  	{{{-I*SizeY}}}	.2" {{{ML_Bg3Style}}} />""";
+				
+				MLText ^= """{{{TheTextCustom}}}""";
+			}
+			
+			
+			
+		}
+		Pos += TheSizeY;
+		
+		MLText ^= """</frame>""";
+	}
+	
+	MLText ^= """ 
+	</frame>
+	""";
+	
+	return MLText;
+}
+
+Text GetXml(Text _LayerName, Text[][] _Elements, Real _Scale, Vec3 _Pos)
+{
+	return GetXml(_LayerName, _Elements, _Scale, _Pos, 0.);
+}
+
+Text[] GetShowAnim(Text[][] _Elements, Vec3 _Pos) 
+{
+	declare Real 	SizeX = GetSize().X;
+	declare Real 	SizeY = GetSize().Y;
+	
+	declare Text[] 	ShowAnim;
+	
+	
+	
+	// VAR DECLARATION
+	
+	declare Vars = 
+	"""	
+	declare M_UIXmlBuilder_PrevPageIsVisible = False;
+	declare M_LaunchShowAnim = False;
+	
+	declare Frame_Bg <=> (Page.MainFrame.GetFirstChild("Frame_Bg") as CMlFrame);
+	declare Button_Back <=> (Page.MainFrame.GetFirstChild("Button_Back") as CMlQuad);
+	
+	declare CMlFrame[] 	AllFrames;
+	declare Integer[] 	AllSizes;
+	declare Boolean[] 	AllShouldPlay;
+	
+	declare CMlFrame[] 	AllFramesSubtitle;
+	declare CMlLabel[] 	AllLabelsSubtitle;
+	declare Integer[] 	AllLabelsTriggers;
+	declare Text[]		AllPrevLabelValue; 
+	declare Real[] 		AllSize;
+	declare Real[] 		AllSpeed;
+	
+	""";
+	
+	foreach(Element in _Elements) 
+	{
+		declare TheName 	= Element[C_NAME];
+		declare TheType 	= Element[C_TYPE];
+		declare TheSize 	= Element[C_SIZE];
+		declare TheParam 	= Element[C_PARAM];
+		
+		Vars ^= 
+		"""
+		AllFrames		.add((Page.MainFrame.GetFirstChild("Frame_{{{TheName}}}") as CMlFrame));
+		AllSizes 		.add({{{TheSize}}});
+		AllShouldPlay 	.add({{{""^(TheType != "Space")}}});
+		""";
+		
+		if(TheType == "Title")
+		{
+			Vars ^= 
+			"""
+			AllFramesSubtitle		.add((Page.MainFrame.GetFirstChild("Frame_Subtitle{{{TheName}}}") as CMlFrame));
+			AllLabelsSubtitle		.add((Page.MainFrame.GetFirstChild("Label_Subtitle{{{TheName}}}") as CMlLabel));
+			""";
+		} 
+		else 
+		if(TheType == "Label" && TL::Find("Roll", TheParam, True, True)) 
+		{
+			Vars ^= 
+			"""
+			AllFramesSubtitle		.add((Page.MainFrame.GetFirstChild("Frame_Clip{{{TheName}}}") as CMlFrame));
+			AllLabelsSubtitle		.add((Page.MainFrame.GetFirstChild("Label_{{{TheName}}}") as CMlLabel));
+			""";
+		}
+	}
+	
+	Vars ^= 
+	"""
+	foreach(Label in AllLabelsSubtitle) 
+	{
+		AllLabelsTriggers.add(Now);
+		AllPrevLabelValue.add("");
+		AllSize.add(-1.);
+		AllSpeed.add(-1.);
+	}
+	
+	""";
+	
+	
+	// LOOP (ON SHOW/HIDE LAYER)
+	// HIDDEN FRAMES ARE REMOVED FROM THE ANIMATION && SOUND QUEUE
+	// DON'T FORGET TO PUT THIS 'LOOP' TEXT AFTER ANY CHANGE OF VISIBILITY ON THE FRAMES IN YOUR LOOP
+	
+	declare Loop = 
+	"""	
+	if(M_UIXmlBuilder_PrevPageIsVisible != PageIsVisible || M_LaunchShowAnim)
+	{
+		M_UIXmlBuilder_PrevPageIsVisible = PageIsVisible;
+		
+		if(M_UIXmlBuilder_PrevPageIsVisible || M_LaunchShowAnim)
+		{
+			Frame_Bg.RelativePosition = <90., 0., Frame_Bg.RelativePosition.Z>;
+
+			LibManialink_AnimStop			(Frame_Bg);
+			LibManialink_SetTargetPosition	(Frame_Bg, <0. , 0., Frame_Bg.RelativePosition.Z>);
+			LibManialink_PresetAnim			(Frame_Bg, 250, "BackOut");
+			
+			declare AnimPos 	= 0.;
+			declare AnimCount 	= -1;
+			declare OffsetX		= - ({{{SizeX}}} + 160 + {{{_Pos.X}}});
+			
+			foreach(I => Frame in AllFrames)
+			{
+				if(AllShouldPlay[I] && Frame.Visible)
+				{
+					AnimCount += 1;
+					
+					Frame.RelativePosition = <OffsetX, AnimPos, Frame.RelativePosition.Z>;
+				
+					LibManialink_AnimStop			(Frame);
+					LibManialink_SetTargetPosition	(Frame, <0. , AnimPos, Frame.RelativePosition.Z>);
+					LibManialink_PresetAnimInsert	(Frame, 100 * AnimCount, 300, "BackOut");
+					Audio.PlaySoundEvent("{{{SoundPath^SoundShowLine}}}", {{{Volumes::GetVolumedB("ShowLine")}}}, 100 * AnimCount);
+				}
+				
+				declare TheSizeY = {{{SizeY}}} * AllSizes[I];
+				AnimPos -= TheSizeY;
+			}
+			//EnableMenuNavigation(M_UIXmlBuilder_PrevPageIsVisible, True, Button_Back, 10);
+		}
+		M_LaunchShowAnim = False;
+	}
+	
+	
+	if(PageIsVisible)
+	{
+		foreach(I => Label in AllLabelsSubtitle)
+		{
+			if(Label.Value != "")
+			{
+				
+				if(AllPrevLabelValue[I] != Label.Value)
+				{
+					AllPrevLabelValue[I]  	= Label.Value;
+					declare Frame 			= AllFramesSubtitle[I];
+					declare SizeText 		= Label.ComputeWidth(Label.Value);
+					declare SizeClip		= Frame.ClipWindowSize.X / 1.;
+					AllSize[I] 				= SizeClip / 2. + SizeText / 2.;
+					AllSpeed[I] 			= AllSize[I] / 12. * 1000.;
+					Label.Size.X 			= SizeText * 1.5; // Securite en cas de manque de precision, pour ne pas ecraser le texte
+				}
+				
+				if(AllSpeed[I] > 0)
+				{
+					declare Size 		= AllSize[I];
+					declare CurTime 	= (Now - AllLabelsTriggers[I]) * 1.;
+					
+					Label.RelativePosition.X = AL::Ease("Linear", CurTime, Size*1., -Size*2., AllSpeed[I]);
+					
+					if(Label.RelativePosition.X <= -Size*1. + 0.01) 
+						AllLabelsTriggers[I] = Now;
+				}
+				
+			}
+		}
+	}
+	""";
+	
+	
+	
+	ShowAnim.add(Vars);
+	ShowAnim.add(Loop);
+	
+	return ShowAnim;
+}
+
+
+
+Text GetSetInputsML(Text _InputId, Text _RightImage, Text _RightText, Text _LeftImage, Text _LeftText)
+{
+	declare MLText =
+	"""
+		////////////////////////////////////
+		// UIXmlBuilder - GetSetInputsML()
+		
+		// IF TRUE TO ISOLATE VAR --- IN-CASE THOSE VAR NAME WOULD NEED TO BE RE-USED
+		if(True)
+		{
+			declare Quad_RightInput 		<=> (Page.MainFrame.GetFirstChild("Quad_RightInput{{{_InputId}}}") 	as CMlQuad);
+			declare Label_RightInput 		<=> (Page.MainFrame.GetFirstChild("Label_RightInput{{{_InputId}}}") as CMlLabel);
+			Quad_RightInput		.ImageUrl 	= "{{{_RightImage}}}";
+			Label_RightInput	.Value 		= "{{{_RightText}}}";
+			
+		}
+	""";
+	
+	if(_LeftText != "" && _LeftImage != "")
+	{
+		MLText ^=
+		"""
+		// IF TRUE TO ISOLATE VAR --- IN-CASE THOSE VAR NAME WOULD NEED TO BE RE-USED
+		if(True)
+		{
+			declare Quad_LeftInput 			<=> (Page.MainFrame.GetFirstChild("Quad_LeftInput{{{_InputId}}}") 	as CMlQuad);
+			declare Label_LeftInput 		<=> (Page.MainFrame.GetFirstChild("Label_LeftInput{{{_InputId}}}") 	as CMlLabel);
+			Quad_LeftInput		.ImageUrl 	= "{{{_LeftImage}}}";
+			Label_LeftInput		.Value 		= "{{{_LeftText}}}";
+		}
+		""";
+	}
+	else
+	{
+	MLText ^=
+		"""
+		// IF TRUE TO ISOLATE VAR --- IN-CASE THOSE VAR NAME WOULD NEED TO BE RE-USED
+		if(True)
+		{
+			declare Frame_LeftInput 		<=> (Page.MainFrame.GetFirstChild("Frame_Left{{{_InputId}}}") 		as CMlFrame);
+			Frame_LeftInput.Visible = False;
+		}		
+		""";
+	}
+	
+	return MLText;
+}
+
+Text GetSetInputsML(Text _InputId, Text _RightImage, Text _RightText)
+{
+	return GetSetInputsML(_InputId, _RightImage, _RightText, "", "");
+}
+
+
+Text GetSetSubtitleML(Text _Id, Text _TextSubtitle)
+{
+	declare MLText =
+	"""
+		////////////////////////////////////
+		// UIXmlBuilder - GetSetTitleML()
+		
+		// IF TRUE TO ISOLATE VAR --- IN-CASE THOSE VAR NAME WOULD NEED TO BE RE-USED
+		if(True)
+		{
+			declare Label_SubtitleTitle 	<=> (Page.MainFrame.GetFirstChild("Label_Subtitle{{{_Id}}}") 	as CMlLabel);
+			Label_SubtitleTitle	.Value 		= "{{{_TextSubtitle}}}";
+		}
+	""";
+	
+	return MLText;
+}
+
+
+
+Text[] GetButtons(Text[][] _Elements, Text _OnClick, Text _OnCancel, Boolean _Debug) 
+{
+	// FIND ALL THE BUTTONS
+	declare Integer[] ButtonIndex;
+	foreach(I => Element in _Elements)
+	{
+		declare TheType 	= Element[C_TYPE];
+		declare TheParam 	= Element[C_PARAM];
+		if(TheType == "Button" 
+		|| TheType == "Rank" && TL::Find("Button", TheParam, True, True)) 
+		{
+			ButtonIndex.add(I);
+		}
+	}
+	
+	
+	// VAR DECLARATION
+	declare Vars = 
+	"""	
+	declare CMlQuad[] 	Buttons;
+	""";
+	
+	declare ButtonsBusiness = "";
+	
+	foreach(I => Index in ButtonIndex)
+	{
+		declare Button 	= _Elements[Index];
+		declare TheName = Button[C_NAME];
+		declare TheCode = Button[C_CODE];
+		
+		Vars ^= """ 
+		Buttons.add((Page.MainFrame.GetFirstChild("Button_{{{TheName}}}") as CMlQuad));
+		""";
+		
+		ButtonsBusiness ^= """ 
+						if (Event.Control.ControlId == "Button_{{{TheName}}}") 
+						{
+							{{{TheCode}}}
+						}
+		""";
+	}
+	
+	Vars ^= """ 
+	declare CMlQuad  ButtonSelected <=> Buttons[0];
+	""";
+	
+	
+	// DEBUG
+	declare Debug = "";
+	if(_Debug) 
+		Debug = """
+		log(Now^" > MouseClick on ID : "^Event.Control.ControlId);
+		log(Now^" > Useful Vars : CMlQuad ButtonSelected && CMlQuad[] Buttons (AllButtons)");
+		""";
+	
+	
+	
+	// LOOP 
+	declare Loop = 
+	"""	
+	
+				foreach(Event in PendingEvents) 
+				{
+					if(Event.Type == CMlEvent::Type::MouseClick) 
+					{
+						{{{Debug}}}
+						if(Event.Control == Button_Back) 
+						{
+							{{{_OnCancel}}}
+						}
+						else
+						{
+							{{{_OnClick}}}
+							{{{ButtonsBusiness}}}
+						}
+					} 
+					else 
+					if(Event.Type == CMlEvent::Type::MouseOver) 
+					{
+						foreach(Button in Buttons)
+						{
+							if (Event.Control == Button) 
+							{
+								ButtonSelected = Button;
+							}
+						}
+					}
+				}
+				
+				declare ButtonSelectedSinVar 	= ML::Sin(Now * 0.01) * 0.5 + 0.5;
+				declare ButtonSelectedOpacity 	= 0.0 + ButtonSelectedSinVar * 1.;
+				
+				foreach(Button in Buttons) 
+					Button.Opacity = 0.;
+					
+				ButtonSelected.Opacity = ButtonSelectedOpacity;
+	""";
+	
+	
+	
+	return [Vars, Loop];
+}
+
+Text[] GetButtons(Text[][] _Elements) 
+{
+	return GetButtons(_Elements, "", "", False);
+}
+

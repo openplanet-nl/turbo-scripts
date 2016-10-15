@@ -1,0 +1,930 @@
+/**
+ *	ScoreTable Library
+ * 	Especially made for console
+ */
+
+#Const Version				"2014-07-17"
+#Const ScriptName			"UIMenuCampaign.Script.txt"
+
+#Include "TextLib" as TL
+#Include "Libs/Nadeo/Layers2.Script.txt" 							as Layers
+#Include "Libs/Nadeo/UIPadButtons.Script.txt"						as UIButtons
+#Include "Libs/Nadeo/TMConsole/Ingame/UI/UIPopupBuilder.Script.txt"	as UIPopupBuilder
+#Include "Libs/Nadeo/TMConsole/Ingame/Medals.Script.txt"			as Medals
+
+
+
+#Const TMC_MEDAL_AUTHOR					0
+#Const TMC_MEDAL_GOLD					1
+#Const TMC_MEDAL_SILVER					2
+#Const TMC_MEDAL_BRONZE					3
+#Const TMC_MEDAL_PLAYER					4
+#Const TMC_MEDAL_NONE					5
+#Const TMC_MEDAL_ANOTHERPLAYER			6
+
+#Const TMC_PLAYERCHOICE_CHOOSEGHOST 	1
+#Const TMC_PLAYERCHOICE_QUIT	 		2
+#Const TMC_PLAYERCHOICE_RESTART			3
+
+#Const TMC_RACEMODE_MEDAL				0
+#Const TMC_RACEMODE_ONLINE				1
+
+#Const C_MaxCount_Top					10
+
+declare Ident 		G_ThePlayerId;
+declare Integer		G_RaceMode;
+
+// ---------------------------------- //
+// Functions
+// ---------------------------------- //
+
+// ---------------------------------- //
+/** Return the version number of the script
+ *
+ *	@return		The version number of the script
+ */
+Text GetScriptVersion() 
+{
+	return Version;
+}
+
+// ---------------------------------- //
+/** Return the name of the script
+ *
+ *	@return		The name of the script
+ */
+Text GetScriptName() 
+{
+	return ScriptName;
+}
+
+// ---------------------------------- //
+/// To re-attach layers in case of UI ResetAll
+Void Attach() 
+{
+}
+
+// ---------------------------------- //
+/// Unload the library
+Void Unload() 
+{
+
+}
+
+Void SetRaceMode(Integer _RaceMode) 
+{
+	if(_RaceMode == TMC_RACEMODE_ONLINE) {
+		declare UI <=> UIManager.GetUI(Players[G_ThePlayerId]);
+		declare netwrite Integer Net_IndexPages for UI;
+		Net_IndexPages = 0;
+		
+		Layers::SetAnimationTypeOut("Layer_TMC_MedalSelection", CUILayer::EUILayerAnimation::None);
+		Layers::SetVisibility("Layer_TMC_MedalSelection", False);
+		Layers::SetVisibility("Layer_TMC_SoloARStart1", True);
+		G_RaceMode = TMC_RACEMODE_ONLINE;
+	} else if(_RaceMode == TMC_RACEMODE_MEDAL) {
+		Layers::SetAnimationTypeOut("Layer_TMC_SoloARStart1", CUILayer::EUILayerAnimation::None);
+		Layers::SetAnimationTypeOut("Layer_TMC_SoloARStart2", CUILayer::EUILayerAnimation::None);
+		Layers::SetVisibility("Layer_TMC_MedalSelection", True);
+		Layers::SetVisibility("Layer_TMC_SoloARStart1", False);
+		Layers::SetVisibility("Layer_TMC_SoloARStart2", False);
+		G_RaceMode = TMC_RACEMODE_MEDAL;
+	}
+}
+
+Boolean PlayerWantsToQuit() 
+{
+	declare UI <=> UIManager.GetUI(Players[G_ThePlayerId]);
+	declare netread Integer 	Net_PlayerWantsToQuitUpdate for UI;
+	declare netwrite Integer 	Pre_PlayerWantsToQuitUpdate for UI;
+	
+	if(Pre_PlayerWantsToQuitUpdate != Net_PlayerWantsToQuitUpdate) {
+		Pre_PlayerWantsToQuitUpdate = Net_PlayerWantsToQuitUpdate;
+		return True;
+	}
+	return False;
+}
+
+Boolean PlayerHasGiveUp() 
+{
+	declare Boolean PlayerHasGiveUp = False;
+	declare UI <=> UIManager.GetUI(Players[G_ThePlayerId]);
+	declare netread Integer 	Net_PlayerHasGiveUpUpdate for UI;
+	declare netwrite Integer 	Pre_PlayerHasGiveUpUpdate for UI;
+	if(Pre_PlayerHasGiveUpUpdate != Net_PlayerHasGiveUpUpdate) {
+		Pre_PlayerHasGiveUpUpdate = Net_PlayerHasGiveUpUpdate;
+		PlayerHasGiveUp = True;
+	}
+	return PlayerHasGiveUp;
+}
+
+Integer GetGhostChosen() 
+{
+	declare Integer GhostChosen = -1;
+	declare UI <=> UIManager.GetUI(Players[G_ThePlayerId]);
+	declare netread Integer Net_MedalChosen for UI;
+	GhostChosen = Net_MedalChosen;
+	return GhostChosen;
+}
+
+Void SetBestTime(Integer _BestTime) 
+{
+	declare UI <=> UIManager.GetUI(Players[G_ThePlayerId]);
+	declare netwrite Integer 	Net_BestTime 			for UI;
+	declare netwrite Integer[]	Net_MedalSelectionTime	for UI;
+	Net_BestTime = _BestTime;
+	if(Net_MedalSelectionTime.existskey(0)) Net_MedalSelectionTime[0] 	= _BestTime;
+}
+
+Void UpdateEndRaceTime() 
+{
+	declare UI <=> UIManager.GetUI(Players[G_ThePlayerId]);
+	declare netwrite Integer 	Net_BestTime 			for UI;
+	declare netwrite Integer[] 	Net_EndRaceTime 		for UI;
+	if(Net_EndRaceTime.existskey(0)) Net_EndRaceTime[0] = Net_BestTime;
+}
+
+Void NewRecord(Integer _Integer) 
+{
+	declare UI <=> UIManager.GetUI(Players[G_ThePlayerId]);
+	declare netwrite Integer Net_LastBestTime for UI;
+	declare netwrite Integer Net_UpdateNewRecord for UI;
+	Net_LastBestTime = _Integer;
+	Net_UpdateNewRecord += 1;
+}
+
+Integer GetPlayerEndRaceChoice() 
+{
+	declare UI <=> UIManager.GetUI(Players[G_ThePlayerId]);
+	declare netread Integer Net_PlayerChoice for UI;
+	return Net_PlayerChoice;
+}
+
+Void UpdateRace(CTmPlayer _Player) 
+{
+	declare UI <=> UIManager.GetUI(Players[G_ThePlayerId]);
+	declare netwrite Integer 	Net_EndRaceUpdate	for UI;
+	declare netwrite Integer 	Net_TimeRace		for UI;
+	declare netwrite Integer[] 	Net_EndRaceTime 	for UI;
+	Net_EndRaceUpdate 			+= 1;
+	Net_TimeRace 				= _Player.CurRace.Time;
+	if(Net_EndRaceTime.existskey(1)) Net_EndRaceTime[1] = Net_TimeRace;
+}
+
+Text GetPlayerDisplayableLogin(Text _Login)
+{
+	declare Text[] 	LoginParts 			= TL::Split("_", _Login);
+	declare Text 	DisplayableLogin	= "";
+	if(LoginParts.count > 0) DisplayableLogin = LoginParts[0];
+	return DisplayableLogin;
+}
+
+Void InitPlayer(Integer _BestRank, Integer _BestTime) 
+{
+	declare UI <=> UIManager.GetUI(Players[G_ThePlayerId]);
+	declare netwrite Integer 	Net_PlayerRank 			for UI;
+	declare netwrite Integer 	Net_BestMedal 			for UI;
+	declare netwrite Integer 	Net_BestTime 			for UI;
+	declare netwrite Integer 	Net_LastBestTime 		for UI;
+	declare netwrite Integer 	Net_UpdateNewRecord 	for UI;
+	declare netwrite Integer	Net_EndRaceUpdate		for UI;
+	declare netwrite Integer	Net_TimeRace			for UI;
+	
+	Net_PlayerRank 		= -1;
+	Net_BestMedal 		= _BestRank;
+	Net_BestTime 		= _BestTime;
+	Net_LastBestTime 	= 0;
+	Net_UpdateNewRecord = 0;
+	Net_EndRaceUpdate 	= 0;
+	Net_TimeRace 		= -1;
+}
+
+Void UpdateSoloARStart1(Integer[] _Ranks, Text[] _Names, Integer[] _Time, Integer _SelectedPlayer) {
+	declare Player 	<=> Players[G_ThePlayerId];
+	declare UI 		<=> UIManager.GetUI(Player);
+	declare netwrite Integer[] 	Net_SoloARStart1_Ranks 							for UI;
+	declare netwrite Text[] 	Net_SoloARStart1_Name 							for UI;
+	declare netwrite Integer[] 	Net_SoloARStart1_Time 							for UI;
+	declare netwrite Integer[] 	Net_SoloARStart1_Medal 							for UI;
+	declare netwrite Integer 	Net_SoloARStart1_SelectedPlayer					for UI;
+	Net_SoloARStart1_Ranks.clear();
+	Net_SoloARStart1_Name.clear();
+	Net_SoloARStart1_Time.clear();
+	for(I, 0, 9) {
+		Net_SoloARStart1_Ranks.add(_Ranks[I]);
+		Net_SoloARStart1_Name.add(_Names[I]);
+		Net_SoloARStart1_Time.add(_Time[I]);
+	}
+	Net_SoloARStart1_SelectedPlayer = _SelectedPlayer;
+}
+
+Void UpdateSoloARStart2(Integer[] _Ranks, Text[] _Names, Integer[] _Time, Integer _SelectedPlayer) {
+	declare Player 	<=> Players[G_ThePlayerId];
+	declare UI 		<=> UIManager.GetUI(Player);
+	declare netwrite Integer[] 	Net_SoloARStart2_Ranks 							for UI;
+	declare netwrite Text[] 	Net_SoloARStart2_Name 							for UI;
+	declare netwrite Integer[] 	Net_SoloARStart2_Time 							for UI;
+	declare netwrite Integer[] 	Net_SoloARStart2_Medal 							for UI;
+	declare netwrite Integer 	Net_SoloARStart2_SelectedPlayer					for UI;
+	Net_SoloARStart2_Ranks.clear();
+	Net_SoloARStart2_Name.clear();
+	Net_SoloARStart2_Time.clear();
+	for(I, 0, 9) {
+		Net_SoloARStart2_Ranks.add(_Ranks[I]);
+		Net_SoloARStart2_Name.add(_Names[I]);
+		Net_SoloARStart2_Time.add(_Time[I]);
+	}
+	Net_SoloARStart2_SelectedPlayer = _SelectedPlayer;
+}
+
+Void UpdateSoloARFinish1(Integer[] _Ranks, Text[] _Names, Integer[] _Time, Integer _SelectedPlayer) {
+	declare Player 	<=> Players[G_ThePlayerId];
+	declare UI 		<=> UIManager.GetUI(Player);
+	declare netwrite Integer[] 	Net_SoloARFinish1_Ranks 							for UI;
+	declare netwrite Text[] 	Net_SoloARFinish1_Name 							for UI;
+	declare netwrite Integer[] 	Net_SoloARFinish1_Time 							for UI;
+	declare netwrite Integer 	Net_SoloARFinish1_SelectedPlayer					for UI;
+	Net_SoloARFinish1_Ranks.clear();
+	Net_SoloARFinish1_Name.clear();
+	Net_SoloARFinish1_Time.clear();
+	for(I, 0, 9) {
+		Net_SoloARFinish1_Ranks.add(_Ranks[I]);
+		Net_SoloARFinish1_Name.add(_Names[I]);
+		Net_SoloARFinish1_Time.add(_Time[I]);
+	}
+	Net_SoloARFinish1_SelectedPlayer = _SelectedPlayer;
+}
+
+Void UpdateSoloARFinish2(Integer[] _Ranks, Text[] _Names, Integer[] _Time, Integer _SelectedPlayer) {
+	declare Player 	<=> Players[G_ThePlayerId];
+	declare UI 		<=> UIManager.GetUI(Player);
+	declare netwrite Integer[] 	Net_SoloARFinish2_Ranks 							for UI;
+	declare netwrite Text[] 	Net_SoloARFinish2_Name 								for UI;
+	declare netwrite Integer[] 	Net_SoloARFinish2_Time 								for UI;
+	declare netwrite Integer 	Net_SoloARFinish2_SelectedPlayer					for UI;
+	Net_SoloARFinish2_Ranks.clear();
+	Net_SoloARFinish2_Name.clear();
+	Net_SoloARFinish2_Time.clear();
+	for(I, 0, 9) {
+		Net_SoloARFinish2_Ranks.add(_Ranks[I]);
+		Net_SoloARFinish2_Name.add(_Names[I]);
+		Net_SoloARFinish2_Time.add(_Time[I]);
+	}
+	Net_SoloARFinish2_SelectedPlayer = _SelectedPlayer;
+}
+
+Void ConstructSoloARFinish1Table() {
+	// ASYNCHRONOUS TABLE
+	declare Player 	<=> Players[G_ThePlayerId];
+	declare UI 		<=> UIManager.GetUI(Player);
+	
+	declare IMGSelect 	= UIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Select);
+	declare TXTSelect 	= _("Go !");
+	
+	declare netwrite Integer[] 	Net_SoloARFinish1_Ranks							for UI;
+	declare netwrite Text[] 	Net_SoloARFinish1_Name 							for UI;
+	declare netwrite Integer[] 	Net_SoloARFinish1_Time 							for UI;
+	declare netwrite Integer[] 	Net_SoloARFinish1_Medal 						for UI;
+	declare netwrite Integer 	Net_SoloARFinish1_SelectedPlayer				for UI;
+	declare netwrite Text 		Net_SoloARFinish1_Title							for UI;
+	declare netwrite Text 		Net_SoloARFinish1_MenuSwitch 					for UI;
+	declare netwrite Text[] 	Net_SoloARFinish1_Inputs 						for UI;
+	
+	Net_SoloARFinish1_Inputs = [IMGSelect, TXTSelect];
+	
+	for(I, 0, C_MaxCount_Top-1) 
+	{
+		Net_SoloARFinish1_Ranks.add(I + 1);
+		Net_SoloARFinish1_Name.add("PLAYER "^I);
+		Net_SoloARFinish1_Time.add(50000);
+		Net_SoloARFinish1_Medal.add(1);
+	}
+	
+	Net_SoloARFinish1_SelectedPlayer 		=  0;
+	Net_SoloARFinish1_Title 				= "ONLINE RECORD (PLACEHOLDER)";
+	Net_SoloARFinish1_MenuSwitch 			= "TOP WORLD";
+	
+	declare InputParam			= "";
+	declare InputUpdate			= "Net_SoloARFinish1_Inputs";
+
+	declare RanksParam			= "Timediff";
+	declare RanksUpdateValues 	= "Net_SoloARFinish1_Ranks Net_SoloARFinish1_Name Net_SoloARFinish1_Time Net_SoloARFinish1_Medal Net_SoloARFinish1_SelectedPlayer";
+
+	declare Text		LayerName		= "Layer_TMC_SoloARFinish1";
+	declare Vec3 		LayerPos 		= <-85., 5., 20.>;
+	declare Text[][] 	LayersContent;
+	
+	LayersContent.add(["Title", 	"OnlineRec", 	_("Online Record"), 	"2",	"", "", "Net_SoloARFinish1_Title"]);
+	LayersContent.add(["Space", 	"", 		  	"", 					"1",	"", "", ""]);
+	// LayersContent.add(["Switch", 	"Switch", 		"", 					"1",	"", "L1 R1", "Net_SoloARFinish1_MenuSwitch"]);
+	
+	for(I, 0, C_MaxCount_Top-1) LayersContent.add(["Rank", "Player"^I, "Player"^I, "1", "", RanksParam, RanksUpdateValues]);
+	
+	LayersContent.add(["Space", 	"", 		 	"", 					"1",	"", "", ""]);
+	LayersContent.add(["Input", 	"Input", 		"", 					"1",	"", InputParam, InputUpdate]);
+
+	UIPopupBuilder::CreateLayer(
+		LayerName, 
+		LayerPos,
+		LayersContent
+	);
+}
+
+Void ConstructSoloARFinish2Table() {
+	// ASYNCHRONOUS TABLE
+	declare Player 	<=> Players[G_ThePlayerId];
+	declare UI 		<=> UIManager.GetUI(Player);
+	
+	declare IMGSelect 	= UIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Select);
+	declare TXTSelect 	= _("Go !");
+	
+	declare netwrite Integer[] 	Net_SoloARFinish2_Ranks							for UI;
+	declare netwrite Text[] 	Net_SoloARFinish2_Name 							for UI;
+	declare netwrite Integer[] 	Net_SoloARFinish2_Time 							for UI;
+	declare netwrite Integer[] 	Net_SoloARFinish2_Medal 						for UI;
+	declare netwrite Integer 	Net_SoloARFinish2_SelectedPlayer				for UI;
+	declare netwrite Text 		Net_SoloARFinish2_Title							for UI;
+	declare netwrite Text 		Net_SoloARFinish2_MenuSwitch 					for UI;
+	declare netwrite Text[] 	Net_SoloARFinish2_Inputs 						for UI;
+	
+	Net_SoloARFinish2_Inputs = [IMGSelect, TXTSelect];
+	
+	for(I, 0, C_MaxCount_Top-1) 
+	{
+		Net_SoloARFinish2_Ranks.add(I + 1);
+		Net_SoloARFinish2_Name.add("PLAYER "^I);
+		Net_SoloARFinish2_Time.add(50000);
+		Net_SoloARFinish2_Medal.add(1);
+	}
+	
+	Net_SoloARFinish2_SelectedPlayer 		=  0;
+	Net_SoloARFinish2_Title 				= "ONLINE RECORD (PLACEHOLDER)";
+	Net_SoloARFinish2_MenuSwitch 			= "NEAR YOU";
+	
+	declare InputParam			= "";
+	declare InputUpdate			= "Net_SoloARFinish2_Inputs";
+
+	declare RanksParam			= "Timediff";
+	declare RanksUpdateValues 	= "Net_SoloARFinish2_Ranks Net_SoloARFinish2_Name Net_SoloARFinish2_Time Net_SoloARFinish2_Medal Net_SoloARFinish2_SelectedPlayer";
+
+	declare Text		LayerName		= "Layer_TMC_SoloARFinish2";
+	declare Vec3 		LayerPos 		= <-85., 5., 20.>;
+	declare Text[][] 	LayersContent;
+	
+	LayersContent.add(["Title", 	"OnlineRec", 	_("Online Record"), 	"2",	"", "", "Net_SoloARFinish2_Title"]);
+	LayersContent.add(["Space", 	"", 		  	"", 					"1",	"", "", ""]);
+	LayersContent.add(["Switch", 	"Switch", 		"", 					"1",	"", "L1 R1", "Net_SoloARFinish2_MenuSwitch"]);
+	
+	for(I, 0, C_MaxCount_Top-1) LayersContent.add(["Rank", "Player"^I, "Player"^I, "1", "", RanksParam, RanksUpdateValues]);
+	
+	LayersContent.add(["Space", 	"", 		 	"", 					"1",	"", "", ""]);
+	LayersContent.add(["Input", 	"Input", 		"", 					"1",	"", InputParam, InputUpdate]);
+
+	UIPopupBuilder::CreateLayer(
+		LayerName, 
+		LayerPos,
+		LayersContent
+	);
+}
+
+Void ConstructSoloARStart1Table() {
+	// ASYNCHRONOUS TABLE
+	declare Player 	<=> Players[G_ThePlayerId];
+	declare UI 		<=> UIManager.GetUI(Player);
+	
+	declare IMGSelect 	= UIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Select);
+	declare IMGCancel 	= UIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Cancel);
+	declare TXTSelect 	= _("Go !");
+	declare TXTMedal 	= _("Medal");
+	
+	declare netwrite Integer[] 	Net_SoloARStart1_Ranks 							for UI;
+	declare netwrite Text[] 	Net_SoloARStart1_Name 							for UI;
+	declare netwrite Integer[] 	Net_SoloARStart1_Time 							for UI;
+	declare netwrite Integer[] 	Net_SoloARStart1_Medal 							for UI;
+	declare netwrite Integer 	Net_SoloARStart1_SelectedPlayer					for UI;
+	declare netwrite Text 		Net_SoloARStart1_Title							for UI;
+	declare netwrite Text 		Net_SoloARStart1_MenuSwitch 					for UI;
+	declare netwrite Text[] 	Net_SoloARStart1_Inputs 						for UI;
+	
+	Net_SoloARStart1_Inputs 			= [IMGSelect, TXTSelect, IMGCancel, TXTMedal];
+	
+	for(I, 0, C_MaxCount_Top-1) 
+	{
+		Net_SoloARStart1_Ranks.add(I + 1);
+		Net_SoloARStart1_Name.add("-");
+		Net_SoloARStart1_Time.add(0);
+		Net_SoloARStart1_Medal.add(1);
+	}
+	
+	Net_SoloARStart1_SelectedPlayer 	=  0;
+	Net_SoloARStart1_Title 				= "ONLINE RECORD (PLACEHOLDER)";
+	Net_SoloARStart1_MenuSwitch 		= "TOP WORLD";
+	
+	declare InputParam			= "";
+	declare InputUpdate			= "Net_SoloARStart1_Inputs";
+
+	declare RanksParam			= "Timediff";
+	declare RanksUpdateValues 	= "Net_SoloARStart1_Ranks Net_SoloARStart1_Name Net_SoloARStart1_Time Net_SoloARStart1_Medal Net_SoloARStart1_SelectedPlayer";
+
+	declare Text		LayerName		= "Layer_TMC_SoloARStart1";
+	declare Vec3 		LayerPos 		= <-85., 5., 20.>;
+	declare Text[][] 	LayersContent;
+	
+	LayersContent.add(["Title", 	"OnlineRec", 	_("Online Record"), 	"2",	"", "", "Net_SoloARStart1_Title"]);
+	LayersContent.add(["Space", 	"", 		  	"", 					"1",	"", "", ""]);
+	LayersContent.add(["Switch", 	"Switch", 		"", 					"1",	"", "L1 R1", "Net_SoloARStart1_MenuSwitch"]);
+	
+	for(I, 0, C_MaxCount_Top-1) LayersContent.add(["Rank", "Player"^I, "Player"^I, "1", "", RanksParam, RanksUpdateValues]);
+	
+	LayersContent.add(["Space", 	"", 		 	"", 					"1",	"", "", ""]);
+	LayersContent.add(["Input", 	"Input", 		"", 					"1",	"", InputParam, InputUpdate]);
+
+	UIPopupBuilder::CreateLayer(
+		LayerName, 
+		LayerPos,
+		LayersContent
+	);
+}
+
+Void ConstructSoloARStart2Table() {
+	// ASYNCHRONOUS TABLE
+	declare Player 	<=> Players[G_ThePlayerId];
+	declare UI 		<=> UIManager.GetUI(Player);
+	
+	declare IMGSelect 	= UIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Select);
+	declare IMGCancel 	= UIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Cancel);
+	declare TXTSelect 	= _("Go !");
+	declare TXTMedal 	= _("Medal");
+	
+	declare netwrite Integer[] 	Net_SoloARStart2_Ranks 							for UI;
+	declare netwrite Text[] 	Net_SoloARStart2_Name 							for UI;
+	declare netwrite Integer[] 	Net_SoloARStart2_Time 							for UI;
+	declare netwrite Integer[] 	Net_SoloARStart2_Medal 							for UI;
+	declare netwrite Integer 	Net_SoloARStart2_SelectedPlayer					for UI;
+	declare netwrite Text 		Net_SoloARStart2_Title							for UI;
+	declare netwrite Text 		Net_SoloARStart2_MenuSwitch 					for UI;
+	declare netwrite Text[] 	Net_SoloARStart2_Inputs 						for UI;
+	
+	Net_SoloARStart2_Inputs 			= [IMGSelect, TXTSelect, IMGCancel, TXTMedal];
+	
+	for(I, 0, C_MaxCount_Top-1) 
+	{
+		Net_SoloARStart2_Ranks.add(I + 1);
+		Net_SoloARStart2_Name.add("-");
+		Net_SoloARStart2_Time.add(0);
+		Net_SoloARStart2_Medal.add(1);
+	}
+	
+	Net_SoloARStart2_SelectedPlayer 	=  0;
+	Net_SoloARStart2_Title 				= "ONLINE RECORD (PLACEHOLDER)";
+	Net_SoloARStart2_MenuSwitch 		= "NEAR YOU";
+	
+	declare InputParam			= "";
+	declare InputUpdate			= "Net_SoloARStart2_Inputs";
+
+	declare RanksParam			= "Timediff";
+	declare RanksUpdateValues 	= "Net_SoloARStart2_Ranks Net_SoloARStart2_Name Net_SoloARStart2_Time Net_SoloARStart2_Medal Net_SoloARStart2_SelectedPlayer";
+
+	declare Text		LayerName		= "Layer_TMC_SoloARStart2";
+	declare Vec3 		LayerPos 		= <-85., 5., 20.>;
+	declare Text[][] 	LayersContent;
+	
+	LayersContent.add(["Title", 	"OnlineRec", 	_("Online Record"), 	"2",	"", "", "Net_SoloARStart2_Title"]);
+	LayersContent.add(["Space", 	"", 		  	"", 					"1",	"", "", ""]);
+	LayersContent.add(["Switch", 	"Switch", 		"", 					"1",	"", "L1 R1", "Net_SoloARStart2_MenuSwitch"]);
+	
+	for(I, 0, C_MaxCount_Top-1) LayersContent.add(["Rank", "Player"^I, "Player"^I, "1", "", RanksParam, RanksUpdateValues]);
+	
+	LayersContent.add(["Space", 	"", 		 	"", 					"1",	"", "", ""]);
+	LayersContent.add(["Input", 	"Input", 		"", 					"1",	"", InputParam, InputUpdate]);
+
+	UIPopupBuilder::CreateLayer(
+		LayerName,
+		LayerPos,
+		LayersContent
+	);
+}
+
+// ---------------------------------- //
+/// Load the library
+Void Load(Ident _PlayerId, Integer[Integer] _MedalsTime, Boolean _IsSymbiose) {
+	Unload();
+	UIButtons::Load();
+	G_RaceMode 		 = TMC_RACEMODE_MEDAL;
+	G_ThePlayerId 	 = _PlayerId;
+	declare Player 	<=> Players[G_ThePlayerId];
+	declare UI 		<=> UIManager.GetUI(Player);
+	
+	ConstructSoloARStart1Table();
+	ConstructSoloARStart2Table();
+	ConstructSoloARFinish1Table();
+	
+	declare IMGSelect 	= UIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Select);
+	declare IMGCancel 	= UIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Cancel);
+	declare TXTSelect 	= _("Continue");
+	declare TXTGo		= _("Go !");
+	declare TXTCancel 	= _("Back");
+	declare TXTOChall 	= _("Online");
+	
+	declare netwrite Integer[Integer] 	Net_MedalsTimes for UI;
+	Net_MedalsTimes = _MedalsTime;
+
+	declare netwrite Text[] 	Net_MenuMedalSelectionInputs	for UI;
+	declare netwrite Text[] 	Net_MenuActionInputs			for UI;
+	declare netwrite Text[] 	Net_MenuMainInputs				for UI;
+	Net_MenuMedalSelectionInputs 	= [IMGSelect, TXTGo];
+	Net_MenuActionInputs 			= [IMGSelect, TXTSelect];
+	Net_MenuMainInputs 				= [IMGSelect, TXTSelect, IMGCancel, TXTCancel];
+	
+	declare netwrite Integer 	Net_BestTime 					for UI;
+	declare netwrite Integer[] 	Net_MedalSelectionRank 			for UI;
+	declare netwrite Text[] 	Net_MedalSelectionName 			for UI;
+	declare netwrite Integer[] 	Net_MedalSelectionTime 			for UI;
+	declare netwrite Integer[] 	Net_MedalSelectionMedal			for UI;
+	declare netwrite Integer 	Net_MedalSelectionMyRank 		for UI;
+	declare netwrite Text 		Net_MedalSelectionMenuSwitch 	for UI;
+	declare netwrite Integer[] 	Net_EndRaceRank 				for UI;
+	declare netwrite Text[] 	Net_EndRaceName 				for UI;
+	declare netwrite Integer[] 	Net_EndRaceTime 				for UI;
+	declare netwrite Integer[] 	Net_EndRaceMedal				for UI;
+	declare netwrite Integer 	Net_EndRaceMyRank 				for UI;
+	declare netwrite Integer 	Net_TimeRace					for UI;
+	
+	// declare netwrite Integer	Net_IndexPages						for UI;
+	// Net_IndexPages = 0;
+	
+	Net_EndRaceRank	.clear();
+	Net_EndRaceName	.clear();
+	Net_EndRaceTime	.clear();
+	Net_EndRaceMedal.clear();
+	Net_EndRaceMyRank = 1;
+	
+	
+	Net_EndRaceRank	.add(0);
+	Net_EndRaceName	.add(_("Personal Best"));
+	Net_EndRaceTime	.add(Net_BestTime);
+	Net_EndRaceMedal.add(-1);
+	
+	Net_EndRaceRank	.add(1);
+	Net_EndRaceName	.add(GetPlayerDisplayableLogin(Player.Login));
+	Net_EndRaceTime	.add(Net_TimeRace);
+	Net_EndRaceMedal.add(-1);
+	
+	Net_MedalSelectionRank	.clear();
+	Net_MedalSelectionName	.clear();
+	Net_MedalSelectionTime	.clear();
+	Net_MedalSelectionMedal	.clear();
+	Net_MedalSelectionMyRank = 0;
+	
+	Net_MedalSelectionRank	.add(0);
+	Net_MedalSelectionName	.add(GetPlayerDisplayableLogin(Player.Login));
+	Net_MedalSelectionTime	.add(Net_BestTime);
+	Net_MedalSelectionMedal	.add(-1);
+	
+	foreach(I => Medal in _MedalsTime)
+	{
+		if(I > 0)
+		{
+			Net_MedalSelectionName	.add(Medals::GetMedalName(I));
+			Net_MedalSelectionTime	.add(Medal);
+			Net_MedalSelectionMedal	.add(I);
+		}
+	}
+	
+	declare Vec3 LayerPos 		= <0., 0., 20.>;
+	
+	declare PlayerRankParam		= "NoRank Medal Timediff";
+	declare RanksParam 			= "NoRank Medal Timediff Button";
+	declare RanksUpdateValues 	= "Net_EndRaceRank Net_EndRaceName Net_EndRaceTime Net_EndRaceMedal Net_EndRaceMyRank";
+	
+	declare LayerName			= "Layer_TMC_MenuActionSolo";
+	declare Text[][] LayerContent;
+	LayerContent.add(["Title", 	"Title", 			_("Campaign"), 					"2",	"", "", ""]);
+	// if(_IsSymbiose) LayerContent.add(["Gauge", 	"Symbiose", 	"Symbiose score", 	"1",	"", "Green", "Net_CoopSymbiosysRatioCopy"]);
+	// LayerContent.add(["Space", 	"", 		  		"", 							"1",	"", "", ""]);
+	// LayerContent.add(["Medal", 	"Medals",			"", 							"4",	"", MedalParam, MedalUpdateValues]);
+	LayerContent.add(["Rank", 	"Player", 			"Player Rank", 					"1",	"", PlayerRankParam, RanksUpdateValues]);
+	LayerContent.add(["Rank", 	"CurRace", 			"This Race", 					"1",	"", PlayerRankParam^" Color MainColor", RanksUpdateValues]);
+	LayerContent.add(["Label", 	"Status1", 			_("Not so bad..."), 			"1",	"", "", "Net_StatusMessage1"]);
+	LayerContent.add(["Label", 	"Status2", 			_("But you can do better."), 	"1",	"", "", "Net_StatusMessage2"]);
+	// LayerContent.add(["Space", 	"", 		  		"", 							"1",	"", "", ""]);
+	LayerContent.add(["Button", "Improve", 			_("Improve"), 					"1",	"Net_PlayerChoice = "^TMC_PLAYERCHOICE_RESTART^";", 	"", ""]);
+	LayerContent.add(["Button", "ChooseOpponent", 	_("Choose Opponent"), 			"1",	"Net_PlayerChoice = "^TMC_PLAYERCHOICE_CHOOSEGHOST^";", "", ""]);
+	LayerContent.add(["Button", "Quit", 			_("Quit"), 						"1",	"Net_PlayerChoice = "^TMC_PLAYERCHOICE_QUIT^";", 		"", ""]);
+	// LayerContent.add(["Space", 	"", 		 		"", 							"1",	"", "", ""]);
+	LayerContent.add(["Input", 	"Input", 			"", 							"1",	"", "", "Net_MenuActionInputs"]);
+	
+	declare LayerBeforeWhile 	= """ declare netwrite Integer Net_PlayerChoice	for UI; """;
+	declare LayerWhenShown 		= """ Net_PlayerChoice = -1; """;
+	
+	// UIPopupBuilder::CreateLayer(
+		// LayerName,
+		// LayerPos,
+		// LayerContent, 
+		// "",
+		// LayerBeforeWhile, 
+		// LayerWhenShown,
+		// ""
+	// );
+	
+	UIPopupBuilder::CreateLayer(
+		LayerName, 
+		"", 
+		1.0, 
+		LayerPos, 
+		LayerContent, 
+		"", 
+		LayerBeforeWhile, 
+		LayerWhenShown, 
+		""
+	); 
+	
+	declare GetRestart				= "Net_PlayerChoice = "^TMC_PLAYERCHOICE_RESTART^";";
+	Net_MedalSelectionMenuSwitch 	= "SWITCH ONLINE CHALLENGE";
+	RanksUpdateValues 	= "Net_MedalSelectionRank Net_MedalSelectionName Net_MedalSelectionTime Net_MedalSelectionMedal Net_MedalSelectionMyRank";
+	LayerName			= "Layer_TMC_MedalSelection";
+	LayerContent 		= 
+	[
+		["Title", 	"MedalSelec", 	_("Ghost Selection"), 	"2",	"", "", ""], 
+		// ["Space", 	"", 		  	"", 					"1",	"", "", ""],
+		// ["Switch", 	"Switch", 		"", 					"1",	"", "L1 R1", "Net_MedalSelectionMenuSwitch"],
+		// ["Medal", 	"Medals",		"", 					"4",	"", "", "Net_BestMedal"],
+		["Rank", 	"Player", 		"Player Rank", 			"1",	"", PlayerRankParam, RanksUpdateValues],
+		// ["Space", 	"", 		 	"", 					"1",	"", "", ""],
+		["Rank", 	"Gold", 		_("Gold medal"), 		"1",	"Net_MedalChosen = "^TMC_MEDAL_GOLD^";"		^ GetRestart, RanksParam, ""],
+		["Rank", 	"Silver", 		_("Silver medal"), 		"1",	"Net_MedalChosen = "^TMC_MEDAL_SILVER^";" 	^ GetRestart, RanksParam, ""],
+		["Rank", 	"Bronze", 		_("Bronze medal"), 		"1",	"Net_MedalChosen = "^TMC_MEDAL_BRONZE^";" 	^ GetRestart, RanksParam, ""],
+		["Button", 	"Alone", 		_("Personal record"), 	"1",	"Net_MedalChosen = "^TMC_MEDAL_PLAYER^";" 	^ GetRestart, RanksParam, ""],
+		// ["Space", 	"", 		 	"", 					"1",	"", "", ""],
+		["Input", 	"Input", 		"", 					"1",	"", "", "Net_MenuMedalSelectionInputs"]
+	];
+	LayerBeforeWhile = 
+	""" 
+		declare netwrite Integer Net_MedalChosen 	for UI;
+		declare netwrite Integer Net_PlayerChoice	for UI; 
+	""";
+	LayerWhenShown = """ Net_MedalChosen = -1; """;
+	
+	// UIPopupBuilder::CreateLayer(
+		// LayerName, 
+		// LayerPos,
+		// LayerContent, 
+		// LayerBeforeWhile, 
+		// LayerWhenShown,
+		// ""
+	// );
+	
+	UIPopupBuilder::CreateLayer(
+		LayerName, 
+		"", 
+		1.0, 
+		LayerPos, 
+		LayerContent, 
+		"", 
+		LayerBeforeWhile,
+		LayerWhenShown, 
+		""
+	); 
+	
+	// UIPopupBuilder::CreateLayer(
+		// Text _LayerName, 
+		// Text _Params, 
+		// Real _Scale, 
+		// Vec3 _Pos, 
+		// Text[][] _Elements, 
+		// Text _Functions, 
+		// Text _CodeBeforeWhile, 
+		// Text _CodeWhenShown, 
+		// Text _CodeInLoop
+	// ); 
+	
+	LayerName		= "Menu";
+	LayerPos		= <0., 0., 33.>;
+	LayerContent 	= 
+	[
+		["Title", 	"Pause", 		_("Pause"), 			"2",	"", "", ""], 
+		// ["Space", 	"", 			  "", 					"1",	"", "", ""],
+		["Button", 	"Resume", 		_("Resume"), 			"1",	"CloseInGameMenu(CMlScriptIngame::EInGameMenuResult::Resume);", "", ""],
+		["Button", 	"ChooseOpp",	_("Choose opponent"), 	"1",	"Net_PlayerHasGiveUpUpdate += 1; CloseInGameMenu(CMlScriptIngame::EInGameMenuResult::Resume);", "", ""],
+		["Button", 	"Quit", 		_("Quit"), 				"1",	"Net_PlayerWantsToQuitUpdate += 1; CloseInGameMenu(CMlScriptIngame::EInGameMenuResult::Resume);", "", ""],
+		// ["Space", 	"", 		  	"", 					"1",	"", "", ""],
+		["Input", 	"Input", 		"", 					"1",	"", "", "Net_MenuMainInputs"]
+	];
+	LayerBeforeWhile = 
+	""" 
+		declare netwrite Integer 	Net_PlayerHasGiveUpUpdate 	for UI;
+		declare netwrite Integer 	Net_PlayerWantsToQuitUpdate for UI;
+	""";
+	
+	// EXAMPLE TO HIDE ChooseOpponent Item using Integer[] Net_HiddenItemsForLayer_NAMEOFTHELAYER
+	// declare netwrite Integer[] Net_HiddenItemsForLayer_Menu for UI;
+	// Net_HiddenItemsForLayer_Menu.clear();
+	// Net_HiddenItemsForLayer_Menu.add(3);
+	
+	UIPopupBuilder::CreateLayer(
+		LayerName, 
+		"IngameMenu",
+		LayerPos,
+		LayerContent,
+		LayerBeforeWhile
+	);
+	
+	Layers::SetVisibility("Layer_TMC_MedalSelection", 			False);
+	Layers::SetVisibility("Layer_TMC_MenuActionSolo", 			False);
+	Layers::SetVisibility("Layer_TMC_SoloARStart1",				False); 
+	Layers::SetVisibility("Layer_TMC_SoloARStart2",				False); 
+	Layers::SetVisibility("Layer_TMC_SoloARFinish1",			False); 
+	Layers::SetVisibility("Layer_TMC_SoloARFinish2",			False); 
+}
+
+Void HideMenuPage() {
+	Layers::SetAnimationTypeOut("Layer_TMC_MedalSelection", CUILayer::EUILayerAnimation::LeftFast);
+	Layers::SetAnimationTypeOut("Layer_TMC_SoloAR", 		CUILayer::EUILayerAnimation::LeftFast);
+	Layers::SetVisibility("Layer_TMC_MedalSelection", False);
+	Layers::SetVisibility("Layer_TMC_SoloAR", False);
+}
+
+Integer GetRaceMode() {
+	return G_RaceMode;
+}
+
+Void ShowSoloARTablePage(Boolean _IsEndRace) {
+	declare Player 	<=> Players[G_ThePlayerId];
+	declare UI 		<=> UIManager.GetUI(Player);
+	declare netwrite Integer	Net_IndexPages						for UI;
+	
+	if(!_IsEndRace) {
+		if(Net_IndexPages == 0) {
+			Layers::SetAnimationTypeOut("Layer_TMC_SoloARStart2", CUILayer::EUILayerAnimation::None);
+			Layers::SetVisibility("Layer_TMC_SoloARStart1", True);
+			Layers::SetVisibility("Layer_TMC_SoloARStart2", False);
+		} else {
+			Layers::SetAnimationTypeOut("Layer_TMC_SoloARStart1", CUILayer::EUILayerAnimation::None);
+			Layers::SetVisibility("Layer_TMC_SoloARStart1", False);
+			Layers::SetVisibility("Layer_TMC_SoloARStart2", True);
+		}
+	} else {
+		if(Net_IndexPages == 0) {
+			Layers::SetAnimationTypeOut("Layer_TMC_SoloARFinish2", CUILayer::EUILayerAnimation::None);
+			Layers::SetVisibility("Layer_TMC_SoloARFinish1", True);
+			Layers::SetVisibility("Layer_TMC_SoloARFinish2", False);
+		} else {
+			Layers::SetAnimationTypeOut("Layer_TMC_SoloARFinish1", CUILayer::EUILayerAnimation::None);
+			Layers::SetVisibility("Layer_TMC_SoloARFinish1", False);
+			Layers::SetVisibility("Layer_TMC_SoloARFinish2", True);
+		}
+	}
+}
+
+Boolean CheckSwitchTable(Boolean _IsEndRace) {
+	declare Player 	<=> Players[G_ThePlayerId];
+	declare UI 		<=> UIManager.GetUI(Player);
+	
+	declare netread Integer 	Net_InputPlayerTrigger_PageDown 	for UI;
+	declare netread Integer 	Net_InputPlayerTrigger_PageUp		for UI;
+	declare netwrite Integer 	Pre_InputPlayerTrigger_PageDown 	for UI;
+	declare netwrite Integer 	Pre_InputPlayerTrigger_PageUp 		for UI;
+	declare netwrite Integer	Net_IndexPages						for UI;
+	
+	if(Pre_InputPlayerTrigger_PageDown != Net_InputPlayerTrigger_PageDown) {
+		if(Net_IndexPages < 1) {
+			Net_IndexPages += 1;
+		} else {
+			Net_IndexPages = 0;
+		}
+		ShowSoloARTablePage(_IsEndRace);
+		Pre_InputPlayerTrigger_PageDown = Net_InputPlayerTrigger_PageDown;
+		return True;
+	}
+	
+	if(Pre_InputPlayerTrigger_PageUp != Net_InputPlayerTrigger_PageUp) {
+		if(Net_IndexPages > 0) {
+			Net_IndexPages -= 1;
+		} else {
+			Net_IndexPages = 1;
+		}
+		ShowSoloARTablePage(_IsEndRace);
+		Pre_InputPlayerTrigger_PageUp = Net_InputPlayerTrigger_PageUp;
+		return True;
+	}
+	
+	return False;
+}
+
+Integer CheckMedalChallengeAnswer() {
+	declare UI <=> UIManager.GetUI(Players[G_ThePlayerId]);
+	declare netread Boolean Net_Layer_TMC_MedalSelection_PopupChoice 	for UI;
+	declare netread Integer Net_Layer_TMC_MedalSelection_PopupUpdate 	for UI;
+	declare netwrite Integer Prev_Layer_TMC_MedalSelection_PopupUpdate 	for UI;
+
+	if(Prev_Layer_TMC_MedalSelection_PopupUpdate != Net_Layer_TMC_MedalSelection_PopupUpdate) {
+		Prev_Layer_TMC_MedalSelection_PopupUpdate = Net_Layer_TMC_MedalSelection_PopupUpdate;
+		
+		if(Net_Layer_TMC_MedalSelection_PopupChoice == True) {
+			return 1;
+		} else {
+			return 2;
+		}
+	}
+	return 0;
+}
+
+Integer CheckOnlineChallengeAnswer() {
+	declare UI <=> UIManager.GetUI(Players[G_ThePlayerId]);
+	declare netread Boolean Net_Layer_TMC_SoloARStart1_PopupChoice 		for UI;
+	declare netread Integer Net_Layer_TMC_SoloARStart1_PopupUpdate 		for UI;
+	declare netwrite Integer Prev_Layer_TMC_SoloARStart1_PopupUpdate 	for UI;
+
+	if(Prev_Layer_TMC_SoloARStart1_PopupUpdate != Net_Layer_TMC_SoloARStart1_PopupUpdate) {
+		Prev_Layer_TMC_SoloARStart1_PopupUpdate = Net_Layer_TMC_SoloARStart1_PopupUpdate;
+		if(Net_Layer_TMC_SoloARStart1_PopupChoice == True) {
+			return 1;
+		} else {
+			return 2;
+		}
+	}
+	
+	declare netread Boolean Net_Layer_TMC_SoloARStart2_PopupChoice 		for UI;
+	declare netread Integer Net_Layer_TMC_SoloARStart2_PopupUpdate 		for UI;
+	declare netwrite Integer Prev_Layer_TMC_SoloARStart2_PopupUpdate 	for UI;
+
+	if(Prev_Layer_TMC_SoloARStart2_PopupUpdate != Net_Layer_TMC_SoloARStart2_PopupUpdate) {
+		Prev_Layer_TMC_SoloARStart2_PopupUpdate = Net_Layer_TMC_SoloARStart2_PopupUpdate;
+		if(Net_Layer_TMC_SoloARStart2_PopupChoice == True) {
+			return 1;
+		} else {
+			return 2;
+		}
+	}
+	
+	return 0;
+}
+
+Integer CheckOnlineChallengeFinishAnswer() {
+	declare UI <=> UIManager.GetUI(Players[G_ThePlayerId]);
+	declare netread Boolean Net_Layer_TMC_SoloARFinish1_PopupChoice 	for UI;
+	declare netread Integer Net_Layer_TMC_SoloARFinish1_PopupUpdate 	for UI;
+	declare netwrite Integer Prev_Layer_TMC_SoloARFinish1_PopupUpdate 	for UI;
+
+	if(Prev_Layer_TMC_SoloARFinish1_PopupUpdate != Net_Layer_TMC_SoloARFinish1_PopupUpdate) {
+		Prev_Layer_TMC_SoloARFinish1_PopupUpdate = Net_Layer_TMC_SoloARFinish1_PopupUpdate;
+		if(Net_Layer_TMC_SoloARFinish1_PopupChoice == True) {
+			return 1;
+		} else {
+			return 2;
+		}
+	}
+	
+	declare netread Boolean Net_Layer_TMC_SoloARFinish2_PopupChoice 	for UI;
+	declare netread Integer Net_Layer_TMC_SoloARFinish2_PopupUpdate 	for UI;
+	declare netwrite Integer Prev_Layer_TMC_SoloARFinish2_PopupUpdate 	for UI;
+
+	if(Prev_Layer_TMC_SoloARFinish2_PopupUpdate != Net_Layer_TMC_SoloARFinish2_PopupUpdate) {
+		Prev_Layer_TMC_SoloARFinish2_PopupUpdate = Net_Layer_TMC_SoloARFinish2_PopupUpdate;
+		if(Net_Layer_TMC_SoloARFinish2_PopupChoice == True) {
+			return 1;
+		} else {
+			return 2;
+		}
+	}
+	
+	return 0;
+}
+
+Void StartMenuLoop() {
+	// CheckSwitchChallenge();
+	if(G_RaceMode == TMC_RACEMODE_ONLINE) {
+		// CheckSwitchTable();
+	}
+}
+
+Void SetStartMenuVisibility(Boolean _Visible) {
+	if(G_RaceMode == TMC_RACEMODE_MEDAL) {
+		Layers::SetAnimationTypeOut("Layer_TMC_MedalSelection", CUILayer::EUILayerAnimation::LeftFast);
+		Layers::SetVisibility("Layer_TMC_MedalSelection", _Visible);
+	} else if(G_RaceMode == TMC_RACEMODE_ONLINE) {
+		Layers::SetAnimationTypeOut("Layer_TMC_SoloARStart1", CUILayer::EUILayerAnimation::LeftFast);
+		Layers::SetVisibility("Layer_TMC_SoloARStart1", _Visible);
+	}
+}
+
+Void SetFinalMenuVisibility(Boolean _Visible) {
+	if(G_RaceMode == TMC_RACEMODE_MEDAL) {
+		Layers::SetAnimationTypeOut("Layer_TMC_MenuActionSolo", CUILayer::EUILayerAnimation::LeftFast);
+		Layers::SetVisibility("Layer_TMC_MenuActionSolo", _Visible);
+	} else if(G_RaceMode == TMC_RACEMODE_ONLINE) {
+		Layers::SetAnimationTypeOut("Layer_TMC_SoloARFinish1", CUILayer::EUILayerAnimation::LeftFast);
+		Layers::SetVisibility("Layer_TMC_SoloARFinish1", _Visible);
+	}
+}
+
+Void SetOpponent(Integer _Opponent)
+{
+	declare UI <=> UIManager.GetUI(Players[G_ThePlayerId]);
+	declare netwrite Text[] 	Net_EndRaceName 				for UI;
+	declare netwrite Integer[] 	Net_EndRaceTime 				for UI;
+	declare netwrite Integer[] 	Net_EndRaceMedal				for UI;
+	if(Net_EndRaceTime.existskey(0)) Net_EndRaceTime[0] = Medals::GetMedalTime(_Opponent);
+	if(Net_EndRaceName.existskey(0)) Net_EndRaceName[0] = Medals::GetMedalName(_Opponent);
+	if(Net_EndRaceMedal.existskey(0)) Net_EndRaceMedal[0] = _Opponent;
+}

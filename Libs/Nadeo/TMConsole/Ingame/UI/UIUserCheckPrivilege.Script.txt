@@ -1,0 +1,193 @@
+/** 
+ *	In-Game UI library
+ */
+	
+#Include "Libs/Nadeo/TMConsole/Menu/MenuLayers.Script.txt"								as Layers
+#Include "Libs/Nadeo/TMConsole/Ingame/UI/UIOnlinePopupBuilder.Script.txt"				as UIPopupBuilder
+#Include "Libs/Nadeo/TMConsole/Colors.Script.txt" 										as Colors
+#Include "Libs/Nadeo/UIPadButtons.Script.txt"											as UIButtons
+#Include "Libs/Nadeo/TMConsole/Ingame/UI/UIOnlineRoomTrackDescDisplay.Script.txt" 		as UIOnlineRoomTrackDescDisplay
+#Include "Libs/Nadeo/TMConsole/Menu/Controller/OnlinePrivilegeController.Script.txt" 	as PrivilegeController
+
+
+#Const Version		"2015-03-02"
+#Const ScriptName	"UIOnlineManageFavorite.Script.txt"
+
+#Const LAYERNAME_FAVORITEMANAGER			"FavoriteManager"
+#Const C_TIMERTIMEOUT						5000
+#Const C_NBATTEMPS							5
+
+#Const C_GAMEPHASE_CHALLENGE			3
+#Const C_GAMEPHASE_PREPARATION			0
+#Const C_GAMEPHASE_GAME					1
+#Const C_GAMEPHASE_POSTGAME				2
+#Const C_GAMEPHASE_OUTRO				4
+
+#Const C_CHECKRESULT_OFF				0
+#Const C_CHECKRESULT_PROCESSING			1
+#Const C_CHECKRESULT_SUCCEED			2
+#Const C_CHECKRESULT_FAILED				3
+
+// declare Ident[] G_UserChecked;
+declare Ident[] G_UserToCheck;
+declare Integer TimerBeforeAchieved;
+
+Void ConstructCheckPrivilegeLiveEventFeedbackML() {
+	declare Text ML = 
+	"""
+	<script ><!--
+		main() {
+			while(True) {
+				yield;
+
+				foreach(Event in PendingEvents) {
+					switch(Event.Type) {
+						case CMlEvent::Type::PluginCustomEvent: {
+							switch(Event.PluginCustomEventType) {
+								/*
+								case "Check_ViewUgcRequired_Succeeded" : {
+									SendCustomEvent("Check_ViewUgcRequired_Succeeded", Text[]);
+								}
+								case "Check_ViewUgcRequired_Failed" : {
+									SendCustomEvent("Check_ViewUgcRequired_Failed", Text[]);
+								}
+								*/
+								case "Check_PlayMultiplayerAsyncRequired_Succeeded" : {
+									SendCustomEvent("Check_PlayMultiplayerAsyncRequired_Succeeded", Text[]);
+								}
+								case "Check_PlayMultiplayerAsyncRequired_Failed" : {
+									SendCustomEvent("Check_PlayMultiplayerAsyncRequired_Failed", Text[]);
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	--></script> 
+	""";
+	Layers::Create("CheckPrivilegeLiveEventFeedback", ML);
+	Layers::Attach("CheckPrivilegeLiveEventFeedback");
+	declare CUILayer CheckPrivilegeLiveEventFeedback <=> Layers::Get("CheckPrivilegeLiveEventFeedback");
+	if(CheckPrivilegeLiveEventFeedback == Null) return;
+}
+
+
+
+Void FlushEvent() {
+	declare  netwrite 	Integer	Net_AskPrivilegeCheckUpdate for UI;
+	declare   			Integer	Pre_AskPrivilegeCheckUpdate for UI;
+	declare netread 	Integer Net_ReInitPrivilegeCheckUpdate for UI;
+	declare   			Integer	Pre_ReInitPrivilegeCheckUpdate for UI;
+	Pre_AskPrivilegeCheckUpdate 	= Net_AskPrivilegeCheckUpdate;
+	Pre_ReInitPrivilegeCheckUpdate 	= Net_ReInitPrivilegeCheckUpdate;
+}
+
+Void CheckNextUser() {
+	PrivilegeController::Check_PlayMultiplayerAsyncRequired("CheckPrivilegeLiveEventFeedback", G_UserToCheck[0]);
+}
+
+Void FillUserToCheck() {
+	declare netwrite Integer[] LibTMC_PairingPads_PadsPlaying for UI;
+	foreach(PadId in LibTMC_PairingPads_PadsPlaying) {
+		foreach(Pad in Input.Pads) {
+			if(PadId == Pad.ControllerId) {
+				G_UserToCheck.add(Pad.UserId);
+			}
+		}
+	}
+}
+
+Void SetCheckPrivilegeResult(Integer _State) {
+	declare netwrite Integer Net_CheckPrivilegeState for UI;
+	Net_CheckPrivilegeState = _State;
+}
+
+Void StartCheckPrivilege() {
+	G_UserToCheck.clear();
+	FillUserToCheck();
+	CheckNextUser();
+	SetCheckPrivilegeResult(C_CHECKRESULT_PROCESSING);
+	// log("START CHECK PRIVILEGE");
+}
+
+Void Load() {
+	FlushEvent();
+	ConstructCheckPrivilegeLiveEventFeedbackML();
+	// ConstructCheckPrivilegeMenuLayer();
+	PrivilegeController::Load();
+	TimerBeforeAchieved = -1;
+}
+
+Boolean MustCheckRequired() {
+	declare  netread 	Integer	Net_AskPrivilegeCheckUpdate for UI;
+	declare   			Integer	Pre_AskPrivilegeCheckUpdate for UI;
+	if(Pre_AskPrivilegeCheckUpdate != Net_AskPrivilegeCheckUpdate) {
+		Pre_AskPrivilegeCheckUpdate = Net_AskPrivilegeCheckUpdate;
+		return True;
+	}
+	return False;
+}
+
+Boolean MustReinitPrivilegeCheck() {
+	declare netread Integer Net_ReInitPrivilegeCheckUpdate for UI;
+	declare   		Integer	Pre_ReInitPrivilegeCheckUpdate for UI;
+	if(Pre_ReInitPrivilegeCheckUpdate != Net_ReInitPrivilegeCheckUpdate) {
+		Pre_ReInitPrivilegeCheckUpdate = Net_ReInitPrivilegeCheckUpdate;
+		return True;
+	}
+	return False;
+}
+
+Void Loop()
+{
+	foreach(Event in PendingEvents) {
+		if(Event.Type != CMlAppEvent::EType::LayerCustomEvent) continue;
+		switch(Event.CustomEventType) {
+			/*
+			case "Check_ViewUgcRequired_Succeeded" : {
+				log("[USER CHECK PRIVILEGE] VIEW UGC SUCCEEDED");
+				G_UserToCheck.removekey(0);
+				if(G_UserToCheck.count == 0) {
+					SetCheckPrivilegeResult(C_CHECKRESULT_SUCCEED);
+				} else {
+					CheckNextUser();
+				}
+			}
+			case "Check_ViewUgcRequired_Failed" : {
+				log("[USER CHECK PRIVILEGE] VIEW UGC FAILED");
+				SetCheckPrivilegeResult(C_CHECKRESULT_FAILED);
+			}
+			*/
+			case "Check_PlayMultiplayerAsyncRequired_Succeeded" : {
+				log("[USER CHECK PRIVILEGE] VIEW UGC SUCCEEDED");
+				G_UserToCheck.removekey(0);
+				if(G_UserToCheck.count == 0) {
+					SetCheckPrivilegeResult(C_CHECKRESULT_SUCCEED);
+					// TimerBeforeAchieved = Now + 3000;
+				} else {
+					CheckNextUser();
+				}
+			}
+			case "Check_PlayMultiplayerAsyncRequired_Failed" : {
+				log("[USER CHECK PRIVILEGE] VIEW UGC FAILED");
+				SetCheckPrivilegeResult(C_CHECKRESULT_FAILED);
+			}
+		}
+	}
+	
+	if(MustCheckRequired()) {
+		log("[USER CHECK PRIVILEGE] START PRIVILEGE");
+		StartCheckPrivilege();
+	}
+	
+	if(MustReinitPrivilegeCheck()) {
+		SetCheckPrivilegeResult(C_CHECKRESULT_OFF);
+	}
+	
+	// if(Now >= TimerBeforeAchieved && TimerBeforeAchieved != -1) {
+		// SetCheckPrivilegeResult(C_CHECKRESULT_SUCCEED);
+		// TimerBeforeAchieved = -1;
+	// }
+	PrivilegeController::Loop();
+}

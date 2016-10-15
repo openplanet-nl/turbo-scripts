@@ -1,0 +1,859 @@
+/** ------------------------------- *
+ *	MusicManager Library
+ * 	Dynamic music made out of loops
+ * -------------------------------- **/
+
+#Const Version						"2016-03-15"
+#Const ScriptName					"Music.Script.txt"
+
+#Include "MathLib" 	as ML
+#Include "TextLib" 	as TL
+
+#Include "Libs/Nadeo/TMConsole/Menu/MenuLayers.Script.txt"					as Layers
+#Include "Libs/Nadeo/TMConsole/Volumes.Script.txt" 							as Volumes
+#Include "Libs/Nadeo/Manialink2.Script.txt" 								as Manialink
+#Include "Libs/Nadeo/TMConsole/Menu/LibMusics.Script.txt"					as LibMusics
+#Include "Libs/Nadeo/TMConsole/Ingame/UI/UIBindingPadButtons.Script.txt" 	as UIBindingPadButtons
+
+#Const DEBUG_UPDATEMODE				"CAudioSourceMusic::EUpdateMode::OnNextHalfBar"
+#Const DEBUG_FORCESEQUENTIAL		False
+#Const DEBUG_FORCERANDOM			False
+#Const DEBUG_FORCEINTENSITY			False
+
+#Const SoundPathLoops				"file://Media/Sounds/TMConsole/Loops/"
+
+#Const SoundFinishLine 				"130 Finish Line.ogg"
+#Const SoundStartLine 				"starting.ogg"
+#Const SoundStartLine2 				"starting2.ogg"
+// #Const SoundStartLine 				"130 Start.ogg"
+			
+#Const MusicStandBy0 				"110 Pit Stop Twang - Military Loop1.ogg"
+#Const MusicStandBy1 				"110 Pit Stop Twang - Military Loop2.ogg"
+#Const MusicStandBy2 				"110 Pit Stop Twang - Military Loop3.ogg"
+#Const MusicReplay 					"MusicReplay.ogg"
+
+#Const SoundGameStart 				"110 Pit Stop Military BONGO END NOTE For Random.ogg"
+
+#Const SoundCheckpointFast0 		"130 Checkpoint Fast 1.ogg"
+#Const SoundCheckpointFast1 		"130 Checkpoint Fast 2.ogg"
+#Const SoundCheckpointFast2 		"130 Checkpoint Fast 3.ogg"
+#Const SoundCheckpointFast3 		"130 Checkpoint Fast 4.ogg"
+#Const SoundCheckpointFast4 		"130 Checkpoint Fast 5.ogg"
+#Const SoundCheckpointFast5 		"130 Checkpoint Fast 6.ogg"
+#Const SoundCheckpointFast6 		"130 Checkpoint Fast 7.ogg"
+#Const SoundCheckpointFast7 		"130 Checkpoint Fast 8.ogg"
+
+#Const SoundCheckpointSlow0 		"130 Checkpoint Slow 1.ogg"
+#Const SoundCheckpointSlow1 		"130 Checkpoint Slow 2.ogg"
+#Const SoundCheckpointSlow2 		"130 Checkpoint Slow 3.ogg"
+#Const SoundCheckpointSlow3 		"130 Checkpoint Slow 4.ogg"
+#Const SoundCheckpointSlow4 		"130 Checkpoint Slow 5.ogg"
+#Const SoundCheckpointSlow5 		"130 Checkpoint Slow 6.ogg"
+#Const SoundCheckpointSlow6 		"130 Checkpoint Slow 7.ogg"
+#Const SoundCheckpointSlow7 		"130 Checkpoint Slow 8.ogg"
+
+#Const C_LayerNameMusicManager		"LibTMC_LayerName_MusicManager"
+
+#Const DEBUGMODE					False
+#Const MUSICTOPLAY					-1
+
+#Const C_MUSICSTOLOAD				6
+#Const C_MUSICSTOLOAD_reduced		3
+
+#Const C_MUSICSTATE_NORMAL			0
+#Const C_MUSICSTATE_BOOST			1
+#Const C_MUSICSTATE_MUTE			2
+
+#Const C_AMBIENTSOUNDMODIFICATOR	6.	
+
+#Const MUSIC_FILE 0
+#Const MUSIC_GAIN 1
+
+declare Ident G_MusicLayerId; ///< Id of the music later in the map type
+declare Text[Integer]		G_MusicsName;
+declare Text[Integer]		G_MusicsLabel;
+declare Text[Integer]		G_MusicsAuthor;
+
+// ---------------------------------- //
+// Functions
+// ---------------------------------- //
+
+// ---------------------------------- //
+// Private
+// ---------------------------------- //
+Text GetLayerName()
+{
+	return C_LayerNameMusicManager;
+}
+
+Void Private_CreateLayerMusicManager(Text _MusicsAccessible, CMode _ExtMode, Boolean _IsTrackbuilder) 
+{
+	declare MusicsToLoad = C_MUSICSTOLOAD;
+	if (_IsTrackbuilder) {
+		MusicsToLoad = C_MUSICSTOLOAD_reduced;
+	} else if (ManiaPlanet != Null && ManiaPlanet.TmTurbo_IsPartialInstall) {
+		MusicsToLoad = C_MUSICSTOLOAD_reduced;
+	}
+	
+	declare Text MLText = """
+	<script><!--
+		{{{Manialink::GetIncludes()}}}
+		#Const DebugName "L_Music"
+		
+		#Const MUSICS {{{_MusicsAccessible}}}
+		#Const C_ROUNDSTATE_ON		0
+		#Const C_ROUNDSTATE_OFF		1
+		#Const C_MUSICSTATE_NORMAL			0
+#Const C_MUSICSTATE_BOOST			1
+#Const C_MUSICSTATE_MUTE			2
+		{{{Manialink::Load()}}}
+
+		declare CAudioSource[] 		G_CheckpointSlow;
+		declare CAudioSource[] 		G_CheckpointFast;
+		declare CAudioSource 		G_MusicStandby;
+		declare CAudioSource 		G_MusicReplay;
+		declare CAudioSource 		G_SoundStandbyEvent;
+		declare Text[Integer][]		G_MusicDescs;
+		declare CAudioSourceMusic[]	G_MusicAll;
+		declare CAudioSourceMusic	G_Music;
+		declare Integer[]			G_MusicRandomIndice;
+		
+		//declare Integer[] 			G_PrevPlayedTracks;
+		declare Integer 			G_PrevPlayedTrack;
+		declare Integer 			G_MusicDelay;
+		declare Real 				G_MusicGain;
+		declare Boolean 			G_IsSplitscreen;
+		declare Boolean				G_IsReplayPlaying;
+		declare Integer 			G_Debug_CurrentSong;
+		declare Text 				G_Debug_SongName;
+		
+		Void ResetSounds(Boolean _ResetStandby)
+		{
+			if(G_MusicStandby != Null && _ResetStandby) 	
+				G_MusicStandby.Stop();
+				
+			if(G_MusicReplay != Null && _ResetStandby) 	
+				G_MusicReplay.Stop();
+				
+			if(G_Music != Null)
+			{
+				G_Music.Stop();
+				G_Music.VolumedB = -100.;
+			}
+		}
+		
+		Text GetStandByMusic()
+		{
+			declare Rand = ML::Rand(0, 2);
+			switch(Rand)
+			{
+				case 0 : return "{{{MusicStandBy0}}}";
+				case 1 : return "{{{MusicStandBy1}}}";
+				case 2 : return "{{{MusicStandBy2}}}";
+			}
+			return "{{{MusicStandBy0}}}";
+		}
+
+		Void PreLoadMusic()
+		{
+			assert(G_MusicAll.count == 0);
+			foreach(Music in G_MusicDescs)
+			{
+				G_MusicAll.add(Audio.CreateMusic("{{{SoundPathLoops}}}" ^ Music[{{{MUSIC_FILE}}}]));
+			}
+
+			if ({{{_IsTrackbuilder}}}) {
+				// evite de charger des musiques qui jouent pas dans l'editeur.
+				G_MusicStandby = G_MusicAll[0];
+				G_MusicReplay = G_MusicAll[0];
+			}
+			
+			if(G_MusicStandby == Null)
+			{
+				declare Text StandByMusic = GetStandByMusic();
+				G_MusicStandby = Audio.CreateSound("{{{SoundPathLoops}}}" ^ StandByMusic, 	{{{Volumes::GetVolumedB("MusicStandBy")}}}, True, True, False);
+				if ({{{_IsTrackbuilder}}}) yield;
+				G_MusicStandby.Stop();
+				G_MusicStandby.VolumedB = {{{Volumes::GetVolumedB("MusicStandBy")}}};
+				G_MusicStandby.PanRadiusLfe 	= {{{Volumes::GetPanRadiusLfe("MusicStandby")}}};
+
+				G_SoundStandbyEvent = Audio.CreateSound("{{{SoundPathLoops}}}{{{SoundGameStart}}}", {{{Volumes::GetVolumedB("MusicStandBy")}}}+3, True, False, False);
+				G_SoundStandbyEvent.PanRadiusLfe = {{{Volumes::GetPanRadiusLfe("MusicStandby")}}};
+			}
+			
+			if(G_MusicReplay == Null)
+			{
+				G_MusicReplay = Audio.CreateSound("{{{SoundPathLoops}}}" ^ "{{{MusicReplay}}}", 	{{{Volumes::GetVolumedB("MusicReplay")}}}, True, True, False);
+				if ({{{_IsTrackbuilder}}}) yield;
+				G_MusicReplay.Stop();
+				G_MusicReplay.VolumedB = {{{Volumes::GetVolumedB("MusicReplay")}}};
+				G_MusicReplay.PanRadiusLfe 	= {{{Volumes::GetPanRadiusLfe("MusicReplay")}}};
+			}
+		}
+
+		Void LoadMusic(Integer _Music)
+		{
+			declare Text[Integer]		Page_MusicsName			for Page;
+			declare Text[Integer]		Page_MusicsLabel		for Page;
+			declare Text[Integer]		Page_MusicsAuthor		for Page;
+			declare				Text	Net_MusicFinalName			for UI;
+			ResetSounds(True);
+
+			assert(G_MusicAll.count == G_MusicDescs.count);
+			declare Integer 	MusicToPlay 	= _Music;
+			if(_Music == -1) 	
+			{
+				MusicToPlay = ML::Rand(0, G_MusicAll.count-1);
+				
+				// on relance une fois on a la même
+				if(G_PrevPlayedTrack == MusicToPlay) MusicToPlay = ML::Rand(0, G_MusicAll.count-1);
+				G_PrevPlayedTrack = MusicToPlay;
+				
+				//MusicToPlay = 0;
+			}
+			if(_Music  < -1)
+				MusicToPlay = G_MusicAll.count + _Music + 1;
+			
+			if(G_MusicAll.existskey(MusicToPlay))
+			{
+				G_Music = G_MusicAll[MusicToPlay];		// (la musique précédente qu'on ecrase est stoppée par ResetSounds() juste avant)
+				G_Music.VolumedB = -100.;
+				G_Music.FadeDuration = .35;
+				
+				G_Debug_SongName = G_MusicDescs[MusicToPlay][{{{MUSIC_FILE}}}];
+				// if({{{DEBUGMODE}}})
+				//log(Now^ "> PLAYING : "^G_Debug_SongName);
+				
+				G_MusicGain = TL::ToReal(G_MusicDescs[MusicToPlay][{{{MUSIC_GAIN}}}]);
+				// if(MusicsDelay.existskey(MusicToPlay)) 	G_MusicDelay	= MusicsDelay[MusicToPlay];
+				// else 									G_MusicDelay	= 0;
+				G_MusicDelay = 0;
+				
+				declare Integer MusicRandInd = 0;
+				if(G_MusicRandomIndice.existskey(MusicToPlay)) {
+					MusicRandInd = G_MusicRandomIndice[MusicToPlay];
+				} else {
+					log("warn : musique petee");
+				}
+
+				if(Page_MusicsAuthor.existskey(MusicRandInd) && Page_MusicsName.existskey(MusicRandInd) && Page_MusicsLabel.existskey(MusicRandInd)) {
+					Net_MusicFinalName = TL::Compose("%1 \"%2\" - %3", Page_MusicsAuthor[MusicRandInd], Page_MusicsName[MusicRandInd], Page_MusicsLabel[MusicRandInd]);
+					// log("MUSIC FINAL NAME: "^Net_MusicFinalName);
+				}
+			}
+			else
+			{
+				log("CAN'T FIND MUSIC INDEX AT : " ^ _Music);
+			}
+		}
+		
+		Void PreloadSounds()
+		{
+			PreLoadMusic();
+			LoadMusic({{{MUSICTOPLAY}}});
+
+			declare SoundsToPreloadEvent = [
+			"{{{SoundFinishLine}}}",
+			"{{{SoundStartLine2}}}",
+			"{{{SoundStartLine}}}"
+			];
+			
+			foreach(Sound in SoundsToPreloadEvent) Audio.CreateSound("{{{SoundPathLoops}}}" ^ Sound);
+			if ({{{_IsTrackbuilder}}}) yield;
+				
+			declare SoundsToPreloadCpSlow = [
+			"{{{SoundCheckpointSlow0}}}",
+			"{{{SoundCheckpointSlow1}}}",
+			"{{{SoundCheckpointSlow2}}}",
+			"{{{SoundCheckpointSlow3}}}",
+			"{{{SoundCheckpointSlow4}}}",
+			"{{{SoundCheckpointSlow5}}}",
+			"{{{SoundCheckpointSlow6}}}",
+			"{{{SoundCheckpointSlow7}}}"
+			];
+			
+			foreach(Sound in SoundsToPreloadCpSlow) G_CheckpointSlow.add(Audio.CreateSound("{{{SoundPathLoops}}}" ^ Sound));
+			if ({{{_IsTrackbuilder}}}) yield;
+			
+			declare SoundsToPreloadCpFast = [
+			"{{{SoundCheckpointFast0}}}",
+			"{{{SoundCheckpointFast1}}}",
+			"{{{SoundCheckpointFast2}}}",
+			"{{{SoundCheckpointFast3}}}",
+			"{{{SoundCheckpointFast4}}}",
+			"{{{SoundCheckpointFast5}}}",
+			"{{{SoundCheckpointFast6}}}",
+			"{{{SoundCheckpointFast7}}}"
+			];
+			
+			foreach(Sound in SoundsToPreloadCpFast) G_CheckpointFast.add(Audio.CreateSound("{{{SoundPathLoops}}}" ^ Sound));
+			if ({{{_IsTrackbuilder}}}) yield;
+		}
+		
+		Void SetSFXSceneLevel() {
+			declare 			Integer Net_PlayerMusicState				for UI;
+			if (G_MusicReplay.IsPlaying && !{{{_IsTrackbuilder}}}) {
+				Audio.LimitSceneSoundVolumedB = {{{Volumes::GetVolumedB("MainSFXReplay")}}};
+			} else if(G_IsSplitscreen) {
+				if(Net_PlayerMusicState == C_MUSICSTATE_NORMAL || Net_PlayerMusicState == C_MUSICSTATE_MUTE) {
+					Audio.LimitSceneSoundVolumedB = {{{Volumes::GetVolumedB("MainSFXSplitscreen")}}};
+				} else if(Net_PlayerMusicState == C_MUSICSTATE_BOOST) {
+					Audio.LimitSceneSoundVolumedB = {{{Volumes::GetVolumedB("MainSFXLowerForMusicBoost")}}};
+				}
+			} else {				
+				if(Net_PlayerMusicState == C_MUSICSTATE_NORMAL) {
+					Audio.LimitSceneSoundVolumedB 		= {{{Volumes::GetVolumedB("MainSFX")}}};
+				} else if(Net_PlayerMusicState == C_MUSICSTATE_MUTE) {
+					Audio.LimitSceneSoundVolumedB = {{{Volumes::GetVolumedB("MainSFXMusicMute")}}};
+				} else if(Net_PlayerMusicState == C_MUSICSTATE_BOOST) {
+					Audio.LimitSceneSoundVolumedB 	= {{{Volumes::GetVolumedB("MainSFXLowerForMusicBoost")}}};
+				}
+			}
+		}
+		
+		Void SetMusicLevel() {
+			declare 			Integer Net_PlayerMusicState				for UI;
+			if(Net_PlayerMusicState == C_MUSICSTATE_NORMAL) {
+				if(!G_IsSplitscreen) {
+					G_Music.VolumedB = {{{Volumes::GetVolumedB("MusicMultiTrack_NewTrack")}}} + G_MusicGain;
+				} else {
+					G_Music.VolumedB = {{{Volumes::GetVolumedB("MusicSplitscreen")}}} + G_MusicGain;
+				}	
+			} else if(Net_PlayerMusicState == C_MUSICSTATE_BOOST) {
+				G_Music.VolumedB = {{{Volumes::GetVolumedB("MusicBoosted")}}};
+			} else if(Net_PlayerMusicState == C_MUSICSTATE_MUTE) {
+				G_Music.VolumedB = {{{Volumes::GetVolumedB("MusicMute")}}};
+			}
+			G_Music		.PanRadiusLfe 	= {{{Volumes::GetPanRadiusLfe("MusicIngame")}}};
+			// G_Music.FadeTracksDuration = 300.;
+			// G_Music.AlsoFilterReverbSend 	= True;
+		}
+		
+		main() 
+		{
+			declare netread 	Integer Net_StandbyEvent 			for UI;
+			declare netread 	Integer Net_StopMusicEvent 			for UI;
+			declare netread 	Integer Net_ReplayEvent 			for UI;
+			declare netread 	Text	Net_ModeName				for UI;
+			declare netread 	Integer Net_NbPlayerChosen 			for UI;
+			declare netread 	Integer Net_RoundState 				for UI;
+			declare				Boolean		Net_HudIsVisible				for UI;
+			
+			declare netwrite 	Boolean Net_IsPauseMenuEnabled 		for UI;
+			declare 			Boolean FrameDebug_UILimits_Visible for UI;
+			
+			declare netwrite 	Integer Net_ShowMessageTrigger 		for UI;
+			declare netwrite 	Text 	Net_ShowMessageText 		for UI;
+			declare				Text	Net_MusicFinalName			for UI;
+			declare 			Integer Net_PlayerMusicState				for UI;
+			// Net_PlayerMusicState = False;
+			declare Text[Integer]		Page_MusicsName			for Page;
+			declare Text[Integer]		Page_MusicsLabel		for Page;
+			declare Text[Integer]		Page_MusicsAuthor		for Page;
+
+			declare M_IsPaused						= False;
+			declare M_PrevStandbyEvent				= Net_StandbyEvent;
+			declare M_PrevStopMusicEvent			= Net_StopMusicEvent;
+			declare M_PrevReplayEvent				= Net_ReplayEvent;
+			declare M_PrevCollectionName 			= "";
+			declare M_SwitchTrackNeeded 			= False;
+			declare M_LapTrackNeeded 				= False;
+			declare M_FreewheelTrackNeeded			= False;
+			declare M_CutoffSpeedTreshold			= 275.;
+			declare M_LatestCheckpointForPlayers 	= -1;
+			declare M_IsLastFinished				= False; 
+			declare M_NbPlayerChosen				= 0;
+			declare M_LastPlayerInSplitscreenLaunchMusic		= False;
+			declare M_SplitscreenMusicLaunched		= False;
+			declare M_PrevModeName = "";
+			declare M_IsQuick = False;
+			declare Integer G_IndexPlayer = 0;
+			declare CTmMlPlayer::ERaceState M_PrevRaceState;
+			
+			// declare G_IsSplitscreen 				= (Net_ModeName == "Rounds Splitscreen");
+			declare M_RaceStateTrigger_Finished 	= GameTime;
+			Audio.LimitSceneSoundVolumedB 			= {{{Volumes::GetVolumedB("MainSFX")}}};
+			
+			G_MusicDescs.clear();
+			if({{{DEBUGMODE}}})
+			{
+				G_MusicDescs = MUSICS;
+			}
+			else
+			{
+				// declare Integer[] PrevRandIndex;
+				G_MusicRandomIndice.clear();
+				declare Integer MaxMusicCount = MUSICS.count;
+				
+				for(I, 0, MaxMusicCount - 1) G_MusicRandomIndice.add(I);
+				for(I, 0, MaxMusicCount - 1) {
+					declare Integer J = ML::Rand(I, MaxMusicCount - 1);
+					declare Integer Buffer = G_MusicRandomIndice[J];
+					G_MusicRandomIndice[J]  = G_MusicRandomIndice[I];
+					G_MusicRandomIndice[I]  = Buffer;
+				}
+				
+				for(I, 0, {{{MusicsToLoad-1}}})
+				{
+					if(I >= G_MusicRandomIndice.count) break;
+					
+					declare Integer RandIndex = G_MusicRandomIndice[I];
+					
+					G_MusicDescs.add(MUSICS[RandIndex]);
+				}
+				
+				//log("G_MusicDescs : "^G_MusicDescs);
+				//G_MusicDescs.add(MUSICS[39]);
+			}
+
+			PreloadSounds();
+			
+			while(True) 
+			{
+				yield;
+				if(!PageIsVisible /*||InputPlayer == Null || GUIPlayer == Null */) 
+					continue;
+				
+				
+				if(M_PrevModeName != Net_ModeName) {
+					G_IsSplitscreen 	= (Net_ModeName == "Rounds Splitscreen");
+					M_PrevModeName 		= Net_ModeName;
+				}
+				
+				declare CTmMlPlayer::ERaceState PlayerRaceState;
+				declare CTmMlPlayer ThePlayer <=> GUIPlayer;
+				
+				if(ThePlayer != Null) {
+					PlayerRaceState = ThePlayer.RaceState;
+					
+					// RACE STATE : ALL THE TIME
+					if(PlayerRaceState == CTmMlPlayer::ERaceState::BeforeStart || M_PrevRaceState == CTmMlPlayer::ERaceState::Eliminated)
+					{
+						ResetSounds(False);
+						M_LastPlayerInSplitscreenLaunchMusic = False;
+						M_LatestCheckpointForPlayers 	= -1;
+						M_IsLastFinished				= False;
+						if(PlayerRaceState == CTmMlPlayer::ERaceState::BeforeStart) {
+							SetSFXSceneLevel();
+						}
+					}
+					
+					// RACE STATE : ON CHANGE 
+					if(M_PrevRaceState  != PlayerRaceState)
+					{
+						M_PrevRaceState  = PlayerRaceState;
+						SetSFXSceneLevel();
+						
+						if(PlayerRaceState == CTmMlPlayer::ERaceState::Finished)
+						{	
+							if(!G_IsSplitscreen) {
+								M_RaceStateTrigger_Finished = GameTime;
+								Audio.LimitSceneSoundVolumedB = {{{Volumes::GetVolumedB("MainSFX")-12.}}};
+								M_IsLastFinished = True;
+							}
+						}
+						else 
+						if(PlayerRaceState == CTmMlPlayer::ERaceState::BeforeStart)
+						{
+							G_MusicReplay.Stop();
+						}
+						else 
+						if(PlayerRaceState == CTmMlPlayer::ERaceState::Running)
+						{
+							if((G_IsSplitscreen && !M_SplitscreenMusicLaunched) || !G_IsSplitscreen) {
+								
+								SetSFXSceneLevel();
+								
+								if(G_IsSplitscreen) {
+									M_SplitscreenMusicLaunched = True;
+								}
+								
+								// START RACE
+								if({{{DEBUGMODE}}}) {
+									LoadMusic(G_Debug_CurrentSong);
+								} else {
+									LoadMusic({{{MUSICTOPLAY}}});
+								}
+								
+								ResetSounds(True);
+								
+								G_Music.LPF_CutoffRatio = 0.25;	// voiture arretée..
+								G_Music.UpdateMode = CAudioSourceMusic::EUpdateMode::OnNextHalfBar;
+								G_Music.Dbg_ForceSequential = {{{DEBUG_FORCESEQUENTIAL}}};
+								G_Music.Dbg_ForceRandom = {{{DEBUG_FORCERANDOM}}};
+								G_Music.Dbg_ForceIntensity = {{{DEBUG_FORCEINTENSITY}}};
+								
+								G_Music.EnableSegment("lap");
+								
+								G_Music.Play();	log ("G_Music.Play() " ^ G_Music);
+								SetMusicLevel();  // juste après le play pour fader.
+							}
+						}
+					}
+				}
+				
+				if(G_IsSplitscreen) {
+					if(M_NbPlayerChosen != Net_NbPlayerChosen) {
+						if(Net_NbPlayerChosen > 0) {
+							M_NbPlayerChosen = Net_NbPlayerChosen;
+						}
+					}
+					
+					declare Integer NbPlayersRunning = 0;
+					foreach(Player in Players) {
+						declare netread 	Boolean Net_IsInGame for Players[G_IndexPlayer];
+						if(Net_IsInGame) {
+							if(Player.RaceState == CTmMlPlayer::ERaceState::Running) {
+								NbPlayersRunning += 1;
+							}
+						}
+					}
+					
+					if(NbPlayersRunning == 1 &&  !M_LastPlayerInSplitscreenLaunchMusic) {
+						M_FreewheelTrackNeeded 					= True;
+						M_LastPlayerInSplitscreenLaunchMusic 	= True;
+					}
+					
+					if(Net_RoundState == C_ROUNDSTATE_OFF) {
+						M_RaceStateTrigger_Finished 		= GameTime;
+						Audio.LimitSceneSoundVolumedB 		= {{{Volumes::GetVolumedB("MainSFX")-12.}}};
+						M_SwitchTrackNeeded 				= True;
+						M_SplitscreenMusicLaunched 			= False;
+						M_IsLastFinished 					= True;
+					}
+				}
+				
+				// ENVIRONEMENT : ON CHANGE
+				
+				if(M_PrevCollectionName != Map.CollectionName)
+				{
+					M_PrevCollectionName = Map.CollectionName;
+					switch(M_PrevCollectionName)
+					{
+						case "Canyon" 	: M_CutoffSpeedTreshold = 250.;
+						case "Valley"  	: M_CutoffSpeedTreshold = 175.;
+						case "Lagoon" 	: M_CutoffSpeedTreshold = 125.;
+						case "Stadium" 	: M_CutoffSpeedTreshold = 225.;
+						default 		: M_CutoffSpeedTreshold = 250.;
+					}
+				}
+				
+				//////////////////////
+				// EVENTS BUSINESS    
+				
+				foreach(Event in RaceEvents)
+				{
+					if (Event.Player != GUIPlayer)
+						continue;
+					switch(Event.Type)
+					{
+						case CTmRaceClientEvent::EType::StopEngine : 
+						{
+							M_FreewheelTrackNeeded 	= True; 
+						}
+						
+						case CTmRaceClientEvent::EType::StartEngine : 
+						{
+							M_SwitchTrackNeeded 	= True; 
+						}
+						
+						case CTmRaceClientEvent::EType::WayPoint : 
+						{
+							if(Event.IsEndRace)
+							{
+								M_SwitchTrackNeeded = True;
+								declare Sound = Audio.CreateSound("{{{SoundPathLoops}}}{{{SoundFinishLine}}}");
+								Audio.PlaySoundEvent(Sound, {{{Volumes::GetVolumedB("FinishLine")}}}, 0);
+							}
+							else
+							if(Event.IsEndLap)
+							{
+								M_LapTrackNeeded = True;
+							}
+							else
+							{
+								if(Event.CheckpointInRace > M_LatestCheckpointForPlayers)
+								{
+									M_LatestCheckpointForPlayers = Event.CheckpointInRace;
+									M_SwitchTrackNeeded = True;
+								}
+							}
+						}
+					}
+				}
+				
+				if(M_PrevStandbyEvent != Net_StandbyEvent)
+				{
+					M_PrevStandbyEvent = Net_StandbyEvent;
+					G_Music			.Stop();
+					G_MusicReplay	.Stop();
+					G_MusicStandby	.VolumedB = {{{Volumes::GetVolumedB("MusicStandBy")}}};
+					G_MusicStandby	.Play();
+					Audio.LimitMusicVolumedB = 0.;
+				}
+				
+				if(M_PrevReplayEvent != Net_ReplayEvent)
+				{
+					M_PrevReplayEvent = Net_ReplayEvent;
+					G_Music			.Stop();
+					G_MusicStandby	.Stop();
+					G_MusicReplay	.VolumedB 		= {{{Volumes::GetVolumedB("MusicReplay")}}};
+					G_MusicReplay	.Play();
+					Audio.LimitSceneSoundVolumedB 	= {{{Volumes::GetVolumedB("MainSFXReplay")}}};
+					Audio.LimitMusicVolumedB = 0.;
+					log("MUSIC VOLUME: "^G_MusicReplay.VolumedB);
+				}
+				
+				if(M_PrevStopMusicEvent != Net_StopMusicEvent)
+				{
+					if(G_MusicStandby.IsPlaying && G_SoundStandbyEvent != Null)
+						Audio.PlaySoundEvent(G_SoundStandbyEvent, {{{Volumes::GetVolumedB("MusicStandBy")}}}+3);
+					M_PrevStopMusicEvent = Net_StopMusicEvent;
+					G_Music			.Stop();
+					G_MusicReplay	.Stop();
+					G_MusicStandby	.Stop();
+					SetSFXSceneLevel();
+					M_SplitscreenMusicLaunched = False;
+				}
+				
+				if(M_SwitchTrackNeeded)
+				{
+					M_SwitchTrackNeeded	= False;
+					G_Music.EnableSegment("loop");
+					G_Music.NextVariant(); //rajouter le randommode après
+				}	
+				
+				if(M_FreewheelTrackNeeded)
+				{
+					M_FreewheelTrackNeeded = False;
+					G_Music.EnableSegment("freewheel");
+				}
+		
+				if(M_LapTrackNeeded)
+				{
+					M_LapTrackNeeded = False;
+					//G_Music.EnableSegment("lap");
+					G_Music.EnableSegment("loop");
+					G_Music.NextVariant(); //rajouter le randommode après
+				}
+			
+				///////////////////////////////////////
+				// LPF FILTERS (PAUSE MENU && SPEED)   
+				
+				declare TargetLPFratioFromSpeed = 0.25;
+				
+				declare CurSpeed = 0.;
+				if (ThePlayer != Null)
+					CurSpeed = 1. * ThePlayer.DisplaySpeed;
+				declare MinValue = 0.25;
+				
+				if(CurSpeed < M_CutoffSpeedTreshold && !G_IsSplitscreen)
+				{
+					declare MinSpeed 	= 75.;
+					declare Speed 		= CurSpeed - MinSpeed;
+					declare SpeedComp 	= M_CutoffSpeedTreshold - MinSpeed;
+					if(Speed < 0.) 
+						Speed = 0.;
+					
+					TargetLPFratioFromSpeed = MinValue + (1.-MinValue) * (Speed / SpeedComp);
+					if (M_IsQuick) {
+						//On fait baisser l'intensité de la loop
+						G_Music.EnableSegment("loop");
+						G_Music.NextVariant(True); //rajouter le randommode après
+						M_IsQuick = False;
+					}
+				}
+				else
+				{
+					M_IsQuick = True;
+					TargetLPFratioFromSpeed = 1.;
+				}
+				
+				declare IsPaused = Net_IsPauseMenuEnabled || M_IsLastFinished;
+				if (M_IsPaused != IsPaused)
+				{
+					M_IsPaused = IsPaused;
+					if (M_IsPaused)
+					{
+						Audio.LimitMusicVolumedB = -3.;
+					} else {
+						Audio.LimitMusicVolumedB = 0.;
+						SetSFXSceneLevel();
+					}
+				}
+				
+				if (!M_IsPaused)
+				{
+					G_Music.LPF_CutoffRatio = TargetLPFratioFromSpeed;
+				} 
+				else 
+				{
+					if(M_IsLastFinished)
+					{
+						declare Max = TargetLPFratioFromSpeed;
+						declare Duration = G_Music.BeatDuration * 40.;
+						declare Time = 1. * (GameTime - M_RaceStateTrigger_Finished);
+						SetMusicLevel();
+						G_Music.LPF_CutoffRatio = AL::Ease("CircOut", Time, Max, (-Max+0.25), Duration);
+					}
+					else
+					{
+						G_Music.LPF_CutoffRatio = {{{Volumes::GetLPF_CutoffRatio("PauseMenuEnabled")}}};
+					}
+				}
+								
+				//if(!G_IsSplitscreen && Net_HudIsVisible) {
+				// log("HUD VISIBLE: "^Net_HudIsVisible);
+				if (G_IsSplitscreen || Net_HudIsVisible) {
+					foreach(Evt in Input.PendingEvents)
+					{
+						if (Evt.Type == CInputEvent::EType::PadButtonPress 
+							&& Evt.Button == CInputEvent::EButton::View
+							&& !Evt.IsAutoRepeat)
+						{
+							Net_PlayerMusicState += 1;
+							if(Net_PlayerMusicState > C_MUSICSTATE_MUTE) Net_PlayerMusicState = C_MUSICSTATE_NORMAL;
+							SetMusicLevel();
+							SetSFXSceneLevel();
+						}
+					}
+				}
+			}
+		}
+	--></script>
+	""";
+	
+	// When inside the Trackbuilder
+	if (_ExtMode != Null) {
+		declare LayerMusic <=> _ExtMode.UIManager.UILayerCreate();
+		G_MusicLayerId = LayerMusic.Id;
+		LayerMusic.ManialinkPage = MLText;
+		if (!_ExtMode.UIManager.UIAll.UILayers.existskey(G_MusicLayerId)) _ExtMode.UIManager.UIAll.UILayers.add(LayerMusic);
+	} else {
+		Layers::Create(C_LayerNameMusicManager, MLText);
+		Layers::Attach(C_LayerNameMusicManager);
+	}
+}
+
+// ---------------------------------- //
+// Public
+// ---------------------------------- //
+
+// Return the version number of the script
+Text GetScriptVersion() 
+{
+	return Version;
+}
+
+// Return the name of the script
+Text GetScriptName() 
+{
+	return ScriptName;
+}
+
+Text[] GetIndexes()
+{
+	declare Text[] MusicsIndexes;
+	if(UserMgr.MainUser != Null) {
+		declare persistent Integer[Integer]	Pers_MusicsEtat2 	for UserMgr.MainUser;
+		
+		// Pers_MusicsEtat2 = Integer[Integer];
+		// UserMgr.MainUser.PersistentSave();
+		
+		for(I, 0, Pers_MusicsEtat2.count - 1)
+		{
+			if(Pers_MusicsEtat2[I] != 1) MusicsIndexes.add(I^"");
+		}	
+	}
+	
+	
+	
+	return MusicsIndexes;
+}
+
+
+Text InjectMusicsAccessible()
+{
+	declare Text MusicsAccessible;
+	declare Text[][] AllMusics = LibMusics::Get_AllMusics();
+	declare Text[] MusicsIndexes = GetIndexes();
+
+	//log("MusicsIndexes: "^MusicsIndexes);
+	
+	MusicsAccessible = """
+	[""";
+	for(I, 0, MusicsIndexes.count - 1)
+	{
+		declare Integer Index = TL::ToInteger(MusicsIndexes[I]);
+		if(!AllMusics.existskey(Index)) continue;
+		if(I > 0)
+		{
+			MusicsAccessible ^= """,
+			""";
+		}
+		MusicsAccessible ^= """
+		[{{{MUSIC_FILE}}} => "{{{AllMusics[Index][0]}}}",
+		 {{{MUSIC_GAIN}}} => {{{AllMusics[Index][1]}}}]""";
+		 G_MusicsName[I] 	= AllMusics[Index][2];
+		 G_MusicsLabel[I]	= AllMusics[Index][3];
+		 G_MusicsAuthor[I]	= AllMusics[Index][4];
+	}
+	MusicsAccessible ^= """
+	]""";
+	
+	if(MusicsIndexes.count <= 0)
+	{
+		MusicsAccessible = """[[{{{MUSIC_FILE}}} => "{{{AllMusics[0][0]}}}",
+		 {{{MUSIC_GAIN}}} => "-99."]]""";
+	}
+	return MusicsAccessible;
+}
+
+// Unload the library
+Void Unload(CMode _ExtMode) 
+{
+	// When inside the Trackbuilder
+	if (_ExtMode != Null) {
+		if (_ExtMode.UIManager.UILayers.existskey(G_MusicLayerId)) {
+			declare Removed = _ExtMode.UIManager.UIAll.UILayers.removekey(G_MusicLayerId);
+			_ExtMode.UIManager.UILayerDestroy(_ExtMode.UIManager.UILayers[G_MusicLayerId]);
+		}
+	} else {
+		Layers::Destroy(C_LayerNameMusicManager);
+	}
+}
+
+Void SendToUI() {
+	declare CUILayer 		LayerToSend 	= Layers::Get(C_LayerNameMusicManager);
+	if(LayerToSend == Null) return;
+	
+	declare Text[Integer]		Page_MusicsName			for LayerToSend.LocalPage;
+	declare Text[Integer]		Page_MusicsLabel		for LayerToSend.LocalPage;
+	declare Text[Integer]		Page_MusicsAuthor		for LayerToSend.LocalPage;
+	Page_MusicsName 	= G_MusicsName;
+	Page_MusicsLabel 	= G_MusicsLabel;
+	Page_MusicsAuthor	= G_MusicsAuthor;
+}
+
+// Load the library
+Void Load(CMode _ExtMode, Boolean _IsTrackbuilder)
+{
+	declare Text MusicsAccessible = InjectMusicsAccessible();
+	declare Real Volume_Musics = 1.0;
+	declare Real Volume_Voices = 1.0;
+	
+	Volumes:: LoadVolumeMusicsSetting(1.0);
+	
+	Unload(_ExtMode);
+
+	Private_CreateLayerMusicManager(MusicsAccessible, _ExtMode, _IsTrackbuilder);
+	SendToUI();
+}
+
+
+// Load the library
+Void Load(CMode _ExtMode) { Load(Null, False); }
+
+// Load the library
+Void Load() { Load(Null); }
+Void Unload() {	Unload(Null); }

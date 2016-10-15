@@ -1,0 +1,64 @@
+#Include "Libs/Nadeo/TMConsole/Menu/MenuLayers.Script.txt"			as Layers
+
+#Const C_REQUESTTYPE_LAUNCHUNLOCKANIM 0
+
+
+
+declare Text				G_LayerToSend;
+declare Integer				G_RequestType;
+declare Text[]				G_ParamToSend;
+
+//External Datas
+
+//Internal Datas
+declare Integer[Integer][Integer]	 G_InternalLaunchAnim; //0 - No Anim | 1 - Anim ligne du haut | 2 - Anim ligne du bas
+
+
+
+Text GetFeedbackText(Boolean _Succeed) {
+	if(G_RequestType == C_REQUESTTYPE_LAUNCHUNLOCKANIM) {
+		return "LaunchUnlockAnim";
+	}
+	return "";
+}
+
+Void SendFeedbackToUI(Boolean _Succeed) {
+	declare CUILayer LayerToSend = Layers::Get(G_LayerToSend);
+	if(LayerToSend == Null) return;
+	declare Text FeedbackText = GetFeedbackText(_Succeed);
+	//log("["^Now^"]G_LayerToSend["^G_LayerToSend^"] FeedbackText["^FeedbackText^"] G_ParamToSend["^G_ParamToSend^"]");
+	LayerCustomEvent(LayerToSend, FeedbackText, G_ParamToSend);
+}
+
+// Functions to call in the Handlers
+//-----------------------------------------------------------//
+Void HACK_LoadInfos()
+{
+	G_InternalLaunchAnim[0]    = Integer[Integer];
+	G_InternalLaunchAnim[1]    = Integer[Integer];
+	G_InternalLaunchAnim[0][1] = 2;
+	G_InternalLaunchAnim[1][1] = 1;
+}
+
+Void SendAnimationToStart(Integer _Environment, Integer _Difficulty, Text _Layer){
+
+	//if animation to start Envoyer l'event au Layer
+	if(!G_InternalLaunchAnim.existskey(_Environment)) return;
+	if(!G_InternalLaunchAnim[_Environment].existskey(_Difficulty)) return;
+	
+	declare Integer AnimToLaunch = G_InternalLaunchAnim[_Environment][_Difficulty];
+	if(AnimToLaunch == 0) return;
+	G_InternalLaunchAnim[_Environment][_Difficulty] = 0;
+
+	G_LayerToSend = _Layer;
+	G_ParamToSend.clear();
+	G_ParamToSend = [""^_Environment, ""^_Difficulty, ""^AnimToLaunch];
+	G_RequestType = C_REQUESTTYPE_LAUNCHUNLOCKANIM;
+
+	SendFeedbackToUI(True);
+}
+
+Void SendAllAnimationToStart(){
+
+	SendFeedbackToUI(True);
+}

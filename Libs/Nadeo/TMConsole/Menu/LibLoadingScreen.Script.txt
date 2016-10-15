@@ -1,0 +1,345 @@
+//Lib LoadingScreen
+#Include "TextLib" as TextLib
+#Include "Libs/Nadeo/UIPadButtons.Script.txt" as UIButtons
+
+#Const C_Family_Canyon           0
+#Const C_Family_Valley           1
+#Const C_Family_Lagoon           2
+#Const C_Family_Stadium          3
+#Const C_Family_Mode             4
+#Const C_Family_ProTipsReal      5
+#Const C_Family_ProTipsFun       6
+#Const C_Family_QuotesReal       7
+#Const C_Family_QuotesFun        8
+#Const C_Family_FastFact         9
+#Const C_Family_TutoController   10
+#Const C_Family_TrackBuilderInfo 11
+#Const C_Family_GarageInfo       12
+#Const C_Family_TitleScreen      13
+
+declare Text[][Integer]    G_FamilyImg;
+declare Integer[][Integer] G_ScreensIndex;
+
+declare Integer[]          G_ScreenFamily;
+declare Text[]      	   G_ScreenText;
+declare Text[]             G_ScreenImg;
+
+//*-- ADD --*//
+Void addFamilyScreen(Integer _Family, Text _ImgPath)
+{
+	G_FamilyImg[_Family].add(_ImgPath);
+}
+
+Void addLoadingScreen(Text _Text, Integer _Family, Text _ImgPath)
+{
+	G_ScreensIndex[_Family].add(G_ScreenText.count);
+
+	G_ScreenText.add(_Text);
+	G_ScreenFamily.add(_Family);
+	G_ScreenImg.add(_ImgPath);
+
+}
+
+
+Void addLoadingScreen(Text _Text, Integer _Family)
+{
+	addLoadingScreen(_Text, _Family, "");
+}
+
+//*-- LOAD --*//
+Void LoadFamilies()
+{
+	G_ScreensIndex[C_Family_Canyon]           = Integer[];
+	G_ScreensIndex[C_Family_Valley]           = Integer[];
+	G_ScreensIndex[C_Family_Lagoon]           = Integer[];
+	G_ScreensIndex[C_Family_Stadium]          = Integer[];
+	G_ScreensIndex[C_Family_Mode]             = Integer[];
+	G_ScreensIndex[C_Family_ProTipsReal]      = Integer[];
+	G_ScreensIndex[C_Family_ProTipsFun]       = Integer[];
+	G_ScreensIndex[C_Family_QuotesReal]       = Integer[];
+	G_ScreensIndex[C_Family_QuotesFun]        = Integer[];
+	G_ScreensIndex[C_Family_FastFact]         = Integer[];
+	G_ScreensIndex[C_Family_TutoController]   = Integer[];
+	G_ScreensIndex[C_Family_TrackBuilderInfo] = Integer[];
+	G_ScreensIndex[C_Family_GarageInfo]       = Integer[];
+	G_ScreensIndex[C_Family_TitleScreen]   = Integer[];
+
+	G_FamilyImg[C_Family_Canyon]            = Text[];
+	G_FamilyImg[C_Family_Valley]            = Text[];
+	G_FamilyImg[C_Family_Lagoon]            = Text[];
+	G_FamilyImg[C_Family_Stadium]           = Text[];
+	G_FamilyImg[C_Family_Mode]              = Text[];
+	G_FamilyImg[C_Family_ProTipsReal]       = Text[];
+	G_FamilyImg[C_Family_ProTipsFun]        = Text[];
+	G_FamilyImg[C_Family_QuotesReal]        = Text[];
+	G_FamilyImg[C_Family_QuotesFun]         = Text[];
+	G_FamilyImg[C_Family_FastFact]          = Text[];
+	G_FamilyImg[C_Family_TutoController]    = Text[];
+	G_FamilyImg[C_Family_TrackBuilderInfo]  = Text[];
+	G_FamilyImg[C_Family_GarageInfo]        = Text[];
+	G_FamilyImg[C_Family_TitleScreen]        = Text[];
+
+	addFamilyScreen(C_Family_Canyon         , "EnvCanyon/LOADING_Enviro_Canyon1.jpg");
+	addFamilyScreen(C_Family_Canyon         , "AdditionalLoadings/LOADING_Enviro_Canyon2.jpg");
+	addFamilyScreen(C_Family_Canyon         , "AdditionalLoadings/LOADING_Enviro_Canyon3.jpg");
+	addFamilyScreen(C_Family_Canyon         , "AdditionalLoadings/LOADING_Enviro_Canyon4.jpg");
+	addFamilyScreen(C_Family_Valley         , "EnvValley/LOADING_Enviro_Valley1.jpg");
+	addFamilyScreen(C_Family_Valley         , "AdditionalLoadings/LOADING_Enviro_Valley2.jpg");
+	addFamilyScreen(C_Family_Valley         , "AdditionalLoadings/LOADING_Enviro_Valley3.jpg");
+	addFamilyScreen(C_Family_Valley         , "AdditionalLoadings/LOADING_Enviro_Valley4.jpg");
+	addFamilyScreen(C_Family_Lagoon         , "EnvLagoon/LOADING_Enviro_Lagoon1.jpg");
+	addFamilyScreen(C_Family_Lagoon         , "EnvLagoon/LOADING_Enviro_Lagoon2.jpg");
+	addFamilyScreen(C_Family_Lagoon         , "EnvLagoon/LOADING_Enviro_Lagoon3.jpg");
+	addFamilyScreen(C_Family_Lagoon         , "EnvLagoon/LOADING_Enviro_Lagoon4.jpg");
+	addFamilyScreen(C_Family_Lagoon         , "AdditionalLoadings/LOADING_Enviro_Lagoon5.jpg");
+	addFamilyScreen(C_Family_Lagoon         , "AdditionalLoadings/LOADING_Enviro_Lagoon6.jpg");
+	addFamilyScreen(C_Family_Lagoon         , "AdditionalLoadings/LOADING_Enviro_Lagoon7.jpg");
+	addFamilyScreen(C_Family_Lagoon         , "AdditionalLoadings/LOADING_Enviro_Lagoon8.jpg");
+	addFamilyScreen(C_Family_Stadium        , "EnvStadium/LOADING_Enviro_Stadium1.jpg");
+	addFamilyScreen(C_Family_Stadium        , "EnvStadium/LOADING_Enviro_Stadium2.jpg");
+	//addFamilyScreen(C_Family_Stadium        , "EnvStadium/LOADING_Enviro_Stadium3.jpg");
+	addFamilyScreen(C_Family_Stadium        , "AdditionalLoadings/LOADING_Enviro_Stadium3.jpg");
+	addFamilyScreen(C_Family_Stadium        , "AdditionalLoadings/LOADING_Enviro_Stadium5.jpg");
+	addFamilyScreen(C_Family_Stadium        , "AdditionalLoadings/LOADING_Enviro_Stadium6.jpg");
+	addFamilyScreen(C_Family_Stadium        , "AdditionalLoadings/LOADING_Enviro_Stadium7.jpg");
+	//addFamilyScreen(C_Family_Stadium        , "EnvStadium/LOADING_Enviro_Stadium4.jpg");
+
+	addFamilyScreen(C_Family_Mode           , "loading_stad_placeholder.png");
+	addFamilyScreen(C_Family_Mode           , "EnvCanyon/LOADING_Enviro_Canyon1.jpg");
+	addFamilyScreen(C_Family_Mode           , "EnvValley/LOADING_Enviro_Valley1.jpg");
+	addFamilyScreen(C_Family_Mode           , "EnvLagoon/LOADING_Enviro_Lagoon1.jpg");
+	addFamilyScreen(C_Family_Mode           , "EnvStadium/LOADING_Enviro_Stadium2.jpg");
+	addFamilyScreen(C_Family_Mode           , "AdditionalLoadings/LOADING_Enviro_Canyon3.jpg");
+	addFamilyScreen(C_Family_Mode           , "AdditionalLoadings/LOADING_Enviro_Valley2.jpg");
+	addFamilyScreen(C_Family_Mode           , "AdditionalLoadings/LOADING_Enviro_Lagoon5.jpg");
+	addFamilyScreen(C_Family_Mode           , "AdditionalLoadings/LOADING_Enviro_Stadium3.jpg");
+
+	addFamilyScreen(C_Family_ProTipsReal    , "loading_stad_placeholder.png");
+	addFamilyScreen(C_Family_ProTipsReal    , "EnvCanyon/LOADING_Enviro_Canyon1.jpg");
+	addFamilyScreen(C_Family_ProTipsReal    , "EnvValley/LOADING_Enviro_Valley1.jpg");
+	addFamilyScreen(C_Family_ProTipsReal    , "EnvLagoon/LOADING_Enviro_Lagoon2.jpg");
+	addFamilyScreen(C_Family_ProTipsReal    , "EnvStadium/LOADING_Enviro_Stadium1.jpg");
+	addFamilyScreen(C_Family_ProTipsReal    , "AdditionalLoadings/LOADING_Enviro_Canyon4.jpg");
+	addFamilyScreen(C_Family_ProTipsReal    , "AdditionalLoadings/LOADING_Enviro_Valley3.jpg");
+	addFamilyScreen(C_Family_ProTipsReal    , "AdditionalLoadings/LOADING_Enviro_Lagoon6.jpg");
+	addFamilyScreen(C_Family_ProTipsReal    , "AdditionalLoadings/LOADING_Enviro_Stadium5.jpg");
+
+	addFamilyScreen(C_Family_ProTipsFun     , "EnvCanyon/LOADING_Enviro_Canyon1.jpg");
+	addFamilyScreen(C_Family_ProTipsFun     , "EnvValley/LOADING_Enviro_Valley1.jpg");
+	addFamilyScreen(C_Family_ProTipsFun     , "EnvLagoon/LOADING_Enviro_Lagoon3.jpg");
+	//addFamilyScreen(C_Family_ProTipsFun     , "EnvStadium/LOADING_Enviro_Stadium3.jpg");
+	addFamilyScreen(C_Family_ProTipsFun     , "AdditionalLoadings/LOADING_Enviro_Stadium3.jpg");
+	addFamilyScreen(C_Family_ProTipsFun     , "AdditionalLoadings/LOADING_Enviro_Canyon2.jpg");
+	addFamilyScreen(C_Family_ProTipsFun     , "AdditionalLoadings/LOADING_Enviro_Valley4.jpg");
+	addFamilyScreen(C_Family_ProTipsFun     , "AdditionalLoadings/LOADING_Enviro_Lagoon7.jpg");
+	addFamilyScreen(C_Family_ProTipsFun     , "AdditionalLoadings/LOADING_Enviro_Stadium6.jpg");
+
+	addFamilyScreen(C_Family_QuotesReal     , "loading_stad_placeholder.png");
+	addFamilyScreen(C_Family_QuotesReal     , "EnvCanyon/LOADING_Enviro_Canyon1.jpg");
+	addFamilyScreen(C_Family_QuotesReal     , "EnvValley/LOADING_Enviro_Valley1.jpg");
+	addFamilyScreen(C_Family_QuotesReal     , "EnvLagoon/LOADING_Enviro_Lagoon4.jpg");
+	addFamilyScreen(C_Family_QuotesReal     , "EnvStadium/LOADING_Enviro_Stadium2.jpg");
+	//addFamilyScreen(C_Family_QuotesReal     , "EnvStadium/LOADING_Enviro_Stadium3.jpg");
+	addFamilyScreen(C_Family_QuotesReal     , "AdditionalLoadings/LOADING_Enviro_Canyon3.jpg");
+	addFamilyScreen(C_Family_QuotesReal     , "AdditionalLoadings/LOADING_Enviro_Valley2.jpg");
+	addFamilyScreen(C_Family_QuotesReal     , "AdditionalLoadings/LOADING_Enviro_Lagoon8.jpg");
+	addFamilyScreen(C_Family_QuotesReal     , "AdditionalLoadings/LOADING_Enviro_Stadium7.jpg");
+
+	addFamilyScreen(C_Family_QuotesFun      , "loading_stad_placeholder.png");
+	addFamilyScreen(C_Family_QuotesFun      , "QuotesFun/LOADING_QuotesFun_Lagoon1.jpg");
+	addFamilyScreen(C_Family_QuotesFun      , "QuotesFun/LOADING_QuotesFun_Lagoon2.jpg");
+	addFamilyScreen(C_Family_QuotesFun      , "QuotesFun/LOADING_QuotesFun_Lagoon3.jpg");
+	addFamilyScreen(C_Family_QuotesFun      , "EnvStadium/LOADING_Enviro_Stadium1.jpg");
+	//addFamilyScreen(C_Family_QuotesFun      , "EnvStadium/LOADING_Enviro_Stadium3.jpg");
+	addFamilyScreen(C_Family_QuotesFun      , "AdditionalLoadings/LOADING_Enviro_Canyon2.jpg");
+	addFamilyScreen(C_Family_QuotesFun      , "AdditionalLoadings/LOADING_Enviro_Canyon4.jpg");
+	addFamilyScreen(C_Family_QuotesFun      , "AdditionalLoadings/LOADING_Enviro_Valley3.jpg");
+	addFamilyScreen(C_Family_QuotesFun      , "AdditionalLoadings/LOADING_Enviro_Valley4.jpg");
+	addFamilyScreen(C_Family_QuotesFun      , "AdditionalLoadings/LOADING_Enviro_Stadium3.jpg");
+
+	addFamilyScreen(C_Family_FastFact       , "loading_stad_placeholder.png");
+	addFamilyScreen(C_Family_FastFact       , "EnvCanyon/LOADING_Enviro_Canyon1.jpg");
+	addFamilyScreen(C_Family_FastFact       , "EnvValley/LOADING_Enviro_Valley1.jpg");
+	addFamilyScreen(C_Family_FastFact       , "EnvLagoon/LOADING_Enviro_Lagoon1.jpg");
+	addFamilyScreen(C_Family_FastFact       , "EnvLagoon/LOADING_Enviro_Lagoon2.jpg");
+	addFamilyScreen(C_Family_FastFact       , "EnvStadium/LOADING_Enviro_Stadium1.jpg");
+	addFamilyScreen(C_Family_FastFact       , "EnvStadium/LOADING_Enviro_Stadium2.jpg");
+	addFamilyScreen(C_Family_FastFact       , "AdditionalLoadings/LOADING_Enviro_Canyon3.jpg");
+	addFamilyScreen(C_Family_FastFact       , "AdditionalLoadings/LOADING_Enviro_Canyon4.jpg");
+	addFamilyScreen(C_Family_FastFact       , "AdditionalLoadings/LOADING_Enviro_Valley2.jpg");
+	addFamilyScreen(C_Family_FastFact       , "AdditionalLoadings/LOADING_Enviro_Valley3.jpg");
+	addFamilyScreen(C_Family_FastFact       , "AdditionalLoadings/LOADING_Enviro_Lagoon7.jpg");
+	addFamilyScreen(C_Family_FastFact       , "AdditionalLoadings/LOADING_Enviro_Stadium7.jpg");
+
+	
+	addFamilyScreen(C_Family_TutoController , "");
+	addFamilyScreen(C_Family_TitleScreen , "");
+
+	//addFamilyScreen(C_Family_TrackBuilderInfo, "Trackbuilder/Trackbuilder_Canyon1.webp");
+	//addFamilyScreen(C_Family_TrackBuilderInfo, "Trackbuilder/Trackbuilder_Stadium2.webp");
+	addFamilyScreen(C_Family_TrackBuilderInfo     , "AdditionalLoadings/Trackbuilder_Canyon1.jpg");
+	addFamilyScreen(C_Family_TrackBuilderInfo     , "AdditionalLoadings/Trackbuilder_Valley1.jpg");
+	addFamilyScreen(C_Family_TrackBuilderInfo     , "AdditionalLoadings/Trackbuilder_Lagoon1.jpg");
+	addFamilyScreen(C_Family_TrackBuilderInfo     , "AdditionalLoadings/Trackbuilder_Stadium1.jpg");
+
+
+}
+
+Void LoadScreen()
+{
+
+	// EG : oui, je sais, c'est hyper spécifique...
+	declare Text ChangeCamButtonName = UIButtons::GetChangeCamButtonName();
+	
+	
+	//Pro Tips (real)
+	addLoadingScreen(TextLib::Compose(_("PRO TIP: Get sweet and lowdown with the cockpit view! Press %1 to switch viewpoints."), ChangeCamButtonName) ,
+		C_Family_ProTipsReal, "ProTipsReal/LOADING_View1.jpg");
+	addLoadingScreen(TextLib::Compose(_("PRO TIP: Make sure the camera catches your good side. Press %1 to change the viewpoint."), ChangeCamButtonName) ,
+		C_Family_ProTipsReal, "ProTipsReal/LOADING_View2.jpg");
+	addLoadingScreen(_("PRO TIP: Just because gravity is taking a break doesn’t mean you have to. Brake while in the air to control your rotation.")              , C_Family_ProTipsReal, "AdditionalLoadings/LOADING_Enviro_Stadium3.jpg"); //=>4
+	addLoadingScreen(_("PRO TIP: Braking in the middle of a jump will stop your car from spinning. You’ve heard of air brakes, right?")                           , C_Family_ProTipsReal, "EnvCanyon/LOADING_Enviro_Canyon1.jpg");
+	addLoadingScreen(_("PRO TIP: Brake while turning a corner to start a drift. (CAUTION: Drifting is not as relaxing as it sounds…)")                            , C_Family_ProTipsReal, "ProTipsReal/LOADING_DRIFT1.jpg");
+	addLoadingScreen(_("PRO TIP: Drifting is a great way to maintain your speed while cornering. Just brake and hold on to your seat.")                           , C_Family_ProTipsReal, "ProTipsReal/LOADING_DRIFT3.jpg");
+	addLoadingScreen(_("PRO TIP: Communication is the key to success in Double Driver mode. Play nice!")                                                          , C_Family_ProTipsReal);
+	addLoadingScreen(_("PRO TIP: Did you know you can play Double Driver in hotseat mode? Well now you do.")                                                      , C_Family_ProTipsReal);
+	
+	addLoadingScreen(_("PRO TIP: Learn from your mistakes. Do not hesitate to respawn from the last checkpoint!")                                                 , C_Family_ProTipsReal, "ProTipsReal/LOADING_Respawn.jpg");
+	addLoadingScreen(_("PRO TIP: Restart a race to either tactically save time or rage quit, depending on your mood!")                                            , C_Family_ProTipsReal, "ProTipsReal/LOADING_Respawn.jpg");
+	addLoadingScreen(_("PRO TIP: If at first you don’t succeed, restart the race to try again!")                                                                  , C_Family_ProTipsReal, "ProTipsReal/LOADING_Respawn.jpg");
+	addLoadingScreen(_("PRO TIP: Use your gas tank wisely in hotseat mode to get the best time.")                                                                 , C_Family_ProTipsReal);
+	addLoadingScreen(_("“Restart” restarts the race and the timer, while “Respawn” takes you to the last checkpoint.")                                            , C_Family_ProTipsReal);
+	
+
+
+	//TRACKBUILDER
+	addLoadingScreen(_("Compete with friends on your home-made maps? Trackbuilder + Challenges combo!")                                                           , C_Family_TrackBuilderInfo);
+	
+	///GARAGE
+	addLoadingScreen(_("GARAGE: The better you look, the better you’ll feel! And the better you feel, the better you’ll race!")                                   , C_Family_GarageInfo      , "Garage/Garage.jpg");
+	
+	//Pro tips (fun)
+	addLoadingScreen(_("PRO TIP: Activate Super Hard mode by holding your controller upside down.")                                                               , C_Family_ProTipsFun);
+	addLoadingScreen(_("PRO TIP: Recreate the atmosphere of a 1980s arcade by pouring cola on the floor and balancing a full ashtray on top of your monitor.")    , C_Family_ProTipsFun);
+	addLoadingScreen(_("PRO TIP: Try racing on randomly generated tracks to ensure that all players have the same advantage.")                                    , C_Family_ProTipsFun);
+	addLoadingScreen(_("PRO TIP: Use Double Driver mode to test your compatibility with prospective life partners.")                                              , C_Family_ProTipsFun, "Modes/LOADING_ProTipsModes_DD2.jpg");
+	//addLoadingScreen(_("(WARNING: Results may vary.)")                                                                                                            , C_Family_ProTipsFun);
+	addLoadingScreen(_("PRO TIP: Get all your friends together and use Arcade mode to straighten out the pecking order!")                                         , C_Family_ProTipsFun);
+	addLoadingScreen(_("PRO TIP: Take a short break every hour to give your eyes and your competitive instincts a rest.")                                         , C_Family_ProTipsFun);
+	addLoadingScreen(_("PRO TIP: For an authentic rally experience, get a friend to push you around and shout directions in your ear while you play.")            , C_Family_ProTipsFun);
+	addLoadingScreen(_("PRO TIP: Sabotage your friends’ chances by tickling them during splitscreen mode!")                                                       , C_Family_ProTipsFun);
+	addLoadingScreen(_("PRO TIP: Lazy hosts love Arcade mode. Leave it running in the background at parties so your friends can jostle for social standing!")     , C_Family_ProTipsFun);
+	addLoadingScreen(_("PRO TIP: Psych out your rivals by theatrically stepping on the gas before you play.")                                      				  , C_Family_ProTipsFun);
+	addLoadingScreen(_("PRO TIP: Impress your friends by sponsoring yourself with brand symbols cut from packaging and stapled to your clothing.")                , C_Family_ProTipsFun);
+	addLoadingScreen(_("PRO TIP: Sponsor yourself by playing with an upturned fast food bucket on your head.")                                                    , C_Family_ProTipsFun);
+
+	//Modes/Environments
+	addLoadingScreen(_("DOUBLE DRIVER: Simple logic says that having two drivers in a car must be better than just one. Right?")                                  , C_Family_Mode, "Modes/LOADING_ProTipsModes_DD2.jpg");
+	addLoadingScreen(_("DOUBLE DRIVER: In this mode, the car will accept directions from both drivers and take the middle road. Sync to win!")                    , C_Family_Mode, "Modes/LOADING_ProTipsModes_DD2.jpg");
+	addLoadingScreen(_("DOUBLE DRIVER: In this mode, the car takes directions from both players and hopes for a happy medium!")                                   , C_Family_Mode, "Modes/LOADING_ProTipsModes_DD2.jpg");
+	addLoadingScreen(_("TRACKBUILDER: Whether you want a quiet jaunt or a hellish joyride, you can go your own road in Trackbuilder mode!")                       , C_Family_Mode);
+	addLoadingScreen(_("Compete with friends on your home-made maps? Trackbuilder + Challenges combo!")                                                           , C_Family_Mode);
+	addLoadingScreen(_("GARAGE: The better you look, the better you’ll feel! And the better you feel, the better you’ll race!")                                   , C_Family_Mode);
+	addLoadingScreen(_("SPLITSCREEN: Play up to four players on the same screen. To your corners please!")                                                        , C_Family_Mode);
+	addLoadingScreen(_("SPLITSCREEN: Play up to four players on the same screen and keep your rivals within easy gloating distance!")                             , C_Family_Mode);
+	addLoadingScreen(_("HOTSEAT: The classical party game mode is not as uncomfortable as it sounds! Up to 8 players Solo or 16 players in Double Driver.")       , C_Family_Mode);
+	addLoadingScreen(_("HOTSEAT: Use your gas tank wisely to achieve a good time. Make it count!")                                                                , C_Family_Mode);
+	addLoadingScreen(_("If you’re not afraid to get your tyres muddy then the Down and Dirty Valley might just be the place for you!")                            , C_Family_Valley);
+	addLoadingScreen(_("Rock out rally-style in the Down and Dirty Valley!")                                                                                      , C_Family_Valley);
+	addLoadingScreen(_("Shake, rattle and rule in the Down and Dirty Valley!")                                                                                    , C_Family_Valley);
+	addLoadingScreen(_("Compete with friends on your home-made maps? Trackbuilder + Challenges combo!")                                                           , C_Family_Valley);
+	addLoadingScreen(_("Your country needs you! Challenge your precision driving skills in the International Stadium!")                                           , C_Family_Stadium);
+	addLoadingScreen(_("Drivers of the world unite! The International Stadium needs you!")                                                                        , C_Family_Stadium);
+	addLoadingScreen(_("Feel like showing off? Get on down to the International Stadium and whip the crowd into a frenzy!")                                       , C_Family_Stadium);
+	addLoadingScreen(_("Compete with friends on your home-made maps? Trackbuilder + Challenges combo!")                                                           , C_Family_Stadium);
+	addLoadingScreen(_("Lovers of open spaces will feel right at home in Canyon Drift. This environment boasts the best tracks in the whole wide west!")          , C_Family_Canyon);
+	addLoadingScreen(_("Canyon Drift is a daredevil’s paradise. Rev it up and turn it loose!")                                                                    , C_Family_Canyon);
+	addLoadingScreen(_("The best way to avoid wear on your tyres is to keep them off the ground. Canyon Drift can help you out!")                                 , C_Family_Canyon);
+	addLoadingScreen(_("Compete with friends on your home-made maps? Trackbuilder + Challenges combo!")                                                           , C_Family_Canyon);
+	addLoadingScreen(_("Defy gravity and soak up the atmosphere in the exotic setting of Tropical Lagoon!")                                                       , C_Family_Lagoon);
+	addLoadingScreen(_("Tropical Lagoon has sandy beaches, calm blue skies, peaceful glades and MAGNETIC ROLLERCOASTER TRACKS!!!")                                , C_Family_Lagoon, "ProTipsFun/LOADING_Protipsfun_Lagoon1.jpg");
+	addLoadingScreen(_("Everyone needs a vacation now and then. Head out to Tropical Lagoon and take the brakes off for a while!")                                , C_Family_Lagoon);
+	addLoadingScreen(_("Compete with friends on your home-made maps? Trackbuilder + Challenges combo!")                                                           , C_Family_Lagoon);
+
+	//Quotes (real)
+	addLoadingScreen(_("If everything seems under control, you’re not going fast enough. – Mario Andretti")                                                       , C_Family_QuotesReal);
+	addLoadingScreen(_("I’ve only had two rules: Do all you can and do it the best you can. – Colonel Sanders")                                                   , C_Family_QuotesReal);
+	addLoadingScreen(_("The will to win, the desire to succeed… These are the keys that will unlock the door to personal excellence. – Confucius")                , C_Family_QuotesReal);
+	addLoadingScreen(_("Stupid risks make life worth living. – Homer J Simpson")                                                                                  , C_Family_QuotesReal);
+	addLoadingScreen(_("Whether you think you can or you think you can’t, you’re right. – Henry Ford")                                                            , C_Family_QuotesReal);
+	addLoadingScreen(_("Only those who dare to fail greatly can ever achieve greatly. – Robert F Kennedy")                                                        , C_Family_QuotesReal);
+	addLoadingScreen(_("I feel the need… the need for speed! – Lt. Pete ‘Maverick’ Mitchell")                                                                     , C_Family_QuotesReal);
+	addLoadingScreen(_("Impossible is a word found only in the dictionary of fools. – Napoleon Bonaparte")                                                        , C_Family_QuotesReal);
+
+	//QUOTES (The Dutchman)
+	addLoadingScreen(_("It’s not the winning that counts, it’s the taking part. Unless you lose. – The Dutchman")                                                 , C_Family_QuotesFun);
+	addLoadingScreen(_("The key to success is to keep moving on. Especially in a race. Nobody ever won a race by not moving. – The Dutchman")                     , C_Family_QuotesFun);
+	addLoadingScreen(_("There is no succeed, only fail. Until you succeed. Then you’re okay. – The Dutchman")                                                     , C_Family_QuotesFun);
+	addLoadingScreen(_("The best way to win is never to lose. – The Dutchman")                                                                                    , C_Family_QuotesFun);
+	addLoadingScreen(_("All you need to be a racing driver is passion. Oh yeah, and a car. – The Dutchman")                                                       , C_Family_QuotesFun);
+	addLoadingScreen(_("Life isn’t all about winning. But racing definitely is. – The Dutchman")                                                                  , C_Family_QuotesFun);
+	addLoadingScreen(_("I think other people’s cars are ugly. I try to keep them all in my rear view mirror. – The Dutchman")                                     , C_Family_QuotesFun);
+	addLoadingScreen(_("A rival once tried to sabotage my car by cutting the brake cables. I didn’t notice for seven races. – The Dutchman")                      , C_Family_QuotesFun);
+	addLoadingScreen(_("The word ‘lose’ is not in my dictionary. In fact, I don’t even own a dictionary. – The Dutchman")                                         , C_Family_QuotesFun);
+	addLoadingScreen(_("The greatest battle you will ever face is the battle against your own nature. Unless you get attacked by a bear. – The Dutchman")         , C_Family_QuotesFun);
+	addLoadingScreen(_("I have a magic mirror that always shows the best driver in the world. It only works for me though. – The Dutchman")                       , C_Family_QuotesFun);
+	addLoadingScreen(_("When drivers ask me what they must do to be the best, I always give them the same answer: Wait until I’m dead. – The Dutchman")           , C_Family_QuotesFun);
+	addLoadingScreen(_("I once drove so fast I lapped myself twice. – The Dutchman")                                                                              , C_Family_QuotesFun);
+	addLoadingScreen(_("Losers put their feet up. Winners put their foot down! – The Dutchman")                                                                   , C_Family_QuotesFun);
+
+	//Fast Fact
+	// addLoadingScreen(_("FAST FACT: Double driving is illegal in the real world because of so-called ‘safety concerns.’")                                          , C_Family_FastFact);
+	// addLoadingScreen(_("FAST FACT: Nobody has ever been hurt falling off the magnetic tracks in Rollercoaster Lagoon. (Although some people were hurt when they hit the ground)") , C_Family_FastFact);
+	addLoadingScreen(_("FAST FACT: The International Stadium can seat more than any other fictional stadium in the world!")                                       , C_Family_FastFact);
+	// addLoadingScreen(_("FAST FACT: Canyon Drift’s amazing views mean more drivers crash here than anywhere else. It’s the world’s #1 scenic blackspot!")          , C_Family_FastFact);
+	addLoadingScreen(_("FAST FACT: The International Stadium employs a full-time staff of 50 cleaners to keep its reflective tracks polished to perfection.")     , C_Family_FastFact);
+	addLoadingScreen(_("FAST FACT: The International Stadium is reputed to be the only man-made structure visible from the moon.")                                , C_Family_FastFact);
+	addLoadingScreen(_("FAST FACT: The engineers who designed the International Stadium made use of a legal loophole which exempts it from the laws of gravity.") , C_Family_FastFact);
+	addLoadingScreen(_("FAST FACT: Down and Dirty Valley is home to three sites of historic interest, six nature reserves and thirty-eight scrapyards.")          , C_Family_FastFact);
+	addLoadingScreen(_("FAST FACT: The Dutchman now makes a living as a barkeeper, motivational speaker and reality TV star.")                                    , C_Family_FastFact);
+	addLoadingScreen(_("FAST FACT: There is no recognised cure for clinical trackmania other than driving really, really fast.")                                  , C_Family_FastFact);
+
+	//Tuto Controller
+	addLoadingScreen("", C_Family_TutoController);
+	addLoadingScreen("", C_Family_TitleScreen);
+
+}
+
+
+//*-- LOAD --*//
+Void Load()
+{
+	LoadFamilies();
+	LoadScreen();
+	//log("G_ScreenFamily: "^ G_ScreenFamily);
+	//log("G_ScreenImg   : "^ G_ScreenImg);
+	//log("G_ScreenText  : "^ G_ScreenText);
+	//log("G_ScreensIndex   : "^ G_ScreensIndex);
+	//log("G_FamilyImg   : "^ G_FamilyImg);
+}
+
+
+
+//*-- GET --*//
+Integer[] GetFamilies()
+{
+	return G_ScreenFamily;
+}
+Text[] GetTexts()
+{
+	return G_ScreenText;
+}
+Text[] GetImgs()
+{
+	return G_ScreenImg;
+}
+
+Integer[][Integer] GetFamilyIndex()
+{
+	return G_ScreensIndex;
+}
+
+Text[][Integer] GetFamilyImg()
+{
+	return G_FamilyImg;
+}

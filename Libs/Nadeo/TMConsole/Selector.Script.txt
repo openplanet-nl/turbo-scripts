@@ -1,0 +1,176 @@
+
+#Const C_ImgBase 	"file://Media/Manialinks/Nadeo/TMConsole/Images/"
+
+
+Text SelectorFunctions() {
+	declare Text MLText = """
+
+	/*
+	Vec3 GetColorArrow(Text _Page, Integer _SelectorPositionX, Integer _SelectorPositionY)
+	{
+		declare Vec3[Integer][Integer] QuadImageColor;
+		if(_Page == "MainSelector") {
+
+		}
+		else if((_Page == "Difficulty") {
+			G_QuadImageColor[0][0] = <1.0, 0.7, 0.>;
+			G_QuadImageColor[1][0] = <0.85, 0.85, 0.85>;
+			G_QuadImageColor[2][0] = <0., 1., 0.>;
+			G_QuadImageColor[3][0] = <0.1, 0.6, 1.>;
+			G_QuadImageColor[4][0] = <1., 0., 0.>;
+			G_QuadImageColor[5][0] = <0.1, 0.1, 0.1>;i
+		}
+		else if((_Page == "BrowseMap") {
+
+		}
+		else if((_Page == "MoodSelector") {
+			case "MainSelector" : Indice.Y = 0.;
+			case "Difficulty" 	: Indice.Y = 1.;
+			case "BrowseMap" 	: Indice.Y = 2.;
+			case "MoodSelector"	: Indice.Y = 3.;
+		}
+		
+		return QuadImageColor;
+	}
+	*/
+
+	Void UpdateSelector(Integer _SelectorPositionX, Integer _SelectorPositionY, Real _PosYFirstQuad, Real _SizeYQuad, Real _MarginY_Button)
+	{
+		declare CMlFrame Frame_SelectorArrows <=> (Page.GetFirstChild("Frame_SelectorArrows") as CMlFrame);
+		declare Real PosnY = _PosYFirstQuad - _SelectorPositionY*_SizeYQuad - _SelectorPositionY*_MarginY_Button*0.8 - _MarginY_Button/2.;
+		
+		//Color
+		/*
+		declare CMlQuad Quad_ArrowLeftBlink  <=> (Page.GetFirstChild("Quad_ArrowLeftBlink") as CMlQuad);
+		declare CMlQuad Quad_ArrowRightBlink  <=> (Page.GetFirstChild("Quad_ArrowRightBlink") as CMlQuad);
+		Quad_ArrowLeftBlink.Colorize  = G_QuadImageColor[_SelectorPositionY][_SelectorPositionX];
+		Quad_ArrowRightBlink.Colorize = G_QuadImageColor[_SelectorPositionY][_SelectorPositionX];
+		*/
+
+		declare Vec3 NewFrameArrowPosition = <Frame_SelectorArrows.RelativePosition.X, PosnY, Frame_SelectorArrows.RelativePosition.Z>;
+		Frame_SelectorArrows.RelativePosition = NewFrameArrowPosition;
+
+		//Frame_SelectorArrows.ClipWindowRelativePosition.X = _SelectorPositionX*0.45 +18.7;
+		Frame_SelectorArrows.ClipWindowRelativePosition.Y =_SelectorPositionY*_SizeYQuad +18.7;
+		Frame_SelectorArrows.ClipWindowRelativePosition.Y = _PosYFirstQuad - (_SizeYQuad/2.);
+
+	}
+
+
+	""";
+	
+	return MLText;
+}
+
+Text InsertInManialink(Boolean _IsUpDownArrow, Real _SizeArrow, Real _SizeXQuad, Real _SizeYQuad, Real _PosXFirstQuad, Real _PosYFirstQuad, Real _MarginX_Button, Real _MarginY_Button){
+
+	declare Text IMGPopupArrow        = "file://Media/_ERR_.dds";	//C_ImgBase^"popup-arrow.dds";
+	declare Text IMGPopupArrowBlink   = C_ImgBase^"popup-arrow-shining.dds";
+
+
+	declare Text MLText = """
+	<frame id="Frame_SelectorArrows" posn="{{{_PosXFirstQuad+ _MarginX_Button/2.}}} {{{_PosYFirstQuad - _MarginY_Button/2.}}} 10."
+	  clip="false" clipsizen="{{{_SizeXQuad}}} {{{_SizeYQuad}}}" clipposn="0 0">
+	  //clip="true" clipsizen="{{{_SizeXQuad-6.6}}} {{{_SizeYQuad-4.}}}" clipposn="-60.5 36.5">
+		""";
+
+	if(_IsUpDownArrow)
+	{
+		MLText ^="""
+		<quad id="Quad_ArrowUp" halign="center" valign="center" image="{{{IMGPopupArrow}}}"
+		sizen="{{{_SizeArrow}}} {{{_SizeArrow}}}" posn="{{{_SizeXQuad/2}}} 2.0  1." rot="0" opacity="1" keepratio="Fit"
+		/>
+		<quad id="Quad_ArrowDown" halign="center" valign="center" image="{{{IMGPopupArrow}}}"  opacity="1" keepratio="Fit"
+		sizen="{{{_SizeArrow}}} {{{_SizeArrow}}}" posn="{{{_SizeXQuad/2.}}} {{{-_SizeYQuad}}}  2." rot="180"
+		/>
+		<quad id="Quad_ArrowUpBlink" halign="center" valign="center" image="{{{IMGPopupArrowBlink}}}"
+		sizen="{{{_SizeArrow*1.32}}} {{{_SizeArrow*1.32}}}" posn="{{{_SizeXQuad/2}}} -1.2  1." rot="0" opacity="1" hidden="1" keepratio="Fit"
+		/>
+		<quad id="Quad_ArrowDownBlink" halign="center" valign="center" image="{{{IMGPopupArrowBlink}}}"  opacity="1" hidden="1" keepratio="Fit"
+		sizen="{{{_SizeArrow*1.32}}} {{{_SizeArrow*1.32}}}" posn="{{{_SizeXQuad/2.}}} {{{-_SizeYQuad+2.6}}}  2." rot="180"
+		/>
+			""";
+	}
+
+	MLText ^= """
+		<quad id="Quad_ArrowLeft" halign="center" valign="center" image="{{{IMGPopupArrow}}}"  opacity="1" keepratio="Fit"
+		sizen="{{{_SizeArrow}}} {{{_SizeArrow}}}" posn="-0.5 {{{-_SizeYQuad/2}}} 1." rot="-90"
+		/>
+		<quad id="Quad_ArrowRight" halign="center" valign="center" image="{{{IMGPopupArrow}}}"  opacity="1" keepratio="Fit"
+		sizen="{{{_SizeArrow}}} {{{_SizeArrow}}}" posn="{{{_SizeXQuad-0.3}}} {{{-_SizeYQuad/2.}}} 2." rot="90"
+		/>
+		<quad id="Quad_ArrowLeftBlink" halign="center" valign="center" image="{{{IMGPopupArrowBlink}}}"  keepratio="Fit"
+		sizen="{{{_SizeArrow*1.32}}} {{{_SizeArrow*1.32}}}" posn="3.0 {{{-_SizeYQuad/2}}} 1." rot="-90" opacity="1" hidden="1"
+		/>
+		<quad id="Quad_ArrowRightBlink" halign="center" valign="center" image="{{{IMGPopupArrowBlink}}}"  opacity="1" hidden="1" keepratio="Fit"
+		sizen="{{{_SizeArrow*1.32}}} {{{_SizeArrow*1.32}}}" posn="{{{_SizeXQuad-3.0}}} {{{-_SizeYQuad/2.}}} 2." rot="90"
+		/>
+	</frame>
+	""";
+	return MLText;
+}
+
+Text InsertFrameworkInManialink(Integer _SelectorNumber, Real _SizeXQuad, Real _SizeYQuad, Real _PosXFirstQuad, Real _PosYFirstQuad, Real _MarginX_Button, Real _MarginY_Button, Text _FrameId, Real _Ratio){
+
+	declare Text IMGSelector;
+
+	switch(_SelectorNumber)
+	{
+		case   0: IMGSelector  = C_ImgBase^"Selectors/select-2x1_v.dds";
+		case   1: IMGSelector  = C_ImgBase^"Selectors/select-2x2_v.dds";
+		case   2: IMGSelector  = C_ImgBase^"Selectors/selector_helmet_menu.tga";
+		case   3: IMGSelector  = C_ImgBase^"Selectors/selector_helmet_menucustom.tga";
+		case   4: IMGSelector  = C_ImgBase^"Selectors/selector_helmet_menu_flag.tga";
+		case   5: IMGSelector  = C_ImgBase^"Selectors/selector_helmet_menu_color.tga";
+		case   6: IMGSelector  = C_ImgBase^"Selectors/selector_helmet_menu_mascot.tga";
+		case   7: IMGSelector  = C_ImgBase^"Selectors/selector_helmet_menu_numbers.tga";
+		case   8: IMGSelector  = C_ImgBase^"Selectors/selector_helmet_menu_material.tga";
+		case   9: IMGSelector  = C_ImgBase^"Selectors/selector_helmet_menu_specskins.tga";
+		case   10: IMGSelector = C_ImgBase^"Selectors/selector_KOT_menu_x3_v.dds";
+		case   11: IMGSelector = C_ImgBase^"Selectors/selector_KOT_randomtracks.dds";
+		case   12: IMGSelector = C_ImgBase^"Online/RoomSettings/selector_roomsetting.tga";
+		case   13: IMGSelector = C_ImgBase^"Online/Tracklist/selector_roomtracklist.tga";
+		case   14: IMGSelector = C_ImgBase^"Selectors/selector_challengebuddies.tga";
+		default : IMGSelector  = C_ImgBase^"Selectors/select-2x2.dds";
+	}
+	declare Real SizeXSelector = _SizeXQuad * _Ratio;
+	declare Real SizeYSelector = _SizeYQuad * _Ratio;
+
+	declare Text MLText = """
+	<frame id="{{{_FrameId}}}" posn="{{{_PosXFirstQuad + _MarginX_Button/2.}}} {{{_PosYFirstQuad - _MarginY_Button/2.}}} 25." clip="false" clipsizen="{{{_SizeXQuad}}} {{{_SizeYQuad}}}" clipposn="0 0">
+		<quad id="Quad_Selector" halign="center" valign="center" image="{{{IMGSelector}}}"  opacity="1" keepratio="Fit"
+		sizen="{{{SizeXSelector}}} {{{SizeYSelector}}}" posn="{{{_SizeXQuad/2}}} {{{-_SizeYQuad/2}}} 1." rot="0"
+		/>
+	</frame>
+	""";
+	return MLText;
+}
+Text InsertFrameworkInManialink(Integer _SelectorNumber, Real _SizeXQuad, Real _SizeYQuad, Real _PosXFirstQuad, Real _PosYFirstQuad, Real _MarginX_Button, Real _MarginY_Button){
+	return InsertFrameworkInManialink(_SelectorNumber, _SizeXQuad, _SizeYQuad, _PosXFirstQuad, _PosYFirstQuad, _MarginX_Button, _MarginY_Button, "Frame_Selector", 1.3);
+}
+
+
+Text InsertInLoop(Text _LinkFrame, Text _LinkDecaleVariation) {
+	declare Text MLText = """
+	
+	/*-- Blink du quad de sélection --*/
+
+	declare CMlFrame Frame_Selector <=> (Page.GetFirstChild({{{_LinkFrame}}}) as CMlFrame);
+	declare CMlQuad  Quad_Selector <=> (Frame_Selector.GetFirstChild("Quad_Selector") as CMlQuad);
+	declare Real ButtonSelectedSinVar  = ML::Sin((Now -{{{_LinkDecaleVariation}}}) * 0.01) * 0.5 + 0.5;
+	declare Real ButtonSelectedOpacity = 0.0 + ButtonSelectedSinVar * 1.;
+	Quad_Selector.Opacity = ButtonSelectedOpacity;
+
+	""";
+	return MLText;
+}
+
+
+
+Text InsertInLoop(Text _LinkFrame) {
+	return InsertInLoop(_LinkFrame, "0");
+}
+
+Text InsertInLoop() {
+	return InsertInLoop("\"Frame_Selector\"", "0");
+}

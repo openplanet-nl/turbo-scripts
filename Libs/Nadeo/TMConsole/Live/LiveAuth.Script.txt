@@ -1,0 +1,157 @@
+#Include "Libs/Nadeo/TMConsole/Live/LiveHelpers.Script.txt"			as LiveHelpers
+#Include "MathLib" as ML
+
+//AUTH
+#Const C_WaitingForTokenStatus_None 	0
+#Const C_WaitingForTokenStatus_WaitMS	1
+#Const C_WaitingForTokenStatus_WaitLive	2
+
+#Const C_LiveTokenTimeout				3600000 //1h
+
+declare Integer G_WaitingForTokenStatus;
+declare Boolean G_IsTokenInvalid;
+declare Text 	G_Auth_Token;
+declare Integer G_LastTokenGenerationTime;
+declare Integer G_TokenGenerationCooldown;
+
+declare CHttpRequest	G_LiveValidationRequest;
+
+Boolean Auth_IsReady() {
+	return G_Auth_Token != "" && G_WaitingForTokenStatus == C_WaitingForTokenStatus_None && !G_IsTokenInvalid ;
+}
+
+Boolean Auth_IsWaitingForToken() {
+	return G_WaitingForTokenStatus != C_WaitingForTokenStatus_None;
+}
+
+Void Auth_ForceGenerateToken() {
+	if (ManiaPlanet.MasterServer_MainMSUser != Null)
+	{
+		log("GENERATETOKEN(force)----------------------------------------------------");
+		ManiaPlanet.Authentication_GetToken(ManiaPlanet.MasterServer_MainMSUser.Id, "nadeolive");
+		G_LastTokenGenerationTime = -1;
+		G_WaitingForTokenStatus = C_WaitingForTokenStatus_WaitMS;
+	} else {
+		G_LastTokenGenerationTime = Now;
+		G_WaitingForTokenStatus = C_WaitingForTokenStatus_None;
+	}
+}
+
+Boolean Auth_GenerateToken() {
+	//GenerateTokenCooldown
+	if (G_LastTokenGenerationTime != 0 && Now < G_LastTokenGenerationTime + G_TokenGenerationCooldown)
+		return False;
+		
+	if (ManiaPlanet.MasterServer_MainMSUser == Null)
+		return False;
+		
+	if (G_WaitingForTokenStatus == C_WaitingForTokenStatus_WaitMS || ManiaPlanet.MasterServer_MainMSUser.ConnectionStatus != CNetMasterServerUserInfo::EMasterServerConnectionStatus::Connected)
+	{
+		/*if (G_WaitingForToken)
+			log("Token Regeneration dropped : already regenerating token");
+		else
+			log("Token Regeneration dropped : no MasterServer connection");*/
+		return True;
+	}
+	
+	log("GENERATETOKEN-----------------------------------------------------------");
+	ManiaPlanet.Authentication_GetToken(ManiaPlanet.MasterServer_MainMSUser.Id, "nadeolive");
+	G_LastTokenGenerationTime = -1;
+	G_WaitingForTokenStatus = C_WaitingForTokenStatus_WaitMS;
+	return True;
+}
+
+Void Auth_Load() {
+	G_LastTokenGenerationTime = 0;
+	G_TokenGenerationCooldown = 10000;
+	G_WaitingForTokenStatus = C_WaitingForTokenStatus_None;
+	G_IsTokenInvalid = True;
+	G_LiveValidationRequest = Null;
+	
+	declare Text AuthToken for ManiaPlanet;
+	if (AuthToken != "") {
+		G_Auth_Token = AuthToken;
+		G_IsTokenInvalid = False;
+	} else {
+		G_IsTokenInvalid = True;
+		Auth_GenerateToken();
+	}
+}
+
+Boolean Auth_SetTokenInvalid() {
+	G_IsTokenInvalid = True;
+	return Auth_GenerateToken();
+}
+
+Text Auth_GetToken() {
+	if (G_WaitingForTokenStatus != C_WaitingForTokenStatus_None)
+		return "";
+    if (G_Auth_Token != "") {
+        //Token already in cache
+        return G_Auth_Token;
+    }	
+	
+    Auth_GenerateToken();
+	log("WARNING : Should call Auth_IsReady() before Auth_GetToken() !");
+    return "";
+}
+
+Text[Text] Auth_GetHttpHeader() {
+    declare Text[Text] Header;
+	declare Text Login;
+	if (ManiaPlanet.MasterServer_MainMSUser != Null)
+		Login = ManiaPlanet.MasterServer_MainMSUser.Login;
+	Header["Maniaplanet-Auth"] = "Login=\"" ^ Login ^ "\", Token=\"" ^ Auth_GetToken() ^ "\"";
+    return Header;
+}
+
+Text Auth_GetLinearizedHeader() {
+	declare Text Login;
+	if (ManiaPlanet.MasterServer_MainMSUser != Null)
+		Login = ManiaPlanet.MasterServer_MainMSUser.Login;
+	return "Maniaplanet-Auth: Login=\"" ^ Login ^ "\", Token=\"" ^ Auth_GetToken() ^ "\"";
+}
+
+Void Auth_Loop() {
+	if (!G_IsTokenInvalid && Now > G_LastTokenGenerationTime + C_LiveTokenTimeout && G_WaitingForTokenStatus == C_WaitingForTokenStatus_None)
+		G_IsTokenInvalid = True;
+	if (G_IsTokenInvalid && G_WaitingForTokenStatus == C_WaitingForTokenStatus_None && ManiaPlanet.MasterServer_MainMSUser != Null && ManiaPlanet.MasterServer_MainMSUser.ConnectionStatus == CNetMasterServerUserInfo::EMasterServerConnectionStatus::Connected)
+		Auth_GenerateToken();
+	if (G_WaitingForTokenStatus == C_WaitingForTokenStatus_WaitMS && ManiaPlanet.Authentication_GetTokenResponseReceived)
+	{
+		G_LastTokenGenerationTime = Now;
+		G_Auth_Token = ManiaPlanet.Authentication_Token;
+		
+		if (ManiaPlanet.Authentication_ErrorCode != 0)
+		{
+			log("Authentication_ErrorCode : "^ManiaPlanet.Authentication_ErrorCode);
+			G_WaitingForTokenStatus = C_WaitingForTokenStatus_None;
+			G_IsTokenInvalid = True;
+			G_TokenGenerationCooldown = ML::Min(G_TokenGenerationCooldown * 2, 15 * 60 * 1000);
+		} else {
+			G_IsTokenInvalid = False;
+			if (G_LiveValidationRequest != Null)
+				Http.Destroy(G_LiveValidationRequest);
+			declare Text Login;
+			if (ManiaPlanet.MasterServer_MainMSUser != Null)
+				Login = ManiaPlanet.MasterServer_MainMSUser.Login;	
+			G_LiveValidationRequest <=> Http.CreateGet(LiveHelpers::GetAPIUrl()^"/me/auth", False, "Maniaplanet-Auth: Login=\"" ^ Login ^ "\", Token=\"" ^ G_Auth_Token ^ "\"");
+			G_WaitingForTokenStatus = C_WaitingForTokenStatus_WaitLive;
+		}
+	}
+	if (G_WaitingForTokenStatus == C_WaitingForTokenStatus_WaitLive && G_LiveValidationRequest.IsCompleted)
+	{
+		G_WaitingForTokenStatus = C_WaitingForTokenStatus_None;
+		G_IsTokenInvalid = G_LiveValidationRequest.StatusCode / 100 != 2;
+		Http.Destroy(G_LiveValidationRequest);
+		G_LiveValidationRequest = Null;
+		
+		if (!G_IsTokenInvalid) {
+			G_TokenGenerationCooldown = 10000;
+			declare Text AuthToken for ManiaPlanet;
+			AuthToken = G_Auth_Token;
+		} else {
+			G_TokenGenerationCooldown = ML::Min(G_TokenGenerationCooldown * 2, 15 * 60 * 1000);
+		}
+	}
+}

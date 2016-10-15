@@ -1,0 +1,122 @@
+/**
+ *	ScoreTable Library
+ * 	Especially made for console
+ */
+
+#Const Version				"2015-02-24"
+#Const ScriptName			"Speaker.Script.txt"
+
+
+#Include "Libs/Nadeo/Sound.Script.txt" 						as Sound
+
+
+
+#Const VolumeSilent 			-99.
+#Const VolumeDefault 			-3.
+
+
+// ---------------------------------- //
+// Functions
+// ---------------------------------- //
+
+// ---------------------------------- //
+// Private
+// ---------------------------------- //
+
+
+
+// ---------------------------------- //
+/** Return the version number of the script
+ *
+ *	@return		The version number of the script
+ */
+Text GetScriptVersion() 
+{
+	return Version;
+}
+
+// ---------------------------------- //
+/** Return the name of the script
+ *
+ *	@return		The name of the script
+ */
+Text GetScriptName() 
+{
+	return ScriptName;
+}
+
+Void Load()
+{
+	Sound::Load();
+}
+
+// ---------------------------------- //
+/// EventLoop
+
+Void EventLoop()
+{
+	// foreach(Event in PendingEvents)
+	// {
+		// declare UI <=> UIManager.GetUI(Event.Player);
+		// declare netread	Integer Net_MusicNextTempoDelay		for UI;
+		// declare netread	Integer Net_MusicBeatDuration		for UI;
+		
+		// declare RemainingLaps 		= MapNbLaps - Event.Player.CurrentNbLaps - 1;
+		// declare Sound				= "";
+		// declare Delay				= 0;
+		// declare NetDelay			= 35;
+		// declare IsMessageLapToGo	= False;
+		
+		// if (Event.Type == CTmModeEvent::EType::WayPoint) 
+		// {
+			// if (Event.IsEndRace) 
+			// {
+			
+			// }
+			// else
+			// if (Event.IsEndLap) 
+			// {
+				// if(RemainingLaps == 1)
+				// {
+					// Sound = "lap-final.wav";
+				// }
+				// else if (RemainingLaps > 1 && RemainingLaps <= 5)
+				// {
+					// Sound = "lap-"^RemainingLaps^".wav";
+					// IsMessageLapToGo = True;
+				// }
+				// Delay = Net_MusicNextTempoDelay - NetDelay;
+			// }
+			// else
+			// {
+			
+			// }
+		// }
+		
+		// else if (Event.Type == CTmModeEvent::EType::GiveUp) 
+		// {
+			
+		// }
+		
+		// else if (Event.Type == CTmModeEvent::EType::Respawn) 
+		// {
+		
+		// }
+		
+		// else if (Event.Type == CTmModeEvent::EType::StartLine) 
+		// {
+			// if(MapNbLaps > 1 && MapNbLaps <= 5)
+			// {
+				// Sound 	= "lap-"^MapNbLaps^".wav";
+				// IsMessageLapToGo = True;
+				// Delay	= Net_MusicNextTempoDelay + Net_MusicBeatDuration - NetDelay;
+			// }
+		// }
+		
+		// if(Sound != "")
+		// {
+			// Sound::PlaySound(SoundPath^Sound, 0., Delay);
+			// if(IsMessageLapToGo) Sound::PlaySound(SoundPath^"lap-message.wav", 0., ML::FloorInteger(Delay+Net_MusicBeatDuration * 1. - 50));
+		// }
+	// }
+}

@@ -1,0 +1,76 @@
+/**
+ *	Inputs Library
+ * 	Especially made for console
+ */
+
+#Const Version		"2014-08-05"
+#Const ScriptName	"ScoresTable.Script.txt"
+
+#Include "Libs/Nadeo/Layers2.Script.txt" 				as Layers
+#Include "Libs/Nadeo/TMConsole/PadInputs.Script.txt" 	as PI
+
+#Const C_LibTMC_Inputs_LayerName 	"LibScoreTable_Inputs"
+
+
+
+
+// ---------------------------------- //
+// Functions
+// ---------------------------------- //
+
+// ---------------------------------- //
+// Private
+// ---------------------------------- //
+
+Void Private_CreateLayerInputs() {
+	
+	declare Text MLText 	= PI::BuildPadInputsLayer();
+	declare Text LayerName 	= C_LibTMC_Inputs_LayerName;
+	
+	Layers::Create(LayerName, MLText);
+	Layers::Attach(LayerName);
+}
+
+
+
+
+// ---------------------------------- //
+// Public
+// ---------------------------------- //
+
+// ---------------------------------- //
+/** Return the version number of the script
+ *
+ *	@return		The version number of the script
+ */
+Text GetScriptVersion() {
+	return Version;
+}
+
+// ---------------------------------- //
+/** Return the name of the script
+ *
+ *	@return		The name of the script
+ */
+Text GetScriptName() {
+	return ScriptName;
+}
+
+// ---------------------------------- //
+/// Unload the library
+Void Unload() {
+	Layers::Destroy(C_LibTMC_Inputs_LayerName);
+}
+
+// ---------------------------------- //
+/// Load the library
+Void Load() {
+	Unload();
+	Private_CreateLayerInputs();
+}
+
+// ---------------------------------- //
+/// To re-attach layers in case of UI ResetAll
+Void Attach() {
+	Layers::Attach(C_LibTMC_Inputs_LayerName);
+}

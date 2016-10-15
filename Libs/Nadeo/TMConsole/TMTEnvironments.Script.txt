@@ -1,0 +1,35 @@
+#Const C_UnknownName	"UnknownEnviro"
+#Const C_CanyonName		"Canyon"
+#Const C_ValleyName		"Valley"
+#Const C_LagoonName		"Lagoon"
+#Const C_StadiumName	"Stadium"
+
+
+#Const C_UnknownIndex	-1
+#Const C_CanyonIndex	0
+#Const C_ValleyIndex	1
+#Const C_LagoonIndex	2
+#Const C_StadiumIndex	3
+
+
+Text GetCollectionName(Integer _EnviroIndex) {
+	switch(_EnviroIndex) {
+		case C_CanyonIndex : return C_CanyonName;
+		case C_ValleyIndex : return C_ValleyName;
+		case C_LagoonIndex : return C_LagoonName;
+		case C_StadiumIndex : return C_StadiumName;
+	}
+	
+	return C_UnknownName;
+}
+
+Integer GetEnviroIndex(Text _CollectionName) {
+	switch(_CollectionName) {
+		case C_CanyonName : return C_CanyonIndex;
+		case C_ValleyName : return C_ValleyIndex;
+		case C_LagoonName : return C_LagoonIndex;
+		case C_StadiumName : return C_StadiumIndex;
+	}
+	
+	return C_UnknownIndex;
+}

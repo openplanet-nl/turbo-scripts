@@ -1,0 +1,198 @@
+#Include "Libs/Nadeo/TMConsole/Menu/MenuLayers.Script.txt"			as Layers
+#Include "Libs/Nadeo/TMConsole/Menu/MenuText.Script.txt"			as MenuText
+#Include "Libs/Nadeo/TMConsole/Menu/MenuTracking.Script.txt"		as MenuTracking
+#Include "Libs/Nadeo/TMConsole/Menu/LibCheats.Script.txt"			as LibCheats
+
+#Const C_REQUESTTYPE_MODENAME 0
+
+#Const C_Menu_Online           	"TMC_Menu_Online"
+#Const C_Menu_Multiplayer       "TMC_Menu_Multiplayer"
+#Const C_Menu_Campaign          "TMC_Menu_Campaign"
+//#Const C_Menu_Editors           "TMC_Menu_Editors"
+#Const C_Menu_Garage            "TMC_Menu_Garage"
+#Const C_Menu_TrackBuilder      "TMC_Menu_TrackBuilder"
+//#Const C_Menu_GlobalLeaderBoard "TMC_Menu_GlobalLeaderBoard"
+
+
+#Const C_ScriptMode_CampaignSolo    	"TMC_CampaignSolo"
+// #Const C_ScriptMode_CampaignSolo    	"TMC_OnlineTimeAttack"
+#Const C_ScriptMode_CampaignCoop    	"TMC_CampaignDuo"
+#Const C_ScriptMode_LocalArcade  		"TMC_LocalArcade"
+#Const C_ScriptMode_LocalHotSeat   		"TMC_HotSeat"
+
+#Const C_ScriptMode_LocalRounds         "TMC_LocalRounds"
+
+#Const C_Screen_OneScreen			"OneScreen"
+
+#Const C_HotSeatIndex				0
+#Const C_ArcadeIndex				1
+#Const C_SplitScreenIndex			2
+
+declare Text				G_LayerToSend;
+declare Integer				G_RequestType;
+declare Text[]				G_ParamToSend;
+
+//External Datas
+declare Text		G_ModeSelect;
+declare Text		G_CampaignSelect;
+declare Text		G_MenuSelect;
+declare Text		G_ModeMultiScreen;
+declare Text		G_SubMenuTitle;
+declare Text		G_SubMenuLegend;
+
+
+//Internal Datas
+
+
+
+Text GetFeedbackText(Boolean _Succeed) {
+	if(G_RequestType == C_REQUESTTYPE_MODENAME) {
+		return "ModeName";
+	}
+	return "";
+}
+
+Void SendFeedbackToUI(Boolean _Succeed) {
+	declare CUILayer LayerToSend = Layers::Get(G_LayerToSend);
+	if(LayerToSend == Null) return;
+	declare Text FeedbackText = GetFeedbackText(_Succeed);
+	//log("["^Now^"]G_LayerToSend["^G_LayerToSend^"] FeedbackText["^FeedbackText^"] G_ParamToSend["^G_ParamToSend^"]");
+	LayerCustomEvent(LayerToSend, FeedbackText, G_ParamToSend);
+}
+
+// Functions to call in the Handlers
+//-----------------------------------------------------------//
+Void SetModeName(Text _ModeName)
+{
+	declare Text SubMode = LibCheats::GetActivatedCheatMode();
+	MenuTracking::StartModeContext(_ModeName, SubMode);
+	
+	G_ModeSelect      = "";
+	G_CampaignSelect  = "";
+	G_ModeMultiScreen = "";
+	//G_MenuSelect      = "";
+
+	switch(_ModeName)
+	{
+		case "Solo"            : {
+			G_ModeSelect      = C_ScriptMode_CampaignSolo;
+			G_ModeMultiScreen = C_Screen_OneScreen;
+			G_MenuSelect      = C_Menu_Campaign;
+			G_CampaignSelect  = "Solo";
+		}
+		case "SuperSolo"            : {
+			G_ModeSelect      = C_ScriptMode_CampaignSolo;
+			G_ModeMultiScreen = C_Screen_OneScreen;
+			G_MenuSelect      = C_Menu_Campaign;
+			G_CampaignSelect  = "SuperSolo";
+		}
+		case "Duo"             : {
+			G_ModeSelect      = C_ScriptMode_CampaignCoop;
+			G_ModeMultiScreen = C_Screen_OneScreen;
+			G_MenuSelect      = C_Menu_Campaign;
+			G_CampaignSelect  = "Duo";
+		}
+		case "Arcade" : {
+			G_ModeSelect      = C_ScriptMode_LocalArcade;
+			G_ModeMultiScreen = C_Screen_OneScreen;
+			G_MenuSelect      = C_Menu_Multiplayer;
+		}
+		case "HotSeat"        : {
+			G_ModeSelect      = C_ScriptMode_LocalHotSeat;
+			G_ModeMultiScreen = C_Screen_OneScreen;
+			G_MenuSelect      = C_Menu_Multiplayer;
+		}
+		// case "Hot Seat Duo"    : {
+			// G_ModeSelect      = C_ScriptMode_LocalHotSeatDuo;
+			// G_ModeMultiScreen = C_Screen_DualSplitScreen;
+			// G_MenuSelect      = C_Menu_Multiplayer;
+		// }
+		case "Rounds"          : {
+			G_ModeSelect      = C_ScriptMode_LocalRounds;
+			G_MenuSelect      = C_Menu_Multiplayer;
+		}
+		case "NewTrack"          : {
+			G_ModeSelect      = C_Menu_TrackBuilder;
+			//G_MenuSelect      = C_Menu_TrackBuilder;
+		}
+	}
+	
+	G_SubMenuTitle  = MenuText::GetSubMenuTitle(G_MenuSelect, G_ModeSelect);
+	G_SubMenuLegend = MenuText::GetSubMenuLegend(G_MenuSelect, G_ModeSelect);
+}
+
+Void SetModeMultiScreen(Text _ModeMultiScreen){
+	G_ModeMultiScreen = _ModeMultiScreen;
+
+}
+
+Void SetMenuName(Text _ModeName)
+{
+	switch(_ModeName)
+	{
+		case "Online"       : G_MenuSelect = C_Menu_Online;
+		case "Local"        : G_MenuSelect = C_Menu_Multiplayer;
+		case "Campaign"     : G_MenuSelect = C_Menu_Campaign;
+		case "Garage"       : G_MenuSelect = C_Menu_Garage;
+		case "TrackBuilder" : G_MenuSelect = C_Menu_TrackBuilder;
+		//case "NewTrack" : G_MenuSelect = C_Menu_TrackBuilder;
+	}
+	//log("G_MenuSelect["^_ModeName^"]: " ^ G_MenuSelect);
+}
+
+Text GetMenuSelect()
+{
+	return G_MenuSelect;
+}
+
+Text GetCampaignName()
+{
+	return G_CampaignSelect;
+}
+
+Text GetModeName()
+{
+	//if(ActualVersion == 4) return C_ScriptMode_LocalHotSeat;
+	if(G_ModeSelect != "") return G_ModeSelect;
+	
+	return C_ScriptMode_LocalArcade;
+}
+
+Text GetModeMultiScreen()
+{
+	return G_ModeMultiScreen;
+}
+
+Void SendModeName(Text _Layer){
+	declare CUILayer 		LayerToSend 	= Layers::Get(_Layer);
+	if(LayerToSend == Null) return;
+	declare Text	Net_ModeSelect		for LayerToSend.LocalPage;
+	declare Text	Net_MenuSelect		for LayerToSend.LocalPage;
+	declare Text	Net_SubMenuTitle	for LayerToSend.LocalPage;
+	declare Text	Net_SubMenuLegend	for LayerToSend.LocalPage;
+	Net_ModeSelect       = G_ModeSelect;
+	Net_MenuSelect       = G_MenuSelect;
+	Net_SubMenuTitle     = G_SubMenuTitle;
+	Net_SubMenuLegend    = G_SubMenuLegend;
+	//log("G_MenuSelect: " ^ G_MenuSelect);
+
+	G_LayerToSend = _Layer;
+	G_ParamToSend.clear();
+	G_RequestType = C_REQUESTTYPE_MODENAME;
+	SendFeedbackToUI(True);
+}
+
+
+
+Void SendModeName(){
+
+	SendFeedbackToUI(True);
+}
+
+//-----------------------------------------------------------//
+// Initialization
+
+Void Load()
+{
+	//Rien
+}

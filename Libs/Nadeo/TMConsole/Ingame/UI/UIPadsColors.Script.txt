@@ -1,0 +1,49 @@
+/** 
+ *	UIUIEchelon
+ */
+#Include "TextLib" as TL
+#Include "Libs/Nadeo/TMConsole/Menu/MenuLayers.Script.txt"	as Layers
+
+Void ConstructReinitPadsML() {
+	
+	declare MLText = """
+		<script><!--
+		#Include "MathLib" as ML
+		
+		main() {
+			declare Integer LibUIReInitPad_ReinitPadUpdate 		for UI;
+			declare Integer Pre_LibUIReInitPad_ReinitPadUpdate;
+			
+			declare Vec3[] DefaultPadColor;
+			DefaultPadColor.add(<0.0, 0.0, 1.0>);
+			DefaultPadColor.add(<1.0, 0.0, 0.0>);
+			DefaultPadColor.add(<0.0, 1.0, 0.0>);
+			DefaultPadColor.add(<0.666, 0.377, 0.936>);
+			
+			while(True) {
+				yield;
+				if(GUIPlayer == Null) continue;
+				
+				if(Pre_LibUIReInitPad_ReinitPadUpdate != LibUIReInitPad_ReinitPadUpdate) {
+					log(Now^">REINIT PAD");
+					foreach(PadIndex => Pad in Input.Pads)  {
+						if(DefaultPadColor.existskey(PadIndex)) {
+							Pad.SetColor(DefaultPadColor[PadIndex]);
+						} else {
+							Pad.SetColor(<1.0, 1.0, 1.0>);
+						}
+					}
+					Pre_LibUIReInitPad_ReinitPadUpdate = LibUIReInitPad_ReinitPadUpdate;
+				}
+			}
+ 		}
+		--></script>
+	""";
+	Layers::Create("Layer_ReinitPadColors", MLText);
+	Layers::Attach("Layer_ReinitPadColors");
+}
+
+Void ReinitPad() {
+	declare Integer LibUIReInitPad_ReinitPadUpdate for UI;
+	LibUIReInitPad_ReinitPadUpdate += 1;
+}

@@ -1,0 +1,116 @@
+/**
+ *	PlayerManager Library
+ * 	Especially made for console
+ */
+
+#Const Version				"2014-09-26"
+#Const ScriptName			"CallVote.Script.txt"
+
+// #Include "Libs/Nadeo/TMConsole/Ingame/Game_Online.Script.txt" 				as Game
+
+
+#Const TMC_TEMPQUESTION_OFF 	0
+#Const TMC_TEMPQUESTION_ACTION 	1
+#Const TMC_TEMPQUESTION_RESULT 	2
+
+#Const TMC_TEMPQUESTION_LIKEMAP			0
+#Const TMC_TEMPQUESTION_ADDMAP			1
+#Const TMC_TEMPQUESTION_ADDROOM			2
+#Const TMC_TEMPQUESTION_LIKECHALLENGE	3
+
+#Const TMC_TEMPQUESTION_TIMERACTION			4000
+#Const TMC_TEMPQUESTION_TIMERRESULT			2000
+
+declare Integer G_TempQuestionState;
+declare Integer G_TempQuestionTimer;
+declare Real 	G_TempQuestionResult;
+
+// ---------------------------------- //
+// Functions
+// ---------------------------------- //
+
+Void SetTempQuestionState(Integer _State) {
+	G_TempQuestionState = _State;
+	foreach(Player in AllPlayers) {
+		declare Boolean SeeEndSequence for Player = False;
+		if(SeeEndSequence) {
+			declare UI <=> UIManager.GetUI(Player);
+			declare Boolean SeeEndSequence for Player = False;
+			if(SeeEndSequence) {
+				declare netwrite Integer 	Net_TempQuestionState			for UI;
+				Net_TempQuestionState = G_TempQuestionState;
+			}
+		}
+	}
+}
+
+Void StartTempQuestion(Integer _QuestionType) {
+	foreach(Player in AllPlayers) {
+		declare Boolean SeeEndSequence for Player = False;
+		if(SeeEndSequence) {
+			declare UI <=> UIManager.GetUI(Player);
+			declare Boolean SeeEndSequence for Player = False;
+			if(SeeEndSequence) {
+				declare netwrite Integer	Net_TempQuestionType			for UI;
+				declare netwrite Integer 	Net_TempQuestionTime			for UI;
+			
+				Net_TempQuestionType 	= _QuestionType;
+				Net_TempQuestionTime	= TMC_TEMPQUESTION_TIMERACTION;
+			}
+		}
+	}
+	
+	SetTempQuestionState(TMC_TEMPQUESTION_ACTION);
+	G_TempQuestionResult = -1.0;
+	G_TempQuestionTimer  = Now + TMC_TEMPQUESTION_TIMERACTION;
+}
+
+/*
+Real GetTempQuestionResult() {
+	declare Integer NbPositiveVotes = 0;
+	foreach(Player in Players) {
+		declare UI <=> UIManager.GetUI(Player);
+		declare netread Integer Net_TempQuestionChoice			for UI;
+		if(Net_TempQuestionChoice == 1) {
+			NbPositiveVotes += 1;
+		}
+	}
+	return NbPositiveVotes*1.0/Players.count*1.0;
+}
+
+Void DisplayPlayersTempQuestionResults() {
+	foreach(Player in Players) {
+		declare UI <=> UIManager.GetUI(Player);
+		declare netwrite Real 	Net_TempQuestionResult			for UI;
+		Net_TempQuestionResult = G_TempQuestionResult;
+	}
+}
+*/
+
+Boolean PlayerWantsTempQuestion() {
+	// TO DO
+	return False;
+}
+
+Integer GetTempQuestionState() {
+	return G_TempQuestionState;
+}
+
+Void TempQuestionLoop() {
+	if(G_TempQuestionState == TMC_TEMPQUESTION_ACTION) {
+		if(G_TempQuestionTimer < Now) {
+			SetTempQuestionState(TMC_TEMPQUESTION_RESULT);
+			G_TempQuestionTimer = Now + TMC_TEMPQUESTION_TIMERRESULT;
+		}
+	} else if(G_TempQuestionState == TMC_TEMPQUESTION_RESULT) {
+		if(G_TempQuestionTimer < Now) {
+			SetTempQuestionState(TMC_TEMPQUESTION_OFF);
+		}
+	} else if(G_TempQuestionState == TMC_TEMPQUESTION_OFF) {
+		
+	}
+}
+
+Boolean IsTempQuestionOverAndPositive() {
+	return (G_TempQuestionResult > 0.5 && G_TempQuestionState == TMC_TEMPQUESTION_OFF);
+}

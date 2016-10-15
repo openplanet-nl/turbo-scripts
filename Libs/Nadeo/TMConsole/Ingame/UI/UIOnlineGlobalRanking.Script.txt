@@ -1,0 +1,1561 @@
+/** 
+ *	In-Game UI library
+ */
+#Include "TextLib" as TL
+	
+#Include "Libs/Nadeo/Anim.Script.txt" 											as Anim
+#Include "Libs/Nadeo/Manialink2.Script.txt"  									as Manialink
+#Include "Libs/Nadeo/TMConsole/Menu/MenuLayers.Script.txt"						as Layers
+#Include "Libs/Nadeo/TMConsole/FontManager.Script.txt"							as Font
+#Include "Libs/Nadeo/TMConsole/Ingame/UI/UIEchelon.Script.txt"					as UIEchelon
+#Include "Libs/Nadeo/TMConsole/Colors.Script.txt" 								as Colors
+#Include "Libs/Nadeo/TMConsole/Volumes.Script.txt" 								as Volumes
+
+#Const Version		"2015-03-02"
+#Const ScriptName	"UIOnlineTimeAttack.Script.txt"
+
+#Const IMGPATH		"file://Media/Images/TMConsole/Ingame/"
+#Const SOUNDPATH	"file://Media/Sounds/TMConsole/"
+
+#Const C_ImgBaseManialinks				"file://Media/Manialinks/Nadeo/TMConsole/Images/"
+#Const VIDEOPATH						"file://Media/Manialinks/Nadeo/TMConsole/Video/"
+
+#Const SOUND_ENDRACE_FLAME				"SFX_UI_RegimeSmoke.wav"
+
+#Const SOUND_JACKPOT					"SFX_UI_Jackpot.wav"
+#Const SOUND_WOOSHSMALL					"event-woosh-small.wav"
+#Const VIDEO_SMOKECENTER_MIRROR			"fxtray_mirror.webm"
+
+#Const IMG_BG_LINE						"menu-bg-1.dds"
+#Const IMG_BG							"slot-medium-bg.dds"
+#Const IMG_FG							"slot-medium-fg.dds"
+#Const C_RACE_MAPNAME_SIZE_X 			70.
+#Const MODE_COLORID_MULTIPLAYER			1
+#Const C_RACE_MAPNAME_SIZE_MEDAL		18
+#Const C_RATIO 							12.962
+#Const C_RATIO_1CIRCLE					0.06666666667
+#Const C_MARGINS_GLOBALRATIO			1.
+#Const C_LabelRankDecalY				7
+#Const C_LabelBigRankDecalY				17
+#Const C_TimeScrollRanking				1000
+#Const C_REWARDS_TEXT_INTERVAL			-0.13
+#Const C_RACE_MAPNAME_POSX_MEDAL		-1
+
+
+#Const vT 	""" valign="top" """
+#Const hR 	""" halign="right" """
+
+
+Void ConstructGlobalRankingModule() {
+	declare FontMain 				= Font::GetFontName("Main");
+	declare FontMainSmall2 			= Font::GetFontName("MainSmall2");
+	
+	/*
+	declare Vec3 EchelonColors[];
+	EchelonColors.add(Colors::GetColor("Grey"));
+	EchelonColors.add(Colors::GetColor("Orange"));
+	EchelonColors.add(Colors::GetColor("Red"));
+	EchelonColors.add(Colors::GetColor("Red2"));
+	EchelonColors.add(Colors::GetColor("Purple"));
+	EchelonColors.add(Colors::GetColor("PinkRed"));
+	EchelonColors.add(Colors::GetColor("Blue"));
+	EchelonColors.add(Colors::GetColor("Green"));
+	EchelonColors.add(Colors::GetColor("Cyan"));
+	EchelonColors.add(Colors::GetColor("Cyan2"));
+	*/
+	
+	declare ColorXmlEchelon0		= Colors::GetEchelonColor(0);
+	declare ColorXmlEchelon1		= Colors::GetEchelonColor(1);
+	declare ColorXmlEchelon2		= Colors::GetEchelonColor(2);
+	declare ColorXmlEchelon3		= Colors::GetEchelonColor(3);
+	declare ColorXmlEchelon4		= Colors::GetEchelonColor(4);
+	declare ColorXmlEchelon5		= Colors::GetEchelonColor(5);
+	declare ColorXmlEchelon6		= Colors::GetEchelonColor(6);
+	declare ColorXmlEchelon7		= Colors::GetEchelonColor(7);
+	declare ColorXmlEchelon8		= Colors::GetEchelonColor(8);
+	declare ColorXmlEchelon9		= Colors::GetEchelonColor(9);
+	
+	declare ColorXmlGreen 			= Colors::GetColorXml("Green");
+	declare ColorXmlWhite 			= Colors::GetColorXml("White");
+	declare ColorXmlGrey 			= Colors::GetColorXml("Grey");
+	declare ColorXmlYellow			= Colors::GetColorXml("Yellow");
+	declare MapNameSizeX 			= C_RACE_MAPNAME_SIZE_X + C_RACE_MAPNAME_SIZE_X * C_RATIO_1CIRCLE+0.2;
+	declare MapNameSizeY 			= C_RACE_MAPNAME_SIZE_X / C_RATIO;
+	declare MapMarginRatio 			= 1.  * C_MARGINS_GLOBALRATIO;
+	declare MapNameMarginY			= 9.  * MapMarginRatio;
+	declare QuadStyleBg				= """sizen="{{{MapNameSizeX}}} {{{MapNameSizeY}}}" image="{{{IMGPATH^IMG_BG_LINE}}}" """;
+	
+	declare MapNameSeparator 		= MapNameSizeY * 0.095;
+	declare MapNameSizeXElement		= C_RACE_MAPNAME_SIZE_X * C_RATIO_1CIRCLE * 12.;
+	declare OpponentSizeYElement	= MapNameSizeY - MapNameSeparator;
+	declare MapNameSizeYElement			= MapNameSizeY * 2. - MapNameSeparator;
+	
+	declare TextStyleMain			= """textfont="{{{FontMain}}}" textsize="3" scale="0.95" textprefix="$t" """;
+	declare TextStyleMainS			= """textfont="{{{FontMainSmall2}}}" textsize="3" scale="0.95" textprefix="$t" """;
+	declare OpponentScreenMarginsRatio 	= 1. * C_MARGINS_GLOBALRATIO;
+	declare OpponentScreenMarginsY		= 9 * OpponentScreenMarginsRatio;
+	declare Text PlaceHolder        = "file://Media/Manialinks/Nadeo/TMConsole/Images/MainMenu/SubMain/PlaceHolderInfoPlayer.png";
+	declare Text PlaceHolder2       = C_ImgBaseManialinks^"PlaceHolder/PlaceHolderModuleRanking.png";
+	
+	declare Text Echelon0           = C_ImgBaseManialinks^"Echelons/RNKG_00b.png";
+	
+	declare Text IMGArrow      		 = C_ImgBaseManialinks^"Arrow.tga";
+	
+
+	declare Real CaseSizeX          = C_RACE_MAPNAME_SIZE_X * C_RATIO_1CIRCLE;
+
+	declare Real EchelonSize        = 10.10;
+	
+	declare QuadStyleBgRight			= """ {{{QuadStyleBg}}} {{{hR}}} """;
+
+	declare Text MLText = """
+	
+	<framemodel id="Frame_LabelRanking">
+		<label id="Label_Ranking" halign="left" valign="center" sizen="{{{MapNameSizeXElement-17.}}}" posn="-2 1.0 0" {{{TextStyleMain}}} text=""/>
+		<label id="Label_RankingPoint" 		posn="0 1.0 0"  sizen="20" valign="center" {{{TextStyleMainS}}} text="" halign="left"/>
+	</framemodel>
+
+	<framemodel id="Frame_BigRankingReward">
+		<label id="Label_BigRanking" 
+			posn="-33. {{{C_REWARDS_TEXT_INTERVAL}}} .5"
+			sizen="200 50" 
+			valign="bottom" 
+			halign="right" 
+			textfont="{{{FontMain}}}"
+			textsize="16"
+			textcolor="{{{ColorXmlWhite}}}"
+			text="World: "
+			autonewline="0"
+			linespacing="0.8"
+			textprefix="$t"
+		/>
+		
+		<label id="Label_BigRankingPointGained" 
+			posn="0. {{{C_REWARDS_TEXT_INTERVAL}}} .5"
+			sizen="300 50" 
+			valign="bottom" 
+			halign="center" 
+			textfont="{{{FontMain}}}"
+			textsize="16"
+			text="+400"
+			textcolor="{{{ColorXmlYellow}}}"
+			autonewline="1"
+			linespacing="0.8"
+			textprefix="$t"
+			hidden="1"
+		/>
+
+		<label id="Label_BigRankingPoint" 
+			posn="35. {{{C_REWARDS_TEXT_INTERVAL}}} .5"
+			sizen="300 50" 
+			valign="bottom" 
+			halign="left" 
+			textfont="{{{FontMain}}}"
+			textsize="16"
+			text="35000/15000"
+			textcolor="{{{ColorXmlWhite}}}"
+			autonewline="1"
+			linespacing="0.8"
+			textprefix="$t"
+		/>
+		
+		
+		
+	</framemodel>
+
+	<frame id="Frame_GlobalRanking" posn="0 0 10" >
+		
+		<quad halign="right" posn="160 81.5 31" image="{{{PlaceHolder}}}" sizen="70 100" keepratio="Fit" opacity="0.0"/>
+		<quad halign="center" valign="center" posn="0 0 40" image="{{{PlaceHolder2}}}" sizen="320 180" keepratio="Fit" opacity="0."/>
+		
+		<frame id="Frame_GlobalRankingBg" posn="90. {{{90-OpponentScreenMarginsY}}} 1.">
+			<quad id="Quad_Bg1" posn="{{{-CaseSizeX-0.2}}}	0.						0" 	{{{QuadStyleBg}}} />
+			<quad id="Quad_Bg2" posn="{{{-CaseSizeX-0.2}}}	{{{-MapNameSizeY}}}		0"	{{{QuadStyleBg}}} />
+			<quad id="Quad_Bg3" posn="{{{-CaseSizeX-0.2}}}	{{{-MapNameSizeY*2}}}	0"	{{{QuadStyleBg}}} />
+		</frame>
+		
+		<quad id="Quad_Smoke" halign="center" valign="center" hidden="1" posn="112. 72. 50."
+			sizen="320 180" scale="0.3" image="{{{VIDEOPATH^VIDEO_SMOKECENTER_MIRROR}}}"
+		/>
+		
+		<frame id="Frame_GlobalRankingAnim" posn="90. {{{90-OpponentScreenMarginsY}}} 31." >
+			<frame id="Frame_GlobalRankingContent" >
+				<quad  id="Quad_BGEchelon" opacity="1.0" posn="{{{-CaseSizeX-0.3}}} {{{-MapNameSeparator-0.3}}} -2." sizen="12.1 11.1" bgcolor="000"/>
+				<quad  id="Quad_Echelon" opacity="1.0" posn="{{{-CaseSizeX+0.0}}} {{{-MapNameSeparator}}} 14." sizen="{{{EchelonSize+0.3}}} {{{EchelonSize}}}" image="{{{IMGPATH^IMG_FG}}}"/>
+				
+				<frame posn="0.2 0 7" clip="True" clipsizen="{{{EchelonSize-0.1}}} {{{EchelonSize-0.3}}}" clipposn="{{{-CaseSizeX+EchelonSize/2.+0.1}}} {{{-MapNameSeparator-EchelonSize/2.-0.1}}}">
+					<frame id="Frame_Echelons">
+						<quad  id="Quad_Echelon1" opacity="1.0" posn="{{{-CaseSizeX+0.0}}} {{{-MapNameSeparator}}} 5."    sizen="{{{EchelonSize}}} {{{EchelonSize}}}" image="" bgcolor="000"/>
+						<quad  id="Quad_Echelon1_2"   opacity="1.0" posn="{{{-CaseSizeX+EchelonSize}}} {{{-MapNameSeparator}}}    5" sizen="{{{EchelonSize}}} {{{EchelonSize}}}"/>
+					</frame>
+				</frame>
+				
+				<frame id="Frame_Player" 	posn="0 0 1">
+					<quad  id="Quad_Avatar" 	posn="3	-1 .4" 		sizen="4 4" 	bgcolor="999" hidden="1" />
+					<label id="Label_PlayerName" 		posn="{{{CaseSizeX+3.0}}} -1 .4" sizen="{{{MapNameSizeXElement-4.}}}" valign="top" {{{TextStyleMain}}} textcolor="{{{ColorXmlYellow}}}" text="Jean-Micheng" halign="left"/>
+					<quad opacity="0.8" posn="{{{CaseSizeX+0.9}}} {{{-MapNameSeparator}}} 0.2"    sizen="{{{MapNameSizeXElement-1.0}}} {{{OpponentSizeYElement}}}" valign="top" 	bgcolor="000" />
+					<quad opacity="1.0" posn="{{{CaseSizeX+1.0}}} {{{-MapNameSeparator}}} .1"  	  sizen="{{{MapNameSizeXElement-1.5}}} {{{OpponentSizeYElement}}}" valign="top" 	image="{{{IMGPATH^IMG_BG}}}" />
+					<quad opacity="0.7" posn="{{{CaseSizeX+1.0}}} {{{-MapNameSeparator}}} 3." 	  sizen="{{{MapNameSizeXElement-1.5}}} {{{OpponentSizeYElement}}}" valign="top" 	image="{{{IMGPATH^IMG_FG}}}" />
+				</frame>
+				
+				<frame id="Frame_Rank" 	posn="0 {{{-MapNameSizeY}}} 1">
+					<quad opacity="0.8" posn="{{{CaseSizeX+1.0}}} {{{-MapNameSeparator}}} 0.2"    sizen="{{{MapNameSizeXElement-1.0}}} {{{OpponentSizeYElement}}}" valign="top" 	bgcolor="000" />
+					<quad opacity="1.0" posn="{{{CaseSizeX+1.0}}} {{{-MapNameSeparator}}} .1"  	  sizen="{{{MapNameSizeXElement-1.5}}} {{{OpponentSizeYElement}}}" valign="top" 	image="{{{IMGPATH^IMG_BG}}}" />
+					<quad opacity="0.7" posn="{{{CaseSizeX+1.0}}} {{{-MapNameSeparator-0.3}}} 5." sizen="{{{MapNameSizeXElement-1.5}}} {{{OpponentSizeYElement}}}" valign="top" 	image="{{{IMGPATH^IMG_FG}}}" />
+				</frame>
+			</frame>
+
+			<frame id="Clip_InfoRanking" posn="{{{CaseSizeX+4.8}}} {{{-MapNameSizeY-3.5}}} 0" clip="true" clipposn="{{{CaseSizeX+21.2}}} 0.1" clipsizen="{{{MapNameSizeXElement-0.3}}} {{{OpponentSizeYElement-0.2}}}" hidden="0" >
+				<quad posn="0 0 2" sizen="320 180" bgcolor="911" halign="center" opacity="0." valign="center"/>
+				<frame id="InfoRanking" posn="0 0 2">
+					<frame posn="0 0 1">
+						<frameinstance modelid="Frame_LabelRanking" posn="0 0                          2." id="Frame_RankingInstance0" />
+						<frameinstance modelid="Frame_LabelRanking" posn="0 -{{{C_LabelRankDecalY}}}   2." id="Frame_RankingInstance1" />
+						<frameinstance modelid="Frame_LabelRanking" posn="0 -{{{C_LabelRankDecalY*2}}} 2." id="Frame_RankingInstance2" />
+						<frameinstance modelid="Frame_LabelRanking" posn="0 -{{{C_LabelRankDecalY*3}}} 2." id="Frame_RankingInstance3" />
+						<frameinstance modelid="Frame_LabelRanking" posn="0 -{{{C_LabelRankDecalY*3}}} 2." id="Frame_RankingInstance4" />
+					</frame>
+				</frame>
+				<quad posn="116 0.5 0" sizen="4.5 3.5" bgcolor="fff" halign="center" opacity="1." valign="center"/>
+			</frame>
+		</frame>
+		
+		<frame id="Frame_EchelonGauge2" posn="250. {{{90-OpponentScreenMarginsY-(MapNameSizeY*2)}}} 50." hidden="1">
+				<quad id="Quad_Bg1" 		posn="0. 0. 				   0." 	{{{QuadStyleBgRight}}} hidden="0"/>
+				<quad id="Quad_Bg2" 		posn="0. {{{-MapNameSizeY}}}   0." 	{{{QuadStyleBgRight}}} hidden="0"/>
+			
+				<quad posn="-38.0 0.6 0.5" 	image="{{{IMGArrow}}}" sizen="12.6 12.6" opacity="1.0" colorize="fff" hidden="1"/>
+				<quad 	posn="-10. {{{-MapNameSeparator}}}	0."  	sizen="{{{MapNameSizeXElement+9.0}}} {{{OpponentSizeYElement}}}" 	{{{vT}}} 	{{{hR}}} image="{{{IMGPATH^IMG_BG}}}" />
+				<quad id="Quad_GaugeEchelon" posn="{{{-(MapNameSizeXElement+19.)}}} {{{-MapNameSeparator}}} 0.5" sizen="{{{MapNameSizeXElement+9}}} {{{OpponentSizeYElement}}}" bgcolor="{{{ColorXmlGrey}}}" {{{vT}}} 	halign="left"/>
+				<quad 	posn="-10. {{{-MapNameSeparator}}}	1.0"  	sizen="{{{MapNameSizeXElement+9.0}}} {{{OpponentSizeYElement}}}" 	{{{vT}}} 	{{{hR}}} image="{{{IMGPATH^IMG_FG}}}" />
+				<label halign="right" valign="center" style="TextButtonNav" posn="-38 -2.5 0.6" opacity="{{{ColorXmlWhite}}}"
+				 id="Label_GaugePourcent" textsize="2.5" sizen="35" text="98.89%" textcolor="fff" textfont="{{{Font::GetFontName("Main")}}}" />
+			</frame>
+	</frame>
+	
+	<frame id="Frame_RankingReward" posn="0. -7. 30." scale="0.6" hidden="1">
+		<label id="Label_Title" 
+				posn="0 17.5 .5"
+				sizen="800 180" 
+				valign="bottom" 
+				halign="center" 
+				textfont="{{{FontMain}}}"
+				textcolor="{{{ColorXmlWhite}}}"
+				textsize="16"
+				text=""
+				autonewline="1"
+				linespacing="0.8"
+				textprefix="$t"
+		/>
+		
+		<frame id="Clip_InfoBigRanking" posn="0. 0. 0" clip="False" clipposn="0. 10." clipsizen="500 13" hidden="0" >
+			<frame id="InfoBigRanking">
+				<frame posn="0 0 1">
+					<frameinstance modelid="Frame_BigRankingReward" posn="0 0 2." 									id="Frame_BigRankingInstance0" />
+					<frameinstance modelid="Frame_BigRankingReward" posn="0 -{{{C_LabelBigRankDecalY}}} 2." 		id="Frame_BigRankingInstance1" />
+					<frameinstance modelid="Frame_BigRankingReward" posn="0 -{{{C_LabelBigRankDecalY*2.0}}} 2." 	id="Frame_BigRankingInstance2" />
+					<frameinstance modelid="Frame_BigRankingReward" posn="0 -{{{C_LabelBigRankDecalY*3.0}}} 2." 	id="Frame_BigRankingInstance3" />
+				</frame>
+			</frame>
+		</frame>
+	</frame>
+	
+	<!--
+	<frame id="Frame_EchelonGauge" posn="{{{160}}} {{{90 - MapNameMarginY - MapNameSizeY*3.}}}" hidden="1">
+		<quad id="Quad_Bg1" 		posn="0. 0. 				   31." 	{{{QuadStyleBgRight}}} />
+		<quad id="Quad_Bg2" 		posn="0. {{{-MapNameSizeY}}}   31." 	{{{QuadStyleBgRight}}} />
+		
+		<frame id="Frame_MedalCountAnim" hidden="0">
+			<quad 	posn="-10. {{{-MapNameSeparator}}}	32."  	sizen="{{{MapNameSizeXElement+9}}} {{{MapNameSizeYElement}}}" 	{{{vT}}} 	{{{hR}}} image="{{{IMGPATH^IMG_BG}}}" />
+			<quad id="Quad_GaugeEchelon" posn="{{{-(MapNameSizeXElement+9)}}} {{{-MapNameSeparator}}} 32.5" sizen="{{{MapNameSizeXElement+9}}} {{{MapNameSizeYElement}}}" bgcolor="ffff" valign="top" halign="left"/>
+			<quad 	posn="-10. {{{-MapNameSeparator}}}	33."  	sizen="{{{MapNameSizeXElement+9}}} {{{MapNameSizeYElement}}}" 	{{{vT}}} 	{{{hR}}} image="{{{IMGPATH^IMG_FG}}}" />
+		</frame>
+	</frame>
+	-->
+	<!--<quad posn="-161. 90. 50." 	image="{{{C_ImgBaseManialinks^"RANKING_arrow.jpg"}}}" sizen="320 180" opacity="0.0"/>-->
+	
+	
+	<script ><!--
+		#Const DebugName  "L_GlobalRanking"
+		#Include "TextLib" as TL
+		#Include "MathLib" as ML
+		#Include "AnimLib" as AL
+
+		#Const C_TimeTick								4000
+		#Const C_TimeTickEchelon						3000
+		
+		#Const C_Score_NumberOfTick						20
+		#Const C_Score_TickTime							20
+		
+		#Const C_Level_NumberOfTick						10
+		#Const C_Level_TickTime							50
+		
+		#Const C_AnimText_Easing 						"ExpOut"
+		#Const C_AnimText_Duration 						650.
+		#Const C_AnimText_DelayShow 					400.
+		#Const C_AnimText_DelayHide 					150.
+		#Const C_AnimText_Offset 						450.
+		
+		#Const C_GLOBALRANKING_DEFAULT					0		
+		#Const C_GLOBALRANKING_RANKING_STARTRANKING		1
+		#Const C_GLOBALRANKING_RANKING_RANKGRIND		2
+		#Const C_GLOBALRANKING_RANKING_ECHELONGRIND		3
+		
+		#Const C_GLOBALRANKING_WORLD					0
+		#Const C_GLOBALRANKING_COUNTRY					1
+		#Const C_GLOBALRANKING_ZONE2					2
+		#Const C_GLOBALRANKING_ZONE3					3
+
+		#Const C_MAXZONE								4
+		
+		#Const TMC_MEDAL_AUTHOR   						0
+		#Const TMC_MEDAL_GOLD   						1
+		#Const TMC_MEDAL_SILVER   						2
+		#Const TMC_MEDAL_BRONZE   						3
+		#Const TMC_MEDAL_PLAYER  						4
+		#Const TMC_MEDAL_NONE   						5
+		#Const TMC_MEDAL_ANOTHERPLAYER					6
+		
+		#Const C_GAMEPHASE_CHALLENGE					3
+		#Const C_GAMEPHASE_PREPARATION					0
+		#Const C_GAMEPHASE_GAME							1
+		#Const C_GAMEPHASE_POSTGAME						2
+		#Const C_GAMEPHASE_OUTRO						4
+		
+		#Const C_GAMECONTEXT_LOCAL						1				
+		#Const C_GAMECONTEXT_ONLINE						0
+
+		#Const C_SpawnStatus_Racing						1	///< The player is currently racing
+		#Const C_SpawnStatus_Waiting					2	///< The player is winting to be spawned
+		#Const C_SpawnStatus_Outro						3	///< The player is watching the outro sequence
+		
+		{{{Manialink::GetIncludes()}}}
+		{{{Manialink::Load()}}}
+		{{{Anim::Inject("Minimal")}}}
+		declare Integer          G_Echelon;
+		declare Integer          G_RankingIndex;
+		
+		declare Integer          G_TimeRanking;
+		declare Integer          G_TimeReplaceFrame;
+		declare Integer          G_Prev_TimeRanking;
+		declare Integer          G_Prev_TimeReplaceFrame;
+
+		declare Text[Integer]    G_ZoneName;
+		declare Integer[Integer] G_PlayerRankings;
+		declare Integer[Integer] G_PlayersCount;
+		declare Integer			 G_NbPlayerZones;
+		declare Integer          G_Score_TickIndex;
+		declare Integer          G_RankTick_NextTick;
+		declare Integer[Integer] G_Tick_AddScore;
+		declare Integer          G_Echelon_NextTick;
+		declare Integer          G_Tick_ScoreFinal;
+		declare Boolean			 G_SequenceHasBeenStarted;
+		declare Integer			 G_LastZoneEnteredIndex;
+		declare Integer			 G_CurZoneToGrind;
+		
+		declare Boolean			G_DebugMode;
+		declare Integer[Integer]G_PointsGained;
+		
+		declare Integer			G_IndexZoneToPrompt;
+		
+		// declare Integer			G_RankTick_NextTick;
+		declare Integer         	G_Level_TickIndex;
+		declare Integer         	G_LevelTick_NextTick;
+		declare Real				G_Tick_AddEchelonLevel;
+		declare Integer				G_Tick_FinalEchelonLevel;
+		declare Integer				G_Tick_CurrentEchelonLevel;
+		declare Boolean         	G_IsEchelonToIcone;
+		declare Integer[Integer] 	G_TempPlayerRankings;
+		
+		Text GetUnknownRanking() {
+			//L16N. The ranking of the player is not ready to display. Eg: France: Rank unknown
+			return _("unavailable");
+		}
+
+		declare Integer G_RankingAnim_StartTime;
+		declare Integer G_RankingAnim_EndTime;
+		declare Real G_RankingAnim_StartPos_Current;
+		declare Real G_RankingAnim_DeltaPos_Current;
+		declare Real G_RankingAnim_StartPos_Next;
+		declare Real G_RankingAnim_DeltaPos_Next;
+		
+		Void NextRankingScroll()
+		{
+			declare CMlFrame InfoRanking     <=> (Page.GetFirstChild("InfoRanking")     as CMlFrame);
+			// declare CMlFrame InfoBigRanking     <=> (Page.GetFirstChild("InfoBigRanking")     as CMlFrame);
+			
+			//FOR BIG RANKING
+			
+			G_RankingIndex -=1;
+			if(G_RankingIndex < 0) {
+				G_RankingIndex = G_NbPlayerZones-1;
+			}
+			
+			InfoRanking.RelativePosition.Y = 0.;
+			declare Real NewPositionY = 7.;
+			
+			// InfoBigRanking.RelativePosition.Y = 0.;
+			declare Real NewPositionBigY = 34.;
+			
+			/*declare Vec3 NewQuadPosition = <InfoRanking.RelativePosition.X, NewPositionY, InfoRanking.RelativePosition.Z>;
+			LibManialink_SetTargetPosition(InfoRanking, NewQuadPosition);
+			LibManialink_PresetAnim(InfoRanking, {{{C_TimeScrollRanking}}}, "EaseLinear");
+			
+			/*
+			declare Vec3 BigNewQuadPosition = <InfoBigRanking.RelativePosition.X, NewPositionBigY, InfoBigRanking.RelativePosition.Z>;
+			LibManialink_SetTargetPosition(InfoBigRanking, BigNewQuadPosition);
+			LibManialink_PresetAnim(InfoBigRanking, {{{C_TimeScrollRanking}}}, "EaseLinear");
+			*/
+			
+			G_RankingAnim_StartTime = Now;
+			G_RankingAnim_EndTime = G_RankingAnim_StartTime + {{{C_TimeScrollRanking}}};
+			G_RankingAnim_StartPos_Current = InfoRanking.RelativePosition.Y;
+			G_RankingAnim_DeltaPos_Current = NewPositionY - G_RankingAnim_StartPos_Current;
+			// G_RankingAnim_StartPos_Next = InfoBigRanking.RelativePosition.Y;
+			G_RankingAnim_DeltaPos_Next = NewPositionBigY - G_RankingAnim_StartPos_Next;
+		}
+
+		//Permet de créer un roulement des labels
+		Void ReplaceFrame()
+		{
+			declare CMlFrame InfoRanking     	<=> (Page.GetFirstChild("InfoRanking")     as CMlFrame);
+			// declare CMlFrame InfoBigRanking     <=> (Page.GetFirstChild("InfoBigRanking")     as CMlFrame);
+			
+			InfoRanking.RelativePosition.Y = 0.;
+			// InfoBigRanking.RelativePosition.Y = 0.;
+			for(I,0, G_NbPlayerZones-1) {
+				declare CMlFrame Frame_RankingInstance 				<=> (Page.GetFirstChild("Frame_RankingInstance"^I) 			as CMlFrame);
+				// declare CMlFrame Frame_BigRankingInstance 			<=> (Page.GetFirstChild("Frame_BigRankingInstance"^I) 		as CMlFrame);
+				declare Real NewPositionY 							= (G_RankingIndex + I) % G_NbPlayerZones * {{{-C_LabelRankDecalY}}}*1.;
+				declare Real NewPositionBigY 						= (G_RankingIndex + I) % G_NbPlayerZones * {{{-C_LabelBigRankDecalY}}}*1.;
+				Frame_RankingInstance.RelativePosition.Y 			= NewPositionY;
+				// Frame_BigRankingInstance.RelativePosition.Y 		= NewPositionBigY;
+			}
+		}
+
+		Void UpdateInfosRanking(Integer _Index)
+		{
+			declare CMlFrame Frame_RankingInstance     			<=> (Page.GetFirstChild("Frame_RankingInstance"^_Index) as CMlFrame);
+			declare CMlLabel Label_Ranking      				<=> (Frame_RankingInstance.GetFirstChild("Label_Ranking")     as CMlLabel);
+			declare CMlLabel Label_RankingPoint 				<=> (Frame_RankingInstance.GetFirstChild("Label_RankingPoint")     as CMlLabel);
+			
+			declare Text TranslatedZone;
+			if(_Index <= 1) TranslatedZone = TL::Compose("%1: ", TL::GetTranslatedText(G_ZoneName[_Index]));
+			else            TranslatedZone = TL::Compose("%1: ", G_ZoneName[_Index]);
+			declare Integer ZoneLenght = TL::Length(TranslatedZone);
+			if(ZoneLenght >= 18) TranslatedZone = TL::SubText(TranslatedZone, 0, 18)^"...";
+			Label_Ranking.SetText(TranslatedZone);
+			
+			// declare Real LabelWidth               			= 	Label_Ranking.ComputeWidth(Label_Ranking.Value);
+			// if(LabelWidth > Label_Ranking.Size.X*1.0) {
+				// LabelWidth = Label_Ranking.Size.X*1.0;
+			// }
+			declare Real LabelWidth              		= Label_Ranking.ComputeWidth(Label_Ranking.Value);
+			declare Real LabelSize               		= Label_Ranking.Size.X;
+			declare Real PosX_RankingPoint 				= LabelWidth;
+			if(LabelWidth >LabelSize) PosX_RankingPoint = LabelSize;
+			Label_RankingPoint.RelativePosition.X 		= PosX_RankingPoint - 3.7;
+			Label_RankingPoint.Size.X             		=  {{{MapNameSizeXElement}}} - PosX_RankingPoint;
+			
+			// Label_RankingPoint.RelativePosition.X 			= 	Label_Ranking.RelativePosition.X + LabelWidth - 1.;
+			
+			if(G_PlayerRankings[_Index] > 0 && G_PlayersCount[_Index] > 0) {
+				Label_RankingPoint.Value              			= 	G_PlayerRankings[_Index] ^"/"^ G_PlayersCount[_Index];
+				// Label_RankingPoint.Value              			= 	100000 ^"/"^ 1000000;
+			} else {
+				Label_RankingPoint.Value              			=	GetUnknownRanking();
+			}
+		}
+		
+		Void UpdateBigInfosRanking(Integer _Index)
+		{
+			declare CMlFrame Frame_BigRankingInstance 			<=> (Page.GetFirstChild("Frame_BigRankingInstance"^_Index) 			as CMlFrame);
+			declare CMlLabel Label_BigRanking      				<=> (Frame_BigRankingInstance.GetFirstChild("Label_BigRanking")     	as CMlLabel);
+			declare CMlLabel Label_BigRankingPoint				<=> (Frame_BigRankingInstance.GetFirstChild("Label_BigRankingPoint") as CMlLabel);
+			declare CMlLabel Label_BigRankingPointGained		<=> (Frame_BigRankingInstance.GetFirstChild("Label_BigRankingPointGained") as CMlLabel);
+			
+			declare Text TranslatedZone;
+			if(_Index <= 1) TranslatedZone = TL::Compose("%1: ", TL::GetTranslatedText(G_ZoneName[_Index]));
+			else            TranslatedZone = TL::Compose("%1: ", G_ZoneName[_Index]);
+			declare Integer ZoneLenght = TL::Length(TranslatedZone);
+			Label_BigRanking.SetText(TranslatedZone);
+			
+			
+			
+			if(G_PlayerRankings[_Index] > 0 && G_PlayersCount[_Index] > 0) {
+				Label_BigRankingPoint.Value						= 	G_PlayerRankings[_Index] ^"/"^ G_PlayersCount[_Index];
+			} else {
+				Label_BigRankingPoint.Value						=	GetUnknownRanking();
+			}
+			
+			// declare Real BigLabelWidth						=  	Label_BigRanking.ComputeWidth(Label_BigRanking.Value);
+			// declare Real BigLabelPointsWidth				= 	Label_BigRankingPoint.ComputeWidth(Label_BigRankingPoint.Value);
+			
+			// Label_BigRankingPoint.RelativePosition.X		= 	Label_BigRanking.RelativePosition.X + BigLabelWidth + 3.;
+			// Label_BigRankingPointGained.RelativePosition.X 	= 	Label_BigRankingPoint.RelativePosition.X + BigLabelPointsWidth + 3.;
+			
+			// declare Real TotalWidth 						= 	BigLabelWidth + BigLabelPointsWidth;
+			// Frame_BigRankingInstance.RelativePosition.X		= 	-TotalWidth/2;
+		}
+		
+		Boolean GetPointsGainedVisible(Integer _Index) {
+			declare CMlFrame Frame_BigRankingInstance 			<=> (Page.GetFirstChild("Frame_BigRankingInstance"^_Index) 			as CMlFrame);
+			declare CMlLabel Label_BigRankingPointGained		<=> (Frame_BigRankingInstance.GetFirstChild("Label_BigRankingPointGained") as CMlLabel);
+			return Label_BigRankingPointGained.Visible;
+		}
+		
+		Void SetPointsGainedVisible(Integer _Index, Boolean _Visible) {
+			declare CMlFrame Frame_BigRankingInstance 			<=> (Page.GetFirstChild("Frame_BigRankingInstance"^_Index) 			as CMlFrame);
+			declare CMlLabel Label_BigRankingPointGained		<=> (Frame_BigRankingInstance.GetFirstChild("Label_BigRankingPointGained") as CMlLabel);
+			Label_BigRankingPointGained.Visible = _Visible;
+		}
+		
+		Void SetPointsGainedValue(Integer _Index, Integer _Value) {
+			declare CMlFrame Frame_BigRankingInstance 			<=> (Page.GetFirstChild("Frame_BigRankingInstance"^_Index) 			as CMlFrame);
+			declare CMlLabel Label_BigRankingPointGained		<=> (Frame_BigRankingInstance.GetFirstChild("Label_BigRankingPointGained") as CMlLabel);
+		
+			Label_BigRankingPointGained.Value = "+"^_Value;
+		}
+		
+		Void ShowBigFrame(Integer _Index, Boolean _Show) {
+			declare CMlFrame Frame_BigRankingInstance 			<=> (Page.GetFirstChild("Frame_BigRankingInstance"^_Index) 			as CMlFrame);
+			Frame_BigRankingInstance.Visible = _Show;
+		}
+		
+		Void SetInfoBigRanking()
+		{
+			for(I,0, G_NbPlayerZones-1) {
+				UpdateBigInfosRanking(I);
+			}
+		}
+		
+		Void SetInfoRanking()
+		{
+			for(I,0, G_NbPlayerZones-1) {
+				UpdateInfosRanking(I);
+				UpdateBigInfosRanking(I);
+			}
+			
+			for(I, G_NbPlayerZones, 3) {
+				ShowBigFrame(I, False);
+			}
+		}
+		
+		// Void 
+
+		Void RankingModuleStopRolling()
+		{
+			G_TimeRanking 		= -1;
+			G_RankingIndex 		= C_GLOBALRANKING_WORLD;
+			G_TimeReplaceFrame 	= Now;
+		}
+
+		Void RankingModuleStartRolling()
+		{
+			G_TimeRanking = Now + 2000;
+		}
+
+		Void RankingModuleChangeScore(Integer _Zone, Integer _Index)
+		{
+			RankingModuleStopRolling();
+			G_Tick_ScoreFinal 		= _Index;
+			G_Tick_AddScore[_Zone]  = _Index/C_Score_NumberOfTick;
+			if(_Index < C_Score_NumberOfTick) G_Tick_AddScore[_Zone] = 1;
+			
+			G_RankTick_NextTick   	= Now + C_Score_TickTime;
+			G_Score_TickIndex 		= 0;
+			
+			G_PointsGained[_Zone] = _Index;
+		}
+		
+		Integer GetEchelonLevelTotalAdd(Integer _FinalLevel)
+		{
+			declare Integer DiffEchelonLevel 	= G_Tick_FinalEchelonLevel - G_Tick_CurrentEchelonLevel;
+			if(DiffEchelonLevel < 0) {
+				return 			(100-G_Tick_CurrentEchelonLevel) + G_Tick_FinalEchelonLevel;
+			} else {
+				return			DiffEchelonLevel;
+			}
+			return -1;
+		}
+		
+		Void EchelonModuleChangeLevel(Integer _FinalLevel)
+		{
+			G_Tick_FinalEchelonLevel 			= _FinalLevel;
+			declare Integer AddEchelonTotalAdd 	= GetEchelonLevelTotalAdd(_FinalLevel);
+			G_Tick_AddEchelonLevel				= AddEchelonTotalAdd*1.0/C_Level_NumberOfTick*1.0;
+			
+			G_LevelTick_NextTick				= Now + C_Level_TickTime;
+			G_Level_TickIndex					= 0;
+		}
+		
+		{{{UIEchelon::GetMLEchelonFunctions()}}}
+
+		declare Integer G_EchelonAnim_StartTime;
+		declare Integer G_EchelonAnim_EndTime;
+		declare Real G_EchelonAnim_StartPos_Current;
+		declare Real G_EchelonAnim_DeltaPos_Current;
+		declare Real G_EchelonAnim_StartPos_Next;
+		declare Real G_EchelonAnim_DeltaPos_Next;
+		
+		Void NextEchelonIconeScroll()
+		{
+			declare CMlFrame Frame_Echelons   <=> (Page.MainFrame.GetFirstChild("Frame_Echelons")  as CMlFrame);
+			declare CMlQuad  Quad_Echelon     <=> (Frame_Echelons.GetFirstChild("Quad_Echelon1")   as CMlQuad);
+			declare CMlQuad  Quad_EchelonNext <=> (Frame_Echelons.GetFirstChild("Quad_Echelon1_2") as CMlQuad);
+
+			declare Integer TransitionTime = 1000;
+
+			//TODO - Changement d'image
+			declare Text ImgEchelon;
+			declare Text ImgNext;
+			if(G_IsEchelonToIcone)
+			{
+				ImgNext    = GetImgEchelon(G_Echelon);
+				ImgEchelon = GetImgIcone(G_Echelon);
+			}
+			else
+			{
+				ImgEchelon = GetImgEchelon(G_Echelon);
+				ImgNext    = GetImgIcone(G_Echelon);
+			}
+			G_IsEchelonToIcone = !G_IsEchelonToIcone;
+
+			declare Vec3 StartPositionNumber  = <{{{-CaseSizeX}}},             Quad_Echelon.RelativePosition.Y,     Quad_Echelon.RelativePosition.Z>;
+			declare Vec3 StartPositionIcone   = <{{{-CaseSizeX+(EchelonSize+0.1)}}}, Quad_EchelonNext.RelativePosition.Y, Quad_EchelonNext.RelativePosition.Z>;
+
+			declare Vec3 EndPositionNumber = <{{{-CaseSizeX-(EchelonSize+0.1)}}}, Quad_Echelon.RelativePosition.Y,     Quad_Echelon.RelativePosition.Z>;
+			declare Vec3 EndPositionIcone  = <{{{-CaseSizeX}}},             Quad_EchelonNext.RelativePosition.Y, Quad_EchelonNext.RelativePosition.Z>;
+
+			Quad_Echelon.ChangeImageUrl(ImgEchelon);
+			Quad_EchelonNext.ChangeImageUrl(ImgNext);
+			Quad_Echelon.RelativePosition     = StartPositionNumber;
+			Quad_EchelonNext.RelativePosition = StartPositionIcone;
+
+			/*LibManialink_SetTargetPosition(Quad_Echelon, EndPositionNumber);
+			LibManialink_PresetAnim(Quad_Echelon, TransitionTime, "EaseInOutQuart");
+			LibManialink_SetTargetPosition(Quad_EchelonNext, EndPositionIcone);
+			LibManialink_PresetAnim(Quad_EchelonNext, TransitionTime, "EaseInOutQuart");*/
+
+			G_EchelonAnim_StartTime = Now;
+			G_EchelonAnim_EndTime = G_EchelonAnim_StartTime + TransitionTime;
+			G_EchelonAnim_StartPos_Current = StartPositionNumber.X;
+			G_EchelonAnim_DeltaPos_Current = EndPositionNumber.X - G_EchelonAnim_StartPos_Current;
+			G_EchelonAnim_StartPos_Next = StartPositionIcone.X;
+			G_EchelonAnim_DeltaPos_Next = EndPositionIcone.X - G_EchelonAnim_StartPos_Next;
+		}
+
+		Void StartEchelonIconeScroll()
+		{
+			G_Echelon_NextTick = Now + C_TimeTickEchelon;
+		}
+
+		Void StopEchelonIconeScroll()
+		{
+			G_Echelon_NextTick  = -1;
+			if(G_IsEchelonToIcone)
+			{
+				NextEchelonIconeScroll();
+			}
+		}
+
+		Void SetEchelon(Integer _NewEchelon)
+		{
+			declare CMlQuad Quad_Echelon  <=> (Page.MainFrame.GetFirstChild("Quad_Echelon1_2")    as CMlQuad);
+			declare Text ImgEchelon = GetImgEchelon(_NewEchelon);
+			Quad_Echelon.ChangeImageUrl(ImgEchelon);
+		}
+		
+		Void SetGaugeSizeEchelonLevel() {
+			declare CMlQuad Quad_GaugeEchelon 		<=> (Page.GetFirstChild("Quad_GaugeEchelon") as CMlQuad);
+			declare 		Real GaugeEchelonTotalSize 	= {{{MapNameSizeXElement+9}}};
+			declare 		Real GaugeEchelonNewSize	= GaugeEchelonTotalSize *((G_Tick_CurrentEchelonLevel*1.0)/100.);
+
+			Quad_GaugeEchelon.Size.X = GaugeEchelonNewSize;
+		}
+		
+		Void SetEchelonPourcent() {
+			declare CMlFrame Frame_EchelonGauge2 <=> (Page.GetFirstChild("Frame_EchelonGauge2") as CMlFrame);
+			declare CMlLabel Label_GaugePourcent  <=> (Frame_EchelonGauge2.GetFirstChild("Label_GaugePourcent") as CMlLabel);
+			// declare Text Pourcent = TL::FormatReal ((G_Tick_CurrentEchelonLevel*100.), 2, False, False);
+			declare Text Pourcent = ""^G_Tick_CurrentEchelonLevel;
+			// log(G_Tick_CurrentEchelonLevel);
+			Label_GaugePourcent.SetText(Pourcent^"%");
+			// log(Label_GaugePourcent.Value);
+		}
+		
+		Void WaitAnimFinished(Integer _WaitTime) {
+			declare Integer WaitTime = _WaitTime;
+			while(WaitTime > 0) {
+				yield;
+				LibManialink_AnimLoop();
+				WaitTime -= Period;
+				// declare CMlFrame Frame_BigRankingInstance 			<=> (Page.GetFirstChild("Frame_BigRankingInstance"^2) 			as CMlFrame);
+				// declare CMlLabel Label_BigRankingPointGained		<=> (Frame_BigRankingInstance.GetFirstChild("Label_BigRankingPointGained") as CMlLabel);
+				// Label_BigRankingPointGained.Opacity = 0.5 + 0.5 * ML::Sin(Now*0.0125);
+			}
+		}
+		
+		Void StopVideoQuad(CMlQuad _Quad) 
+		{
+			_Quad.Hide();
+			_Quad.Video_Rewind();
+			_Quad.Video_IsPlaying = False;
+		}
+
+		Void PlayVideoQuad(CMlQuad _Quad, Integer _Duration) 
+		{
+			StopVideoQuad(_Quad);
+			_Quad.Video_IsPlaying = False;
+			_Quad.Video_Rewind();
+			_Quad.Show();
+			_Quad.Video_IsPlaying = True;
+			_Quad.Video_IsLooping = False;	
+		}
+		
+		Void SetPlayerNewGlobalRankings() {
+			foreach(ZoneIndex => Ranking in G_TempPlayerRankings) {
+				G_PlayerRankings[ZoneIndex] = Ranking;
+			}
+			SetInfoRanking();
+		}
+		
+		
+		
+		Void SetPlayerNewGlobalRankings(Integer _Index) {
+			/*
+			foreach(ZoneIndex => Ranking in G_TempPlayerRankings) {
+				
+			}
+			*/
+			
+			G_PlayerRankings[_Index] = G_TempPlayerRankings[_Index];
+			// SetInfoRanking();
+			declare netread Integer 	Net_RankingSequenceType 			for UI;
+			if(Net_RankingSequenceType == 0) {
+				UpdateInfosRanking(_Index);
+			}
+			UpdateBigInfosRanking(_Index);
+		}
+		
+		Void InitZoneToGrind() {
+			declare Integer DiffRank = 0;
+			if(G_TempPlayerRankings.existskey(G_CurZoneToGrind)) {
+				if(G_TempPlayerRankings[G_CurZoneToGrind] != G_PlayerRankings[G_CurZoneToGrind]) {
+					DiffRank = G_PlayerRankings[G_CurZoneToGrind] - G_TempPlayerRankings[G_CurZoneToGrind];
+					if(DiffRank < 0) DiffRank = 0;
+				}
+			} else {
+				DiffRank = 0;
+			}
+			
+			SetPointsGainedVisible(G_CurZoneToGrind, True);
+			SetPointsGainedValue(G_CurZoneToGrind, 0);
+			RankingModuleChangeScore(G_CurZoneToGrind, DiffRank);
+			// log(Now^"[IN MANIALINK] MAKE DIFFERENCE: "^G_CurZoneToGrind^" "^G_TempPlayerRankings[G_CurZoneToGrind]^" "^G_PlayerRankings[G_CurZoneToGrind]^" "^DiffRank^" "^G_Tick_AddScore[G_CurZoneToGrind]);
+		}
+		
+		main() {
+			// NextEchelonIconeScroll();
+			G_Echelon 					= -1;
+			
+			G_RankingIndex         	 	= 0;
+			G_Echelon_NextTick 			= -1;
+			// StartEchelonIconeScroll();
+			
+			G_TimeRanking           	= Now + C_TimeTick;
+			G_TimeReplaceFrame      	= Now + C_TimeTick + {{{C_TimeScrollRanking}}} + 100;
+			
+			G_Prev_TimeRanking      	= -1;
+			G_Prev_TimeReplaceFrame 	= -1;
+			G_RankTick_NextTick         = -1;
+			G_LevelTick_NextTick        = -1;
+			G_Tick_CurrentEchelonLevel  = -1;
+			
+			G_DebugMode									= False;
+
+			declare TriggerShow 				= -1;
+
+			declare CMlFrame Frame_RankingReward 		<=> (Page.GetFirstChild("Frame_RankingReward") as CMlFrame);
+			declare CMlLabel Label_Title 				<=> (Page.GetFirstChild("Label_Title") as CMlLabel);
+			declare CMlFrame Frame_EchelonGauge2 		<=> (Page.GetFirstChild("Frame_EchelonGauge2") as CMlFrame);
+			declare CMlFrame Frame_GlobalRankingAnim 	<=> (Page.GetFirstChild("Frame_GlobalRankingAnim") as CMlFrame);
+			declare CMlFrame Frame_GlobalRanking 		<=> (Page.GetFirstChild("Frame_GlobalRanking") as CMlFrame);
+			
+			declare Vec3[Integer] EchelonsColor;
+			// EchelonsColor[0] = <{{{ColorXmlWhite}}}>;
+			EchelonsColor[0] = {{{ColorXmlEchelon0}}};
+			EchelonsColor[1] = {{{ColorXmlEchelon1}}};
+			EchelonsColor[2] = {{{ColorXmlEchelon2}}};
+			EchelonsColor[3] = {{{ColorXmlEchelon3}}};
+			EchelonsColor[4] = {{{ColorXmlEchelon4}}};
+			EchelonsColor[5] = {{{ColorXmlEchelon5}}};
+			EchelonsColor[6] = {{{ColorXmlEchelon6}}};
+			EchelonsColor[7] = {{{ColorXmlEchelon7}}};
+			EchelonsColor[8] = {{{ColorXmlEchelon8}}};
+			EchelonsColor[9] = {{{ColorXmlEchelon9}}};
+			declare CMlQuad Quad_GaugeEchelon 		<=> (Page.GetFirstChild("Quad_GaugeEchelon") as CMlQuad);
+			// Quad_GaugeEchelon.BgColor = EchelonsColor[G_Echelon];
+			Quad_GaugeEchelon.Size.X = 1.0;
+			G_SequenceHasBeenStarted = False;
+			declare CMlLabel Label_PlayerName 			<=> (Page.GetFirstChild("Label_PlayerName") as CMlLabel);
+			declare CMlQuad Quad_Smoke 					<=> (Page.GetFirstChild("Quad_Smoke") as CMlQuad);
+			Quad_Smoke.Blend = CMlQuad::EBlendMode::Add;
+			// Quad_Smoke.Colorize = EchelonsColor[G_Echelon];
+			
+			declare Integer[Text] 	PlayerRankings 						for Page;
+			declare Integer[Text] 	PlayersCount						for Page;
+			declare Integer[Text] 	PlayerMapRankings 					for Page;
+			declare Integer[Text] 	PlayersMapCount						for Page;
+			
+			declare Integer 		UpdatePlayerGlobalRankings			for Page;
+			declare Integer 		WaitforPlayerRankingsUpdateTimer 	for Page;
+			declare Integer		 	UpdatePlayerMapRankings 			for Page;
+			
+			declare Integer			M_UpdatePlayerGlobalRankings 	= UpdatePlayerGlobalRankings;
+			declare Integer			M_UpdatePlayerMapRankings 		= UpdatePlayerMapRankings;
+			
+			declare Integer			TimerBeforeInput = 0;
+			
+			declare Text 	ZonePath 		= LocalUser.ZonePath;
+			declare Text[] 	ZoneSplitted 	= TL::Split("|", ZonePath);
+			G_NbPlayerZones					= ZoneSplitted.count;
+			
+			declare Integer[Text] ZoneNameToZoneIndex;
+			foreach(IndexKey => ZoneName in ZoneSplitted) {
+				G_PlayersCount[IndexKey] 		= 0;
+				G_PlayerRankings[IndexKey]		= 0;
+				G_ZoneName[IndexKey] 			= ZoneName;
+				ZoneNameToZoneIndex[ZoneName] 	= IndexKey;
+			}
+			SetInfoRanking();
+			G_LastZoneEnteredIndex = G_ZoneName.count-1;
+
+			declare netwrite Integer 	Net_StartRankingAnimationUpdate 		for UI;
+			declare netread Integer 	Net_StopRankingSequenceUpdate 		for UI;
+			declare netread Text		Net_ZonePath						for UI;
+			declare	netread Integer 	Net_OpponentType 					for UI;
+			declare netread Integer 	Net_CutOffTimeLimit 				for UI;
+			declare netread Integer 	Net_GamePhase						for UI;
+			declare netread Integer 	Net_GameContext						for UI;
+			declare netread		Text		Net_ModeName					for UI;
+			declare netread Integer 	Net_PlayerStatus					for UI;
+			declare netread Boolean 	Net_IsShowcase 						for Teams[0];
+			declare netread Integer 	Net_RankingSequenceType 			for UI;
+			// declare netread Integer 	Net_GamePhase 						for UI;
+			declare netwrite 	Boolean 	Net_IsBuddiesListShown 			for UI;
+			declare netread Integer 	Net_ForceDisplayLastRankingUpdate 	for UI;
+			declare	netread Text 		Net_Reward_Status					for UI;
+			declare Boolean 	UIOnlineGlobalRanking_IsPlayerConnectedMasterServer 	for UI;
+			// Net_IsPlayerConnectedMasterServer = False;
+			
+			// declare	netread Text 		Net_Reward_Status					for UI;
+			
+			// declare	netwrite 	Integer Net_Reward_TriggerPressedContinue 	for UI;
+			declare netwrite Boolean	Net_IsFavoriteManagerShown			for UI;
+			declare netwrite Boolean 	Net_IsPauseMenuEnabled 				for UI;
+			declare netwrite Boolean 	Net_IsScoreTableVisible 			for UI;
+			declare Integer 	Net_LaunchNewEchelonAnimation 			for UI;
+			declare netwrite Integer	Net_PlayerEchelon					for UI;
+			declare netwrite Integer Net_MainUserControllerId for UI;
+			declare netwrite Integer 	Net_GlobalRanking_TriggerPressedContinue 	for UI;
+			declare Integer  Pre_GlobalRanking_TriggerPressedContinue 	= Net_GlobalRanking_TriggerPressedContinue;
+			declare netwrite Text		Net_Reward_DiffRank					for UI;
+			declare Boolean 	IsPlayerSpec 			for UI;
+			
+			declare DesiredVisible 						= False;
+			declare Pre_StartRankingAnimationUpdate 		= Net_StartRankingAnimationUpdate;
+			declare Pre_StopRankingSequenceUpdate 		= Net_StopRankingSequenceUpdate;
+
+			RankingModuleStartRolling();
+			SetPointsGainedVisible(C_GLOBALRANKING_WORLD, False);
+
+			declare			Integer GlobalRankingPhase 		= C_GLOBALRANKING_DEFAULT;
+			declare			Integer Pre_GlobalRankingPhase 	= GlobalRankingPhase;
+			
+			// G_TempPlayerRankings[C_GLOBALRANKING_ZONE3] 		= 450;
+			// G_TempPlayerRankings[C_GLOBALRANKING_ZONE2] 		= 450;
+			// G_TempPlayerRankings[C_GLOBALRANKING_COUNTRY] 	= 450;
+			// G_TempPlayerRankings[C_GLOBALRANKING_WORLD] 		= 450;
+
+			declare Integer TimerWaitNewRank					= 0;
+			declare Integer M_PlayerStatus						= 0;
+			
+			StopVideoQuad(Quad_Smoke);
+			
+			declare Integer Pre_ForceDisplayLastRankingUpdate = Net_ForceDisplayLastRankingUpdate;
+			declare Integer TriggerAnimShow 				= 0;
+			declare Integer	AnimDuration					= 300;
+			declare Vec3	StartPosition 					= <0.0, 0.0, 0.0>;
+			declare Vec3	EndPosition						= <0.0, 0.0, 0.0>;
+			// declare Boolean IsDesiredVisible 			= !Net_IsPauseMenuEnabled && !Net_IsScoreTableVisible && Net_OpponentType == TMC_MEDAL_NONE && !Net_IsFavoriteManagerShown;
+			declare Boolean IsDesiredVisible 				= False;
+			declare Boolean M_IsDesiredVisible				= False;
+			declare CMlFrame FrameToMove;
+			declare Boolean M_FirstInit						= True;
+			declare Boolean M_RankingInit					= False;
+			declare M_SoundJackpot 							= Audio.CreateSound("{{{SOUNDPATH}}}{{{SOUND_JACKPOT}}}", {{{Volumes::GetVolumedB("ScoreJackpot")}}}, False, False, False);	
+			declare M_SoundFXFlame	 						= Audio.CreateSound("{{{SOUNDPATH ^ SOUND_ENDRACE_FLAME}}}", {{{Volumes::GetVolumedB("RewardFlame")}}}, False, False, False);
+			declare M_SoundFXWooshSmall						= Audio.CreateSound("{{{SOUNDPATH ^ SOUND_WOOSHSMALL}}}", {{{Volumes::GetVolumedB("EndRaceYes")}}}, False, False, False);
+			
+			
+			declare Boolean JackPotHasBeenPlayed = False;
+			
+			declare Real[] NbRanking = [0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95];
+			declare Integer IndexPlayed = 0;
+
+			declare CMlFrame Frame_InfoRanking <=> (Page.GetFirstChild("InfoRanking") as CMlFrame);
+			declare CMlFrame Frame_InfoBigRanking <=> (Page.GetFirstChild("InfoBigRanking") as CMlFrame);
+			declare CMlFrame Frame_Echelons   <=> (Page.MainFrame.GetFirstChild("Frame_Echelons")  as CMlFrame);
+			declare CMlQuad  Quad_Echelon     <=> (Frame_Echelons.GetFirstChild("Quad_Echelon1")   as CMlQuad);
+			declare CMlQuad  Quad_EchelonNext <=> (Frame_Echelons.GetFirstChild("Quad_Echelon1_2") as CMlQuad);
+			
+			while(True) {
+				yield;
+				LibManialink_AnimLoop();
+				if(!PageIsVisible) continue;
+			
+				// Label_Title.Opacity = 0.6 + 0.4 * ML::Sin(Now*0.004);
+				// log(G_PlayerRankings);
+				
+				if(InputPlayer != Null) {
+					Label_PlayerName.Value = InputPlayer.User.Name;
+					
+					if(G_Tick_CurrentEchelonLevel == -1) {
+						G_Tick_CurrentEchelonLevel = InputPlayer.User.NextEchelonPercent;
+						// G_Tick_CurrentEchelonLevel = 70;
+						SetEchelonPourcent();
+						SetGaugeSizeEchelonLevel();
+					}
+					
+					// Net_IsPlayerConnectedMasterServer = False;
+					
+					declare Integer PlayerEchelonIndex = GetEchelonPlayerIndex(InputPlayer);
+					if(G_Echelon == -1 && PlayerEchelonIndex != -1 && UIOnlineGlobalRanking_IsPlayerConnectedMasterServer) {
+						G_Echelon 					= GetEchelonPlayerIndex(InputPlayer);
+						Quad_GaugeEchelon.BgColor 	= EchelonsColor[G_Echelon];
+						Quad_Smoke.Colorize 		= EchelonsColor[G_Echelon];
+						StartEchelonIconeScroll();
+					}
+				}
+				
+				if(!Net_IsShowcase) {
+						if(InputPlayer.User.StereoDisplayMode == CUser::EStereoDisplayMode::None) {
+							if(Net_GameContext == C_GAMECONTEXT_ONLINE) {
+								if(Net_GamePhase == C_GAMEPHASE_GAME) {
+									IsDesiredVisible = !Net_IsBuddiesListShown && !Net_IsPauseMenuEnabled && !Net_IsScoreTableVisible && !Net_IsFavoriteManagerShown && (GameTime < Net_CutOffTimeLimit || Net_CutOffTimeLimit == -1) && Net_OpponentType == TMC_MEDAL_NONE && GUIPlayer != Null && !IsPlayerSpec;
+								} else {
+									IsDesiredVisible = !Net_IsBuddiesListShown && !Net_IsPauseMenuEnabled && !Net_IsScoreTableVisible && UI.UISequence != CUIConfig::EUISequence::Podium;
+								}
+							} else {
+								IsDesiredVisible = (!Net_IsPauseMenuEnabled && !Net_IsFavoriteManagerShown && Net_OpponentType == TMC_MEDAL_NONE);
+							}
+						} else {
+							IsDesiredVisible = False;
+						}
+				} else {
+					IsDesiredVisible = False;
+				}
+				
+				if(M_PlayerStatus != Net_PlayerStatus) {				
+					if(Net_PlayerStatus == C_SpawnStatus_Outro) {
+						RankingModuleStopRolling();
+						if(G_Echelon > -1) StopEchelonIconeScroll();
+					}
+					M_PlayerStatus = Net_PlayerStatus;
+				}
+				
+				if(M_FirstInit) {
+					M_IsDesiredVisible = !IsDesiredVisible;
+					M_FirstInit = False;
+				}
+				
+				if(IsDesiredVisible != M_IsDesiredVisible) {
+					if(IsDesiredVisible) {
+						Frame_GlobalRanking.RelativePosition = <0., 0., 0.>;
+						FrameToMove 	<=> Frame_GlobalRankingAnim;
+						StartPosition 	= <190., {{{90-OpponentScreenMarginsY}}}, 31.>;
+						EndPosition 	= <90., {{{90-OpponentScreenMarginsY}}}, 31.>;
+					} else {
+						FrameToMove 	<=> Frame_GlobalRanking;
+						StartPosition 	= <0., {{{90-OpponentScreenMarginsY}}}, 31.>;
+						EndPosition 	= <90., {{{90-OpponentScreenMarginsY}}}, 31.>;
+					}
+					TriggerAnimShow = Now;
+					M_IsDesiredVisible = IsDesiredVisible;
+				}
+				
+				if(Now > TriggerAnimShow + AnimDuration) {
+					if(FrameToMove != Null)
+						if(Frame_GlobalRankingAnim.RelativePosition != EndPosition)
+							Frame_GlobalRankingAnim.RelativePosition = EndPosition;
+				} else {
+					if(FrameToMove != Null)
+						CheckToPlayMoveTo("BackOut", FrameToMove , TriggerAnimShow, StartPosition, EndPosition, AnimDuration);
+				}
+
+				if(G_Echelon_NextTick != -1 && G_Echelon_NextTick < Now)
+				{
+					NextEchelonIconeScroll();
+					G_Echelon_NextTick = Now + C_TimeTickEchelon;
+				}
+				
+				if(Pre_ForceDisplayLastRankingUpdate != Net_ForceDisplayLastRankingUpdate) {
+					//We restart the count with the actual version
+					if(Net_RankingSequenceType == 0) {
+						if(PlayerRankings.count > 0 && PlayersCount.count > 0) {
+							foreach(ZoneName => Ranking in PlayerRankings) {
+								declare Integer ZoneIndex = ZoneNameToZoneIndex[ZoneName];
+								if(G_PlayerRankings[ZoneIndex] != Ranking) {
+									G_PlayerRankings[ZoneIndex] = Ranking;
+								}
+							}
+							
+							foreach(ZoneName => Players in PlayersCount) {
+								declare Integer ZoneIndex = ZoneNameToZoneIndex[ZoneName];
+								if(G_PlayersCount[ZoneIndex] != Players) {
+									G_PlayersCount[ZoneIndex] = Players;
+								}
+							}
+						} else {
+							foreach(IndexKey => ZoneName in ZoneSplitted) {
+								G_PlayersCount[IndexKey] 		= 0;
+								G_PlayerRankings[IndexKey]		= 0;
+							}
+						}
+						SetInfoRanking();
+					} else if(Net_RankingSequenceType == 1) {
+						if(PlayerMapRankings.count > 0 && PlayersMapCount.count > 0) {
+							foreach(ZoneName => Ranking in PlayerMapRankings) {
+								declare Integer ZoneIndex = ZoneNameToZoneIndex[ZoneName];
+								if(G_PlayerRankings[ZoneIndex] != Ranking) {
+									G_PlayerRankings[ZoneIndex] = Ranking;
+								}
+							}
+							
+							foreach(ZoneName => Players in PlayersMapCount) {
+								declare Integer ZoneIndex = ZoneNameToZoneIndex[ZoneName];
+								if(G_PlayersCount[ZoneIndex] != Players) {
+									G_PlayersCount[ZoneIndex] = Players;
+								}
+							}
+							
+						} else {
+							foreach(IndexKey => ZoneName in ZoneSplitted) {
+								G_PlayersCount[IndexKey] 		= 0;
+								G_PlayerRankings[IndexKey]		= 0;
+							}
+						}
+						
+						SetInfoBigRanking();
+						// SetInfoRanking();
+					}
+					
+					Pre_ForceDisplayLastRankingUpdate = Net_ForceDisplayLastRankingUpdate;
+				}
+				
+				if(Pre_StartRankingAnimationUpdate != Net_StartRankingAnimationUpdate) {
+					log(Now^"[IN MANIALINK] SET DEFAULT RANKING");
+					TimerBeforeInput 			= Now + 549;
+					G_SequenceHasBeenStarted 	= True;
+					
+					RankingModuleStopRolling();
+					if(G_Echelon > -1) StopEchelonIconeScroll();
+					ReplaceFrame();
+					
+					Net_Reward_DiffRank = "";
+					G_TempPlayerRankings.clear();
+					GlobalRankingPhase 		= C_GLOBALRANKING_RANKING_STARTRANKING;
+					TimerWaitNewRank 		= WaitforPlayerRankingsUpdateTimer;
+					
+					if(Net_GameContext == C_GAMECONTEXT_ONLINE || Net_ModeName == "Championship") {
+						Frame_EchelonGauge2.Visible = True;
+						Frame_EchelonGauge2.RelativePosition = <160.0, Frame_EchelonGauge2.RelativePosition.Y, Frame_EchelonGauge2.RelativePosition.Z>;
+					}
+					
+					M_RankingInit = True;
+					Pre_StartRankingAnimationUpdate = Net_StartRankingAnimationUpdate;
+				}
+				
+				if(M_UpdatePlayerGlobalRankings != UpdatePlayerGlobalRankings && ((GlobalRankingPhase == C_GLOBALRANKING_RANKING_STARTRANKING && M_RankingInit) || GlobalRankingPhase == C_GLOBALRANKING_DEFAULT)) {
+					foreach(ZoneName => Ranking in PlayerRankings) {
+						declare Integer ZoneIndex = ZoneNameToZoneIndex[ZoneName];
+						if(GlobalRankingPhase == C_GLOBALRANKING_RANKING_STARTRANKING) {
+							G_TempPlayerRankings[ZoneIndex] = Ranking;
+							if(G_PlayerRankings[ZoneIndex] == 0) {
+								G_PlayerRankings[ZoneIndex] = Ranking;
+							}
+						} else {
+							if(G_PlayerRankings[ZoneIndex] != Ranking) {
+								G_PlayerRankings[ZoneIndex] = Ranking;
+							}
+						}
+					}
+					
+					foreach(ZoneName => Players in PlayersCount) {
+						declare Integer ZoneIndex = ZoneNameToZoneIndex[ZoneName];
+						if(G_PlayersCount[ZoneIndex] != Players) {
+							G_PlayersCount[ZoneIndex] = Players;
+						}
+					}
+					
+					if(GlobalRankingPhase == C_GLOBALRANKING_RANKING_STARTRANKING) {
+						TimerWaitNewRank 	= 0;
+						// GlobalRankingPhase 	=  C_GLOBALRANKING_RANKING_RANKGRIND;
+					}
+					
+					SetInfoRanking();
+					M_UpdatePlayerGlobalRankings = UpdatePlayerGlobalRankings;
+				}
+				
+				if(M_UpdatePlayerMapRankings != UpdatePlayerMapRankings && Net_RankingSequenceType == 1 && ((GlobalRankingPhase == C_GLOBALRANKING_RANKING_STARTRANKING && M_RankingInit) || GlobalRankingPhase == C_GLOBALRANKING_DEFAULT)) {
+					log(Now^">UPDATE MAP RANKING");
+					foreach(ZoneName => Ranking in PlayerMapRankings) {
+						declare Integer ZoneIndex = ZoneNameToZoneIndex[ZoneName];
+						if(GlobalRankingPhase == C_GLOBALRANKING_RANKING_STARTRANKING) {
+							G_TempPlayerRankings[ZoneIndex] = Ranking;
+							if(G_PlayerRankings[ZoneIndex] == 0) {
+								G_PlayerRankings[ZoneIndex] = Ranking;
+							}
+						} else {
+							if(G_PlayerRankings[ZoneIndex] != Ranking) {
+								G_PlayerRankings[ZoneIndex] = Ranking;
+							}
+						}
+					}
+					
+					foreach(ZoneName => Players in PlayersMapCount) {
+						declare Integer ZoneIndex = ZoneNameToZoneIndex[ZoneName];
+						if(G_PlayersCount[ZoneIndex] != Players) {
+							G_PlayersCount[ZoneIndex] = Players;
+						}
+					}
+					
+					if(GlobalRankingPhase == C_GLOBALRANKING_RANKING_STARTRANKING) {
+						TimerWaitNewRank = 0;
+					}
+					
+					// SetInfoRanking();
+					M_UpdatePlayerMapRankings = UpdatePlayerMapRankings;
+				} else {
+					M_UpdatePlayerMapRankings = UpdatePlayerMapRankings;
+				}
+				
+				if(Pre_GlobalRankingPhase != GlobalRankingPhase) {
+					Pre_GlobalRankingPhase = GlobalRankingPhase;
+					if(GlobalRankingPhase == C_GLOBALRANKING_RANKING_STARTRANKING) {
+						DesiredVisible 				= True;
+						TriggerShow 				= Now;
+						Frame_RankingReward.Visible = True;
+						
+						if(Net_Reward_Status == "ONLINERANKING") {
+							Frame_RankingReward.RelativePosition.Y = -7.0;
+							Label_Title.Visible = False;
+						} else if(Net_Reward_Status == "LOCALRANKING") {
+							Frame_RankingReward.RelativePosition.Y 	= -40.0;
+							Frame_RankingReward.RelativeScale 		= 0.4;
+							Label_Title.Visible = True;
+						}
+						
+						if(Net_RankingSequenceType == 0) {
+							Label_Title.Value = _("Global Ranking");
+						} else {
+							Label_Title.Value = _("Map Ranking");
+						}
+						
+					} else if(GlobalRankingPhase == C_GLOBALRANKING_RANKING_RANKGRIND) {				
+						G_CurZoneToGrind 			= 0;
+						for(I, 0, 3) {
+							SetPointsGainedVisible(I, False);
+							SetPointsGainedValue(I, 0);
+						}
+						
+						InitZoneToGrind();
+						JackPotHasBeenPlayed 		= False;
+					} else if(GlobalRankingPhase == C_GLOBALRANKING_RANKING_ECHELONGRIND) {
+						Frame_EchelonGauge2.Visible = True;
+						Frame_EchelonGauge2.RelativePosition = <160.0, Frame_EchelonGauge2.RelativePosition.Y, Frame_EchelonGauge2.RelativePosition.Z>;
+						
+						declare Integer NewEchelon = InputPlayer.User.NextEchelonPercent;
+						// declare Integer NewEchelon = 1;
+						EchelonModuleChangeLevel(NewEchelon);
+						
+						//CB: Hack to zap animation and just display final score.
+						G_Level_TickIndex = C_Level_NumberOfTick;
+
+						if(IndexPlayed < NbRanking.count-1) {
+							IndexPlayed += 1;
+						} else {
+							IndexPlayed = 0;
+						}
+					} else if(GlobalRankingPhase == C_GLOBALRANKING_DEFAULT) {
+						if(G_Echelon > -1) StartEchelonIconeScroll();
+						RankingModuleStartRolling();
+						M_RankingInit = False;
+					}
+				}
+
+				if(GlobalRankingPhase == C_GLOBALRANKING_RANKING_STARTRANKING) {
+					if(DesiredVisible) {
+						Frame_RankingReward.RelativePosition.X = AL::Ease(
+							C_AnimText_Easing, 
+							Now-(TriggerShow+C_AnimText_DelayShow)*1., 
+							C_AnimText_Offset, 
+							-C_AnimText_Offset, 
+							C_AnimText_Duration
+						);
+						
+						if(Frame_RankingReward.RelativePosition.X == 0) {
+							if(TimerWaitNewRank > 0) {
+								TimerWaitNewRank -= Period;	
+							} else {
+								if(GlobalRankingPhase == C_GLOBALRANKING_RANKING_STARTRANKING && G_TempPlayerRankings.count  < G_NbPlayerZones) {
+									GlobalRankingPhase = C_GLOBALRANKING_DEFAULT;
+								} else {
+									GlobalRankingPhase = C_GLOBALRANKING_RANKING_RANKGRIND;
+								}
+								
+								/*
+								if(GlobalRankingPhase != C_GLOBALRANKING_RANKING_RANKGRIND) {
+									GlobalRankingPhase = C_GLOBALRANKING_RANKING_RANKGRIND;
+								}
+								*/
+							}
+						}
+					}
+				}
+				
+				// if(Pre_StopRankingSequenceUpdate != Net_StopRankingSequenceUpdate) {
+				/*
+				if(Pre_GlobalRanking_TriggerPressedContinue != Net_GlobalRanking_TriggerPressedContinue) {
+					if(G_SequenceHasBeenStarted) {
+						log("WOUHOU STOP");
+						G_SequenceHasBeenStarted = False;
+						Frame_RankingReward.Visible = False;
+						SetPointsGainedVisible(C_GLOBALRANKING_WORLD, False);
+						GlobalRankingPhase = C_GLOBALRANKING_DEFAULT;
+						
+						Frame_EchelonGauge2.Visible = False;
+						
+						
+						for(I, 0, 3) {
+							SetPointsGainedVisible(I, False);
+							SetPointsGainedValue(I, 0);
+						}
+						
+						if(G_TempPlayerRankings.count > 0 && G_PlayerRankings.count > 0 && Net_RankingSequenceType == 0) {
+							SetPlayerNewGlobalRankings();
+						}
+					}
+					
+					Pre_GlobalRanking_TriggerPressedContinue 	= Net_GlobalRanking_TriggerPressedContinue;
+				}
+				*/
+				
+				if(Pre_StopRankingSequenceUpdate != Net_StopRankingSequenceUpdate || Pre_GlobalRanking_TriggerPressedContinue != Net_GlobalRanking_TriggerPressedContinue) {
+					
+					Frame_RankingReward.Visible = False;
+					GlobalRankingPhase = C_GLOBALRANKING_DEFAULT;
+					Frame_EchelonGauge2.Visible = False;
+					
+					for(I, 0, 3) {
+						SetPointsGainedVisible(I, False);
+						SetPointsGainedValue(I, 0);
+					}
+					
+					if(G_TempPlayerRankings.count > 0 && G_PlayerRankings.count > 0 && Net_RankingSequenceType == 0) {
+						SetPlayerNewGlobalRankings();
+					}
+					
+					if(G_SequenceHasBeenStarted) {
+						G_SequenceHasBeenStarted = False;
+					}
+					
+					Pre_StopRankingSequenceUpdate 				= Net_StopRankingSequenceUpdate;
+					Pre_GlobalRanking_TriggerPressedContinue 	= Net_GlobalRanking_TriggerPressedContinue;
+				}
+
+				//Roulement du Ranking
+				if(G_NbPlayerZones > 1) {
+					if(Now > G_TimeRanking && G_TimeRanking != G_Prev_TimeRanking && G_TimeRanking != -1)
+					{
+						NextRankingScroll();
+						G_Prev_TimeRanking = G_TimeRanking;
+						G_TimeRanking      = Now + C_TimeTick;
+						if(G_SequenceHasBeenStarted) {
+							G_TimeRanking      = Now + (C_TimeTick/3);
+						}
+						G_TimeReplaceFrame = Now + {{{C_TimeScrollRanking}}} + 100;
+					}
+					if(Now > G_TimeReplaceFrame && G_TimeReplaceFrame != G_Prev_TimeReplaceFrame)
+					{
+						ReplaceFrame();
+						G_Prev_TimeReplaceFrame = G_TimeReplaceFrame;
+					}
+				}
+
+				if(GlobalRankingPhase == C_GLOBALRANKING_RANKING_RANKGRIND) {
+					if(G_RankTick_NextTick < Now && G_RankTick_NextTick != -1 && G_Score_TickIndex <= C_Score_NumberOfTick)
+					{	
+						G_Score_TickIndex += 1;
+						declare Boolean HasBeenAdded = False;
+						
+						if(G_PlayerRankings[G_CurZoneToGrind] > G_TempPlayerRankings[G_CurZoneToGrind]) {
+							G_PlayerRankings[G_CurZoneToGrind] -= G_Tick_AddScore[G_CurZoneToGrind];
+							HasBeenAdded = True;
+							Audio.PlaySoundEvent(CAudioManager::ELibSound::ScoreIncrease, 0, {{{Volumes::GetVolumedB("ScoreIncrease")}}});
+						}
+						
+						if(Net_RankingSequenceType == 0) {
+							UpdateInfosRanking(G_CurZoneToGrind);
+						}
+						
+						UpdateBigInfosRanking(G_CurZoneToGrind);
+						
+						declare Integer CurAdded = 0;
+						if(HasBeenAdded) {
+							for(J, 0, G_Score_TickIndex) {
+								CurAdded += G_Tick_AddScore[G_CurZoneToGrind];
+							}
+						} else {
+							if(!JackPotHasBeenPlayed && G_PointsGained[G_CurZoneToGrind] > 0) {
+								M_SoundJackpot.Stop();
+								M_SoundJackpot.Play();
+								JackPotHasBeenPlayed = True;
+							}
+							CurAdded = G_PointsGained[G_CurZoneToGrind];
+						}
+						SetPointsGainedValue(G_CurZoneToGrind, CurAdded);
+						G_RankTick_NextTick = Now + C_Score_TickTime;
+					}
+					
+					else if(G_Score_TickIndex >= C_Score_NumberOfTick && G_RankTick_NextTick != -1)
+					{
+						G_RankTick_NextTick = -1;
+						
+						if(!JackPotHasBeenPlayed && G_PointsGained[G_CurZoneToGrind] > 0) {
+							M_SoundJackpot.Stop();
+							M_SoundJackpot.Play();
+							JackPotHasBeenPlayed = True;
+						}
+						
+						if(G_PlayerRankings[G_CurZoneToGrind] > 0 && G_PlayersCount[G_CurZoneToGrind] > 0) {
+							if(G_PointsGained[G_CurZoneToGrind] > 0) {
+								// Net_Reward_DiffRank = TL::Compose(_("You won %1 ranks in worldwide ranking"), ""^G_PointsGained);
+							} else {
+								// Net_Reward_DiffRank = _("0 rank won in worldwide ranking");
+								// Net_Reward_DiffRank = _("No rank won in worldwide ranking");
+							}
+							
+							SetPlayerNewGlobalRankings(G_CurZoneToGrind);
+							SetPointsGainedVisible(G_CurZoneToGrind, True);
+							SetPointsGainedValue(G_CurZoneToGrind, G_PointsGained[G_CurZoneToGrind]);
+						} else {
+							Net_Reward_DiffRank = _("Cannot display ranks won in worldwide ranking");
+						}
+						
+						if(G_CurZoneToGrind < G_PlayerRankings.count-1) {
+							G_CurZoneToGrind += 1;
+							InitZoneToGrind();
+							JackPotHasBeenPlayed = False;
+						} else {
+							
+							if(Net_GameContext == C_GAMECONTEXT_ONLINE || Net_ModeName == "Championship") {
+								GlobalRankingPhase = C_GLOBALRANKING_RANKING_ECHELONGRIND;
+							} else {
+								if(Net_RankingSequenceType == 0) {
+									GlobalRankingPhase = C_GLOBALRANKING_DEFAULT;
+								}
+							}
+						}
+					}
+				}
+				
+				if(GlobalRankingPhase == C_GLOBALRANKING_RANKING_ECHELONGRIND) {
+					if(G_LevelTick_NextTick < Now && G_LevelTick_NextTick != -1 && G_Level_TickIndex <= C_Level_NumberOfTick) {
+						G_Level_TickIndex += 1;
+						
+						G_Tick_CurrentEchelonLevel += ML::NearestInteger(G_Tick_AddEchelonLevel);
+						// G_Tick_CurrentEchelonLevel += ML::NearestInteger(10.);
+						
+						
+						if(G_Tick_AddEchelonLevel > 0) {
+							// Audio.PlaySoundEvent(CAudioManager::ELibSound::ScoreIncrease, 0, {{{Volumes::GetVolumedB("ScoreIncrease")}}});
+						}
+						
+						if(G_Tick_CurrentEchelonLevel > 100) {
+							G_Tick_CurrentEchelonLevel 		= G_Tick_CurrentEchelonLevel - 100;
+						}
+						
+						G_LevelTick_NextTick = Now + C_Level_TickTime;
+						SetGaugeSizeEchelonLevel();
+						SetEchelonPourcent();
+					} else if(G_Level_TickIndex >= C_Level_NumberOfTick && G_Level_TickIndex != -1) {
+						if(GetEchelonPlayerIndex(InputPlayer) != G_Echelon) {
+						// if(True) {
+							G_Echelon 						= GetEchelonPlayerIndex(InputPlayer);
+							// G_Echelon 						= G_Echelon+1;
+							Net_LaunchNewEchelonAnimation			+= 1;
+							Net_PlayerEchelon 				= G_Echelon;
+
+							Frame_RankingReward.Visible 	= False;
+							SetEchelon(G_Echelon);
+							Quad_GaugeEchelon.BgColor 	= EchelonsColor[G_Echelon];
+							Quad_Smoke.Colorize 		= EchelonsColor[G_Echelon];
+							PlayVideoQuad(Quad_Smoke, 1000);
+							M_SoundFXFlame.Play();
+						}
+						
+						G_Tick_CurrentEchelonLevel 	= G_Tick_FinalEchelonLevel;
+						SetGaugeSizeEchelonLevel();
+						SetEchelonPourcent();
+						GlobalRankingPhase 			= C_GLOBALRANKING_DEFAULT;
+						// M_SoundJackpot.Stop();
+						// M_SoundJackpot.Play();
+						G_Level_TickIndex 		= -1;
+						G_LevelTick_NextTick 	= -1;
+						RankingModuleStartRolling();
+						if(G_Echelon > -1) StartEchelonIconeScroll();
+					}
+				}
+				
+				if(Net_GameContext == C_GAMECONTEXT_LOCAL && GlobalRankingPhase != C_GLOBALRANKING_DEFAULT) {
+					foreach(PadIndex => Pad in Input.Pads) 
+					{
+						foreach(Button in Pad.ButtonEvents)
+						{
+							switch(Button) 
+							{
+								case CInputScriptPad::EButton::A : 
+								{
+									if(Net_MainUserControllerId == Pad.ControllerId) {
+										log("[GLOBAL RANKING] PRESS A");
+										Net_GlobalRanking_TriggerPressedContinue += 1;
+										
+										// for(I, 0, 3) {
+											// SetPointsGainedVisible(I, False);
+											// SetPointsGainedValue(I, 0);
+										// }
+									}
+								}
+							}
+						}
+					}
+				}
+				
+				if (Now >= G_EchelonAnim_StartTime && Now <= G_EchelonAnim_EndTime) {
+					Quad_Echelon.RelativePosition.X = AL::EaseInOutQuart(
+						Now - G_EchelonAnim_StartTime,
+						G_EchelonAnim_StartPos_Current,
+						G_EchelonAnim_DeltaPos_Current,
+						G_EchelonAnim_EndTime - G_EchelonAnim_StartTime
+					);
+					Quad_EchelonNext.RelativePosition.X = AL::EaseInOutQuart(
+						Now - G_EchelonAnim_StartTime,
+						G_EchelonAnim_StartPos_Next,
+						G_EchelonAnim_DeltaPos_Next,
+						G_EchelonAnim_EndTime - G_EchelonAnim_StartTime
+					);
+				}
+
+				if (Now >= G_RankingAnim_StartTime && Now <= G_RankingAnim_EndTime) {
+					Frame_InfoRanking.RelativePosition.Y = AL::EaseLinear(
+						Now - G_RankingAnim_StartTime,
+						G_RankingAnim_StartPos_Current,
+						G_RankingAnim_DeltaPos_Current,
+						G_RankingAnim_EndTime - G_RankingAnim_StartTime
+					);
+					/*
+					Frame_InfoBigRanking.RelativePosition.Y = AL::EaseLinear(
+						Now - G_RankingAnim_StartTime,
+						G_RankingAnim_StartPos_Next,
+						G_RankingAnim_DeltaPos_Next,
+						G_RankingAnim_EndTime - G_RankingAnim_StartTime
+					);
+					*/
+				}
+				
+				/*
+				foreach(Event in PendingEvents)
+				{
+					if(Event.Type 			== CMlEvent::Type::MenuNavigation 
+					&&(Event.MenuNavAction 	== CMlEvent::EMenuNavAction::Select
+					))
+					{
+						Net_GlobalRanking_TriggerPressedContinue += 1;
+						
+					}
+				}
+				*/
+				
+				/*
+				foreach(Event in PendingEvents) {
+					if(G_LockInput + 100 > Now) continue;
+					switch(Event.Type) {
+						case CMlEvent::Type::PluginCustomEvent: {
+							switch(Event.PluginCustomEventType) {
+								case "StartEchelonScroll" : {
+									// StartEchelonIconeScroll();
+								}
+								case "StopEchelonScroll" : {
+									StopEchelonIconeScroll();
+								}
+							}
+						}
+					}
+				}
+				*/
+			}
+		}
+	--></script> 
+	""";
+	Layers::Create("GlobalRanking", MLText);
+	Layers::Attach("GlobalRanking");
+	declare Layer <=> Layers::Get("GlobalRanking");
+	Layer.InOutAnimation = CUILayer::EUILayerAnimation::RightFast;
+}
+
+Void Load()
+{
+	ConstructGlobalRankingModule();
+}
+
+Void ShowGlobalRanking(Boolean _Show) {
+	Layers::SetVisibility("GlobalRanking", _Show);
+}
+
+Void UpdateWorldRanking(Integer _Ranking) {
+	declare CUILayer GlobalRankingLayer = Layers::Get("GlobalRanking");
+	declare Integer WorldRanking for GlobalRankingLayer.LocalPage;
+	WorldRanking = _Ranking;
+}
+
+Void UpdateWorldPlayersCount(Integer _Count) {
+	declare CUILayer GlobalRankingLayer = Layers::Get("GlobalRanking");
+	declare Integer WorldPlayersCount for GlobalRankingLayer.LocalPage;
+	WorldPlayersCount = _Count;
+}
+
+Void UpdateRegionRanking(Integer _Ranking) {
+	declare CUILayer GlobalRankingLayer = Layers::Get("GlobalRanking");
+	declare Integer RegionRanking for GlobalRankingLayer.LocalPage;
+	RegionRanking = _Ranking;
+}
+
+Void UpdateRegionPlayersCount(Integer _Count) {
+	declare CUILayer GlobalRankingLayer = Layers::Get("GlobalRanking");
+	declare Integer RegionPlayersCount for GlobalRankingLayer.LocalPage;
+	RegionPlayersCount = _Count;
+}
+
+Void UpdateCountryRanking(Integer _Ranking) {
+	declare CUILayer GlobalRankingLayer = Layers::Get("GlobalRanking");
+	declare Integer CountryRanking for GlobalRankingLayer.LocalPage;
+	CountryRanking = _Ranking;
+}
+
+Void UpdateCountryPlayersCount(Integer _Count) {
+	declare CUILayer GlobalRankingLayer = Layers::Get("GlobalRanking");
+	declare Integer CountryPlayersCount for GlobalRankingLayer.LocalPage;
+	CountryPlayersCount = _Count;
+}

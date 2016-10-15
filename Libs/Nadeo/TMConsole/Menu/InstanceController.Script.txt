@@ -1,0 +1,126 @@
+#Include "Libs/Nadeo/TMConsole/Menu/MenuLayers.Script.txt"								as Layers
+#Include "Libs/Nadeo/TMConsole/Live/LiveEvent.Script.txt" 								as LiveEvent
+#Include "Libs/Nadeo/TMConsole/Live/LiveHttp.Script.txt" 								as LiveHttp
+#Include "Libs/Nadeo/TMConsole/Live/LiveXml.Script.txt" 								as LiveXml
+
+#Const C_ApiUrl "http://preprod.live.nadeo.com/daas-api/"
+
+#Const	C_REQUESTSTATUS_NOREQUEST 	0
+#Const	C_REQUESTSTATUS_WAITING 	1
+#Const	C_REQUESTSTATUS_COMPLETE 	2
+
+#Const C_REQUESTTYPE_NONE			-1
+#Const C_REQUESTTYPE_ALLINSTANCES	0
+// #Const C_REQUESTTYPE_ALLINSTANCES	0
+
+declare Text				G_RequestAllInstancesId;
+
+declare Text[Text][] 		G_AllInstances;
+declare Text				G_LayerToSend;
+
+declare Integer[Integer]	G_RequestInstanceStatus;
+declare Integer				G_TypeInstanceRequested;
+
+// Functions to call
+//-----------------------------------------------------------//
+
+//Datas for All Instances
+//declare Integer		Net_AllInstancesUpdate
+//declare Text[Text][] 	AllInstances
+Void GetAllInstances(Text _LayerToSend) {
+	G_LayerToSend 							= _LayerToSend;
+	G_TypeInstanceRequested					= C_REQUESTTYPE_ALLINSTANCES;
+}
+
+Void GetSpecInstance(Text _LayerToSend, Text _InstanceId) {
+	//TO DO
+}
+
+Void GetMyInstances(Text _LayerToSend) {
+	//TO DO
+}
+
+Void CreateInstance(Text _LayerToSend, Text _OwnerLogin) {
+	//TO DO
+}
+
+Void KillInstance(Text _LayerToSend, Text _InstanceId) {
+	//TO DO
+}
+
+//-----------------------------------------------------------//
+Void WarnNotEnoughParamsLive() {
+	log("NOT ENOUGH PARAMS FOR PLAYLIST");
+}
+
+Void ReInitRequest() {
+	G_TypeInstanceRequested = C_REQUESTTYPE_NONE;
+	G_LayerToSend			= "";
+}
+
+Void Load() {
+	G_RequestInstanceStatus[C_REQUESTTYPE_ALLINSTANCES] = C_REQUESTSTATUS_NOREQUEST;
+	ReInitRequest();
+}
+
+Void RequestAllInstances() {
+	declare Ident CurId 								= LiveHttp::Manialib_Http_GetAsync(C_ApiUrl^"instances");
+	G_RequestAllInstancesId								= CurId^"";
+	G_RequestInstanceStatus[C_REQUESTTYPE_ALLINSTANCES] = C_REQUESTSTATUS_WAITING;
+}
+
+Void JoinRoom(Text _Link) {
+	OpenLink(_Link, CManiaApp::ELinkType::ManialinkBrowser);
+}
+
+Void SendInstanceListToUI() {
+	declare CUILayer 		LayerToSend 	= Layers::Get(G_LayerToSend);
+	if(LayerToSend == Null) return;
+	
+	declare Integer 		RequestedInstancesUpdate 		for LayerToSend.LocalPage;
+	declare Text[Text][] 	RequestedInstances 				for LayerToSend.LocalPage;
+	RequestedInstancesUpdate					+= 1;
+	RequestedInstances							= G_AllInstances;
+	LayerCustomEvent(LayerToSend, "AllInstancesSent", [""]);
+}
+
+Void SetInstanceList(Text _RequestResult) {
+	declare CXmlDocument	Doc 			= LiveXml::Manialib_Xml_CreateDocument(_RequestResult);
+	G_AllInstances							= LiveXml::Manialib_Xml_NodeToArray2(Doc.GetFirstChild("result"));
+	LiveXml::Manialib_Xml_DestroyDocument(Doc);
+}
+
+Void SendDatasToUILoop() {
+	if(G_TypeInstanceRequested != C_REQUESTTYPE_NONE) {
+		if(G_RequestInstanceStatus[G_TypeInstanceRequested] == C_REQUESTSTATUS_COMPLETE) {
+			SendInstanceListToUI();
+			ReInitRequest();
+		} else if(G_RequestInstanceStatus[G_TypeInstanceRequested] == C_REQUESTSTATUS_NOREQUEST) {
+			RequestAllInstances();
+		}
+		
+	}
+}
+
+Void LiveLoop() {
+	foreach(LiveEvent in LiveEvent::Manialib_Event_PendingEvents()) {
+		switch(LiveEvent[0][0]) {
+			case "Manialib.Http.Success": {
+				declare Text CurRequestId = LiveEvent[1][0];
+				declare Text RequestResult;
+				switch(CurRequestId) {
+					case G_RequestAllInstancesId : {
+						if(LiveEvent[1].count < 1) {
+							WarnNotEnoughParamsLive();
+							continue;
+						}
+						RequestResult = LiveEvent[1][1];
+						SetInstanceList(RequestResult);
+					}
+				}
+			}
+		}
+	}
+	
+	SendDatasToUILoop();
+}

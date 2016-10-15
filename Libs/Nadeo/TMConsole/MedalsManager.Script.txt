@@ -1,0 +1,201 @@
+
+#Const C_SoloRecordGhostName	"Solo_BestGhost"
+#Const C_DDriverGhostName		"Duo_BestGhost"
+
+#Const C_AuthorMedal	0
+#Const C_GoldMedal		1
+#Const C_SilverMedal	2
+#Const C_BronzeMedal	3
+#Const C_NoMedal		4
+
+declare Boolean G_Loaded;
+
+declare Integer[Text] G_SoloMedals;
+declare Integer[Text] G_DDriverMedals;
+declare Integer G_NbSoloMedals;
+declare Integer G_NbDDriverMedals;
+
+// EG : pourrait-on s'en passer ?
+Integer MedalToInt(CHighScore::EMedal _Medal) {
+	switch(_Medal) {
+		case CHighScore::EMedal::Author 	: return C_AuthorMedal;
+		case CHighScore::EMedal::Gold 		: return C_GoldMedal;
+		case CHighScore::EMedal::Silver 	: return C_SilverMedal;
+		case CHighScore::EMedal::Bronze 	: return C_BronzeMedal;
+		case CHighScore::EMedal::Finished 	: return C_NoMedal;
+		case CHighScore::EMedal::None 		: return C_NoMedal;
+	}
+	
+	return C_NoMedal;
+}
+
+Void Load() {
+	if(G_Loaded) return;
+	G_Loaded = True;
+	
+	G_NbSoloMedals = 0;
+	G_NbDDriverMedals = 0;
+	DataMgr.RetrieveGameFiles(CDataMgr::EFileType::Map);
+	
+	// Logger::StartCounter("Medals Manager");
+	
+	// HACK
+	wait(DataMgr.Ready);
+	
+	foreach( Map in DataMgr.Maps ) {
+		DataMgr.RetrieveRecords(Map, DataMgr.MenuUserId);
+		
+		// HACK
+		wait(DataMgr.Ready);
+		
+		declare Text MapUid = Map.MapUid;
+		G_SoloMedals[MapUid] = C_NoMedal;
+		G_DDriverMedals[MapUid] = C_NoMedal;
+		
+		declare Integer AuthorTime 	= 0;
+		declare Integer GoldTime 	= 0;
+		declare Integer SilverTime  = 0;
+		declare Integer BronzeTime	= 0;
+		
+		declare Integer SoloTime	= -1;
+		declare Integer DDriverTime	= -1;
+		
+		foreach(Index => Record in DataMgr.Records) {
+			declare Integer CurrentTime = Record.Time;
+			
+			switch(Record.GhostName) {
+				case C_SoloRecordGhostName 	: SoloTime 		= CurrentTime;
+				case C_DDriverGhostName 	: DDriverTime 	= CurrentTime;
+				default : {
+					switch(Record.Medal) {
+						case CHighScore::EMedal::Author 	: AuthorTime = CurrentTime;
+						case CHighScore::EMedal::Gold 		: GoldTime 	 = CurrentTime;
+						case CHighScore::EMedal::Silver 	: SilverTime = CurrentTime;
+						case CHighScore::EMedal::Bronze 	: BronzeTime = CurrentTime;
+					}
+				}
+			}
+		}
+		
+		declare Integer SoloMedal		= C_NoMedal;
+		declare Integer DDriverMedal	= C_NoMedal;
+		
+		if(SoloTime > 0) {
+			if(SoloTime < AuthorTime) 		SoloMedal	= C_AuthorMedal;
+			else if(SoloTime < GoldTime) 	SoloMedal	= C_GoldMedal;
+			else if(SoloTime < SilverTime) 	SoloMedal	= C_SilverMedal;
+			else if(SoloTime < BronzeTime) 	SoloMedal	= C_BronzeMedal;
+		}
+		if(DDriverTime > 0) {
+			if(DDriverTime < AuthorTime) 		DDriverMedal	= C_AuthorMedal;
+			else if(DDriverTime < GoldTime) 	DDriverMedal	= C_GoldMedal;
+			else if(DDriverTime < SilverTime) 	DDriverMedal	= C_SilverMedal;
+			else if(DDriverTime < BronzeTime) 	DDriverMedal	= C_BronzeMedal;
+		}
+		
+		G_SoloMedals[MapUid]	= SoloMedal;
+		G_NbSoloMedals += C_NoMedal - SoloMedal;
+		
+		G_DDriverMedals[MapUid]	= DDriverMedal;
+		G_NbDDriverMedals += C_NoMedal - DDriverMedal;
+	}
+	
+	// Logger::TickCounter("Medals Manager");
+}
+
+Integer GetMedal(Text _MapUid, Boolean _IsDDriver) {
+	if(_IsDDriver) {
+		if(!G_DDriverMedals.existskey(_MapUid)) return C_NoMedal;
+		return G_DDriverMedals[_MapUid];
+	} else {
+		if(!G_SoloMedals.existskey(_MapUid)) return C_NoMedal;
+		return G_SoloMedals[_MapUid];
+	}
+	return C_NoMedal;
+}
+
+Integer GetNbMedals(Boolean _IsDDriver) {
+	if(_IsDDriver) {
+		return G_NbDDriverMedals;
+	} else {
+		return G_NbSoloMedals;
+	}
+	
+	return 0;
+}
+
+Void GiveMedal(Text _MapUid, Boolean _IsDDriver, Integer _NewMedal) {
+	declare Integer Medal = GetMedal(_MapUid, _IsDDriver);
+	if(_NewMedal <= Medal) return;
+	
+	declare Integer NbNewMedals = Medal - _NewMedal;
+	
+	if(_IsDDriver) {
+		G_DDriverMedals[_MapUid] = _NewMedal;
+		G_NbDDriverMedals += NbNewMedals;
+	} else {
+		G_SoloMedals[_MapUid] = _NewMedal;
+		G_NbSoloMedals += NbNewMedals;
+	}
+}
+
+
+Text MLMedalsManager() {
+
+	declare Text MLText = """
+	// <script><!-- // pour la colo syntaxique :)
+	
+	/*
+	- Medals - Integer[Integer]
+	Medals[IndexMaps] = Etat du Lock 
+	3 = Bronze
+	2 = Argent
+	1 = Or
+	0 = Trackmaster
+	*/
+	
+
+	Integer GetMedalMap(Integer _IndexMaps) {
+		declare Integer[Integer] Medals for This;
+		if(!Medals.existskey(_IndexMaps)) return -1;
+
+		return Medals[_IndexMaps];
+	}
+
+	Void SetMedalMap( Integer _IndexMaps, Integer _Medal)
+	{
+		declare Integer[Integer] Medals for This;
+		//if(!Medals.existskey(_IndexMaps)) NumberOfMedal[_IndexMaps] = 0;
+		Medals[_IndexMaps] = _Medal;
+	}
+
+	Integer[] GetBlockMedal(Integer _Enviro, Integer _Difficulty, Integer _Line)
+	{
+		declare Integer[Integer] Medals for This;
+		declare Integer[] BlockMedal;
+
+		declare Integer MapNumber = (_Difficulty)*40 + (_Enviro)*10 + _Line*5;
+
+		for(I, 1, 5) //Représente les 5 maps d'un Block
+		{
+			declare Integer IndexMap = MapNumber + I;
+			if(Medals.existskey(IndexMap))
+			{
+				BlockMedal.add(Medals[IndexMap]);
+			}
+		}
+		return BlockMedal;
+	}
+
+
+	
+	Void UpdateMedalsInfo()
+	{
+		declare Integer[Integer][] MedalsByEnviro for This;
+
+	}
+	
+	""";
+
+	return MLText;
+}

@@ -1,0 +1,27 @@
+#Include "Libs/Nadeo/TMConsole/Logger.Script.txt" 				as Logger
+
+#Const C_MnemoRoomCreated		"OnRoomCreated"
+#Const C_MnemoChallengeCreated	"OnChallengeCreated"
+
+
+Void Load() {
+	// CreateUbiClubPopupLayer();
+}
+
+Void SendAchievementEvent(Text _AchievementMnemo, Integer _Value) {
+	declare Integer[] Values;
+	Values.add(_Value);
+	ManiaPlanet.AchievementsManager.SendEvent(DataMgr.MenuUserId, _AchievementMnemo, Values);
+	// Logger::Log("Menu - SendAchievementEvent (DataMgr.MenuUserId, _AchievementMnemo, Values)"^DataMgr.MenuUserId^", "^_AchievementMnemo^", "^Values);
+}
+
+
+
+Void RoomCreated() {
+	SendAchievementEvent(C_MnemoRoomCreated, 0);
+}
+
+Void ChallengeCreated() {
+	SendAchievementEvent(C_MnemoChallengeCreated, 0);
+}
+

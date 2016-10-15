@@ -1,0 +1,321 @@
+#Include "TextLib"			as TextLib
+#Include "Libs/Nadeo/TMConsole/Logger.Script.txt"										as Logger
+#Include "Libs/Nadeo/TMConsole/Menu/MenuLayers.Script.txt"								as Layers
+#Include "Libs/Nadeo/TMConsole/PopUpManager.Script.txt"									as PopUpManager
+#Include "Libs/Nadeo/TMConsole/Menu/Controller/ChallengeController.Script.txt" 			as ChallengeController
+#Include "Libs/Nadeo/TMConsole/MenuColor.Script.txt"		   							as MenuColor
+#Include "Libs/Nadeo/TMConsole/Menu/IngameAccessController.Script.txt"					as InGameAccessController
+#Include "Libs/Nadeo/TMConsole/TMTEnvironments.Script.txt"		   						as TMTEnvironments
+#Include "Libs/Nadeo/TMConsole/Menu/MenuContext.Script.txt"								as MenuContext
+
+declare Boolean G_MustPlayRace;
+
+declare Text 	G_RaceSettings;
+declare Text[] 	G_RaceMapsPaths;
+
+declare Boolean G_PrevIsLimitedToCanyon;
+
+Void WarnNotEnoughParams(CMlAppEvent _Event) {
+	Logger::Warn("[Menucontroller] event "^_Event.CustomEventType^": not enough params ["^_Event.CustomEventData^"]");
+}
+
+Void RequestAllChallenges(Integer _Offset, Integer _Length, Text _Filters) {
+	ChallengeController::GetAllChallenges("ChallengeBrowser", _Offset, _Length, _Filters);
+}
+
+Void RequestInstalledChallenges(Integer _Offset, Integer _Length) {
+	ChallengeController::GetInstalledChallenges("ChallengeBrowser", _Offset, _Length);
+}
+
+Void RequestMyChallenges(Integer _Offset, Integer _Length) {
+	ChallengeController::GetMyChallenges("ChallengeBrowser", _Offset, _Length);
+}
+
+Void RequestStartRace(Integer _ChallengeId, Text _Body)
+{
+	//DEAD CODE
+}
+
+Void RequestPublishChallenge(Integer _ChallengeId)
+{
+	ChallengeController::PublishChallenge("ChallengeBrowser", _ChallengeId);
+}
+
+Void RequestChallengeMaps(Integer _ChallengeId)
+{
+	ChallengeController::GetChallengeMaps("ChallengeBrowser", _ChallengeId);
+}
+
+Void RequestChallengeTries(Integer _ChallengeId, Integer _Offset, Integer _Length)
+{
+	ChallengeController::GetChallengeTries("ChallengeBrowser", _ChallengeId, _Offset, _Length);
+}
+
+Void RequestGiveUpRace(Integer _ChallengeId, Integer _RaceId)
+{
+	ChallengeController::FinishRace("ChallengeBrowser", _ChallengeId, _RaceId);
+}
+
+Void RequestInstallChallenge(Integer _ChallengeId)
+{
+	ChallengeController::InstallChallenge("ChallengeBrowser", _ChallengeId);
+}
+
+Void RequestUninstallChallenge(Integer _ChallengeId)
+{
+	ChallengeController::UninstallChallenge("ChallengeBrowser", _ChallengeId);
+}
+
+Void RequestInstalledChallenge(Integer _ChallengeId)
+{
+	ChallengeController::GetInstalledChallenge("ChallengeBrowser", _ChallengeId);
+}
+
+Void PlayRace()
+{
+	G_MustPlayRace = False;
+	InGameAccessController::PlayTrackList(G_RaceMapsPaths, "TMC_Championship", G_RaceSettings);
+}
+
+Void RequestPlayRace(Text[] _MapPaths, Text _AuthorTimes, Text _GoldTimes, Text _SilverTimes, Text _BronzeTimes, Integer _ChallengeId, Integer _RaceId, Integer _IsValidation)
+{
+	declare Text GameContext;
+	if (_IsValidation == 1)
+		GameContext = "2"; //"2", hack tempo en attendant la version validation du script de Championships
+	else
+		GameContext = "1";
+
+	G_RaceSettings = """
+	<mode_script_settings>
+		<setting name="S_GameContext"	   	value="{{{GameContext}}}"  			type="integer"/>
+		<setting name="S_ChallengeId"    	value="{{{_ChallengeId}}}"         	type="integer"/>
+		<setting name="S_RaceId"	     	value="{{{_RaceId}}}"             	type="integer"/>
+		<setting name="S_AuthorTimes"		value="{{{_AuthorTimes}}}"			type="text"/>
+		<setting name="S_GoldTimes"			value="{{{_GoldTimes}}}"			type="text"/>
+		<setting name="S_SilverTimes"		value="{{{_SilverTimes}}}"			type="text"/>
+		<setting name="S_BronzeTimes"		value="{{{_BronzeTimes}}}"			type="text"/>
+	</mode_script_settings>
+	""";
+	G_RaceMapsPaths = _MapPaths;
+	G_MustPlayRace = True;
+	PlayRace();
+}
+
+Void LaunchTrain(Text _ChallengeId, Text _MapPath, Text _AuthorTime, Text _GoldTime, Text _SilverTime, Text _BronzeTime, Text _CollectionName)
+{
+	declare Text Settings = """
+	<mode_script_settings>
+		<setting name="S_GameContext"	   	value="0"             				type="integer"/>
+		<setting name="S_ChallengeId"    	value="{{{_ChallengeId}}}"         type="integer"/>
+		<setting name="S_AuthorTimes"		value="{{{_AuthorTime}}}"			type="text"/>
+		<setting name="S_GoldTimes"			value="{{{_GoldTime}}}"				type="text"/>
+		<setting name="S_SilverTimes"		value="{{{_SilverTime}}}"			type="text"/>
+		<setting name="S_BronzeTimes"		value="{{{_BronzeTime}}}"			type="text"/>
+	</mode_script_settings>
+	""";
+	
+	declare Integer EnviroIndex = TMTEnvironments::GetEnviroIndex(_CollectionName);
+	
+	// EG : toujours sur des maps custo
+	InGameAccessController::PlayTrack(_MapPath, "TMC_Championship", Settings, "", False, EnviroIndex, True);
+	
+	
+	//TitleFlow.PlayMapList(G_RaceMapsPaths, "TMC_Championship", G_RaceSettings);
+	//wait(TitleFlow.IsReady);
+	//declare CUILayer ChallengeTracks = Layers::Get("ChallengeTracks");
+	//LayerCustomEvent(ChallengeTracks, "OnExitTrain", Text[]);
+}
+
+Void Loop() {
+	//if (G_MustPlayRace && TitleFlow.IsReady)
+	//	PlayRace();
+	
+	declare Boolean IsLimitedToCanyon = ManiaPlanet.TmTurbo_IsPartialInstall || ManiaPlanet.TmTurbo_IsDemo;
+	if (G_PrevIsLimitedToCanyon != IsLimitedToCanyon)
+	{
+		declare CUILayer ChallengeBrowser = Layers::Get("ChallengeBrowser");
+		LayerCustomEvent(ChallengeBrowser, "SetIsLimitedToCanyon", [TextLib::ToText(IsLimitedToCanyon)]);
+	}
+
+	foreach(Event in PendingEvents) {
+		if(Event.Type != CMlAppEvent::EType::LayerCustomEvent) continue;
+		switch(Event.CustomEventType) {
+			case "RequestAllChallenges" : {
+				if (Event.CustomEventData.count < 3)
+					WarnNotEnoughParams(Event);
+				else {
+					declare Integer Offset = TextLib::ToInteger(Event.CustomEventData[0]);
+					declare Integer Length = TextLib::ToInteger(Event.CustomEventData[1]);
+					declare Text Filters = Event.CustomEventData[2];
+					RequestAllChallenges(Offset, Length, Filters);
+				}
+			
+			}
+			case "RequestInstalledChallenges" : {
+				if (Event.CustomEventData.count < 2)
+					WarnNotEnoughParams(Event);
+				else {
+					declare Integer Offset = TextLib::ToInteger(Event.CustomEventData[0]);
+					declare Integer Length = TextLib::ToInteger(Event.CustomEventData[1]);
+					RequestInstalledChallenges(Offset, Length);
+				}
+			}
+			case "RequestMyChallenges" : {
+				if (Event.CustomEventData.count < 2)
+					WarnNotEnoughParams(Event);
+				else {
+					declare Integer Offset = TextLib::ToInteger(Event.CustomEventData[0]);
+					declare Integer Length = TextLib::ToInteger(Event.CustomEventData[1]);
+					RequestMyChallenges(Offset, Length);
+				}
+			}
+			case "RequestStartRace" : {
+				if (Event.CustomEventData.count < 2)
+					WarnNotEnoughParams(Event);
+				else {
+					declare Integer ChallengeId = TextLib::ToInteger(Event.CustomEventData[0]);
+					RequestStartRace(ChallengeId, Event.CustomEventData[1]);
+				}
+			}
+			case "RequestPublishChallenge" : {
+				if (Event.CustomEventData.count < 1)
+					WarnNotEnoughParams(Event);
+				else {
+					declare Integer ChallengeId = TextLib::ToInteger(Event.CustomEventData[0]);
+					RequestPublishChallenge(ChallengeId);
+				}
+			}
+			case "RequestChallengeMaps" : {
+				if (Event.CustomEventData.count < 1)
+					WarnNotEnoughParams(Event);
+				else {
+					declare Integer ChallengeId = TextLib::ToInteger(Event.CustomEventData[0]);
+					RequestChallengeMaps(ChallengeId);
+				}
+			}
+			case "RequestGiveUpRace" : {
+				if (Event.CustomEventData.count < 2)
+					continue;
+				else {
+					declare Integer ChallengeId = TextLib::ToInteger(Event.CustomEventData[0]);
+					declare Integer RaceId = TextLib::ToInteger(Event.CustomEventData[1]);
+					RequestGiveUpRace(ChallengeId, RaceId);
+				}
+			}
+			case "RequestChallengeTries" : {
+				declare Integer ChallengeId = TextLib::ToInteger(Event.CustomEventData[0]);
+				declare Integer Offset		= TextLib::ToInteger(Event.CustomEventData[1]);
+				declare Integer Length		= TextLib::ToInteger(Event.CustomEventData[2]);
+				RequestChallengeTries(ChallengeId, Offset, Length);
+			}
+			
+			case "RequestInstallChallenge" : {
+				declare Integer ChallengeId = TextLib::ToInteger(Event.CustomEventData[0]);
+				RequestInstallChallenge(ChallengeId);
+			}
+			case "RequestUninstallChallenge" : {
+				declare Integer ChallengeId = TextLib::ToInteger(Event.CustomEventData[0]);
+				RequestUninstallChallenge(ChallengeId);
+			}
+			case "RequestBuddiesChallenges" : {
+				//DEAD CODE
+			}
+			case "RequestInstalledChallenge" : {
+				declare Integer ChallengeId = TextLib::ToInteger(Event.CustomEventData[0]);
+				RequestInstalledChallenge(ChallengeId);
+			}
+			
+			case "AutoGiveUpRace" : {
+				declare Integer ChallengeId = TextLib::ToInteger(Event.CustomEventData[0]);
+				declare Integer RaceId = TextLib::ToInteger(Event.CustomEventData[1]);
+				RequestGiveUpRace(ChallengeId, RaceId);
+			}
+			case "PlayRace" : {
+				if (Event.CustomEventData.count < 4)
+					WarnNotEnoughParams(Event);
+				else {
+					declare Text[] MapPaths = TextLib::Split(",", Event.CustomEventData[0]);
+					declare Text AuthorTimes = Event.CustomEventData[1];
+					declare Text GoldTimes = Event.CustomEventData[2];
+					declare Text SilverTimes = Event.CustomEventData[3];
+					declare Text BronzeTimes = Event.CustomEventData[4];
+					declare Integer ChallengeId = TextLib::ToInteger(Event.CustomEventData[5]);
+					declare Integer TryId = TextLib::ToInteger(Event.CustomEventData[6]);
+					declare Integer IsValidation = TextLib::ToInteger(Event.CustomEventData[7]);
+					RequestPlayRace(MapPaths, AuthorTimes, GoldTimes, SilverTimes, BronzeTimes, ChallengeId, TryId, IsValidation);
+				}
+			}
+			case "SetOngletFocusNewChallenge" : {
+				declare CUILayer ChallengeBrowser = Layers::Get("ChallengeBrowser");
+				LayerCustomEvent(ChallengeBrowser, "SetOngletFocusNewChallenge", Text[]);
+			}
+			case "PopUp_CannotTrain" : {
+				PopUpManager::AddPopUp2(0, _("You cannot train a challenge with a pending race"), "", False);
+			}
+			case "PopUp_MustValidate" : {
+				PopUpManager::AddPopUp2(0, _("You cannot publish a challenge without validating it first"), "", False);
+			}
+			case "PopUpChallengePublished" : {
+				PopUpManager::AddPopUp2(0, _("Challenge successfully published !"), "", False);
+			}
+			case "PopUpChallengeInstalled" : {
+				PopUpManager::AddPopUp2(0, _("Challenge successfully added !"), "", False);
+			}
+			case "PopUpChallengeRemoved" : {
+				PopUpManager::AddPopUp2(0, _("Challenge successfully removed !"), "", False);
+			}
+			case "PopUpRaceAskYesNo" : {
+				//DEAD CODE
+			}
+			case "PopUp_CanyonRestricted" : {
+				if (ManiaPlanet.TmTurbo_IsPartialInstall)
+					PopUpManager::AddPopUp2(0, _("You will only see Canyon challenges because the game is not fully installed. You won't be able to create new challenges."), "", False);
+				else if (ManiaPlanet.TmTurbo_IsDemo)
+					PopUpManager::AddPopUp2(0, _("You will only see Canyon challenges because you have the Trial version. You won't be able to create new challenges. Unlock the full game to unlock all features."), "", False);
+			}
+			case "ChallengeBrowser_Race_AskYesNo" : {
+				//DEAD CODE
+			}
+			case "PopUpAskGotoBuddies" : {
+				declare Text TitleColor = TextLib::ColorToText(MenuColor::GetMenuColor(2));
+				PopUpManager::AddAskYesNo2(TextLib::Compose(_("Do you want to open the \"%1\" menu ?"), _("Buddies Challenges Browser")),_("Go to buddies challenges ?"), TitleColor, "ChallengeBrowser_GotoBuddies");
+			}
+			case "ChallengeBrowser_GotoBuddies_AskYesNo" : {
+				if (Event.CustomEventData.count < 1)
+					WarnNotEnoughParams(Event);
+				else {
+					declare CUILayer ChallengeBrowser = Layers::Get("ChallengeBrowser");
+					LayerCustomEvent(ChallengeBrowser, "GotoBuddiesChallenges", [Event.CustomEventData[0]]);
+				}
+			}
+			case "PopUpDeleteAskYesNo" : {
+				declare Text TitleColor = TextLib::ColorToText(MenuColor::GetMenuColor(2));
+				PopUpManager::AddAskYesNo2(_("Deleting an unpublished challenge will loose it forever. Are you sure you want to proceed ?"),_("Delete challenge ?"), TitleColor, "ChallengeBrowser_Delete");
+			}
+			case "ChallengeBrowser_Delete_AskYesNo" : {
+				if (Event.CustomEventData.count < 1)
+					WarnNotEnoughParams(Event);
+				else {
+					declare CUILayer ChallengeBrowser = Layers::Get("ChallengeBrowser");
+					LayerCustomEvent(ChallengeBrowser, "DeleteChallenge", [Event.CustomEventData[0]]);
+				}
+			}
+			case "LaunchTrain" : {
+				LaunchTrain(Event.CustomEventData[0], Event.CustomEventData[1], Event.CustomEventData[2], Event.CustomEventData[3], Event.CustomEventData[4], Event.CustomEventData[5], Event.CustomEventData[6]);
+			}
+			case "GetMustGotoBuddies" : {
+				declare Text[] Context = MenuContext::GetContext("ChallengeBrowser");
+				if (Context.count != 0 && Context[0] == "MustGotoBuddies")
+				{
+					declare CUILayer ChallengeBrowser = Layers::Get("ChallengeBrowser");
+					LayerCustomEvent(ChallengeBrowser, "MustGotoBuddies", Text[]);
+				}
+			}
+			case "GetIsLimitedToCanyon" : {
+				declare Boolean IsLimitedToCanyon = ManiaPlanet.TmTurbo_IsPartialInstall || ManiaPlanet.TmTurbo_IsDemo;
+				declare CUILayer ChallengeBrowser = Layers::Get("ChallengeBrowser");
+				LayerCustomEvent(ChallengeBrowser, "SetIsLimitedToCanyon", [TextLib::ToText(IsLimitedToCanyon)]);
+			}
+		}
+	}
+}

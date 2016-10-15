@@ -1,0 +1,21 @@
+Real GetScaleFromPlayerCount(Integer _PlayerCount)
+{
+	if(_PlayerCount >= 3)
+		return 0.5;
+	return 1.;
+}
+
+Real GetCoefPosXFromPlayerCount(Integer _PlayerCount)
+{
+	if(_PlayerCount == 2)
+		return 0.5;
+	return 1.;
+}
+
+// Scale used for several specific frames (bonus mode, etc.) which appear too big in Dual SplitScreen
+Real GetSpecialScaleFromPlayerCount(Integer _PlayerCount)
+{
+	if(_PlayerCount == 2)
+		return 0.75;
+	return 1.;
+}

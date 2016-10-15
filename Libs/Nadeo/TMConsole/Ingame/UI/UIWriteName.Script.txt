@@ -1,0 +1,685 @@
+/** 
+ *	UIUIEchelon
+ */
+#Include "Libs/Nadeo/TMConsole/Colors.Script.txt" 								as Colors
+#Include "Libs/Nadeo/TMConsole/Colors.Script.txt" 								as Colors
+#Include "Libs/Nadeo/TMConsole/Volumes.Script.txt" 								as Volumes
+#Include "Libs/Nadeo/TMConsole/FontManager.Script.txt" 							as Font
+#Include "Libs/Nadeo/TMConsole/Ingame/UI/UIPopupBuilder.Script.txt"				as UIPopupBuilder
+#Include "Libs/Nadeo/TMConsole/Ingame/UI/UIButtonNamesPopup.Script.txt" 		as UIButtonNamesPopup
+#Include "Libs/Nadeo/UIPadButtons.Script.txt"									as UIButtons
+#Include "Libs/Nadeo/Layers2.Script.txt" 										as Layers
+
+#Include "TextLib" as TL
+
+#Const SoundPath						"file://Media/Sounds/TMConsole/"
+#Const MODE_COLORID_MULTIPLAYER			1
+#Const SoundOk 					"event-on.wav"
+#Const SoundCancel 				"event-off.wav"
+#Const SoundValidate2 			"event-validate.wav"
+#Const SoundBoardOut 			"intro-woosh2.wav"
+#Const SoundBoardNextLetter		"event-next.wav"
+
+#Const IMGPATH										"file://Media/Images/TMConsole/Ingame/"
+// #Const IMG_HOTSEAT									"splitlogo.png"
+#Const IMG_HOTSEAT									"mode-hotseat.dds"
+
+Void Load(Boolean _IsSplitscreen) 
+{
+	UIButtons::Load();
+	
+	declare UI <=> UIManager.GetUI(Players[0]);
+	declare IMGSelect 	= UIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Select);
+	declare IMGCancel 	= UIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Cancel);
+	declare TXTSelect 	= UIButtonNamesPopup::GetSelectText();
+	declare TXTErase 	= UIButtonNamesPopup::GetEraseText();
+	
+	declare netwrite Text[] 	Net_WriteNameInputs 						for UI;
+	Net_WriteNameInputs		= [IMGSelect, TXTSelect, IMGCancel, TXTErase];
+	
+	declare InputUpdate 						= "Net_WriteNameInputs";
+	declare InputParam					= "PlayerSelection";
+	// declare InputUpdate					= "Net_ScoresTableInputs";
+	// declare RanksParam					= "Small Medal";
+	// declare RanksUpdateValues_1Player 	= "Net_ScoresTableMenuRanks Net_ScoresTableMenuName Net_ScoresTableMenuTime Net_ScoresTableMenuMedal Net_ScoresTableMenuSelectedPlayer";
+	declare ColorMode 					= Colors::GetModeColorName(MODE_COLORID_MULTIPLAYER);
+	declare TitleParam					= "ColorText "^ColorMode;
+	
+	declare Vec3 		LayerPos 		= <-85., 5., 31.>;
+	declare Text[][] 	LayersContent;
+	
+	declare ColorXmlWhite 	 = Colors::GetColorXml	("White");
+	declare ColorXmlGrey 	 = Colors::GetColorXml	("Grey");
+	declare FontMain 		 = Font	::GetFontName	("Main");
+	declare SizeX 			 = UIPopupBuilder::GetSize().X;
+	declare SizeY 			 = UIPopupBuilder::GetSize().Y;
+	declare PosXNames		 = SizeX * 0.2;
+	declare TextSizeMed 	 = 8;
+	declare TextSizeBig 	 = 16;
+	declare MLXml_BigName 	 = """
+	<label id="Label_BigName" posn="{{{SizeX*0.5}}} 	{{{-SizeY*0.83}}}	.4" sizen="{{{SizeX-10}}} 	{{{SizeY}}}" valign="center" halign="center" textfont="{{{FontMain}}}" textsize="{{{TextSizeBig}}}" textcolor="{{{ColorXmlWhite}}}" text="AAA" /> 
+	<frame id="Frame_BigName2players">
+		<label id="Label_BigName1" posn="{{{SizeX*0.5 - PosXNames}}} 	{{{-SizeY*0.83}}}	.4" sizen="{{{SizeX-10}}} 	{{{SizeY}}}" valign="center" halign="center" textfont="{{{FontMain}}}" textsize="{{{TextSizeBig}}}" textcolor="{{{ColorXmlWhite}}}" text="AAA" /> 
+		<label id="Label_BigName2" posn="{{{SizeX*0.5 + PosXNames}}} 	{{{-SizeY*0.83}}}	.4" sizen="{{{SizeX-10}}} 	{{{SizeY}}}" valign="center" halign="center" textfont="{{{FontMain}}}" textsize="{{{TextSizeBig}}}" textcolor="{{{ColorXmlWhite}}}" text="AAA" /> 
+	</frame>	
+	""";
+	declare MLXml_NameEditor = """
+	<frame id="Frame_NameEdit" posn="0. 0.5">
+		<label id="Label_NameEdit1" posn="{{{SizeX*0.5}}} 	{{{-SizeY*0.5}}}	.4" sizen="{{{SizeX-10}}} 	{{{SizeY}}}" valign="center" halign="center" textfont="{{{FontMain}}}" textsize="{{{TextSizeMed}}}" textcolor="{{{ColorXmlGrey}}}" text="ABCDEFGHIJKLM" /> 
+		<label id="Label_NameEdit2" posn="{{{SizeX*0.5}}} 	{{{-SizeY*1.5}}}	.4" sizen="{{{SizeX-10}}} 	{{{SizeY}}}" valign="center" halign="center" textfont="{{{FontMain}}}" textsize="{{{TextSizeMed}}}" textcolor="{{{ColorXmlGrey}}}" text="NOPQRSTUVWXYZ" /> 
+		<label id="Label_NameEdit3" posn="{{{SizeX*0.5}}} 	{{{-SizeY*2.5}}}	.4" sizen="{{{SizeX-10}}} 	{{{SizeY}}}" valign="center" halign="center" textfont="{{{FontMain}}}" textsize="{{{TextSizeMed}}}" textcolor="{{{ColorXmlGrey}}}" text="0123456789" /> 
+	</frame>	
+	""";
+	
+	declare MLScriptFunctions = """
+	
+	Text GetNameProtected(Text[] _TheName, Integer _NameLettersCount)
+	{
+		declare Text		Name = "";
+		declare Integer 	NbCharsOftheName = _TheName.count;
+		
+		for(I, 0, _NameLettersCount-1)
+		{
+			if(I >= NbCharsOftheName)	Name ^= " ";
+			else						Name ^= _TheName[I];
+		}
+		
+		/*
+		Name = TL::Trim(Name);
+		
+		if(Name == "")
+		{
+			for(I, 0, _NameLettersCount-1) Name ^= " ";
+		}
+		*/
+		
+		return Name;
+	}
+		
+	Void AnimSwitchName(CMlLabel _Label, Real _PosX)
+	{
+		declare Pos 	= <_PosX, _Label.RelativePosition.Y, _Label.RelativePosition.Z>;
+		declare Offset 	= 8;
+		declare Time1 	= 10;
+		declare Time2 	= 350;
+		
+		LibManialink_AnimStop			(_Label);
+		LibManialink_SetTargetPosition	(_Label, <Pos.X+Offset, Pos.Y, Pos.Z>);
+		LibManialink_PresetAnim			(_Label, Time1, "Linear");
+		LibManialink_SetTargetPosition	(_Label, Pos);
+		LibManialink_PresetAnimInsert	(_Label, Time1+1, Time2, "ElasticOut");
+		
+		Audio.PlaySoundEvent("{{{SoundPath^SoundBoardOut}}}", {{{Volumes::GetVolumedB("MenuSwitch")}}});
+	}
+	""";
+	
+	declare MLScriptInit = """
+	
+	declare netwrite 	Integer[] 	LibTMC_PairingPads_PadsPlaying 				for UI;
+	declare netwrite 	Integer 	LibTMC_ScoresTable_NewNameTrigger 			for UI;
+	declare netwrite 	Text 		LibTMC_ScoresTable_NewName 					for UI;
+	declare netwrite	Boolean		LibTMC_ScoresTable_ScoreWritten				for UI;
+	declare netwrite	Boolean		LibTMC_PlayerManager_GameStarted 			for UI;
+	LibTMC_ScoresTable_ScoreWritten 	= False;
+
+	declare AddLetter 					= False;
+	declare ForceValidate 				= False;
+	declare ForceAddLetterOnValidate 	= False;
+	declare NameLettersCount 			= 4;
+	
+	declare Text[][] Letters = [
+		["A","B","C","D","E","F","G","H","I","J","K","L","M", "_"],
+		["N","O","P","Q","R","S","T","U","V","W","X","Y","Z"],
+		["0","1","2","3","4","5","6","7","8","9"]
+	];
+	declare Integer[] 		TheRowIndexForPad 					= [0,0,0];
+	declare Integer[] 		TheLetterIndexForPad 				= [0,0];
+	declare Text[][] 		TheNameForPad 						= [Text[], Text[]];
+	
+	declare	Text[][]		NameSuggestionsLibrary;
+	declare Integer[] 		NameSuggestionIndexForPad 		= [-1,-1];
+	
+	declare Text[]			DefaultName;
+	for(I, 0, NameLettersCount-2) DefaultName.add("A");
+	
+	NameSuggestionsLibrary.add(DefaultName);
+	
+	// foreach(Letter in DefaultName) {
+		// TheNameForPad[0].add(Letter);
+	// }
+	TheNameForPad[0] = DefaultName;
+	declare Frame_BigName2players 	<=> ((Page.MainFrame.GetFirstChild("Frame_BigName2players")) 	as CMlFrame);
+	declare Label_BigName 			<=> ((Page.MainFrame.GetFirstChild("Label_BigName")) 			as CMlLabel);
+	
+	declare CMlLabel[] Label_NameEdit;
+	Label_NameEdit.add((Page.MainFrame.GetFirstChild("Label_NameEdit1") as CMlLabel));
+	Label_NameEdit.add((Page.MainFrame.GetFirstChild("Label_NameEdit2") as CMlLabel));
+	Label_NameEdit.add((Page.MainFrame.GetFirstChild("Label_NameEdit3") as CMlLabel));
+	
+	declare CMlLabel[] Label_BigName2Players;
+	Label_BigName2Players.add((Page.MainFrame.GetFirstChild("Label_BigName1") as CMlLabel));
+	Label_BigName2Players.add((Page.MainFrame.GetFirstChild("Label_BigName2") as CMlLabel));
+	
+	declare RowCount 		= Letters.count;
+	declare LettersCount 	= [Letters[0].count, Letters[1].count, Letters[2].count];
+	declare CanUpdate		= True;
+	declare NeedInit		= False;
+	declare Integer[] PadsReady;
+	""";
+	
+	declare MLScriptLoop = """
+	// declare PadsCount = LibTMC_PairingPads_PadsPlaying.count;
+	declare PadsCount = 1;
+	// log(Now^"PADS PLAYING: "^LibTMC_PairingPads_PadsPlaying);
+	if(LibTMC_PlayerManager_GameStarted) LibTMC_ScoresTable_ScoreWritten = False;
+	// log(PadsReady);
+	if(CanUpdate)
+	{
+		declare TheBigName = ["", ""];
+		for(PadIndex, 0, PadsCount-1)
+		{
+			for(I, 0, NameLettersCount-1)
+			{
+				if(TheNameForPad[PadIndex].existskey(I)) 		TheBigName[PadIndex] ^= "$fff"^TheNameForPad[PadIndex][I]^"$z";
+				else if(I > TheNameForPad[PadIndex].count)		TheBigName[PadIndex] ^= "$fff"^"-"^"$z";
+				else
+				{
+					if(PadsCount > 1 && TheNameForPad[PadIndex].count < NameLettersCount)
+					{
+						if(PadIndex == 0) 	TheBigName[PadIndex] ^= "$f45";
+						else				TheBigName[PadIndex] ^= "$0ff";
+					}
+					else
+					{
+						TheBigName[PadIndex] ^= "$f45";
+					}
+
+					if(TheRowIndexForPad[PadIndex] < 0) {
+						TheRowIndexForPad[PadIndex] = 2;
+					}
+					
+					if(TheLetterIndexForPad[PadIndex] < 0) {
+						TheLetterIndexForPad[PadIndex] = 0;
+					}
+					TheBigName[PadIndex] ^= Letters[TheRowIndexForPad[PadIndex]][TheLetterIndexForPad[PadIndex]]^"$z";
+				}
+			}
+		}
+		
+		foreach(I => Row in Letters)
+		{
+			declare RowValue = "";
+			foreach(J => Letter in Row)
+			{
+				if(TheRowIndexForPad[0] == I && TheLetterIndexForPad[0] == J || TheRowIndexForPad[1] == I && TheLetterIndexForPad[1] == J)
+				{
+					if(PadsCount > 1 && TheRowIndexForPad[0] == I && TheLetterIndexForPad[0] == J && TheRowIndexForPad[1] == I && TheLetterIndexForPad[1] == J)
+					{
+						RowValue ^= "$fff"^Letter^"$z";
+					}
+					else
+					{
+						if(PadsCount > 1)
+						{
+							if(TheRowIndexForPad[0] == I && TheLetterIndexForPad[0] == J) 	RowValue ^= "$f45";
+							else 															RowValue ^= "$0ff";
+						}
+						else
+						{
+							if(TheRowIndexForPad[0] == I && TheLetterIndexForPad[0] == J) 	RowValue ^= "$f45";
+						}
+						RowValue ^= Letter^"$z";
+					}
+				}			
+				else
+				{
+					RowValue ^= Letter;
+				}
+			}
+			Label_NameEdit[I].Value = RowValue;
+		}
+		
+		if(PadsCount > 1)
+		{
+			Label_BigName			.Visible = False;
+			Frame_BigName2players	.Visible = True;
+			foreach(I => Label in Label_BigName2Players) Label.Value = TheBigName[I];
+		}
+		else
+		{
+			Label_BigName			.Value 		= TheBigName[0];
+			Label_BigName			.Visible 	= True;
+			Frame_BigName2players	.Visible 	= False;
+		}
+	}
+	
+	declare Up 			= False;
+	declare Down 		= False;
+	declare Left 		= False;
+	declare Right 		= False;
+	declare PageUp 		= False;
+	declare PageDown 	= False;
+	declare Select		= False;
+	declare Cancel		= False;
+	
+	if(IsMenuNavigationForeground && PageIsVisible) 
+	{
+		foreach(Event in PendingEvents)
+		{
+			switch(Event.Type)
+			{
+				case CMlEvent::Type::MenuNavigation :
+				{
+					switch (Event.MenuNavAction)
+					{
+						case CMlEvent::EMenuNavAction::Select :
+						{
+							Select = True;
+						}
+						case CMlEvent::EMenuNavAction::Cancel :
+						{
+							Cancel = True;
+						}
+						case CMlEvent::EMenuNavAction::AppMenu :
+						{
+							Cancel = True;
+						}
+						case CMlEvent::EMenuNavAction::Up :
+						{
+							Up = True;
+						}
+						
+						case CMlEvent::EMenuNavAction::Down :
+						{
+							Down = True;
+						}
+						
+						case CMlEvent::EMenuNavAction::Left :
+						{
+							Left = True;
+						}
+						
+						case CMlEvent::EMenuNavAction::Right :
+						{
+							Right = True;
+						}
+						case CMlEvent::EMenuNavAction::AppMenu :
+						{
+							ShowInGameMenu();
+						}
+						case CMlEvent::EMenuNavAction::PageUp :
+						{
+							PageUp = True;
+						}
+						case CMlEvent::EMenuNavAction::PageDown :
+						{
+							PageDown = True;
+						}
+					}
+				}
+			}
+		}
+		
+		// declare netwrite Integer Net_MainUserControllerId for UI;
+		declare Integer PadI = 0;
+		
+		// declare Integer PadI = 0;
+		
+		
+		/*
+		declare Up 		= Button == CInputScriptPad::EButton::Up || Button == CInputScriptPad::EButton::LeftStick_Up;
+		declare Down 	= Button == CInputScriptPad::EButton::Down  || Button == CInputScriptPad::EButton::LeftStick_Down;
+		declare Left 	= Button == CInputScriptPad::EButton::Left  || Button == CInputScriptPad::EButton::LeftStick_Left;
+		declare Right 	= Button == CInputScriptPad::EButton::Right  || Button == CInputScriptPad::EButton::LeftStick_Right;
+		*/
+		
+		if(PageUp || PageDown)
+		{
+			if(PageUp) 
+			{
+				if(NameSuggestionsLibrary.existskey(NameSuggestionIndexForPad[PadI] + 1)) 	
+					NameSuggestionIndexForPad[PadI] += 1; 
+			}
+			else
+			if(PageDown) 
+			{
+				if(NameSuggestionIndexForPad.existskey(PadI))
+				{
+					if(NameSuggestionIndexForPad[PadI] <  0)	NameSuggestionIndexForPad[PadI]  = 0;
+					if(NameSuggestionIndexForPad[PadI] >  0)	NameSuggestionIndexForPad[PadI] -= 1;
+				}
+			}
+			
+			// SECURITY IF NAME ENDS WITH EMPTY LETTERS " "
+			
+			declare LastKey 			= NameSuggestionsLibrary.count-1 - NameSuggestionIndexForPad[PadI];
+			declare NameSuggestion 		= NameSuggestionsLibrary[LastKey];
+			/*
+			for(I, 0, NameSuggestionLast) 
+			{
+				declare J = NameSuggestionLast-I;
+				if(NameSuggestion[J] == " ") 	
+					NameSuggestion.removekey(J);
+				else 							
+					break;
+			}
+			*/
+			// SET THE NAME TO THE SUGGESTION
+			
+			TheNameForPad[PadI] = NameSuggestion;
+			
+			// LOCATING THE LETTER IN THE KEYBOARD
+			
+			declare IndexToRemove 		= TheNameForPad[PadI].count-1;
+			declare LetterToFind 		= TheNameForPad[PadI][IndexToRemove];
+			if(LetterToFind == " ") LetterToFind = "_";
+			declare RowIndexToFind		= 0;
+			declare LetterIndexToFind	= 0;
+			
+			LetterIndexToFind = Letters[RowIndexToFind].keyof(LetterToFind);
+			if(LetterIndexToFind == -1)
+			{
+				RowIndexToFind += 1;
+				LetterIndexToFind = Letters[RowIndexToFind].keyof(LetterToFind);
+			}
+			if(LetterIndexToFind < 0) LetterIndexToFind = 0;
+			
+			// SET THE EDIT CURSOR ONE LETTER BEFORE
+			
+			if(TheNameForPad[PadI].count >= 4) 
+			{
+				TheNameForPad[PadI].removekey(IndexToRemove);
+				ForceAddLetterOnValidate = True;
+			}
+			
+			// SET THE SELECTED LETTER ON THE KEYBOARD TO THE LAST LETTER OF THE SUGGESTION
+			
+			TheRowIndexForPad[PadI]  	= RowIndexToFind;
+			TheLetterIndexForPad[PadI] 	= LetterIndexToFind;
+			
+			// ANIM
+			
+			declare Label 	= Label_BigName;
+			declare PosX 	= {{{SizeX*0.5}}};
+			
+			if(PadsCount > 1) 
+			{
+				Label = Label_BigName2Players[PadI];
+				if(PadI == 0) 	PosX = {{{SizeX*0.5 - PosXNames}}};
+				else 			PosX = {{{SizeX*0.5 + PosXNames}}};
+			}
+			
+			AnimSwitchName(Label, PosX);
+		}
+		else
+		if(Up || Down || Left || Right) 
+		{
+			// log(RowCount);
+			if(Up || Down)
+			{
+				if(Up) 
+					TheRowIndexForPad[PadI] = (TheRowIndexForPad[PadI] - 1) % RowCount;
+				else
+				if(Down)  
+					TheRowIndexForPad[PadI] = (TheRowIndexForPad[PadI] + 1) % RowCount;
+				
+				declare RowI = TheRowIndexForPad[PadI];
+
+				if(RowI < 0)
+					RowI = 2;
+					
+				if(!Letters[RowI].existskey(TheLetterIndexForPad[PadI])) TheLetterIndexForPad[PadI] = Letters[RowI].count-1;
+			}
+			else
+			if(Left) 
+			{
+				if(TheRowIndexForPad[PadI] != -1) {
+					TheLetterIndexForPad[PadI] = (TheLetterIndexForPad[PadI] - 1 + LettersCount[TheRowIndexForPad[PadI]]) % LettersCount[TheRowIndexForPad[PadI]];	
+				}
+			}
+			else
+			if(Right) 
+			{
+				if(TheRowIndexForPad[PadI] != -1) {
+					TheLetterIndexForPad[PadI] = (TheLetterIndexForPad[PadI] + 1) % LettersCount[TheRowIndexForPad[PadI]];
+				}
+			}
+			Audio.PlaySoundEvent("{{{SoundPath^SoundBoardNextLetter}}}", {{{Volumes::GetVolumedB("MenuMove")}}});	
+			ForceAddLetterOnValidate = False;
+		}
+		else
+		if(Select) 
+		{
+			AddLetter = True;
+		}
+		else
+		if(Cancel) 
+		{
+			declare IndexToRemove = TheNameForPad[PadI].count-1;
+			if(TheNameForPad[PadI].removekey(IndexToRemove)) 
+				Audio.PlaySoundEvent("{{{SoundPath^SoundCancel}}}", {{{Volumes::GetVolumedB("RemoveLetter")}}});
+			PadsReady.remove(PadI);	
+			ForceAddLetterOnValidate = False;
+		}
+		
+		/*
+		else
+		if(Button == CInputScriptPad::EButton::Menu) 
+		{
+			
+			if(ForceAddLetterOnValidate) 
+			{
+				ForceAddLetterOnValidate 	= False;						
+				AddLetter 					= True;
+			}
+			else
+			{
+				ForceValidate = True;
+			}
+		}
+		*/
+		
+		if(AddLetter)
+		{
+			AddLetter = False;
+			if(TheNameForPad[PadI].count < NameLettersCount)
+			{
+				declare TheLetter = Letters[TheRowIndexForPad[PadI]][TheLetterIndexForPad[PadI]];
+				if(TheLetter == "_") TheLetter = " ";
+				
+				TheNameForPad[PadI].add(TheLetter);
+			} 
+		
+			if(TheNameForPad[PadI].count == NameLettersCount && !PadsReady.exists(PadI))
+			{
+				PadsReady.add(PadI);
+				Audio.PlaySoundEvent("{{{SoundPath^SoundValidate2}}}", {{{Volumes::GetVolumedB("MenuClick")}}});	
+			}
+			else
+			{
+				Audio.PlaySoundEvent("{{{SoundPath^SoundOk}}}", {{{Volumes::GetVolumedB("AddLetter")}}});	
+			}
+		}
+		
+		if(ForceValidate)
+		{
+			ForceValidate = False;
+			
+			declare CurrentLettersCount = TheNameForPad[PadI].count;
+			
+			if(CurrentLettersCount > 0)
+			{
+				for(I, CurrentLettersCount-1, NameLettersCount-1)
+				{
+					TheNameForPad[PadI].add(" ");
+				}
+			}
+			else
+			{
+				for(I, 0, NameLettersCount-1)
+				{
+					TheNameForPad[PadI].add("A");
+				}
+			}
+			
+			PadsReady.add(PadI);
+			Audio.PlaySoundEvent("{{{SoundPath^SoundValidate2}}}", {{{Volumes::GetVolumedB("MenuClick")}}});
+		}
+		
+	
+		foreach(PadIndex => Pad in Input.Pads)
+		{
+			
+			if(LibTMC_PairingPads_PadsPlaying.exists(Pad.ControllerId)) {
+				declare  PadI = LibTMC_PairingPads_PadsPlaying.keyof(Pad.ControllerId);
+				if(PadI > -1)
+				{
+					foreach(Button in Input.Pads[PadIndex].ButtonEvents) 
+					{
+						
+					}
+				}
+			}
+		}
+		
+		if(PadsReady.count == PadsCount || NeedInit)
+		{
+			// log((PadsReady.count == PadsCount)^" "^NeedInit);
+			if(!NeedInit)
+			{
+				LibTMC_ScoresTable_NewName = GetNameProtected(TheNameForPad[0], NameLettersCount);
+				
+				if(PadsCount > 1)
+				{
+					declare Name2 = GetNameProtected(TheNameForPad[1], NameLettersCount);
+					
+					LibTMC_ScoresTable_NewName ^= " + " ^ Name2;
+				}
+				
+				foreach(I => Name in TheNameForPad) 
+				{
+					
+					declare MaxNames = LibTMC_PairingPads_PadsPlaying.count-1;
+					if(I <= MaxNames) 
+					{
+						
+						// REMOVING NAME IF ALLREADY IN "NameSuggestionsLibrary" ARRAY
+						declare Integer[] 	KeysToRemove 		= GetKeysToRemove_AlreadyExistingElements(NameSuggestionsLibrary, Name);
+						declare Integer 	KeysToRemoveCount 	= KeysToRemove.count;
+						if(KeysToRemoveCount > 0)
+						{
+							declare LastKey = KeysToRemoveCount-1;
+							for(I, 0, LastKey) 
+							{
+								declare J = LastKey-I;
+								declare IndexToRemove = KeysToRemove[J];
+								if(NameSuggestionsLibrary.existskey(IndexToRemove)) NameSuggestionsLibrary.removekey(IndexToRemove);
+							}
+						}
+						
+						// ADDING NAME AGAIN TO MAKE THIS NAME THE LATEST ONE USED
+						NameSuggestionsLibrary.add(Name);
+					}
+				}			
+			}
+			
+			PadsReady.clear();
+			NameSuggestionIndexForPad 			= [-1,-1];
+			TheNameForPad 						= [Text[], Text[]];
+			// TheNameForPad[0]					= DefaultName;
+			TheRowIndexForPad 					= [0,0];
+			TheLetterIndexForPad 				= [0,0];
+			
+			// log(Now^"coucou: "^NeedInit);
+			if(!NeedInit)
+			{	
+				CanUpdate 							= False;
+				LibTMC_ScoresTable_NewNameTrigger 	= Now;
+				LibTMC_ScoresTable_ScoreWritten 	= True;
+			}
+			
+			NeedInit 							= False;
+		}
+		declare Label_Info2 <=> (Page.MainFrame.GetFirstChild("Label_Info2") as CMlLabel);
+		Label_Info2.Value = TL::Compose(_("%1 - %2: select previous names"), GetL1ButtonName(), GetR1ButtonName());
+	}
+	""";
+	// LayerPos = <-85., 5., 31.>;
+	//L16N in a popup, choose a name preregistered with this button. Has to remain short.
+	declare Text SelectPreviousName = TL::Compose(_("%1 - %2: select previous names"), UIButtons::GetL1ButtonName(), UIButtons::GetR1ButtonName());
+
+	// SCORES TABLE
+	
+	LayersContent.clear();
+	LayersContent.add(["Title", 	"Title", 	  IMGPATH^IMG_HOTSEAT, 		"2",	"", TitleParam, "Net_WriteNameMenuTitle Net_WriteNameMenuSubtitle"]);
+	LayersContent.add(["Custom", 	"Name",		  	MLXml_BigName, 			"2",	"", "Fg Bg", ""]);
+	LayersContent.add(["Custom", 	"Edit",		  	MLXml_NameEditor,		"3",	"", "Bg2", ""]);
+	// LayersContent.add(["Custom", 	"Void",		  	"", 					"2",	"", "Bg2", ""]);
+	
+	LayersContent.add(["Label", 	"Info2",	  	SelectPreviousName, 	"1",	"", "Dark", ""]);
+	LayersContent.add(["Custom", 	"",	  	 		"", 					"1",	"", "Bg2", ""]);
+	LayersContent.add(["Space", 	"", 		 	"", 					"1",	"", "", ""]);
+	LayersContent.add(["Input", 	"Input", 		"", 					"1",	"", "", InputUpdate]);
+	
+	declare Text SpeParam = "";
+	
+	if(_IsSplitscreen) {
+		SpeParam	= "Splitscreen";
+	}
+	
+	UIPopupBuilder::CreateLayer(
+		"Layer_TMC_NameEdit", 
+		SpeParam,
+		LayerPos,
+		LayersContent, 
+		MLScriptFunctions, 
+		MLScriptInit, 
+		"""
+		CanUpdate 	= True;
+		NeedInit 	= True;
+		LibTMC_ScoresTable_ScoreWritten = False;
+		""",
+		MLScriptLoop
+	);
+	
+	if(_IsSplitscreen) {
+		Layers::SetVisibility("Layer_TMC_NameEdit"^0, 	False);
+		Layers::SetVisibility("Layer_TMC_NameEdit"^1, 	False);
+		Layers::SetVisibility("Layer_TMC_NameEdit"^2, 	False);
+		Layers::SetVisibility("Layer_TMC_NameEdit"^3, 	False);
+	} else {
+		Layers::SetVisibility("Layer_TMC_NameEdit", 	False);
+	}
+}
+
+Void SetVisibilityNameEdit(Boolean _Show) {
+	Layers::SetVisibility("Layer_TMC_NameEdit", _Show);
+}
+
+Void SetVisibilityNamePlayer(Boolean _Show) {
+
+	Layers::SetVisibility("Layer_TMC_NameEdit"^0, _Show);
+	// Layers::SetVisibility("Layer_TMC_NameEdit"^1, _Show);
+	// Layers::SetVisibility("Layer_TMC_NameEdit"^2, _Show);
+}
+
+Text GetNewName() {
+	foreach(Player in AllPlayers) {
+		declare UI <=> UIManager.GetUI(Player);
+		declare netread 	Text 		LibTMC_ScoresTable_NewName 					for UI;
+		return LibTMC_ScoresTable_NewName;
+	}
+	return "";
+}
+
+Boolean ScoreWritten() {
+	declare Boolean IsScoreWritten = False;
+	foreach(Player in AllPlayers) {
+		declare UI <=> UIManager.GetUI(Player);
+		declare netread	Boolean		LibTMC_ScoresTable_ScoreWritten				for UI;
+		IsScoreWritten = LibTMC_ScoresTable_ScoreWritten;
+		//log("Is score written: "^LibTMC_ScoresTable_ScoreWritten);
+	}
+	
+	return IsScoreWritten;
+}

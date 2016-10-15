@@ -1,0 +1,1946 @@
+/**
+ *	Time Attack mode
+ */
+#Extends "Modes/TrackMania/TMC_ModeBase.Script.txt"
+
+#Const	CompatibleMapTypes	["RaceCE", "Race"] 
+
+#Const	Version		"2016-01-20"
+#Const	ScriptName	"TMC_LocalArcade.Script.txt"
+
+#Include "Libs/Nadeo/TMConsole/Ingame/Game.Script.txt" 							as Game
+#Include "Libs/Nadeo/TMConsole/Ingame/UI/UISequences.Script.txt" 				as UISequence
+#Include "Libs/Nadeo/TMConsole/Ingame/Ghosts.Script.txt" 						as Ghosts
+// #Include "Libs/Nadeo/TMConsole/Ingame/Players.Script.txt" 						as Players
+#Include "Libs/Nadeo/TMConsole/Ingame/Medals.Script.txt" 						as Medals
+#Include "Libs/Nadeo/TMConsole/Ingame/CarsModels.Script.txt" 					as CarsModels
+#Include "Libs/Nadeo/TMConsole/Ingame/ScoresTable.Script.txt" 					as ST
+#Include "Libs/Nadeo/TMConsole/Ingame/UI/UISymbiose.Script.txt" 				as UISymbiose
+#Include "Libs/Nadeo/TMConsole/Ingame/UI/UIArcade.Script.txt" 					as UIArcade
+#Include "Libs/Nadeo/UIPadButtons.Script.txt"									as UIButtons
+#Include "Libs/Nadeo/TMConsole/Colors.Script.txt" 								as Colors
+#Include "Libs/Nadeo/TMConsole/Ingame/FlavourText.Script.txt" 					as FlavourText
+#Include "Libs/Nadeo/TMConsole/Ingame/RewardScreens.Script.txt" 				as RewardScreens
+#Include "Libs/Nadeo/TMConsole/Ingame/IngameAchievements.Script.txt" 			as IngameAchievements
+
+#Include "TextLib" as TL
+#Include "MathLib" as ML
+
+// ---------------------------------- //
+// Settings
+// ---------------------------------- //
+#Setting S_TimeLimit 	50800	as _("Time limit :")
+#Setting S_Musics	                    ""
+#Setting S_IsUgcTrack	False	as _("Is ugc track")
+
+// prefix "Arcade" for new cheat codes (old ones may be deprecated...)
+#Setting S_ArcadeCheatCode_ButtonSmash		False	as _("Cheat: ButtonSmash:")
+#Setting S_ArcadeCheatCode_Collisions		False	as _("Cheat: Collisions:")
+#Setting S_ArcadeCheatCode_ScaledCar		False	as _("Cheat: ScaledCar:")
+#Setting S_ArcadeCheatCode_CatchUpSpeed		False	as _("Cheat: CatchUpSpeed:")
+#Setting S_ArcadeCheatCode_CheckpointBonus	False	as _("Cheat: CheckpointBonus:")
+#Setting S_ArcadeCheatCode_UniqueCamera		False	as _("Cheat: UniqueCamera:")
+#Setting S_ArcadeCheatCode_StuntTurbo		False	as _("Cheat: StuntTurbo:")
+#Setting S_ArcadeCheatCode_TurboButton		False	as _("Cheat: TurboButton:")
+#Setting S_ArcadeCheatCode_JumpButton		False	as _("Cheat: JumpButton:")
+#Setting S_ArcadeCheatCode_LowGravity		False	as _("Cheat: LowGravity:")
+#Setting S_ArcadeCheatCode_AerialCamera		False	as _("Cheat: AerialCamera:")
+#Setting S_ArcadeCheatCode_BonusEvents		False	as _("Cheat: BonusEvents:")
+
+// ---------------------------------- //
+// Constants
+// ---------------------------------- //
+#Const C_GAMEPHASE_IDLE				-1
+#Const C_GAMEPHASE_PREPARATION		0
+#Const C_GAMEPHASE_GAME				1
+#Const C_GAMEPHASE_POSTGAME			2
+#Const C_GAMEPHASE_FINAL			3
+#Const C_GAMEPHASE_STANDBY			4
+
+#Const TMC_MEDAL_AUTHOR				0
+#Const TMC_MEDAL_GOLD				1
+#Const TMC_MEDAL_SILVER				2
+#Const TMC_MEDAL_BRONZE				3
+#Const TMC_MEDAL_PLAYER				4
+#Const TMC_MEDAL_NONE				5
+#Const TMC_MEDAL_ANOTHERPLAYER		6
+
+#Const TMC_GAMEPLAY_CREDIT			2
+
+#Const TMC_PLAYSTEP_IDLE			-1
+#Const TMC_PLAYSTEP_SCORETABLE		0
+#Const TMC_PLAYSTEP_PLAYERSELEC		1
+
+#Const TMC_IDLESTEP_REPLAY			0
+#Const TMC_IDLESTEP_STANDBY			1
+#Const TMC_IDLESTEP_NONE			-1
+
+#Const TMC_FINALCHOICE_RETRY		1
+#Const TMC_FINALCHOICE_FINISH		2
+
+#Const TMC_IDLESTEP_TIMERSTANDBY	10000
+
+#Const TMC_POSTGAME_TIMEOUTRESULT	60000			
+#Const TMC_POSTGAME_TIMEOUTNAME		120000	
+
+#Const C_IdleTimeMax 				10		
+
+#Const TMC_HANDSONMODE				False
+#Const TMC_GHOSTNAME				"Arcade_"
+
+#Const C_REMOVED_GHOST_NICK			"REM:"
+
+#Const TMC_DATAMGR_TIMEOUT			5000
+
+#Const C_CHEAT_LOW_GRAVITY_COEF		0.42
+
+// ---------------------------------- //
+// Global Variables
+// ---------------------------------- //
+declare Integer						G_GamePhase;
+declare CGhost[Integer] 			G_PlayerGhosts;
+declare Ident[Text]					G_CacheGhosts;
+declare CGhost[Ident]				G_ReplayGhosts;
+declare Ident						G_ThePlayerId;
+declare Integer[Integer]			G_TimesOnMap;
+declare Ident[]						G_CarModels;
+declare Ident[]						G_CarDoubleModels;
+declare Text						G_EnviroName;
+declare Boolean						G_IsDoubleDriver;
+declare Integer						G_RaceIndex;
+declare Boolean						G_IdleSequence;
+declare Integer						G_BestTimePlayer;
+declare Boolean						G_HasNewBestTime;
+declare Integer						G_LastPositionPlayer;
+declare Integer						G_BestPositionPlayer;
+declare Integer						G_RaceNbPlayer;
+declare Integer						G_PlayerNbCredit;
+declare Boolean						G_FirstInit;
+declare CGhost						G_BestGhost;
+declare Boolean						G_PerformanceSaved;
+declare Integer						G_StartTimerGame;
+declare Integer						G_TimeToSubstract;
+declare Integer						G_StartTimerGhostReplay;
+declare Integer						G_StandByTimer;
+declare Boolean[Integer]			G_IsGhostDoubleDriver;
+declare Integer						G_PrevPositionPlayer;
+declare Integer						G_PlayStep;
+declare Integer						G_IdleStep;
+declare Integer						G_CurrentCheat;
+declare Boolean						G_HasWonAgainstOpponent;
+declare Boolean						G_HasEnteredTableScore;
+declare Boolean						G_HasNewPosition;
+declare Boolean						G_HasEndSequencePlayed;
+declare Boolean						G_FirstScore;
+declare Boolean						G_HasFinishedRace;
+declare Integer						G_RaceTimeOut;
+declare Integer						G_OpponentPosition;
+declare Integer						G_RaceTimeOutTimer;
+declare Integer						G_OpponentType;
+declare CGhost						G_OpponentGhost;
+declare Integer						G_PostGameTimeOutTimer;
+declare Boolean						G_IdleFocus;
+declare Integer[Integer]			G_CarIndexAllowed;
+declare Integer						G_PlayerCarIndex;
+declare Boolean						G_CarSkinChosen;
+declare Boolean						G_PlayerWantsEmptyScoreTable;
+declare Boolean						G_HasNewMedal;
+declare Integer						G_PlayerBestMedal;
+declare Boolean						G_IsTrackRandom;
+declare Integer						G_PlayerLastMedal;
+declare Integer						G_PlayerLastTime;
+// declare Integer						G_PlayerLastMedal;
+
+***InitServer***
+***
+declare Integer PrevTimeLimit = S_TimeLimit;
+declare Integer StartTime;
+***
+
+***BeforeLoadMap***
+***
+G_EnviroName 		= MapList[NextMapIndex].CollectionName;
+// log(G_EnviroName);
+CarsModels::StartItemList();
+G_CarModels 		= CarsModels::LoadCarsModels(G_EnviroName, "Arcade", False);
+G_CarDoubleModels 	= CarsModels::LoadCarsModels(G_EnviroName, "Arcade", True);
+// log(G_CarModels);
+CarsModels::EndItemList();
+
+// ArcadeCheatCodes (1 of 2)
+if(S_ArcadeCheatCode_Collisions)
+	EnableCollisions = True;
+if(S_ArcadeCheatCode_ScaledCar)	// deprecated
+	EnableScaleCar = True;
+if(S_ArcadeCheatCode_CheckpointBonus)
+{
+	EnableCheckpointBonus = True;
+	EnableScaleCar = True;
+	if(S_ArcadeCheatCode_BonusEvents)
+		EnableBonusEvents = True;
+}
+// NOT TODO : S_ArcadeCheatCode_UniqueCamera
+if(S_ArcadeCheatCode_UniqueCamera)		// temporaire : pour pouvoir tester sans avoir deux manettes
+	EnableUniqueCamera = True;
+***
+
+***StartServer***
+***
+// ---------------------------------- //
+// Initialize mode
+PrevTimeLimit 		= S_TimeLimit;
+StartTime 			= -1;
+NbLaps 				= 3;
+IndependantLaps 	= False;
+// MB_SetDefaultRespawnMode(CTmMode::ETMRespawnBehaviour::GiveUpBeforeFirstCheckPoint );
+MB_SetDefaultRespawnMode(CTmMode::ETMRespawnBehaviour::Normal);
+MB_UsePodium 		= False;
+MB_UseIntro 		= False;
+G_IsDoubleDriver  	= False;
+G_IdleFocus			= False;
+G_IdleSequence 		= False;
+G_RaceIndex 		= 0;
+G_BestTimePlayer 	= -1;
+G_FirstInit 		= True;
+G_PerformanceSaved 	= False;
+G_StartTimerGame	= 0;
+G_PlayStep			= TMC_PLAYSTEP_SCORETABLE;
+G_PlayerNbCredit 	= TMC_GAMEPLAY_CREDIT;
+***
+
+***BeforeLoadMap***
+***
+ClientManiaAppUrl = "file://Media/Manialinks/Nadeo/TMConsole/Ingame/UILocalManiaApp.Script.txt";
+***
+
+***MapIntro***
+***
+UISequence::IntroSequence();
+***
+
+***StartMap***
+***
+if(!TMC_HANDSONMODE) {
+	IngameAchievements::Load();
+}
+// CreateLayerCheatCodeInput();
+
+while(Players.count == 0) {
+	yield;
+	Ghosts::Loop();
+}
+
+
+//Init Variables
+G_ThePlayerId 				= Players[0].Id;
+ReinitCheatCode();
+
+Game::SetPlayerId(G_ThePlayerId);
+
+Game::SetIsUgcTrack(S_IsUgcTrack);
+Game::Load(This, "Arcade", S_Musics);
+
+NbLaps = Map.TMObjective_NbLaps;
+Game::SetNbLaps(NbLaps);
+
+// ArcadeCheatCodes (2 of 2)
+if(S_ArcadeCheatCode_ButtonSmash)
+	Players[G_ThePlayerId].ButtonSmashFrenzy = True;
+if(S_ArcadeCheatCode_ScaledCar)
+	Players[G_ThePlayerId].TinyCar = True;
+if(S_ArcadeCheatCode_CatchUpSpeed)
+	Players[G_ThePlayerId].EnableCatchUpSpeed = True;
+if(S_ArcadeCheatCode_StuntTurbo)
+	Players[G_ThePlayerId].EnableStuntMode = True;
+if(S_ArcadeCheatCode_TurboButton)
+	Players[G_ThePlayerId].EnableTurboButton = True;
+if(S_ArcadeCheatCode_JumpButton)
+	Players[G_ThePlayerId].JumpMode = CTmPlayer::ETmJumpMode::Simple;
+if(S_ArcadeCheatCode_LowGravity)
+	Players[G_ThePlayerId].GravityCoef = C_CHEAT_LOW_GRAVITY_COEF;
+if(S_ArcadeCheatCode_AerialCamera)
+	Players[G_ThePlayerId].ForcedAerialCamera = True;
+
+// ---------------------------------- //
+// Initialize race
+StartTime = Now + 3000;
+CutOffTimeLimit = StartTime + (S_TimeLimit * 1000);
+
+// ---------------------------------- //
+//Load libs
+Ghosts::Load();
+UIButtons::Load();
+
+declare Boolean NoGhostOnMap = False;
+for(Medal, TMC_MEDAL_GOLD, TMC_MEDAL_BRONZE) {
+	declare Integer GhostRaceTime = Ghosts::GetMedalGhostTime(Medal);
+	if(GhostRaceTime == -1) {
+		NoGhostOnMap = True;
+		break;	
+	}
+	G_TimesOnMap[Medal] = GhostRaceTime;
+}
+
+if(NoGhostOnMap) {
+	G_TimesOnMap 					= Medals::GetTimesOnMap();
+} else {
+	G_TimesOnMap[TMC_MEDAL_AUTHOR]	= Medals::GetMedalTime(TMC_MEDAL_AUTHOR);
+}
+
+Medals::SetTimesOnMap(G_TimesOnMap);
+
+declare Text IsTrackRandom = Map.MapInfo.MapStyle;
+if(IsTrackRandom == "Random") {
+	Game::SetIsTrackRandom(True);
+	G_IsTrackRandom = True;
+	ST::SetIsTrackRandom(G_IsTrackRandom);
+}
+
+// ---------------------------------- //
+//Load Layers
+Game::WaitTime(250);
+UISequence::ComposeVideoTransitionLayer();
+declare Boolean PlayerWearHmd = Game::GetPlayerUseSpecialVision(Players[G_ThePlayerId]);
+ST::Load(PlayerWearHmd);
+// Players::Load();
+
+UISymbiose::Load(G_ThePlayerId);
+UIArcade::Load(PlayerWearHmd, S_IsUgcTrack);
+// SetIsUgcTrack(S_IsUgcTrack);
+
+declare Integer BestTimePlayer = Ghosts::GetPlayerTime("Solo_BestGhost");
+Medals::SetBestMedalInGameUI(This, BestTimePlayer, G_ThePlayerId);
+
+G_TimesOnMap = Medals::GetTimesOnMap();
+declare Integer TimeWarmUp = G_TimesOnMap[TMC_MEDAL_BRONZE];
+// G_RaceTimeOut = ML::NearestInteger(TimeWarmUp+(TimeWarmUp*0.20));
+// EG : proposition = 3 x Bronze
+G_RaceTimeOut = 3 * TimeWarmUp;
+
+Game::SetNbPadsNeeded(1);
+Game::SetPlayerNickname("PLAYER");
+
+Load();
+
+// ---------------------------------- //
+// Ghosts
+InitGhosts();
+
+// ---------------------------------- //
+//Load Score table with persistence
+LoadGhostsDataMgr();
+InitPersistentScoreTable();
+
+G_CarSkinChosen = False;
+// Players::SetPlayerManagerOn();
+// ChangeModelCarByPlayers(False);
+SpawnArcadePlayer();
+UISequence::InputIdleManialink();
+
+// UISequence::SetStandByView();
+Game::WaitTime(1000);
+
+if(!Game::GetPlayerUseSpecialVision(Players[G_ThePlayerId])) {
+	StartIdleStepStandBy();
+}
+
+UIManager.HoldLoadingScreen = False;
+ST::UpdateCredits(G_PlayerNbCredit);
+SetGamePhase(C_GAMEPHASE_IDLE);
+
+UISequence::SetIdleFocus();
+// Game::ShowUI();
+Game::WaitTime(1000);
+
+G_IdleStep			= TMC_IDLESTEP_STANDBY;
+G_StandByTimer 		= Now + TMC_IDLESTEP_TIMERSTANDBY;
+
+G_StartTimerGhostReplay = Now + 5000;
+// HideOpponents = True;
+// ForceMaxOpponents = 5;
+// Game::ShowReward(Players[G_ThePlayerId], _("Game over"), _("You should try harder!"), _("Every failure is One Step Closer to success"), "to continue", "file://Media/Images/TMConsole/Ingame/rewards-loser.dds", Colors::GetColor("PinkRed"));
+InitPostGameTimeOut(TMC_POSTGAME_TIMEOUTNAME);
+
+SendIfHandsOn();
+
+G_PlayerWantsEmptyScoreTable = False;
+Game::SetMultiPairing(False);
+***
+
+***PlayLoop***
+***
+Ghosts::Loop();
+Game::Loop();
+UISequence::Loop();
+
+if(CheckCheatCode()) {
+	SetTrackGhostsAsRemoved();
+	SaveTrackGhostsDataMgr();
+	MB_StopMap = True;
+	break;
+}
+
+if(!Game::GetPlayerUseSpecialVision(Players[G_ThePlayerId])) {
+	if(G_IdleStep == TMC_IDLESTEP_REPLAY) {
+		CheckGoToStandBy();
+	} else if(G_IdleStep == TMC_IDLESTEP_STANDBY) {
+		if(Now >= G_StandByTimer) {
+			if(IsOneGhostExist()) {
+				StartIdleStepReplay();
+				G_IdleStep = TMC_IDLESTEP_REPLAY;
+			} else {
+				G_StandByTimer = Now + TMC_IDLESTEP_TIMERSTANDBY;
+			}
+		}
+	}
+}
+
+if(G_GamePhase == C_GAMEPHASE_IDLE) {
+
+	//Show the replay looping until a player comes
+	// if(Players::ShouldChangeMap()) {
+		// MB_StopMap = True;
+	// }
+
+	if(GetIsIdleForTooLong()) {
+		if(!UISequence::IsIdleFocus()) {
+			G_PlayStep = TMC_PLAYSTEP_SCORETABLE;
+			// SendPlayStep();
+			ST::ShowPlayerSelec(False);
+			ST::ShowScoreTableResult(False);
+			SendScoresTableOn(False);
+			UISequence::SetIdleFocus();
+			// Game::SetMapNameFrameVisibility(True);
+			// Game::ShowUI();
+			while(!UISequence::IsIdleFocus()) {
+				yield;
+				Ghosts::Loop();
+				if(!Game::GetPlayerUseSpecialVision(Players[G_ThePlayerId]))
+					CheckGoToStandBy();
+			}
+			
+			// if(TMC_HANDSONMODE && G_TimeToSubstract > 0) {
+				// declare Integer[] IndexGhostsToRemove = ST::UpdateTableScoresTimer(G_TimeToSubstract);
+				// if(IndexGhostsToRemove.count > 0) {
+					// TimerLeftRemoveGhosts(IndexGhostsToRemove);
+					// SaveTrackGhostsDataMgr();
+				// }
+				// G_TimeToSubstract = 0;
+			// }
+		}
+	}
+	
+	if(!UISequence::IsIdleFocus()) {
+		
+		if(G_PlayStep == TMC_PLAYSTEP_SCORETABLE) {
+			
+			if(!ST::IsScoreTableResultShown()) {
+				/*
+				declare Integer GhostNotNull = 0;
+				foreach(Ghost in G_PlayerGhosts) {
+					if(Ghost != Null) {
+						log("[ARCADE MODE] Ghost nickname: "^Ghost.Nickname);
+						GhostNotNull += 1;
+					}
+				}
+				log("[ARCADE MODE] Ghosts count: "^GhostNotNull);
+				log("[ARCADE MODE] Remaining ghosts to save: "^Ghosts::RemainingGhostsToSave());
+				*/
+				Game::WaitTime(500);
+				UISequence::IdleFocusOutML();
+				ST::ShowScoreTableResult(True);
+				SendScoresTableOn(True);
+			}
+			
+			if(UIArcade::PlayerWantsToEmptyScoreTable()) {
+				SendScoresTableOn(False);
+				ST::ShowScoreTableResult(False);
+				UISequence::IdleFocusOutML();
+				UIArcade::SetVisibilityClearOutChoice(True);
+				G_PlayerWantsEmptyScoreTable = True;
+				Game::WaitTime(500);
+			}
+			
+			if(G_PlayerWantsEmptyScoreTable) {
+				while(UIArcade::GetClearOutChoice() == -1) {
+					yield;
+					Ghosts::Loop();
+					Game::Loop();
+				}
+				
+				declare Integer Choice = UIArcade::GetClearOutChoice();
+				if(Choice == 1) {
+					SetTrackGhostsAsRemoved();
+					SaveTrackGhostsDataMgr();
+					InitGhosts();
+					LoadGhostsDataMgr();
+					InitPersistentScoreTable();
+				}
+				UIArcade::SetVisibilityClearOutChoice(False);
+				G_PlayerWantsEmptyScoreTable = False;
+				
+				Game::WaitTime(500);
+			}
+			
+			if(ST::GetScoreTableResultAnswer()) {
+				SendScoresTableOn(False);
+				ST::ShowScoreTableResult(False);
+				Game::WaitTime(250);
+				G_PlayStep = TMC_PLAYSTEP_PLAYERSELEC;
+			}
+		} else if(G_PlayStep == TMC_PLAYSTEP_PLAYERSELEC) {
+			if(!ST::IsPlayerSelectShown()) {
+				// UISequence::IdleFocusOutML();
+				ST::ShowPlayerSelec(True);
+				Game::WaitTime(250);
+				G_RaceNbPlayer = 0;
+			}
+			G_RaceNbPlayer = ST::GetNbPlayerChosen();
+		}
+		
+		if(G_RaceNbPlayer > 0) {
+			G_FirstInit = False;
+			Game::SetNbPlayers(G_RaceNbPlayer);
+			
+			G_StartTimerGame = Now;
+			ST::ShowPlayerSelec(False);
+			G_PlayStep = TMC_PLAYSTEP_SCORETABLE;
+			ST::SetTableScoreTimerUpdated(False);
+			
+			InitPlayer();
+			
+			//Deal with Double driver skins
+			if(G_RaceNbPlayer == 1) {
+				Game::SetIsSymbiose(False);
+				if(G_IsDoubleDriver) {
+					// Game::DefaultSoloPairing();
+					
+					Game::SetMultiPairing(False);
+					Game::DefaultSoloPairing();
+					G_IsDoubleDriver  = False;
+					G_CarSkinChosen = False;
+					UnspawnArcadePlayer();
+				}
+			} else {
+				Game::SetIsSymbiose(True);
+				
+				if(!G_IsDoubleDriver) {
+					
+					G_IsDoubleDriver  = True;
+					G_CarSkinChosen = False;
+					UnspawnArcadePlayer();					
+				}
+			}
+			
+			// if(G_IsDoubleDriver) {
+				// Game::SetIsSymbiose(True);
+				// Game::SetNbPlayers(2);
+			// } else {
+				// Game::SetNbPlayers(1);
+			// }
+			// Players::CopyPadsPlayingArrays();
+			// SetPlayerRandomCarIndex();
+			// SetOpponentCarAllowed();
+			// SetPlayerCarModel();
+
+			// Players::ResetPads();
+			// Players::SetPlayerManagerOff();
+			ST::HideScoreTable();
+			UIArcade::ReInitCamera();
+			SetGamePhase(C_GAMEPHASE_PREPARATION);
+		}
+	}
+} else if(G_GamePhase == C_GAMEPHASE_PREPARATION) {
+	Game::SetStopMusic();
+	Game::SetMultiPairing(True);
+	
+	UISequence::LaunchPlayingSequence();
+	SpawnArcadePlayer();
+	Game::WaitTime(250);
+	
+	SetContextualOpponent();
+	LoadGhosts(True);
+	SetOpponentForUI(G_OpponentGhost, G_OpponentType);
+	G_IdleStep 					= TMC_IDLESTEP_NONE;
+	
+	G_HasFinishedRace			= False;
+	G_HasWonAgainstOpponent 	= False;
+	G_HasEnteredTableScore		= False;
+	G_HasEndSequencePlayed		= False;
+	G_FirstScore 				= False;
+	G_HasNewBestTime			= False;
+	G_HasNewMedal				= False;
+
+	G_PlayerLastTime			= -1;
+	
+	G_HasNewPosition			= False;
+	G_RaceTimeOutTimer			= Now + G_RaceTimeOut;
+	UISymbiose::SetSymbioseOn();
+	
+	UIArcade::SetVisibilityCredit(True);
+	
+	// ChangeRandomIndexCarModel();
+	
+	SetGamePhase(C_GAMEPHASE_GAME);
+} else if(G_GamePhase == C_GAMEPHASE_GAME) {
+
+	// ---------------------------------- //
+	// Spawn players
+	if (Game::IsWaiting(Players[G_ThePlayerId])) {
+		Game::StartRace(Players[G_ThePlayerId]);
+	}
+	
+	// ---------------------------------- //
+	// Manage events
+	foreach (Event in PendingEvents) {
+		
+		// PassOn(Event);
+		// ---------------------------------- //
+		// Waypoint
+		if (Event.Type == CTmModeEvent::EType::WayPoint) {
+			PassOn(Event);
+			
+			if (Event.IsEndRace) {
+				Event.Player.Score.PrevRace = Event.Player.CurRace;
+				G_HasFinishedRace = True;
+				Game::EndRace(Event.Player);
+				G_PlayerLastTime 	= Event.Player.CurRace.Time;
+				SetLastMedalPlayer(Event.Player);
+				
+				Game::WaitTime(1000);
+				G_LastPositionPlayer			= 	ST::SimulateNewScore(G_PlayerLastTime);
+
+				//We want to keep the best players's performance and time
+				if(G_PlayerLastTime < G_BestTimePlayer || G_BestTimePlayer == -1) {
+					G_BestTimePlayer 		= G_PlayerLastTime;
+					G_HasNewBestTime		= True;
+					
+					SetMedalPlayer(Players[G_ThePlayerId]);
+					declare CGhost LastGhost 		= DataMgr.GhostRetrieveFromPlayer(Players[G_ThePlayerId]);
+					if(G_BestGhost != Null) 		DataMgr.GhostDestroy(G_BestGhost);
+					G_BestGhost						= LastGhost;
+					SetTempBestGhostNickname();
+					if(G_OpponentType != TMC_MEDAL_NONE && (G_BestPositionPlayer == 0)) {
+						G_HasWonAgainstOpponent = True;
+					}
+				} else {
+					G_HasNewBestTime		= False;
+				}
+				
+				if(G_LastPositionPlayer < G_BestPositionPlayer || G_BestPositionPlayer == -1) {
+					if(G_OpponentType != TMC_MEDAL_NONE) {
+						if(G_LastPositionPlayer <= G_OpponentPosition) {
+							G_HasWonAgainstOpponent = True;
+						}
+						
+						if(G_LastPositionPlayer < 10 && (G_BestPositionPlayer == 10 || G_BestPositionPlayer == -1)) {
+							G_HasEnteredTableScore 	= True;
+						}
+						
+					} else {
+						if(G_LastPositionPlayer < 10) {
+							G_HasEnteredTableScore 	= True;
+							G_FirstScore			= True;
+						}
+					}
+					
+					//DEBUG
+					// if(!G_HasOpponent) 				G_HasWonAgainstOpponent = True;
+					
+					G_PrevPositionPlayer	= G_BestPositionPlayer;
+					G_BestPositionPlayer 	= G_LastPositionPlayer;
+					
+					if(G_PrevPositionPlayer != G_BestPositionPlayer) {
+						G_HasNewPosition = True;
+					}
+				} else {
+				
+					G_PrevPositionPlayer	= G_BestPositionPlayer;
+				}
+				
+				// log("G_HasWonAgainstOpponent: 	"^G_HasWonAgainstOpponent);
+				// log("G_HasEnteredTableScore: 	"^G_HasEnteredTableScore);
+				// log("G_HasNewBestTime: 			"^G_HasNewBestTime);
+				// log("G_HasNewPosition: 			"^G_HasNewPosition);
+				Game::WaitTime(1000);
+				SetGamePhase(C_GAMEPHASE_POSTGAME);
+			}
+		}
+		// ---------------------------------- //
+		// GiveUp
+		else if (Event.Type == CTmModeEvent::EType::GiveUp) {
+			/*
+			UsePlayerCredits();
+			if(G_PlayerNbCredit >= 0) {
+				UISymbiose::SetSymbioseOff();
+				// Game::WaitRace(Event.Player);
+				SetGamePhase(C_GAMEPHASE_PREPARATION);
+			} else {
+				// Game::WaitRace(Event.Player);
+				
+			}
+			*/
+			Discard(Event);
+			SetGamePhase(C_GAMEPHASE_POSTGAME);
+			// InitPostGameTimeOut();
+			// SetGamePhase(C_GAMEPHASE_POSTGAME);
+			// UsePlayerCredits();
+			// SetGamePhase(C_GAMEPHASE_PREPARATION);
+		} else {
+			PassOn(Event);
+		}
+	}
+	
+	if(PlayerHasGiveUpRace()) {
+		SetPlayerCredits(0);
+		Game::EndRace(Players[G_ThePlayerId]);
+		Game::WaitTime(500);
+		SetGamePhase(C_GAMEPHASE_POSTGAME);
+	}
+	
+	/*
+	if(Game::GetPlayerDespawnTimeOut()) {
+		// HERE
+		// I18N  "to continue"
+		// Game::ShowReward(Players[G_ThePlayerId], _("Time is over!"), "", "to continue", "file://Media/Images/TMConsole/Ingame/rewards-loser.dds", <1.0, 1.0, 1.0>);
+		// ST::WriteCongratMessage(-1);
+		SetGamePhase(C_GAMEPHASE_POSTGAME);
+	}
+	*/
+} else if(G_GamePhase == C_GAMEPHASE_POSTGAME) {
+	
+	UISymbiose::SetSymbioseOff();
+	UIArcade::SetVisibilityCredit(False);
+	
+	if(!G_HasEndSequencePlayed) {
+		declare Boolean IsFinalCredit = (G_PlayerNbCredit == 0);
+		EndSequence(IsFinalCredit);
+		
+		G_HasEndSequencePlayed = True;
+	}
+	
+	if(G_PlayerNbCredit > 0) {
+		// UnspawnArcadePlayer();
+		SequenceTransition();
+		UsePlayerCredits();
+		SetGamePhase(C_GAMEPHASE_PREPARATION);
+		
+		// if(!ST::IsFinalChoiceShown()) {
+			// InitPostGameTimeOut(TMC_POSTGAME_TIMEOUTRESULT);
+			// Game::WaitTime(500);
+			// UIArcade::SetVisibilityPGTimeOut(True);
+			// ST::UpdateResultPlayer(G_BestPositionPlayer, G_BestTimePlayer, G_IsDoubleDriver);
+			// Game::WaitTime(500);
+			// ST::ShowFinalChoicePopUp(True);
+			// Game::WaitTime(250);
+		// }
+		
+		// if(ST::IsFinalChoiceShown()) {
+			// declare Integer PlayerFinalChoice = ST::GetPlayerFinalChoice();
+			// if(PlayerFinalChoice != 0) {
+				// ST::ShowFinalChoicePopUp(False);
+				// UIArcade::SetVisibilityPGTimeOut(False);
+				// Game::WaitTime(250);
+				// if(PlayerFinalChoice == TMC_FINALCHOICE_RETRY) {
+					// UsePlayerCredits();
+					// SetGamePhase(C_GAMEPHASE_PREPARATION);
+				// } else if(PlayerFinalChoice == TMC_FINALCHOICE_FINISH) {
+					// InitPostGameTimeOut(TMC_POSTGAME_TIMEOUTNAME);
+					// Game::WaitTime(250);
+					// SetGamePhase(C_GAMEPHASE_FINAL);
+				// }
+			// }
+			
+			// UpdateTimeOutTimer();
+			// if(G_PostGameTimeOutTimer <= 0) {
+				// Game::WaitTime(250);
+				// ST::ShowFinalChoicePopUp(False);
+				// UIArcade::SetVisibilityPGTimeOut(False);
+				// InitPostGameTimeOut(TMC_POSTGAME_TIMEOUTNAME);
+				// Game::WaitTime(250);
+				// SetGamePhase(C_GAMEPHASE_FINAL);
+			// }
+		// }
+	} else if(G_PlayerNbCredit <= 0) {
+		if(!Game::GetPlayerUseSpecialVision(Players[G_ThePlayerId])) {
+			// Game::WaitTime(2000);
+			if(G_IdleStep == TMC_IDLESTEP_NONE) {
+				// if(IsOneGhostExist()) {
+					// StartIdleStepReplay();
+					// G_IdleStep = TMC_IDLESTEP_REPLAY;
+				// } else {
+					// StartIdleStepStandBy();
+					// G_IdleStep = TMC_IDLESTEP_STANDBY;
+				// }
+				G_StandByTimer = Now + TMC_IDLESTEP_TIMERSTANDBY;
+				StartIdleStepStandBy();
+				G_IdleStep = TMC_IDLESTEP_STANDBY;
+			}
+		} else {
+			Ghosts::RemoveAllGhosts();
+			// Game::HideTransition(Players[G_ThePlayerId]);
+			// Game::WaitRace(Players[G_ThePlayerId]);
+			SequenceTransition();
+			Players[G_ThePlayerId].IsSpawned = True;
+			Players[G_ThePlayerId].RaceStartTime = -1;
+		}
+		
+		InitPostGameTimeOut(TMC_POSTGAME_TIMEOUTNAME);
+		SetGamePhase(C_GAMEPHASE_FINAL);
+	}
+} else if(G_GamePhase == C_GAMEPHASE_FINAL) {
+	// if(UIArcade::GetVisibilityPGTimeOut()) {
+		
+	// } else if(!UIArcade::GetVisibilityPGTimeOut()){
+		// UIArcade::SetVisibilityPGTimeOut(True);
+	// }
+	
+	UpdateTimeOutTimer();
+	//Save the score of the player
+	if(G_BestPositionPlayer > -1 && G_BestPositionPlayer < 10) {
+		if(!G_PerformanceSaved) {
+			// Game::HideUI();
+			SaveBestPlayerPerformance();
+			ST::WriteCongratMessage(G_BestPositionPlayer);
+			G_PerformanceSaved = True;
+		}
+		
+		declare Boolean IsScoreWritten = ST::ScoreWritten();
+		if(IsScoreWritten || G_PostGameTimeOutTimer <= 0) {
+			UIArcade::SetVisibilityPGTimeOut(False);
+			G_PerformanceSaved = False;
+
+			if(IsScoreWritten) {
+				ST::WriteName(False);
+			} else {
+				ST::WriteName(True);
+			}
+			ST::HideSetName();
+			Game::WaitTime(500);
+			
+			SetTrackGhostsNickname();
+			SaveTrackGhostsDataMgr();
+			StopTimer();
+			G_PlayStep = TMC_PLAYSTEP_SCORETABLE;
+			// SendPlayStep();
+			G_RaceNbPlayer = 0;
+			G_CarSkinChosen = False;
+			// log("End car skin false");
+			// UISequence::SetIdleFocus();
+
+			// while(!UISequence::IsIdleFocus()) {
+				// yield;
+				// Ghosts::Loop();
+			// }
+			// EG : la première fois que le mec joue en arcade, il est forcément dans la table des scores.
+			if(!TMC_HANDSONMODE) {
+				IngameAchievements::SendArcadeFinishedEvent();
+			}
+			// Game::SetArcadeSolo();
+			Game::SetMultiPairing(False);
+			SetGamePhase(C_GAMEPHASE_IDLE);
+		}
+	} else {
+		StopTimer();
+		// UISequence::SetIdleFocus();
+
+		// while(!UISequence::IsIdleFocus()) {
+			// yield;
+			// Ghosts::Loop();
+			// log(Now^">Idle focus");
+		// }
+		// Game::SetArcadeSolo();
+		Game::SetMultiPairing(False);
+		Game::WaitTime(200);
+		G_RaceNbPlayer = 0;
+		SetGamePhase(C_GAMEPHASE_IDLE);
+	}
+} else if(G_GamePhase == C_GAMEPHASE_STANDBY) {
+	/*
+	SpawnArcadePlayer();
+	// UISequence::SetStandByView();
+	ST::ShowRemainingCreditPopup(True);
+	
+	WaitPlayerPopupAnswer();
+	ST::ShowRemainingCreditPopup(False);
+	SetGamePhase(C_GAMEPHASE_GAME);	
+	*/
+}
+***
+
+***EndMap***
+***
+Game::WaitRaceAll();
+// Players::SetPlayerManagerChangeMap();
+// while(!Players::ConfirmChangeMap()) {
+	// yield;
+	// Ghosts::Loop();
+// }
+NextMapIndex = 0;
+Ghosts::Unload();
+***
+
+***EndServer***
+***
+declare Integer FakeVariable6 = 0;
+***
+
+Void SetLastMedalPlayer(CTmPlayer _Player) {
+	G_PlayerLastMedal = Medals::GetMedalFromTime(_Player.CurRace.Time);
+}
+
+Void SetMedalPlayer(CTmPlayer _Player) {
+	if(G_IsTrackRandom) return;
+	declare UI <=> UIManager.GetUI(_Player);
+	declare LastMedal				= Medals::GetMedalFromTime(G_BestTimePlayer);
+	if(G_PlayerBestMedal > LastMedal) {
+		G_PlayerBestMedal			= LastMedal;
+		G_HasNewMedal				= True;
+	}
+}
+
+Boolean GetIsIdleForTooLong() 
+{
+	declare UI <=> UIManager.GetUI(Players[G_ThePlayerId]);
+	if(UI == Null) return False;
+	
+	declare Integer NbPadsTooLong = 0;
+	foreach(I => Pad in Input.Pads) {
+		if(Pad.IdleDuration >= C_IdleTimeMax*1000) {
+			NbPadsTooLong += 1;
+			
+		}
+		// log(Pad.IdleDuration);
+	}
+	
+	return NbPadsTooLong == Input.Pads.count;
+}
+
+Void SendIfHandsOn() {
+	declare UI <=> UIManager.GetUI(Players[G_ThePlayerId]);
+	declare netwrite Boolean Net_IsHandsOn for UI;
+	Net_IsHandsOn = TMC_HANDSONMODE;
+}
+
+Void SendScoresTableOn(Boolean _IsOne) {
+	declare UI <=> UIManager.GetUI(Players[G_ThePlayerId]);
+	declare netwrite Boolean Net_ScoresTableOn for UI;
+	Net_ScoresTableOn = _IsOne;
+}
+
+Void SetTempBestGhostNickname() {
+	if(G_BestGhost != Null) {
+		G_BestGhost.Nickname = _("Personal record");
+	}
+}
+
+// Void InitCarModelIndexes() {
+	// HCAK EG
+	// return;
+	
+	// G_CarIndexAllowed.clear();
+	// for(I, 0, 3) {
+		// G_CarIndexAllowed[I] = I;
+	// }
+	// declare Integer Temp;
+	// for(I, 0, 3) {
+		// declare Integer J = ML::Rand(0, I);
+		// Temp = G_CarIndexAllowed[I];
+		// G_CarIndexAllowed[I] = G_CarIndexAllowed[J];
+		// G_CarIndexAllowed[J] = Temp;
+	// }
+	
+	// G_CurrentCarIndex = 0;
+// }
+
+Void InitPostGameTimeOut(Integer _TimeOut) {
+	G_PostGameTimeOutTimer = _TimeOut;
+	// G_PreNow = Now;
+	
+}
+
+Void UpdateTimeOutTimer() {
+	G_PostGameTimeOutTimer -= Game::GetCustomPeriod();
+	// log(G_PostGameTimeOutTimer);
+	declare UI <=> UIManager.GetUI(Players[G_ThePlayerId]);
+	declare netwrite Integer Net_PostGameTimeOutTimer for UI;
+	Net_PostGameTimeOutTimer = G_PostGameTimeOutTimer;
+}
+
+Text[] SplitGhostName(CGhost _Ghost) {
+	// declare Text[] NickNameSplited = TL::Split(_Ghost.Nickname, "_");
+	declare Text[] NickNameSplited = TL::Split("_", _Ghost.Nickname);
+	return NickNameSplited;
+}
+
+Void LoadGhostsDataMgr() {
+	// EG FIX : on ignore les ghosts dont le nick commencer par REM:
+	// pour permettre de supprimer les ghosts en début de journée
+	for(I, 0, 9) {
+		declare CGhost CurGhost = Ghosts::GetPlayerGhost(TMC_GHOSTNAME^I);
+		if(CurGhost == Null) break;
+		
+		//Security
+		declare Integer WaitingTime = Now + TMC_DATAMGR_TIMEOUT;
+		 if(CurGhost.DataState == CGhost::EDataState::Error) continue;
+		while(Now < WaitingTime) {
+			yield;
+			Ghosts::Loop();
+			if(CurGhost.DataState == CGhost::EDataState::Ready) break;
+		}
+		
+		if(CurGhost.DataState != CGhost::EDataState::Ready) continue;
+		
+		if (TL::SubString(CurGhost.Nickname, 0, 4) == C_REMOVED_GHOST_NICK) {
+			break;
+		} else {
+			G_PlayerGhosts[I] = CurGhost;
+			// declare Text[] NickName = SplitGhostName(CurGhost);
+			// Si le surnom du ghost correspond à la syntaxe 
+			// if(NickName.count >= 2) {
+				// G_PlayerGhosts[I] = CurGhost;
+			// }
+		}
+	}
+}
+
+Void ReinitCheatCode() {
+	if (Players.count == 0)
+		return;
+	declare CUIConfig UI <=> UIManager.GetUI(Players[G_ThePlayerId]);
+	if(UI == Null) return;
+	
+	declare netread Integer Net_CheatCodeNow for UI;
+	G_CurrentCheat = Net_CheatCodeNow;
+}
+
+Boolean CheckCheatCode() {
+	if (Players.count == 0)
+		return False;
+	declare CUIConfig UI <=> UIManager.GetUI(Players[G_ThePlayerId]);
+	if(UI == Null) return False;
+	
+	declare netread Integer Net_CheatCodeNow for UI;
+	if(Net_CheatCodeNow != G_CurrentCheat) return True;
+	
+	return False;
+}
+
+Void InitPersistentScoreTable() {
+	declare Integer[Integer] 	GhostsScore;
+	declare Text[Integer] 		GhostsName;
+	declare Integer[Integer] 	GhostsTimerLeft;
+	
+	declare Integer IndexScore = 0;
+	
+	for(I, 0, 9) {
+		if(G_PlayerGhosts[I] != Null) {
+			GhostsScore[IndexScore] 		= G_PlayerGhosts[I].RaceResult.Time;
+			GhostsName[IndexScore] 			= G_PlayerGhosts[I].Nickname;
+			
+			//Unused value
+			GhostsTimerLeft[IndexScore]		= 0;
+			IndexScore += 1;
+			
+			// NickNameSplited 		= SplitGhostName(G_PlayerGhosts[I]);
+			// if(NickNameSplited.count == 0) break;
+			// if(NickNameSplited.existskey(0))	GhostsName[I] 			= NickNameSplited[0];
+			// if(NickNameSplited.existskey(1)) 	GhostsTimerLeft[I] 		= TL::ToInteger(NickNameSplited[1]);
+		}
+	}
+	
+	ST::InitScoreTable(GhostsScore, GhostsName, GhostsTimerLeft);
+}
+
+Void SetTrackGhostsAsRemoved() {
+	G_CacheGhosts.clear();
+
+	for(I, 0, 9) {
+		if(G_PlayerGhosts[I] == Null) break;
+		G_PlayerGhosts[I].Nickname = C_REMOVED_GHOST_NICK^"_0";
+	}
+}
+
+Void SetTrackGhostsNickname() {
+	//Remember to write the nickname
+	for(I, 0, 9) {
+		if(G_PlayerGhosts[I] == Null || G_PlayerGhosts[I].Nickname == C_REMOVED_GHOST_NICK^"_0") break;
+		declare Text Name 			= ST::GetPlayerName(I);
+		// declare Text TimerLeft 		= TL::ToText(ST::GetPlayerTimerLeft(I));
+		// declare Text GhostNickname 	= Name^"_"^TimerLeft;
+		declare Text GhostNickname 	= Name;
+		G_PlayerGhosts[I].Nickname = GhostNickname;
+	}
+}
+
+Void SaveTrackGhostsDataMgr() {
+	for(I, 0, 9) {
+		declare Ghost <=> G_PlayerGhosts[I];
+		if(Ghost == Null) break;
+		
+		declare GhostName = TMC_GHOSTNAME^I;
+		if (G_CacheGhosts.existskey(GhostName) && G_CacheGhosts[GhostName] == Ghost.Id) {
+			continue;
+		}
+		
+		//Ghosts::SaveGhostRecord(Ghost, GhostName);
+		Ghosts::Async_SaveGhostRecord(Ghost, GhostName);
+		G_CacheGhosts[GhostName] = Ghost.Id;
+	}
+}
+
+Void StopTimer() {
+	G_TimeToSubstract = Now - G_StartTimerGame;
+}
+
+Void SetPlayerCredits(Integer _NewCredit) {
+	G_PlayerNbCredit = _NewCredit;
+	ST::UpdateCredits(G_PlayerNbCredit);
+	declare CUIConfig UI <=> UIManager.GetUI(Players[G_ThePlayerId]);
+	if(UI == Null) return;
+	declare netwrite Integer Net_Credits_Count for UI;
+	Net_Credits_Count = G_PlayerNbCredit;
+}
+
+Void UsePlayerCredits() {
+	G_PlayerNbCredit -= 1;
+	ST::UpdateCredits(G_PlayerNbCredit);
+	declare CUIConfig UI <=> UIManager.GetUI(Players[G_ThePlayerId]);
+	if(UI == Null) return;
+	declare netwrite Integer Net_Credits_Count for UI;
+	Net_Credits_Count = G_PlayerNbCredit;
+}
+
+Void WaitPlayerPopupAnswer() {
+	while(!ST::GetPopUpAnswer()) {
+		yield;
+		Ghosts::Loop();
+	}
+}
+
+Void InitPlayer() {
+	SetPlayerCredits(TMC_GAMEPLAY_CREDIT);
+	G_BestPositionPlayer	= -1;
+	G_BestTimePlayer 		= -1;
+	G_BestGhost 			= Null;
+	G_PlayerBestMedal		= TMC_MEDAL_NONE;
+	G_PlayerLastMedal		= TMC_MEDAL_NONE;
+	// G_LastGhost 			= Null;
+	// ST::UpdateResultPlayer(G_BestPositionPlayer, G_BestTimePlayer);
+}
+
+Void WaitPlayerInput() {
+	while(!UISequence::IsReplayOff()) {
+		yield;
+		Ghosts::Loop();
+	}
+}
+
+Void UnspawnArcadePlayer() {
+	Players[G_ThePlayerId].IsSpawned = False;
+}
+
+Void WaitRewardAnswer() {
+	while(!Game::GetRewardAnswer(Players[G_ThePlayerId])) {
+		yield;
+		//ADD THINGS LIKE POPUP
+		Ghosts::Loop();
+		Game::Loop();
+
+	}
+	// Game::HideTransition(Players[G_ThePlayerId]);
+}
+
+/*
+Text GetRankMessage(Integer _Position) {
+	declare Text RankMessage = "";
+	switch(_Position) {
+		//L16N The player has reach a rank during the game
+		case 0	:	RankMessage = _("You reached the 1st place.");
+		case 1	:	RankMessage = _("You reached the 2nd place.");
+		case 2	:	RankMessage = _("You reached the 3rd place.");
+		default	:	RankMessage = TL::Compose(_("You reached the %1th place."), ""^_Position+1);
+	}
+	return RankMessage;
+}
+*/
+
+Integer GetIndexLastGhost() {
+	declare Integer IndexLastGhost;
+	for(I, 0, G_PlayerGhosts.count-1) {
+		if(G_PlayerGhosts[I] != Null) 	IndexLastGhost = I;
+		else							break;
+	}
+	return IndexLastGhost;
+}
+
+Boolean IsOneGhostExist() {
+	foreach(Ghost in G_PlayerGhosts) {
+		if(Ghost != Null) {
+			return True;
+		}
+	}
+	// if(G_BestGhost != Null) return True;
+	return False;
+}
+
+Void EndSequence(Boolean _FinalCredit) {
+	declare Text Title 		= "";
+	declare Text Subtitle 	= "";
+	declare Text Subtitle2	= "";
+	declare Vec3 TextColor 	= <1.0, 1.0, 1.0>;
+	declare Text RewardUrl	= "";
+	declare Text Sign		= "+";
+	
+	if(G_HasNewMedal) {
+		if(G_PlayerBestMedal == TMC_MEDAL_GOLD) {
+			Title 		= FlavourText::GetCampaignGoldTitle();
+			Subtitle 	= FlavourText::GetCampaignGoldSubTitle();
+			Subtitle2	= FlavourText::GetNewRecordOfThePlayer(G_BestTimePlayer);
+			TextColor 	= Colors::GetColor("Gold");
+		} else if(G_PlayerBestMedal == TMC_MEDAL_SILVER){
+			Title 		= FlavourText::GetCampaignSilverTitle();
+			Subtitle 	= FlavourText::GetCampaignSilverSubTitle(); 
+			Subtitle2	= FlavourText::GetNewRecordOfThePlayer(G_BestTimePlayer);
+			TextColor 	= Colors::GetColor("Silver");
+		} else if(G_PlayerBestMedal == TMC_MEDAL_BRONZE){
+			Title 		= FlavourText::GetCampaignBronzeTitle();
+			Subtitle 	= FlavourText::GetCampaignBronzeSubTitle(); 
+			Subtitle2	= FlavourText::GetNewRecordOfThePlayer(G_BestTimePlayer);
+			TextColor 	= Colors::GetColor("Bronze");
+		} else if(G_PlayerBestMedal == TMC_MEDAL_AUTHOR) {
+			Title 		= FlavourText::GetCampaignTrackmasterTitle();
+			Subtitle 	= FlavourText::GetCampaignTrackmasterSubTitle(); 
+			Subtitle2	= FlavourText::GetNewRecordOfThePlayer(G_BestTimePlayer);
+			TextColor 	= Colors::GetColor("Green");
+		}
+		RewardUrl = RewardScreens::GetScreenMedalWon();
+		Game::ShowReward(Players[G_ThePlayerId], Title, Subtitle, Subtitle2, "to continue", RewardUrl, TextColor, Sign, True);
+		WaitRewardAnswer();
+	}
+	
+	if(G_HasFinishedRace) {
+		if(G_HasNewPosition) {
+			if(G_BestPositionPlayer == 0) {
+				if(IsOneGhostExist()) {
+					Title = _("Pole position!");
+					//L16N Subtitle of the final screen.
+					Subtitle = _("You've set the fastest time!");
+					Subtitle2 = FlavourText::GetNewRecordOfThePlayer(G_BestTimePlayer);
+					Game::ShowReward(Players[G_ThePlayerId], Title, Subtitle, Subtitle2, _("to continue"), RewardScreens::GetScreenArcade(), Colors::GetColor("BlueLight"), "+", True);
+					WaitRewardAnswer();
+				} else {
+					Title = _("Great!");
+					//L16N. The player is the first to have his name in the scores tableclem
+					Subtitle = _("You put the first record!");
+					Subtitle2 = FlavourText::GetNewRecordOfThePlayer(G_BestTimePlayer);
+					Game::ShowReward(Players[G_ThePlayerId], Title, Subtitle, Subtitle2, _("to continue"), RewardScreens::GetScreenArcade(), Colors::GetColor("BlueLight"), "+", True);
+					WaitRewardAnswer();
+				}
+			} else {
+				if(G_BestPositionPlayer > -1 && G_BestPositionPlayer < 9) {
+					//L16N A Title of the final screen. The player made a good score
+					Title = FlavourText::GetArcadeTop10Title();
+					//L16N A subtitle of a game final screen.
+					Subtitle = Game::GetRankMessage(G_BestPositionPlayer);
+					declare Text TimeMessage = FlavourText::GetNewRecordOfThePlayer(G_BestTimePlayer);
+					Game::ShowReward(Players[G_ThePlayerId], Title, Subtitle, TimeMessage, _("to continue"), RewardScreens::GetScreenArcade(), <1.0, 1.0, 1.0>, "+", True);
+					WaitRewardAnswer();
+				} else {
+					Title 		= FlavourText::GetArcadeCloseTitle();
+					Subtitle 	= FlavourText::GetArcadeTryAgainSubTitle();
+					Subtitle2	= FlavourText::GetArcadeDefaultSubtitle();
+					Game::ShowReward(Players[G_ThePlayerId], Title, Subtitle,  Subtitle2, _("to continue"), RewardScreens::GetScreenArcade(), Colors::GetColor("PinkRed"), "-", True);
+					WaitRewardAnswer();
+				}
+			}
+		} else if(G_HasNewBestTime) {
+			//L16N A Title of a game final screen. The player made a good performance
+			Title = _("Well played!");
+			//L16N Subtitle of a game final screen.
+			Subtitle =  _("You have a new record!");
+			declare Text Subt = "";
+			if(G_PlayerLastMedal >= TMC_MEDAL_AUTHOR && G_PlayerLastMedal <= TMC_MEDAL_BRONZE) {
+				Subt = TL::Compose(_("Your new best record: %1, %2"), TL::TimeToText(G_BestTimePlayer, True), Medals::GetMedalName(G_PlayerLastMedal));
+			} else {
+				Subt = TL::Compose(_("Your new best record: %1"), TL::TimeToText(G_BestTimePlayer, True));
+			}
+			Subtitle2	= Subt;
+			Game::ShowReward(Players[G_ThePlayerId], Title, Subtitle, Subtitle2, _("to continue"), RewardScreens::GetScreenArcade(), <1.0, 1.0, 1.0>, "+", True);
+			WaitRewardAnswer();
+		} else {
+			if(G_BestPositionPlayer > -1 && G_BestPositionPlayer < 9) {
+				Title 		= FlavourText::GetArcadeCloseTitle();
+				Subtitle 	= FlavourText::GetHotSeatCallOutBad();
+				declare Text Subt = "";
+				if(G_PlayerLastMedal >= TMC_MEDAL_AUTHOR && G_PlayerLastMedal <= TMC_MEDAL_BRONZE) {
+					Subt = TL::Compose(_("Your last record: %1, %2"), TL::TimeToText(G_PlayerLastTime, True), Medals::GetMedalName(G_PlayerLastMedal));
+				} else {
+					Subt = TL::Compose(_("Your last record: %1"), TL::TimeToText(G_PlayerLastTime, True));
+				}
+				Subtitle2	= Subt;
+				Game::ShowReward(Players[G_ThePlayerId],Title, Subtitle,  Subtitle2, _("to continue"), RewardScreens::GetScreenArcade(), Colors::GetColor("PinkRed"), "-", True);		
+				WaitRewardAnswer();
+			} else {
+				Title 		= FlavourText::GetArcadeCloseTitle();
+				Subtitle 	= FlavourText::GetArcadeTryAgainSubTitle();
+				declare Text Subt = "";
+				if(G_PlayerLastMedal >= TMC_MEDAL_AUTHOR && G_PlayerLastMedal <= TMC_MEDAL_BRONZE) {
+					Subt = TL::Compose(_("Your last record: %1, %2"), TL::TimeToText(G_PlayerLastTime, True), Medals::GetMedalName(G_PlayerLastMedal));
+				} else {
+					Subt = TL::Compose(_("Your last record: %1"), TL::TimeToText(G_PlayerLastTime, True));
+				}
+				Subtitle2	= Subt;
+				Game::ShowReward(Players[G_ThePlayerId], Title, Subtitle,  Subtitle2, _("to continue"), RewardScreens::GetScreenArcade(), Colors::GetColor("PinkRed"), "-", True);
+				WaitRewardAnswer();
+			}
+			
+			/*
+			if(G_PlayerLastMedal == TMC_MEDAL_GOLD) {
+				Title 		= FlavourText::GetCampaignGoldTitle();
+				Subtitle 	= FlavourText::GetCampaignGoldSubTitle();
+				Subtitle2	= FlavourText::GetNewRecordOfThePlayer(G_BestTimePlayer);
+				TextColor 	= Colors::GetColor("Gold");
+			} else if(G_PlayerLastMedal == TMC_MEDAL_SILVER){
+				Title 		= FlavourText::GetCampaignSilverTitle();
+				Subtitle 	= FlavourText::GetCampaignSilverSubTitle(); 
+				Subtitle2	= FlavourText::GetNewRecordOfThePlayer(G_BestTimePlayer);
+				TextColor 	= Colors::GetColor("Silver");
+			} else if(G_PlayerLastMedal == TMC_MEDAL_BRONZE){
+				Title 		= FlavourText::GetCampaignBronzeTitle();
+				Subtitle 	= FlavourText::GetCampaignBronzeSubTitle(); 
+				Subtitle2	= FlavourText::GetNewRecordOfThePlayer(G_BestTimePlayer);
+				TextColor 	= Colors::GetColor("Bronze");
+			} else if(G_PlayerLastMedal == TMC_MEDAL_AUTHOR) {
+				Title 		= FlavourText::GetCampaignTrackmasterTitle();
+				Subtitle 	= FlavourText::GetCampaignTrackmasterSubTitle(); 
+				Subtitle2	= FlavourText::GetNewRecordOfThePlayer(G_BestTimePlayer);
+				TextColor 	= Colors::GetColor("GreenMaster");
+			}
+			RewardUrl = RewardScreens::GetScreenMedalWon();
+			Game::ShowReward(Players[G_ThePlayerId], Title, Subtitle, Subtitle2, _("to continue"), RewardUrl, TextColor, Sign, True);
+			WaitRewardAnswer();
+			
+			if(G_HasNewMedal) {
+				if(G_PlayerBestMedal == TMC_MEDAL_GOLD) {
+					Title 		= FlavourText::GetCampaignGoldTitle();
+					Subtitle 	= FlavourText::GetCampaignGoldSubTitle();
+					Subtitle2	= FlavourText::GetNewRecordOfThePlayer(G_BestTimePlayer);
+					TextColor 	= Colors::GetColor("Gold");
+				} else if(G_PlayerBestMedal == TMC_MEDAL_SILVER){
+					Title 		= FlavourText::GetCampaignSilverTitle();
+					Subtitle 	= FlavourText::GetCampaignSilverSubTitle(); 
+					Subtitle2	= FlavourText::GetNewRecordOfThePlayer(G_BestTimePlayer);
+					TextColor 	= Colors::GetColor("Silver");
+				} else if(G_PlayerBestMedal == TMC_MEDAL_BRONZE){
+					Title 		= FlavourText::GetCampaignBronzeTitle();
+					Subtitle 	= FlavourText::GetCampaignBronzeSubTitle(); 
+					Subtitle2	= FlavourText::GetNewRecordOfThePlayer(G_BestTimePlayer);
+					TextColor 	= Colors::GetColor("Bronze");
+				} else if(G_PlayerBestMedal == TMC_MEDAL_AUTHOR) {
+					Title 		= FlavourText::GetCampaignTrackmasterTitle();
+					Subtitle 	= FlavourText::GetCampaignTrackmasterSubTitle(); 
+					Subtitle2	= FlavourText::GetNewRecordOfThePlayer(G_BestTimePlayer);
+					TextColor 	= Colors::GetColor("Green");
+				}
+				RewardUrl = RewardScreens::GetScreenMedalWon();
+				Game::ShowReward(Players[G_ThePlayerId], Title, Subtitle, Subtitle2, _("to continue"), RewardUrl, TextColor, Sign, True);
+				WaitRewardAnswer();
+			} else {
+				
+			}
+			*/
+		}
+		
+		/*
+		if(G_HasNewPosition && G_BestPositionPlayer == 0) {
+			
+			Title = _("Pole position!");
+			//L16N Subtitle of the final screen.
+			Subtitle = _("You've set the fastest time!");
+			Subtitle2 = FlavourText::GetNewRecordOfThePlayer(G_BestTimePlayer);
+			Game::ShowReward(Players[G_ThePlayerId], Title, Subtitle, Subtitle2, "", RewardScreens::GetScreenArcade(), Colors::GetColor("BlueLight"), "+", True);
+			WaitRewardAnswer();
+		} else if(G_HasEnteredTableScore) {
+			
+			//L16N A Title of the final screen. The player made a good score
+			Title = FlavourText::GetArcadeTop10Title();
+			//L16N A subtitle of a game final screen.
+			Subtitle = FlavourText::GetArcadeTop10SubTitle();
+			declare Text RankMessage = Game::GetRankMessage(G_BestPositionPlayer);
+			Game::ShowReward(Players[G_ThePlayerId], Title, Subtitle, RankMessage, "", RewardScreens::GetScreenArcade(), <1.0, 1.0, 1.0>, "+", True);
+			WaitRewardAnswer();
+		} else if(G_HasWonAgainstOpponent && G_HasNewPosition) {
+			declare Text RankMessage = Game::GetRankMessage(G_BestPositionPlayer);
+			//L16N A Title of a game final screen. The player made a good performance
+			Title = _("Congrats!");
+			//L16N Subtitle of a game final screen.
+			Subtitle =  _("You beat your opponent!");
+			Game::ShowReward(Players[G_ThePlayerId], Title, Subtitle, RankMessage, "", RewardScreens::GetScreenArcade(), <1.0, 1.0, 1.0>, "+", True);
+			WaitRewardAnswer();
+		} else if(G_HasNewBestTime) {
+			//L16N A Title of a game final screen. The player made a good performance
+			Title = _("Well played!");
+			//L16N Subtitle of a game final screen.
+			Subtitle =  _("You have a new record!");
+			Subtitle2 = FlavourText::GetNewRecordOfThePlayer(G_BestTimePlayer);
+			Game::ShowReward(Players[G_ThePlayerId], Title, Subtitle, Subtitle2, "", RewardScreens::GetScreenArcade(), <1.0, 1.0, 1.0>, "+", True);
+			WaitRewardAnswer();
+		} else {
+			if(G_BestPositionPlayer > -1 && G_BestPositionPlayer < 9) {
+				Title 		= FlavourText::GetArcadeCloseTitle();
+				Subtitle 	= FlavourText::GetHotSeatCallOutBad();
+				Subtitle2	= FlavourText::GetArcadeDefaultSubtitle();
+				
+				Game::ShowReward(Players[G_ThePlayerId],Title, Subtitle,  Subtitle2, "", RewardScreens::GetScreenArcade(), Colors::GetColor("PinkRed"), "-", True);		
+				WaitRewardAnswer();
+			} else {
+				Title 		= FlavourText::GetArcadeCloseTitle();
+				Subtitle 	= FlavourText::GetArcadeTryAgainSubTitle();
+				Subtitle2	= FlavourText::GetArcadeDefaultSubtitle();
+				Game::ShowReward(Players[G_ThePlayerId], Title, Subtitle,  Subtitle2, "", RewardScreens::GetScreenArcade(), Colors::GetColor("PinkRed"), "-", True);
+				WaitRewardAnswer();
+			}
+		}
+		*/
+		Game::HideReward(Players[G_ThePlayerId]);
+	}
+}
+
+Void SequenceTransition() {
+	declare Boolean DoesTransition = G_PlayerNbCredit == 0 && !Game::GetPlayerUseSpecialVision(Players[G_ThePlayerId]);
+
+	// if(DoesTransition) {
+		// Game::ShowTransition(Players[G_ThePlayerId]);
+		// Game::WaitTime(1000);
+	// }
+	if(!Game::IsWaiting(Players[G_ThePlayerId])) {
+		Game::WaitRace(Players[G_ThePlayerId]);
+	}
+	// if(DoesTransition) {
+		// Game::HideTransition(Players[G_ThePlayerId]);
+	// }
+	
+}
+
+/*
+Void SequenceTransitionHelico() {
+	UISequence::StartTransitionVideo();
+	Game::WaitTime(1000);
+	if(!Game::IsWaiting(Players[G_ThePlayerId])) {
+		Game::WaitRace(Players[G_ThePlayerId]);
+	}
+	UISequence::StopTransitionVideo();
+}
+*/
+
+Void SetGamePhase(Integer _Phase) {
+	G_GamePhase = _Phase;
+	declare UI <=> UIManager.GetUI(Players[G_ThePlayerId]);
+	declare netwrite Integer Net_GamePhase for UI;
+	Net_GamePhase = G_GamePhase;
+}
+
+Void KeepGhost() {
+	if(G_BestPositionPlayer == -1 || G_BestGhost == Null) return;
+	
+	// declare Integer IndexNbPlayer = G_RaceNbPlayer-1;
+	declare J = G_PlayerGhosts.count-1;
+	if(G_PlayerGhosts[J] != Null) {
+		DataMgr.GhostDestroy(G_PlayerGhosts[J]);
+		G_PlayerGhosts[J] = Null;
+	}
+	// DataMgr.GhostDestroy(G_PlayerGhosts[J]);
+	while(J > G_BestPositionPlayer) {
+		G_PlayerGhosts[J] = G_PlayerGhosts[J-1];
+		J -= 1;
+	}
+	G_PlayerGhosts[G_BestPositionPlayer] = G_BestGhost;
+	
+	if(G_IsDoubleDriver) {
+		G_IsGhostDoubleDriver[G_BestPositionPlayer] = True;
+	} else {
+		G_IsGhostDoubleDriver[G_BestPositionPlayer] = False; 
+	}
+}
+
+Void WaitTime(Integer _Time) {
+	declare Integer WaitingTime = _Time;
+	while(WaitingTime > 0) {
+		WaitingTime -= Period;
+		yield;
+		Ghosts::Loop();
+	}
+}
+
+Void InitGhosts() {
+	for(I, 0, 9) {		
+		G_PlayerGhosts[I] = Null;
+	}
+}
+
+Void SetOpponentMarker(CGhost _Ghost, Ident _GhostIdentReplay, Text _OpponentName) {
+	if(_Ghost != Null) {
+		declare Ident OpponentId = _GhostIdentReplay;
+		UIManager.UIAll.MarkersXML = """<marker playerid="{{{OpponentId}}}" label="{{{_OpponentName}}}" visibility="WhenVisible"/>""";
+	} else {
+		UIManager.UIAll.MarkersXML = "";
+	}
+}
+
+Void SetOpponentForUI(CGhost _Ghost, Integer _OpponentType) {
+	declare Integer[] GhostCpTime;
+	log("IN SET OPPONENT: "^_Ghost);
+	if(_Ghost != Null) {
+		foreach(Cp in _Ghost.RaceResult.Checkpoints) GhostCpTime.add(Cp);
+		Game::SetOpponent(_OpponentType, GhostCpTime);
+		declare Text[Integer] Names = ST::GetTopNames(1);
+		declare Text OpponentName = "Opponent";
+		log("SET OPPONENT: "^_OpponentType^_Ghost);
+		if(Names.existskey(G_OpponentPosition)) {
+			OpponentName = G_OpponentPosition+1^" - "^Names[G_OpponentPosition];
+		}
+		
+		Game::SetOpponentName(OpponentName);
+		
+		declare Text PlayerNickname;
+		if(G_BestPositionPlayer > -1 && G_BestPositionPlayer < 10) {
+			PlayerNickname = G_BestPositionPlayer+1^" - PLAYER";
+		} else {
+			PlayerNickname = "PLAYER";
+		}
+		Game::SetPlayerNickname(PlayerNickname);
+	} else {
+		Game::SetOpponent(TMC_MEDAL_NONE, Integer[]);
+	}
+}
+
+Void SetOpponentCarAllowed() {
+	declare Integer IndexAllowed = 0;
+	for(I, 0, 3) {
+		if(I != G_PlayerCarIndex) {
+			G_CarIndexAllowed[IndexAllowed] = I;
+			IndexAllowed += 1;
+		}
+	}
+}
+
+Void SetPlayerRandomCarIndex() {
+	G_PlayerCarIndex = ML::Rand(0, 3);
+	// log("RANDOM: "^G_PlayerCarIndex);
+}
+
+Void SetPlayerCarModel() {
+	declare CTmPlayer MainPlayer = Players[G_ThePlayerId];
+	if(!G_IsDoubleDriver) {
+		if(G_CarModels.existskey(G_PlayerCarIndex)) {
+			// log("G_Player car index"^G_PlayerCarIndex);
+			MainPlayer.ForceModelId = G_CarModels[G_PlayerCarIndex];
+			
+		} else {
+			MainPlayer.ForceModelId = G_CarModels[0];
+		}
+	} else {
+		if(G_CarDoubleModels.existskey(G_PlayerCarIndex)) {
+			MainPlayer.ForceModelId = G_CarDoubleModels[G_PlayerCarIndex];
+			// log("FORCE MODEL");
+		} else {
+			MainPlayer.ForceModelId = G_CarDoubleModels[0];
+		}
+		
+		// if(G_CarModels.existskey(G_PlayerCarIndex)) {
+			// MainPlayer.ForceModelId = G_CarModels[G_PlayerCarIndex];
+			
+		// } else {
+			// MainPlayer.ForceModelId = G_CarModels[0];
+		// }
+	}
+	
+}
+
+// Void ChangeRandomIndexCarModel() {
+	// log("ChangeRandomIndexCarModel. new index is "^G_CurrentCarIndex);
+	// G_CurrentCarIndex = (G_CurrentCarIndex + 1) % 2;
+	// log("ChangeRandomIndexCarModel. new index is "^G_CurrentCarIndex);
+// }
+
+// Integer GetRandomIndexCar() {
+	// return G_CurrentCarIndex;
+// }
+
+/*
+// HACK EG : 2 indices possibles
+Integer GetRandomIndexCar() {
+	declare Integer IndexCar = G_CarIndexAllowed[G_CurrentCarIndex];
+	G_CurrentCarIndex += 1;
+	if(G_CurrentCarIndex > 3) {
+		G_CurrentCarIndex = 0;
+	}
+	return IndexCar;
+}
+*/
+
+// Void SetPlayerModelCar() {
+	// declare Integer CarIndex = GetRandomIndexCar();
+	// G_PlayerCarIndex = CarIndex;
+	// SetModelCar(CarIndex);
+// }
+
+// Void ChangeModelCarByPlayers(Boolean _WithTransition) {
+	// if(_WithTransition) {
+		// SequenceTransition();
+	// }
+	// SetPlayerModelCar();
+// }
+
+Ident LoadGhost(CGhost _Ghost, Integer _IndexModel, Boolean _IsDoubleDriver, Boolean _IsTransparent) {
+	declare Ident CarModelIdent;
+	
+	if(!_IsDoubleDriver) {
+		if(G_CarModels.existskey(_IndexModel)) {
+			CarModelIdent = G_CarModels[_IndexModel];
+		} else {
+			CarModelIdent = G_CarModels[0];
+		}
+	} else {
+		if(G_CarDoubleModels.existskey(_IndexModel)) {
+			CarModelIdent = G_CarDoubleModels[_IndexModel];
+		} else {
+			CarModelIdent = G_CarDoubleModels[0];
+		}
+		
+		if(G_CarModels.existskey(_IndexModel)) {
+			CarModelIdent = G_CarModels[_IndexModel];
+		} else {
+			CarModelIdent = G_CarModels[0];
+		}
+	}
+	
+	return Ghosts::LoadGhostOnMapWithSkin(_Ghost, _IsTransparent, CarModelIdent);
+}
+
+Void LoadGhosts(Boolean _IsRace) {
+	Ghosts::RemoveAllGhosts();
+	declare CGhost MainGhost = Null;
+	G_ReplayGhosts.clear();
+	
+	//We display the first three ghosts if they exist + the last one
+	for(I, 0, 2) {
+		MainGhost = G_PlayerGhosts[I];
+		if(MainGhost != Null) {
+			declare Integer CarModelIndex 	= G_CarIndexAllowed[I];
+			declare Boolean DDriverGhost	= False;
+			declare Ident GhostIdent 		= LoadGhost(MainGhost, CarModelIndex, DDriverGhost , False);
+			G_ReplayGhosts[GhostIdent]		= MainGhost;
+		}
+	}
+	
+	declare Integer IndexLastGhost = GetIndexLastGhost();
+
+	if(IndexLastGhost > 2) {
+		declare CGhost LastGhost			= G_PlayerGhosts[IndexLastGhost];
+		declare Integer RandomModelIndex	= ML::Rand(0, G_CarIndexAllowed.count-1);
+		declare Boolean DDriverGhost		= False;
+		declare Ident GhostIdent 			= LoadGhost(LastGhost, RandomModelIndex, DDriverGhost , False);
+		G_ReplayGhosts[GhostIdent]			= LastGhost;
+	}
+	
+	if(G_BestGhost != Null) {
+		declare Ident GhostIdent 	= LoadGhost(G_BestGhost, G_PlayerCarIndex, G_IsDoubleDriver, False);
+		G_ReplayGhosts[GhostIdent]	= G_BestGhost;
+		UISequence::SetReplayGhostFocus(GhostIdent);
+	}
+	
+	//OPPONENT GHOST
+	/*
+	if(_IsRace) {
+		if(G_BestPositionPlayer != G_OpponentPosition) {
+			declare Integer RandomModelIndex	= ML::Rand(0, G_CarIndexAllowed.count-1);
+			declare Integer CarModelIndex 		= G_CarIndexAllowed[RandomModelIndex]; 
+			declare CGhost MainGhost 			= G_PlayerGhosts[G_OpponentPosition];
+			declare Ident GhostIdent 			= LoadGhost(MainGhost, CarModelIndex, False, False);
+			G_ReplayGhosts[GhostIdent]			= MainGhost;
+			
+			// for(I, 0, 2) {
+			
+			// }
+			
+		} else {
+			if(G_BestGhost != Null) {
+				declare Ident GhostIdent 	= LoadGhost(G_BestGhost, G_PlayerCarIndex, G_IsDoubleDriver, False);
+				UISequence::SetReplayGhostFocus(GhostIdent);
+			}
+		}
+	} else { 
+		for(I, 0, 2) {
+			MainGhost = G_PlayerGhosts[I];
+			if(MainGhost != Null) {
+				declare Integer CarModelIndex 	= G_CarIndexAllowed[I];
+				declare Boolean DDriverGhost	= False;
+				declare Ident GhostIdent 		= LoadGhost(MainGhost, CarModelIndex, DDriverGhost , False);
+				G_ReplayGhosts[GhostIdent]		= MainGhost;
+			}
+		}
+	}
+	*/
+}
+
+Boolean PlayerHasGiveUpRace() {
+	declare UI <=> UIManager.GetUI(Players[G_ThePlayerId]);
+	declare netread Integer 	Net_PlayerHasGiveUpUpdate for UI;
+	declare netwrite Integer 	Pre_PlayerHasGiveUpUpdate for UI;
+	
+	// log(Pre_PlayerHasGiveUpUpdate^" "^Net_PlayerHasGiveUpUpdate);
+	if(Pre_PlayerHasGiveUpUpdate != Net_PlayerHasGiveUpUpdate) {
+		Pre_PlayerHasGiveUpUpdate = Net_PlayerHasGiveUpUpdate;
+		return True;
+	}
+	return False;
+}
+
+
+
+Void SaveBestPlayerPerformance() {
+	if(G_BestPositionPlayer == -1 || G_BestGhost == Null) assert(True, "NO PERFORMANCE TO SAVE");
+	
+	if(G_BestTimePlayer > 0) {
+		declare Tmp = ST::WriteNewScore(G_BestTimePlayer);
+		KeepGhost();
+	}
+}
+
+Void Load()
+{
+	declare UI <=> UIManager.GetUI(Players[G_ThePlayerId]);
+	declare netwrite Text[] Net_MenuMainInputs for UI;
+	
+	declare IMGSelect 		= UIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Select);
+	declare IMGCancel 		= UIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Cancel);
+	declare TXTSelect 		= _("Continue");
+	declare TXTCancel 		= _("Back");
+
+	Net_MenuMainInputs 		= [IMGSelect, TXTSelect, IMGCancel, TXTCancel];
+}
+
+
+Integer LastIndexGhost() {
+	for(I, 0, 9) {
+		if(G_PlayerGhosts[I] == Null) {
+			return I-1;
+		}
+	}
+	return -1;
+}
+
+Void TimerLeftRemoveGhosts(Integer[] IndexGhostsToRemove) {
+	declare Integer LastIndex = LastIndexGhost();
+	for(I, 0, 9) {
+		if(IndexGhostsToRemove.exists(I)) {
+			declare Integer LastIndex = LastIndexGhost();
+			for(J, I, LastIndex) {
+				if(J < LastIndex)  {
+					G_PlayerGhosts[J] = G_PlayerGhosts[J+1];
+				}
+			}
+		}
+	}
+
+	G_CacheGhosts.clear();
+	
+	declare Integer NbIndexesToRemove 	= IndexGhostsToRemove.count;
+	declare Integer StartIndex 			= LastIndex - (NbIndexesToRemove-1);	
+	for(I, StartIndex, LastIndex) {
+		G_PlayerGhosts[I].Nickname = C_REMOVED_GHOST_NICK^"_0";
+	}
+}	
+	
+/*
+	for(I, 0, 9) {
+		if(IndexGhostsToRemove.exists(I)) {
+			declare Integer LastIndex = LastIndexGhost();
+			for(J, I, LastIndex) {
+				if(J < LastIndex)  {
+					G_PlayerGhosts[J] = G_PlayerGhosts[J+1];
+				} else	{
+					G_PlayerGhosts[J] = Null;
+					// C_REMOVED_GHOST_NICK^"_0"
+				}
+			}
+		}
+	}
+*/
+
+Boolean CheckGhostsReplayEnded() {	
+	if(Now < G_StartTimerGhostReplay) return False;
+	// log("Start timer ghost: "^G_StartTimerGhostReplay);
+	foreach(IdentIndex => Ghost in G_ReplayGhosts) {
+		if(RaceGhost_IsReplayOver(IdentIndex)) return True;
+	}
+	return False;
+}
+
+/*
+Void RemoveGhostAtEndReplay() {
+	declare Integer NbGhostReplayOver = 0;
+	foreach(IdentIndex => Ghost in G_ReplayGhosts) {
+		if(RaceGhost_IsReplayOver(IdentIndex)) {
+			// log("Remove Ghost");
+			// Ghosts::RemoveGhost(IdentIndex);
+			// Game::WaitTime(1000);
+			// log("Success");
+			NbGhostReplayOver += 1;
+		}
+	}
+	
+	// if(NbGhostReplayOver == G_ReplayGhosts.count) {
+	if(NbGhostReplayOver == 1) {
+		log(Now^">Restart Ghost Replay");
+		// UISequence::SetReplayCameraType(4);
+		G_StartTimerGhostReplay = Now + 2000;
+		
+		UISequence::LaunchPlayingSequence();
+		SpawnArcadePlayer();
+		// UISequence::LaunchReplaySequence();
+		// UnSpawnArcadePlayer();
+		// LoadGhosts(False);
+		// UISequence::SetReplayCameraType(0);
+		// SpawnArcadePlayer();
+		// UISequence::SetStandByView();
+	}
+}
+*/
+
+
+/*
+Void ShowOpponentChallenge(Integer _Type,Integer _Rank) {
+	declare Boolean	ChallengeYourself	= (_Type == TMC_MEDAL_PLAYER || _Rank <= 0);
+	declare Text	OpponentName		= "";
+		
+	if( ! ChallengeYourself) {
+		declare Text[Integer] 	TopNames 			= ST::GetTopNames(1);
+		declare Integer			NbTopNames			= TopNames.count;
+		
+		if(NbTopNames <= 0) {
+			ChallengeYourself = True;
+		} else {
+			OpponentName = TopNames[_Rank-1];
+		}
+	}
+	
+	if(ChallengeYourself) {
+		Game::ShowReward(Players[G_ThePlayerId], "Challenge your time", "Get ready", "to continue", "file://Media/Images/TMConsole/Ingame/rewards-bg.dds", <1.0, 1.0, 1.0>);
+	} else {
+		Game::ShowReward(Players[G_ThePlayerId], OpponentName^" is your challenger", "Rank: "^_Rank, "to start the race", "file://Media/Images/TMConsole/Ingame/rewards-bg.dds", <1.0, 1.0, 1.0>);
+	}
+	
+	WaitRewardAnswer();
+}
+*/
+
+Void SetContextualOpponent() {
+	
+	if(IsOneGhostExist()) {
+		if(G_BestPositionPlayer == 0) {
+			G_OpponentGhost		= G_BestGhost;
+			G_OpponentPosition 	= 0;
+			G_OpponentType 		= TMC_MEDAL_PLAYER;
+		} else {
+			G_OpponentGhost					= G_PlayerGhosts[0];
+			G_OpponentPosition 				= 0;
+			G_OpponentType 					= TMC_MEDAL_ANOTHERPLAYER;
+		}
+	} else {
+		if(G_BestPositionPlayer == 0 && G_BestGhost != Null) {
+			G_OpponentGhost		= G_BestGhost;
+			G_OpponentPosition 	= 0;
+			G_OpponentType 		= TMC_MEDAL_PLAYER;
+		} else {
+			G_OpponentType 						= TMC_MEDAL_NONE;
+			G_OpponentGhost 					= Null;
+			G_OpponentPosition 					= -1;
+		}		
+	}
+	
+	/*
+	if(G_BestPositionPlayer > -1 && G_BestPositionPlayer < 10) {
+		if(G_BestPositionPlayer == 0) {
+			G_OpponentGhost		= G_BestGhost;
+			G_OpponentPosition 	= 0;
+			G_OpponentType 		= TMC_MEDAL_PLAYER;
+		} else {
+			declare Integer IndexLastGhost = GetIndexLastGhost();
+			
+			if(G_BestPositionPlayer <= IndexLastGhost) {
+				if(G_BestPositionPlayer <= 2) {
+					declare Integer IndexOpponent 	= G_BestPositionPlayer - 1;
+					G_OpponentGhost					= G_PlayerGhosts[IndexOpponent];
+					G_OpponentPosition 				= IndexOpponent;
+					G_OpponentType 					= TMC_MEDAL_ANOTHERPLAYER;
+				} else {
+					declare Integer IndexOpponent 	= 2;
+					G_OpponentGhost					= G_PlayerGhosts[IndexOpponent];
+					G_OpponentPosition 				= IndexOpponent;
+					G_OpponentType 					= TMC_MEDAL_ANOTHERPLAYER;
+				}
+			} else {
+				declare Integer IndexOpponent 	= IndexLastGhost;
+				G_OpponentGhost					= G_PlayerGhosts[IndexOpponent];
+				G_OpponentPosition 				= IndexOpponent;
+				G_OpponentType 					= TMC_MEDAL_ANOTHERPLAYER;
+			}
+		}
+	} else {
+		if(IsOneGhostExist()) {
+			declare Integer IndexOpponent		= GetIndexLastGhost();
+			G_OpponentGhost 					= G_PlayerGhosts[IndexOpponent];
+			G_OpponentType 						= TMC_MEDAL_ANOTHERPLAYER;
+			G_OpponentPosition 					= IndexOpponent;
+		} else {
+			G_OpponentType 						= TMC_MEDAL_NONE;
+			G_OpponentGhost 					= Null;
+			G_OpponentPosition 					= -1;
+		}
+	}
+	*/
+}
+
+Void SpawnArcadePlayer() {
+	if(!Players[G_ThePlayerId].IsSpawned) {
+		if(!G_CarSkinChosen) {
+			SetPlayerRandomCarIndex();
+			SetOpponentCarAllowed();
+			SetPlayerCarModel();
+			G_CarSkinChosen = True;
+		}
+		Players[G_ThePlayerId].IsSpawned = True;
+	}
+}
+
+Void StartIdleStepReplay() {
+	// if(Game::GetPlayerUseSpecialVision(Players[G_ThePlayerId])) return;
+	SequenceTransition();
+	UnspawnArcadePlayer();
+	G_StartTimerGhostReplay = Now + 5000;
+	LoadGhosts(False);
+	Game::SetReplayMusic();
+	UISequence::LaunchReplaySequence();
+}
+
+Void StartIdleStepStandBy() {
+	// if(Game::GetPlayerUseSpecialVision(Players[G_ThePlayerId])) return;
+	
+	SequenceTransition();
+	SetOpponentMarker(Null, NullId, "");
+	
+	SpawnArcadePlayer();
+	UISequence::SetStandByView();
+	Game::SetStandbyMusic();
+}
+
+Void CheckGoToStandBy() {
+	if(CheckGhostsReplayEnded()) {
+		StartIdleStepStandBy();
+		G_StandByTimer = Now + TMC_IDLESTEP_TIMERSTANDBY;
+		G_IdleStep = TMC_IDLESTEP_STANDBY;
+	}
+}

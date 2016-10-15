@@ -1,0 +1,79 @@
+#Include "Libs/Nadeo/TMConsole/Menu/MenuLayers.Script.txt"									as Layers
+
+#Const DefaultSmartStartOn			False
+
+
+#Const Launch_Arcade_SplitS			[1,2]
+
+declare Boolean		G_SmartStartActivate;
+declare Integer[]	G_SmartStartPath;
+
+/*
+ * Infos à avoir pour Gladys (l'IA)
+ * Nombre de médailes
+ * AlreadyGoTo:
+ * 		- [Modes]
+ * 		- Garage
+ * 		- Mix
+ * 		- RecordCenter
+ * Nombre d'amis possédant le jeu
+ * Nombre de maps crées
+ * Nombre de joueurs (Question posée)
+ * Niveau du joueur => Pro/Normal/Débutant (Question posée) (?)
+ * 
+ */
+
+
+
+Boolean IsSmartStartActivate() {
+	return G_SmartStartActivate;
+}
+
+Integer GetPathMenu() {
+	// HACK EG
+	// return G_SmartStartPath[0];
+	return 0;
+}
+
+Integer GetPathSubMenu() {
+	// HACK EG
+	// return G_SmartStartPath[1];
+	return 0;
+}
+
+Void SetSmartStartActivate(Boolean _Activate) {
+	G_SmartStartActivate = _Activate;
+	declare CUILayer Layer <=> Layers::Get("SmartStartInfo");
+	//declare Boolean	Net_IsSmartStart  for Layer.LocalPage;
+	//Net_IsSmartStart  = IsSmartStartActivate();
+	if(Layer == Null) return;
+	LayerCustomEvent(Layer, "UpdateInfo", [G_SmartStartActivate^""]);
+}
+
+
+
+Void Init() {
+	//declare Boolean	SmartStartActivate for PERSISTANTE;
+	//G_SmartStartActivate = SmartStartActivate;
+	SetSmartStartActivate(DefaultSmartStartOn);
+	G_SmartStartPath = Launch_Arcade_SplitS;
+}
+
+Void Unload() {
+
+}
+
+Void Load() {
+	Unload();
+	Init();
+}
+
+Void SetInfosToLayer(CUILayer _Layer) {
+	if(_Layer == Null) return;
+	declare Boolean	Net_IsSmartStart  for _Layer.LocalPage;
+	declare Integer	Net_PathStartMain for _Layer.LocalPage;
+	declare Integer	Net_PathSubMenu   for _Layer.LocalPage;
+	Net_IsSmartStart  = IsSmartStartActivate();
+	Net_PathStartMain = GetPathMenu();
+	Net_PathSubMenu   = GetPathSubMenu();
+}

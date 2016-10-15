@@ -1,0 +1,49 @@
+/**
+ *	Inputs Library
+ * 	Especially made for console
+ */
+
+#Const Version		"2014-08-05"
+#Const ScriptName	"ScoresTable.Script.txt"
+
+#Include "Libs/Nadeo/TMConsole/Menu/MenuLayers.Script.txt"								as Layers
+#Include "Libs/Nadeo/TMConsole/LayerBuilders/LBPopUp.Script.txt"						as LBPopUp
+#Include "Libs/Nadeo/TMConsole/Menu/PageHandlers/PadHandler.Script.txt"					as PadHandler
+
+
+#Const TMC_CONTEXT_LOCAL		0
+#Const TMC_CONTEXT_ONLINE		1
+
+declare Text 	G_PopupInGameLayerName;
+declare Boolean G_IsPadConnected;
+
+Boolean GetIsPadConnected() {
+	return G_IsPadConnected;
+}
+
+Void Load() {
+	G_PopupInGameLayerName = "PopupInGame";
+	declare netread Boolean	Net_IsMultiPairing 	for UI;
+	// if(!Net_IsMultiPairing) {
+		Layers::Create(G_PopupInGameLayerName, LBPopUp::Build("", ""));
+		Layers::Attach(G_PopupInGameLayerName);
+	// }
+	PadHandler::LoadPadButton();
+}
+
+Void Loop() {
+	declare netread Boolean	Net_IsMultiPairing 	for UI;
+	declare			Boolean Pre_IsMultiPairing	for UI;
+	// if(!Net_IsMultiPairing) {
+		PadHandler::InGameLoop(G_PopupInGameLayerName);
+		G_IsPadConnected = PadHandler::IsPadConnected();
+	// }
+	/*
+	if(Pre_IsMultiPairing != Net_IsMultiPairing) {
+		if(Net_IsMultiPairing) {
+			PadHandler::HidePopupInGame(G_PopupInGameLayerName);
+		}
+		Pre_IsMultiPairing = Net_IsMultiPairing;
+	}
+	*/
+}

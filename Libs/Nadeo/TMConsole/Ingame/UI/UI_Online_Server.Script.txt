@@ -1,0 +1,390 @@
+/** 
+ *	In-Game UI library
+ */
+ 
+
+
+#Include "Libs/Nadeo/Layers2.Script.txt" 							as Layers
+#Include "Libs/Nadeo/TMConsole/FontManager.Script.txt" 				as Font
+#Include "Libs/Nadeo/TMConsole/Volumes.Script.txt" 					as Volumes
+
+#Const Version		"2015-03-02"
+#Const ScriptName	"UI.Script.txt"
+
+
+//////////////////////////////////////////
+// IMAGES
+
+	
+	
+
+//////////////////////////////////////////
+// SOUNDS
+
+	
+
+
+
+//////////////////////////////////////////
+// VIDEO
+
+
+
+
+//////////////////////////////////////////
+// ALIGN
+
+
+
+
+//////////////////////////////////////////
+// NON-SETTINGS CONST
+
+#Const C_LAYERNAME_PADS 					"Layer_MML_PadsPopup"
+#Const C_LAYERNAME_PRESS_TO_RESTART			"PressToRestart"
+#Const C_LAYERNAME_UI						"Race"
+// #Const C_LAYERNAME_TIMEOUT					"TimeOut"
+
+#Const C_RATIO 								12.962
+
+#Const C_LEFT								0
+#Const C_HCENTER							1
+#Const C_RIGHT								2
+#Const C_NONE								3
+
+#Const C_RATIO_1CIRCLE						0.06666666667
+#Const C_DURATION_LABELSHOW					2000
+#Const C_DELAY_LAP							0
+#Const C_DELAY_ENDRACE						1500
+
+
+
+//////////////////////////////////////////
+// RACE ML SETTINGS
+
+#Const C_RACE_CLIP_OFFSET 					0.2
+#Const C_RACE_FREEWHEEL_SIZE_X 				46.
+#Const C_RACE_MAPNAME_SIZE_X 				70.
+#Const C_RACE_MAPNAME_TEXTSIZE_SIGN 		5
+#Const C_RACE_MAPNAME_TEXTSIZE_NAME			7
+#Const C_RACE_MAPNAME_MARGIN_SIGN			3
+#Const C_RACE_MAPNAME_POSX_MEDAL			-1
+#Const C_RACE_MAPNAME_SIZE_MEDAL			18
+#Const C_RACE_MAPNAME_POSY_LAP				-11.5
+#Const C_RACE_MAPNAME_POSY_LAPTEXT			-1.5
+#Const C_RACE_MAPNAME_SIZE_LAP				6
+#Const C_RACE_SPEEDVIDEO_SIZERATIO			1.02
+#Const C_RACE_DOUBLEDRIVER_LOGO_SIZEX		52
+
+
+
+//////////////////////////////////////////
+// 321GO ML SETTINGS
+
+#Const C_INTRO_QUAD_SIZE 					37
+#Const C_INTRO_QUAD_OPACITY 				0.8
+#Const C_INTRO_QUAD_OPACITY_NORMAL 			1.
+#Const C_INTRO_POSX							0
+#Const C_INTRO_POSY 						0
+
+
+
+//////////////////////////////////////////
+// REWARD ML SETTINGS
+
+#Const C_REWARDS_TRANSITION_SIZE_X			1012.5
+#Const C_REWARDS_BUTTON_SIZE_X				10
+#Const C_REWARDS_TEXT_INTERVAL				-0.13
+#Const C_REWARDS_PRESSTOCONTINUE_INTERVAL	1
+#Const C_REWARDS_PRESSTOCONTINUE_POSY		-75
+
+
+
+//////////////////////////////////////////
+// PRESS TO RESTART ML SETTINGS
+
+#Const C_PRESSTORESTART_IMG_SIZE 			60
+#Const C_PRESSTORESTART_TEXT_SIZE 			4
+#Const C_PRESSTORESTART_TEXT_INTERLIGN 		-0.5
+
+
+
+//////////////////////////////////////////
+// SPEED COUNTER 
+
+#Const C_SPEED_SIZEGAUGE					30.
+#Const C_SPEED_SIZEGAUGE_RATIO				1.75
+#Const C_SPEED_FULLCIRCLEVALUE				400.
+#Const C_GAUGE_OPACITY						0.6
+#Const C_GAUGEPERSISTENT_OPACITY			0.5
+#Const C_GAUGEPERSISTENT_FADEDURATION		3000
+
+
+
+//////////////////////////////////////////
+// CHECKPOINT TIMER SETTINGS
+
+// THE TEXT SIZE IS THE DEFAULT ONE USED OTHER COUNTERS (C_TEXT_DEFAUTSIZE), WITH A SCALE APPLIED TO THE WHOLE FRAME (C_TEXT_CHECKPOINT_SCALE)
+#Const C_TEXT_CHECKPOINT_SCALE 				1.
+
+#Const C_Y_SPACEBETWEEN_CHECKPOINTTIME		11.
+#Const C_X_SPACEBETWEEN_CHECKPOINTTIME		40.
+
+#Const C_CHECKPOINT_SHOW_DURATION			3000
+
+
+
+//////////////////////////////////////////
+// GENERAL SETTINGS
+
+#Const C_TEXT_DEFAUTSIZE 					5
+
+// HERE TO SET THE UI MARGINS FOR THE "90%"
+// 1. = 10% Vertically & 10% Horizontally (16/9)
+#Const C_MARGINS_GLOBALRATIO				1.
+
+
+#Const C_WHITE_OPACITY						0.85
+#Const C_SPEED_ANIM_BLINKSPEED				0.0125
+#Const C_TURBO_ANIM_BLINKSPEED				0.100
+
+
+#Const C_COMMENTARIES_MAXCOUNT_CP_YES 		23
+#Const C_COMMENTARIES_MAXCOUNT_CP_NO 		38
+#Const C_COMMENTARIES_MAXCOUNT_ENDRACE_YES 	18
+#Const C_COMMENTARIES_MAXCOUNT_ENDRACE_NO 	37
+#Const C_COMMENTARIES_MAXCOUNT_CARHIT 		16
+
+#Const C_COMMENTARIES_CARHIT_MIN_INTERVAL	2000
+#Const C_COMMENTARIES_TOPLAY_EACH_XX_CP_MIN	2
+#Const C_COMMENTARIES_TOPLAY_EACH_XX_CP_MAX 4
+#Const C_COMMENTARIES_DELAY					400
+
+declare CTmMode	G_Mode;
+declare Text 	G_ModeName;
+declare Integer G_SpawnDuration;
+	
+declare Text 	G_FontTitle;
+declare Text 	G_FontMain;
+declare Text 	G_FontMainSmall;
+declare Text 	G_FontChrono;
+declare Text 	G_FontNumberBig;
+
+// ---------------------------------- //
+/** Create the Race manialink
+ *
+ *	@return	The manialink Text
+ */
+Void SetChallengeFrameVisibility(Boolean _Visibility)
+{
+	foreach(Player in AllPlayers)
+	{
+		declare UI <=> UIManager.GetUI(Player);
+		if(UI == Null) return;
+		
+		declare	netwrite Boolean Net_ChallengeFrameVisibility for UI;
+		
+		Net_ChallengeFrameVisibility = _Visibility;
+		
+	}
+}
+
+Void SetMapNameFrameVisibility(Boolean _Visibility)
+{
+	foreach(Player in AllPlayers)
+	{
+		declare UI <=> UIManager.GetUI(Player);
+		if(UI == Null) return;
+		
+		declare	netwrite Boolean Net_MapNameFrameVisibility for UI;
+		
+		Net_MapNameFrameVisibility = _Visibility;
+		
+	}
+}
+
+Void SetPlayerNickname(Text _PlayerNickname)
+{
+	foreach(Player in AllPlayers)
+	{
+		declare UI <=> UIManager.GetUI(Player);
+		if(UI == Null) return;
+		
+		declare	netwrite Text Net_PlayerNickname for UI;
+		
+		Net_PlayerNickname = _PlayerNickname;
+	}
+}
+
+Void SetOpponentName(Text _OpponentName)
+{
+	foreach(Player in AllPlayers)
+	{
+		declare UI <=> UIManager.GetUI(Player);
+		if(UI == Null) return;
+		
+		declare	netwrite Text Net_OpponentName for UI;
+		
+		Net_OpponentName = _OpponentName;
+	}
+}
+
+Void SetIsTrackRandom(Boolean _IsTrackRandom)  {
+	foreach(Player in AllPlayers) {
+		declare UI <=> UIManager.GetUI(Player);
+		declare netwrite Boolean Net_IsTrackRandom for UI;
+		Net_IsTrackRandom = _IsTrackRandom;
+	}
+}
+
+Void SetOpponent(CTmPlayer _Player, Integer _OpponentType, Integer[] _OpponentCheckpointsTime)
+{
+	declare UI <=> UIManager.GetUI(_Player);
+	if(UI == Null) return;
+	
+	declare	netwrite Integer 	Net_OpponentType 			for UI;
+	declare	netwrite Integer[] 	Net_OpponentCheckpointsTime for UI;
+	declare netwrite Integer	Net_OpponentUpdate			for UI;
+	Net_OpponentType 				= _OpponentType;
+	Net_OpponentCheckpointsTime 	= _OpponentCheckpointsTime;
+	Net_OpponentUpdate				+= 1;
+}
+
+Void SetVisibilityInGame(Boolean _Visible) 
+{
+	Layers::SetVisibility(C_LAYERNAME_UI, _Visible);
+}
+
+Void SetVisibilityPadAlert(Boolean _Visible) 
+{
+	Layers::SetVisibility(C_LAYERNAME_PADS, _Visible);
+}
+
+Void SetVisibilityPressToRestart(Boolean _Visible) 
+{
+	Layers::SetVisibility(C_LAYERNAME_PRESS_TO_RESTART, _Visible);
+}
+
+// Void SetVisibilityTimeOut(Boolean _Visible) 
+// {
+	// Layers::SetVisibility(C_LAYERNAME_TIMEOUT, _Visible);
+// }
+
+Void CancelAnim321Go(CTmPlayer _Player)
+{
+	declare UI <=> UIManager.GetUI(_Player);
+	if(UI == Null) return;
+	
+	declare netwrite Integer LibTMC_321Go_TriggerCancelAnim for UI;
+	
+	LibTMC_321Go_TriggerCancelAnim = Now;
+}
+
+Void CancelAnim321Go()
+{
+	foreach(Player in AllPlayers) CancelAnim321Go(Player);
+}
+
+Void PlayAnim321Go(CTmPlayer _Player)
+{
+	declare UI <=> UIManager.GetUI(_Player);
+	if(UI == Null) return;
+	
+	declare netwrite Integer LibTMC_321Go_TriggerAnim for UI;
+	
+	LibTMC_321Go_TriggerAnim = Now;
+}
+
+Void PlayAnim321Go()
+{
+	foreach(Player in AllPlayers) PlayAnim321Go(Player);
+}
+
+Void SetNbLaps(Integer _NbLaps) {
+	declare netwrite Integer Net_NbLaps for Teams[0];
+	Net_NbLaps = _NbLaps;
+	
+	// foreach(Player in AllPlayers) {
+		// declare UI <=> UIManager.GetUI(Player);
+		// if(UI == Null) return;
+		
+	// }
+}
+
+Void SetMaxPoints(Integer _MaxPoints) {
+	foreach(Player in AllPlayers) {
+		declare UI <=> UIManager.GetUI(Player);
+		if(UI == Null) return;
+		declare netwrite Integer Net_MaxPoints for Teams[0];
+		Net_MaxPoints = _MaxPoints;
+	}
+}
+
+Void LoadVolumes(CUser _User) 
+{
+	declare Real VolumeVoices for _User;
+	Volumes::LoadVolumeVoicesSetting(VolumeVoices);
+}
+
+Void Load(CTmMode _Mode, Text _ModeName, Integer _SpawnDuration) 
+{
+	////////////////////////////////////////
+	// INITS                                
+	G_Mode 					   <=> _Mode;
+	G_ModeName 					= _ModeName;
+	G_SpawnDuration				= _SpawnDuration;
+	G_FontTitle 				= Font::GetFontName("Title");
+	G_FontMain 					= Font::GetFontName("Main");
+	G_FontMainSmall 			= Font::GetFontName("MainSmall");
+	G_FontChrono 				= Font::GetFontName("Chrono");
+	G_FontNumberBig				= Font::GetFontName("NumberBig");
+	
+	foreach(Player in AllPlayers) 
+	{
+		declare UI <=> UIManager.GetUI(Player);
+		if(UI == Null) return;
+		declare	netwrite Integer 	Net_OpponentType 		for UI;
+		declare netwrite Text		Net_ModeName			for Teams[0];
+		Net_OpponentType	= -1;
+		Net_ModeName		= _ModeName;
+	}
+	
+	////////////////////////////////////////
+	// VISIBILITY                           
+	if(G_ModeName != "OnlineTimeAttack" && G_ModeName  !="OnlineLaps" && G_ModeName  !="OnlineRounds"){
+		UIManager.UIAll.ScoreTableVisibility 				= CUIConfig::EVisibility::ForcedHidden;
+	} else {
+		UIManager.UIAll.ScoreTableVisibility 				= CUIConfig::EVisibility::Normal;
+	}
+	
+	UIManager.UIAll.ScoreTableOnlyManialink 			= True;
+	UIManager.UIAll.OverlayHideMapInfo 					= True;
+	UIManager.UIAll.OverlayHideOpponentsInfo			= True;
+	UIManager.UIAll.OverlayHideCheckPointList 			= True;
+	UIManager.UIAll.OverlayHideRoundScores 				= True;
+	UIManager.UIAll.OverlayHideCountdown 				= True;
+	UIManager.UIAll.OverlayHideChrono 					= True;
+	UIManager.UIAll.OverlayHideSpeedAndDist 			= True;
+	UIManager.UIAll.OverlayHidePersonnalBestAndRank 	= True;
+	UIManager.UIAll.OverlayHidePosition 				= True;
+	UIManager.UIAll.OverlayHideCheckPointTime 			= True;
+	UIManager.UIAll.AltMenuNoDefaultScores 				= True;
+	UIManager.UIAll.OverlayHideMultilapInfos 			= True;
+	UIManager.UIAll.OverlayHide321Go 					= True;
+	UIManager.UIAll.OverlayHideSpectatorInfos			= True;
+	UIManager.UIAll.AlliesLabelsVisibility 				= CUIConfig::ELabelsVisibility::Never;
+	UIManager.UIAll.OpposingTeamLabelsVisibility		= CUIConfig::ELabelsVisibility::WhenVisible;
+	
+	UIManager.UIAll.OverlayHideChat 					= False;
+	//UIManager.UIAll.OverlayChatHideAvatar 			= False;
+	//UIManager.UIAll.OverlayChatLineCount 				= 7;
+	//UIManager.UIAll.OverlayChatOffset 				= <0., 0.>;
+}
+
+Void UpdateTimeOutTimer(Integer _Timer) {
+	foreach(Player in Players) {
+		declare UI <=> UIManager.GetUI(Player);
+		declare netwrite Integer Net_TimeOutTimer for UI;
+		Net_TimeOutTimer = _Timer;
+	}
+}

@@ -1,0 +1,136 @@
+/** 
+ *	UILabel
+ */
+#Include "Libs/Nadeo/TMConsole/Ingame/UI/UIPopupBuilder.Script.txt"						as UIPopupBuilder
+#Include "Libs/Nadeo/TMConsole/Colors.Script.txt" 										as Colors
+#Include "Libs/Nadeo/UIPadButtons.Script.txt"											as UIButtons
+#Include "Libs/Nadeo/Layers2.Script.txt" 												as Layers
+
+#Const Version		"2015-03-02"
+#Const ScriptName	"UIOnlineManageFavorite.Script.txt"
+
+#Const LAYERNAME_FAVORITEMANAGER			"FavoriteManager"
+#Const C_TIMERTIMEOUT						5000
+#Const C_NBATTEMPS							5
+
+#Const C_GAMEPHASE_CHALLENGE			3
+#Const C_GAMEPHASE_PREPARATION			0
+#Const C_GAMEPHASE_GAME					1
+#Const C_GAMEPHASE_POSTGAME				2
+#Const C_GAMEPHASE_OUTRO				4
+
+Void ShowFavoriteManager(Boolean _Show) {
+	Layers::SetVisibility(LAYERNAME_FAVORITEMANAGER, _Show);
+}
+
+Void ManageFavoriteLoop() {
+	
+	declare UI <=> UIManager.GetUI(Players[0]);
+	if(UI == Null) return;
+
+	declare netread Boolean Net_IsFavoriteManagerShown for UI;
+	declare			Boolean Pre_IsFavoriteManagerShown for UI;
+	// log(Now^" "^Net_IsFavoriteManagerShown^" "^Pre_IsFavoriteManagerShown );
+	if(Pre_IsFavoriteManagerShown != Net_IsFavoriteManagerShown) {
+		ShowFavoriteManager(Net_IsFavoriteManagerShown);
+		Pre_IsFavoriteManagerShown = Net_IsFavoriteManagerShown;
+	}
+}
+
+Void ConstructFavoriteManager() {
+
+	declare Text 		ColorMode;
+	declare Text 		LayerName		= LAYERNAME_FAVORITEMANAGER;
+	declare Vec3 		LayerPos		= <-85., 15., 61.>;
+	declare Text[][] 	LayerContent;
+	declare Text 		LayerBeforeWhile;
+	
+	declare IMGSelect 		= UIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Select);
+	declare TXTSelect 		= _("Select");
+	declare TXTCancel 		= _("Back");
+	declare ColorGrey			= Colors::GetColor("Grey");
+	declare ColorWhite			= Colors::GetColor("White");
+	foreach(Player in AllPlayers) 
+	{
+		declare UI <=> UIManager.GetUI(Player);
+		if(UI == Null) return;
+		declare netwrite Text 		Net_MenuFavoriteTitle			for UI;
+		declare netwrite Text 		Net_MenuFavoriteSubtitle		for UI;
+		declare netwrite Text[] 	Net_FavoriteInputs 				for UI;
+		// declare netwrite Text 		Net_TrackButtonContent 			for UI;
+		Net_FavoriteInputs 	= [IMGSelect, TXTSelect];
+	}
+	
+	ColorMode 					= Colors::GetModeColorName(1);
+	declare TitleParam			= "ColorText "^ColorMode;
+	LayerContent 	= 
+	[
+		["Title", 	"Favorite", 	"Favorite",									"2",	"", TitleParam, "Net_MenuFavoriteTitle Net_MenuFavoriteSubtitle"], 
+		["Space", 	"", 			"", 										"1",	"", "", ""],
+		["Button", 	"SetTrack", 	_("Add track to favorite"), 				"1",	"Net_PlayerWantsToSetTrackUpdate += 1;", "", "Net_TrackButtonContent"],
+		["Button", 	"SetAuthor", 	_("Add track's author to favorite"),		"1",	"Net_PlayerWantsToSetAuthorUpdate += 1;", "", "Net_AuthorButtonContent"],
+		["Button", 	"ReporTrack", 	_("Report track"),							"1",	"Net_PlayerWantsToReportTrackUpdate += 1;", "", ""],
+		["Button", 	"Resume", 		_("Resume"), 								"1",	"Net_PlayerWantsToResumeMFUpdate += 1;" , "", ""],
+		["Space", 	"", 		  	"", 										"1",	"", "", ""],
+		["Input", 	"Input", 		"", 										"1",	"", "", "Net_FavoriteInputs"]
+	];
+	LayerBeforeWhile = 
+	"""
+		declare netwrite Integer 	Net_PlayerWantsToSetRoomUpdate 			for UI;
+		declare netwrite Integer 	Net_PlayerWantsToSetTrackUpdate 		for UI;
+		declare netwrite Integer 	Net_PlayerWantsToSetAuthorUpdate 		for UI;
+		declare netwrite Integer 	Net_PlayerWantsToResumeMFUpdate 		for UI;
+		declare netwrite Integer 	Net_PlayerWantsToReportTrackUpdate 		for UI;
+		declare netwrite Boolean 	Net_IsPlayerConnectedMasterServer 		for UI;
+	""";
+
+	declare Text LayerInLoop = 
+	"""
+		declare CMlLabel 	Label_SetTrack 					<=> (Page.MainFrame.GetFirstChild("Label_SetTrack") as CMlLabel);
+		declare CMlQuad 	Button_SetTrack 				<=> (Page.MainFrame.GetFirstChild("Button_SetTrack") as CMlQuad);
+		
+		declare CMlLabel 	Label_SetAuthor 				<=> (Page.MainFrame.GetFirstChild("Label_SetAuthor") as CMlLabel);
+		declare CMlQuad 	Button_SetAuthor 				<=> (Page.MainFrame.GetFirstChild("Button_SetAuthor") as CMlQuad);
+		
+		declare CMlLabel 	Label_ReporTrack 				<=> (Page.MainFrame.GetFirstChild("Label_ReporTrack") as CMlLabel);
+		declare CMlQuad 	Button_ReporTrack 				<=> (Page.MainFrame.GetFirstChild("Button_ReporTrack") as CMlQuad);
+		
+		
+		if(Net_IsPlayerConnectedMasterServer) {
+			Label_SetTrack.TextColor = {{{ColorWhite}}};
+			Button_SetTrack.Show();
+			
+			Label_SetAuthor.TextColor = {{{ColorWhite}}};
+			Button_SetAuthor.Show();
+			
+			Label_ReporTrack.TextColor = {{{ColorWhite}}};
+			Button_ReporTrack.Show();
+			
+		} else {
+			Label_SetTrack.TextColor = {{{ColorGrey}}};
+			Button_SetTrack.Hide();
+			
+			Label_SetAuthor.TextColor = {{{ColorGrey}}};
+			Button_SetAuthor.Hide();
+			
+			Label_ReporTrack.TextColor = {{{ColorGrey}}};
+			Button_ReporTrack.Hide();
+		}
+	""";
+	
+	UIPopupBuilder::CreateLayer(
+		LayerName,
+		"FavoriteMenu",
+		LayerPos,
+		LayerContent,
+		"",
+		LayerBeforeWhile,
+		"",
+		LayerInLoop
+	);
+	
+	// log(Now^"HAS COSNTRUCT FAVORITE POPUP");
+	// CreateLayer(Text _LayerName, Text _Params, Vec3 _Pos, Text[][] _Elements, Text _Functions, Text _CodeBeforeWhile, Text _CodeWhenShown, Text _CodeInLoop) 
+	ShowFavoriteManager(False);
+}
+

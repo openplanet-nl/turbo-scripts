@@ -1,0 +1,48 @@
+/**
+ *	ScoreTable Library
+ * 	Especially made for console
+ */
+
+#Const Version		"2014-07-17"
+#Const ScriptName	"UIPlayerMusicSetting.Script.txt"
+
+
+Void Load() {
+	// un peu violent, mais n'est appelé que si UserMgr.MainUser != Null
+	if(UserMgr.MainUser == Null) return;
+	
+	declare persistent 	Integer			Pers_SettingMusicState			for UserMgr.MainUser;
+	declare 			Integer			Pre_SettingMusicState			for LocalUser;
+	declare 			Integer			Local_SessionMusicState			for LocalUser;
+	declare				Integer			Net_PlayerMusicState			for UI;
+	declare				Integer			Pre_PlayerMusicState			for UI;
+	
+	declare Boolean PersistentHasPrio = False;
+	if(Pre_SettingMusicState != Pers_SettingMusicState) {
+		Pre_SettingMusicState = Pers_SettingMusicState;
+		PersistentHasPrio = True;
+		// log("Persistent has prio!");
+	}
+	
+	//Fin de projet. Si le local est au-dessus de 0, c'est qu'il a été setté depuis le jeu, donc il prend la prio sur le setting. 
+	if(Local_SessionMusicState > 0 && !PersistentHasPrio) {
+		Net_PlayerMusicState = Local_SessionMusicState - 1;
+	} else {
+		Net_PlayerMusicState = Pers_SettingMusicState;
+	}
+	// log("NET USER: 	"^Net_PlayerMusicState);
+	Pre_PlayerMusicState = Net_PlayerMusicState;
+}
+
+Void Loop() {
+	if(UserMgr.MainUser == Null) return;
+	
+	declare				Integer			Net_PlayerMusicState			for UI;
+	declare				Integer			Pre_PlayerMusicState			for UI;
+	declare 			Integer			Local_SessionMusicState			for LocalUser;
+	if(Pre_PlayerMusicState != Net_PlayerMusicState && UserMgr.MainUser.PersistentIsReady) {
+		Local_SessionMusicState = Net_PlayerMusicState + 1;
+		Pre_PlayerMusicState 	= Net_PlayerMusicState;
+		UserMgr.MainUser.PersistentSave();
+	}
+}

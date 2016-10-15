@@ -1,0 +1,455 @@
+#Include "TextLib"																			as TextLib
+#Include "Libs/Nadeo/TMConsole/Logger.Script.txt"											as Logger
+#Include "Libs/Nadeo/TMConsole/Menu/IngameAccessController.Script.txt"						as IngameAccessController
+#Include "Libs/Nadeo/TMConsole/Menu/Controller/Solo_CampaignController.Script.txt" 			as CampaignController
+#Include "Libs/Nadeo/TMConsole/Menu/Controller/SuperSolo_CampaignController.Script.txt"		as SuperSolo_CampaignController
+#Include "Libs/Nadeo/TMConsole/Menu/Controller/Duo_CampaignController.Script.txt"			as CampaignDuoController
+#Include "Libs/Nadeo/TMConsole/Menu/Controller/OnlineController.Script.txt" 				as OnlineController
+#Include "Libs/Nadeo/TMConsole/Menu/Controller/ModeController.Script.txt" 					as ModeController
+#Include "Libs/Nadeo/TMConsole/Menu/MenuLayers.Script.txt"									as Layers
+#Include "Libs/Nadeo/TMConsole/Menu/XmlCreator.Script.txt"									as XmlCreator
+#Include "Libs/Nadeo/TMConsole/Menu/PimpUnlock.Script.txt" 									as PimpUnlock
+#Include "Libs/Nadeo/TMConsole/Menu/PageHandlers/RankingModuleHandler.Script.txt"			as RankingModuleHandler
+#Include "Libs/Nadeo/TMConsole/Menu/PageHandlers/ConnectionHandler.Script.txt" 				as ConnectionHandler
+#Include "Libs/Nadeo/TMConsole/Menu/Controller/RecordCenterController.Script.txt"			as RecordCenterController
+#Include "Libs/Nadeo/TMConsole/Menu/MenuVersion.Script.txt"									as MenuVersion
+
+#Const GLOBALRANKING_WORLDR		0
+#Const GLOBALRANKING_WORLDP		1
+#Const GLOBALRANKING_COUNTRYR	2
+#Const GLOBALRANKING_COUNTRYP	3
+#Const GLOBALRANKING_ZONE2R		4
+#Const GLOBALRANKING_ZONE2P		5
+#Const GLOBALRANKING_ZONE3R		6
+#Const GLOBALRANKING_ZONE3P		7
+
+#Const C_TIMECHECKMAPRANKING	150
+
+declare Integer							G_UpdateRankingTimer;
+declare Integer[]						G_GlobalRankingGet;
+declare Integer[]						G_IndexMapsToSend;
+declare Integer 						G_PreMyPeriod;
+declare Integer 						G_MapFocus;
+declare Integer 						G_TimeExitIngame;
+declare Integer 						G_NumberOfNextTracks;
+
+
+Void WarnNotEnoughParams(CMlAppEvent _Event) {
+	Logger::Warn("[Menucontroller] event "^_Event.CustomEventType^": not enough params ["^_Event.CustomEventData^"]");
+}
+
+Void ExitIngameFeedbackToUI() {
+	RankingModuleHandler::SentRankingInfos();
+	ConnectionHandler::CheckPageOnlineAcces();
+	declare CUILayer LayerToSend = Layers::Get("BrowseTracks");
+	if(LayerToSend == Null) return;
+	declare Text FeedbackText = "HideBlackQuad";
+	LayerCustomEvent(LayerToSend, FeedbackText, [""^G_NumberOfNextTracks]);
+}
+
+Void IsUnlockAnimation(Integer _Environment, Integer _Difficulty)
+{
+	declare Text ModeName = ModeController::GetModeName();
+
+	if(ModeName == "TMC_CampaignDuo")
+	{
+		//CampaignDuoController::SendUnlockAnimationToStart(_Environment, _Difficulty, "BrowseTracks");
+	}
+	else
+	{
+		//CampaignController::SendUnlockAnimationToStart(_Environment, _Difficulty, "BrowseTracks");
+	}
+}
+
+Void UpdateWorldRanking(Integer _Ranking) {
+	declare CUILayer GlobalRankingLayer = Layers::Get("RankingModule");
+	declare Integer WorldRanking for GlobalRankingLayer.LocalPage;
+	WorldRanking = _Ranking;
+}
+
+Void UpdateWorldPlayersCount(Integer _Count) {
+	declare CUILayer GlobalRankingLayer = Layers::Get("RankingModule");
+	declare Integer WorldPlayersCount for GlobalRankingLayer.LocalPage;
+	WorldPlayersCount = _Count;
+}
+
+/*
+Void SendPlayerMedals(Integer _NbMedals) {
+	declare CUILayer GlobalRankingLayer = Layers::Get("RankingModule");
+	declare Integer NbTotalMedals for GlobalRankingLayer.LocalPage;
+	NbTotalMedals = _NbMedals;
+}
+*/
+
+Void Load() {
+}
+
+Void GetNextMapRank()
+{
+	G_MapFocus += 1;
+	G_UpdateRankingTimer = C_TIMECHECKMAPRANKING;
+	G_PreMyPeriod = 0;
+	G_GlobalRankingGet.clear();
+}
+
+Void SendAllInfos(Text Page)
+{
+
+	declare Text ModeName = ModeController::GetModeName();
+	declare Text CampaignName = ModeController::GetCampaignName();
+	
+	
+	ModeController::SendModeName(Page);
+	if(ModeName == "TMC_CampaignDuo")
+	{
+		CampaignDuoController::SendAllInfos(Page);
+	}
+	else if(ModeName == "TMC_LocalArcade" || ModeName == "TMC_HotSeat" || ModeName == "TMC_LocalRounds")
+	{
+		declare Boolean IsAllCampaignMode = True;
+		declare Integer ActualVersion = MenuVersion::GetVersion();
+		if(ActualVersion != 0) IsAllCampaignMode = False;
+		CampaignController::SendAllInfos(Page, IsAllCampaignMode);
+		//CampaignDuoController::SendAllUnlockAnimationsToStart(Page);
+	}
+	else
+	{
+		if(CampaignName == "SuperSolo") {
+			SuperSolo_CampaignController::SendAllInfos(Page);
+		} else {
+			CampaignController::SendAllInfos(Page);
+		}
+	}
+}
+
+Integer GetMapNumber(Text _MapPath)
+{
+	declare Text[]  SplitMapPath     = TextLib::Split("""\""", ""^_MapPath);
+	if(!SplitMapPath.existskey(3)) return -1;
+	declare Text[]  SplitMapNumber   = TextLib::Split(""".""", ""^SplitMapPath[3]);
+	return TextLib::ToInteger(SplitMapNumber[0]);
+}
+
+Void PlayMap(Text _MapPath, Integer _Difficulty, Integer _Enviro, Integer _Line, Integer _Index)
+{
+	declare Text    MapPath     = _MapPath;
+	declare Text    Mode        = ModeController::GetModeName();
+	//declare Text    SettingsXml = "";
+	declare Text    MultiMode   = ModeController::GetModeMultiScreen();
+
+	declare Integer Difficulty  = _Difficulty;
+	declare Integer Enviro      = _Enviro;
+	declare Integer Line        = _Line;
+	declare Integer Index       = _Index;
+	declare Integer PlayerMedals;
+	declare Integer MedalsNeedsForNextUnlock;
+	declare Integer MedalTypeNeededForNextUnlock;
+	declare Boolean SameEnviro;
+	declare Boolean SameDifficulty;
+	declare Integer LastMedal;
+	declare Integer NumberOfBronze;
+	declare Integer NumberOfSilver;
+	declare Integer NumberOfGold;
+	declare Integer NumberOfAuthor;
+	declare Integer NbMedalsToUnlockPimp;
+	
+	declare Integer[] MedalsByTypeByEnviroDiff;
+	declare Integer[] MedalsByTypeByDiff;
+	
+	if(Mode == "TMC_CampaignDuo")
+	{
+		PlayerMedals             = CampaignDuoController::GetPlayerMedals();
+		declare Integer[]	NextUnlock = CampaignDuoController::GetNextUnlock();
+		MedalsNeedsForNextUnlock 		= NextUnlock[0];
+		MedalTypeNeededForNextUnlock 	= NextUnlock[1];
+		SameEnviro               = CampaignDuoController::IsSameEnviro(Enviro);
+		SameDifficulty           = CampaignDuoController::IsSameDifficulty(Difficulty);
+		LastMedal                = CampaignDuoController::GetLastMedal();
+		CampaignDuoController::ActualTrackInfo(Difficulty, Enviro, Line, Index);
+		NumberOfBronze           = CampaignDuoController::GetMedalByType(3);
+		NumberOfSilver           = CampaignDuoController::GetMedalByType(2);
+		NumberOfGold             = CampaignDuoController::GetMedalByType(1);
+		NumberOfAuthor           = CampaignDuoController::GetMedalByType(0);
+		NbMedalsToUnlockPimp	 = -1;
+	}
+	else
+	{
+		declare Boolean IsInSuperSolo for LocalUser;
+		
+		if(IsInSuperSolo) {
+			PlayerMedals             = SuperSolo_CampaignController::GetPlayerMedals();
+			declare Integer[]	NextUnlock = SuperSolo_CampaignController::GetNextUnlock();
+			MedalsNeedsForNextUnlock 		= NextUnlock[0];
+			MedalTypeNeededForNextUnlock 	= NextUnlock[1];
+			SameEnviro               = SuperSolo_CampaignController::IsSameEnviro(Enviro);
+			SameDifficulty           = SuperSolo_CampaignController::IsSameDifficulty(Difficulty);
+			LastMedal                = SuperSolo_CampaignController::GetLastMedal();
+			SuperSolo_CampaignController::ActualTrackInfo(Difficulty, Enviro, Line, Index);
+			NumberOfBronze           = SuperSolo_CampaignController::GetMedalByType(3);
+			NumberOfSilver           = SuperSolo_CampaignController::GetMedalByType(2);
+			NumberOfGold             = SuperSolo_CampaignController::GetMedalByType(1);
+			NumberOfAuthor           = SuperSolo_CampaignController::GetMedalByType(0);
+			NbMedalsToUnlockPimp	 = PimpUnlock::GetNbOfMedalsToNextUnlock();
+			
+			MedalsByTypeByEnviroDiff = SuperSolo_CampaignController::GetCurrentDoubleBlockMedals(Enviro, Difficulty);
+			MedalsByTypeByDiff = SuperSolo_CampaignController::GetMedalsByDifficulty(Difficulty);
+		} else {
+			PlayerMedals             = CampaignController::GetPlayerMedals();
+			declare Integer[]	NextUnlock = CampaignController::GetNextUnlock();
+			MedalsNeedsForNextUnlock 		= NextUnlock[0];
+			MedalTypeNeededForNextUnlock 	= NextUnlock[1];
+			SameEnviro               = CampaignController::IsSameEnviro(Enviro);
+			SameDifficulty           = CampaignController::IsSameDifficulty(Difficulty);
+			LastMedal                = CampaignController::GetLastMedal();
+			CampaignController::ActualTrackInfo(Difficulty, Enviro, Line, Index);
+			NumberOfBronze           = CampaignController::GetMedalByType(3);
+			NumberOfSilver           = CampaignController::GetMedalByType(2);
+			NumberOfGold             = CampaignController::GetMedalByType(1);
+			NumberOfAuthor           = CampaignController::GetMedalByType(0);
+			NbMedalsToUnlockPimp	 = PimpUnlock::GetNbOfMedalsToNextUnlock();
+			
+			MedalsByTypeByEnviroDiff = CampaignController::GetCurrentDoubleBlockMedals(Enviro, Difficulty);
+			MedalsByTypeByDiff = CampaignController::GetMedalsByDifficulty(Difficulty);
+		}
+		
+		
+	}
+
+	declare Text    SettingsXml = XmlCreator::GetXml(
+		PlayerMedals, 
+		LastMedal, 
+		MedalsNeedsForNextUnlock, 
+		MedalTypeNeededForNextUnlock,  
+		Enviro, 
+		Difficulty-1, 
+		SameEnviro, 
+		SameDifficulty,
+		"", 
+		NumberOfBronze, 
+		NumberOfSilver, 
+		NumberOfGold, 
+		NumberOfAuthor, 
+		NbMedalsToUnlockPimp, 
+		MedalsByTypeByEnviroDiff,
+		MedalsByTypeByDiff);
+
+	// continue;
+	
+	// on est sur la campagne, donc False à la fin.
+	IngameAccessController::PlayTrack(MapPath, Mode, SettingsXml, MultiMode, True, Enviro, False, False);
+
+	declare Boolean DoNextTrack for LocalUser;
+	if(DoNextTrack)
+	{
+		declare Integer MapNumber        = GetMapNumber(_MapPath);
+		if(MapNumber != -1)
+		{
+			
+			declare Integer DifficultySelect = MapNumber/40+1;
+			declare Text[] NextMapInfos      = CampaignController::Get_NextMapPath(MapNumber, DifficultySelect, _Enviro);
+			if(NextMapInfos[0] != "")
+			{
+				G_NumberOfNextTracks += 1;
+				//log("NextMapInfos: " ^ NextMapInfos);
+				PlayMap(NextMapInfos[0], _Difficulty, TextLib::ToInteger(NextMapInfos[1]), _Line, _Index);
+				//PlayTrack(NextMapInfos[0], _Mode, _SettingsXml, _ModeMulti, _IsCampaign, TextLib::ToInteger(NextMapInfos[1]), _IsCustomMap);
+				return;
+			}
+		}
+		//PlayTrack(_MapPath, _Mode, _SettingsXml, _ModeMulti, _IsCampaign, _Enviro, _IsCustomMap);
+		//return;
+	}
+
+	G_TimeExitIngame = Now + 500;
+	
+}
+
+Void Loop() {
+
+
+	if(G_TimeExitIngame < Now && G_TimeExitIngame != 0)
+	{
+		ExitIngameFeedbackToUI();
+		G_TimeExitIngame = 0;
+	}
+
+	foreach(Event in PendingEvents) {
+		if(Event.Type != CMlAppEvent::EType::LayerCustomEvent) continue;
+		switch(Event.CustomEventType) {
+			case "PlayMap" : {
+				if(Event.CustomEventData.count < 5) {
+					WarnNotEnoughParams(Event);
+					continue;
+				}
+
+				declare Text    MapPath     = Event.CustomEventData[0];
+				declare Integer Difficulty  = TextLib::ToInteger(Event.CustomEventData[1]);
+				declare Integer Enviro      = TextLib::ToInteger(Event.CustomEventData[2]);
+				declare Integer Line        = TextLib::ToInteger(Event.CustomEventData[3]);
+				declare Integer Index       = TextLib::ToInteger(Event.CustomEventData[4]);
+
+				G_NumberOfNextTracks = 0;
+
+				PlayMap(MapPath, Difficulty, Enviro, Line, Index);
+
+			}
+			case "IsUnlockAnim" :
+			{
+				if(Event.CustomEventData.count < 2) {
+					WarnNotEnoughParams(Event);
+					continue;
+				}
+				declare Integer Environment = TextLib::ToInteger(Event.CustomEventData[0]);
+				declare Integer Difficulty  = TextLib::ToInteger(Event.CustomEventData[1])-1;
+				IsUnlockAnimation(Environment, Difficulty);
+			}
+			case "GetAllInfos" :
+			{
+				declare Text Page = Event.CustomEventData[0];
+				SendAllInfos(Page);
+			}
+			case "SwitchRecordCenter" :
+			{
+				RecordCenterController::RecordCenterSwitch();
+			}
+			case "SendMapsRankingInfos": {
+				declare Text Layer = Event.CustomEventData[0];
+				declare CUILayer 		LayerToSend 	= Layers::Get(Layer);
+				if(LayerToSend == Null) return;
+				G_UpdateRankingTimer = C_TIMECHECKMAPRANKING;
+				G_GlobalRankingGet.clear();
+				//declare Integer NbMedals = CampaignController::GetPlayerMedals();
+				//SendPlayerMedals(NbMedals);
+				declare Integer	Net_DifficultySelect		for LayerToSend.LocalPage;
+				declare Integer	Net_MapRankingInfos_Index	for LayerToSend.LocalPage;
+
+				G_IndexMapsToSend.clear();
+				//G_IndexMapsToSend.add(CampaignController::GetMapInfoByDifficulty(Net_DifficultySelect)[0]);
+
+				G_MapFocus = 0;
+				OnlineController::ClearMapsRanking();
+				declare Text[] PlayerZones = TextLib::Split("|", LocalUser.ZonePath);
+				//log("PlayerZones     / " ^ PlayerZones);
+				G_IndexMapsToSend.add(Net_MapRankingInfos_Index);
+			}
+		}
+	}
+
+	if(ManiaPlanet.MasterServer_MainMSUser == Null) return;
+
+	if(G_UpdateRankingTimer > 0) {
+		declare CMapInfo Map                 = DataMgr.Maps[G_IndexMapsToSend[G_MapFocus]];
+		declare Text[]   PlayerZones         = TextLib::Split("|", LocalUser.ZonePath);
+		
+		
+		declare Integer  WorldRanking        = 0;
+		declare Integer  WorldPlayersCount   = 0;
+		
+		declare Integer  CountryRanking      = 0;
+		declare Integer  CountryPlayersCount = 0;
+		
+		declare Integer  Zone2Ranking        = 0;
+		declare Integer  Zone2PlayersCount   = 0;
+		
+		declare Integer  Zone3Ranking        = 0;
+		declare Integer  Zone3PlayersCount   = 0;
+		
+		
+		
+		if(PlayerZones.count > 0 && !G_GlobalRankingGet.existskey(GLOBALRANKING_WORLDR)) {
+			WorldRanking        = ScoreMgr.MapLeaderBoard_GetPlayerRanking(ManiaPlanet.MasterServer_MainMSUser.Id, Map.MapUid, PlayerZones[0]);
+		}
+		if(PlayerZones.count > 0 && !G_GlobalRankingGet.existskey(GLOBALRANKING_WORLDP)) {
+			WorldPlayersCount   = ScoreMgr.MapLeaderBoard_GetPlayerCount(Map.MapUid, PlayerZones[0]);
+		}
+		
+		if(PlayerZones.count > 1 && !G_GlobalRankingGet.existskey(GLOBALRANKING_COUNTRYR)) {
+			CountryRanking      = ScoreMgr.MapLeaderBoard_GetPlayerRanking(ManiaPlanet.MasterServer_MainMSUser.Id, Map.MapUid,  PlayerZones[0]^"|"^PlayerZones[1]);
+		}
+		if(PlayerZones.count > 1 && !G_GlobalRankingGet.existskey(GLOBALRANKING_COUNTRYP)) {
+			CountryPlayersCount = ScoreMgr.MapLeaderBoard_GetPlayerCount(Map.MapUid, PlayerZones[0]^"|"^PlayerZones[1]);
+		}
+		
+		if(PlayerZones.count > 2 && !G_GlobalRankingGet.existskey(GLOBALRANKING_ZONE2R)) {
+			Zone2Ranking       = ScoreMgr.MapLeaderBoard_GetPlayerRanking(ManiaPlanet.MasterServer_MainMSUser.Id, Map.MapUid,  PlayerZones[0]^"|"^PlayerZones[1]^"|"^PlayerZones[2]);
+		}
+		if(PlayerZones.count > 2 && !G_GlobalRankingGet.existskey(GLOBALRANKING_ZONE2P)) {
+			Zone2PlayersCount  = ScoreMgr.MapLeaderBoard_GetPlayerCount(Map.MapUid,  PlayerZones[0]^"|"^PlayerZones[1]^"|"^PlayerZones[2]);
+		}
+
+		if(PlayerZones.count > 3 && !G_GlobalRankingGet.existskey(GLOBALRANKING_ZONE3R)) {
+			Zone3Ranking       = ScoreMgr.MapLeaderBoard_GetPlayerRanking(ManiaPlanet.MasterServer_MainMSUser.Id, Map.MapUid,  PlayerZones[0]^"|"^PlayerZones[1]^"|"^PlayerZones[2]^"|"^PlayerZones[3]);
+		}
+		if(PlayerZones.count > 3 && !G_GlobalRankingGet.existskey(GLOBALRANKING_ZONE3P)) {
+			Zone3PlayersCount  = ScoreMgr.MapLeaderBoard_GetPlayerCount(Map.MapUid,  PlayerZones[0]^"|"^PlayerZones[1]^"|"^PlayerZones[2]^"|"^PlayerZones[3]);
+		}
+		
+		declare Integer Index = G_IndexMapsToSend[G_MapFocus];
+		if(WorldRanking > 0 && !G_GlobalRankingGet.exists(GLOBALRANKING_WORLDR)) {
+			G_GlobalRankingGet.add(GLOBALRANKING_WORLDR);
+			OnlineController::AddMapToMapsRanking_World(Index, WorldRanking);
+		}
+		if(WorldPlayersCount > 0 && !G_GlobalRankingGet.exists(GLOBALRANKING_WORLDP)) {
+			G_GlobalRankingGet.add(GLOBALRANKING_WORLDP);
+			OnlineController::AddMapToMapsRankingPlayerCount_World(Index, WorldPlayersCount);
+		}
+		
+		if(CountryRanking > 0 && !G_GlobalRankingGet.exists(GLOBALRANKING_COUNTRYR)) {
+			G_GlobalRankingGet.add(GLOBALRANKING_COUNTRYR);
+			OnlineController::AddMapToMapsRanking_Country(Index, CountryRanking);
+		}
+		if(CountryPlayersCount > 0 && !G_GlobalRankingGet.exists(GLOBALRANKING_COUNTRYP)) {
+			G_GlobalRankingGet.add(GLOBALRANKING_COUNTRYP);
+			OnlineController::AddMapToMapsRankingPlayerCount_Country(Index, CountryPlayersCount);
+		}
+
+		if(Zone2Ranking > 0 && !G_GlobalRankingGet.exists(GLOBALRANKING_ZONE2R)) {
+			G_GlobalRankingGet.add(GLOBALRANKING_ZONE2R);
+			OnlineController::AddMapToMapsRanking_Zone2(Index, Zone2Ranking);
+		}
+		if(Zone2PlayersCount > 0 && !G_GlobalRankingGet.exists(GLOBALRANKING_ZONE2P)) {
+			G_GlobalRankingGet.add(GLOBALRANKING_ZONE2P);
+			OnlineController::AddMapToMapsRankingPlayerCount_Zone2(Index, Zone2PlayersCount);
+		}
+		
+		if(Zone3Ranking > 0 && !G_GlobalRankingGet.exists(GLOBALRANKING_ZONE3R)) {
+			G_GlobalRankingGet.add(GLOBALRANKING_ZONE3R);
+			OnlineController::AddMapToMapsRanking_Zone3(Index, Zone3Ranking);
+		}
+		
+		if(Zone3PlayersCount > 0 && !G_GlobalRankingGet.exists(GLOBALRANKING_ZONE3P)) {
+			G_GlobalRankingGet.add(GLOBALRANKING_ZONE3P);
+			OnlineController::AddMapToMapsRankingPlayerCount_Zone3(Index, Zone3PlayersCount);
+		}
+		
+		if(G_GlobalRankingGet.count == 8) {
+			G_UpdateRankingTimer = 0;
+			if(G_MapFocus < G_IndexMapsToSend.count - 1)
+			{
+				GetNextMapRank();
+			}
+		}
+
+		G_PreMyPeriod = Now;
+		if(ManiaPlanet.MasterServer_MainMSUser.ConnectionStatus == CMasterServerUser::EMasterServerConnectionStatus::Connected) {
+		
+			//log("ManiaPlanet.MasterServer_MainMSUser.ConnectionStatus: "^ ManiaPlanet.MasterServer_MainMSUser.ConnectionStatus);
+			G_UpdateRankingTimer -= 1;
+			if(G_UpdateRankingTimer <= 0)
+			{
+				if(G_MapFocus < G_IndexMapsToSend.count - 1)
+				{
+					GetNextMapRank();
+				}
+				else
+				{
+					OnlineController::SendMapsRanking("BrowseTracks");
+				}
+			}
+		}
+		else
+		{
+			G_UpdateRankingTimer = 0;
+		}
+	}
+}

@@ -1,0 +1,89 @@
+
+#Include "Libs/Nadeo/Manialink2.Script.txt"					as Manialink
+#Include "Libs/Nadeo/UIPadButtons.Script.txt"				as UIButtons
+#Include "Libs/Nadeo/TMConsole/UIXmlBuilder.Script.txt"		as UIXmlBuilder
+#Include "Libs/Nadeo/TMConsole/Menu/MenuLayers.Script.txt" 	as Layers
+
+#Const C_LayerName	"MySweetLayerName"
+
+
+
+Void CreateLayer()
+{
+	declare Real LayerScale = 1.;
+	declare Vec3 LayerPos 	= <-117., 34., 15.>;
+	declare Text[][] LayerContent;
+	LayerContent.add(["Title", 	"Title",     "Titre du popup", 	"2",	"", "", ""]);
+	LayerContent.add(["Space", 	"", 	     "", 			 	"1",	"", "", ""]);
+	LayerContent.add(["Button", "Yes", 	     _("Yes"), 			"1",	"""log(Now^"> YOU CLICKED ON YES");""", "", ""]);
+	LayerContent.add(["Button", "No", 	     _("No"), 			"1",	"""log(Now^"> YOU CLICKED ON NO");""", "", ""]);
+	LayerContent.add(["Input", 	"Input",     "", 			 	"1",	"", "", ""]);
+	
+	declare MLShowAnim 	= UIXmlBuilder::GetShowAnim(LayerContent, LayerPos);
+	
+	// declare MLButtons 	= UIXmlBuilder::GetButtons(LayerContent, MLOnClick, MLOnCancel, False);
+	declare MLButtons 	= UIXmlBuilder::GetButtons(LayerContent);
+
+	declare ML = 
+	"""
+	{{{UIXmlBuilder::GetXml("IdMainFrame", LayerContent, LayerScale, LayerPos)}}}
+	
+	
+	
+	<script><!--
+		{{{Manialink::GetIncludes()}}}
+		#Const DebugName "L_MonLayerDeTest"
+		{{{Manialink::Load()}}}
+		
+		
+		main() 
+		{
+			{{{UIXmlBuilder::GetSetInputsML("Input", 
+			UIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Select), _("Go !"),
+			UIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Cancel), _("Cancel"))}}}
+			{{{UIXmlBuilder::GetSetSubtitleML("Title", "Mon super prompteur qui tue")}}}
+			{{{MLShowAnim[0]}}}
+			{{{MLButtons[0]}}}
+			log(Now^" > LOAD OK : {{{C_LayerName}}}");
+			
+			
+			
+			while(True)
+			{
+				yield;
+				
+				{{{MLShowAnim[1]}}}
+				
+				if(!PageIsVisible && PendingEvents.count == 0) continue;
+				
+				LibManialink_AnimLoop();
+				{{{MLButtons[1]}}}
+			}
+		}
+	--></script>
+	""";
+	
+	
+	
+	Layers::Create(C_LayerName, ML);
+	Layers::Attach(C_LayerName);
+	declare Layer = Layers::Get(C_LayerName);
+	Layer.OutAnimation = CUILayer::EUILayerAnimation::LeftFast;
+}
+
+
+
+Void Load()
+{
+	CreateLayer();
+}
+
+CUILayer GetLayer()
+{
+	return Layers::Get(C_LayerName);
+}
+
+Text GetLayerName()
+{
+	return C_LayerName;
+}

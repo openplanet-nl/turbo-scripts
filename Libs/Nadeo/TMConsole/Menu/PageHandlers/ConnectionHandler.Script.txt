@@ -1,0 +1,342 @@
+#Include "Libs/Nadeo/TMConsole/Menu/MenuLayers.Script.txt"										as Layers
+#Include "Libs/Nadeo/TMConsole/Menu/Pages.Script.txt"											as Pages
+#Include "Libs/Nadeo/TMConsole/Menu/PageHandlers/RankingModuleHandler.Script.txt"				as RankingModuleHandler
+#Include "Libs/Nadeo/TMConsole/PopUpManager.Script.txt"											as PopUpManager
+#Include "Libs/Nadeo/TMConsole/Menu/Controller/Solo_CampaignController.Script.txt" 				as Solo_CampaignController
+#Include "Libs/Nadeo/TMConsole/Menu/Controller/TaskMessageErrorController.Script.txt"			as TaskMessageErrorController
+#Include "Libs/Nadeo/TMConsole/Menu/PageHandlers/ZoneHandler.Script.txt"						as ZoneHandler
+#Include "Libs/Nadeo/TMConsole/Menu/Controller/PrivilegeController.Script.txt"					as PrivilegeController
+
+#Const C_SoloCampaign		0
+#Const C_SuperSoloCampaign	1
+
+#Const C_None                   0
+#Const C_NetworkNotAvailable    1
+#Const C_FirstPartySignedOut    2
+#Const C_NoUbiServicesSession   3
+#Const C_MasterServerDisabled   4
+#Const C_MasterServerInSafeMode 5
+
+declare Text    									               G_PlayerName;
+declare Integer 									               G_PopUp_Time;
+declare Text    									               G_PopUp_Text;
+declare CNetMasterServerUserInfo::EMasterServerConnectionStatus    G_PrevConnectionStatus;
+declare CScoreMgr::EMasterServerScoreStatus                        G_PrevMasterServerScoreStatus;
+//declare Boolean										               G_WaitLaunchNextPage;
+declare CNetMasterServerUserInfo::ETaskErrorType                   G_TaskErrorType;
+ 
+declare Text 														G_Connection_LayerName;
+declare Text														G_Connection_FeedbackText;
+declare Text														G_SessionId;
+declare Boolean														G_WaitAutoJoin;
+ 
+Void Load() {
+	if(ManiaPlanet.MasterServer_MainMSUser == Null) return;
+	G_PopUp_Time = -1;
+	//G_WaitLaunchNextPage = False;
+	G_TaskErrorType = ManiaPlanet.MasterServer_MainMSUser.LastConnectionErrorType;
+	G_Connection_LayerName 		= "";
+	G_Connection_FeedbackText 	= "";
+}
+
+Void SetAutoJoinSessionId(Text _SessionId)
+{
+	G_SessionId = _SessionId;
+	//log("["^Now^"]SetAutoJoinSessionId - G_SessionId: " ^ G_SessionId);
+}
+
+Void AutoJoinSession()
+{
+
+	declare CUILayer 		LayerToSend 	= Layers::Get("PopUp_JoinAFriend");
+	if(LayerToSend != Null)
+	{
+		declare CUILayer 		LayerPopUp 	= Layers::Get("PopUp");
+		declare CUILayer 		LayerPopUp2 = Layers::Get("SuperPopUp");
+		LayerCustomEvent(LayerPopUp , "HideAll", [""]);
+		LayerCustomEvent(LayerPopUp2, "HideAll", [""]);
+		declare CManiaplanetPluginInterface G_UIPlugin = Plugins.GetInterface("UIPlugin");
+		G_UIPlugin.CustomEvent("HideRecordCenter", [""]);
+
+		declare Text	Net_LoginToJoin		for LayerToSend.LocalPage;
+		declare Text	Net_PasswordToJoin	for LayerToSend.LocalPage;
+		declare Text	Net_SessionIdToJoin	for LayerToSend.LocalPage;	
+		Net_LoginToJoin = "";
+		Net_PasswordToJoin = "";
+		Net_SessionIdToJoin = G_SessionId;
+		//log("["^Now^"]AutoJoinSession - G_SessionId: " ^ G_SessionId);
+
+		declare Text[] StartPages = ["Main"];
+		declare Text CurrentPage = Pages::GetCurrentPageName();
+		if(CurrentPage != "Main") Pages::GoandStartPage(StartPages);
+		declare Boolean CanIGo = PrivilegeController::CanIGotoPage("PopUp_JoinAFriend");
+	}
+}
+
+Void StartWaitAutoJoin()
+{
+	G_WaitAutoJoin = True;
+
+}
+
+Void StopWaitAutoJoin()
+{
+	G_WaitAutoJoin = False;
+}
+
+Boolean GetWaitAutoJoin()
+{
+	return G_WaitAutoJoin;
+}
+
+Void ConnectionToMasterServer()
+{
+	if(ManiaPlanet.MasterServer_MainMSUser == Null) return;
+	if(ManiaPlanet.MasterServer_MainMSUser.ConnectionStatus == CNetMasterServerUserInfo::EMasterServerConnectionStatus::Connected) return;
+	//declare CUILayer NextLayer <=> Layers::Get("OnlineInfo");
+	//LayerCustomEvent(NextLayer, "ConnectOnline", [""]);
+
+	ManiaPlanet.MasterServer_Connect(ManiaPlanet.MasterServer_MainMSUser.Id);
+	//LayerCustomEvent(NextLayer, "ConnectionEnd", [""]);
+}
+
+Void ConnectionToMasterServer_WithFeedback()
+{
+	if(ManiaPlanet.MasterServer_MainMSUser == Null || G_Connection_LayerName == "") return;
+	if (ManiaPlanet.MasterServer_MainMSUser.ConnectionStatus == CNetMasterServerUserInfo::EMasterServerConnectionStatus::Connected)
+	{
+		declare CUILayer Layer <=> Layers::Get(G_Connection_LayerName);
+		LayerCustomEvent(Layer, G_Connection_FeedbackText, Text[]);
+		G_Connection_LayerName = "";
+		G_Connection_FeedbackText = "";
+
+		
+	} else {
+		ManiaPlanet.MasterServer_Connect(ManiaPlanet.MasterServer_MainMSUser.Id);
+		G_PrevConnectionStatus = ManiaPlanet.MasterServer_MainMSUser.ConnectionStatus;
+	}
+}
+
+Void AskConnectionToMasterServer(Text _LayerName, Text _FeedbackText)
+{
+	G_Connection_LayerName 		= _LayerName;
+	G_Connection_FeedbackText 	= _FeedbackText;
+	
+	if(ManiaPlanet.MasterServer_MainMSUser == Null) return;
+	if (ManiaPlanet.MasterServer_MainMSUser.ConnectionStatus == CNetMasterServerUserInfo::EMasterServerConnectionStatus::Connected)
+	{
+		declare CUILayer Layer <=> Layers::Get(_LayerName);
+		LayerCustomEvent(Layer, _FeedbackText, Text[]);
+		G_Connection_LayerName = "";
+		G_Connection_FeedbackText = "";
+	} else {
+		PopUpManager::AddAskYesNo2(_("Do you want to connect to the server ?"), _("Online Feature"), "fff", "ConnectOnline_WithLayerFeedback");
+	}	
+}
+
+Void SendConnectionFailed()
+{
+	if (G_Connection_LayerName != "")
+	{
+		declare CUILayer Layer <=> Layers::Get(G_Connection_LayerName);
+		LayerCustomEvent(Layer, "Reconnection_Failed", Text[]);
+		G_Connection_LayerName = "";
+		G_Connection_FeedbackText = "";
+	}
+}
+
+Boolean IsOnlinePage(Text _Page)
+{
+	declare Text[] OnlinePages = 
+	["MyRooms",
+	 "BrowseOnlineRooms",
+	 "CommunityTracks",
+	 "MyPrivateRoom",
+	 "ServerBrowser",
+	 //"TrackbuilderWorkshop", //on restreint les onglets, mais on reste dans le menu.
+	 "Location",
+	 "RoomManager",
+	 "RoomPlaylist",
+	 "JoinAFriend",
+	 "ChallengeManager",
+	 "ChallengeBuddies",
+	 "ChallengeBrowser",
+	 "BuddiesChallengeBrowser",
+	 "ChallengeTracks"];
+	
+	return OnlinePages.exists(_Page);
+}
+
+Boolean CheckIsConnected()
+{
+	if(ManiaPlanet.MasterServer_MainMSUser == Null) return False;
+	return ManiaPlanet.MasterServer_MainMSUser.ConnectionStatus == CNetMasterServerUserInfo::EMasterServerConnectionStatus::Connected;
+}
+
+CNetMasterServerUserInfo::EMasterServerConnectionStatus GetEtatConnection()
+{
+	if(ManiaPlanet.MasterServer_MainMSUser == Null) return CNetMasterServerUserInfo::EMasterServerConnectionStatus::NotConnected;
+	return ManiaPlanet.MasterServer_MainMSUser.ConnectionStatus;
+}
+
+
+Void CheckPageOnlineAcces()
+{
+	if(ManiaPlanet.MasterServer_MainMSUser == Null) return;
+	declare Text  CurrentPageName = Pages::GetCurrentPageName();
+	if((ManiaPlanet.MasterServer_MainMSUser.ConnectionStatus == CNetMasterServerUserInfo::EMasterServerConnectionStatus::NotConnected || ManiaPlanet.MasterServer_MainMSUser.ConnectionStatus == CNetMasterServerUserInfo::EMasterServerConnectionStatus::Disconnecting) && IsOnlinePage(CurrentPageName))
+	{
+		declare Text NextPage = "Main";
+		Pages::GoandStartPage(NextPage);
+	}
+}
+
+
+Void ConnectionLoop() {
+	if(ManiaPlanet.MasterServer_MainMSUser == Null) return;
+	
+
+	if(G_WaitAutoJoin && ManiaPlanet.MasterServer_MainMSUser.ConnectionStatus == CNetMasterServerUserInfo::EMasterServerConnectionStatus::Connected)
+	{
+		declare Text CurrentPage = Pages::GetCurrentPageName();
+		if(CurrentPage != "Intro" && CurrentPage != "StartDemo")
+		{
+			AutoJoinSession();
+			//G_WaitAutoJoin = False;
+			StopWaitAutoJoin();
+		}
+	}
+
+
+
+
+	if(G_PrevConnectionStatus != ManiaPlanet.MasterServer_MainMSUser.ConnectionStatus)
+	{
+		// Logger::Log("G_PrevConnectionStatus change "^G_PrevConnectionStatus^" -> "^ManiaPlanet.MasterServer_MainMSUser.ConnectionStatus);
+		
+		declare Text  CurrentPageName = Pages::GetCurrentPageName();
+		if(CurrentPageName == "StartDemo")
+		{
+			declare CUILayer NextLayer2 <=> Layers::Get("StartDemo");
+			LayerCustomEvent(NextLayer2, "CheckEtatConnection", [ManiaPlanet.MasterServer_MainMSUser.ConnectionStatus^""]);
+		}
+		
+		if ((CurrentPageName == "TrackbuilderWorkshop" || CurrentPageName == "MyTracks") && CurrentPageName != G_Connection_LayerName)
+		{
+			declare CUILayer Layer <=> Layers::Get(CurrentPageName); //La layer a le nom de la page ici.
+			LayerCustomEvent(Layer, "MSConnectionStatus", [(ManiaPlanet.MasterServer_MainMSUser.ConnectionStatus == CNetMasterServerUserInfo::EMasterServerConnectionStatus::Connected)^""]);
+		}
+		
+		CheckPageOnlineAcces();
+
+		if(ManiaPlanet.MasterServer_MainMSUser.ConnectionStatus == CNetMasterServerUserInfo::EMasterServerConnectionStatus::Connected)
+		{
+			RankingModuleHandler::Load();
+			declare CUILayer NextLayer3 <=> Layers::Get("RankingModule");
+			
+			declare Text PlayerDisplayName = "";
+			if(UserMgr.MainUser != Null) {
+				PlayerDisplayName = UserMgr.MainUser.DisplayName;
+			}
+			
+			LayerCustomEvent(NextLayer3, "UpdateInfo", [PlayerDisplayName]);
+			RankingModuleHandler::SentRankingInfos();
+
+			/*
+			if(G_WaitAutoJoin)
+			{
+				AutoJoinSession();
+				G_WaitAutoJoin = False;
+			}
+			*/
+			
+
+
+			if(ZoneHandler::NeedChangeZone() && Solo_CampaignController::IsCampaignLoad())
+			{
+				PopUpManager::AddPopUp2(0, _("Welcome to Trackmania Turbo!\n Please choose your ranking zone."), "", False);
+				Pages::GotoNext("Location");
+			}
+
+			if (G_Connection_LayerName != "")
+			{
+				declare CUILayer Layer <=> Layers::Get(G_Connection_LayerName);
+				LayerCustomEvent(Layer, G_Connection_FeedbackText, Text[]);
+				G_Connection_LayerName = "";
+				G_Connection_FeedbackText = "";
+			}
+		}
+		else if(ManiaPlanet.MasterServer_MainMSUser.ConnectionStatus == CNetMasterServerUserInfo::EMasterServerConnectionStatus::NotConnected)
+		{
+			declare CNetMasterServerUserInfo::ETaskErrorType TaskErrorType = ManiaPlanet.MasterServer_MainMSUser.LastConnectionErrorType;
+			declare Integer ErrorCode =  ManiaPlanet.MasterServer_MainMSUser.LastConnectionErrorCode;
+			
+			PopUpManager::HidePopUpAsk("PopUp");
+			//log("["^Now^"]NotConnected - LastConnectionErrorType: " ^ TaskErrorType);
+			//log("["^Now^"]NotConnected - LastConnectionErrorCode: " ^ ErrorCode);
+
+			TaskMessageErrorController::TaskErrorMessage(TaskErrorType, ErrorCode);
+			SendConnectionFailed();
+			PrivilegeController::CancelTasks();
+			StopWaitAutoJoin();
+		}
+		//log("ManiaPlanet.MasterServer_MainMSUser.ConnectionStatus: " ^ ManiaPlanet.MasterServer_MainMSUser.ConnectionStatus);
+		G_PrevConnectionStatus = ManiaPlanet.MasterServer_MainMSUser.ConnectionStatus;
+	}
+
+
+/*
+	if(G_WaitLaunchNextPage)
+	{
+		declare Boolean Hack_AutoJoin_IsActive = False;
+		if(!Hack_AutoJoin_IsActive)
+		{
+			declare CUILayer NextLayer2 <=> Layers::Get("StartDemo");
+			LayerCustomEvent(NextLayer2, "LaunchNextPage", [""]);
+			G_WaitLaunchNextPage = False;
+		}
+	}
+*/
+	if(G_PrevConnectionStatus == CNetMasterServerUserInfo::EMasterServerConnectionStatus::Connected)
+	{
+		declare CScoreMgr::EMasterServerScoreStatus MasterServerStatus = ScoreMgr.ScoreStatus_GetMasterServerStatus(DataMgr.MenuUserId);
+		if(G_PrevMasterServerScoreStatus != MasterServerStatus)
+		{
+			if(MasterServerStatus == CScoreMgr::EMasterServerScoreStatus::Synchronized)
+			{		
+				////Solo_CampaignController::Load(MasterServerStatus^"");
+				//declare Text  CurrentPageName = Pages::GetCurrentPageName();
+				//if(CurrentPageName == "MapsOverview" || CurrentPageName == "BrowseTracks") MapsOverviewHandler::SendAllInfos(CurrentPageName);
+			}
+			G_PrevMasterServerScoreStatus = MasterServerStatus;
+		}
+	}
+	else if(G_PrevConnectionStatus == CNetMasterServerUserInfo::EMasterServerConnectionStatus::NotConnected)
+	{
+		declare Text  CurrentPageName = Pages::GetCurrentPageName();
+		//log("CurrentPageName: " ^ CurrentPageName);
+		if(IsOnlinePage(CurrentPageName))
+		{
+			Pages::GotoPrevious();
+			//declare Text NextPage = "Main";
+			//Pages::GoandStartPage(NextPage);
+		}
+	}
+	
+
+	if(G_PopUp_Time < Now && G_PopUp_Time != -1)
+	{
+		PopUpManager::AddPopUp2(0, G_PopUp_Text, "", False);
+		G_PopUp_Time = -1;
+	}
+	
+	if(UserMgr.MainUser != Null && G_PlayerName != UserMgr.MainUser.DisplayName)
+	{
+		RankingModuleHandler::Load();
+		declare CUILayer NextLayer3 <=> Layers::Get("RankingModule");
+		LayerCustomEvent(NextLayer3, "ShowRanking", [UserMgr.MainUser.DisplayName]);
+		RankingModuleHandler::SentRankingInfos();
+		G_PlayerName = UserMgr.MainUser.DisplayName;
+	}
+
+}
