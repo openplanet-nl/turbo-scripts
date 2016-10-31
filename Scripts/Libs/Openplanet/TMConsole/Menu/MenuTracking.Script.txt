@@ -1,0 +1,171 @@
+#Include "TextLib" as TextLib
+#Include "Libs/Openplanet/TMConsole/Logger.Script.txt" 			as Logger
+#Include "Libs/Openplanet/TMConsole/TMTEnvironments.Script.txt" 	as TMTEnvironments
+
+// ATTENTION : ces constantes sont les mêmes que celles définies dans LBMainSelector.
+#Const		C_GameNameSoloCampaign		"Solo"
+#Const		C_GameNameSuperSolo			"SuperSolo"
+#Const		C_GameNameDDCampaign		"Duo"
+#Const		C_GameNameChampionships		"Challenges"
+#Const		C_GameNameBuddiesChallenges	"BuddiesChallenges"
+#Const		C_GameNameHotSeat			"HotSeat"
+#Const		C_GameNameArcade			"Arcade"
+#Const		C_GameNameSplitScreen		"Rounds"
+#Const		C_GameNameBrowseRooms		"BrowseRooms"
+#Const		C_GameNameJoinAFriend		"JoinAFriend"
+#Const		C_GameNameNewTrack			"NewTrack"
+#Const		C_GameNameMyTracks			"MyTracks"
+#Const		C_GameNameGarage			"Garage"
+#Const		C_GameNameMusicMix			"MusicMix"
+#Const		C_SynchOnlineModeContext	"SynchOnline"
+
+
+declare Text G_ModeContext;
+declare Text G_MapContextId;
+
+Void Load() {
+	G_ModeContext 	= "";
+	G_MapContextId	= "";
+}
+
+
+Void StopMap() {
+	// Logger::Log("[MenuTracking] Stop Map Context: "^G_MapContextId);
+	ManiaPlanet.MasterServer_Tracking_ContextMapStop( DataMgr.MenuUserId, G_MapContextId );
+	G_MapContextId = "";
+}
+
+Void StopModeContext() {
+	if(G_ModeContext == "") return;
+	
+	if(G_MapContextId != "") {
+		StopMap();
+	}
+	
+	ManiaPlanet.MasterServer_Tracking_ContextGameModeStop( DataMgr.MenuUserId, G_ModeContext );
+	// Logger::Log("[MenuTracking] Stop Mode Context: "^G_ModeContext);
+	G_ModeContext = "";
+}
+ 
+ Boolean HasMode() {
+	return G_ModeContext != "";
+ }
+ 
+/**
+ * @param _ModeContext doit prendre sa valeur parmi
+ *		"BrowseRooms"
+ *		"JoinAFriend"
+ *		"HotSeat"
+ *		"Arcade"
+ *		"Rounds"
+ *		"Solo"
+ *		"Duo"
+ *		"Challenges"
+ *		"SuperSolo"
+ *		"NewTrack"
+ *		"MyTracks"
+ *		"Garage"
+ *		"MusicMix"
+ **/
+Void StartModeContext(Text _ModeContext, Text _ModeSubContext) {
+	StopModeContext();
+	
+	if(_ModeContext == C_GameNameNewTrack || _ModeContext == C_GameNameMyTracks) {
+		// on ne track pas cet event directement, on attend que le joueur ait choisi le type d'editeur
+		G_ModeContext = "";
+		return;
+	}
+	
+	if(_ModeContext == C_GameNameChampionships || _ModeContext == C_GameNameBuddiesChallenges)
+	{
+		// on ne track pas cet event directement, on attend que le joueur rentre dans la room et on donne le mode de la room
+		G_ModeContext = "";
+		return;
+	}
+	
+	declare Text TheModeContext = _ModeContext;
+	
+	if(TheModeContext == C_GameNameBrowseRooms || TheModeContext == C_GameNameJoinAFriend) {
+		// traduction de certains modes online mal nommés
+		TheModeContext = C_SynchOnlineModeContext;
+	} else {
+		// traduction de certains modes locaux mal nommés en random gen.
+		switch(TheModeContext) {
+			case "TMC_LocalArcade" 	: TheModeContext = C_GameNameArcade;
+			case "TMC_HotSeat" 		: TheModeContext = C_GameNameHotSeat;
+			case "TMC_LocalRounds" 	: TheModeContext = C_GameNameSplitScreen;
+		}
+	}
+	
+	G_ModeContext = TheModeContext^_ModeSubContext;
+	
+	// Logger::Log("[MenuTracking] Start Mode Context: "^G_ModeContext);
+	ManiaPlanet.MasterServer_Tracking_ContextGameModeStart(DataMgr.MenuUserId, G_ModeContext);
+}
+
+Void StartModeContext(Text _ModeContext) {
+	return StartModeContext(_ModeContext, "");
+}
+
+/**
+ * @param _MapNumber = number of the map (e.g. 14 for track #014).
+ * 	in the trackbuilder context, please use
+ * 		 0	for Canyon
+ *		-1	for Valley
+ *		-2	for Lagoon
+ *		-3	for Stadium
+ */
+Void Private_StartMapContext(Text _MapContextId, Text _MapEnviroId) {
+	G_MapContextId = _MapContextId;
+	// Logger::Log("[MenuTracking] Start Map Context: "^_MapContextId^" in enviro "^_MapEnviroId);
+	ManiaPlanet.MasterServer_Tracking_ContextMapStart( DataMgr.MenuUserId, G_MapContextId, _MapEnviroId);
+}
+
+Void PlayCampaignMap(Text _MapPath) {
+	// _MapPath ressemble à "Campaign/02_Green/03_Lagoon/052_V_Speed.Map.Gbx"
+	declare Text[] MapPathElements = TextLib::Split("\\", _MapPath);
+	if(MapPathElements.count < 4) {
+		Logger::Warn("[MenuTracking] unable to parse _MapPath: "^_MapPath);
+		return;
+	}
+	declare Text MapName		= MapPathElements[3];
+	declare Text MapEnviro		= MapPathElements[2];
+	
+	declare Text MapContextId	= TextLib::SubText(MapName, 0, 3);
+	declare Text MapEnviroId	= TextLib::SubText(MapEnviro, 0, 3);
+	
+	Private_StartMapContext(MapContextId, MapEnviroId);
+}
+
+// pour info, le nom de la track ressemble (sur PC) à ":usr00000000-data0:Map\0.Map.gbx"
+Void PlayCustomMap(Integer _EnviroIndex) {
+	declare Text EnviroId = TMTEnvironments::GetCollectionName(_EnviroIndex);
+	Private_StartMapContext("Custom", EnviroId);
+}
+
+Void PlayRandomMap(Text _EnviroName) {
+	Private_StartMapContext("Random", _EnviroName);
+}
+
+
+Void PlayCustomTracklist(Integer _MapCount) {
+	// EG : pas génial, mais au moins on n'a pas rien.
+	declare Text EnviroId = TMTEnvironments::GetCollectionName(-1);
+	Private_StartMapContext("TracklistOfSize"^_MapCount, EnviroId);
+}
+
+
+///  _EditorIndex = "0", "1", "2" (ou "3" pour le random gen)
+Void StartTrackbuilderContext(Text _EnviroName, Text _EditorIndex) {
+	declare Text ClearEditorName;
+	switch(_EditorIndex) {
+		case "0": ClearEditorName = "BeginnerEditor"; 
+		case "1": ClearEditorName = "NormalEditor"; 
+		case "2": ClearEditorName = "ExpertEditor"; 
+		case "3": ClearEditorName = "RandomEditor"; 
+		default: ClearEditorName = "UnknownEditor";
+	}
+	
+	StartModeContext(ClearEditorName);
+	Private_StartMapContext("Edited", _EnviroName);
+}

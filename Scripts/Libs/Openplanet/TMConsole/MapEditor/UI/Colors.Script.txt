@@ -1,0 +1,85 @@
+/** 
+ * Colors management
+ */
+#Const Version		"2015-12-15"
+#Const ScriptName	"Colors.Script.txt"
+
+#Include "TextLib" as TL
+
+// ---------------------------------- //
+// Constants
+// ---------------------------------- //
+#Const C_Color_White		0
+#Const C_Color_Black		1
+#Const C_Color_Grey			2
+#Const C_Color_Purple		3
+#Const C_Color_Orange		4
+#Const C_Color_Yellow		5
+#Const C_Color_Red			6
+#Const C_Color_Silver		7
+#Const C_Color_DarkPurple	8
+#Const C_Color_SoftBlack	9
+#Const C_Color_LightGrey	10
+#Const C_Color_Green		11
+#Const C_Color_Trackmaster	12
+
+// ---------------------------------- //
+// Functions
+// ---------------------------------- //
+// ---------------------------------- //
+// Public
+// ---------------------------------- //
+// ---------------------------------- //
+/// Access to color constants
+Integer Color_White()		{ return C_Color_White; }
+Integer Color_Black()		{ return C_Color_Black; }
+Integer Color_Grey()		{ return C_Color_Grey; }
+Integer Color_Purple()		{ return C_Color_Purple; }
+Integer Color_Orange()		{ return C_Color_Orange; }
+Integer Color_Yellow()		{ return C_Color_Yellow; }
+Integer Color_Red()			{ return C_Color_Red; }
+Integer Color_Silver()		{ return C_Color_Silver; }
+Integer Color_DarkPurple()	{ return C_Color_DarkPurple; }
+Integer Color_SoftBlack()	{ return C_Color_SoftBlack; }
+Integer Color_LightGrey()	{ return C_Color_LightGrey; }
+Integer Color_Green()		{ return C_Color_Green; }
+Integer Color_Trackmaster() { return C_Color_Trackmaster; }
+
+// ---------------------------------- //
+/** Get a color in Vec3 format from its name
+ *
+ *	@param	_ColorName				The color name
+ *
+ *	@return							The color in Vec3 format
+ */
+Vec3 GetColor(Integer _ColorName) { 
+	switch (_ColorName) {
+		case C_Color_White 			: return <0.949, 0.949, 0.949>;
+		case C_Color_Black			: return <0.010, 0.010, 0.010>; ///< Using <0., 0., 0.> don't work with colorize
+		case C_Color_Grey 			: return <0.416, 0.416, 0.416>;
+		case C_Color_Purple 		: return <0.607, 0.309, 1.000>;
+		case C_Color_Orange 		: return <1.000, 0.643, 0.000>;
+		case C_Color_Yellow			: return <1.000, 0.945, 0.000>;
+		case C_Color_Red			: return <1.000, 0.196, 0.110>;
+		case C_Color_Silver			: return <0.357, 0.380, 0.407>;
+		case C_Color_DarkPurple 	: return <0.364, 0.184, 0.600>;
+		case C_Color_SoftBlack		: return <0.102, 0.102, 0.102>;
+		case C_Color_LightGrey		: return <0.698, 0.698, 0.698>;
+		case C_Color_Green			: return <0.000, 1.000, 0.082>;
+		case C_Color_Trackmaster	: return <0.000, 1.000, 0.082>;
+	}
+	
+	log(Now^"> [Lib MapEditor/UI/Colors] Can't find color : "^_ColorName);
+	return <0.,0.,0.>;
+}
+
+// ---------------------------------- //
+/** Get a color in 3 digits hexadecimal format from its name
+ *
+ *	@param	_ColorName				The color name
+ *
+ *	@return							The color in 3 digits hexadecimal format
+ */
+Text GetColorML(Integer _ColorName) {
+	return TL::ColorToText(GetColor(_ColorName));
+}

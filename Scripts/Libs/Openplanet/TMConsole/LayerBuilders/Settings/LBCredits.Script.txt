@@ -1,0 +1,1473 @@
+
+// file://Media/Manialinks/Nadeo/TMConsole/MainMenuArnaud.Script.txt
+#Include "TextLib"											as TL
+#Include "Libs/Openplanet/Manialink2.Script.txt"					as Manialink
+#Include "Libs/Openplanet/TMConsole/PanelParameter.Script.txt"	as PanelParameter
+#Include "Libs/Openplanet/TMConsole/FontManager.Script.txt"		as Font
+#Include "Libs/Openplanet/UIPadButtons.Script.txt"				as LibUIButtons
+
+#Const C_ImgBase 	"file://Media/Manialinks/Nadeo/TMConsole/Images/"
+
+
+Text Build(Text _ShowAnim, Text _HideAnim) {
+	
+
+	declare Real	SizeX_Total      = PanelParameter::GetSizePanelX();
+	
+	declare Real	ClipSizeX        =  SizeX_Total;
+	declare Real	ClipSizeY        =  180.;
+	declare Real	ClipPosX         =  320.;
+	declare Real	ClipPosY         =  -10.;
+
+	
+	declare Text    IMGBackground    = C_ImgBase^"MERCATOR.png";
+	declare Text    IMGLogo    		 = C_ImgBase^"logo512.png";
+	
+	//declare Text 	IMGAction1   = LibUIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Action1);
+	//declare Text 	IMGCancel    = LibUIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Cancel);
+	declare Text 	TXTAction1   = _("Speed");
+	declare Text 	TXTCancel    = _("Back");
+
+
+	declare Text 	IMG_PC_Action1 = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"), CManiaAppEvent::EMenuNavAction::Action1);
+	declare Text 	IMG_PS_Action1 = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::Action1);
+	declare Text 	IMG_XB_Action1 = LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::Action1);
+	declare Text 	IMG_PC_Cancel  = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"), CManiaAppEvent::EMenuNavAction::Cancel);
+	declare Text 	IMG_PS_Cancel  = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::Cancel);
+	declare Text 	IMG_XB_Cancel  = LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::Cancel);
+
+
+	declare LabelCredit = """
+
+TRACKMANIA ORIGINAL CONCEPT
+Olivier Torreilles
+
+GAME DIRECTOR
+Florent Castelnérac
+
+CREATIVE DIRECTOR
+François Alaux
+
+GAME PRODUCER
+Émilien Gorisse
+
+GAME CREATIVE PRODUCER
+Sébastien Blanc
+
+GAME DESIGN
+Clément Bachellerie
+
+GAME DESIGN UI
+Léo Heitz
+Arnaud Misaine
+
+GAME LEVEL DESIGN
+Guillaume Rocchiccioli
+
+3D CREATIVE DIRECTOR
+François-Xavier Delmotte
+
+3D ARTISTIC DIRECTOR
+Stephen Magnardi
+
+3D ARTISTS
+Yohann Delcourt
+Axel Janssen
+Christophe Kermorgant
+Christophe Moyne
+Hugo Touzé
+Michel Vibert
+Massimo Bongiorno
+
+SOUND DESIGN
+Gabriel Morin
+Jonathan Wachoru
+
+DATA MANAGER
+Jean-Baptiste Macé
+
+PRODUCT MANAGER
+Anastasia Belozerova
+
+MANAGING DIRECTOR ASSISTANT
+Dominique Conil
+
+ADDITIONAL UI
+Emmanuel Nouailles
+
+COMMUNITY MANAGEMENT
+Cédric Anthony
+Amélie Castelnérac
+
+FINANCIAL PLANNING ANALYST
+Stéphane Adler
+
+TECHNICAL DIRECTOR
+Florent Castelnérac
+
+RESEARCH AND DEVELOPMENT ENGINEERS
+Guillaume Bachelier
+Xavier Bouchoux
+Rafik Boughida
+David Fallot
+Sylvain Guglielmi
+Alexis Jacob
+Baptiste Lafontaine
+Jean-Sébastien Luce
+Nicolas Maurer
+Philippe Melot
+Thomas Ordonneau
+Clément Ozil
+Sylvain Planes
+Damien Quilot
+Maxime Raoust
+
+
+=  ENCORE STUDIO  =
+
+GRAPHIC DESIGN AND MUSIC SUPERVISION
+Quentin Brachet
+
+GRAPHIC AND ANIMATIONS DESIGN
+Hervé de Crécy
+
+GRAPHIC DESIGN
+Thomas Jumin
+Adrien Chevalier
+
+ORIGINAL SOUND TRACK
+Daniel Pemberton
+
+WRITER
+Lee Williams
+
+=  UBISOFT ENTERTAINMENT  =
+
+PRESIDENT AND CEO
+Yves Guillemot
+
+EXECUTIVE DIRECTOR, WORLDWIDE STUDIOS
+Christine Burgess-Quémard
+
+CHIEF CREATIVE OFFICER
+Serge Hascoët
+
+VP EDITORIAL
+Olivier Dauba
+Yann Masson
+Elisabeth Pellen
+
+VP, PRODUCTION MANAGER
+Nicolas Schoener
+
+LINE PRODUCERS
+Maya Savic
+Stephen Prigent
+
+LINE DESIGNER
+Michaël Zanatta
+
+DIRECTOR OF IP DEVELOPMENT
+Tommy François
+
+IP DEVELOPER AND BRAND DIRECTOR
+Olivier Blin
+
+ECS PRODUCTION MANAGER
+Anne Duflos
+
+IMAGERY DEVELOPERS
+Victorien Guillemonat
+Philippe Negre
+
+PROJECT CLOSERS
+Razvan Andrei Safta
+Michael Ockenden
+
+LIVE OPERATIONS DIRECTOR
+Anne Blondel Jouin
+
+PROJECT SUPPORT MANAGER
+Corentin Francois
+
+LOCALIZATION GROUP MANAGER
+Eugen Popescu
+
+CERTIFICATION COORDINATOR - AGE RATING
+Jean-Marie Mogentale
+
+NORTH AMERICAN AGE RATING SPECIALIST
+Andres Chirino
+
+CERTIFICATION 1ST PARTY MANAGER
+Anis Boujaouane
+
+QC AND USER RESEARCH DIRECTOR
+Pierre Jouen
+	""";
+	
+declare Text LabelCredit2 ="""
+
+WW QC DIRECTOR 
+Razvan Rotunjanu
+
+WW QC MANAGERS
+Radu Emanuel Constantin
+Robert Neculau
+Mircea Nutu
+
+CCO-EXECUTIVE ASSISTANT
+Celine Akef
+
+DATA MANAGER
+Adrien Anger
+
+GAME ANALYTICS RESEARCH DIRECTOR
+Michel Pierfitte
+
+EDITORIAL USER RESEARCH DIRECTOR
+Sébastien Odasso
+
+LEAD USER RESEARCHER
+Jean-Luc Potte
+
+ASSOCIATE GAMES USER RESEARCHER
+Stephan Brival
+
+GAMES USER RESEARCHERS
+Tristan Dufour
+Guillaume Louvel
+
+BIOMETRY PROJECT MANAGER
+Nicolas Mathieu
+
+VP, UPLAY AND CASUAL GAMES
+Stephanie Perotti
+
+ONLINE SERVICES MANAGER
+Julien Hummer
+
+QC UNIT MANAGER
+George Stercu
+
+LEAD COMPLIANCE SPECIALIST
+Adrian Ghetu Bejan
+Daniel Luca
+
+ASSOCIATE LEAD COMPLIANCE SPECIALIST
+Cristin Ghihanis
+Sebastian Toader
+Stefan Paraschiv
+Adrian Bursumac
+
+ON-SITE COMPLIANCE COORDINATOR
+Irina Gabriela Popa
+Vlad Toma
+
+COMPLIANCE PROJECT LEAD
+Liviu-Cristian Damian
+Florin Catalin Gafton
+
+COMPLIANCE SPECIALISTS
+Alexandru Alexandrescu
+Alexandru Podeanu
+Andrei-Vlad Stanescu
+Bogdan Gabriel Avram
+Bogdan-Alexandru Mincu
+Dragos-Octavian Dumitru
+Gabriel Buhai-Volintiru
+George-Alexandru Popa
+Lucian Puscasu
+Madalin Petcu
+Nadir Boramet
+Tiberiu Barbulescu
+Florin Cristea 
+Sergiu Androne
+Daniel Adrian Petrov
+Ionut-Alexandru Uceanu Petrache
+Andreea Matei Szakats
+Gabriel Olteanu 
+Alexandru Bica 
+Mircea Boicu
+Iulia-Alexandra Anghel 
+Cristian Tache
+Mihai Maxim Man
+Catalin Marian Ion
+Simona Georgiana Silisteanu
+Octavian Mircea
+
+MONTREAL QUALITY CONTROL MANAGER
+Yanick Beaudet
+
+UOR/NETWORKING COORDINATOR
+Radu Emanuel Constantin
+
+UOR/NETWORKING LEAD
+Christopher Sokalski
+
+UOR/NETWORKING SPECIALISTS
+Mathieu Beaucage
+Jean-Charles Bernier
+Kristianne Bilodeau
+Strati Giannios
+Kassandra Girard
+Olivier Guilbault
+Christopher Normandeau
+Akil Roberts
+
+TRACKING LEAD
+Guillaume Gardin
+
+TRACKING SPECIALIST
+Sabahudin Kojic
+
+QC STUDIO MANAGER
+Rahul Khatal
+
+QC UNIT CO-ORDINATOR
+Vandit Kinarivala 
+
+QC PROJECT LEAD
+Chaitanya Girme
+
+QC ASSOCIATE PROJECT LEAD
+Prabuddha Wanjare
+
+TESTERS
+Aditya Asawale 
+Ajinkya Joshi
+Aziz Methiwala 
+Chinmay Joshi
+Deepak Kumar  
+Dinesh Solanki
+Garima Panchal 
+Faizan Shaikh
+Farooq Shaikh
+Jatin Sharma
+Mangesh Bhatkar
+Manjith Shaik
+Mayur Sonawane
+Mihir Kulkarni
+Neetish kumar Singh
+Omkar Dani
+Prashant Pawar 
+Sachin Rodge
+Sohan Karanje
+Vikrant Dhumal 
+Vinayak Kshirsagar 
+Vipul Thawait
+Virendra Chaudhari
+
+""";	
+
+
+declare Text LabelCredit3 ="""
+
+CHIEF LEGAL OFFICER
+Cécile Russeil
+
+VP DEPUTY GENERAL COUNSEL
+Christele Jalady
+
+VICE-PRESIDENT, DEPUTY GENERAL COUNSEL
+Joshua Meyer
+
+ASSOCIATE GENERAL COUNSELS
+Virginie Gringarten
+Marc Muraccini
+
+UBISOFT LEGAL COUNSELS
+Sandy Hervé
+Thomas Ber
+Charles-Thomas Pélissier
+Jean-Baptiste Morguet
+Marine Gallois
+Cécilia Boije Af Gennas
+Pauline Dutilleul
+Celeste Berry
+Léo Rebillaud
+Perrine Bouhot
+Florent Boisneault 
+Christophe Ziatyk
+Julien Rivet
+Camille de Monplanet
+Adrien Crestey
+Brice Quantin 
+Misha Benjamin
+
+EMEA LOCALIZATION MANAGER
+Eugen Popescu
+
+EMEA LOCALIZATION QUALITY MANAGER
+Anca Marica
+
+LOCALIZATION PROJECT MANAGER
+Adrian Turbatu
+
+LOCALIZATION DEV TEST
+Alexandra Tugui
+Andreea Stignei
+
+FRENCH VERSION BY
+Philippe Colin
+Nicolas Fanthou
+
+GERMAN VERSION BY
+Ubisoft GmbH
+
+HEAD OF LOCALIZATION
+Stefan Dinger 
+
+SENIOR LOCALIZATION MANAGER
+Dieter Pfeil
+
+ITALIAN VERSION BY
+Gian Maria Battistini
+
+SPANISH VERSION BY
+GameLoc Localisation Services S.L.
+
+LATAM  SPANISH VERSION BY
+GameLoc Localisation Services S.L.
+
+BRAZILIAN VERSION BY
+Local Heroes
+
+RUSSIAN VERSION BY
+All Correct Localization
+
+TRANSLATOR
+Romans Savickis
+
+EDITORS
+Andrey Zemlyansky
+Ksenia Mezhenina
+
+PROJECT MANAGEMENT
+Yulia Sadovnik
+
+POLISH VERSION BY
+Roboto Translation
+
+JAPANESE VERSION PROJECT MANAGEMENT
+Yuna Tsuda
+
+KEYWORDS INTERNATIONAL CO., LTD.
+Ayumi Takahashi (Localization Manager)
+Masamichi Oe (Translator)
+Shingo Endo (Translator)
+Keiichiro Ishibashi (Translator)
+
+ARABIC VERSION BY
+Bayan-tech
+
+SIMPLIFIED CHINESE VERSION BUSNIESS AND MARKETING DIRECTOR
+Yang Hai Long (Vincent)
+
+TRANSLATION
+Yu Xin Ming
+
+TEST
+Yu Xin Ming
+Li Ping
+
+LOCALIZATION TESTING BY
+Enzyme
+
+MANAGEMENT
+João  Abreu Lopes
+Lewis Glover
+Marie-Claude Gagnon 
+Mariusz Wolsztajn
+Thomas Mann
+
+LINGUISTICS: FRENCH
+Samuel Gex-Fabry
+
+LINGUISTICS: ITALIAN
+Luca Papale
+
+LINGUISTICS: GERMAN
+Steffen Lippert
+
+LINGUISTICS: SPANISH
+José Menéndez Llosa
+
+LINGUISTICS: LATAM SPANISH
+Connie Rodriguez
+
+LINGUISTICS: BRAZILIAN
+Lucas Naegele Aranguren
+
+LINGUISTICS: RUSSIAN
+Karen Tamrazyan
+
+LINGUISTICS: Polish
+Paweł Cieszyński
+
+
+""";
+
+
+declare Text LabelCredit4 ="""
+=  EMEA CUSTOMER MANAGEMENT  =
+
+VICE PRESIDENT, CUSTOMER MANAGEMENT
+Stéphane CATHERINE
+
+CUSTOMER SUPPORT LEAD
+William RICHARDSON
+
+COUSTOMER SUPPORT AREA MANAGERS
+Dale MURPHY
+Nicole WEEDALL
+Ian WILSON
+Luca ZUCCONELLI
+     
+CUSTOMER SUPPORT LIVE OPERATIONS MANAGER
+Andrew MILLMOOR
+     
+HEAD OF CUSTOMER SUPPORT
+Dimitri KARAKASSIDES
+     
+EMEA CONSUMER RELATIONSHIP CENTER - CUSTOMER SUPPORT TEAM
+Sabia AHMAD
+Tristan ALLOO
+Gehan AMARANAYAKE
+Jasmin AUER
+Anthony AUSTIN
+Jose BALSAS
+Thomas BEACH
+Jassin BERMAOUI
+Pamela BORRECA
+Viaceslav BRAZOVSKIJ
+Friedrich BRILLING
+Thomas COCKERILL
+Anthony COOK
+Renata CORTE REAL
+Andrea DELLA NOCE
+Gregoire DESCLAUX
+Amos DOUGLAS
+Thomas ENKVIST
+Flavio ESPOSITO
+Sebastian FLOHR
+Laurent FOLIO
+Valeria GIAMMANCO
+Adam GODDARD
+Nicholas GREENWELL
+Jorge GUZMAN
+Sven HEMKEN
+Neil HETHERINGTON
+Jessica HINDLEY
+Andrew HOLLIDAY
+Vincent HOUCKHAM
+Paul HUTCHINSON
+Roswitha JANCZYK
+Timothy JEYNES
+Sofia KASIDOU
+Karen KAZARIAN
+Steven KEERS
+Heather KING
+Rene LANGHANS
+Anette LARSSON
+Michal LEMANSKI
+Marcel LEWANDOWSKI
+Maria LOGACHEVA
+Daniel LOW
+Bruno MADEIRA
+Mohammed MAROUN
+Inna MATTHEWS
+David MCCLOSKEY
+Sergej MEDVEDEV
+Viktoriia MITIAKOVA
+ANDRZEJ MOJKO
+Katarzyna NAYIR
+Jasmin NIYONGABO
+Patrick OBST
+Trumaine ODARANILE
+Tatiana ONDERCINOVA
+Louise PARNELL
+Bruno PIERSON
+Alexandre PINEAU
+Chandy PIRARD
+Ekaterina POLIAKOVA
+Thibaut PORTE
+Dirk PRIEMEL
+William RAYNER
+Chris REID
+Florian RICHTER
+Maxim ROMANOVICH
+Florian SCHOEPPL
+Marek SCHOTT
+Merlin SCHUMACHER
+Immanuel SLIJKHUIS
+Michael SPENCE
+Luke STEAD
+Julia STEGEMANN
+Piotr SZYNDLER
+Victor TARAIRE
+Aurelien TESSIER
+John TETLOW
+Michail TISEVIC
+Marc TSHIELEKEJA
+Alexander WALKER
+Gary WALKER
+Daniel WARREN
+Alexander WARREN
+Liv WIKINGSSON
+Danny WONG
+Luke WOODWARD
+Antoni ZALEWSKI
+Dominik ZNAJDEK
+
+HEAD OF CRM & COMMUNITY DEVELOPMENT
+Damien GLORIEUX
+     
+SENIOR PROGRAM MANAGER, CUSTOMER MANAGEMENT
+Céline PAIVA
+
+COMMUNITY DEVELOPMENT GROUP MANAGER
+Christophe ZERATHE
+     
+CRM GROUP MANAGER
+Gwenn BERHAULT
+
+CRM OPERATION MANAGER
+Lucas FONTAINE
+
+CRM ENGAGEMENT SPECIALIST
+Clemence LOISEAU
+
+
+=  WORLDWIDE CUSTOMER MANAGEMENT  =
+
+VICE PRESIDENT, CUSTOMER MANAGEMENT
+Josh MILLIGAN
+
+ASSOCIATE DIRECTOR, COMMUNITY DEVELOPMENT
+Keshawn WOMACK
+
+SENIOR MANAGER, NCSA CUSTOMER SUPPORT
+Tara REICHLEY
+
+MANAGER, ENTERPRISE SERVICE STRATEGY, NCSA CUSTOMER SUPPORT
+Trent GIARDINO
+
+SENIOR LEAD, GAME ACTIVITY, NCSA CUSTOMER SUPPORT
+Topher POWELL
+
+ASSISTANT DEPARTMENT MANAGER, NCSA CUSTOMER SUPPORT
+Scott MORRISON
+
+GAME OWNER, NCSA CUSTOMER SUPPORT
+Dustin STRAIN
+
+NCSA CUSTOMER SUPPORT TEAM
+Logan WATERMAN
+Dennis HILTING 
+Chris GAYLE
+Margie GAYLE
+Dave HORN
+Matt BAKER
+Henry JACOBS
+Jenny DICKSON
+Tyler DENNING
+Ani TUCKER
+Quentin BURLESON
+Chad HAWKINS
+Leigh ALLAN
+Claire GRAVENHORST
+Jordan MARSHALL
+Bobby MORRIS JR
+Eddie HARO
+Daniel STEWART
+Dustin STRAIN
+Kenneth SCOTT
+Gabriela QUINONES-CORDOVA
+Taylor KINSEY
+Sharon BERG
+Paul CHAMBERS
+Brandan CHEATHAM
+Mukenji TSCHIGOMBA
+Sara OLIVEIRA
+Stefan KOMLOS
+
+ASSOCIATE DIRECTOR, CRM
+Scott DIXON
+
+MANAGER, CRM
+Katie MCGUIGAN
+
+CRM SPECIALIST
+Alexis BEVERLY
+
+CRM COORDINATOR
+Joseph CHENEY
+
+SENIOR MANAGER, CRM INTEGRATION
+Martin MAHEUX-LESSARD
+
+CRM INTEGRATION SPECIALISTS
+Yinqiu WU
+Alexandru DOGEANU
+Arch KUMAR
+Luke Anthony GAVITA
+
+CRM INSIGHT MANAGER
+Matthieu DI MERCURIO
+
+SENIOR COMPETITION MANAGER
+Robb CHIARINI
+
+COMPETITION MANAGER
+John TEYMOORIAN
+
+SENIOR PROGRAM MANAGER, CUSTOMER MANAGEMENT
+Noemie VERPEAUX
+
+CRM PROGRAM MANAGER
+Sandra LEW
+
+CS PROGRAM MANAGER
+Pierre BRAUDE
+
+COMMUNITY PROGRAM MANAGER
+Sam COPUR
+
+
+
+=  UPLAY  =
+
+DEVELOPMENT DIRECTOR
+Pierre Escaich
+
+UBISOFT MASSIVE - PRODUCT MANAGER
+Robert Pearce
+
+UBISOFT MASSIVE - ASSOCIATE PRODUCER
+Alexander Strandberg
+
+UBISOFT MASSIVE - LEAD PROGRAMMER
+Olof Naessén
+
+UBISOFT MASSIVE - LEAD SERVER PROGRAMMER
+Nils Bandel
+
+UBISOFT MASSIVE - ASSOCIATE LEAD PROGRAMMER
+Jon Lilja
+
+UBISOFT MASSIVE - SENIOR OPERATIONS MANAGER
+Anders Kapusta-Lejczak
+
+UBISOFT MASSIVE - OPERATIONS ASSISTANT
+Mikael Hjortsberg
+
+UBISOFT MASSIVE - PROJECT COORDINATOR
+Morag Doig-Granito
+
+UBISOFT MASSIVE - INTEGRATION ENGINEER
+Markus Holmberg
+
+UBISOFT MASSIVE - PROGRAMMERS
+Mathias Fredriksson
+Igor Khlepitko
+Johan Soräng
+Gustaf Ekberg
+Ulf Persson
+Olafur Waage
+Fedor Chinarev
+Mikael Selander
+Alexander Taylor
+
+UBISOFT MASSIVE - UI DESIGNER
+Timur Kondrakov
+
+UBISOFT MASSIVE - SENIOR UX DESIGNER
+Paulo César Marques 
+
+UBISOFT MASSIVE - LEAD QC
+Magnus Hallenborg
+
+UBISOFT MASSIVE - INFRASTRUCTURE ARCHITECT
+Mattias Erichsén
+
+UBISOFT MASSIVE - SENIOR MARKETING INTELLIGENCE ANALYST
+Jakob Brynte
+
+UBISOFT MASSIVE - COMMUNITY DEVELOPER
+Cain Sinopoulos
+
+UBISOFT MONTREAL - PRODUCT MANAGER
+Christophe Grandjean
+
+UBISOFT KIEV - ASSOCIATE PRODUCER
+Sergey Golubkin
+
+UBISOFT KIEV - PROGRAMMERS
+Oleksii Nesterenko
+Denys Sokolov
+Kostiantyn Bondar
+Sergii Ushakov
+Oleksii Titov
+
+UBISOFT KIEV - QC
+Andrii Velychko
+
+UBISOFT BUCHAREST - STUDIO MANAGER
+Emil Gheorghe
+
+UBISOFT BUCHAREST - QC UNIT MANAGER
+Andrei Voicu
+
+UBISOFT BUCHAREST - QC PROJECT LEAD
+Tiberiu Axinti
+
+UBISOFT BUCHAREST - ASSOCIATE QC PROJECT LEAD
+Florin Oniu
+
+UBISOFT BUCHAREST - TEST COORDINATORS
+Costin-Bogdan Echert
+Madalina-Ioana Marin
+Nicusor-Iulian Grosu
+
+UBISOFT BUCHAREST - TESTERS
+Adrian Benedic
+Marius Dascalu
+George-Marian Badiu
+Eduard Motoi
+Stefan Trif
+Florin-Silviu Gagiu
+Razvan Paraschivescu
+Andrei-Marius Caravan
+Irina-Mihaela Bozdoc
+Robert-Costin Zamfir
+
+
+=  ADDITIONAL CREDITS  =
+
+VOICE ACTING
+Tercelin Kirtley 
+Nathanael Ghisalberti 
+Shadi Rochard 
+Anastasia Belozerova
+Sergio Dos Santos
+
+
+=  UBISOFT MUSIC  =
+
+WW MUSIC DIRECTOR
+Didier Lord
+
+WW MUSIC BUSINESS AND PUBLISHING DIRECTOR 
+Jeremy Blechet
+
+WW MUSIC MARKETING MANAGER
+Elodie Sok
+
+WW MUSIC LICENSING MANAGER
+Nikolaos Bardanis
+
+WW MUSIC LICENSING SPECIALIST 
+Louis-Philippe Caron
+
+WW MUSIC LICENSING ADMINISTRATION SPECIALIST
+Lori Cromwell
+
+
+= SCHUBERT MUSIC PUBLISHING =
+
+MUSIC SUPERVISORS
+Alex Cortay
+Matthieu Chabaud
+
+
+= MUSIC =
+""";
+
+// ce label est aligné à gauche.
+declare Text LabelCredit5 ="""
+
+
+Bleaker “Untitled”
+Written by Fergus Jones.
+Published by Bleaker.
+Courtesy of Bleaker.
+
+Breakbot “Shades of Black”
+Written by Thibaut Berland.
+Published by Because Editions/Headbangers Publishing.
+(p) and © 2011 Ed Banger under exclusive license to Because Music.
+
+Brodinski “Oblivion (Noob remix) ”
+Written by Brodinski (Copyright Control/Turbo).
+Published by Turbo Recordings.
+Courtesy of Turbo Recordings.
+
+Bustre “Combine”
+Written by Bruce Charles.
+Published by Monstercat.
+Courtesy of Monstercat.
+
+Busy P “Rainbow Man”
+Written by Andre Gelrud, Natan Hercberg, Pierre Winter.
+Published by Because Editions/Headbangers Publishing.
+(p) and © 2013 Ed Banger under exclusive license to Because Music.
+
+Costello “Primal”
+Written by Remy Fivet. 
+Published by Boysnoize Records.
+Courtesy of Boysnoize Records.
+
+Dj Feadz “Metaman”
+Written by Fabien Pianta, Johann Mattar.
+Published by Because Editions/Headbangers Publishing.
+(p) and © 2011 Ed Banger under exclusive license to Because Music.
+
+Dj Pone “Errotic Impulses”
+Written by Thomas Parent/Arnaud Rebotini.
+Published by Ponar Editions.
+(p) and © 2015 Ed Banger Records uner exclusive license to Because Music.
+
+Droptek “Colossus”
+Written by Lewis Christopher Earl Munns. 
+Published by Monstercat.
+Courtesy of Monstercat.
+
+Gingy and Bordello “Body Acid”
+Written by Brian Wong.
+Published by Turbo Recordings/Copyright Control.
+Courtesy of Turbo Recordings.
+
+Mitch Murder “Breeze”
+Written by Johan Bengtsson.
+Published by Prescription Songs LLC. Administered by Kobalt Music Publishing America, Inc.
+Courtesy of Mad Decent. By Arrangement with The Greater Goods Co.
+
+Mitch Murder “Breakazoid”
+Written by Johan Bengtsson.
+Published by Prescription Songs LLC. Administered by Kobalt Music Publishing America, Inc.
+Courtesy of Mad Decent. By Arrangement with The Greater Goods Co.
+
+Oliver “Light Years Away”
+Written by Oliver Goldstein, Ryland Blackinton, and Vaughn Oliver.
+Published by Published by Prescription Songs LLC. Administered by Kobalt Music Publishing America, Inc. / These Are Songs Of Pulse, Vaughn Oliver Music, Ollie G Music, These Are Pulse Songs and Pleasure Ryland.
+Courtesy of Fool's Gold Records. By Arrangement with The Greater Goods Co.
+
+Photonz “Babalon”
+Written by Marco Rodrigues.
+Published by Photonz.
+Courtesy of Photonz.
+
+Photonz “Errortrak”
+Written by Marco Rodrigues.
+Published by Photonz.
+Courtesy of Photonz.
+
+Randomer “No Hook”
+Written and produced by Rohan Walder.
+Published by Turbo Music.
+(p) and © 2013 Turbo Recordings.
+
+Roses “Deon Custom”
+Written by Deon A Van Ooijen. 
+Published by Monstercat.
+Courtesy of Monstercat.
+
+Rushmore “Sensation”
+Written by Matthew Thomas.
+Published by Rushmore.
+Courtesy of Rushmore.
+
+Strip Steve “Metadata”
+Written by Theo Pozoga.
+Published by Boysnoize Records.
+Courtesy of Boysnoize Records.
+
+TWR72 “Stefan”
+Written and produced by Tom Doorschodt and Roger van der Zwan. 
+Published by Turbo Music, Talpa/Electric Zoo.
+(p) and © 2013 Turbo Recordings.
+
+TWR72 “Steie”
+Written and produced by Tom Doorschodt and Roger van der Zwan. 
+Published by Turbo Music, Talpa/Electric Zoo.
+(p) and © 2013 Turbo Recordings.
+
+GraniT “Cris”
+Written by Stéphane Bernard and Romain Delahaye-Serafini.
+Published by Jarring Effects.
+(p) 2013 JFX LAB.
+
+GraniT “Polar”
+Written by Stéphane Bernard and Romain Delahaye-Serafini.
+Published by Jarring Effects.
+(p) 2013 JFX LAB.
+
+4GetMeNot “AB Road”
+Written by Stéphane Bernard 
+Published by Jarring Effects.
+
+Mondkopf “Deadwood”
+Written by Paul Régimbeau. 
+(p) 2011 In Paradisum.
+
+Qoso “Jura”
+Written by Charlie Jainiaut. 
+(p) 2014 In Paradisum.
+ 
+Jean Nipon “Rosso”
+Written by Jean-Baptiste Brassy. 
+Published by Living Large Publishing / Schubert Music Publishing.
+(p) 2011 Midnight Munchies.
+
+French Fries “Bug Noticed”
+Written by Valentino Canzani Mora. 
+Published by Living Large Publishing / Schubert Music Publishing.
+(p) 2013 ClekClekBoom. 
+ 
+Coni “Flip”
+Written by Nicolas Olier. 
+Published by Living Large Publishing / Schubert Music Publishing.
+(p) 2013 ClekClekBoom.
+ 
+Aethority “Dirty Jose”
+Written by Jonathan Chaoul and Mattias Mimoun. 
+Published by Living Large Publishing / Schubert Music Publishing.
+
+The Town “The Movement”
+Written by Alexis Talneau and Thomas Prevost.
+Published by Living Large Publishing / Schubert Music Publishing.
+(p) 2012 ClekClekBoom.
+
+Draft Dodger “928 GTS”
+Written by Quentin Brachet 
+(p) 2014 Midnight Trouble.
+
+Draft Dodger “M-57”
+Written by Quentin Brachet 
+(p) 2013 Midnight Trouble. 
+
+Draft Dodger “Choon”
+Written and produced by Quentin Brachet.
+
+Cavart “Club Suede”
+Written and produced by Romain Cavart. 
+
+Benoît B. “Traxxmen”
+Written and produced by Benoît Bovis. 
+
+Don Rimini “Adam and Eve (Dub)”
+Written and produced by Xavier Gassemann. 
+(p) 2014 Brooklyn Fire Records.
+
+Photonz “Xabregas”
+Written and produced by Marco Rodriguez. 
+(p) 2011 One Eyed Jacks.
+
+« Ibiza » 
+performed by Amnesia
+written by M De San Antonio and composed by Stephane Novak, Bruno Van Garsse
+published by Now Discs
+(P) 1988 Now Discs
+
+« Across the dark »
+performed by Pleasure game
+written and composed by Jacky Meurisse, Bruno Van Garsse, Benoît Marissal, Michel Nachtergaele
+Published by Now Discs
+(P) 1991 Now Discs
+
+« Go to the moon »
+performed by DJPC
+written and composed by Bruno Van Garsse, Patrick Cools, M De San Antonio and Jacques Meurisse
+published by Now Discs
+(P) 1992 Now Discs
+
+« Control Expansion » (DJPC Mix)
+Performed by DJPC
+Written and composed by Bruno Van Garsse, Patrick Cools, M De San Antonio
+Published by Now Discs
+(P) 1992 Now Discs
+
+« Sheebeedoo »
+Performed by Grassilac
+Written and composed by Frederic Geert Dhont, Bruno Van Garsse, Michel Nachtergaele and Christophe Strynckx
+Published by Now Discs
+(P) 1994 Now Discs
+
+ 
+= LEGENDARY PAINTWORKS =
+
+“FLASH” LEGENDARY PAINTWORK
+	COPYRIGHT © 2014 ELEY KISHIMOTO APPAREL LTD. 
+
+	
+=  QUOTES  =
+
+“IF EVERYTHING SEEMS UNDER CONTROL, YOU’RE NOT GOING FAST ENOUGH.”
+	Quote attributed to Mario Andretti (1940-present), retired Italian American world champion racing driver.
+
+“I’VE ONLY HAD TWO RULES: DO ALL YOU CAN AND DO IT THE BEST YOU CAN.”
+	Quote attributed to Harland David Sanders aka Colonel Sanders (1890 – 1980), American businessman – founder of fast food restaurant chain Kentucky Fried Chicken (KFC).
+	
+“THE WILL TO WIN, THE DESIRE TO SUCCEED… THESE ARE THE KEYS THAT WILL UNLOCK THE DOOR TO PERSONAL EXCELLENCE.”
+	Quote attributed to Confucius (551 BC – 479 BC), Chinese philosopher, teacher and political figure. 
+	
+“STUPID RISKS MAKE LIFE WORTH LIVING.”
+	Quote taken from the Simpsons episode “Lost Our Lisa” (Season 9, episode 24) written by Brian Scully and directed by Pete Michels. The Simpsons and the Homer J Simpson character created by Matt Groening.
+
+“WHETHER YOU THINK YOU CAN OR YOU THINK YOU CAN’T, YOU’RE RIGHT.”
+	Quote attributed to Henry Ford (1863 – 1947), American industrialist and founder of the Ford Motor Company.
+
+“ONLY THOSE WHO DARE TO FAIL GREATLY CAN EVER ACHIEVE GREATLY.”
+	Quote taken from Robert F. Kennedy’s N.U.S.A.S. “Day of Affirmation” Speech at the University of Cape Town, South Africa on June 6th, 1966.
+	
+“I FEEL THE NEED… THE NEED FOR SPEED!”
+	Quote taken from the movie “Top Gun” (1986) written by Jim Cash and Jack Epps, Jr., directed by Tony Scott, produced by Don Simpson and Jerry Bruckheimer, in association with Paramount Pictures.
+
+“IMPOSSIBLE IS A WORD FOUND ONLY IN THE DICTIONARY OF FOOLS.”
+	Quote attributed to Napoleon Bonaparte (1769-1821). English variant attribution to the quote “impossible n’est pas français” taken from Napoleon’s letter to the general Le Marois dated July 9th, 1813 during the German Campaign of 1813.
+
+
+
+= AUDIOMOTORS =
+
+AudioMotors technology © Audiogaming S.A.S. All rights reserved
+
+
+= WebM =
+
+WebM
+Copyright (c) 2010, Google Inc. All rights reserved.
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+•	Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+•	Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+•	Neither the name of Google nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS “AS IS” AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+WebM uses VP8 Bitstream, without any modifications.  This work is licensed under a Creative Commons Attribution 3.0. license available at http://www.webmproject.org/license/bitstream/
+
+Based on Matroska Specifications
+
+= WebP =
+
+WebP
+Copyright (c) 2010, Google Inc. All rights reserved.
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+•	Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+•	Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+•	Neither the name of Google nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS “AS IS” AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+= EASING EQUATIONS =
+
+TERMS OF USE - EASING EQUATIONS
+Open source under the BSD License. 
+
+Copyright (c) 2001 Robert Penner All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+•	Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+•	Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+•	Neither the name of the author nor the names of contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS “AS IS” AND ANYEXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSEDAND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISEDOF THE POSSIBILITY OF SUCH DAMAGE. 
+
+
+= SPECIAL THANKS =
+
+To all the players of the Trackmania community!
+
+""";
+
+
+	declare Text MLText = """
+	<framemodel id="Frame_Button">
+		<quad  halign="center" valign="center" bgcolor="ff0"
+			sizen="12.0 12.0"  posn="0 0. 1" opacity="0." />
+	</framemodel>
+
+	<frame id="Frame_All" posn="0 0 20" hidden="0">
+		<quad halign="center" valign="center" image="{{{IMGBackground}}}" posn="0 0 0" sizen="320 180"/>
+		<frame id="Frame_Content" posn="0.0 0 1" scale="1.0" clip="False" clipsizen="{{{ClipSizeX}}} {{{ClipSizeY}}}" clipposn="{{{ClipPosX}}} {{{ClipPosY}}}">
+			<quad  halign="center" valign="center" bgcolor="111"
+				sizen="320 180"  posn="0 0. 0" opacity="0." />
+			<quad  halign="center" valign="center" bgcolor="111"
+				sizen="80 45"  posn="0 -20. 0" opacity="1." image="{{{IMGLogo}}}" keepratio="Fit" />
+			<label id="Label_Credit" halign="center" valign="top" bgcolor="fff" text="{{{LabelCredit}}}" autonewline="1"
+				posn="0. 0.5 1" opacity="1." sizen="200" textfont="{{{Font::GetFontName("Main")}}}"/>
+			<label id="Label_Credit2" halign="center" valign="top" bgcolor="fff" text="{{{LabelCredit2}}}" autonewline="1"
+				posn="0. 0.5 1" opacity="1." sizen="200" textfont="{{{Font::GetFontName("Main")}}}"/>
+			<label id="Label_Credit3" halign="center" valign="top" bgcolor="fff" text="{{{LabelCredit3}}}" autonewline="1"
+				posn="0. 0.5 1" opacity="1." sizen="200" textfont="{{{Font::GetFontName("Main")}}}"/>
+			<label id="Label_Credit4" halign="center" valign="top" bgcolor="fff" text="{{{LabelCredit4}}}" autonewline="1"
+				posn="0. 0.5 1" opacity="1." sizen="200" textfont="{{{Font::GetFontName("Main")}}}"/>
+			<label id="Label_Credit5" halign="left" valign="top" bgcolor="fff" text="{{{LabelCredit5}}}" autonewline="1"
+				posn="-100. 0.5 1" opacity="1." sizen="200" textfont="{{{Font::GetFontName("Main")}}}"/>
+		</frame>
+
+		<frame id="Frame_ButtonAction1" posn="140 13 2" hidden="0">
+			""";
+		for (I, 0, 2) {
+			declare Text Image;
+			switch (I) {
+				case LibUIButtons::GetPlatform("PC") 	: Image = IMG_PC_Action1;
+				case LibUIButtons::GetPlatform("PS4") 	: Image = IMG_PS_Action1;
+				case LibUIButtons::GetPlatform("XB1") 	: Image = IMG_XB_Action1;
+			}
+		
+			MLText ^= """
+			<quad id="Quad_Action1{{{I}}}" halign="center" valign="bottom" keepratio="Fit" sizen="8 8" image="{{{Image}}}" posn="0 -88.5 6" />""";
+		
+		}
+	MLText ^= """
+			<label halign="right" valign="center" style="TextButtonNav" posn="-5 -84.3 6" sizen="70" textfont="{{{Font::GetFontName("Main")}}}"
+			id="Label_Action1" textsize="4" text="{{{TXTAction1}}}" textcolor="fff"/>
+			<quad  halign="right" valign="center" sizen="80 7.5"  posn="8 -84.3 7" opacity="0." scriptevents="1" id="MouseInput_Speed" />
+		</frame>
+		<frame id="Frame_ButtonAction2" posn="140 5 2" hidden="0">
+		""";
+		for (I, 0, 2) {
+			declare Text Image;
+			switch (I) {
+				case LibUIButtons::GetPlatform("PC") 	: Image = IMG_PC_Cancel;
+				case LibUIButtons::GetPlatform("PS4") 	: Image = IMG_PS_Cancel;
+				case LibUIButtons::GetPlatform("XB1") 	: Image = IMG_XB_Cancel;
+			}
+		
+			MLText ^= """
+			<quad id="Quad_Cancel{{{I}}}" halign="center" valign="bottom" keepratio="Fit" sizen="8 8" image="{{{Image}}}" posn="0 -88.5 6" />""";
+		
+		}
+	MLText ^= """
+			<label halign="right" valign="center" style="TextButtonNav" posn="-5 -84.3 6" sizen="70" textfont="{{{Font::GetFontName("Main")}}}"
+			id="Label_Cancel" textsize="4" text="{{{TXTCancel}}}" textcolor="fff"/>
+			<quad  halign="right" valign="center" sizen="80 7.5"  posn="8 -84.3 7" opacity="0." scriptevents="1" id="MouseInput_Cancel" />
+		</frame>
+	</frame>
+
+	<script><!--
+		
+		#Const DebugName  "L_Credits"
+		
+		//Vitesses verticales des crédits, en unités Manialink par secondes.
+		#Const C_Credits_Speed			5.4
+		#Const C_Credits_SpeedFast		50.
+		
+		{{{Manialink::GetIncludes()}}}
+		{{{Manialink::Load()}}}
+		
+		declare Boolean		G_IsPlaying;
+		declare Boolean		G_IsSpeed;
+		declare Integer		G_LastAnimTime;
+		declare Integer		G_ActiveButtonPlatform;
+		declare CMlQuad[] 	QuadButtons;
+		declare CMlLabel[]	LabelButtons;
+
+
+		{{{LibUIButtons::Inject_SetInputInfoTextSelected()}}}
+
+		Void UpdateLabelLight(CMlControl _Control)
+		{
+			foreach(I => Button in QuadButtons)
+			{
+				declare Label_LeftInput <=> LabelButtons[I];
+				//declare Boolean IsFocus  = ButtonSelected == Null && (I == 0 && Event.Control.ControlId == "ButtonInput_Sort" || I == 1 && Event.Control.ControlId == "ButtonInput_Cancel");
+				declare Boolean IsFocus  = False;
+				if (_Control == Button)
+				{
+					IsFocus = True;
+				}
+				else
+				{
+					IsFocus = False;
+				}
+				//log("Button["^Button^"]: " ^ IsFocus);
+				SetInputInfoTextSelected(Label_LeftInput, IsFocus);
+			}
+		}
+
+		Void Init()
+		{
+			declare CMlFrame Frame_Content <=> (Page.GetFirstChild("Frame_Content") as CMlFrame);
+			declare CMlLabel Label_Credit <=> (Frame_Content.GetFirstChild("Label_Credit") as CMlLabel);
+			declare CMlLabel Label_Credit2 <=> (Frame_Content.GetFirstChild("Label_Credit2") as CMlLabel);
+			declare CMlLabel Label_Credit3 <=> (Frame_Content.GetFirstChild("Label_Credit3") as CMlLabel);
+			declare CMlLabel Label_Credit4 <=> (Frame_Content.GetFirstChild("Label_Credit4") as CMlLabel);
+			declare CMlLabel Label_Credit5 <=> (Frame_Content.GetFirstChild("Label_Credit5") as CMlLabel);
+
+			declare Real Label_Credit1Height = Label_Credit.ComputeHeight(Label_Credit.Value);
+			declare Real Label_Credit2Height = Label_Credit.ComputeHeight(Label_Credit2.Value);
+			declare Real Label_Credit3Height = Label_Credit.ComputeHeight(Label_Credit3.Value);
+			declare Real Label_Credit4Height = Label_Credit.ComputeHeight(Label_Credit4.Value);
+			
+			Frame_Content.RelativePosition.Y = 0.;
+			Label_Credit.RelativePosition.Y  = -95.;
+			Label_Credit2.RelativePosition.Y = -90. - Label_Credit1Height;
+			Label_Credit3.RelativePosition.Y = -85. - Label_Credit1Height - Label_Credit2Height;
+			Label_Credit4.RelativePosition.Y = -85. - Label_Credit1Height - Label_Credit2Height - Label_Credit3Height;
+			Label_Credit5.RelativePosition.Y = -85. - Label_Credit1Height - Label_Credit2Height - Label_Credit3Height - Label_Credit4Height;
+			
+			// EG : mais... c'est quoi ce "computeHeight" qui prend un text en paramètre ?
+			// EG : et... ça renvoie 1.e10 ! Pourquoi ça marche ce truc ?
+			
+			G_IsSpeed   = False;
+			G_IsPlaying = False;
+		}
+
+		Void HidePage()
+		{
+			G_IsPlaying = False;
+			SendCustomEvent("DetachPage", ["Credits"]);
+		}
+
+
+		Void ShowPage()
+		{
+			Init();
+			G_IsPlaying = True;
+			G_LastAnimTime = Now;
+		}
+
+		Void SwitchVitesse()
+		{
+			G_IsSpeed = !G_IsSpeed;
+		}
+
+		Void UpdateHelpersForPlatform(Integer _Platform) {
+			declare Text[] InputIds = [""];
+			declare Text[] AdditionnalInputIds = ["Quad_Action1", "Quad_Cancel"];
+	
+			declare CMlQuad  QuadInputIcon;
+			declare CMlFrame Frame_CheatInputs <=> (Page.GetFirstChild("Frame_CheatInputs") as CMlFrame);
+			for(F, 0, 2)
+			{
+				declare CMlFrame Frame_CheatInput <=> (Page.GetFirstChild("Frame_CheatInput"^F) as CMlFrame);
+				for (I, 0, 2) {
+					
+					for (J, 0, AdditionnalInputIds.count-1) {
+						QuadInputIcon <=> (Page.GetFirstChild(AdditionnalInputIds[J]^I) as CMlQuad);
+						if (I == _Platform)
+						{
+							QuadInputIcon.Show();
+						}
+						else
+						{
+							QuadInputIcon.Hide();
+						}
+					}
+				}
+			}
+		}
+
+		main() {
+			Init();
+			declare CMlFrame Frame_Content <=> (Page.GetFirstChild("Frame_Content") as CMlFrame);
+			
+			//HACK - A enlever
+			EnableMenuNavigation(True,False,Null,1);
+			//HACKEND
+			
+			QuadButtons.add((Page.GetFirstChild("MouseInput_Speed") as CMlQuad));
+			LabelButtons.add((Page.GetFirstChild("Label_Action1") as CMlLabel));
+			QuadButtons.add((Page.GetFirstChild("MouseInput_Cancel") as CMlQuad));
+			LabelButtons.add((Page.GetFirstChild("Label_Cancel") as CMlLabel));
+
+
+			while(True) {
+				yield;
+				if(! PageIsVisible) continue;
+				//LibManialink_AnimLoop();
+
+				if(G_IsPlaying)
+				{
+					declare Real BaseSpeed;
+					if (G_IsSpeed)
+						BaseSpeed = C_Credits_SpeedFast;
+					else
+						BaseSpeed = C_Credits_Speed;
+					Frame_Content.RelativePosition.Y += BaseSpeed * (Now - G_LastAnimTime) / 1000.;
+					G_LastAnimTime = Now;
+				}
+
+				// if(Frame_Content.RelativePosition.Y >= 2060.)
+				
+				if(Frame_Content.RelativePosition.Y >= 6200.)
+				{
+					ShowPage();
+					SendCustomEvent("GotoPrevious", [""]);
+				}
+
+				if (Input.PendingEvents.count != 0) {
+					declare Integer LastInputPlatform;
+					switch (Input.PendingEvents[Input.PendingEvents.count-1].Pad.Type) {
+						case CInputPad::EPadType::Keyboard 		: LastInputPlatform = {{{LibUIButtons::GetPlatform("PC")}}};
+						case CInputPad::EPadType::PlayStation 	: LastInputPlatform = {{{LibUIButtons::GetPlatform("PS4")}}};
+						case CInputPad::EPadType::XBox 			: LastInputPlatform = {{{LibUIButtons::GetPlatform("XB1")}}};
+						default 								: LastInputPlatform = {{{LibUIButtons::GetPlatform("PC")}}};
+					}
+					if (LastInputPlatform != G_ActiveButtonPlatform)
+					{
+						SendCustomEvent("SetActiveButtonPlaform", ["Credits", TL::ToText(LastInputPlatform)]);
+					}
+				}
+
+				foreach(Event in PendingEvents) {
+					switch(Event.Type) {
+						case CMlEvent::Type::PluginCustomEvent: {
+							switch(Event.PluginCustomEventType) {
+								case "Show" : {
+									EnableMenuNavigation(True,False,Null,2);
+									ShowPage();
+									SendCustomEvent("GetActiveButtonPlatform", ["Credits"]);
+									{{{_ShowAnim}}}
+								}
+								case "Hide" : {
+									EnableMenuNavigation(True,False,Null,0);
+									{{{_HideAnim}}}
+									HidePage();
+								}
+								case "SetActiveButtonPlatform" : {
+									G_ActiveButtonPlatform = TL::ToInteger(Event.CustomEventData[0]);
+									UpdateHelpersForPlatform(G_ActiveButtonPlatform);
+								}
+							}
+						}
+						case CMlEvent::Type::MouseClick: {
+							declare Text[] InputId = TL::Split("_", Event.ControlId);
+							if (InputId.count < 2 || InputId[0] != "MouseInput")
+								continue;
+							switch (InputId[1]) {
+								case "Speed" : SwitchVitesse();
+								case "Cancel" : SendCustomEvent("GotoPrevious", [""]);
+								case "AppMenu" : SendCustomEvent("GotoPrevious", [""]);
+							}
+						}
+						case CMlEvent::Type::MouseOver: {
+							UpdateLabelLight(Event.Control);
+						}
+						case CMlEvent::Type::MenuNavigation: {
+							switch(Event.MenuNavAction) {
+								case CMlEvent::EMenuNavAction::Cancel : {
+									SendCustomEvent("GotoPrevious", [""]);
+								}
+								case CMlEvent::EMenuNavAction::AppMenu : {
+									SendCustomEvent("GotoPrevious", [""]);
+								}
+								case CMlEvent::EMenuNavAction::Action1 : {
+									SwitchVitesse();
+								}
+							}
+						}
+					}
+				}
+			}	
+		}
+		
+
+	--></script>
+	""";
+
+	return MLText;
+}

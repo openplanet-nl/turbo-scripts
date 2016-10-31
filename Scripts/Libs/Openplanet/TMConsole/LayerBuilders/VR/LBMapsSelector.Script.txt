@@ -1,0 +1,885 @@
+
+// file://Media/Manialinks/Nadeo/TMConsole/MainMenuArnaud.Script.txt
+#Include "Libs/Openplanet/Manialink2.Script.txt"	              as Manialink
+#Include "Libs/Openplanet/UIPadButtons.Script.txt"	            as LibUIButtons
+#Include "Libs/Openplanet/TMConsole/VRMapsManager.Script.txt"  as MapsManager
+#Include "Libs/Openplanet/TMConsole/Volumes.Script.txt"			as Volumes
+
+#Const C_ImgBase  	"file://Media/Manialinks/Nadeo/TMConsole/Images/VR/"
+#Const SoundSelect  "file://Media/Sounds/TMConsole/event-validate.wav"
+#Const SoundMove	  "file://Media/Sounds/TMConsole/event-next.wav"
+#Const SoundBack	  "file://Media/Sounds/TMConsole/event-on.wav"
+
+Text Build(Text _ShowAnim, Text _HideAnim) {
+	
+  declare Text    C_DefaultPathFilter ="""VR\\""";
+  declare Integer Count_InstancesX    = 10;
+  declare Integer Count_InstancesY    = 2;
+  declare Real    MarginY_Button      = 15.4;
+  declare Real    MarginX_Button      = 10.0;
+  declare Real    PosXFirstQuad       = -80.0;
+  declare Real    PosYFirstQuad       = 0.0;
+  declare Real    SizeXQuad           = 60.;
+  declare Real    SizeYQuad           = 40.;
+  declare Real    FocusArrowsScale    = 1.1;
+  declare Real    NormalArrowsScale   = 1.;
+  declare Real    SizeLogos           = 20.;
+  declare Vec3    ColorText           = <1.0, 1.0, 1.0>;
+  declare Vec3    FocusColorText      = <0.4, 0.4, 1.0>;
+  declare Text    LogoImg             = C_ImgBase ^ "Logos.png";
+  declare Integer NumberOfQuadCreateY = 20;
+  declare Integer NumberOfXShow       = 4;
+  
+  declare Text    IMGSelect           = LibUIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Select);
+  declare Text    IMGCancel           = LibUIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Cancel);
+
+  declare Vec3[Integer][Integer] PositionQuads;
+
+	declare Text MLText = """
+	
+  <framemodel id="Frame_Button" >
+    <quad halign="center" valign="center" sizen="{{{SizeXQuad}}} {{{SizeYQuad}}}" bgcolor="000" id="Quad_Icon" hidden="0" opacity="1"/>
+    <quad halign="center" valign="center" sizen="{{{SizeXQuad/3.5}}} {{{SizeXQuad/3.5}}}" posn="21.5 -10.8 2" id="Quad_Medal" opacity="0" hidden="1" style="MedalsBig" substyle="MedalSlot"/>
+    <label halign="center" valign="center" style="TextButtonBig" posn="0.0 -{{{SizeYQuad/2 + 7.5}}} 1" id="Label_QuadName" textemboss="true"
+    textsize="8." text="" hidden="1" sizen="60" textcolor="{{{ColorText}}}"/>
+  </framemodel>
+
+  <frame id="FrameAll" hidden="0" scale="0.7" posn="0 -5 0">
+
+    <quad id="Quad_Title" halign="center" valign="center" sizen="104 65" keepratio="Fit"
+     posn="0 29 1." opacity="1" style="TitleLogos" substyle="Title" image ="{{{LogoImg}}}"
+    />
+
+    <frame id="Frame_Logo" posn="0 112 0 " scale="0.8">
+      <quad id="Quad_ManiaLogo" halign="center" valign="center" sizen="{{{SizeLogos*4}}} {{{SizeLogos}}}"
+       posn="79.5 -62.4 1." opacity="1.0" style="TitleLogos" substyle="Collection" hidden="0"
+      />
+      <quad id="Quad_UbiLogo" halign="center" valign="center" sizen="{{{SizeLogos*4*1.1}}} {{{SizeLogos*1.1}}}"
+       posn="-95.5 -61.2 1." opacity="1.0" style="TitleLogos" substyle="Author" hidden="0"
+      />
+      <label id="Label_Nadeo" posn="-8 -62.5 1." halign="center" valign="center" style="TextButtonBig"  textemboss="true" text="Nadeo" textsize="8."/>
+    </frame>
+
+    <frame id="FrameTitle" posn="0 85 5" scale="1.0" hidden="1">
+      <label halign="center" valign="center" style="TextButtonBig" posn="0 0 0"   id="Label_Title"     textemboss="true" textsize="17." text="Trackmania Console" hidden="0"/>
+      <label halign="center" valign="center" style="TextButtonBig" posn="0 -20 0" id="Label_SubTitle"  textemboss="true" textsize="15." text="VR Demo"            hidden="0"/>
+    </frame>
+
+    <frame id="FrameQuad" posn="0 5 5">
+    """;
+      //declare Integer count = 0;
+  for(I,0,Count_InstancesY-1)
+  {
+    declare Real IndexY = I*1.;
+    declare Real PosnY = PosYFirstQuad - IndexY*SizeYQuad - IndexY*MarginY_Button*1. - MarginY_Button/2.;
+    PositionQuads[I]   = Vec3[Integer];
+
+    for(J,0,Count_InstancesX)
+    {
+      declare Real IndexJ = J*1.;
+      declare Real PosnX = PosXFirstQuad + IndexJ*SizeXQuad + IndexJ*MarginX_Button*1. + MarginX_Button/2.;
+      PositionQuads[I][J] = <PosnX, PosnY, 7.>;
+      MLText^="""
+        
+          <frameinstance modelid="Frame_Button" posn="{{{PosnX}}} {{{PosnY}}} 2." id="Frame_Instance{{{I}}}{{{J}}}" />
+      """;
+    }
+  }
+  MLText^="""
+
+      <frame id="HUD_Buttons" >
+        <frame id="FrameSelect" posn="-25.7 -53.1 11"> //posn="-50.7 -53.1 11"
+          <quad id="Button_Select" halign="center" valign="center" keepratio="Fit"
+          sizen="8.0 8.0" image="{{{IMGSelect}}}" posn="0 0 0" opacity="1."/>
+          <label id="Label_Select" halign="left" valign="center" style="TextButtonBig" posn="6 0.5 0" textemboss="true" textsize="6." text="Select"/>
+        </frame>
+
+        <frame id="FrameCancel" posn="1.4 -53.1 11" hidden="1">
+          <quad id="Button_Cancel" halign="center" valign="center" keepratio="Fit"
+          sizen="8.0 8.0" image="{{{IMGCancel}}}" posn="0 0 0" opacity="1." />
+          <label id="Label_Cancel" halign="left" valign="center" style="TextButtonBig" posn="6 0.5 0" textemboss="true" textsize="6." text="Quit"/>
+        </frame>
+      </frame>
+    </frame>
+
+
+    <frame id="Frame_Selector" posn="-2.5 -2.4 7.">
+      <frame id="Frame_SelectorArrows" posn="-160 -20 7." halign="center" valign="center" scale="{{{FocusArrowsScale}}}" hidden="1">
+        <quad halign="center" valign="center" posn="{{{SizeXQuad/2.}}} {{{SizeYQuad/2.}}}" sizen="{{{SizeXQuad}}} {{{SizeYQuad}}}" bgcolor="000" id="Quad_Selector" opacity="0."/>
+       
+        <frame id="Arrows" hidden="0">
+          <quad id="Quad_ArrowLeft" halign="center" valign="center" image="file://Media/Manialinks/Nadeo/TMConsole/Images/VR/popup-arrow.png"
+          sizen="22. 22." posn="0. {{{SizeYQuad/2.}}} 1." rot="-90" opacity="1" keepratio="Fit"
+          />
+          <quad id="Quad_ArrowRight" halign="center" valign="center" image="file://Media/Manialinks/Nadeo/TMConsole/Images/VR/popup-arrow.png" opacity="1" keepratio="Fit"
+          sizen="22. 22." posn="{{{SizeXQuad}}} {{{SizeYQuad/2.}}} 2." rot="90"
+          />
+          <quad id="Quad_ArrowDown" halign="center" valign="center" image="file://Media/Manialinks/Nadeo/TMConsole/Images/VR/popup-arrow.png"
+          sizen="22. 22." posn="{{{SizeXQuad/2.}}} 0.  1." rot="180" opacity="1" keepratio="Fit"
+          />
+          <quad id="Quad_ArrowUp" halign="center" valign="center" image="file://Media/Manialinks/Nadeo/TMConsole/Images/VR/popup-arrow.png"  opacity="1" keepratio="Fit"
+          sizen="22. 22." posn="{{{SizeXQuad/2.}}} {{{SizeYQuad}}}  2." rot="0"
+          />
+        </frame>
+
+        <frame id="ArrowsBlink" hidden="0">
+          <quad id="Quad_ArrowLeftBlink" halign="center" valign="center" image="file://Media/Manialinks/Nadeo/TMConsole/Images/VR/popup-arrow-shining.dds"  keepratio="Fit"
+          sizen="31. 31." posn="4.8 20 3." rot="-90" opacity="0.5"
+          />
+          <quad id="Quad_ArrowRightBlink" halign="center" valign="center" image="file://Media/Manialinks/Nadeo/TMConsole/Images/VR/popup-arrow-shining.dds" 
+           opacity="0.5" keepratio="Fit"
+          sizen="31. 31." posn="55 20 3." rot="90"
+          />
+          <quad id="Quad_ArrowDownBlink" halign="center" valign="center" image="file://Media/Manialinks/Nadeo/TMConsole/Images/VR/popup-arrow-shining.dds" 
+          sizen="31. 31." posn="30 5  3." rot="180" opacity="0.5" keepratio="Fit"
+          />
+          <quad id="Quad_ArrowUpBlink" halign="center" valign="center" image="file://Media/Manialinks/Nadeo/TMConsole/Images/VR/popup-arrow-shining.dds"  opacity="0.5" keepratio="Fit"
+          sizen="31. 31." posn="30 35  3." rot="0"
+          />
+        </frame>
+      </frame>
+    </frame>
+
+
+
+  </frame>
+
+<script><!--
+    #Include "MathLib" as ML
+
+
+    #Const C_NbDifficulty 5
+    #Const C_NbEnviro 3
+    #Const C_NumberOfQuadCreateY {{{NumberOfQuadCreateY}}}
+    #Const C_TrackOpacity 0.90 
+    #Const C_TimeBeforeStartFade 1000 
+
+  {{{Manialink::GetIncludes()}}}
+  {{{Manialink::Load()}}}
+  {{{MapsManager::MLMapsManager(4)}}}
+
+  declare Text[Integer][Integer]    G_MapPath;
+  declare Vec3[Integer][Integer]    G_PositionQuads;
+  declare Boolean[Integer][Integer] G_ActiveQuad;
+  declare Integer                   G_SelectorPositionX;
+  declare Integer                   G_SelectorPositionY;
+  declare Boolean                   G_BlockLoop;
+  declare Integer                   G_TimeBlinkTrack;
+  declare Integer                   G_TimeEndFadeIn;
+  declare Integer                   G_PositionsFramesX;
+  declare Integer                   G_PositionsFramesY;
+  declare Integer                   G_IndexMaxX;
+  declare Integer                   G_IndexMaxY;
+  declare Boolean                   G_LoadUserMaps;
+
+  Boolean IsActiveQuad(Integer _SelectorPositionX, Integer _SelectorPositionY)
+  {
+    if(!G_ActiveQuad.existskey(_SelectorPositionY)) return False;
+    if(!G_ActiveQuad[_SelectorPositionY].existskey(_SelectorPositionX)) return False;
+    if(!G_ActiveQuad[_SelectorPositionY][_SelectorPositionX]) return False;
+    return True;
+  }
+
+  Text GetMedalSubStyle(Integer _MedalIndex)
+  {
+    switch(_MedalIndex)
+    {
+      case 0 : return "MedalBronze";
+      case 1 : return "MedalSilver";
+      case 2 : return "MedalGold";
+      case 3 : return "MedalNadeo";
+    }
+
+    return "MedalSlot";
+  }
+
+  Void UnselectTrack(Integer _OldSelectorPositionX, Integer _OldSelectorPositionY)
+  {
+    declare Real NormalScale = {{{NormalArrowsScale}}};
+
+    declare CMlFrame OldFrameModel <=> (Page.GetFirstChild("Frame_Instance"^_OldSelectorPositionY^""^_OldSelectorPositionX) as CMlFrame);
+    declare CMlQuad  OldQuad_Icon  <=> (OldFrameModel.GetFirstChild("Quad_Icon") as CMlQuad);
+    declare CMlLabel OldLabel_Icon <=> (OldFrameModel.GetFirstChild("Label_QuadName") as CMlLabel);
+    LibManialink_SetTargetScale(OldQuad_Icon, NormalScale);
+    LibManialink_PresetAnim(OldQuad_Icon, 310, "EaseLinear");
+    LibManialink_SetTargetTextColor(OldLabel_Icon, {{{ColorText}}});
+    LibManialink_PresetAnim(OldLabel_Icon, 300, "EaseLinear");
+
+  }
+
+
+  Void SelectTrack()
+  {
+    declare CMlFrame Arrows        <=> (Page.GetFirstChild("Arrows") as CMlFrame);
+    declare CMlFrame ArrowsBlink   <=> (Page.GetFirstChild("ArrowsBlink") as CMlFrame);
+    declare CMlFrame Frame_Model   <=> (Page.GetFirstChild("Frame_Instance"^G_SelectorPositionY^""^G_SelectorPositionX) as CMlFrame);
+    declare CMlQuad  Quad_Selector <=> (Page.GetFirstChild("Quad_Selector")        as CMlQuad);
+    declare CMlQuad  Quad_Icon     <=> (Frame_Model.GetFirstChild("Quad_Icon")     as CMlQuad);
+
+
+    //Selector
+    foreach(Control in Arrows.Controls)
+    {
+      declare CMlQuad Quad_Arrow <=> (Page.GetFirstChild(Control.ControlId) as CMlQuad);
+      //Quad_Arrow.Opacity = 0.;
+      LibManialink_SetTargetOpacity(Quad_Arrow, 0.);
+      LibManialink_PresetAnim(Quad_Arrow, 200, "EaseLinear");
+    }
+    foreach(Control in ArrowsBlink.Controls)
+    {
+      declare CMlQuad Quad_ArrowBlink <=> (Page.GetFirstChild(Control.ControlId) as CMlQuad);
+      //Quad_ArrowBlink.Opacity = 0.;
+      LibManialink_SetTargetOpacity(Quad_ArrowBlink, 0.);
+      LibManialink_PresetAnim(Quad_ArrowBlink, 200, "EaseLinear");
+    }
+
+
+    Quad_Selector.Image = Quad_Icon.Image;
+    Quad_Selector.RelativeScale = 1.;
+    Quad_Selector.RelativePosition.Z = Quad_Icon.RelativePosition.Z + 1.;
+    declare Integer TimeTransition = 400;
+
+    LibManialink_SetTargetScale(Quad_Selector, 1.4);
+    LibManialink_PresetAnim(Quad_Selector, 900, "EaseOutElastic"); //QuintOut
+    LibManialink_SetTargetOpacity(Quad_Selector, 0.4);
+    LibManialink_PresetAnim(Quad_Selector, TimeTransition/2, "EaseLinear"); //EaseLinear
+    LibManialink_SetTargetOpacity(Quad_Selector, 0.0);
+    LibManialink_PresetAnimInsert(Quad_Selector, TimeTransition/2, TimeTransition/2, "EaseLinear"); //Elastic
+
+    G_TimeBlinkTrack = Now + TimeTransition;
+    G_BlockLoop = True;
+
+  }
+
+
+
+
+  Real FindTrackOpacity(Integer IndexX, Integer IndexY)
+  {
+    if(G_IndexMaxX <= 3)
+    {
+      return C_TrackOpacity;
+    }
+
+    if(IndexX < G_PositionsFramesX -1 && G_PositionsFramesX > 0 || IndexX > G_PositionsFramesX + 4 && G_PositionsFramesX < G_IndexMaxX-3)
+    {
+      return 0.;
+
+    }
+    else if(IndexX < G_PositionsFramesX + 0 && G_PositionsFramesX > 0  || IndexX > G_PositionsFramesX + 3 && G_PositionsFramesX < G_IndexMaxX-3)
+    {
+      return 0.3;
+    }
+    else if(IndexX < G_PositionsFramesX + 1 && G_PositionsFramesX > 0  || IndexX > G_PositionsFramesX + 2 && G_PositionsFramesX < G_IndexMaxX-3)
+    {
+      return 0.7;
+    }
+    else
+    {
+      return C_TrackOpacity;
+    }
+
+    return 0.;
+  }
+
+  Void UpdateQuad()
+  {
+    for(I, 0, G_IndexMaxY)
+    {
+      for(J, 0, G_IndexMaxX)
+      {
+        if(!IsActiveQuad(J,I)) continue;
+        declare CMlFrame FrameModel  <=> (Page.GetFirstChild("Frame_Instance"^I^""^J)       as CMlFrame);
+        declare CMlLabel Label_Icon <=> (FrameModel.GetFirstChild("Label_QuadName") as CMlLabel);
+        declare CMlQuad  Quad_Icon <=> (FrameModel.GetFirstChild("Quad_Icon") as CMlQuad);
+        declare CMlQuad  Quad_Medal <=> (FrameModel.GetFirstChild("Quad_Medal") as CMlQuad);
+
+        declare Real TrackOpacity = FindTrackOpacity(J, I);
+
+        //Quad_Icon.Opacity  = TrackOpacity;
+        Label_Icon.Opacity = TrackOpacity;
+        LibManialink_SetTargetOpacity(Quad_Icon, TrackOpacity);
+        LibManialink_PresetAnim(Quad_Icon, 750, "EaseLinear");
+        //Hack - Hidde Medal
+        //LibManialink_SetTargetOpacity(Quad_Medal, TrackOpacity);
+        //LibManialink_PresetAnim(Quad_Medal, 750, "EaseLinear");
+      }
+    }
+  }
+
+  Void ReShowPage()
+  { 
+    declare CMlFrame Arrows        <=> (Page.GetFirstChild("Arrows") as CMlFrame);
+    declare CMlFrame ArrowsBlink   <=> (Page.GetFirstChild("ArrowsBlink") as CMlFrame);
+
+    declare Real TargetArrowsOpacity = ML::Sin(Now*0.0035)*0.05 + 0.75;
+
+    //Selector
+    foreach(Control in Arrows.Controls)
+    {
+      declare CMlQuad Quad_Arrow <=> (Page.GetFirstChild(Control.ControlId) as CMlQuad);
+      Quad_Arrow.Opacity = 1.;
+    }
+    foreach(Control in ArrowsBlink.Controls)
+    {
+      declare CMlQuad Quad_ArrowBlink <=> (Page.GetFirstChild(Control.ControlId) as CMlQuad);
+      Quad_ArrowBlink.Opacity = TargetArrowsOpacity;
+    }
+    UpdateQuad();
+    G_BlockLoop = False;
+  }
+
+  Void UpdateSelectedTrack(Integer _SelectorPositionX, Integer _SelectorPositionY, Integer _OldSelectorPositionX, Integer _OldSelectorPositionY, Boolean _SetTrackOpacity)
+  {
+    declare CMlFrame Frame_SelectorArrows <=> (Page.GetFirstChild("Frame_SelectorArrows") as CMlFrame);
+    declare CMlFrame FrameQuad            <=> (Page.GetFirstChild("FrameQuad") as CMlFrame);
+    declare Real TargetScale = {{{FocusArrowsScale}}};
+
+    //SetPositionFrame()
+
+    //// Scroll sur X
+    //if(G_PositionsFramesX-_SelectorPositionX < -2 && G_PositionsFramesX < G_IndexMaxX-{{{NumberOfXShow}}}-2)
+    if(G_PositionsFramesX -_SelectorPositionX < -2 && G_PositionsFramesX < G_IndexMaxX-3)
+    {
+      G_PositionsFramesX + =1;
+
+      declare Real NewPosnX = G_PositionsFramesX*{{{SizeXQuad+MarginX_Button}}};
+      declare Vec3 NewFramePosition = <-NewPosnX, FrameQuad.RelativePosition.Y, FrameQuad.RelativePosition.Z>;
+      LibManialink_SetTargetPosition(FrameQuad, NewFramePosition);
+      LibManialink_PresetAnim(FrameQuad, 300, "EaseInOutQuint"); //QuintOut
+    }
+    else if(G_PositionsFramesX-_SelectorPositionX > -1  && G_PositionsFramesX > 0)
+    {
+      G_PositionsFramesX - =1;
+
+      declare Real NewPosnX = G_PositionsFramesX*{{{SizeXQuad+MarginX_Button}}};
+      declare Vec3 NewFramePosition = <-NewPosnX, FrameQuad.RelativePosition.Y, FrameQuad.RelativePosition.Z>;
+      LibManialink_SetTargetPosition(FrameQuad, NewFramePosition);
+      LibManialink_PresetAnim(FrameQuad, 300, "EaseInOutQuint");
+    }
+    else
+    {
+      declare Vec3 NewPosition = G_PositionQuads[_SelectorPositionY][_SelectorPositionX] - <{{{SizeXQuad/2}}},{{{SizeYQuad/2}}}-5, 0.>;
+      declare Real PosnX = NewPosition.X -  G_PositionsFramesX*{{{SizeXQuad + MarginX_Button}}};
+      declare Real PosnY = NewPosition.Y -  G_PositionsFramesY*{{{SizeYQuad + MarginY_Button}}};
+
+      declare CMlFrame Frame_SelectorArrows  <=> (Page.GetFirstChild("Frame_SelectorArrows") as CMlFrame);
+      
+      declare Vec3 NewFrameArrowPosition = <PosnX, PosnY, Frame_SelectorArrows.RelativePosition.Z>;
+      LibManialink_SetTargetPosition(Frame_SelectorArrows, NewFrameArrowPosition);
+      LibManialink_PresetAnim(Frame_SelectorArrows, 500, "QuintOut");
+    }
+
+    declare CMlFrame NewFrameModel  <=> (Page.GetFirstChild("Frame_Instance"^_SelectorPositionY^""^_SelectorPositionX)       as CMlFrame);
+    declare CMlLabel  NewLabel_Icon <=> (NewFrameModel.GetFirstChild("Label_QuadName") as CMlLabel);
+    declare CMlQuad  NewQuad_Icon   <=> (NewFrameModel.GetFirstChild("Quad_Icon") as CMlQuad);
+    LibManialink_SetTargetScale(NewQuad_Icon, TargetScale);
+    LibManialink_PresetAnim(NewQuad_Icon, 300, "EaseLinear");
+    LibManialink_SetTargetTextColor(NewLabel_Icon, {{{FocusColorText}}});
+    LibManialink_PresetAnim(NewLabel_Icon, 300, "EaseLinear");
+
+    if(_SelectorPositionX != _OldSelectorPositionX || _SelectorPositionY != _OldSelectorPositionY)
+    {
+      UnselectTrack(_OldSelectorPositionX, _OldSelectorPositionY);
+     
+    }
+
+    if(_SetTrackOpacity)
+    {
+      //HACK - UpdateQuad Commenté pour raison de perforance
+      //UpdateQuad(); // Permet de set la bonne opacité (avec effet de transition qui peut faire ramer) les quads
+    }
+  }
+
+
+
+  Void StartFadeInTitle()
+  {
+    declare Real TargetOpacity = C_TrackOpacity;
+    declare Integer TimeBeforeStartFade = C_TimeBeforeStartFade; //1000
+
+    //Quad Title
+    declare CMlQuad  Quad_Title <=> (Page.GetFirstChild("Quad_Title") as CMlQuad);
+    Quad_Title.Opacity = 0.;
+    LibManialink_SetTargetOpacity(Quad_Title, TargetOpacity);
+    LibManialink_PresetAnimInsert(Quad_Title, TimeBeforeStartFade, 2000, "EaseLinear");
+
+    //Quads Logo
+    declare CMlQuad  Quad_ManiaLogo <=> (Page.GetFirstChild("Quad_ManiaLogo") as CMlQuad);
+    Quad_ManiaLogo.Opacity = 0.;
+    LibManialink_SetTargetOpacity(Quad_ManiaLogo, TargetOpacity);
+    LibManialink_PresetAnimInsert(Quad_ManiaLogo, TimeBeforeStartFade, 2000, "EaseLinear");
+    declare CMlQuad  Quad_UbiLogo <=> (Page.GetFirstChild("Quad_UbiLogo") as CMlQuad);
+    Quad_UbiLogo.Opacity = 0.;
+    LibManialink_SetTargetOpacity(Quad_UbiLogo, TargetOpacity);
+    LibManialink_PresetAnimInsert(Quad_UbiLogo, TimeBeforeStartFade, 2000, "EaseLinear");
+    declare CMlLabel  Label_Nadeo <=> (Page.GetFirstChild("Label_Nadeo") as CMlLabel);
+    Label_Nadeo.Opacity = 0.;
+    LibManialink_SetTargetOpacity(Label_Nadeo, TargetOpacity);
+    LibManialink_PresetAnimInsert(Label_Nadeo, TimeBeforeStartFade, 2000, "EaseLinear");
+   
+
+
+
+    declare CMlQuad  Button_Select <=> (Page.GetFirstChild("Button_Select") as CMlQuad);
+    Button_Select.Opacity = 0.;
+    LibManialink_SetTargetOpacity(Button_Select, TargetOpacity);
+    LibManialink_PresetAnimInsert(Button_Select, TimeBeforeStartFade, 2000, "EaseLinear");
+    declare CMlQuad  Button_Cancel <=> (Page.GetFirstChild("Button_Cancel") as CMlQuad);
+    Button_Cancel.Opacity = 0.;
+    LibManialink_SetTargetOpacity(Button_Cancel, TargetOpacity);
+    LibManialink_PresetAnimInsert(Button_Cancel, TimeBeforeStartFade, 2000, "EaseLinear");
+    
+    declare CMlLabel  Label_Select <=> (Page.GetFirstChild("Label_Select") as CMlLabel);
+    Label_Select.Opacity = 0.;
+    LibManialink_SetTargetOpacity(Label_Select, TargetOpacity);
+    LibManialink_PresetAnimInsert(Label_Select, TimeBeforeStartFade, 2000, "EaseLinear");
+    declare CMlLabel  Label_Cancel <=> (Page.GetFirstChild("Label_Cancel") as CMlLabel);
+    Label_Cancel.Opacity = 0.;
+    LibManialink_SetTargetOpacity(Label_Cancel, TargetOpacity);
+    LibManialink_PresetAnimInsert(Label_Cancel, TimeBeforeStartFade, 2000, "EaseLinear");
+    
+  }
+
+  Void StartFadeInQuad()
+  {
+    declare CMlFrame FrameAll <=> (Page.GetFirstChild("FrameAll") as CMlFrame);
+    declare CMlFrame FrameTitle <=> (Page.GetFirstChild("FrameTitle") as CMlFrame);
+    declare CMlFrame FrameQuad <=> (Page.GetFirstChild("FrameQuad") as CMlFrame);
+    declare CMlFrame Arrows <=> (Page.GetFirstChild("Arrows") as CMlFrame);
+    declare CMlFrame ArrowsBlink <=> (Page.GetFirstChild("ArrowsBlink") as CMlFrame);
+
+    declare Integer TimeBeforeStartFade = C_TimeBeforeStartFade; //1000
+    declare Real TargetOpacity = C_TrackOpacity;
+    declare Integer TimeDelay = 0;
+    declare Integer TimeDelayAdd = 100; //200
+    declare Integer CountQuad = 0;
+    declare Integer TimeFadeTotal = 0;
+    G_BlockLoop = True;
+
+    
+    //labels Title
+    foreach(Control in FrameTitle.Controls)
+    {
+      declare CMlLabel LabelTitle <=> (Page.GetFirstChild(Control.ControlId) as CMlLabel);
+      LabelTitle.Opacity = 0.;
+
+      LibManialink_SetTargetOpacity(LabelTitle, TargetOpacity);
+      LibManialink_PresetAnimInsert(LabelTitle, TimeBeforeStartFade, 2000, "EaseLinear");
+    }
+    TimeDelay += 1000;
+
+    //Tracks - Name/Icon/Medal
+    for(I,0,{{{Count_InstancesY}}})
+    {
+      for(J,0,{{{Count_InstancesX}}})
+      {
+        if(!IsActiveQuad(J,I)) continue;
+        declare CMlFrame FrameModel <=> (Page.GetFirstChild("Frame_Instance"^I^""^J) as CMlFrame);
+        
+        declare CMlQuad  Quad_Icon <=> (FrameModel.GetFirstChild("Quad_Icon") as CMlQuad);
+        declare CMlQuad  Quad_Medal <=> (FrameModel.GetFirstChild("Quad_Medal") as CMlQuad);
+        declare CMlLabel Label_QuadName <=> (FrameModel.GetFirstChild("Label_QuadName") as CMlLabel);
+
+        declare Real OpacityTrack = FindTrackOpacity(J,I);
+
+        Quad_Icon.Opacity = 0.;
+        LibManialink_SetTargetOpacity(Quad_Icon, OpacityTrack);
+        LibManialink_PresetAnimInsert(Quad_Icon, TimeBeforeStartFade + TimeDelay, 700, "EaseLinear");
+        
+        Quad_Medal.Opacity = 0.;
+        //Hack - Hidde Medal
+        //LibManialink_SetTargetOpacity(Quad_Medal, OpacityTrack);
+        //LibManialink_PresetAnimInsert(Quad_Medal, TimeBeforeStartFade + TimeDelay, 700, "EaseLinear");
+        
+        Label_QuadName.Opacity = 0.;
+        LibManialink_SetTargetOpacity(Label_QuadName, OpacityTrack);
+        LibManialink_PresetAnimInsert(Label_QuadName, TimeBeforeStartFade + TimeDelay, 700, "EaseLinear");
+
+        CountQuad += 1;
+        TimeDelay += TimeDelayAdd;
+      }
+    }
+
+    declare TimeFadeArrow   = 1000;
+    TimeFadeTotal =  TimeBeforeStartFade + TimeDelay + (TimeDelayAdd*CountQuad) + TimeFadeArrow;
+
+    G_TimeEndFadeIn = Now + TimeFadeTotal;
+
+    declare Real TargetArrowsOpacity = ML::Sin(G_TimeEndFadeIn*0.0035)*0.05 + 0.75;
+
+    //Selector
+    foreach(Control in Arrows.Controls)
+    {
+      declare CMlQuad Quad_Arrow <=> (Page.GetFirstChild(Control.ControlId) as CMlQuad);
+      Quad_Arrow.Opacity = 0.;
+      LibManialink_SetTargetOpacity(Quad_Arrow, 1.);
+      LibManialink_PresetAnimInsert(Quad_Arrow, TimeBeforeStartFade + TimeDelay + (TimeDelayAdd*CountQuad), TimeFadeArrow, "EaseLinear");
+    }
+    foreach(Control in ArrowsBlink.Controls)
+    {
+      declare CMlQuad Quad_ArrowBlink <=> (Page.GetFirstChild(Control.ControlId) as CMlQuad);
+      Quad_ArrowBlink.Opacity = 0.;
+      LibManialink_SetTargetOpacity(Quad_ArrowBlink, TargetArrowsOpacity);
+      LibManialink_PresetAnimInsert(Quad_ArrowBlink, TimeBeforeStartFade + TimeDelay + (TimeDelayAdd*CountQuad), TimeFadeArrow, "EaseLinear");
+    }
+
+    //Focus for the first Track - Set the Position of the Selector
+    declare Frame_SelectorArrows <=> (Page.GetFirstChild("Frame_SelectorArrows") as CMlFrame);
+    declare CMlFrame NewFrameModel <=> (Page.GetFirstChild("Frame_Instance"^G_SelectorPositionY^""^G_SelectorPositionX) as CMlFrame);
+    declare CMlLabel NewLabel_Icon <=> (NewFrameModel.GetFirstChild("Label_QuadName")                                   as CMlLabel);
+    declare CMlQuad  NewQuad_Icon  <=> (NewFrameModel.GetFirstChild("Quad_Icon")                                        as CMlQuad);
+    LibManialink_SetTargetScale(NewQuad_Icon, {{{FocusArrowsScale}}});
+    LibManialink_PresetAnimInsert(NewQuad_Icon, TimeBeforeStartFade + TimeDelay + (TimeDelayAdd*CountQuad),  500, "EaseLinear");
+    LibManialink_SetTargetTextColor(NewLabel_Icon, {{{FocusColorText}}});
+    LibManialink_PresetAnimInsert(NewLabel_Icon, TimeBeforeStartFade + TimeDelay + (TimeDelayAdd*CountQuad),  500, "EaseLinear");
+    declare Vec3 NewPosition = G_PositionQuads[G_SelectorPositionY][G_SelectorPositionX] - <{{{SizeXQuad/2}}},{{{SizeYQuad/2}}}-5, 0.>;
+    Frame_SelectorArrows.RelativePosition = NewPosition;
+
+  }
+
+  Void StartAllFade()
+  {
+    StartFadeInTitle();
+    StartFadeInQuad();
+  }
+
+  Void InitQuad()
+  {
+
+    for(I, 0, {{{Count_InstancesY-1}}})
+    {
+      G_PositionQuads[I] = Vec3[Integer];
+      G_ActiveQuad[I]    = Boolean[Integer];
+      G_MapPath[I]       = Text[Integer];
+      for(J, 0, {{{Count_InstancesX}}})
+      {
+        declare Integer  QuadNumber     = I*{{{Count_InstancesX}}}+J+I;
+        declare CMlFrame FrameTrack     <=> (Page.GetFirstChild("Frame_Instance"^I^""^J) as CMlFrame);
+        declare CMlQuad  Quad_Icon      <=> (FrameTrack.GetFirstChild("Quad_Icon") as CMlQuad);
+        declare CMlQuad  Quad_Medal     <=> (FrameTrack.GetFirstChild("Quad_Medal") as CMlQuad);
+        declare CMlLabel Label_QuadName <=> (FrameTrack.GetFirstChild("Label_QuadName") as CMlLabel);
+
+        Quad_Icon     .Opacity = 0.;
+        Quad_Medal    .Opacity = 0.;
+        Label_QuadName.Opacity = 0.;
+        Quad_Icon     .Visible = False;
+        Quad_Medal    .Visible = False;
+        //Label_QuadName.Visible = False;
+      }
+    }
+
+    //Selector
+    declare Frame_SelectorArrows <=> (Page.GetFirstChild("Frame_SelectorArrows") as CMlFrame);
+    Frame_SelectorArrows.Visible = False;
+  }
+
+  Void Init()
+  {
+    InitQuad();
+  }
+
+  Void SetPage()
+  {
+    if(G_LoadUserMaps)
+    {
+      LoadUserMaps();
+    }
+    else
+    {
+      LoadCampaignMaps("{{{C_DefaultPathFilter}}}");
+    }
+
+    //LoadCampaignMaps("Campaigns\\Summer\\03 - Blue\\");
+    //LoadCampaignMaps();
+    G_TimeEndFadeIn    = -1;
+    G_BlockLoop        = True;
+    G_TimeBlinkTrack   = -1;
+    G_PositionsFramesX = 0;
+    G_PositionsFramesY = 0;
+
+    declare Integer NumberOfQuadSetX;
+    declare Integer NumberOfQuadSetY;
+
+    if(DataMgr.Maps.count > 8)
+    {
+      NumberOfQuadSetX = 3 + (DataMgr.Maps.count - 8)/2 + (DataMgr.Maps.count - 8)%2;
+    }
+    else if(DataMgr.Maps.count > 6)
+    {
+      NumberOfQuadSetX = 3;
+      NumberOfQuadSetY = 1;
+
+    }
+    else
+    {
+      NumberOfQuadSetX = 2;
+      NumberOfQuadSetY = 1;
+      NumberOfQuadSetY = 1;
+
+      declare CMlFrame FrameAll <=> (Page.GetFirstChild("FrameAll") as CMlFrame);
+      declare CMlFrame HUD_Buttons <=> (Page.GetFirstChild("HUD_Buttons") as CMlFrame);
+
+      if(DataMgr.Maps.count <= 3)
+      {
+        
+        HUD_Buttons.RelativePosition.Y = 0.;
+        FrameAll.RelativePosition.Y = 0.;
+      }
+      else  if(DataMgr.Maps.count <= 6)
+      {
+        HUD_Buttons.RelativePosition.Y = -55.;
+        FrameAll.RelativePosition.Y = 15.;
+      }
+    }
+    if(NumberOfQuadSetX > {{{Count_InstancesX}}})
+    {
+      NumberOfQuadSetX = {{{Count_InstancesX}}};
+    }
+    G_IndexMaxX = NumberOfQuadSetX;
+    G_IndexMaxY = NumberOfQuadSetY;
+
+    for(I, 0, NumberOfQuadSetY)
+    {
+      G_PositionQuads[I] = Vec3[Integer];
+      G_ActiveQuad[I]    = Boolean[Integer];
+      G_MapPath[I]       = Text[Integer];
+      for(J, 0, NumberOfQuadSetX)
+      {
+        declare Integer  QuadNumber     = I*NumberOfQuadSetX+J+I;
+        declare CMlFrame FrameTrack     <=> (Page.GetFirstChild("Frame_Instance"^I^""^J) as CMlFrame);
+        declare CMlQuad  Quad_Icon      <=> (FrameTrack.GetFirstChild("Quad_Icon") as CMlQuad);
+        declare CMlQuad  Quad_Medal     <=> (FrameTrack.GetFirstChild("Quad_Medal") as CMlQuad);
+        declare CMlLabel Label_QuadName <=> (FrameTrack.GetFirstChild("Label_QuadName") as CMlLabel);
+
+        if(!DataMgr.Maps.existskey(QuadNumber))
+        {
+          Quad_Icon.Visible  = False;
+          Quad_Medal.Visible = False;
+
+          G_ActiveQuad[I][J] = False;
+          continue;
+        }
+        else
+        {
+          Quad_Icon.Visible = True;
+
+          DataMgr.LoadMapThumbnail(QuadNumber);
+          G_MapPath[I][J] = DataMgr.Maps[QuadNumber].FileName;
+          Label_QuadName.Value = DataMgr.Maps[QuadNumber].Name;
+          Label_QuadName.Value = "Race " ^ QuadNumber+1;
+          //RetrieveRecords(DataMgr.Maps[QuadNumber]);
+          G_ActiveQuad[I][J] = True;
+          wait(DataMgr.Ready);
+          Quad_Icon.Image = DataMgr.MapThumbnail;
+
+
+          declare Integer MyMedal = -1;
+          /*
+          if(DataMgr.Records.count >= 5)
+          {
+            MyTime = DataMgr.Records[4].Time;
+            //MyTime = 50000000;
+          }
+          for(IndexMedal, 0, 3)
+          {
+            if(MyTime < DataMgr.Records[IndexMedal].Time && MyTime != -1)
+            {
+             MyMedal = IndexMedal;
+            }
+          }
+          */
+          declare Text MedalSubStyle = GetMedalSubStyle(MyMedal);
+          Quad_Medal.Substyle = MedalSubStyle;
+          //Quad_Medal.Visible  = True; //HACK - Pour cacher les médailes
+          Quad_Medal.Visible  = False; //HACK - Pour cacher les médailes
+        }
+      }
+    }
+
+
+
+
+    if(NumberOfQuadSetX >= 5)
+    {
+      G_PositionsFramesX  = 1;
+      G_SelectorPositionX = 2;
+      G_SelectorPositionY = 0;
+    }
+    else
+    {
+      G_PositionsFramesX  = 0;
+      G_SelectorPositionX = 0;
+      G_SelectorPositionY = 0;
+    }
+      declare CMlFrame FrameQuad  <=> (Page.GetFirstChild("FrameQuad") as CMlFrame);
+      declare Real NewPosnX = G_PositionsFramesX*{{{SizeXQuad+MarginX_Button}}};
+      declare Vec3 NewFramePosition = <-NewPosnX, FrameQuad.RelativePosition.Y, FrameQuad.RelativePosition.Z>;
+      FrameQuad.RelativePosition = NewFramePosition;
+
+      G_PositionQuads = {{{PositionQuads}}};
+      UpdateSelectedTrack(G_SelectorPositionX, G_SelectorPositionY, G_SelectorPositionX, G_SelectorPositionY, False);
+  }
+
+  Void LaunchMap()
+  {
+    declare Text MapPath     = G_MapPath[G_SelectorPositionY][G_SelectorPositionX];
+    declare Text ModeMulti = "Symbiose";
+    SendCustomEvent("PlayMap", [MapPath, "", ModeMulti]);
+  }
+
+  main(){
+    EnableMenuNavigationInputs = True;
+
+    declare CMlQuad Quad_ArrowLeftBlink  <=> (Page.GetFirstChild("Quad_ArrowLeftBlink") as CMlQuad);
+    declare CMlQuad Quad_ArrowRightBlink <=> (Page.GetFirstChild("Quad_ArrowRightBlink") as CMlQuad);
+    declare CMlQuad Quad_ArrowUpBlink    <=> (Page.GetFirstChild("Quad_ArrowUpBlink") as CMlQuad);
+    declare CMlQuad Quad_ArrowDownBlink  <=> (Page.GetFirstChild("Quad_ArrowDownBlink") as CMlQuad);
+    declare CMlQuad Quad_ArrowLeft       <=> (Page.GetFirstChild("Quad_ArrowLeft") as CMlQuad);
+    declare CMlQuad Quad_ArrowRight      <=> (Page.GetFirstChild("Quad_ArrowRight") as CMlQuad);
+    declare CMlQuad Quad_ArrowUp         <=> (Page.GetFirstChild("Quad_ArrowUp") as CMlQuad);
+    declare CMlQuad Quad_ArrowDown       <=> (Page.GetFirstChild("Quad_ArrowDown") as CMlQuad);
+    
+   
+    declare Real Red   = 0.0;
+    declare Real Green = 0.6;
+    declare Real Blue  = 1.0;
+
+    Quad_ArrowLeftBlink  .Colorize = <Red, Green, Blue>;
+    Quad_ArrowRightBlink .Colorize = <Red, Green, Blue>;
+    Quad_ArrowUpBlink    .Colorize = <Red, Green, Blue>;
+    Quad_ArrowDownBlink  .Colorize = <Red, Green, Blue>;
+    G_LoadUserMaps = False;
+
+    Init();
+    SetPage();
+    StartAllFade();
+
+    while(True){
+      yield;
+      LibManialink_AnimLoop();
+
+      //Move Arrows
+      //Blink des flèches
+      declare Real SinPosition                 = ML::Sin(Now*0.0035)*0.55;
+    
+      Quad_ArrowLeft.RelativePosition.X        = -0.5 - SinPosition;
+      Quad_ArrowLeftBlink.RelativePosition.X   = 3.5  - SinPosition;
+      Quad_ArrowRight.RelativePosition.X       = 60   + SinPosition;
+      Quad_ArrowRightBlink.RelativePosition.X  = 55   + SinPosition;
+      Quad_ArrowUp.RelativePosition.Y          = 40   + SinPosition;
+      Quad_ArrowUpBlink.RelativePosition.Y     = 35   + SinPosition;
+      Quad_ArrowDown.RelativePosition.Y        = 0    - SinPosition;
+      Quad_ArrowDownBlink.RelativePosition.Y   = 5.   - SinPosition;
+
+      if(G_TimeEndFadeIn < Now && G_TimeEndFadeIn != -1)
+      {
+        G_TimeEndFadeIn =-1;
+        G_BlockLoop = False;
+      }
+
+      if(G_TimeBlinkTrack < Now && G_TimeBlinkTrack != -1)
+      {
+        G_TimeBlinkTrack =-1;
+        UnselectTrack(G_SelectorPositionX, G_SelectorPositionY);
+        G_BlockLoop = False;
+        LaunchMap();
+      }
+
+
+      if(G_BlockLoop) continue; //Permet de blocker les inputs pendant le FadeIn du début
+
+      declare Real SinOpacity                  = ML::Sin(Now*0.0035)*0.05 + 0.75;
+      Quad_ArrowLeftBlink.Opacity              = SinOpacity;
+      Quad_ArrowRightBlink.Opacity             = SinOpacity;
+      Quad_ArrowUpBlink     .Opacity = SinOpacity;
+      Quad_ArrowDownBlink   .Opacity = SinOpacity;
+
+
+      foreach(Event in PendingEvents) {
+        switch(Event.Type){
+
+
+          case CMlEvent::Type::PluginCustomEvent: {
+            
+            switch(Event.PluginCustomEventType) {
+              case "Show" : {
+                Init();
+                SetPage();
+                ReShowPage();
+                {{{_ShowAnim}}}
+              }
+            }
+          }
+          case CMlEvent::Type::KeyPress: {
+            if (Event.KeyCode == 156) {
+              //SendCustomEvent("GotoPrevious", [""]);
+              //TitleFlow.Quit();
+            }
+          }
+
+          case CMlEvent::Type::MenuNavigation: {
+            switch(Event.MenuNavAction) {
+              case CMlEvent::EMenuNavAction::Up : {
+                if(IsActiveQuad(G_SelectorPositionX, G_SelectorPositionY - 1))
+                {
+                  Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+                  G_SelectorPositionY -=1;
+                  UpdateSelectedTrack(G_SelectorPositionX, G_SelectorPositionY, G_SelectorPositionX, G_SelectorPositionY + 1, True);
+                }
+              }
+              case CMlEvent::EMenuNavAction::Down : {
+                if(IsActiveQuad(G_SelectorPositionX, G_SelectorPositionY + 1))
+                {
+                  Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+                  G_SelectorPositionY +=1;
+                  UpdateSelectedTrack(G_SelectorPositionX, G_SelectorPositionY, G_SelectorPositionX, G_SelectorPositionY - 1, True);
+                }
+              }
+              case CMlEvent::EMenuNavAction::Right : {
+                if(IsActiveQuad(G_SelectorPositionX + 1, G_SelectorPositionY))
+                {
+                  Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+                  G_SelectorPositionX +=1;
+                  UpdateSelectedTrack(G_SelectorPositionX, G_SelectorPositionY, G_SelectorPositionX - 1, G_SelectorPositionY, True);
+                }
+              }
+              case CMlEvent::EMenuNavAction::Left : {
+                if(IsActiveQuad(G_SelectorPositionX - 1, G_SelectorPositionY))
+                {
+                  Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+                  G_SelectorPositionX -=1;
+                  UpdateSelectedTrack(G_SelectorPositionX, G_SelectorPositionY, G_SelectorPositionX + 1, G_SelectorPositionY, True);
+                }
+              }
+              case CMlEvent::EMenuNavAction::Cancel : {
+                //TitleFlow.Quit();
+                //SendCustomEvent("Home", [""]);
+              }
+
+              case CMlEvent::EMenuNavAction::Select : {
+                SelectTrack();
+                Audio.PlaySoundEvent("{{{SoundSelect}}}", {{{Volumes::GetVolumedB("MenuValidate")}}});
+              }
+              case CMlEvent::EMenuNavAction::Action2 : {
+                
+                continue; //Empeche de switch vers les maps Custom
+                Audio.PlaySoundEvent("{{{SoundBack}}}", {{{Volumes::GetVolumedB("MenuPageBack")}}});
+                G_LoadUserMaps = !G_LoadUserMaps;
+                UnselectTrack(G_SelectorPositionX, G_SelectorPositionY);
+                Init();
+                SetPage();
+                StartFadeInQuad();
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+--></script>
+
+	""";
+	
+	return MLText;
+}

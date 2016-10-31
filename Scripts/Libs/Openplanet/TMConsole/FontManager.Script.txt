@@ -1,0 +1,16 @@
+Text GetFontName(Text _Font)
+{
+	switch(_Font)
+	{
+		case "Main" 		: return "TMAG-super-italic-01";
+		case "MainSmall" 	: return "AkzidGrtskProMed";
+		case "MainSmall2"	: return "TMAG-Medium-italic-01";
+		case "Chrono" 		: return "TMTimerfin-01";
+		case "Title" 		: return "TungstenNarrow-Black-normal";
+		case "TitleSmall" 	: return "Tungsten-Bold-italic";
+		case "NumberSmall" 	: return "TungstenNarrow-Semibold";
+		case "NumberBig" 	: return "tracknumber";
+	}
+	
+	return "";
+}

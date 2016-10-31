@@ -1,0 +1,468 @@
+/** 
+ * Stack of weighted list of macroblocks
+ */
+
+#Const Version		"2015-11-24"
+#Const ScriptName	"WeightedListStack.Script.txt"
+
+#Include "Libs/Openplanet/TMConsole/MapEditor/Utils.Script.txt" as Utils
+#Include "Libs/Openplanet/TMConsole/MapEditor/Random.Script.txt" as Random
+
+// ---------------------------------- //
+// Globales
+// ---------------------------------- //
+declare Integer[Integer][Ident][] G_LibWeightedList_ListUnsorted;
+declare Integer[Integer][Ident][] G_LibWeightedList_ListSorted;
+declare Int3[Integer][Integer][Ident][] G_LibWeightedList_ListPlacements;
+declare Integer[] G_LibWeightedList_ListMax;
+declare Boolean[] G_LibWeightedList_ListModified;
+declare CMacroblockModel G_LibWeightedList_Random_MacroblockModel;		///< Random result
+declare Integer G_LibWeightedList_Random_Placement;						///< Random result
+declare Int3 G_LibWeightedList_Random_Coord;							///< Random result
+declare CEditorPlugin::CardinalDirections G_LibWeightedList_Random_Dir;	///< Random result
+
+// ---------------------------------- //
+// Functions
+// ---------------------------------- //
+// ---------------------------------- // 
+// Private
+// ---------------------------------- //
+// ---------------------------------- //
+/** Check if a list exists
+ *
+ *	@param	_Id 					Id of the list to check
+ *
+ *	@return							True if the list exists, False otherwise
+ */
+Boolean Private_ListExists(Integer _Id) {
+	return _Id < G_LibWeightedList_ListModified.count;
+}
+
+// ---------------------------------- //
+/** Sort the macroblock list and compute
+ *	the info necessary to select a random block
+ *
+ *	@param	_Id 					Id of the list
+ */
+Void Private_SortMacroblocksList(Integer _Id) {
+	if (!Private_ListExists(_Id)) return;
+	
+	G_LibWeightedList_ListSorted[_Id].clear();
+	G_LibWeightedList_ListMax[_Id] = 0;
+	declare MacroblockModelsList = G_LibWeightedList_ListUnsorted[_Id];
+	foreach (MacroblockModel => PlacementsWeights in MacroblockModelsList) {
+		foreach (Placement => Weight in PlacementsWeights) {
+			if (!G_LibWeightedList_ListSorted[_Id].existskey(MacroblockModel)) G_LibWeightedList_ListSorted[_Id][MacroblockModel] = Integer[Integer];
+			G_LibWeightedList_ListSorted[_Id][MacroblockModel][Placement] = G_LibWeightedList_ListMax[_Id];
+			G_LibWeightedList_ListMax[_Id] += Weight;
+		}
+	}
+	G_LibWeightedList_ListModified[_Id] = False;
+}
+
+// ---------------------------------- //
+// Public
+// ---------------------------------- //
+// ---------------------------------- //
+/** Return the version number of the script
+ *
+ *	@return							The version number of the script
+ */
+Text GetScriptVersion() {
+	return Version;
+}
+
+// ---------------------------------- //
+/** Return the name of the script
+ *
+ *	@return							The name of the script
+ */
+Text GetScriptName() {
+	return ScriptName;
+}
+
+// ---------------------------------- //
+/** Create a new list at the end of the stack
+ *
+ *	@return							Return the key of the list
+ */
+Integer Push() {
+	G_LibWeightedList_ListUnsorted.add(Integer[Integer][Ident]);
+	G_LibWeightedList_ListSorted.add(Integer[Integer][Ident]);
+	G_LibWeightedList_ListPlacements.add(Int3[Integer][Integer][Ident]);
+	G_LibWeightedList_ListMax.add(0);
+	G_LibWeightedList_ListModified.add(True);
+	
+	return G_LibWeightedList_ListModified.count - 1;
+}
+
+// ---------------------------------- //
+/// Delete a list at the end of the stack
+Void Pop() {
+	declare Boolean Removed;
+	Removed = G_LibWeightedList_ListUnsorted.removekey(G_LibWeightedList_ListUnsorted.count-1);
+	Removed = G_LibWeightedList_ListSorted.removekey(G_LibWeightedList_ListSorted.count-1);
+	Removed = G_LibWeightedList_ListPlacements.removekey(G_LibWeightedList_ListPlacements.count-1);
+	Removed = G_LibWeightedList_ListMax.removekey(G_LibWeightedList_ListMax.count-1);
+	Removed = G_LibWeightedList_ListModified.removekey(G_LibWeightedList_ListModified.count-1);
+}
+
+// ---------------------------------- //
+/// Delete all lists
+Void Clear() {
+	G_LibWeightedList_ListUnsorted.clear();
+	G_LibWeightedList_ListSorted.clear();
+	G_LibWeightedList_ListPlacements.clear();
+	G_LibWeightedList_ListMax.clear();
+	G_LibWeightedList_ListModified.clear();
+}
+
+// ---------------------------------- //
+/** Check if a list exists
+ *
+ *	@param	_Id 					Id of the list to check
+ *
+ *	@return							True if the list exists, False otherwise
+ */
+Boolean Exists(Integer _Id) {
+	return Private_ListExists(_Id);
+}
+
+// ---------------------------------- //
+/** Check if a macroblock exists in the list
+ *
+ *	@param	_Id 					Id of the list to check
+ *	@param	_MacroblockModel		The macroblock to check
+ *
+ *	@return							True if the macroblock exists, False otherwise
+ */
+Boolean Exists(Integer _Id, CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return False;
+	if (!Private_ListExists(_Id)) return False;
+	
+	return G_LibWeightedList_ListUnsorted[_Id].existskey(_MacroblockModel.Id);
+}
+
+// ---------------------------------- //
+/** Check if a macroblock with a specific placement exists in the list
+ *
+ *	@param	_Id 					Id of the list to check
+ *	@param	_MacroblockModel		The macroblock to check
+ *	@param	_Placement				The palcement to check
+ *
+ *	@return							True if the macroblock with the given placement exists, False otherwise
+ */
+Boolean Exists(Integer _Id, CMacroblockModel _MacroblockModel, Integer _Placement) {
+	if (_MacroblockModel == Null) return False;
+	if (!Private_ListExists(_Id)) return False;
+	
+	return (
+		G_LibWeightedList_ListUnsorted[_Id].existskey(_MacroblockModel.Id) &&
+		G_LibWeightedList_ListUnsorted[_Id][_MacroblockModel.Id].existskey(_Placement)
+	);
+}
+
+// ---------------------------------- //
+/** Add a macroblock to a list
+ *
+ *	@param	_Id 					Id of the list to update
+ *	@param	_MacroblockModel		The macroblock to add
+ *	@param	_Placement				The placement of the macroblock
+ *	@param	_Coord					The coordinates associated to the placement
+ *	@param	_Dir					The direction associated to the placement
+ *	@param	_Weight					The weight of the macroblock
+ */
+Void Add(Integer _Id, CMacroblockModel _MacroblockModel, Integer _Placement, Int3 _Coord, Integer _Dir, Integer _Weight) {
+	if (_MacroblockModel == Null) return;
+	if (!Private_ListExists(_Id)) return;
+	
+	if (!G_LibWeightedList_ListUnsorted[_Id].existskey(_MacroblockModel.Id)) {
+		G_LibWeightedList_ListUnsorted[_Id][_MacroblockModel.Id] = Integer[Integer];
+		G_LibWeightedList_ListPlacements[_Id][_MacroblockModel.Id] = Int3[Integer][Integer];
+	}
+	if (!G_LibWeightedList_ListPlacements[_Id][_MacroblockModel.Id].existskey(_Placement)) {
+		G_LibWeightedList_ListPlacements[_Id][_MacroblockModel.Id][_Placement] = Int3[Integer];
+	}
+	
+	G_LibWeightedList_ListUnsorted[_Id][_MacroblockModel.Id][_Placement] = _Weight;
+	G_LibWeightedList_ListPlacements[_Id][_MacroblockModel.Id][_Placement][_Dir] = _Coord;
+	
+	G_LibWeightedList_ListModified[_Id] = True;
+}
+
+// ---------------------------------- //
+/// Overload Add() function
+Void Add(Integer _Id, CMacroblockModel _MacroblockModel, Integer _Weight) {
+	Add(_Id, _MacroblockModel, 0, <0, 0, 0>, 0, _Weight);
+}
+
+// ---------------------------------- //
+/** Remove a macroblock from a list
+ *
+ *	@param	_Id 					Id of the list to update
+ *	@param	_MacroblockModel		The macroblock to remove
+ *
+ *	@return							True if the macroblock was removed, False otherwise
+ */
+Boolean Remove(Integer _Id, CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return False;
+	if (!Private_ListExists(_Id)) return False;
+	
+	declare Removed = G_LibWeightedList_ListUnsorted[_Id].removekey(_MacroblockModel.Id);
+	Removed = G_LibWeightedList_ListPlacements[_Id].removekey(_MacroblockModel.Id);
+	G_LibWeightedList_ListModified[_Id] = True;
+	return Removed;
+}
+
+// ---------------------------------- //
+/** Remove a macroblock placement from a list
+ *
+ *	@param	_Id 					Id of the list to update
+ *	@param	_MacroblockModel		The macroblock to remove
+ *	@param	_Placement				The placement to remove
+ *
+ *	@return							True if the macroblock placement was removed, False otherwise
+ */
+Boolean Remove(Integer _Id, CMacroblockModel _MacroblockModel, Integer _Placement) {
+	if (_MacroblockModel == Null) return False;
+	if (!Private_ListExists(_Id)) return False;
+	if (!G_LibWeightedList_ListUnsorted[_Id].existskey(_MacroblockModel.Id)) return False;
+	
+	declare Removed = G_LibWeightedList_ListUnsorted[_Id][_MacroblockModel.Id].removekey(_Placement);
+	Removed = G_LibWeightedList_ListPlacements[_Id][_MacroblockModel.Id].removekey(_Placement);
+	if (G_LibWeightedList_ListUnsorted[_Id][_MacroblockModel.Id].count <= 0) {
+		G_LibWeightedList_ListUnsorted[_Id].removekey(_MacroblockModel.Id);
+		G_LibWeightedList_ListPlacements[_Id].removekey(_MacroblockModel.Id);
+	}
+	G_LibWeightedList_ListModified[_Id] = True;
+	return Removed;
+}
+
+// ---------------------------------- //
+/** Remove a macroblock placement from a list
+ *
+ *	@param	_Id 					Id of the list to update
+ *	@param	_MacroblockModel		The macroblock to remove
+ *	@param	_Coord					The macroblock coordinates
+ *	@param	_Dir					The macroblock direction
+ *
+ *	@return							True if the macroblock placement was removed, False otherwise
+ */
+Boolean Remove(Integer _Id, CMacroblockModel _MacroblockModel, Int3 _Coord, CEditorPlugin::CardinalDirections _Dir) {
+	if (_MacroblockModel == Null) return False;
+	if (!Private_ListExists(_Id)) return False;
+	if (!G_LibWeightedList_ListPlacements[_Id].existskey(_MacroblockModel.Id)) return False;
+	
+	declare Removed = False;
+	declare Placements = G_LibWeightedList_ListPlacements[_Id][_MacroblockModel.Id];
+	foreach (Placement => Properties in Placements) {
+		if (Removed) break;
+		foreach (Dir => Coord in Properties) {
+			if (Removed) break;
+			if (_Coord == Coord && Utils::DirToInt(_Dir) == Dir) {
+				G_LibWeightedList_ListPlacements[_Id][_MacroblockModel.Id].removekey(Placement);
+				G_LibWeightedList_ListUnsorted[_Id][_MacroblockModel.Id].removekey(Placement);
+				Removed = True;
+			}
+		}
+	}
+		
+	G_LibWeightedList_ListModified[_Id] = True;
+	return Removed;
+}
+
+// ---------------------------------- //
+/** Get all macroblocks in a list
+ *
+ *	@param	_Id 					Id of the list to get
+ *
+ *	@return							All macroblocks in the list
+ */
+CMacroblockModel[] GetAll(Integer _Id) {
+	if (!Private_ListExists(_Id)) return CMacroblockModel[];
+	
+	declare CMacroblockModel[] MacroblocksList;
+	declare List = G_LibWeightedList_ListUnsorted[_Id];
+	foreach (MacroblockId => Weight in List) {
+		if (!MacroblockModels.existskey(MacroblockId)) continue;
+		MacroblocksList.add(MacroblockModels[MacroblockId]);
+	}
+	
+	return MacroblocksList;
+}
+
+// ---------------------------------- //
+/** Get all macroblocks and their weights in a list
+ *
+ *	@param	_Id 					Id of the list to get
+ *
+ *	@return							All macroblocks and weights in the list
+ */
+Integer[Integer][Ident] GetAllWithWeight(Integer _Id) {
+	if (!Private_ListExists(_Id)) return Integer[Integer][Ident];
+	
+	/*declare Integer[Ident] MacroblocksList;
+	declare List = G_LibWeightedList_ListUnsorted[_Id];
+	foreach (MacroblockId => Weight in List) {
+		MacroblocksList[MacroblockId] = Weight;
+	}
+	
+	return MacroblocksList;*/
+	return G_LibWeightedList_ListUnsorted[_Id];
+}
+
+
+// ---------------------------------- //
+/// Clear the random selection properties
+Void ClearRandom() {
+	G_LibWeightedList_Random_MacroblockModel <=> Null;
+	G_LibWeightedList_Random_Placement = -1;
+	G_LibWeightedList_Random_Coord = Utils::NullCoord();
+	G_LibWeightedList_Random_Dir = CEditorPlugin::CardinalDirections::North;
+}
+
+// ---------------------------------- //
+/** Select a random macroblock in a list
+ *
+ *	@param	_Id 					Id of the list to check
+ *
+ *	@return							True if a random macroblock was selected, False otherwise
+ */
+Boolean SelectRandom(Integer _Id) {
+	ClearRandom();
+	
+	if (!Private_ListExists(_Id)) return False;
+	
+	if (G_LibWeightedList_ListModified[_Id]) {
+		Private_SortMacroblocksList(_Id);
+	}
+	
+	declare MacroblockModelsList = G_LibWeightedList_ListSorted[_Id];
+	declare TargetWeight = Random::Rand(0, G_LibWeightedList_ListMax[_Id]-1);
+	declare Stop = False;
+	foreach (MacroblockModelId => PlacementsWeights in MacroblockModelsList) {
+		if (Stop) break;
+		foreach (Placement => Weight in PlacementsWeights) {
+			if (Weight > TargetWeight) {
+				Stop = True;
+				break;
+			}
+			if (MacroblockModels.existskey(MacroblockModelId)) {
+				G_LibWeightedList_Random_MacroblockModel <=> MacroblockModels[MacroblockModelId];
+				G_LibWeightedList_Random_Placement = Placement;
+			} else {
+				G_LibWeightedList_Random_MacroblockModel <=> Null;
+				G_LibWeightedList_Random_Placement = -1;
+			}
+		}
+	}
+	
+	if (G_LibWeightedList_Random_MacroblockModel != Null && G_LibWeightedList_Random_Placement != -1) {
+		declare MacroblockModelsPlacements = G_LibWeightedList_ListPlacements[_Id];
+		foreach (MacroblockModelId => Placements in MacroblockModelsPlacements) {
+			if (MacroblockModelId != G_LibWeightedList_Random_MacroblockModel.Id) continue;
+			foreach (Placement => Properties in Placements) {
+				if (Placement != G_LibWeightedList_Random_Placement) continue;
+				foreach (Dir => Coord in Properties) {
+					G_LibWeightedList_Random_Coord = Coord;
+					G_LibWeightedList_Random_Dir = Utils::IntToDir(Dir);
+					return True;
+				}
+			}
+		}
+	}
+	
+	return False;
+}
+
+// ---------------------------------- //
+/** Get the randomly selected macroblock model
+ *
+ *	@return							The macroblock model
+ */
+CMacroblockModel GetMacroblockModelFromRandom() {
+	return G_LibWeightedList_Random_MacroblockModel;
+}
+
+// ---------------------------------- //
+/** Get the placement from the randomly select macroblock
+ *
+ *	@return							The placement
+ */
+Integer GetPlacementFromRandom() {
+	return G_LibWeightedList_Random_Placement;
+}
+
+// ---------------------------------- //
+/** Get the coordinates from the randomly select macroblock
+ *
+ *	@return							The coordinates
+ */
+Int3 GetCoordFromRandom() {
+	return G_LibWeightedList_Random_Coord;
+}
+
+// ---------------------------------- //
+/** Get the direction from the randomly select macroblock
+ *
+ *	@return							The direction
+ */
+CEditorPlugin::CardinalDirections GetDirFromRandom() {
+	return G_LibWeightedList_Random_Dir;
+}
+
+// ---------------------------------- //
+/** Clear a list
+ *
+ *	@param	_Id 					Id of the list to clear
+ */
+Void Empty(Integer _Id) {
+	if (!Private_ListExists(_Id)) return;
+	
+	G_LibWeightedList_ListUnsorted[_Id].clear();
+	G_LibWeightedList_ListSorted[_Id].clear();
+	G_LibWeightedList_ListPlacements[_Id].clear();
+	G_LibWeightedList_ListMax[_Id] = 0;
+	G_LibWeightedList_ListModified[_Id] = True;
+}
+
+// ---------------------------------- //
+/** Get the number of elements in a list
+ *
+ *	@param	_Id 					Id of the list to check
+ *
+ *	@return							The number of elements in the list
+ */
+Integer Count(Integer _Id) {
+	if (!Private_ListExists(_Id)) return 0;
+	
+	return G_LibWeightedList_ListUnsorted[_Id].count;
+}
+
+// ---------------------------------- //
+/** Get the number of placements available for a macroblock model
+ *
+ *	@param	_Id 					Id of the list to check
+ *	@param	_MacroblockModel		The macroblock model to check
+ *
+ *	@return							The number of placements
+ */
+Integer PlacementsCount(Integer _Id, CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return 0;
+	if (!Private_ListExists(_Id)) return 0;
+	if (!G_LibWeightedList_ListUnsorted[_Id].existskey(_MacroblockModel.Id)) return 0;
+	
+	return G_LibWeightedList_ListUnsorted[_Id][_MacroblockModel.Id].count;
+}
+
+// ---------------------------------- //
+/// Unload the library
+Void Unload() {
+	Clear();
+}
+
+// ---------------------------------- //
+/// Load the library
+Void Load() {
+	Unload();
+}

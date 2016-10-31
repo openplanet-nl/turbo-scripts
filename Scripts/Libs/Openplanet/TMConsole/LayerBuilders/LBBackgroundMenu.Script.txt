@@ -1,0 +1,172 @@
+
+#Include "Libs/Openplanet/Manialink2.Script.txt"						as Manialink
+#Include "Libs/Openplanet/TMConsole/PadInputs.Script.txt"			as PadInputs
+#Include "Libs/Openplanet/TMConsole/PanelParameter.Script.txt"		as PanelParameter
+#Include "Libs/Openplanet/TMConsole/Menu/ClipTransitions.Script.txt"	as ClipTransitions
+
+#Const C_ImgBase 	"file://Media/Manialinks/Nadeo/TMConsole/Images/"
+ 
+Text Build(Text _ShowAnim, Text _HideAnim) {
+	
+	
+	declare Text    IMGPlan7          = C_ImgBase^"tmce_menu_canyon_skybg_loop.webm";
+	
+
+	
+	
+	declare Text MLText = """
+	
+	<frame id="Frame_All" posn="0 0 2" hidden="1">
+		
+	
+
+		<frame id="Frame_Content" posn="0. 0 0" scale="1.0" clip="true" clipsizen="360 180" clipposn="320 0">
+
+
+			<frame id="0" class="parallax">
+				<quad id="VideoSky" halign="center" valign="center" opacity="1." keepratio="Fit"
+					sizen="20000 180" posn="0 0 -15"
+				/>
+			</frame>
+		</frame>
+
+	</frame>
+
+	<script><!--
+		#Const DebugName  "L_BgMenu"
+		
+		
+		#Const C_TimeTransitionPage  {{{PanelParameter::GetTimeTransitionPage()}}}
+		#Const C_TimeStartClip       {{{PanelParameter::GetTimeStartClip()}}}
+		#Const C_TimeAnimClip        {{{PanelParameter::GetTimeAnimClip()}}}
+		#Const C_TimeTransitionPage2 {{{PanelParameter::GetTimeTransitionPage2()}}}
+		#Const C_TimeStartClip2      {{{PanelParameter::GetTimeStartClip2()}}}
+		#Const C_TimeAnimClip2       {{{PanelParameter::GetTimeAnimClip2()}}}
+		
+		{{{Manialink::GetIncludes()}}}
+		{{{Manialink::Load()}}}
+		{{{ClipTransitions::Functions(["Frame_Content"])}}}
+		{{{PadInputs::MLPadInputs()}}}
+		
+		declare Integer G_HideTime;
+		declare Integer G_EndTransitionTime;
+		
+		declare CVideo[Text]	G_Videos;
+		declare CMlQuad[Text]	G_VideoQuads;
+				
+		Void Load(Text _Name, Text _Path) {
+			declare V = Video.CreateVideo(_Path, True, True);
+			declare Q = (Page.GetFirstChild(_Name) as CMlQuad);
+			Q.Image = V.Image;
+			//log("Q: " ^ Q);
+			//log("V.Image: " ^ V.Image ^" | _Path: "^_Path);
+			
+			G_Videos[_Name] 			= V;
+			G_VideoQuads[_Name]			= Q;
+			G_VideoQuads[_Name].Hide();
+		}
+
+		Void LoadAll() {
+			Load("VideoSky", "{{{IMGPlan7}}}");
+		}
+		
+		Void Preload()
+		{
+		}
+
+
+		Void HidePage(Text _PreviousPage)
+		{
+			declare CMlFrame  Frame_All <=> (Page.GetFirstChild("Frame_All") as CMlFrame);
+			//StartSetClipPosition_Frame_Content(<360., 0.>, <0., 0.>, C_TimeStartClip2, C_TimeAnimClip2);
+			if(_PreviousPage == "Intro" || _PreviousPage == "StartDemo" || _PreviousPage == "Location" || _PreviousPage == "Settings")
+			{
+				G_HideTime  = Now;
+			}
+			else
+			{
+				G_HideTime  = Now + C_TimeTransitionPage2;
+			}
+		}
+
+		Void ShowPage(Text _PreviousPage)
+		{
+			declare CMlFrame  Frame_All <=> (Page.GetFirstChild("Frame_All") as CMlFrame);
+			Frame_All.Show();
+
+			G_Videos["VideoSky"].Play();
+			G_VideoQuads["VideoSky"].Show();
+
+			
+			if(_PreviousPage == "Main")
+			{
+				G_EndTransitionTime = Now + C_TimeStartClip + C_TimeAnimClip;
+				StartSetClipPosition_Frame_Content( <0., 0.>, <360., 0.>, C_TimeStartClip, C_TimeAnimClip);
+			}
+			else
+			{
+				declare CMlFrame Frame_Content       <=> (Page.GetFirstChild("Frame_Content")			as CMlFrame);
+				Frame_Content.ClipWindowRelativePosition    = <0., 0.>;
+			}
+		}
+
+		main() {
+			declare CMlFrame Frame_Content       <=> (Page.GetFirstChild("Frame_Content")			as CMlFrame);
+			Preload();
+			LoadAll();
+
+			G_HideTime          = -1;
+			G_EndTransitionTime = -1;
+			while(True) {
+				yield;
+				if(! PageIsVisible) continue;
+				LibManialink_AnimLoop();
+
+				if(G_EndTransitionTime <= Now && G_EndTransitionTime != -1)
+				{
+					Frame_Content.ClipWindowRelativePosition    = <0., 0.>;
+					G_EndTransitionTime = -1;
+				}
+
+
+				if(G_HideTime <= Now && G_HideTime != -1)
+				{
+					/*
+					G_Videos["VideoSky"].Stop();
+					G_VideoQuads["VideoSky"].Hide();
+					G_HideTime = -1;
+					SendCustomEvent("DetachPage", ["BackgroundMenu"]);
+					*/
+				}
+
+				{{{ClipTransitions::InjectInWhile(["Frame_Content"])}}}
+
+				foreach(Event in PendingEvents) {
+					switch(Event.Type) {
+
+						case CMlEvent::Type::PluginCustomEvent: {
+							switch(Event.PluginCustomEventType) {
+								case "Show" : {
+									declare Page = Event.CustomEventData[0];
+									ShowPage(Page);
+									{{{_ShowAnim}}}
+								}
+								case "Hide" : {
+									{{{_HideAnim}}}
+									declare Page = Event.CustomEventData[0];
+									HidePage(Page);
+								}
+							}
+						}
+					}
+				}
+				
+			}	
+		}
+		
+
+	--></script>
+	""";
+	
+	return MLText;
+}

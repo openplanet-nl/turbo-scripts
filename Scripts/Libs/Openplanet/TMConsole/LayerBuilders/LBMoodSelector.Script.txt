@@ -1,0 +1,449 @@
+
+// file://Media/Manialinks/Nadeo/TMConsole/MainMenuArnaud.Script.txt
+#Include "Libs/Openplanet/Manialink2.Script.txt"					as Manialink
+#Include "Libs/Openplanet/TMConsole/BuilderHelper.Script.txt"	as BuilderHelper
+#Include "Libs/Openplanet/UIPadButtons.Script.txt"				as LibUIButtons
+#Include "Libs/Openplanet/TMConsole/LibAudio.Script.txt"			as LibAudio
+#Include "Libs/Openplanet/TMConsole/Volumes.Script.txt"			as Volumes
+
+#Const C_ImgBase 	"file://Media/Manialinks/Nadeo/TMConsole/Images/"
+#Const EditorPlugin	"PartyEditor2.Script.txt"
+#Const C_SizePanelX   6.
+#Const C_SizePanelY   5.
+ 
+Text Build(Text _ShowAnim, Text _HideAnim) {
+	
+	declare Text IMGFontGroundValley1 = C_ImgBase^"travelling-valley-fg1.png";
+	declare Text IMGBackGroundValley1 = C_ImgBase^"travelling-valley-bg1.jpg";
+	declare Text IMGPopupArrow        = "file://Media/_ERR_.dds";	//C_ImgBase^"popup-arrow.png";
+	declare Text IMGPopupArrowBlink   = C_ImgBase^"popup-arrow-shining.dds";
+	declare Text IMGBoardFull         = C_ImgBase^"board-full.png";
+	declare Text IMGBoardFooter       = C_ImgBase^"board-bg-footer.png";
+	
+	declare Text IMGSunrise           = C_ImgBase^"board-mood-sunrise.dds";
+	declare Text IMGDay               = C_ImgBase^"board-mood-day.dds";
+	declare Text IMGSunset            = C_ImgBase^"board-mood-sunset.dds";
+	declare Text IMGNight             = C_ImgBase^"board-mood-night.dds";
+	
+	declare Text IMGStadium           = C_ImgBase^"board-evt2-stadium.dds";
+	declare Text IMGCanyon            = C_ImgBase^"board-evt2-canyon.dds";
+	declare Text IMGValley            = C_ImgBase^"board-evt2-valley.dds";
+	declare Text IMGLagoon            = C_ImgBase^"board-evt2-lagoon.dds";
+	
+	declare Text 	IMGSelect         = LibUIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Select);
+	declare Text 	IMGCancel         = LibUIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Cancel);
+	declare Text 	SoundSelect          = LibAudio::GetSoundSelect();
+	declare Text 	SoundMove            = LibAudio::GetSoundMove();
+	declare Text 	SoundBack            = LibAudio::GetSoundBack();
+	
+	declare Integer Count_InstancesY  = 4;
+	declare Integer Count_InstancesX  = 1;
+	declare Real	MarginY_Button    = 0.25;
+	declare Real	MarginX_Button    = 0.;
+	declare Real	SizeX_Total       = 231.39;
+	declare Real	SizeY_Total       = 104.8 - MarginY_Button;
+	declare Real	SizeXQuad         = (SizeX_Total - Count_InstancesX*MarginX_Button) / Count_InstancesX;
+	declare Real	SizeYQuad         = (SizeY_Total - Count_InstancesY*MarginY_Button) / Count_InstancesY;
+	declare Real	PosnXLabel        = SizeXQuad/2.;
+	declare Real	PosnYLabel        = -SizeYQuad/2.;
+	declare Real	PosXFirstQuad	  = -91.5;
+	declare Real	PosYFirstQuad	  = 51.8;
+	declare Real	SizeArrow         = 17.;
+	
+	declare Text MLText = """
+	
+	<framemodel id="Frame_Button">
+		<label halign="center" valign="center" style="TextButtonNav" posn="{{{PosnXLabel}}} {{{PosnYLabel}}} 1"
+		 id="Label_Name" textsize="6." text=""/>
+
+		<label halign="center" valign="center" style="TextButtonNav" posn="{{{SizeXQuad/2}}} {{{-SizeYQuad/2-23.0}}} 1" autonewline="1" maxlines="3"
+		 id="Label_Tuto" textsize="2." sizen="{{{SizeXQuad-5}}}" text=""/>
+
+		<quad halign="left" valign="top" sizen="{{{SizeXQuad}}} {{{SizeYQuad}}}" id="Quad_Icon" opacity="1."/>
+		<quad halign="left" valign="top" sizen="{{{SizeXQuad}}} {{{SizeYQuad}}}" bgcolor="fff" id="Quad_Bg" opacity="0."/>
+	</framemodel>
+
+
+	<frame id="Frame_All" posn="0 0 4">
+
+		<quad id="Button_Select" halign="center" valign="bottom" keepratio="Fit"
+		sizen="8.0 8.0" image="{{{IMGSelect}}}" posn="151.4 -88.1 5" opacity="1."
+		/>
+		<quad id="Button_Select" halign="center" valign="bottom" keepratio="Fit"
+		sizen="8.0 8.0" image="{{{IMGCancel}}}" posn="-131.7 -88.1 5" opacity="1."
+		/>
+		
+		<frame id="Frame_Decord" posn="-160 0 0">
+			<quad id="BackGroundLvl1" halign="left" valign="bottom" opacity="1." keepratio="Fit"
+				sizen="1000 180" image="{{{IMGFontGroundValley1}}}" posn="0 -90 1"
+			/>
+			<quad id="BackGroundLvl2" halign="left" valign="center" opacity="1." keepratio="Fit"
+				sizen="1200 180" image="{{{IMGBackGroundValley1}}}" posn="0 0 0"
+			/>
+		</frame>
+	
+		
+		<frame id="Frame_Content" posn="0.1 3 0" scale="0.9">
+
+			<quad id="BackgroundPlaceHolder" halign="center" valign="center" keepratio="Fit"
+			sizen="320 180"  image="{{{IMGBoardFull}}}" posn="0.4 -4.8 2" opacity="1." scale="1.166"
+			/>
+			<frame scale="0.955" posn="-0.9 0.8 0">
+				<frame id="Frame_SelectorArrows" posn="{{{PosXFirstQuad+ MarginX_Button/2.}}} {{{PosYFirstQuad - MarginY_Button/2.}}} 15."  clip="false" clipsizen="{{{SizeXQuad-6.6}}} {{{SizeYQuad-4.}}}" clipposn="-60.5 36.5">
+					<quad id="Quad_ArrowLeft" halign="center" valign="center" image="{{{IMGPopupArrow}}}" 
+					sizen="{{{SizeArrow}}} {{{SizeArrow}}}" posn="-0.5 {{{-SizeYQuad/2}}} 1." rot="-90" opacity="1" keepratio="Fit"
+					/>
+					<quad id="Quad_ArrowRight" halign="center" valign="center" image="{{{IMGPopupArrow}}}"  opacity="1" keepratio="Fit"
+					sizen="{{{SizeArrow}}} {{{SizeArrow}}}" posn="{{{SizeXQuad-0.3}}} {{{-SizeYQuad/2.}}} 2." rot="90"
+					/>
+					<quad id="Quad_ArrowLeftBlink" halign="center" valign="center" image="{{{IMGPopupArrowBlink}}}"  keepratio="Fit"
+					sizen="{{{SizeArrow*1.32}}} {{{SizeArrow*1.32}}}" posn="3.0 {{{-SizeYQuad/2}}} 1." rot="-90" opacity="1"
+					/>
+					<quad id="Quad_ArrowRightBlink" halign="center" valign="center" image="{{{IMGPopupArrowBlink}}}"  opacity="1" keepratio="Fit"
+					sizen="{{{SizeArrow*1.32}}} {{{SizeArrow*1.32}}}" posn="{{{SizeXQuad-3.0}}} {{{-SizeYQuad/2.}}} 2." rot="90"
+					/>
+				</frame>
+				
+				<quad id="Quad_ArrowNext" halign="center" valign="center" image="{{{IMGPopupArrow}}}" opacity="0."
+				sizen="24 215" posn="-49 -40 6." rot="0" keepratio="Fit"
+				/>
+
+				<quad id="Quad_ArrowPrevious" halign="center" valign="center" image="{{{IMGPopupArrow}}}" opacity="0."
+				sizen="24 215" posn="-49 50 6." rot="180" keepratio="Fit"
+				/>
+
+
+
+				<quad id="BoardFooter" halign="left" valign="top" opacity="1." keepratio="Fit"
+					image="{{{IMGBoardFooter}}}" sizen="{{{SizeX_Total+SizeXQuad+MarginX_Button-0.3}}} 300  5"
+					posn="-137.9 -53 4." scale="0.5998"
+				/>
+
+				<frame posn="-135.5 -58 4." id="Frame_MapNameSelec">
+					<label halign="left" valign="center" style="TextButtonNav" posn="0 0 0" textcolor="000" textemboss="0"
+					 id="Label_MapNameTitle" textsize="4." text=""  sizen="{{{SizeXQuad-5.}}}"/>
+					<label halign="left" valign="center" style="TextSubTitle1" posn="1 -7 0" textcolor="000" textemboss="0"
+					 id="Label_MapName" textsize="7." text="Map Title" hidden="1" sizen="{{{2*SizeXQuad-5.}}}"/>
+				</frame>
+
+				<quad id="BoardEnviro" halign="left" valign="top" opacity="1."
+					sizen="46.2 104.8" posn="-137.9 52 3." bgcolor="fff"
+				/>
+
+	""";
+	//posn="{{{PosXFirstQuad+ MarginX_Button/2.-7.}}} {{{PosYFirstQuad - MarginY_Button/2.+10.}}} 8."
+	//posn="{{SizeXQuad/2.}}} {{-SizeYQuad/2.}}} 8."
+	for(I,0,Count_InstancesY-1)
+	{
+		declare Real IndexY = I*1.;
+		declare Real PosnY = PosYFirstQuad - IndexY*SizeYQuad - IndexY*MarginY_Button*1. - MarginY_Button/2.;
+		for(J,0,Count_InstancesX-1)
+		{
+			declare Real IndexJ = J*1.;
+			declare Real PosnX = PosXFirstQuad + IndexJ*SizeXQuad + IndexJ*MarginX_Button*1. + MarginX_Button/2.;
+			MLText^="""
+				
+			<frameinstance modelid="Frame_Button" posn="{{{PosnX}}} {{{PosnY}}} 5." id="Frame_Instance{{{I}}}{{{J}}}" />
+			""";
+		}
+	}
+	
+	MLText^="""
+			</frame>
+		</frame>
+	</frame>
+
+	<script><!--
+		#Const DebugName  "L_MoodSelector"
+		
+		#Include "MathLib" as ML
+		
+		{{{Manialink::GetIncludes()}}}
+		{{{Manialink::Load()}}}
+		{{{BuilderHelper::MLCommonFunctions()}}}
+	
+		declare Vec3[Integer][Integer] G_QuadImageColor;
+		declare Text[Integer][Integer] G_IndexEnviro;
+
+
+		Text GetEnviro(Integer _Index)
+		{
+			declare Text Enviro;
+			switch(_Index) {
+				case 0	: Enviro = "Canyon";
+				case 1	: Enviro = "Valley";
+				case 2	: Enviro = "Lagoon";
+				case 3 	: Enviro = "Stadium";
+			}
+
+			return Enviro;
+		}
+
+		Text GetEnviroImg(Integer _Index)
+		{
+			declare Text EnviroImg;
+			switch(_Index) {
+				case 0	: EnviroImg = "{{{IMGCanyon}}}";
+				case 1	: EnviroImg = "{{{IMGValley}}}";
+				case 2	: EnviroImg = "{{{IMGLagoon}}}";
+				case 3 	: EnviroImg = "{{{IMGStadium}}}";
+			}
+
+			return EnviroImg;
+		}
+
+		Text GetMood(Integer _Index)
+		{
+			declare Text Enviro;
+			switch(_Index) {
+				case 0 	: Enviro = "Sunrise";
+				case 1	: Enviro = "Day";
+				case 2	: Enviro = "Sunset";
+				case 3	: Enviro = "Night";
+			}
+
+			return Enviro;
+		}
+
+		Text GetPlayerModel(Integer _Index)
+		{
+			declare Text PlayerModel;
+			switch(_Index) {
+				case 0	: PlayerModel = "CanyonCar";
+				case 1	: PlayerModel = "ValleyCar";
+				case 2	: PlayerModel = "LagoonCar";
+				case 3 	: PlayerModel = "StadiumCar";
+			}
+
+			return PlayerModel;
+		}
+
+		Void InitPage()
+		{
+			declare Integer EnviroSelect for This;
+			
+			declare CMlQuad Quad_BoardFooter     <=> (Page.GetFirstChild("BoardFooter") 			as CMlQuad);
+			declare CMlQuad QuadBoardEnviro      <=> (Page.GetFirstChild("BoardEnviro") 			as CMlQuad);
+			Quad_BoardFooter.Colorize = <0., 0., 0.>;
+			declare Text EnviroImg = GetEnviroImg(EnviroSelect);
+			QuadBoardEnviro.ChangeImageUrl(EnviroImg);
+		}
+
+		Void UpdateHeaderTitle()
+		{
+			declare Vec3 HeaderInfo_LabelTitleColor for This;
+			HeaderInfo_LabelTitleColor = <1.0, 1.0, 1.0>;
+			declare Text HeaderInfo_LabelTitle for This;
+			HeaderInfo_LabelTitle = "Choose a Mood";
+			declare Vec3 NextColorHeaderInfo for This;
+			NextColorHeaderInfo = <0.1, 0.1, 0.1>;
+
+			SendCustomEvent("UpdateHeaderTitle", [""]);
+		}
+
+		Void UpdateSelector(Integer _IndexSelectX, Integer _IndexSelectY)
+		{
+			declare CMlQuad Quad_ArrowLeftBlink  <=> (Page.GetFirstChild("Quad_ArrowLeftBlink")  as CMlQuad);
+			declare CMlQuad Quad_ArrowRightBlink <=> (Page.GetFirstChild("Quad_ArrowRightBlink") as CMlQuad);
+
+			Quad_ArrowLeftBlink.Colorize  = G_QuadImageColor[0][0];
+			Quad_ArrowRightBlink.Colorize = G_QuadImageColor[0][0];
+
+		}
+
+		main() {
+			{{{BuilderHelper::MLEnableMenuNavigationInputs()}}}
+
+			declare CMlFrame[][Integer]	Frames_Instance;
+			declare CMlLabel[][Integer]	Labels_Name;
+			declare CMlLabel[][Integer]	Labels_Tuto;
+			declare CMlQuad[][Integer]	Quad_Icon;
+			declare Integer 			IndexSelectY = 0;
+			declare Integer 			IndexSelectX = 0;
+			declare Integer 			IndexMaxY = {{{Count_InstancesY}}};
+			declare Integer 			IndexMaxX = {{{Count_InstancesX}}};
+
+
+			declare Text[Integer][Integer] TextButton;
+			declare Text[Integer][Integer] QuadImageUrl;
+			declare Text[Integer][Integer] QuadImageTutoUrl;
+			for(I, 0, {{{Count_InstancesY-1}}})
+			{
+				TextButton[I]       =  Text[Integer];
+				QuadImageUrl[I]     =  Text[Integer];
+				QuadImageTutoUrl[I] =  Text[Integer];
+				G_QuadImageColor[I]	=  Vec3[Integer];
+				G_IndexEnviro[I] 	=  Text[Integer];
+
+			}
+			TextButton[0][0]       = "Stadium";
+			TextButton[1][0]       = "Canyon";
+			TextButton[2][0]       = "Valley";
+			TextButton[3][0]       = "Lagoon";
+			G_QuadImageColor[0][0] = <1.0, 0.5, 0.1>;
+			G_QuadImageColor[1][0] = <0.07, 0.58, 1.0>;
+			G_QuadImageColor[2][0] = <0.6, 0.0, 0.1>;
+			G_QuadImageColor[3][0] = <0.4, 0.4, 1.>;
+			QuadImageUrl[0][0]       = "{{{IMGSunrise}}}";
+			QuadImageUrl[1][0]       = "{{{IMGDay}}}";
+			QuadImageUrl[2][0]       = "{{{IMGSunset}}}";
+			QuadImageUrl[3][0]       = "{{{IMGNight}}}";
+			G_IndexEnviro[0][0]       = "Stadium";
+			G_IndexEnviro[1][0]       = "Canyon";
+			G_IndexEnviro[2][0]       = "Valley";
+			G_IndexEnviro[3][0]       = "Lagoon";
+
+
+			for(I, 0, {{{Count_InstancesY-1}}})
+			{
+				Frames_Instance[I]	= CMlFrame[];
+				Labels_Name[I]		= CMlLabel[];
+				Labels_Tuto[I]		= CMlLabel[];
+				Quad_Icon[I]		= CMlQuad[];
+				for(J,0,{{{Count_InstancesX-1}}})
+				{
+					Frames_Instance[I]	.add( (Page.MainFrame.GetFirstChild("Frame_Instance"^I^""^J)	as CMlFrame) );
+					Labels_Name[I]		.add( (Frames_Instance[I][J].GetFirstChild("Label_Name") 		as CMlLabel) );
+					Labels_Tuto[I]		.add( (Frames_Instance[I][J].GetFirstChild("Label_Tuto") 		as CMlLabel) );
+					Quad_Icon[I]		.add( (Frames_Instance[I][J].GetFirstChild("Quad_Icon") 		as CMlQuad)  );
+				}
+			}
+
+			Quad_Icon[0][0].ChangeImageUrl(QuadImageUrl[0][0]);
+			Quad_Icon[1][0].ChangeImageUrl(QuadImageUrl[1][0]);
+			Quad_Icon[2][0].ChangeImageUrl(QuadImageUrl[2][0]);
+			Quad_Icon[3][0].ChangeImageUrl(QuadImageUrl[3][0]);
+
+
+			declare CMlFrame Frame_SelectorArrows  <=> (Page.GetFirstChild("Frame_SelectorArrows") as CMlFrame);
+			
+			
+			declare Real PosnY = {{{PosYFirstQuad}}} - IndexSelectY*{{{SizeYQuad}}} - IndexSelectY*{{{MarginY_Button}}}*0.8 - {{{MarginY_Button}}}/2.;
+			declare CMlQuad Quad_ArrowLeftBlink  <=> (Page.GetFirstChild("Quad_ArrowLeftBlink") as CMlQuad);
+			declare CMlQuad Quad_ArrowRightBlink  <=> (Page.GetFirstChild("Quad_ArrowRightBlink") as CMlQuad);
+			declare CMlQuad Quad_ArrowLeft  <=> (Page.GetFirstChild("Quad_ArrowLeft") as CMlQuad);
+			declare CMlQuad Quad_ArrowRight  <=> (Page.GetFirstChild("Quad_ArrowRight") as CMlQuad);
+			
+			
+			while(True) {
+				yield;
+				if(! PageIsVisible) continue;
+				LibManialink_AnimLoop();
+
+				declare Real SinOpacity = ML::Sin(Now*0.0035)*0.05 + 0.75;
+				declare Real SinPosition = ML::Sin(Now*0.0035)*0.05;
+				Quad_ArrowLeftBlink		.Opacity = SinOpacity;
+				Quad_ArrowRightBlink	.Opacity = SinOpacity;
+				Quad_ArrowLeftBlink.RelativePosition.X  += SinPosition;
+				Quad_ArrowLeft.RelativePosition.X       += SinPosition;
+				Quad_ArrowRightBlink.RelativePosition.X -= SinPosition;
+				Quad_ArrowRight.RelativePosition.X      -= SinPosition;
+
+				foreach(Event in PendingEvents) {
+					switch(Event.Type) {
+						case CMlEvent::Type::MenuNavigation: {
+							switch(Event.MenuNavAction) {
+								case CMlEvent::EMenuNavAction::Up : {
+									if(IndexSelectY > 0)
+									{
+										IndexSelectY -= 1;
+										Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+										declare Real PosnY = {{{PosYFirstQuad}}} - IndexSelectY*{{{SizeYQuad}}} - IndexSelectY*{{{MarginY_Button}}}*0.8 - {{{MarginY_Button}}}/2.;
+										
+										declare Vec3 NewFrameArrowPosition = <Frame_SelectorArrows.RelativePosition.X, PosnY, Frame_SelectorArrows.RelativePosition.Z>;
+										Frame_SelectorArrows.RelativePosition = NewFrameArrowPosition;
+										UpdateSelector(IndexSelectX, IndexSelectY);
+									}
+								}
+								case CMlEvent::EMenuNavAction::Down : {
+									if(IndexSelectY < IndexMaxY-1)
+									{
+										IndexSelectY += 1;
+										Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+										declare Real PosnY = {{{PosYFirstQuad}}} - IndexSelectY*{{{SizeYQuad}}} - IndexSelectY*{{{MarginY_Button}}}*0.8 - {{{MarginY_Button}}}/2.;
+										
+										declare Vec3 NewFrameArrowPosition = <Frame_SelectorArrows.RelativePosition.X, PosnY, Frame_SelectorArrows.RelativePosition.Z>;
+										Frame_SelectorArrows.RelativePosition = NewFrameArrowPosition;
+										UpdateSelector(IndexSelectX, IndexSelectY);
+									}
+								}
+								case CMlEvent::EMenuNavAction::Left : {
+									if(IndexSelectX > 0)
+									{
+										IndexSelectX -= 1;
+										Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+										declare Real PosnX = {{{PosXFirstQuad}}} + IndexSelectX*{{{SizeXQuad}}} + IndexSelectX*{{{MarginX_Button}}}*1. + {{{MarginX_Button}}}/2.;
+										
+										declare Vec3 NewFrameArrowPosition = <PosnX, Frame_SelectorArrows.RelativePosition.Y, Frame_SelectorArrows.RelativePosition.Z>;
+										Frame_SelectorArrows.RelativePosition = NewFrameArrowPosition;
+										UpdateSelector(IndexSelectX, IndexSelectY);
+									}
+								}
+								case CMlEvent::EMenuNavAction::Right : {
+									if(IndexSelectX < IndexMaxX-1)
+									{
+										IndexSelectX += 1;
+										Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+										declare Real PosnX = {{{PosXFirstQuad}}} + IndexSelectX*{{{SizeXQuad}}} + IndexSelectX*{{{MarginX_Button}}}*1. + {{{MarginX_Button}}}/2.;
+										declare Vec3 NewFrameArrowPosition = <PosnX, Frame_SelectorArrows.RelativePosition.Y, Frame_SelectorArrows.RelativePosition.Z>;
+										Frame_SelectorArrows.RelativePosition = NewFrameArrowPosition;
+										UpdateSelector(IndexSelectX, IndexSelectY);
+									}
+								}
+								case CMlEvent::EMenuNavAction::Select : {
+									Audio.PlaySoundEvent("{{{SoundSelect}}}", {{{Volumes::GetVolumedB("MenuValidate")}}});
+									declare Integer EnviroSelect for This;
+									declare Text PlayerModel = GetPlayerModel(EnviroSelect);
+									declare Text Enviro = GetEnviro(EnviroSelect);
+									declare Text Mood = GetMood(IndexSelectY);
+
+									
+									SendCustomEvent("GotoPrevious", [""]);
+									SendCustomEvent("LaunchEditor", [Enviro, Mood, "", PlayerModel, "", "{{{EditorPlugin}}}"]);
+									SendCustomEvent("DetachPage", ["Mood"]);
+								}
+								case CMlEvent::EMenuNavAction::Cancel : {
+									IndexSelectY     = 0;
+									Audio.PlaySoundEvent("{{{SoundBack}}}", {{{Volumes::GetVolumedB("MenuPageBack")}}});
+									SendCustomEvent("GotoPrevious", [""]);
+								}
+								case CMlEvent::EMenuNavAction::AppMenu : {
+									IndexSelectY     = 0;
+									Audio.PlaySoundEvent("{{{SoundBack}}}", {{{Volumes::GetVolumedB("MenuPageBack")}}});
+									SendCustomEvent("GotoPrevious", [""]);
+								}
+							}
+						}
+
+						
+						case CMlEvent::Type::PluginCustomEvent: {
+							
+							switch(Event.PluginCustomEventType) {
+								case "Show" : {
+									IndexSelectY  = 0;
+									IndexSelectX  = 0;
+									declare Real PosnY = {{{PosYFirstQuad}}} - IndexSelectY*{{{SizeYQuad}}} - IndexSelectY*{{{MarginY_Button}}}*1. - {{{MarginY_Button}}}/2.;
+									Frame_SelectorArrows.RelativePosition.Y = PosnY;
+									InitPage();
+									UpdateSelector(IndexSelectX, IndexSelectY);
+									{{{_ShowAnim}}}
+									//SendCustomEvent("SetActiveLayer", ["Mood"]);
+									EnableMenuNavigation(True,False,Null,1);
+									//UpdateHeaderTitle();
+								}
+							
+								case "Hide" : {
+									SendCustomEvent("DetachPage", ["Mood"]);
+									{{{_HideAnim}}}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	--></script>
+	""";
+	
+	return MLText;
+}

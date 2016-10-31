@@ -1,0 +1,367 @@
+/** 
+ * Utils library
+ */
+
+#Const Version		"2015-12-30"
+#Const ScriptName	"Utils.Script.txt"
+
+#Include "MathLib" as ML
+#Include "Libs/Openplanet/TMConsole/MapEditor/Layers.Script.txt" as Layers
+
+// ---------------------------------- //
+// Constants
+// ---------------------------------- //
+// Save status
+#Const C_SaveStatus_NotSaved	0
+#Const C_SaveStatus_Modified	1
+#Const C_SaveStatus_Saved		2
+
+// ---------------------------------- //
+// Globales
+// ---------------------------------- //
+declare Boolean G_EnableLog;		///< Log status
+declare Integer G_SaveStatus;		///< Save status
+declare Boolean G_LogToFile;		///< Log to file
+declare Text	G_Log;				///< Log content
+declare Boolean G_IsTrialVersion;	///< Trial version
+
+// ---------------------------------- //
+// Functions
+// ---------------------------------- //
+// ---------------------------------- //
+// Public
+// ---------------------------------- //
+// ---------------------------------- //
+/** Return the version number of the script
+ *
+ *	@return						The version number of the script
+ */
+Text GetScriptVersion() {
+	return Version;
+}
+
+// ---------------------------------- //
+/** Return the name of the script
+ *
+ *	@return						The name of the script
+ */
+Text GetScriptName() {
+	return ScriptName;
+}
+
+// ---------------------------------- //
+/** Log a value
+ *
+ *	@param	_Text				The value to log
+ */
+Void Log(Text _Text) {
+	if (!G_EnableLog) return;
+	
+	if (G_LogToFile) G_Log ^= Now^"> "^_Text^"\n";
+	else log(Now^"> "^_Text);
+}
+
+// ---------------------------------- //
+/** Enable the log function to output logs
+ *
+ *	@param	_Enable					True to enable, False to disable
+ */
+Void EnableLog(Boolean _Enable) {
+	G_EnableLog = _Enable;
+}
+
+// ---------------------------------- //
+/** Save log message to file instead of sending them to the console
+ *
+ *	@param	_ToFile					True to send log to file, False otherwise
+ */
+Void LogToFile(Boolean _ToFile) {
+	G_LogToFile = _ToFile;
+}
+
+// ---------------------------------- //
+/// Reset the log file
+Void ResetLogFile() {
+	G_Log = "";
+}
+
+// ---------------------------------- //
+/// View the log file
+Void ViewLogFile() {
+	if (!G_EnableLog) return;
+	
+	declare LayerLogFile <=> Layers::Create("LogFile");
+	declare LibUtils_WaitLog for LayerLogFile.LocalPage = True;
+	declare LibUtils_LogUpdate for LayerLogFile.LocalPage = -1;
+	declare LibUtils_Log for LayerLogFile.LocalPage = "";
+	LibUtils_Log = G_Log;
+	LibUtils_LogUpdate = Now;
+	
+	LibUtils_WaitLog = True;
+	
+	LayerLogFile.ManialinkPage = """
+<manialink version="3" name="MapEditor:LogFile">
+<frame pos="0 0" z-index="10000">
+	<quad pos="0 0" z-index="-1" size="320 180" halign="center" valign="center" style="Bgs1" substyle="BgDialogBlur" />
+	<quad pos="0 0" z-index="-2" size="320 180" halign="center" valign="center" bgcolor="000" opacity="0.8" scriptevents="1" />
+	<textedit pos="0 80" size="220 100" halign="center" textformat="script" textsize="2" id="TextEdit_Log" />
+	<label pos="0 -25" halign="center" style="CardButtonMedium" scriptevents="1" text="OK" id="Button_OK" />
+</frame>
+<script><!--
+main() {
+	declare TextEdit_Log <=> (Page.GetFirstChild("TextEdit_Log") as CMlTextEdit);
+	
+	declare LibUtils_WaitLog for Page = True;
+	declare LibUtils_LogUpdate for Page = -1;
+	declare LibUtils_Log for Page = "";
+	
+	declare PrevLogUpdate = -1;
+	
+	while (True) {
+		yield;
+		
+		if (PrevLogUpdate != LibUtils_LogUpdate) {
+			PrevLogUpdate = LibUtils_LogUpdate;
+			TextEdit_Log.Value = LibUtils_Log;
+		}
+		
+		foreach (Event in PendingEvents) {
+			if (Event.Type == CMlEvent::Type::MouseClick) {
+				if (Event.ControlId == "Button_OK") LibUtils_WaitLog = False;
+			}
+		}
+	}
+}
+--></script>
+</manialink>
+""";
+	
+	while (LibUtils_WaitLog) yield;
+	
+	Layers::Destroy("LogFile");
+}
+
+// ---------------------------------- //
+/** Convert an Integer to a CEditorPlugin::CardinalDirections
+ *	0: North, 1: East, 2: South, 3: West
+ *
+ *	@param	_ClipNb				The Integer to convert
+ *
+ *	@return						The cardinal direction
+ */
+CEditorPlugin::CardinalDirections IntToDir(Integer _ClipNb) {
+	switch (_ClipNb) {
+		case 0: return CEditorPlugin::CardinalDirections::North;
+		case 1: return CEditorPlugin::CardinalDirections::East;
+		case 2: return CEditorPlugin::CardinalDirections::South;
+		case 3: return CEditorPlugin::CardinalDirections::West;
+	}
+	
+	return CEditorPlugin::CardinalDirections::North;
+}
+
+// ---------------------------------- //
+/** Convert a CBlock::CardinalDirections to a CEditorPlugin::CardinalDirections
+ *
+ *	@param	_Dir				The CBlock::CardinalDirections to convert
+ *
+ *	@return						The cardinal direction
+ */
+CEditorPlugin::CardinalDirections DirToDir(CBlock::CardinalDirections _Dir) {
+	switch (_Dir) {
+		case CBlock::CardinalDirections::North: return CEditorPlugin::CardinalDirections::North;
+		case CBlock::CardinalDirections::East: return CEditorPlugin::CardinalDirections::East;
+		case CBlock::CardinalDirections::South: return CEditorPlugin::CardinalDirections::South;
+		case CBlock::CardinalDirections::West: return CEditorPlugin::CardinalDirections::West;
+	}
+	
+	return CEditorPlugin::CardinalDirections::North;
+}
+
+// ---------------------------------- //
+/** Convert a CEditorPlugin::CardinalDirections to  an Integer
+ *	0: North, 1: East, 2: South, 3: West
+ *
+ *	@param	_Dir				The cardinal direction to convert
+ *
+ *	@return						The Integer
+ */
+Integer DirToInt(CEditorPlugin::CardinalDirections _Dir) {
+	switch (_Dir) {
+		case CEditorPlugin::CardinalDirections::North	: return 0;
+		case CEditorPlugin::CardinalDirections::East	: return 1;
+		case CEditorPlugin::CardinalDirections::South	: return 2;
+		case CEditorPlugin::CardinalDirections::West	: return 3;
+	}
+	
+	return 0;
+}
+
+// ---------------------------------- //
+/** Convert a CEditorPlugin::CardinalDirections to  a Vec3
+ *
+ *	@param	_Dir				The cardinal direction to convert
+ *
+ *	@return						The Vec3
+ */
+Vec3 DirToVec3(CEditorPlugin::CardinalDirections _Dir) {
+	switch (_Dir) {
+		case CEditorPlugin::CardinalDirections::North	: return <0., 0., 1.>;
+		case CEditorPlugin::CardinalDirections::East	: return <1., 0., 0.>;
+		case CEditorPlugin::CardinalDirections::South	: return <0., 0., -1.>;
+		case CEditorPlugin::CardinalDirections::West	: return <-1., 0., 0.>;
+	}
+	
+	return <0., 0., 0.>;
+}
+
+// ---------------------------------- //
+/** Convert an Int3 block position into a Vec3 world position
+ *
+ *	@param	_BlockPosition		The block position
+ *
+ *	@return						The world position
+ */
+Vec3 GetWorldPosition(Int3 _BlockPosition) {
+	return <CollectionSquareSize * _BlockPosition.X, CollectionSquareHeight * (_BlockPosition.Y - CollectionGroundY), CollectionSquareSize * _BlockPosition.Z>;
+}
+
+// ---------------------------------- //
+/** Convert an Int3 block position into a Vec3 world position
+ *	and center the position on the block
+ *
+ *	@param	_BlockPosition		The block position
+ *
+ *	@return						The world position
+ */
+Vec3 GetWorldPosition2(Int3 _BlockPosition) {
+	return <
+		(CollectionSquareSize * _BlockPosition.X) + (CollectionSquareSize * 0.5), 
+		(CollectionSquareHeight * (_BlockPosition.Y - CollectionGroundY)) + (CollectionSquareHeight * 0.5), 
+		(CollectionSquareSize * _BlockPosition.Z) + (CollectionSquareSize * 0.5)
+	>;
+}
+
+// ---------------------------------- //
+/** Convert a Vec3 world position into an Int3 block position
+ *
+ *	@param	_WorldPosition		The world position
+ *
+ *	@return						The block position
+ *
+Int3 GetBlockPosition(Vec3 _WorldPosition) {
+	
+}*/
+
+// ---------------------------------- //
+/** Compute the manhattan distance between two points
+ *
+ *	@param	_Start				The starting point
+ *	@param	_End				The ending point
+ *
+ *	@return						The manhattan distance between the two given points
+ */
+Integer ManhattanDistance(Int3 _Start, Int3 _End) {
+	return ML::Abs(_Start.X - _End.X) + ML::Abs(_Start.Y - _End.Y) + ML::Abs(_Start.Z - _End.Z);
+}
+
+// ---------------------------------- //
+/** Return the neighbor coordinates of a coordinate
+ *
+ *	@param	_Coord				The coordinates to check
+ *
+ *	@return						The neighboring coordinates
+ */
+Int3[] GetNeighbors(Int3 _Coord) {
+	declare NeighborsCoords = [<1, 0, 0>, <-1, 0, 0>, <0, 0, 1>, <0, 0, -1>, <0, 1, 0>, <0, -1, 0>];
+	declare Int3[] Neighbors;
+	foreach (NeighborCoord in NeighborsCoords) {
+		Neighbors.add(_Coord + NeighborCoord);
+	}
+	return Neighbors;
+}
+
+// ---------------------------------- //
+/** Check if an entry from the second array exists in the first array
+ *
+ *	@param	_Array1				The array to check
+ *	@param	_Array2				The values to check
+ *
+ *	@return						True if an entry from the second array is in the first array, False otherwise
+ */
+/* Replaced by Array1.containsoneof(Array2)
+Boolean Exists(Text[] _Array1, Text[] _Array2) {
+	foreach (Value in _Array2) {
+		if (_Array1.exists(Value)) return True;
+	}
+	return False;
+}
+*/
+
+// ---------------------------------- //
+/** Check if the first array only contains values from the second array
+ *
+ *	@param	_Array1				The array to check
+ *	@param	_Array2				The values to check
+ *
+ *	@return						True if the first array contains only values from the second array, False otherwise
+ */
+/* Replaced by Array1.containsonly(Array2)
+Boolean Only(Text[] _Array1, Text[] _Array2) {
+	foreach (Value in _Array1) {
+		if (!_Array2.exists(Value)) return False;
+	}
+	return True;
+}
+*/
+
+// ---------------------------------- //
+/** Get Null coord
+ *
+ *	@return						Null coord
+ */
+Int3 NullCoord() {
+	return <-1, -1, -1>;
+}
+
+// ---------------------------------- //
+/// Get the save status constants
+Integer SaveStatus_NotSaved() { return C_SaveStatus_NotSaved; }
+Integer SaveStatus_Modified() { return C_SaveStatus_Modified; }
+Integer SaveStatus_Saved() { return C_SaveStatus_Saved; }
+
+// ---------------------------------- //
+/** Set the saved status of the map
+ *
+ *	@param	_SaveStatus				The save status
+ */
+Void SetSaveStatus(Integer _SaveStatus) {
+	G_SaveStatus = _SaveStatus;
+}
+
+// ---------------------------------- //
+/** Get the saved status of the map
+ *
+ *	@return							The save status
+ */
+Integer GetSaveStatus() {
+	return G_SaveStatus;
+}
+
+// ---------------------------------- //
+/** Turn on/off the trial version mode
+ *
+ *	@param	_Trial					Is in trial mode or not
+ */
+Void IsTrialVersion(Boolean _Trial) {
+	G_IsTrialVersion = _Trial;
+}
+
+// ---------------------------------- //
+/** Check if the trackbuilder is in trial version
+ *
+ *	@return							True if the trackbuilder is in trial version, False otherwise
+ */
+Boolean IsTrialVersion() {
+	return G_IsTrialVersion;
+}

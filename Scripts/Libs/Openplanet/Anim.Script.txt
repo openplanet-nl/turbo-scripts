@@ -1,0 +1,272 @@
+// ---------------------------------- //
+// TestMode Anim Library
+// ---------------------------------- //
+
+
+// ---------------------------------- //
+// Inject lib Fonction
+// ---------------------------------- //
+
+Text GetIncludes()
+{
+	return """ 
+	#Include "MathLib" as ML
+	#Include "AnimLib" as AL
+	""";
+	
+}
+
+Text GetStandardFunctions()
+{
+	return """ 
+	
+	
+	/////////////////////////////////////
+	// SLIDE ANIMS                       
+	
+	Boolean CheckToPlayAnimSlideTo(Text _Easing, CMlFrame _Frame, Integer _LatestStart, Vec3 _EndPos, Real _OffsetX, Real _OffsetY, Integer _Duration) 
+	{
+		
+		declare Boolean AnimDone		= False;
+		declare Real 	CurrTime 		= (Now - _LatestStart)*1.;
+		declare Real	Duration		= _Duration * 1.;
+		declare Real 	CurrentPosX;
+		declare Real 	CurrentPosY;
+		
+		if (CurrTime >= 0)
+		{
+			if (CurrTime < Duration) 
+			{
+				CurrentPosX = AL::Ease(_Easing, CurrTime, _EndPos.X-_OffsetX, _OffsetX, Duration);
+				CurrentPosY = AL::Ease(_Easing, CurrTime, _EndPos.Y-_OffsetY, _OffsetY, Duration);
+			}  
+			else 
+			{
+				AnimDone = True;
+				CurrentPosX = _EndPos.X;
+				CurrentPosY = _EndPos.Y;
+			}
+		}
+		
+		_Frame.RelativePosition = <CurrentPosX, CurrentPosY, _EndPos.Z>;
+		
+		return AnimDone;
+	}
+	
+	
+	
+	
+	/////////////////////////////////////
+	// POSITION ANIMS                    
+	
+	Boolean CheckToPlayMoveTo(Text _Easing, CMlFrame _Frame, CMlQuad _Quad,  CMlLabel _Label, Integer _LatestStart, Vec3 _StartPos, Vec3 _EndPos, Integer _Duration) 
+	{
+		declare Boolean AnimDone	= False;
+		declare Real 	CurrTime 	= (Now - _LatestStart)*1.;
+		declare Real	Duration	= _Duration * 1.;
+		declare Real 	CurrentPosX;
+		declare Real 	CurrentPosY;
+		declare Real 	CurrentPosZ = _StartPos.Z;
+		
+		if (CurrTime >= 0)
+		{
+			if (CurrTime < Duration)
+			{
+				CurrentPosX = AL::Ease(_Easing, CurrTime, _StartPos.X, _EndPos.X - _StartPos.X, Duration);
+				CurrentPosY = AL::Ease(_Easing, CurrTime, _StartPos.Y, _EndPos.Y - _StartPos.Y, Duration);
+			}  
+			else 
+			{
+				CurrentPosX = _EndPos.X;
+				CurrentPosY = _EndPos.Y;
+				AnimDone 	= True;
+			}
+		}
+		
+		if(_Frame != Null) 	_Frame	.RelativePosition = <CurrentPosX, CurrentPosY, CurrentPosZ>;
+		if(_Quad  != Null) 	_Quad	.RelativePosition = <CurrentPosX, CurrentPosY, CurrentPosZ>;
+		if(_Label != Null) 	_Label	.RelativePosition = <CurrentPosX, CurrentPosY, CurrentPosZ>;
+		
+		return AnimDone;
+	}
+	
+	// FRAME VERSION
+	Boolean CheckToPlayMoveTo(Text _Easing, CMlFrame _Frame, Integer _LatestStart, Vec3 _StartPos, Vec3 _EndPos, Integer _Duration) 
+	{
+		return  CheckToPlayMoveTo(_Easing,_Frame, Null, Null, _LatestStart, _StartPos, _EndPos, _Duration);
+	}
+	
+	// QUAD VERSION
+	Boolean CheckToPlayMoveTo(Text _Easing, CMlQuad _Quad, Integer _LatestStart, Vec3 _StartPos, Vec3 _EndPos, Integer _Duration) 
+	{
+		return  CheckToPlayMoveTo(_Easing, Null, _Quad, Null, _LatestStart, _StartPos, _EndPos, _Duration);
+	}
+	
+	// LABEL VERSION
+	Boolean CheckToPlayMoveTo(Text _Easing, CMlLabel _Label, Integer _LatestStart, Vec3 _StartPos, Vec3 _EndPos, Integer _Duration) 
+	{
+		return  CheckToPlayMoveTo(_Easing, Null, Null, _Label, _LatestStart, _StartPos, _EndPos, _Duration);
+	}
+	
+	
+	
+	
+	/////////////////////////////////////
+	// FADE ANIMS                        
+	
+	Boolean CheckToPlayAnimFadeTo(Text _Easing, CMlQuad _Quad, CMlLabel _Label, Integer _LatestStart, Real _MaxOpacity, Real _MinOpacity, Integer _Duration) 
+	{
+		
+		declare Boolean AnimDone		= False;
+		declare Real 	CurrTime 		= (Now - _LatestStart)*1.;
+		declare Real	Duration		= _Duration * 1.;
+		declare Real 	CurrentScale 	= 1.;
+		
+		if (CurrTime >= 0)
+		{
+			if (CurrTime < Duration) 
+			{
+				declare Real CurrentOpacity = AL::Ease(_Easing, CurrTime, _MinOpacity, 	_MaxOpacity-_MinOpacity, Duration);
+				
+				if(_Quad  != Null) _Quad.Opacity 	= CurrentOpacity;
+				if(_Label != Null) _Label.Opacity 	= CurrentOpacity;
+			}  
+			else 
+			{ 
+				AnimDone 		= True;
+			}
+		}
+
+		return AnimDone;
+	}
+	
+	// LABEL VERSION
+	Boolean CheckToPlayAnimFadeTo(Text _Easing, CMlLabel _Label, Integer _LatestStart, Real _MaxOpacity, Real _MinOpacity, Integer _Duration) 
+	{
+		return CheckToPlayAnimFadeTo(_Easing, Null, _Label, _LatestStart, _MaxOpacity, _MinOpacity, _Duration);
+	}
+	
+	// QUAD VERSION
+	Boolean CheckToPlayAnimFadeTo(Text _Easing, CMlQuad _Quad, Integer _LatestStart, Real _MaxOpacity, Real _MinOpacity, Integer _Duration) 
+	{
+		return CheckToPlayAnimFadeTo(_Easing, _Quad, Null, _LatestStart, _MaxOpacity, _MinOpacity, _Duration);
+	}
+	
+	
+	
+	
+	/////////////////////////////////////
+	// SCALE ANIMS                       
+	
+	Boolean CheckToPlayAnimScaleTo(Text _Easing, CMlFrame _Frame, CMlQuad _Quad, CMlLabel _Label, Integer _LatestStart, Real _StartScale, Real _EndScale, Integer _Duration) {
+		
+		declare Boolean AnimDone		= False;
+		declare Real 	CurrTime 		= (Now - _LatestStart)*1.;
+		declare Real	Duration		= _Duration * 1.;
+		declare Real 	CurrentScale 	= 1.;
+		
+		if (CurrTime > 0 && CurrTime <= Duration) 
+		{
+			CurrentScale = AL::Ease(_Easing, CurrTime, _StartScale, _EndScale-_StartScale, Duration);
+		}  
+		else if(CurrTime < 0)
+		{ 
+			CurrentScale 	= _StartScale; 
+		}
+		else
+		{ 
+			CurrentScale 	= _EndScale; 
+			AnimDone 		= True;
+		}
+		
+		if(_Frame != Null) _Frame	.RelativeScale = CurrentScale;
+		if(_Quad  != Null) _Quad	.RelativeScale = CurrentScale;
+		if(_Label != Null) _Label	.RelativeScale = CurrentScale;
+		
+		return AnimDone;
+	}
+	
+	Boolean CheckToPlayAnimScaleTo(Text _Easing, CMlFrame _Frame, Integer _LatestStart, Real _StartScale, Real _EndScale, Integer _Duration) {
+		return CheckToPlayAnimScaleTo(_Easing, _Frame, Null, Null, _LatestStart, _StartScale, _EndScale, _Duration);
+	}
+	
+	Boolean CheckToPlayAnimScaleTo(Text _Easing, CMlQuad _Quad, Integer _LatestStart, Real _StartScale, Real _EndScale, Integer _Duration) {
+		return CheckToPlayAnimScaleTo(_Easing, Null, _Quad, Null, _LatestStart, _StartScale, _EndScale, _Duration);
+	}
+	
+	Boolean CheckToPlayAnimScaleTo(Text _Easing, CMlLabel _Label,  Integer _LatestStart, Real _StartScale, Real _EndScale, Integer _Duration) {
+		return CheckToPlayAnimScaleTo(_Easing, Null, Null, _Label, _LatestStart, _StartScale, _EndScale, _Duration);
+	}
+	
+	Boolean CheckToPlayAnimScaleTo(Text _Easing, CMlQuad _Quad, CMlLabel _Label, Integer _LatestStart, Real _StartScale, Real _EndScale, Integer _Duration) {
+		return CheckToPlayAnimScaleTo(_Easing, Null, _Quad, _Label, _LatestStart, _StartScale, _EndScale, _Duration);
+	}
+	""";
+}
+
+Text GetCustomFunctions()
+{
+	return """ 
+	
+	//////////////////////////////////////////////////
+	// CUSTOM ANIMS                                   
+	
+	Boolean CheckToPlayAnimScaleCustom(Text _Easing, CMlFrame _Frame, Integer _LatestStart, Real _StartScale, Real _MaxScale, Integer _Duration) {
+	
+		declare Boolean AnimDone		= False;
+		declare Real 	CurrTime 		= (Now - _LatestStart)*1.;
+		declare Real	Duration		= _Duration * 1.;
+		declare Real 	CurrentScale 	= 1.;
+		
+		if (CurrTime >= 0 && CurrTime < _Duration) {
+			declare ChangeInValue = _StartScale-_MaxScale;
+			if(_MaxScale < _StartScale)
+				ChangeInValue = _MaxScale-_StartScale;
+				
+			CurrentScale = AL::Ease(_Easing, CurrTime, _MaxScale, ChangeInValue, Duration);
+			_Frame.RelativeScale = CurrentScale;
+			
+		}  else { 
+			CurrentScale 	= _StartScale; 
+			AnimDone 		= True;
+		}
+		
+		// _Frame.RelativeScale = CurrentScale;
+		return AnimDone;
+	
+	}
+	
+	Boolean CheckToPlayAnimZoom(Text _Easing, CMlFrame _Frame, CMlQuad _Quad, CMlLabel _Label, Integer _LatestStart, Real _StartScale, Real _MaxScale, Integer _Duration, Real _MaxOpacity, Real _MinOpacity) {
+		declare Boolean AnimDone = False;
+		AnimDone = CheckToPlayAnimFadeTo("Linear", _Quad, _Label, _LatestStart, _MaxOpacity, _MinOpacity, _Duration);
+		AnimDone = CheckToPlayAnimScaleCustom(_Easing, _Frame, _LatestStart, _StartScale, _MaxScale, _Duration);
+		return AnimDone;
+	}
+	
+	Boolean CheckToPlayAnimZoom(Text _Easing, CMlFrame _Frame, CMlQuad _Quad, CMlLabel _Label, Integer _LatestStart, Real _StartScale, Real _MaxScale, Integer _Duration) {
+		return CheckToPlayAnimZoom(_Easing, _Frame, _Quad, _Label, _LatestStart, _StartScale, _MaxScale, _Duration, 1., 0.25);
+	}
+	
+	""";
+}
+
+
+
+Text Inject(Text _Mode) 
+{ 
+
+	declare Text ML;
+	switch(_Mode)
+	{
+		case	"Minimal"		: ML = GetStandardFunctions();
+		case	"WithIncludes"	: ML = GetIncludes() ^ GetStandardFunctions();
+		default 				: ML = GetIncludes() ^ GetStandardFunctions() ^ GetCustomFunctions();
+	}
+	
+	return ML;
+}
+
+Text Inject()
+{
+	return Inject("");
+}

@@ -1,0 +1,574 @@
+#Include "Libs/Openplanet/TMConsole/PopUpManager.Script.txt"									as PopUpManager
+#Include "Libs/Openplanet/TMConsole/TMTEnvironments.Script.txt"								as TMTEnvironments
+#Include "TextLib"																		as TextLib
+#Include "Libs/Openplanet/TMConsole/Menu/Controller/ModeController.Script.txt" 				as ModeController
+#Include "Libs/Openplanet/TMConsole/Menu/MenuMusicController.Script.txt" 					as MenuMusicController
+#Include "Libs/Openplanet/TMConsole/Menu/Pages.Script.txt"									as Pages
+#Include "Libs/Openplanet/TMConsole/Menu/MenuLayers.Script.txt"								as Layers
+#Include "Libs/Openplanet/TMConsole/Menu/Controller/TaskMessageErrorController.Script.txt"	as TaskMessageErrorController
+#Include "Libs/Openplanet/TMConsole/MenuColor.Script.txt"									as MenuColor
+#Include "Libs/Openplanet/TMConsole/Menu/Controller/RecordCenterController.Script.txt"		as RecordCenterController
+
+#Const Hack_TrialMode 		False
+#Const Hack_PartialInstall 	False
+#Const Hack_OnlineAcces 	True
+
+#Const C_Enviro_Canyon	 	0
+#Const C_Enviro_Valley	 	1
+#Const C_Enviro_Lagoon	 	2
+#Const C_Enviro_Stadium 	3
+
+#Const C_Editor_Beginner	0
+#Const C_Editor_Normal		1
+#Const C_Editor_Advanced	2
+#Const C_Editor_Random		3
+
+
+#Const C_ScriptMode_CampaignSolo    	"TMC_CampaignSolo"
+#Const C_ScriptMode_CampaignCoop    	"TMC_CampaignDuo"
+#Const C_ScriptMode_LocalArcade  		"TMC_LocalArcade"
+#Const C_ScriptMode_LocalHotSeat   		"TMC_HotSeat"
+#Const C_ScriptMode_LocalRounds         "TMC_LocalRounds"
+
+declare Boolean 					G_CheckPrivilege;
+declare Boolean 					G_WaitMapsLoaded;
+declare Text 						G_NextPage;
+declare Boolean 					G_CheckCanCreateTrack;
+declare Boolean 					G_CheckingDiskSpace;
+declare Text 						G_EditorType;
+declare CWebServicesTaskResult 		G_NetworkAvailabilityTask;
+declare CWebServicesTaskResult[]	G_Privileges;
+declare Integer						G_PrivilegesSucces;
+
+Void PrivilegeFail()
+{
+	/*
+	declare Text  CurrentPageName = Pages::GetCurrentPageName();
+	if(CurrentPageName == "Main")
+	{
+		declare CUILayer MainSelectorLayer <=> Layers::Get("MainSelector");
+		LayerCustomEvent(MainSelectorLayer, "PrivilegeFail", [""]);
+	}
+	*/
+	//declare CUILayer MainSelectorLayer <=> Layers::Get("LoadingPopUp");
+	//LayerCustomEvent(MainSelectorLayer, "Hide", [""]);
+}
+
+Boolean IsTryingToJoinSession() {
+	return G_NextPage == "PopUp_JoinAFriend";
+}
+
+Text GetNextPage()
+{
+	declare Text NextPage = G_NextPage;
+	G_NextPage = "";
+	return NextPage;
+}
+
+
+Void InitNextPage()
+{
+	G_NextPage = "";
+}
+
+
+Void HideLoading()
+{
+	declare CUILayer LoadingLayer <=> Layers::Get("LoadingPopUp");
+	if(LoadingLayer == Null) return;
+	LayerCustomEvent(LoadingLayer, "Hide", [""]);
+}
+Void ShowLoading()
+{
+	declare CUILayer LoadingLayer <=> Layers::Get("LoadingPopUp");
+	if(LoadingLayer == Null) return;
+	LayerCustomEvent(LoadingLayer, "Show", [""]);
+}
+//Have I//
+Boolean IsOnlineAccessible()
+{
+	if(ManiaPlanet.MasterServer_MainMSUser == Null) return False;
+	
+	if(ManiaPlanet.MasterServer_MainMSUser.ConnectionStatus != CMasterServerUser::EMasterServerConnectionStatus::Connected)
+	{
+		HideLoading();
+		declare Text ColorText = TextLib::ColorToText(MenuColor::GetMenuColor(1));
+		PopUpManager::AddAskYesNo2(_("Do you want to connect to the server ?"), _("Online Feature"), ColorText, "ConnectOnline");
+		return False;
+	}
+	return True;
+}
+
+Void HasOnlinePrivilege(CPrivilegeMgr::EPrivilege[] _OnlinePrivileges, Text _NextPage)
+{
+	ShowLoading();
+	G_Privileges.clear();
+	G_PrivilegesSucces = 0;
+	G_NextPage 		   = _NextPage;
+	//G_Context		   = _Context;
+	foreach(OnlinePrivilege in _OnlinePrivileges)
+	{
+		G_Privileges.add(PrivilegeMgr.CheckPrivilege(DataMgr.MenuUserId, OnlinePrivilege));
+	}
+	G_CheckPrivilege = True;
+}
+
+Boolean HasMapsLoaded(Text _NextPage)
+{
+	ShowLoading();
+	G_NextPage 		   = _NextPage;
+	//G_Context 		   = [""];
+	G_WaitMapsLoaded = True;
+	return False;
+}
+
+Boolean IsPartialInstall(Boolean _IsNotif)
+{
+	declare Boolean IsPartialInstall = ManiaPlanet.TmTurbo_IsPartialInstall;
+	if(Hack_PartialInstall) IsPartialInstall = True;
+	
+	if(IsPartialInstall && _IsNotif)
+	{
+		HideLoading();
+		PopUpManager::AddPopUp2(0, _("This feature is currently not available. Please check back later."),"", False);
+	}
+	
+	return IsPartialInstall;
+}
+
+Boolean IsPartialInstall()
+{
+	return IsPartialInstall(True);
+}
+
+Boolean IsSlowInstall(Boolean _IsNotif)
+{
+	declare Boolean IsSlowInstall = ManiaPlanet.TmTurbo_IsSlowInstall;
+	
+	if(IsSlowInstall && _IsNotif)
+	{
+		HideLoading();
+		PopUpManager::AddPopUp2(0, _("This feature is currently not available. Please check back later."),"", False);
+	}
+
+	return IsSlowInstall;
+}
+Boolean IsSlowInstall()
+{
+	return IsSlowInstall(True);
+}
+
+
+Boolean IsTrial(Boolean _IsNotif)
+{
+	declare Boolean IsTrial = ManiaPlanet.TmTurbo_IsDemo;
+	if(Hack_TrialMode) IsTrial = Hack_TrialMode; //Hack
+	if(IsTrial && _IsNotif)
+	{
+		//PopUpManager::AddPopUp2(0, _("You cannot acces to this part in the Trial version"), "", False);
+		//declare Text  CurrentPageName = Pages::GetCurrentPageName();
+		//if(CurrentPageName == "Main")
+		//{
+		//	declare CUILayer MainSelectorLayer <=> Layers::Get("MainSelector");
+		//	LayerCustomEvent(MainSelectorLayer, "PrivilegeFail", [""]);
+		//}
+
+		HideLoading();
+		//PopUpManager::AddAskYesNo2(_("Do you want to Unlock the full version ?"), _("Trial Version"), "BuyFullVersion");
+		PopUpManager::AddAskYesNo2BuyFullGame(_("4 environments and 200 official tracks\n The complete Trackbuilder\n Online challenges and new multiplayer modes"),_("Unlock the full game"), "BuyFullVersion");
+
+	}
+	//PopUpFeedback
+	return IsTrial;
+}
+
+Boolean IsTrial()
+{
+	return IsTrial(True);
+}
+
+Boolean IsBeta(Boolean _IsNotif)
+{
+	declare Boolean IsBeta = False;
+	if(IsBeta) PopUpManager::AddPopUp2(0, _("This feature is not accessible in the Beta."),"", False);
+	return IsBeta;
+}
+
+Boolean IsBeta()
+{
+	return IsBeta(True);
+}
+
+Boolean IsUbisoftClub(Boolean _IsNotif, Text _NewPage)
+{
+	if(ManiaPlanet.MasterServer_MainMSUser == Null) return False;
+	declare Boolean IsUbisoftClub = ManiaPlanet.MasterServer_MainMSUser.HasUplayProfile;
+	if(!IsUbisoftClub && _IsNotif)
+	{
+		G_NextPage = _NewPage;
+		HideLoading();
+		PopUpManager::AddAskYesNo2(_("You need a Uplay account to access this feature."),_("Create your account now?"), "UPlayConnect");
+	}
+	return IsUbisoftClub;
+}
+
+
+Void CheckNetworkAvailability()
+{
+	if(ManiaPlanet.MasterServer_MainMSUser == Null) return;
+	
+	if(G_NetworkAvailabilityTask != Null) return;
+	G_NetworkAvailabilityTask = ManiaPlanet.MasterServer_CheckNetworkAvailability(ManiaPlanet.MasterServer_MainMSUser.Id);
+}
+
+//Can I Access to//
+Boolean CanIGotoEnviro(Integer _Enviro, Boolean _IsNotif) {
+
+	switch(_Enviro)
+	{
+		case C_Enviro_Canyon :             return True;
+		case C_Enviro_Valley :{
+			if(IsTrial(_IsNotif))          return False;
+			if(IsSlowInstall()) return False;
+			if(IsPartialInstall(_IsNotif)) return False;
+		}
+		case C_Enviro_Lagoon :{
+			if(IsTrial(_IsNotif))          return False;
+			if(IsSlowInstall()) return False;
+			if(IsPartialInstall(_IsNotif)) return False;
+		}
+		case C_Enviro_Stadium:{
+			if(IsTrial(_IsNotif))          return False;
+			if(IsSlowInstall()) return False;
+			if(IsPartialInstall(_IsNotif)) return False;
+		}
+	}
+	
+	/*
+	declare Integer ActualVersion = MenuVersion::GetVersion();
+	if(!Main_CampaignController::IsEnviroUnlock(_Enviro) && ActualVersion == 0)
+	{
+		PopUpManager::AddPopUp2(0, _("You can unlock this environment in the campaigns mode"),"", False);
+		return False;
+	}
+	*/
+
+	return True;
+}
+Boolean CanIGotoEnviro(Integer _Enviro) {
+	return CanIGotoEnviro(_Enviro, True);
+}
+
+
+Boolean CanIGotoEnviro(Text _EnviroName) {
+	return CanIGotoEnviro(TMTEnvironments::GetEnviroIndex(_EnviroName) );
+}
+
+Boolean CanIGotoEditor(Text _EditorMode) {
+	declare Integer EditorMode = TextLib::ToInteger(_EditorMode);
+	switch(EditorMode)
+	{
+		case C_Editor_Beginner : return True;
+		case C_Editor_Normal :{
+			if(IsTrial())          return False;
+		}
+		case C_Editor_Advanced :{
+			if(IsTrial())          return False;
+		}
+		case C_Editor_Random :{
+			if(IsTrial())          return False;
+		}
+	}
+	return True;
+}
+
+Boolean CanIGotoMode(Text _Mode, Boolean _IsNotif) {
+	switch(_Mode)
+	{
+		case C_ScriptMode_CampaignSolo : return True;
+		case C_ScriptMode_CampaignCoop : return True;
+		case C_ScriptMode_LocalArcade :{
+			if(IsTrial(_IsNotif))          return False;
+		}
+		case C_ScriptMode_LocalHotSeat : return True;
+		case C_ScriptMode_LocalRounds :{
+			if(IsTrial(_IsNotif))          return False;
+		}
+	}
+	return True;
+}
+Boolean CanIGotoMode(Text _Mode) {
+	return CanIGotoMode(_Mode, True);
+}
+
+Boolean IsFullPrivilege()
+{
+
+	if(IsTrial())             return False;
+	if(IsPartialInstall())    return False;
+	if(!IsOnlineAccessible()) return False;
+	return True;
+}
+
+
+Void ResultOnlinePrivilege(Boolean _Succes)
+{
+	HideLoading();
+	if(_Succes)
+	{
+		if(G_NextPage == "") return;
+		Pages::GotoNext(G_NextPage);
+		MenuMusicController::PlayPageAmbiance(G_NextPage);
+	}
+	else
+	{
+		//PopUpManager::AddPopUp2(0, _("You do not have the right privileges to access this area."),"", False);
+		G_CheckPrivilege = False;
+	}
+	InitNextPage();
+}
+
+Boolean CanIGotoPage(Text _NewPage, Boolean _IsNotif) {
+	//log("_NewPage: " ^ _NewPage);
+	G_NextPage = "";
+	switch(_NewPage)
+	{
+		//case "RoomManager"      : if(!IsOnlineAccessible()) return False;
+		case "MyTracks"         : 
+		{
+			if(IsSlowInstall()) return False;
+			//if(IsPartialInstall())    return False;
+		}
+		case "Garage"           :{
+			//if(IsTrial())          return False;
+			if(IsSlowInstall()) return False;
+			if(IsPartialInstall()) return False;
+		}
+		case "Musics"           :{
+			if(IsBeta())            return False;
+			//if(IsPartialInstall()) return False;
+		}
+		case "Location"           :{
+			if(!IsOnlineAccessible()) return False;
+			//if(IsTrial())            return False;
+			//if(IsPartialInstall()) return False;
+		}
+		case "KindOfTracks" :{
+			if(IsSlowInstall()) return False;
+			//if(IsPartialInstall())    return False;
+			declare Text    Mode        = ModeController::GetModeName();
+			if(!CanIGotoMode(Mode)) return False;
+		}
+		case "MapsOverview" :{
+			declare Text    Mode        = ModeController::GetModeName();
+
+			if(Mode == C_ScriptMode_CampaignSolo) return HasMapsLoaded(_NewPage);
+			
+			//if(!CanIGotoMode(Mode)) return False;
+		}
+		case "ServerBrowser" :{
+			if(IsSlowInstall()) return False;
+			//if(IsPartialInstall()) return False;
+			if(!IsOnlineAccessible()) return False;
+			if(!IsUbisoftClub(_IsNotif, _NewPage))    return False;
+			declare Privileges = [CPrivilegeMgr::EPrivilege::PlayMultiplayerMode];
+			HasOnlinePrivilege(Privileges, _NewPage);
+			return False;
+		}
+		case "JoinAFriend" :{
+			if(IsSlowInstall()) return False;
+			//if(IsPartialInstall()) return False;
+			if(!IsOnlineAccessible()) return False;
+			if(!IsUbisoftClub(_IsNotif, _NewPage))    return False;
+			declare Privileges = [CPrivilegeMgr::EPrivilege::PlayMultiplayerMode];
+			HasOnlinePrivilege(Privileges, _NewPage);
+			return False;
+		}
+		case "PopUp_JoinAFriend" :{
+			G_NextPage = _NewPage;
+			if(IsSlowInstall()) return False;
+			//if(IsPartialInstall()) return False;
+			if(!IsOnlineAccessible()) return False;
+			if(!IsUbisoftClub(_IsNotif, _NewPage))    return False;
+			declare Privileges = [CPrivilegeMgr::EPrivilege::PlayMultiplayerMode];
+			HasOnlinePrivilege(Privileges, _NewPage);
+			return False;
+		}
+		case "TrackbuilderWorkshop" :{
+			//if(!IsFullPrivilege()) return False;
+		}
+		case "RoomPlaylist" :{
+			//if(!IsFullPrivilege()) return False;
+		}
+		case "ChallengeBrowser" :{
+			if(!IsOnlineAccessible()) return False;
+			if(IsSlowInstall()) return False;
+			if(IsTrial())            return False;
+			if(!IsUbisoftClub(True, _NewPage))    return False;
+			declare Privileges = [CPrivilegeMgr::EPrivilege::PlayMultiplayerAsync];
+			HasOnlinePrivilege(Privileges, _NewPage);
+			return False;
+		}
+		case "BuddiesChallengeBrowser" :{
+			if(!IsOnlineAccessible()) return False;
+			if(IsSlowInstall()) return False;
+			if(IsTrial())            return False;
+			if(!IsUbisoftClub(True, _NewPage))    return False;
+			declare Privileges = [CPrivilegeMgr::EPrivilege::PlayMultiplayerAsync];
+			HasOnlinePrivilege(Privileges, _NewPage);
+			return False;
+			//HACK
+			//HasOnlinePrivilege(CPrivilegeMgr::EPrivilege::PlayMultiplayerMode, _NewPage);
+			//return False;
+		}
+		case "ChallengeManager" :{
+			//if(!IsOnlineAccessible()) return False;
+			//if(IsTrial())            return False;
+			//if(!IsFullPrivilege()) return False;
+		}
+		case "ChallengeBuddies" :{
+			//if(!IsFullPrivilege()) return False;
+		}
+		case "ChallengeTracks" :{
+			//if(!IsFullPrivilege()) return False;
+		}
+	}
+	return True;
+}
+Boolean CanIGotoPage(Text _NewPage) {
+	return CanIGotoPage(_NewPage, True);
+}
+
+Boolean CanIUploadMap() {
+	return True;
+}
+
+
+Void CancelLoading() {
+	G_CheckPrivilege = False;
+	G_WaitMapsLoaded = False;
+	//HideLoading();
+
+	//declare Text  CurrentPageName = Pages::GetCurrentPageName();
+	//if(CurrentPageName == "Main")
+	//{
+	//	declare CUILayer MainSelectorLayer <=> Layers::Get("MainSelector");
+	//	LayerCustomEvent(MainSelectorLayer, "PrivilegeFail", [""]);
+	//}
+
+}
+
+Void CheckCanCreateTrack(Text _Type)
+{
+	G_CheckingDiskSpace = False;
+	G_CheckCanCreateTrack = True;
+	G_EditorType = _Type;
+}
+
+Void CancelTasks()
+{
+	for (I, 0, G_Privileges.count-1)
+	{
+		if(G_Privileges[I] == Null) continue;
+		G_Privileges[I].Cancel();
+	}
+}
+
+Void Loop() {
+	if(G_CheckPrivilege)
+	{
+		for (I, 0, G_Privileges.count-1)
+		{
+			if (G_Privileges[I] == Null || G_Privileges[I].IsProcessing) continue;
+			if (G_Privileges[I].IsCanceled)
+			{
+				ResultOnlinePrivilege(False);
+				break;
+			}
+			if(G_Privileges[I].HasSucceeded) {
+				//ResultOnlinePrivilege(True);
+				//log("HasSucceeded I: " ^ I);
+				G_Privileges[I] = Null;
+				G_PrivilegesSucces += 1;
+				continue;
+			}
+			if(G_Privileges[I].HasFailed) {
+				declare CWebServicesTaskResult::ETaskErrorType TaskErrorType = G_Privileges[I].ErrorType;
+				declare Integer                                ErrorCode     = G_Privileges[I].ErrorCode;
+				TaskMessageErrorController::TaskErrorMessage(TaskErrorType, ErrorCode);
+				ResultOnlinePrivilege(False);
+				break;
+			}
+		}
+
+		if(G_PrivilegesSucces == G_Privileges.count)
+		{
+			ResultOnlinePrivilege(True);
+			G_CheckPrivilege = False;
+		}
+	}
+
+	//Sert à accéder au Record Center
+	if(G_NetworkAvailabilityTask != Null)
+	{
+		if(G_NetworkAvailabilityTask.IsCanceled) {
+			declare Boolean RecordCenterVisible  for LocalUser;
+			RecordCenterVisible = False;
+			G_NetworkAvailabilityTask = Null;
+		}
+		else if(G_NetworkAvailabilityTask.HasSucceeded) {
+			G_NetworkAvailabilityTask = Null;
+			RecordCenterController::RecordCenterSwitch();
+		}
+		else if(G_NetworkAvailabilityTask.HasFailed) {
+			declare Boolean RecordCenterVisible  for LocalUser;
+			RecordCenterVisible = False;
+			G_NetworkAvailabilityTask = Null;
+			//Message ?
+		}
+	}
+
+	if(G_WaitMapsLoaded)
+	{
+		declare CScoreMgr::EMasterServerScoreStatus MasterServerStatus = ScoreMgr.ScoreStatus_GetMasterServerStatus(DataMgr.MenuUserId);
+		if(MasterServerStatus != CScoreMgr::EMasterServerScoreStatus::Synchronizing)
+		{
+			ResultOnlinePrivilege(True);
+			G_WaitMapsLoaded = False;
+		}
+
+		if(ManiaPlanet.MasterServer_MainMSUser == Null) return;
+		if(ManiaPlanet.MasterServer_MainMSUser.ConnectionStatus == CMasterServerUser::EMasterServerConnectionStatus::NotConnected)
+		{
+			ResultOnlinePrivilege(True);
+			G_WaitMapsLoaded = False;
+		}
+	}
+
+	if(G_CheckCanCreateTrack && DataMgr.Ready)
+	{
+		if(G_CheckingDiskSpace)
+		{
+			G_CheckCanCreateTrack = False;
+			G_CheckingDiskSpace = False;
+			if(DataMgr.HasFreeSpaceForNewMap)
+			{
+				//EditTrack(G_TrackToEdit, G_EditorPluginToUse);
+				//ManiaPlanet.ExternalCustomEvent("Coucou",[""]);
+				ManiaPlanet.CustomMenu_Request("External_LaunchEditor", [G_EditorType]);
+			}
+			else
+			{
+				PopUpManager::AddPopUp2(0, _("You have no more space to create tracks. You must delete or upload some tracks before creating new ones."), "", False);
+				declare CUILayer LayerKOT <=> Layers::Get("KindOfTracks");
+				declare Boolean	Page_SetQuadBlack		for LayerKOT.LocalPage;
+				Page_SetQuadBlack = False;
+			}
+		}
+		else
+		{
+			DataMgr.QueryHasFreeSpaceForNewMap(DataMgr.MenuUserId);
+			G_CheckingDiskSpace = True;
+		}
+	}
+}

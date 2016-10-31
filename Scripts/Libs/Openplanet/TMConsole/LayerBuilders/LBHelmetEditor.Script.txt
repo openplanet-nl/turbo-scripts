@@ -1,0 +1,1139 @@
+// file://Media/Manialinks/Nadeo/TMConsole/MainMenuArnaud.Script.txt
+#Include "Libs/Openplanet/Manialink2.Script.txt"					as Manialink
+#Include "Libs/Openplanet/TMConsole/BuilderHelper.Script.txt"	as BuilderHelper
+#Include "Libs/Openplanet/UIPadButtons.Script.txt"				as LibUIButtons
+#Include "Libs/Openplanet/TMConsole/PanelParameter.Script.txt"	as PanelParameter
+#Include "Libs/Openplanet/TMConsole/Menu/ClipTransitions.Script.txt"	as ClipTransitions
+#Include "Libs/Openplanet/TMConsole/LibAudio.Script.txt"			as LibAudio
+#Include "Libs/Openplanet/TMConsole/Volumes.Script.txt"			as Volumes
+
+#Const C_ImgBase	"file://Media/Manialinks/Nadeo/TMConsole/Images/"
+#Const C_SizePanelX   6.
+#Const C_SizePanelY   6.
+
+
+Text Build(Text _ShowAnim, Text _HideAnim) {
+	declare Text 	IMGSelectorOn        = C_ImgBase^"popup-selector4-on.png";
+	declare Text 	IMGSelectorOff       = C_ImgBase^"popup-selector4-off.png";
+
+	declare Text 	IMGSelect            = LibUIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Select);
+	declare Text 	IMGCancel            = LibUIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Cancel);
+
+	declare Text 	SoundSelect          = LibAudio::GetSoundSelect();
+	declare Text 	SoundMove            = LibAudio::GetSoundMove();
+	declare Text 	SoundBack            = LibAudio::GetSoundBack();
+	
+	declare Text 	IMGIcon              = "file://Media/_ERR_.dds";	//C_ImgBase^"board-3x3-selected.png";
+	
+	declare Integer Count_InstancesY     = 3;
+	declare Integer Count_InstancesX     = 2;
+	declare Real	SizeX_Total          = PanelParameter::GetSizePanelX(Count_InstancesX*1.25);
+	declare Real	SizeY_Total          = PanelParameter::GetSizePanelY(C_SizePanelY);
+	declare Real	MarginY_Button       = 0.40;
+	declare Real	MarginX_Button       = 0.40;
+	declare Real	SizeYQuad            = (SizeY_Total - Count_InstancesY*MarginY_Button) / Count_InstancesY;
+	declare Real	SizeXQuad            = (SizeX_Total - Count_InstancesX*MarginX_Button) / Count_InstancesX;
+	//declare Real	SizeXQuad            = SizeYQuad;
+	declare Real	PosnXLabel           = -SizeXQuad;
+	declare Real	PosnYLabel           = 0.;
+	declare Real	PosYFirstQuad        = PanelParameter::GetPosPanelY(C_SizePanelY)+(SizeYQuad + MarginY_Button);
+	declare Real	PosXFirstQuad        = PanelParameter::GetPosPanelX(C_SizePanelX)+(SizeXQuad + MarginX_Button)*2.-30.;
+	//declare Real	PosXFirstQuad        = PanelParameter::GetPosPanelX(C_SizePanelX)+(SizeXQuad + MarginX_Button)*2.;
+	
+
+
+	declare Real	SizeX_SubMTotal           = PanelParameter::GetSizePanelX(Count_InstancesX*1.25*1.2);
+	declare Real	SizeY_SubMTotal           = PanelParameter::GetSizePanelY(C_SizePanelY*1.2);
+	
+	declare Real	SizeXSubQuad              = (SizeX_SubMTotal - Count_InstancesX*MarginX_Button) / Count_InstancesX*1.;
+	declare Real	SizeYSubQuad              = (SizeY_SubMTotal - Count_InstancesY*MarginY_Button) / Count_InstancesY*1.;
+	
+	/////////////////////////////////////////Parametre Création des Sub-menus
+	//Drapeau
+	declare Integer Count_InstancesX_Drapeau  = 6; 
+	declare Integer Count_InstancesY_Drapeau  = 16;
+	declare Real	MarginX_Drapeau           = 4.0;
+	declare Real	MarginY_Drapeau           = 1.9;
+	declare Real	SizeX_DrapeauTotal        = 89.5;
+	declare Real	SizeY_DrapeauTotal        = 162.;
+	declare Real	SizeXQuad_Drapeau         = (SizeX_DrapeauTotal - Count_InstancesX_Drapeau*MarginX_Drapeau) / Count_InstancesX_Drapeau*1.;
+	declare Real	SizeYQuad_Drapeau         = (SizeY_DrapeauTotal - Count_InstancesY_Drapeau*MarginY_Drapeau) / Count_InstancesY_Drapeau*1.;
+	declare Text 	IMGDrapeauBase            = C_ImgBase^"Helmets/Drapeaux/Base.png";
+	declare Text 	IMGDrapeau01              = C_ImgBase^"Helmets/Drapeaux/fr.png";
+	declare Text 	IMGDrapeau02              = C_ImgBase^"Helmets/Drapeaux/ch.png";
+	//Chiffre
+	declare Integer Count_InstancesX_Chiffre  = 5;
+	declare Integer Count_InstancesY_Chiffre  = 11;
+	declare Real	MarginX_Chiffre           = 9.40;
+	declare Real	MarginY_Chiffre           = 2.30;
+	declare Real	SizeX_ChiffreTotal        = 106.5;
+	declare Real	SizeY_ChiffreTotal        = 145.;
+	declare Real	SizeXQuad_Chiffre         = (SizeX_ChiffreTotal - Count_InstancesX_Chiffre*MarginX_Chiffre) / Count_InstancesX_Chiffre*1.;
+	declare Real	SizeYQuad_Chiffre         = (SizeY_ChiffreTotal - Count_InstancesY_Chiffre*MarginY_Chiffre) / Count_InstancesY_Chiffre*1.;
+	//Symbole
+	declare Integer Count_InstancesX_Symbole  = 5;
+	declare Integer Count_InstancesY_Symbole  = 11;
+	declare Real	MarginX_Symbole           = 9.40;
+	declare Real	MarginY_Symbole           = 2.30;
+	declare Real	SizeX_SymboleTotal        = 106.5;
+	declare Real	SizeY_SymboleTotal        = 145.;
+	declare Real	SizeXQuad_Symbole         = (SizeX_SymboleTotal - Count_InstancesX_Symbole*MarginX_Symbole) / Count_InstancesX_Symbole*1.;
+	declare Real	SizeYQuad_Symbole         = (SizeY_SymboleTotal - Count_InstancesY_Symbole*MarginY_Symbole) / Count_InstancesY_Symbole*1.;
+	declare Text 	IMGSymboleBase            = C_ImgBase^"Helmets/Symboles/SymbolesBase.png";
+	declare Text 	IMGSymbole01              = C_ImgBase^"Helmets/Symboles/Symb01.png";
+	declare Text 	IMGSymbole02              = C_ImgBase^"Helmets/Symboles/Symb02.png";
+	//Couleur
+	declare Integer Count_InstancesX_Couleur  = 5;
+	declare Integer Count_InstancesY_Couleur  = 11;
+	declare Real	MarginX_Couleur           = 9.40;
+	declare Real	MarginY_Couleur           = 2.30;
+	declare Real	SizeX_CouleurTotal        = 106.5;
+	declare Real	SizeY_CouleurTotal        = 145.;
+	declare Real	SizeXQuad_Couleur         = (SizeX_CouleurTotal - Count_InstancesX_Couleur*MarginX_Couleur) / Count_InstancesX_Couleur*1.;
+	declare Real	SizeYQuad_Couleur         = (SizeY_CouleurTotal - Count_InstancesY_Couleur*MarginY_Couleur) / Count_InstancesY_Couleur*1.;
+	declare Text 	IMGCouleurBase            = C_ImgBase^"Helmets/Couleurs/CouleursBase.png";
+	declare Text 	IMGCouleur01              = C_ImgBase^"Helmets/Couleurs/Couleur01.png";
+	declare Text 	IMGCouleur02              = C_ImgBase^"Helmets/Couleurs/Couleur02.png";
+	//Material
+	declare Integer Count_InstancesX_Material = 2;
+	declare Integer Count_InstancesY_Material = 3;
+	declare Real	MarginX_Material          = 0.40;
+	declare Real	MarginY_Material          = 0.40;
+	declare Real	SizeX_MaterialTotal       = 120.5;
+	declare Real	SizeY_MaterialTotal       = 170.;
+	declare Real	SizeXQuad_Material        = (SizeX_MaterialTotal - Count_InstancesX_Material*MarginX_Material) / Count_InstancesX_Material*1.;
+	declare Real	SizeYQuad_Material        = (SizeY_MaterialTotal - Count_InstancesY_Material*MarginY_Material) / Count_InstancesY_Material*1.;
+	declare Text 	IMGMaterialBase           = C_ImgBase^"Helmets/Materials/MaterialsBase.png";
+	declare Text 	IMGMaterial01             = C_ImgBase^"Helmets/Materials/Material01.png";
+	declare Text 	IMGMaterial02             = C_ImgBase^"Helmets/Materials/Material02.png";
+	declare Text 	IMGMaterial03             = C_ImgBase^"Helmets/Materials/Material03.png";
+	declare Text 	IMGMaterial04             = C_ImgBase^"Helmets/Materials/Material04.png";
+	declare Text 	IMGMaterial05             = C_ImgBase^"Helmets/Materials/Material05.png";
+	declare Text 	IMGMaterial06             = C_ImgBase^"Helmets/Materials/Material06.png";
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	
+
+	declare Text MLText = """
+	
+	<framemodel id="Frame_Button">
+		<label halign="center" valign="center" style="TextButtonNav" posn="{{{PosnXLabel}}} {{{PosnYLabel}}} 1"
+		 id="Label_Name" textsize="6." textcolor="fff" sizen="{{{SizeXQuad-15}}}"/>
+
+		<quad halign="center" valign="center" sizen="{{{SizeXQuad}}} {{{SizeYQuad}}}" bgcolor="9005" posn="{{{-SizeXQuad}}} {{{0}}}"
+		 id="Quad_IconBase" opacity="1."  scale="1.0"/>
+
+		<quad halign="center" valign="center" sizen="{{{SizeXQuad}}} {{{SizeYQuad}}}" bgcolor="fff" posn="{{{-SizeXQuad}}} {{{0}}} 1"
+		 id="Quad_Icon" opacity="0."  scale="1.0"/>
+
+		<quad halign="center" valign="center" sizen="{{{SizeXQuad+0.5}}} {{{SizeYQuad}}}" bgcolor="000" id="Quad_Bg" image="{{{IMGSelectorOff}}}" opacity="0."/>
+	</framemodel>
+	
+	<framemodel id="Frame_SubButton">
+		<label halign="center" valign="center" style="TextButtonNav" posn="{{{-SizeXSubQuad/2.}}} {{{-SizeYSubQuad/2.}}} 1"
+		 id="Label_SubName" textsize="6." textcolor="000" sizen="{{{SizeXSubQuad-15}}}"/>
+
+		<quad halign="center" valign="center" sizen="{{{SizeXSubQuad}}} {{{SizeYSubQuad}}}" bgcolor="808" posn="{{{-SizeXSubQuad}}} {{{0}}}"
+		 id="Quad_SubIconBase" opacity="0.5"  scale="1.0"/>
+
+		<quad halign="center" valign="center" sizen="{{{SizeXSubQuad}}} {{{SizeYSubQuad}}}" bgcolor="808" posn="{{{-SizeXSubQuad}}} {{{0}}}"
+		 id="Quad_SubIcon" opacity="0."  scale="1.0"/>
+	</framemodel>
+	
+	//Création de chaque framemodel pour chaque SubMenu
+	<framemodel id="Frame_SubButton_Drapeau"> //Drapeau
+		
+		<quad halign="left" valign="top" sizen="{{{SizeXQuad_Drapeau}}} {{{SizeYQuad_Drapeau}}}" bgcolor="808"
+		 id="Quad_SubIconBase" opacity="0.0"  scale="1.0" hidden="1"/>
+
+		<quad halign="left" valign="top" sizen="{{{SizeXQuad_Drapeau}}} {{{SizeYQuad_Drapeau}}}" bgcolor="808"
+		 id="Quad_SubIcon" opacity="0."  scale="1.0" hidden="0"/>
+	</framemodel>
+	<framemodel id="Frame_SubButton_Chiffre"> //Chiffre
+		<label halign="center" valign="center" style="TextButtonNav" posn="0 0 1"
+		 id="Label_SubName" textsize="6." text="23" textcolor="fff" sizen="{{{SizeXQuad_Chiffre-15}}}"/>
+
+		<quad halign="center" valign="center" sizen="{{{SizeXQuad_Chiffre}}} {{{SizeYQuad_Chiffre}}}" bgcolor="808"
+		 id="Quad_SubIconBase" opacity="0.0"  scale="1.0" hidden="0"/>
+
+		<quad halign="center" valign="center" sizen="{{{SizeXQuad_Chiffre}}} {{{SizeYQuad_Chiffre}}}" bgcolor="808"
+		 id="Quad_SubIcon" opacity="0."  scale="1.0" hidden="0"/>
+	</framemodel>
+	<framemodel id="Frame_SubButton_Symbole"> //Symbole
+		<label halign="center" valign="center" style="TextButtonNav" posn="{{{-SizeXQuad_Symbole/2.}}} {{{-SizeYSubQuad/2.}}} 1"
+		 id="Label_SubName" textsize="6." textcolor="000" sizen="{{{SizeYQuad_Symbole-15}}}"/>
+
+		<quad halign="left" valign="top" sizen="{{{SizeXQuad_Symbole}}} {{{SizeYQuad_Symbole}}}" bgcolor="808"
+		 id="Quad_SubIconBase" opacity="0.0"  scale="1.0" hidden="1"/>
+
+		<quad halign="left" valign="top" sizen="{{{SizeXQuad_Symbole}}} {{{SizeYQuad_Symbole}}}" bgcolor="808"
+		 id="Quad_SubIcon" opacity="0."  scale="1.0"/>
+	</framemodel>
+	<framemodel id="Frame_SubButton_Couleur"> //Couleur
+		<label halign="center" valign="center" style="TextButtonNav" posn="{{{-SizeXQuad_Couleur/2.}}} {{{-SizeYSubQuad/2.}}} 1"
+		 id="Label_SubName" textsize="6." textcolor="000" sizen="{{{SizeYQuad_Couleur-15}}}"/>
+
+		<quad halign="left" valign="top" sizen="{{{SizeXQuad_Couleur}}} {{{SizeYQuad_Couleur}}}" bgcolor="808"
+		 id="Quad_SubIconBase" opacity="0.0"  scale="1.0"/>
+
+		<quad halign="left" valign="top" sizen="{{{SizeXQuad_Couleur}}} {{{SizeYQuad_Couleur}}}" bgcolor="808"
+		 id="Quad_SubIcon" opacity="0."  scale="1.0"/>
+	</framemodel>
+	<framemodel id="Frame_SubButton_Material"> //Material
+		<label halign="center" valign="center" style="TextButtonNav" posn="{{{-SizeXQuad_Material/2.}}} {{{-SizeYSubQuad/2.}}} 1"
+		 id="Label_SubName" textsize="6." textcolor="000" sizen="{{{SizeYQuad_Material-15}}}"/>
+
+		<quad halign="left" valign="top" sizen="{{{SizeXQuad_Material}}} {{{SizeYQuad_Material}}}" bgcolor="808"
+		 id="Quad_SubIconBase" opacity="0.0"  scale="1.0"/>
+
+		<quad halign="left" valign="top" sizen="{{{SizeXQuad_Material}}} {{{SizeYQuad_Material}}}" bgcolor="808"
+		 id="Quad_SubIcon" opacity="0."  scale="1.0"/>
+	</framemodel>
+	
+
+
+
+
+
+	
+	<frame id="Frame_All" hidden="1">
+
+		<quad id="Button_Select" halign="center" valign="bottom" keepratio="Fit"
+		sizen="8.0 8.0" image="{{{IMGSelect}}}" posn="151.4 -88.1 11" opacity="1."
+		/>
+		<quad id="Button_Select" halign="center" valign="bottom" keepratio="Fit"
+		sizen="8.0 8.0" image="{{{IMGCancel}}}" posn="-131.7 -88.1 11" opacity="1."
+		/>
+		
+		<frame id="Frame_Sub0" hidden="1"> // Name
+		</frame>
+		
+		<frame id="Frame_Sub1" hidden="1" posn="0 0 20"> // Drapeau
+
+		<quad id="Quad_DrapeauBase" halign="center" valign="center" keepratio="Fit"
+		sizen="100.0 160.0" image="{{{IMGDrapeauBase}}}" posn="70.0 3. 15" opacity="1."
+		/>
+		<quad  halign="center" valign="center" keepratio="Fit" style="EnergyBar" substyle="EnergyBar" 
+		sizen="100.0 170.0" posn="70.0 3. 12" opacity="0.9" bgcolor="000"
+		/>
+
+	""";
+	//SubMenu
+	for(I,0,Count_InstancesY_Drapeau-1)
+	{
+		declare Real IndexY = I*1.;
+		declare Real PosYFirstDrapeauQuad = 74.;
+		declare Real PosnY = PosYFirstDrapeauQuad - IndexY*SizeYQuad_Drapeau - IndexY*MarginY_Drapeau*1. - MarginY_Drapeau/2. + 10.;
+		for(J,0,Count_InstancesX_Drapeau-1)
+		{
+			declare Real IndexJ = J*1.;
+			declare Real PosXFirstDrapeauQuad = 27.;
+			declare Real PosnX = PosXFirstDrapeauQuad+ IndexJ*SizeXQuad_Drapeau + IndexJ*MarginX_Drapeau*1.;
+			MLText^="""
+				<frameinstance modelid="Frame_SubButton_Drapeau" posn="{{{PosnX}}} {{{PosnY}}} 40." id="Frame_InstanceSub{{{I}}}{{{J}}}" />
+			""";
+		}
+	}
+	MLText^="""
+		</frame>
+
+		<frame id="Frame_Sub2" hidden="1" posn="0 0 20"> // Chiffre
+
+			<quad  halign="center" valign="center" keepratio="Fit" style="EnergyBar" substyle="EnergyBar" 
+			sizen="110.0 150.0" posn="70.0 3. 12" opacity="1.0" bgcolor="000"
+			/>
+	""";
+	//SubMenu
+	for(I,0,Count_InstancesY_Chiffre-1)
+	{
+		declare Real IndexY = I*1.;
+		declare Real PosYFirstChiffreQuad = 60.;
+		declare Real PosnY = PosYFirstChiffreQuad - IndexY*SizeYQuad_Chiffre - IndexY*MarginY_Chiffre*1. - MarginY_Chiffre/2. + 10.;
+		for(J,0,Count_InstancesX_Chiffre-1)
+		{
+			declare Real IndexJ = J*1.;
+			declare Real PosXFirstChiffreQuad = 27.;
+			declare Real PosnX = PosXFirstChiffreQuad+ IndexJ*SizeXQuad_Chiffre + IndexJ*MarginX_Chiffre*1.;
+			MLText^="""
+				<frameinstance modelid="Frame_SubButton_Chiffre" posn="{{{PosnX}}} {{{PosnY}}} 40." id="Frame_InstanceSub{{{I}}}{{{J}}}" />
+			""";
+		}
+	}
+	MLText^="""
+		</frame>
+
+		<frame id="Frame_Sub3" hidden="1" posn="0 0 20"> // Symbole
+		<quad id="Quad_SymboleBase" halign="center" valign="center" keepratio="Fit"
+		sizen="100.0 160.0" image="{{{IMGSymboleBase}}}" posn="70.0 3. 15" opacity="1."
+		/>
+		<quad  halign="center" valign="center" keepratio="Fit" style="EnergyBar" substyle="EnergyBar" 
+		sizen="110.0 170.0" posn="70.0 3. 12" opacity="0.8" bgcolor="0008"
+		/>
+
+	""";
+	//SubMenu
+	for(I,0,Count_InstancesY_Symbole-1)
+	{
+		declare Real IndexY = I*1.;
+		declare Real FirstPosYQuad = 65.;
+		declare Real PosnY = FirstPosYQuad - IndexY*SizeYQuad_Symbole - IndexY*MarginY_Symbole*1. - MarginY_Symbole/2. + 10.;
+		for(J,0,Count_InstancesX_Symbole-1)
+		{
+			declare Real IndexJ = J*1.;
+			//declare Real PosnX = PosXFirstSubQuad + IndexJ*SizeXQuad + IndexJ*MarginX_Button*1. + MarginX_Button/2. + SizeXQuad/2 - SizeXQuad*(Count_InstancesX-1);
+			declare Real FirstPosXQuad = 22.6;
+			declare Real PosnX = FirstPosXQuad+ IndexJ*SizeXQuad_Symbole + IndexJ*MarginX_Symbole*1.;
+			MLText^="""
+				<frameinstance modelid="Frame_SubButton_Symbole" posn="{{{PosnX}}} {{{PosnY}}} 40." id="Frame_InstanceSub{{{I}}}{{{J}}}" />
+			""";
+		}
+	}
+	
+	MLText^="""
+		</frame>
+
+		<frame id="Frame_Sub4" hidden="1" posn="0 0 20"> // Couleur
+		<quad id="Quad_CouleurBase" halign="center" valign="center" keepratio="Fit"
+		sizen="100.0 160.0" image="{{{IMGCouleurBase}}}" posn="70.0 3. 15" opacity="1."
+		/>
+		<quad  halign="center" valign="center" keepratio="Fit" style="EnergyBar" substyle="EnergyBar" 
+		sizen="110.0 170.0" posn="70.0 3. 12" opacity="1." bgcolor="0008"
+		/>
+	""";
+	//SubMenu
+	for(I,0,Count_InstancesY_Couleur-1)
+	{
+		declare Real IndexY = I*1.;
+		declare Real FirstPosYQuad = 65.;
+		declare Real PosnY = FirstPosYQuad - IndexY*SizeYQuad_Couleur - IndexY*MarginY_Couleur*1. - MarginY_Couleur/2. + 10.;
+		for(J,0,Count_InstancesX_Couleur-1)
+		{
+			declare Real IndexJ = J*1.;
+			//declare Real PosnX = PosXFirstSubQuad + IndexJ*SizeXQuad + IndexJ*MarginX_Button*1. + MarginX_Button/2. + SizeXQuad/2 - SizeXQuad*(Count_InstancesX-1);
+			declare Real FirstPosXQuad = 22.6;
+			declare Real PosnX = FirstPosXQuad+ IndexJ*SizeXQuad_Couleur + IndexJ*MarginX_Couleur*1.;
+			MLText^="""
+				<frameinstance modelid="Frame_SubButton_Couleur" posn="{{{PosnX}}} {{{PosnY}}} 40." id="Frame_InstanceSub{{{I}}}{{{J}}}" />
+			""";
+		}
+	}
+	
+	MLText^="""
+		</frame>
+
+		<frame id="Frame_Sub5" hidden="1" posn="0 0 20"> // Material
+		<quad id="Quad_CouleurBase" halign="center" valign="center" keepratio="Fit"
+		sizen="120.0 180.0" image="{{{IMGMaterialBase}}}" posn="70.0 3. 15" opacity="1."
+		/>
+		<quad  halign="center" valign="center" keepratio="Fit" style="EnergyBar" substyle="EnergyBar" 
+		sizen="110.0 170.0" posn="70.0 3. 12" opacity="0." bgcolor="0008"
+		/>
+
+	""";
+	//SubMenu
+	for(I,0,Count_InstancesY_Material-1)
+	{
+		declare Real IndexY = I*1.;
+		declare Real FirstPosYQuad = 78.;
+		declare Real PosnY = FirstPosYQuad - IndexY*SizeYQuad_Material - IndexY*MarginY_Material*1. - MarginY_Material/2. + 10.;
+		for(J,0,Count_InstancesX_Material-1)
+		{
+			declare Real IndexJ = J*1.;
+			//declare Real PosnX = PosXFirstSubQuad + IndexJ*SizeXQuad + IndexJ*MarginX_Button*1. + MarginX_Button/2. + SizeXQuad/2 - SizeXQuad*(Count_InstancesX-1);
+			declare Real FirstPosXQuad = 10.0;
+			declare Real PosnX = FirstPosXQuad+ IndexJ*SizeXQuad_Material + IndexJ*MarginX_Material*1.;
+			MLText^="""
+				<frameinstance modelid="Frame_SubButton_Material" posn="{{{PosnX}}} {{{PosnY}}} 40." id="Frame_InstanceSub{{{I}}}{{{J}}}" />
+			""";
+		}
+	}
+	
+	MLText^="""
+		</frame>
+
+
+
+
+
+
+		<frame id="Frame_Content" posn="0.0 0 1" scale="1.0" clip="true" clipsizen="320 180" clipposn="320 0">
+
+			<frame id="Frame_InfoPage">
+				<label halign="center" valign="center" style="TextButtonNav" posn="-50 60 5"
+			 id="Label_Title" textsize="7." textcolor="fff" text="Always wear your helmet" opacity="1."/>
+				<label halign="center" valign="center" style="TextButtonNav" posn="-53 53 5"
+			 id="Label_SubTitle" textsize="3." textcolor="f00" text="Create & custom your online helmet icon" opacity="1."/>
+				<label halign="right" valign="center" style="TextButtonNav" posn="15 -57 5"
+			 id="Label_Legend" textsize="3." textcolor="f00" text="Create & custom your personal number" sizen="130" opacity="1."/>
+			</frame>
+
+			<frame id="Frame_InfoButton_Name">
+				<label halign="center" valign="center" style="TextButtonNav" posn="44.9 62 5"
+			 textsize="2." textcolor="fff" text="Trackmania " opacity="1."/>
+				<label halign="center" valign="center" style="TextButtonNav" posn="44.9 57 5"
+			 textsize="2." textcolor="fff" text="Worldwide Ranking" opacity="1."/>
+				<label halign="center" valign="center" style="TextButtonNav" posn="44.9 47 5"
+			 id="Label_ShortName" textsize="14." textcolor="fff" text="Zla" sizen="46" opacity="1."/>
+				<label halign="center" valign="center" style="TextButtonNav" posn="44.9 37 5"
+			 textsize="2." textcolor="fff" text="A.K.A" sizen="130" opacity="1."/>
+				<label halign="center" valign="center" style="TextButtonNav" posn="44.9 33 5"
+			 id="Label_Name" textsize="2." textcolor="fff" text="Zlatanus" sizen="46" opacity="1."/>
+
+				<label halign="center" valign="center" style="TextButtonNav" posn="44.9 -15 5"
+			 textsize="2." textcolor="fff" text="Official numbers" opacity="1."/>
+
+				<label halign="center" valign="center" style="TextButtonNav" posn="93.6 -57 5"
+			 id="Label_MaterialName" textsize="2." textcolor="fff" text="Magnesium" opacity="1."/>
+
+			</frame>
+			
+	""";
+	//Menu
+	declare Integer count = 0;
+	for(I,0,Count_InstancesY-1)
+	{
+		declare Real IndexY = I*1.;
+		declare Real PosnY = PosYFirstQuad - IndexY*SizeYQuad - IndexY*MarginY_Button*1. - MarginY_Button/2.;
+		for(J,0,Count_InstancesX-1)
+		{
+			declare Real IndexJ = J*1.;
+			//declare Real PosnX = PosXFirstQuad + IndexJ*SizeXQuad + IndexJ*MarginX_Button*1. + MarginX_Button/2. + SizeXQuad/2 - SizeXQuad*(Count_InstancesX-1);
+			declare Real PosnX = PosXFirstQuad+ IndexJ*SizeXQuad + IndexJ*MarginX_Button*1. + (3-Count_InstancesX)*SizeXQuad/2.;
+			MLText^="""
+				<frameinstance modelid="Frame_Button" posn="{{{PosnX}}} {{{PosnY}}} 5." id="Frame_Instance{{{I}}}{{{J}}}" />
+			""";
+		}
+	}
+	
+	MLText^="""
+		</frame>
+	</frame>
+
+	<script><!--
+		#Const DebugName  "L_HelmetEditor"
+
+		#Const C_TimeTransitionPage {{{PanelParameter::GetTimeTransitionPage()}}}
+		#Const C_TimeStartClip      {{{PanelParameter::GetTimeStartClip()}}}
+		#Const C_TimeAnimClip       {{{PanelParameter::GetTimeAnimClip()}}}
+		#Const C_TimeTransitionPage2 {{{PanelParameter::GetTimeTransitionPage2()}}}
+		#Const C_TimeStartClip2      {{{PanelParameter::GetTimeStartClip2()}}}
+		#Const C_TimeAnimClip2       {{{PanelParameter::GetTimeAnimClip2()}}}
+
+		{{{Manialink::GetIncludes()}}}
+		
+		{{{Manialink::Load()}}}
+		{{{BuilderHelper::MLCommonFunctions()}}}
+		{{{ClipTransitions::Functions(["Frame_Content"])}}}
+
+		declare Text[Integer][Integer]	G_IndexGameSelect;
+		declare Integer 				G_HideTime;
+		declare Integer 				G_LockInput;
+		declare Integer 				G_SubMenuControlled;
+		declare Integer 				G_SubMenuIndexX;
+		declare Integer 				G_SubMenuIndexY;
+		declare Integer[Integer]		G_SubMenuIndexMaxX;
+		declare Integer[Integer]		G_SubMenuIndexMaxY;
+		declare Integer[Integer]		G_SubIndex;
+		declare Text[Integer][Integer]	G_LabelLegendText;
+		
+		Void Preload()
+		{
+			PreloadImage("{{{IMGSelectorOn}}}");
+			PreloadImage("{{{IMGSelectorOff}}}");
+			PreloadImage("{{{IMGIcon}}}");
+			PreloadImage("{{{IMGDrapeauBase}}}");
+			PreloadImage("{{{IMGDrapeau01}}}");
+			PreloadImage("{{{IMGDrapeau02}}}");
+			PreloadImage("{{{IMGSymboleBase}}}");
+			PreloadImage("{{{IMGSymbole01}}}");
+			PreloadImage("{{{IMGSymbole02}}}");
+			PreloadImage("{{{IMGCouleurBase}}}");
+			PreloadImage("{{{IMGCouleur01}}}");
+			PreloadImage("{{{IMGCouleur02}}}");
+			PreloadImage("{{{IMGMaterialBase}}}");
+			PreloadImage("{{{IMGMaterial01}}}");
+			PreloadImage("{{{IMGMaterial02}}}");
+			PreloadImage("{{{IMGMaterial03}}}");
+			PreloadImage("{{{IMGMaterial04}}}");
+			PreloadImage("{{{IMGMaterial05}}}");
+			PreloadImage("{{{IMGMaterial06}}}");
+		}
+
+		Text GetDescriptionMenu(Integer _SubMenuIndex ,Integer _Index)
+		{
+			switch(_SubMenuIndex)
+			{
+				case 5: //Drapeaux
+				{
+					switch(_Index)
+					{
+						case  1: return _("Magnesium");
+						case  2: return _("Titanium");
+						case  3: return _("Chrome");
+						case  4: return _("Iridium");
+						case  5: return _("Gold");
+						case  6: return _("Aluminium");
+					}
+				}
+			}
+			return "";
+		}
+
+		Text GetImgPath(Integer _SubMenuIndex ,Integer _Index)
+		{
+			switch(_SubMenuIndex)
+			{
+				case 1: //Drapeaux
+				{
+					switch(_Index)
+					{
+						case  1: return "{{{IMGDrapeau02}}}";
+						case  2: return "{{{IMGDrapeau02}}}";
+						case  3: return "{{{IMGDrapeau02}}}";
+						case  4: return "{{{IMGDrapeau02}}}";
+						case  5: return "{{{IMGDrapeau02}}}";
+						case  6: return "{{{IMGDrapeau02}}}";
+						case  7: return "{{{IMGDrapeau02}}}";
+						default: return "{{{IMGDrapeau01}}}";
+					}
+				}
+				case 3: //Symbole
+				{
+					switch(_Index)
+					{
+						case  1: return "{{{IMGSymbole01}}}";
+						case  2: return "{{{IMGSymbole01}}}";
+						case  3: return "{{{IMGSymbole01}}}";
+						case  4: return "{{{IMGSymbole01}}}";
+						case  5: return "{{{IMGSymbole01}}}";
+						case  6: return "{{{IMGSymbole01}}}";
+						case  7: return "{{{IMGSymbole01}}}";
+						default: return "{{{IMGSymbole02}}}";
+					}
+					
+
+				}
+				case 4: //Couleurs
+				{
+					switch(_Index)
+					{
+						case  1: return "{{{IMGCouleur02}}}";
+						case  2: return "{{{IMGCouleur02}}}";
+						case  3: return "{{{IMGCouleur02}}}";
+						case  4: return "{{{IMGCouleur02}}}";
+						case  5: return "{{{IMGCouleur02}}}";
+						case  6: return "{{{IMGCouleur02}}}";
+						case  7: return "{{{IMGCouleur01}}}";
+						default: return "{{{IMGCouleur01}}}";
+					}
+				}
+				case 5: // Materials
+				{
+					switch(_Index)
+					{
+						case  1: return "{{{IMGMaterial01}}}";
+						case  2: return "{{{IMGMaterial02}}}";
+						case  3: return "{{{IMGMaterial03}}}";
+						case  4: return "{{{IMGMaterial04}}}";
+						case  5: return "{{{IMGMaterial05}}}";
+						case  6: return "{{{IMGMaterial06}}}";
+					}
+				}
+			}
+			return "";
+		}
+
+		Void SetHeaderInfo()
+		{
+			declare Vec3 HeaderInfo_LabelTitleColor for This;
+			declare Text HeaderInfo_LabelTitle for This;
+			declare Vec3 NextColorHeaderInfo for This;
+			HeaderInfo_LabelTitle = "Work in Progress";
+			HeaderInfo_LabelTitleColor = <1.0, 0.9, 0.0>;
+			NextColorHeaderInfo =  <0.1, 0.1, 0.1>;
+			SendCustomEvent("UpdateHeaderTitle", [""]);
+		}
+
+		Integer GetSubMenuIndexSelectedX(Integer _SubMenuIndex)
+		{
+			declare Integer SelectedX;
+
+			return SelectedX;
+		}
+
+		Integer GetSubMenuIndexSelectedY(Integer _SubMenuIndex)
+		{
+			declare Integer SelectedY;
+
+			return SelectedY;
+		}
+
+		Integer GetSubMenu(Integer _IndexSelectX, Integer _IndexSelectY)
+		{
+			declare Integer SubMenuIndex = _IndexSelectY*2 + _IndexSelectX;
+			return SubMenuIndex;
+		}
+
+		Vec2 GetSubMenuIndexPosition(Integer _SubMenuIndex)
+		{
+			declare Vec2    IndexPosition;
+			declare Integer MaxX  = G_SubMenuIndexMaxX[_SubMenuIndex];
+			declare Integer Index = G_SubIndex[_SubMenuIndex];
+			
+			IndexPosition.X = (Index-1)%MaxX*1.;
+			IndexPosition.Y = (Index-1)/MaxX*1.;
+			return IndexPosition;
+		}
+
+		Integer GetSubMenuIndex(Integer _SubMenuIndex ,Integer _SelectorPositionX, Integer _SelectorPositionY)
+		{
+			declare Integer MaxX    = G_SubMenuIndexMaxX[_SubMenuIndex];
+			declare Integer Index =  _SelectorPositionY*MaxX + _SelectorPositionX+1 + _SelectorPositionX/MaxX*MaxX;
+			return Index;
+		}
+
+		Integer GetMenuIndex(Integer _SelectorPositionX, Integer _SelectorPositionY)
+		{
+			declare Integer MaxX    = {{{Count_InstancesX}}};
+			declare Integer Index =  _SelectorPositionY*MaxX + _SelectorPositionX+1 + _SelectorPositionX/MaxX*MaxX -1;
+			return Index;
+		}
+
+		Void UpdateLabelLegend(Integer _SubMenuIndex, Integer _Index)
+		{
+			declare CMlFrame Frame_Content   <=> (Page.GetFirstChild("Frame_Content") as CMlFrame);
+			declare CMlLabel Label_Legend   <=> (Frame_Content.GetFirstChild("Label_Legend") as CMlLabel);
+
+			if(!G_LabelLegendText[_SubMenuIndex].existskey(_Index)) return;
+			Label_Legend.Value = G_LabelLegendText[_SubMenuIndex][_Index];
+		}
+		
+		
+
+		Void UpdateIndexSub(Integer _SubMenuIndex, Integer _SelectorPositionX, Integer _SelectorPositionY)
+		{
+			declare CMlFrame Frames_SubMenu   <=> (Page.GetFirstChild("Frame_Sub"^_SubMenuIndex)                                              as CMlFrame);
+			declare CMlFrame Frames_Instance1 <=> (Frames_SubMenu.GetFirstChild("Frame_InstanceSub"^_SelectorPositionY^""^_SelectorPositionX) as CMlFrame);
+			declare CMlFrame Frames_Instance2 <=> (Frames_SubMenu.GetFirstChild("Frame_InstanceSub"^G_SubMenuIndexY^""^G_SubMenuIndexX)       as CMlFrame);
+			declare CMlQuad  Quad_Icon1       <=> (Frames_Instance1.GetFirstChild("Quad_SubIcon")                                             as CMlQuad);
+			declare CMlQuad  Quad_Icon2       <=> (Frames_Instance2.GetFirstChild("Quad_SubIcon")                                             as CMlQuad);
+			
+
+			declare Integer SubMenuIndex = GetSubMenuIndex(_SubMenuIndex, _SelectorPositionX, _SelectorPositionY);
+			UpdateLabelLegend(_SubMenuIndex, SubMenuIndex);
+
+			LibManialink_SetTargetOpacity(Quad_Icon1, 0.40);
+			LibManialink_PresetAnim(Quad_Icon1, 250, "EaseLinear");
+			if(_SelectorPositionX != G_SubMenuIndexX || _SelectorPositionY != G_SubMenuIndexY)
+			{
+				LibManialink_SetTargetOpacity(Quad_Icon2, 0.);
+				LibManialink_PresetAnim(Quad_Icon2, 250, "EaseLinear");
+			}
+			G_SubMenuIndexX = _SelectorPositionX;
+			G_SubMenuIndexY = _SelectorPositionY;
+		}
+
+
+		Void UpdateQuads(Integer _SelectorPositionX, Integer _SelectorPositionY, Integer _PreviousQuadX, Integer _PreviousQuadY)
+		{
+			declare CMlFrame Frames_Instance1     <=> (Page.GetFirstChild("Frame_Instance"^_SelectorPositionY^""^_SelectorPositionX) as CMlFrame);
+			declare CMlFrame Frames_Instance2     <=> (Page.GetFirstChild("Frame_Instance"^_PreviousQuadY^""^_PreviousQuadX) as CMlFrame);
+			declare CMlQuad  Quad_Icon1           <=> (Frames_Instance1.GetFirstChild("Quad_Icon") as CMlQuad);
+			declare CMlQuad  Quad_Icon2           <=> (Frames_Instance2.GetFirstChild("Quad_Icon") as CMlQuad);
+			
+
+			declare Integer MenuIndex = GetMenuIndex(_SelectorPositionX, _SelectorPositionY);
+			UpdateLabelLegend(-1, MenuIndex);
+
+			LibManialink_SetTargetOpacity(Quad_Icon1, 0.4);
+			LibManialink_PresetAnim(Quad_Icon1, 250, "EaseLinear");
+			if(_SelectorPositionX != _PreviousQuadX || _SelectorPositionY != _PreviousQuadY)
+			{
+				LibManialink_SetTargetOpacity(Quad_Icon2, 0.);
+				LibManialink_PresetAnim(Quad_Icon2, 250, "EaseLinear");
+			}
+		}
+
+		Void OpenSubMenu(Integer _SubMenuIndex)
+		{
+			declare CMlFrame Frames_SubMenu <=> (Page.GetFirstChild("Frame_Sub"^_SubMenuIndex) as CMlFrame);
+			Frames_SubMenu.Show();
+
+			G_SubMenuControlled = _SubMenuIndex;
+			declare Vec2 IndexPosition = GetSubMenuIndexPosition(_SubMenuIndex);
+			G_SubMenuIndexX = ML::NearestInteger(IndexPosition.X);
+			G_SubMenuIndexY = ML::NearestInteger(IndexPosition.Y);
+		}
+
+		Void CloseSubMenu()
+		{
+			declare CMlFrame Frames_SubMenu <=> (Page.GetFirstChild("Frame_Sub"^G_SubMenuControlled) as CMlFrame);
+			declare CMlFrame Frames_Instance <=> (Frames_SubMenu.GetFirstChild("Frame_InstanceSub"^G_SubMenuIndexY^""^G_SubMenuIndexX)   as CMlFrame);
+			declare CMlQuad  Quad_Icon       <=> (Frames_Instance.GetFirstChild("Quad_SubIcon")                                         as CMlQuad);
+			LibManialink_SetTargetOpacity(Quad_Icon, 0.);
+			LibManialink_PresetAnim(Quad_Icon, 250, "EaseLinear");
+			Frames_SubMenu.Hide();
+
+			G_SubMenuControlled = -1;
+		}
+		
+		Text SelectGame(Integer _IndexSelectX, Integer _IndexSelectY)
+		{
+			declare Text GameSelect 			for This;
+			declare Integer DifficultySelect	for This;
+			declare Text NextPage;
+			declare Text ButtonChoose = G_IndexGameSelect[_IndexSelectY][_IndexSelectX];
+			switch(ButtonChoose) {
+				case "Boutton1": 
+				{
+					GameSelect = "Boutton1";
+					DifficultySelect = 1;
+					declare Text HeaderInfo_LabelTitle for This;
+					HeaderInfo_LabelTitle = "Boutton1";
+					NextPage = "Difficulty";
+				}
+				case "Boutton2": 
+				{
+					GameSelect = "Boutton2";
+					DifficultySelect = 1;
+					declare Text HeaderInfo_LabelTitle for This;
+					HeaderInfo_LabelTitle = "Boutton2";
+					NextPage = "Difficulty";
+				}
+				case "Boutton3": 
+				{
+					GameSelect = "Boutton3";
+					DifficultySelect = 1;
+					declare Text HeaderInfo_LabelTitle for This;
+					HeaderInfo_LabelTitle = "Boutton3";
+					NextPage = "Difficulty";
+				}
+			}
+
+			return NextPage;
+		}
+
+		Void SelectSubButton(Integer _SubMenuIndex ,Integer _SelectorPositionX, Integer _SelectorPositionY, Integer _SubPositionX, Integer _SubPositionY)
+		{
+			declare CMlFrame Frames_Instance     <=> (Page.GetFirstChild("Frame_Instance"^_SelectorPositionY^""^_SelectorPositionX) as CMlFrame);
+			declare CMlQuad  Quad_Icon           <=> (Frames_Instance.GetFirstChild("Quad_IconBase") as CMlQuad);
+			declare Integer Index = GetSubMenuIndex(G_SubMenuControlled, G_SubMenuIndexX, G_SubMenuIndexY);
+			G_SubIndex[G_SubMenuControlled] = Index;
+			
+			if(_SubMenuIndex == 2)
+			{
+				declare CMlLabel Label_Name      <=> (Frames_Instance.GetFirstChild("Label_Name") as CMlLabel);
+				Label_Name.Value = G_SubIndex[_SubMenuIndex]^"";
+				Label_Name.RelativeScale = 3.;
+				Label_Name.RelativePosition.Y = 3.;
+			}
+			else if(_SubMenuIndex == 5)
+			{
+				declare CMlLabel  Label_MaterialName <=> (Page.GetFirstChild("Label_MaterialName") as CMlLabel);
+				declare Text Material = GetDescriptionMenu(_SubMenuIndex, Index);
+				Label_MaterialName.Value = Material;
+			}
+			declare Text ImgPath = GetImgPath(_SubMenuIndex, Index);
+			Quad_Icon.ChangeImageUrl(ImgPath);
+			
+
+		}
+		Void LoadInfoPlayer()
+		{
+			G_SubIndex[0] = 0;
+			G_SubIndex[1] = 8;
+			G_SubIndex[2] = 12;
+			G_SubIndex[3] = 3;
+			G_SubIndex[4] = 4;
+			G_SubIndex[5] = 4;
+
+		}
+
+		Void InitPage()
+		{
+			//declare Text[] SplitUserLogin = TL::Split("_", LocalUser.Login);
+			declare Text[] SplitUserLogin = ["Zlatanus"];
+			declare Text UserLogin = SplitUserLogin[0];
+			
+			declare CMlLabel Label_ShortName       <=> (Page.GetFirstChild("Label_ShortName") as CMlLabel);
+			declare CMlLabel Label_Name            <=> (Page.GetFirstChild("Label_Name") as CMlLabel);
+			
+			declare Text TestLabel = TL::SubString(UserLogin, 0, 3);
+			Label_Name.Value = UserLogin;
+			Label_ShortName.Value = TestLabel;
+
+			LoadInfoPlayer();
+
+			//SelectSubButton(G_SubMenuControlled, IndexSelectX, IndexSelectY, G_SubMenuIndexX , G_SubMenuIndexY);
+		
+			//Hack
+			declare Integer count = 1;
+			for(I,0,{{{Count_InstancesY_Chiffre - 1}}})
+			{
+				for(J,0, {{{Count_InstancesX_Chiffre - 1}}})
+				{
+					declare CMlFrame Frames_SubMenu <=> (Page.GetFirstChild("Frame_Sub2") as CMlFrame);
+					declare CMlFrame Frames_Instance  <=> (Frames_SubMenu.GetFirstChild("Frame_InstanceSub"^I^""^J) as CMlFrame);
+					declare CMlLabel Label_Name     <=> (Frames_Instance.GetFirstChild("Label_SubName") as CMlLabel);
+					//Label_Name.Value = ML::Rand(1, 99)^"";
+					Label_Name.Value = count^"";
+					count += 1;
+				}
+			}
+
+			for(I, 0, {{{Count_InstancesY - 1}}})
+			{
+				for(J,0, {{{Count_InstancesX - 1}}})
+				{
+					declare Integer Index = GetMenuIndex(J, I);
+					declare CMlFrame Frames_Instance  <=> (Page.GetFirstChild("Frame_Instance"^I^""^J) as CMlFrame);
+					if(Index == 2)
+					{
+						declare CMlLabel Label_Name      <=> (Frames_Instance.GetFirstChild("Label_Name") as CMlLabel);
+						Label_Name.Value = G_SubIndex[Index]^"";
+						Label_Name.RelativeScale = 3.;
+						Label_Name.RelativePosition.Y = 3.;
+					}
+					else if(Index == 5)
+					{
+						declare CMlLabel  Label_MaterialName <=> (Page.GetFirstChild("Label_MaterialName") as CMlLabel);
+						declare Text Material = GetDescriptionMenu(Index, G_SubIndex[Index]);
+						Label_MaterialName.Value = Material;
+					}
+						declare CMlQuad  Quad_Icon        <=> (Frames_Instance.GetFirstChild("Quad_IconBase") as CMlQuad);
+						declare Text ImgPath = GetImgPath(Index, G_SubIndex[Index]);
+						Quad_Icon.ChangeImageUrl(ImgPath);
+				}
+			}
+		}
+
+
+		Void HidePage()
+		{
+			StartSetClipPosition_Frame_Content(<320., 0.>, <0., 0.>, C_TimeStartClip2, C_TimeAnimClip2);
+			G_HideTime  = Now + C_TimeStartClip2 + C_TimeAnimClip2;
+			G_LockInput = Now + C_TimeStartClip2 + C_TimeAnimClip2;
+		}
+
+		Void ShowPage(Text _PreviousPage)
+		{
+			declare CMlFrame  Frame_All <=> (Page.GetFirstChild("Frame_All") as CMlFrame);
+			declare Vec3 NewFramePos  = <Frame_All.RelativePosition.X, 0., Frame_All.RelativePosition.Z>;
+			
+			
+			if(_PreviousPage == "Main")
+			{
+				/*
+				Frame_All.RelativePosition = OldFramePos;
+				LibManialink_SetTargetPosition(Frame_All, NewFramePos);
+				LibManialink_PresetAnim(Frame_All, C_TimeTransitionPage, "EaseLinear");
+				*/
+				StartSetClipPosition_Frame_Content( <0., 0.>, <320., 0.>, C_TimeStartClip, C_TimeAnimClip);
+				G_LockInput = Now + C_TimeTransitionPage;
+			}
+			else
+			{
+				Frame_All.RelativePosition = NewFramePos;
+			}
+			
+				Frame_All.RelativePosition = NewFramePos;
+			
+			Frame_All.Show();
+			G_HideTime  = -1;
+		}
+
+		main() {
+			{{{BuilderHelper::MLEnableMenuNavigationInputs()}}}
+
+			Preload();
+
+			declare CMlFrame[][Integer]	Frames_Instance;
+			declare CMlLabel[][Integer]	Labels_Name;
+			declare CMlLabel[][Integer]	Labels_Tuto;
+			declare CMlQuad[][Integer]	Quad_Icon;
+			declare Integer 			IndexSelectY = 0;
+			declare Integer 			IndexSelectX = 0;
+			declare Integer 			IndexMaxY = {{{Count_InstancesY}}};
+			declare Integer 			IndexMaxX = {{{Count_InstancesX}}};
+			
+			declare Text[Integer][Integer] TextButton;
+			declare Text[Integer][Integer] IndexButton;
+			declare Text[Integer][Integer] QuadImageUrl;
+			declare Text[Integer][Integer] QuadImageTutoUrl;
+			declare Text[Integer][Integer] TextTuto;
+			for(I, 0, {{{Count_InstancesY-1}}})
+			{
+				TextButton[I]        =  Text[Integer];
+				QuadImageUrl[I]      =  Text[Integer];
+				QuadImageTutoUrl[I]  =  Text[Integer];
+				IndexButton[I]       =  Text[Integer];
+				TextTuto[I]          =  Text[Integer];
+				G_IndexGameSelect[I] = Text[Integer];
+			}
+			TextButton[0][0]        = "";
+			TextButton[0][1]        = "";
+			TextButton[1][0]        = "Chiffre";
+			TextButton[1][1]        = "";
+			TextButton[2][0]        = "";
+			TextButton[2][1]        = "";
+			G_IndexGameSelect[0][0] = "Name";
+			G_IndexGameSelect[0][1] = "Drapeau";
+			G_IndexGameSelect[1][0] = "Chiffre";
+			G_IndexGameSelect[1][1] = "Symbole";
+			G_IndexGameSelect[2][0] = "Couleurs";
+			G_IndexGameSelect[2][1] = "Material";
+			G_HideTime              = -1;
+			G_SubMenuControlled     = -1;
+			G_SubMenuIndexMaxX[0] = 1;
+			G_SubMenuIndexMaxX[1] = {{{Count_InstancesX_Drapeau}}};
+			G_SubMenuIndexMaxX[2] = {{{Count_InstancesX_Chiffre}}};
+			G_SubMenuIndexMaxX[3] = {{{Count_InstancesX_Symbole}}};
+			G_SubMenuIndexMaxX[4] = {{{Count_InstancesX_Couleur}}};
+			G_SubMenuIndexMaxX[5] = {{{Count_InstancesX_Material}}};
+			G_SubMenuIndexMaxY[0] = 1;
+			G_SubMenuIndexMaxY[1] = {{{Count_InstancesY_Drapeau}}};
+			G_SubMenuIndexMaxY[2] = {{{Count_InstancesY_Chiffre}}};
+			G_SubMenuIndexMaxY[3] = {{{Count_InstancesY_Symbole}}};
+			G_SubMenuIndexMaxY[4] = {{{Count_InstancesY_Couleur}}};
+			G_SubMenuIndexMaxY[5] = {{{Count_InstancesY_Material}}};
+
+			G_SubIndex[0] = 0;
+			G_SubIndex[1] = 0;
+			G_SubIndex[2] = 0;
+			G_SubIndex[3] = 0;
+			G_SubIndex[4] = 0;
+			G_SubIndex[5] = 0;
+
+			G_LabelLegendText[-1]	= Text[Integer];
+
+			for(I, 0, {{{Count_InstancesY-1}}})
+			{
+				Frames_Instance[I]		= CMlFrame[];
+				Labels_Name[I]			= CMlLabel[];
+				Labels_Tuto[I]			= CMlLabel[];
+				Quad_Icon[I]			= CMlQuad[];
+
+				for(J,0,{{{Count_InstancesX-1}}})
+				{
+					Frames_Instance[I]	.add( (Page.MainFrame.GetFirstChild("Frame_Instance"^I^""^J)	as CMlFrame) );
+					Labels_Name[I]		.add( (Frames_Instance[I][J].GetFirstChild("Label_Name") 		as CMlLabel) );
+					Quad_Icon[I]		.add( (Frames_Instance[I][J].GetFirstChild("Quad_Icon") 		as CMlQuad)  );
+					//Labels_Tuto[I][J].Hide();
+					Labels_Name[I][J].Value = TextButton[I][J];
+					//Quad_Icon[I][J].ChangeImageUrl(QuadImageUrl[I][J]);
+					declare Index = GetMenuIndex(J, I);
+					G_LabelLegendText[Index]	= Text[Integer];
+
+				}
+			}
+			Quad_Icon[IndexSelectY][IndexSelectX].Opacity = 1.;
+			//Labels_Tuto[IndexSelectY][IndexSelectX].Show();
+
+			G_LabelLegendText[-1][0] = "Your Name"; //|I18NInternal|English
+			G_LabelLegendText[-1][1] = "Create & custom your personal flag";
+			G_LabelLegendText[-1][2] = "Create & custom your personal number";
+			G_LabelLegendText[-1][3] = "Create & custom your personal Icon";
+			G_LabelLegendText[-1][4] = "Create & custom your personal color";
+			G_LabelLegendText[-1][5] = "Create & custom your personal material";
+			G_LabelLegendText[0][0]  = "";
+			G_LabelLegendText[0][5]  = "Drapeau 5";
+			G_LabelLegendText[1][0]  = "Drapeau 0";
+			G_LabelLegendText[1][1]  = "Drapeau 1";
+			G_LabelLegendText[1][2]  = "Drapeau 2";
+			G_LabelLegendText[1][3]  = "Drapeau 3";
+			G_LabelLegendText[1][4]  = "Drapeau 4";
+			G_LabelLegendText[1][5]  = "Drapeau 5";
+			G_LabelLegendText[2][0]  = "0";
+			G_LabelLegendText[2][1]  = "1";
+			G_LabelLegendText[2][2]  = "2";
+			G_LabelLegendText[2][3]  = "3";
+			G_LabelLegendText[2][4]  = "4";
+			G_LabelLegendText[2][5]  = "5";
+			G_LabelLegendText[3][0]  = "0";
+			G_LabelLegendText[3][1]  = "1";
+			G_LabelLegendText[3][2]  = "2";
+			G_LabelLegendText[3][3]  = "3";
+			G_LabelLegendText[3][4]  = "4";
+			G_LabelLegendText[3][5]  = "5";
+			G_LabelLegendText[4][0]  = "0";
+			G_LabelLegendText[4][1]  = "1";
+			G_LabelLegendText[4][2]  = "2";
+			G_LabelLegendText[4][3]  = "3";
+			G_LabelLegendText[4][4]  = "4";
+			G_LabelLegendText[4][5]  = "5";
+			G_LabelLegendText[5][0]  = "0";
+			G_LabelLegendText[5][1]  = "1";
+			G_LabelLegendText[5][2]  = "2";
+			G_LabelLegendText[5][3]  = "3";
+			G_LabelLegendText[5][4]  = "4";
+			G_LabelLegendText[5][5]  = "5";
+			
+
+			InitPage();
+			
+			while(True) {
+				yield;
+				if(! PageIsVisible) continue;
+				LibManialink_AnimLoop();
+
+				{{{ClipTransitions::InjectInWhile(["Frame_Content"])}}}
+
+				if(G_HideTime <= Now && G_HideTime != -1)
+				{
+					G_HideTime = -1;
+					SendCustomEvent("DetachPage", ["HelmetEditor", "HeaderInfo","BackgroundMenu", "Board"]);
+				}
+
+				foreach(Event in PendingEvents) {
+					if(G_LockInput > Now) continue;
+					
+					switch(Event.Type) {
+
+						case CMlEvent::Type::MenuNavigation: {
+
+							if(G_SubMenuControlled < 0)
+							{
+								switch(Event.MenuNavAction) {
+									case CMlEvent::EMenuNavAction::Up : {
+										if(IndexSelectY > 0)
+										{
+											IndexSelectY -= 1;
+											Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+											UpdateQuads(IndexSelectX, IndexSelectY, IndexSelectX, IndexSelectY + 1);
+										}
+									}
+									case CMlEvent::EMenuNavAction::Down : {
+										if(IndexSelectY < IndexMaxY-1)
+										{
+											IndexSelectY += 1;
+											Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+											UpdateQuads(IndexSelectX, IndexSelectY, IndexSelectX, IndexSelectY -1);
+										}
+									}
+									case CMlEvent::EMenuNavAction::Left : {
+										if(IndexSelectX > 0)
+										{
+											IndexSelectX -= 1;
+											Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+											UpdateQuads(IndexSelectX, IndexSelectY, IndexSelectX+1, IndexSelectY);
+										}
+									}
+									case CMlEvent::EMenuNavAction::Right : {
+										if(IndexSelectX < IndexMaxX-1)
+										{
+											IndexSelectX += 1;
+											Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+											UpdateQuads(IndexSelectX, IndexSelectY, IndexSelectX-1, IndexSelectY);
+										}
+									}
+									case CMlEvent::EMenuNavAction::Select : {
+										declare Integer IndexSubMenu = GetSubMenu(IndexSelectX, IndexSelectY);
+										if(IndexSubMenu <= 0) continue;
+										OpenSubMenu(IndexSubMenu);
+										UpdateIndexSub(G_SubMenuControlled, G_SubMenuIndexX, G_SubMenuIndexY);
+										
+										continue;
+										declare Text MainMenuChoose = SelectGame(IndexSelectX, IndexSelectY);
+										if(MainMenuChoose != "")
+										{
+											Audio.PlaySoundEvent("{{{SoundSelect}}}", {{{Volumes::GetVolumedB("MenuValidate")}}});
+											SendCustomEvent("GotoPage", [MainMenuChoose]);
+											//SendCustomEvent("DetachPage", ["HelmetEditor"]);
+										}
+									}
+									case CMlEvent::EMenuNavAction::Action1 : {
+										
+										SendCustomEvent("StartHelmet", [""]);
+									}
+									case CMlEvent::EMenuNavAction::Cancel : {
+										Audio.PlaySoundEvent("{{{SoundBack}}}", {{{Volumes::GetVolumedB("MenuPageBack")}}});
+										
+										if(G_SubMenuControlled < 0)
+										{
+											SendCustomEvent("GotoPrevious", [""]);
+											HidePage();
+										}
+										else
+										{
+											CloseSubMenu();
+											UpdateQuads(IndexSelectX, IndexSelectY, IndexSelectX, IndexSelectY);
+										}
+									}
+								}
+							}
+							else
+							{
+								switch(Event.MenuNavAction) {
+									case CMlEvent::EMenuNavAction::Up : {
+										if(G_SubMenuIndexY > 0)
+										{
+											Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+											UpdateIndexSub(G_SubMenuControlled, G_SubMenuIndexX, G_SubMenuIndexY - 1);
+											//G_SubMenuIndexMaxY
+											//G_SubMenuIndexMaxX
+										}
+									}
+									case CMlEvent::EMenuNavAction::Down : {
+										if(G_SubMenuIndexY < G_SubMenuIndexMaxY[G_SubMenuControlled] - 1)
+										{
+											Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+											UpdateIndexSub(G_SubMenuControlled, G_SubMenuIndexX, G_SubMenuIndexY + 1);
+										}
+									}
+									case CMlEvent::EMenuNavAction::Left : {
+										if(G_SubMenuIndexX > 0)
+										{
+											Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+											UpdateIndexSub(G_SubMenuControlled, G_SubMenuIndexX - 1, G_SubMenuIndexY);
+										}
+									}
+									case CMlEvent::EMenuNavAction::Right : {
+										if(G_SubMenuIndexX < G_SubMenuIndexMaxX[G_SubMenuControlled] - 1)
+										{
+											Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+											UpdateIndexSub(G_SubMenuControlled, G_SubMenuIndexX + 1, G_SubMenuIndexY);
+										}
+									}
+									case CMlEvent::EMenuNavAction::Select : {
+										
+										SelectSubButton(G_SubMenuControlled, IndexSelectX, IndexSelectY, G_SubMenuIndexX , G_SubMenuIndexY);
+										
+										CloseSubMenu();
+										UpdateQuads(IndexSelectX, IndexSelectY, IndexSelectX, IndexSelectY);
+									}
+									case CMlEvent::EMenuNavAction::Cancel : {
+										Audio.PlaySoundEvent("{{{SoundBack}}}", {{{Volumes::GetVolumedB("MenuPageBack")}}});
+										CloseSubMenu();
+										UpdateQuads(IndexSelectX, IndexSelectY, IndexSelectX, IndexSelectY);
+                            	
+                            	
+									}
+								}
+							}
+						}
+
+
+						case CMlEvent::Type::PluginCustomEvent: {
+							declare PreviousPage = Event.CustomEventData[0];
+							switch(Event.PluginCustomEventType) {
+								case "Show" : {
+									UpdateQuads(IndexSelectX, IndexSelectY, IndexSelectX, IndexSelectY);
+									ShowPage(PreviousPage);
+									{{{_ShowAnim}}}
+									SetHeaderInfo();
+									EnableMenuNavigation(True,False,Null,1);
+								}
+								
+								case "Hide" : {
+									{{{_HideAnim}}}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	--></script>
+	""";
+	
+	return MLText;
+}

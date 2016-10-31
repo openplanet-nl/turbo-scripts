@@ -1,0 +1,350 @@
+#Include "TextLib"													as TextLib
+#Include "Libs/Openplanet/TMConsole/Menu/MenuLayers.Script.txt"			as Layers
+#Include "Libs/Openplanet/TMConsole/PopUpManager.Script.txt"				as PopUpManager
+
+#Const C_REQUESTTYPE_REWARDSSENT	0
+#Const C_REQUESTTYPE_RANKINGINFOS	1
+#Const C_REQUESTTYPE_PLAYERLIST		2
+#Const C_REQUESTTYPE_MAPSRANKING	3
+#Const C_REQUESTTYPE_ECHELONSENT	4
+
+
+declare Text					G_LayerToSend;
+declare Integer					G_RequestType;
+declare Text[]					G_ParamToSend;
+
+declare Integer[Text]			G_PlayerRanking;
+declare Integer[Text]			G_NumberOfPlayers;
+declare Integer[Text][Integer]	G_MapsRanking;
+declare Integer[Text][Integer]	G_MapsRankingPlayerCount;
+
+
+
+Text GetFeedbackText(Boolean _Succeed) {
+	if(G_RequestType == C_REQUESTTYPE_REWARDSSENT) {
+		return "RewardsSent";
+	}
+	else if(G_RequestType == C_REQUESTTYPE_RANKINGINFOS) {
+		return "RankingInfosSent";
+	}
+	else if(G_RequestType == C_REQUESTTYPE_PLAYERLIST) {
+		return "LeaderBoardListSent";
+	}
+	else if(G_RequestType == C_REQUESTTYPE_MAPSRANKING) {
+		return "MapsRankingSent";
+	}
+	else if(G_RequestType == C_REQUESTTYPE_ECHELONSENT) {
+		return "EchelonSent";
+	}
+	return "";
+}
+
+Void SendFeedbackToUI(Boolean _Succeed) {
+	declare CUILayer LayerToSend = Layers::Get(G_LayerToSend);
+	if(LayerToSend == Null) return;
+	declare Text FeedbackText = GetFeedbackText(_Succeed);
+	LayerCustomEvent(LayerToSend, FeedbackText, G_ParamToSend);
+}
+
+Void SendAllAnimationToStart(){
+	SendFeedbackToUI(True);
+}
+
+
+
+// Functions to call in the Handlers
+//-----------------------------------------------------------//
+
+/*
+ @FeedBackLayer apparait pour _Layer sous forme: _Layer^_FeedBackLayer^"_AskYesNo"
+ */
+Void CheckConnection(Text _Layer, Boolean _Premium, Boolean _FeedBackConnectionWarning, Text _FeedBackLayer)
+{
+	PopUpManager::AddAskYesNo("Poser la question ?","UPlay", _Layer^_FeedBackLayer);
+
+	/*
+	declare TypeOfConnection GetTypeOFConnection
+
+	//Vérifier les connections souhaitez et envoyer un message si il manque un prérequis
+
+	if(NotConnect)
+	{
+		_Premium
+	}
+	else
+	{
+		//GOTOPAGE
+	}
+	*/
+}
+
+Void CheckConnection()
+{
+	CheckConnection("", False, False, "");
+}
+
+Boolean Connect(Text _Reason, Text _AnswerLayer) {
+	/*
+	if (already connected) => SendEvent(_AnswerLayer, "Connection Succeed");
+
+	declare Connection = ConnectionBlahBlahDavid(reason);
+	wait(Connection.done);
+
+	
+
+	if(Connection.Succeed)	{
+		if(Connection.UPlayAccountInvalid) {
+			// uplay
+		}
+		wait(Connection.UplayFinished);
+		SendEvent(_AnswerLayer, "Connection Succeed");
+	}
+
+	switch(Connection.FailureCause) {
+		case "ya pas le net": {
+
+		}
+		case PremiumAccountNeeded: {
+			ShowPopupYesNo("buy PS+");
+		}
+	}
+*/
+	return False;
+}
+
+Integer GetEchelon(Text _Echelon)
+{
+	switch(_Echelon)
+	{
+		case "::EEchelon::None"   : return 0;
+		case "::EEchelon::Bronze1": return 1;
+		case "::EEchelon::Bronze2": return 2;
+		case "::EEchelon::Bronze3": return 3;
+		case "::EEchelon::Silver1": return 4;
+		case "::EEchelon::Silver2": return 5;
+		case "::EEchelon::Silver3": return 6;
+		case "::EEchelon::Gold1"  : return 7;
+		case "::EEchelon::Gold2"  : return 8;
+		case "::EEchelon::Gold3"  : return 9;
+	}
+	return 0;
+}
+
+Void GetRankingInfos()
+{
+	G_PlayerRanking["Zone0"]     = 500;
+	G_NumberOfPlayers["Zone0"]   = 1000;
+	G_PlayerRanking["Zone1"]   = 50;
+	G_NumberOfPlayers["Zone1"] = 100;
+	G_PlayerRanking["Zone2"]    = 5;
+	G_NumberOfPlayers["Zone2"]  = 10;
+}
+
+Void Load()
+{
+	//CheckConnection();
+	GetRankingInfos();
+}
+
+Void ClearMapsRanking()
+{
+	G_MapsRanking.clear();
+	G_MapsRankingPlayerCount.clear();
+	//G_MapsRanking["Zone0"]              = Integer[Integer];
+	//G_MapsRanking["Zone1"]            = Integer[Integer];
+	//G_MapsRanking["Zone2"]             = Integer[Integer];
+	//G_MapsRankingPlayerCount["Zone0"]   = Integer[Integer];
+	//G_MapsRankingPlayerCount["Zone1"] = Integer[Integer];
+	//G_MapsRankingPlayerCount["Zone2"]  = Integer[Integer];
+}
+
+Void CreateMapsRankingIndex(Integer _Index)
+{
+	G_MapsRanking[_Index]              = Integer[Text];
+}
+
+Void CreateMapsRankingCountIndex(Integer _Index)
+{
+	G_MapsRankingPlayerCount[_Index]   = Integer[Text];
+}
+
+Void AddMapToMapsRanking_World(Integer _Index, Integer _Score)
+{
+	if(!G_MapsRanking.existskey(_Index)) CreateMapsRankingIndex(_Index);
+	G_MapsRanking[_Index]["Zone0"] = _Score;
+}
+
+Void AddMapToMapsRanking_Country(Integer _Index, Integer _Score)
+{
+	if(!G_MapsRanking.existskey(_Index)) CreateMapsRankingIndex(_Index);
+	G_MapsRanking[_Index]["Zone1"] = _Score;
+}
+
+Void AddMapToMapsRanking_Zone2(Integer _Index, Integer _Score)
+{
+	if(!G_MapsRanking.existskey(_Index)) CreateMapsRankingIndex(_Index);
+	G_MapsRanking[_Index]["Zone2"] = _Score;
+}
+
+Void AddMapToMapsRanking_Zone3(Integer _Index, Integer _Score)
+{
+	if(!G_MapsRanking.existskey(_Index)) CreateMapsRankingIndex(_Index);
+	G_MapsRanking[_Index]["Zone3"] = _Score;
+}
+
+Void AddMapToMapsRankingPlayerCount_World(Integer _Index, Integer _Score)
+{
+	if(!G_MapsRankingPlayerCount.existskey(_Index)) CreateMapsRankingCountIndex(_Index);
+	G_MapsRankingPlayerCount[_Index]["Zone0"] = _Score;
+}
+
+Void AddMapToMapsRankingPlayerCount_Country(Integer _Index, Integer _Score)
+{
+	if(!G_MapsRankingPlayerCount.existskey(_Index)) CreateMapsRankingCountIndex(_Index);
+	G_MapsRankingPlayerCount[_Index]["Zone1"] = _Score;
+}
+
+Void AddMapToMapsRankingPlayerCount_Zone2(Integer _Index, Integer _Score)
+{
+	if(!G_MapsRankingPlayerCount.existskey(_Index)) CreateMapsRankingCountIndex(_Index);
+	G_MapsRankingPlayerCount[_Index]["Zone2"] = _Score;
+}
+
+Void AddMapToMapsRankingPlayerCount_Zone3(Integer _Index, Integer _Score)
+{
+	if(!G_MapsRankingPlayerCount.existskey(_Index)) CreateMapsRankingCountIndex(_Index);
+	G_MapsRankingPlayerCount[_Index]["Zone3"] = _Score;
+}
+
+Void SendMapsRanking(Text _Layer){
+	declare CUILayer 		LayerToSend 	= Layers::Get(_Layer);
+	if(LayerToSend == Null) return;
+	declare Integer[Text][Integer]	Net_MapsRanking				for LayerToSend.LocalPage;
+	declare Integer[Text][Integer]	Net_MapsRankingPlayerCount	for LayerToSend.LocalPage;
+	Net_MapsRanking            = G_MapsRanking;
+	Net_MapsRankingPlayerCount = G_MapsRankingPlayerCount;
+	
+	G_LayerToSend = _Layer;
+	G_ParamToSend.clear();
+	G_RequestType = C_REQUESTTYPE_MAPSRANKING;
+	SendFeedbackToUI(True);
+}
+
+Void SendLeaderBoardList(Text _Layer, Text _Zone, Integer _PageNeed){
+	//declare PlayerRank = ScoreMgr.GlobalLeaderBoard_GetPlayerRanking(DataMgr.MenuUserId, "Zone0");
+	declare Integer FromIndex   = 0;
+	declare Integer PlayerIndex = 36;
+
+	declare Integer PlayerPage  = (PlayerIndex-1) / 9;
+	
+	
+	if(_PageNeed == -1)
+	{
+		FromIndex = PlayerPage*9;
+	}
+	else
+	{
+		FromIndex = _PageNeed*9;
+	}
+
+	//declare PlayerList = ScoreMgr.GlobalRanking_Get(DataMgr.MenuUserId, _Zone);
+
+	//declare CWebServicesTaskResult TaskResult = ScoreMgr.GlobalLeaderBoard_GetPlayerList(MSUser.Id, "Zone0", 1, 5);
+	declare CUILayer 		LayerToSend 	= Layers::Get(_Layer);
+	if(LayerToSend == Null) return;
+	declare Integer[]	Net_PlayerListIndex			for LayerToSend.LocalPage;
+	declare Integer[]	Net_PlayerListRank			for LayerToSend.LocalPage;
+	declare Text[]		Net_PlayerListLogin			for LayerToSend.LocalPage;
+	declare Text[]		Net_PlayerListDisplayName	for LayerToSend.LocalPage;
+	declare Integer[]	Net_PlayerListScore			for LayerToSend.LocalPage;
+
+
+
+	declare CWebServicesTaskResult TaskResult = ScoreMgr.GlobalLeaderBoard_GetPlayerList(DataMgr.MenuUserId, _Zone, FromIndex, 10);
+	while( TaskResult.IsProcessing )
+	{
+		//log(Now^"> Task is processing");
+		sleep(1000); //TODO - Bonne façon de faire ?
+	}
+	if( TaskResult.HasSucceeded )
+	{
+		declare CWebServicesTaskResult_RealLeaderBoard Net_LeaderBoardResult  <=> (TaskResult as CWebServicesTaskResult_RealLeaderBoard);
+		foreach(LeaderBoardInfoIndex => LeaderBoardInfoValue in Net_LeaderBoardResult.LeaderBoardInfo) 
+		{
+			//log(LeaderBoardInfoIndex^": "^LeaderBoardInfoValue.Rank^" - "^LeaderBoardInfoValue.Login^" - "^LeaderBoardInfoValue.DisplayName^" - "^LeaderBoardInfoValue.Score);
+			Net_PlayerListIndex.add(LeaderBoardInfoIndex);
+			Net_PlayerListRank.add(LeaderBoardInfoValue.Rank);
+			Net_PlayerListLogin.add(LeaderBoardInfoValue.Login);
+			Net_PlayerListDisplayName.add(LeaderBoardInfoValue.DisplayName);
+			//Net_PlayerListScore.add(LeaderBoardInfoValue.Score);
+		}
+	}
+
+	//Net_PlayerList.clear();
+
+	G_LayerToSend = _Layer;
+	G_ParamToSend.clear();
+	G_RequestType = C_REQUESTTYPE_PLAYERLIST;
+	SendFeedbackToUI(True);
+}
+
+Void SendRankingInfos(Text _Layer){
+	declare CUILayer 		LayerToSend 	= Layers::Get(_Layer);
+	if(LayerToSend == Null) return;
+	declare Integer[Text]	Net_PlayerRanking		for LayerToSend.LocalPage;
+	declare Integer[Text]	Net_NumberOfPlayers		for LayerToSend.LocalPage;
+	//ScoreMgr.GlobalLeaderBoard_GetPlayerCount("Zone0");
+	declare Text[] SplitUserLogin = TextLib::Split("|", LocalUser.ZonePath);
+	
+	if(SplitUserLogin.count >= 2)
+	{
+		G_PlayerRanking["Zone0"]   = ScoreMgr.GlobalLeaderBoard_GetPlayerRanking(DataMgr.MenuUserId, SplitUserLogin[0]);
+		G_NumberOfPlayers["Zone0"]   = ScoreMgr.GlobalLeaderBoard_GetPlayerCount(SplitUserLogin[0]);
+		G_PlayerRanking["Zone1"] = ScoreMgr.GlobalLeaderBoard_GetPlayerRanking(DataMgr.MenuUserId, SplitUserLogin[1]);
+		G_NumberOfPlayers["Zone1"] = ScoreMgr.GlobalLeaderBoard_GetPlayerCount(SplitUserLogin[1]);
+	}
+	Net_PlayerRanking.clear();
+	Net_NumberOfPlayers.clear();
+	Net_PlayerRanking   = G_PlayerRanking;
+	Net_NumberOfPlayers = G_NumberOfPlayers;
+
+	//Net_WorkshopIndex	= G_WorkshopIndex;
+
+	G_LayerToSend = _Layer;
+	G_ParamToSend.clear();
+	G_RequestType = C_REQUESTTYPE_RANKINGINFOS;
+	SendFeedbackToUI(True);
+}
+
+Void SendAllInfos(Text _Layer){
+	declare CUILayer 		LayerToSend 	= Layers::Get(_Layer);
+	if(LayerToSend == Null) return;
+	declare Text[Text][]	Net_WorkshopIndex		for LayerToSend.LocalPage;
+	
+	//Net_WorkshopIndex	= G_WorkshopIndex;
+
+	G_LayerToSend = _Layer;
+	G_ParamToSend.clear();
+	G_RequestType = C_REQUESTTYPE_REWARDSSENT;
+	SendFeedbackToUI(True);
+}
+
+
+Void SendEchelon(Text _Layer){
+	declare CUILayer 		LayerToSend 	= Layers::Get(_Layer);
+	if(LayerToSend == Null) return;
+	
+	if(ManiaPlanet.MasterServer_MainMSUser != Null) {
+		if(ManiaPlanet.MasterServer_MainMSUser.ConnectionStatus == CMasterServerUser::EMasterServerConnectionStatus::Connected) {
+			declare Integer	Net_Echelon		for LayerToSend.LocalPage;
+			declare Integer Echelon      for LocalUser;
+			Net_Echelon = GetEchelon(LocalUser.Echelon^"");
+			Echelon = Net_Echelon;
+			
+			G_LayerToSend = _Layer;
+			G_ParamToSend.clear();
+			G_RequestType = C_REQUESTTYPE_ECHELONSENT;
+			SendFeedbackToUI(True);
+		}
+	}
+}

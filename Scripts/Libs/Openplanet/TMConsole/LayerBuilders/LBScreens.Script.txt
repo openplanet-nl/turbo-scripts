@@ -1,0 +1,498 @@
+
+// file://Media/Manialinks/Nadeo/TMConsole/MainMenuArnaud.Script.txt
+#Include "Libs/Openplanet/Manialink2.Script.txt"					as Manialink
+#Include "Libs/Openplanet/TMConsole/PanelParameter.Script.txt"	as PanelParameter
+#Include "Libs/Openplanet/TMConsole/MenuColor.Script.txt"		as Color
+
+#Const C_ImgBase 	"file://Media/Manialinks/Nadeo/TMConsole/Images/"
+ 
+Text Build(Text _ShowAnim, Text _HideAnim) {
+	
+	declare Text IMGBackground        = C_ImgBase^"bg.jpg";
+	declare Text IMGBlueScreen        = C_ImgBase^"BlueScreen.png";
+	
+	
+	declare Integer Count_InstancesY  = 6;
+	declare Integer Count_InstancesX  = 6;
+	declare Real	MarginX_Button    = 0.;
+	declare Real	MarginY_Button    = 0.;
+	//declare Real	SizeX_Total       = 238.0;
+	//declare Real	SizeY_Total       = 134.;
+	declare Real	SizeX_Total       = PanelParameter::GetSizePanelX();
+	declare Real	SizeY_Total       = PanelParameter::GetSizePanelY();
+	declare Real	SizeXQuad         = (SizeX_Total - Count_InstancesX*MarginX_Button) / Count_InstancesX;
+	declare Real	SizeYQuad         = (SizeY_Total - Count_InstancesY*MarginY_Button) / Count_InstancesY;
+	declare Real	PosnXLabel        = SizeXQuad/2.;
+	declare Real	PosnYLabel        = -SizeYQuad/2.;
+	declare Real	PosXFirstQuad     = -SizeX_Total/2;
+	declare Real	PosYFirstQuad     = SizeY_Total/2+3;
+	
+	//HACK
+	declare Real Hack_IndexY = 3.;
+	declare Real Hack_IndexJ = 1.;
+	declare Real Hack_PosnY = PosYFirstQuad - Hack_IndexY*SizeYQuad - Hack_IndexY*MarginY_Button*1. - MarginY_Button/2.;
+	declare Real Hack_PosnX = PosXFirstQuad + Hack_IndexJ*SizeXQuad + Hack_IndexJ*MarginX_Button*1. + MarginX_Button/2.;
+	declare Real Hack_IndexY2 = 1.;
+	declare Real Hack_IndexJ2 = 3.;
+	declare Real Hack_PosnY2 = PosYFirstQuad - Hack_IndexY2*SizeYQuad - Hack_IndexY2*MarginY_Button*1. - MarginY_Button/2.;
+	declare Real Hack_PosnX2 = PosXFirstQuad + Hack_IndexJ2*SizeXQuad + Hack_IndexJ2*MarginX_Button*1. + MarginX_Button/2.;
+	declare Real Hack_IndexY3 = 4.;
+	declare Real Hack_IndexJ3 = 4.;
+	declare Real Hack_PosnY3 = PosYFirstQuad - Hack_IndexY3*SizeYQuad - Hack_IndexY3*MarginY_Button*1. - MarginY_Button/2.;
+	declare Real Hack_PosnX3 = PosXFirstQuad + Hack_IndexJ3*SizeXQuad + Hack_IndexJ3*MarginX_Button*1. + MarginX_Button/2.;
+
+	//HACKEND
+
+	declare Text MLText = """
+	
+	<framemodel id="Frame_Button">
+		<label halign="left" valign="center" style="TextButtonNav" posn="{{{PosnXLabel}}} {{{PosnYLabel}}} 1"
+		 id="Label_Name" textsize="9." text="" hidden="0" sizen="{{{SizeXQuad-5.}}}"/>
+		<quad halign="left" valign="top" sizen="{{{SizeXQuad}}} {{{SizeYQuad}}}" bgcolor="999" id="G_Quad_Screen" hidden="1"/>
+	</framemodel>
+	
+	<frame id="Frame_All" posn="0 0 21">
+		<frame id="Frame_All2">
+			<label halign="left" valign="center" style="TextButtonNav" posn="-155 81.5 5" id="Title" textsize="15" text="" textcolor="fff"/>
+			<label halign="left" valign="center" style="TextButtonNav" posn="-155 69.0 5" id="SubTitle" textsize="9" text="" textcolor="fff"/>
+			
+			<quad id="Background" halign="center" valign="center" opacity="0."
+			sizen="320 180" image="{{{IMGBackground}}}" posn="0 0 0" />
+		</frame>
+
+
+		<frame id="FrameAll_Buttons" posn="0. 0. 2.">
+		<!--
+			//HACK
+		-->
+		<quad halign="left" valign="top" sizen="{{{SizeXQuad}}} {{{SizeYQuad}}}" bgcolor="000" id="Test0"
+		 hidden="0" posn="{{{Hack_PosnX}}} {{{Hack_PosnY}}} 0" blendmode="Default" opacity="0.0" />
+		<quad halign="left" valign="top" sizen="{{{SizeXQuad}}} {{{SizeYQuad}}}" bgcolor="000" id="Test1"
+		 hidden="0" posn="{{{Hack_PosnX2}}} {{{Hack_PosnY2}}} 0" blendmode="Default" opacity="0.0" />
+		<quad halign="left" valign="top" sizen="{{{SizeXQuad}}} {{{SizeYQuad}}}" bgcolor="000" id="Test2"
+		 hidden="0" posn="{{{Hack_PosnX3}}} {{{Hack_PosnY3}}} 0" blendmode="Default" opacity="0.0" />
+
+		<quad halign="left" valign="top" sizen="{{{SizeXQuad}}} {{{SizeYQuad}}}" bgcolor="111" id="BlueScreen"
+		 hidden="0" opacity="0." />
+		<quad halign="left" valign="center" sizen="{{{SizeXQuad-6.}}} {{{SizeYQuad/8.}}}" bgcolor="fff" id="BlueScreenLoad"
+		 hidden="0" posn="{{{Hack_PosnX2+3.0}}} {{{Hack_PosnY2-SizeYQuad/2.}}} 0" blendmode="Default" opacity="0.0" />
+		<quad halign="left" valign="center" sizen="{{{SizeXQuad-8.}}} {{{SizeYQuad/10.}}}" bgcolor="000" id="BlueScreenLoad2"
+		 hidden="0" blendmode="Default" opacity="0.0" />
+		<!--
+			//HACKEND
+		-->
+		""";
+		//declare Integer count = 0;
+		for(I,0,Count_InstancesY-1)
+		{
+			declare Real IndexY = I*1.;
+			declare Real PosnY = PosYFirstQuad - IndexY*SizeYQuad - IndexY*MarginY_Button*1. - MarginY_Button/2.;
+			MLText^="""
+			""";
+			for(J,0,Count_InstancesX-1)
+			{
+			declare Real IndexJ = J*1.;
+			declare Real PosnX = PosXFirstQuad + IndexJ*SizeXQuad + IndexJ*MarginX_Button*1. + MarginX_Button/2.;
+			MLText^="""
+				<frameinstance modelid="Frame_Button" posn="{{{PosnX}}} {{{PosnY}}} 5." id="Frame_Instance{{{I}}}{{{J}}}" />
+			""";
+			}
+		}
+
+		MLText^="""
+		</frame>
+
+	</frame>
+
+	<script><!--
+		#Const DebugName  "L_Screens"
+		
+		#Const C_TimeScreenOn 10
+		#Const C_TimeAnim     2000
+		#Const C_NumberOfTick 30
+
+		{{{Manialink::GetIncludes()}}}
+		{{{Manialink::Load()}}}
+		
+		declare CMlFrame[Integer][Integer]	G_Frames_Instance;
+		declare CMlQuad[][Integer] 			G_Quad_Screens;
+		declare Integer[Integer][Integer]	G_Screens_Etat;
+		declare Integer 					G_TimeNextTick;
+		declare Integer 					G_TimeStepBlueScreen;
+		declare Integer 					G_NextStepBlueScreen;
+		declare Integer 					G_TickCount;
+
+
+		Void SetImage(Integer _IndexSelectX, Integer _IndexSelectY, Text _URLImg)
+		{
+			if(!G_Screens_Etat.existskey(_IndexSelectY))				return;
+			if(!G_Screens_Etat[_IndexSelectY].existskey(_IndexSelectX)) return;
+
+			G_Quad_Screens[_IndexSelectY][_IndexSelectX].ChangeImageUrl(_URLImg);
+		}
+
+		Void SetVisibility(Integer _IndexSelectX, Integer _IndexSelectY, Boolean _IsVisible)
+		{
+			if(!G_Screens_Etat.existskey(_IndexSelectY))				return;
+			if(!G_Screens_Etat[_IndexSelectY].existskey(_IndexSelectX)) return;
+
+			if(_IsVisible)G_Quad_Screens[_IndexSelectY][_IndexSelectX].Visible = True;
+			else          G_Quad_Screens[_IndexSelectY][_IndexSelectX].Visible = False;
+			
+		}
+
+
+		Boolean IsScreenOff(Integer _IndexSelectX, Integer _IndexSelectY)
+		{
+			if(!G_Screens_Etat.existskey(_IndexSelectY))				return False;
+			if(!G_Screens_Etat[_IndexSelectY].existskey(_IndexSelectX)) return False;
+			if(G_Screens_Etat[_IndexSelectY][_IndexSelectX] <= 0)
+			{
+				return True;
+			}
+			return False;
+		}
+
+		Void UpdateQuadsScreen()
+		{
+			for(I, 0, {{{Count_InstancesY-1}}})
+			{
+				for(J ,0, {{{Count_InstancesX-1}}})
+				{
+					if(IsScreenOff(J,I))
+					{
+						G_Quad_Screens[I][J].Visible = False;
+					}
+					else
+					{
+						G_Quad_Screens[I][J].Visible = True;
+					}
+				}
+			}
+		}
+
+		Void StartAnim(Integer _IndexSelectX, Integer _IndexSelectY)
+		{
+			G_Screens_Etat[_IndexSelectY][_IndexSelectX] = C_TimeScreenOn;
+			G_TickCount = 0;
+			G_TimeNextTick = Now + (C_TimeAnim/C_NumberOfTick);
+
+		}
+
+		Void TickAnim()
+		{
+			declare Integer[Integer][Integer]	New_Screens_Etat;
+			for(I, 0, {{{Count_InstancesY-1}}})
+			{
+				New_Screens_Etat[I]    = Integer[Integer];
+				for(J ,0, {{{Count_InstancesX-1}}})
+				{
+					if(G_Screens_Etat[I][J] > 0)
+					{
+						if(IsScreenOff(J,I-1)) New_Screens_Etat[I-1][J] = C_TimeScreenOn;
+						if(IsScreenOff(J-1,I)) New_Screens_Etat[I][J-1] = C_TimeScreenOn;
+						New_Screens_Etat[I][J] = G_Screens_Etat[I][J] - 1;
+					}
+					else
+					{
+						New_Screens_Etat[I][J] = G_Screens_Etat[I][J];
+					}
+				}
+			}
+			G_Screens_Etat = New_Screens_Etat;
+			UpdateQuadsScreen();
+		}
+
+		Void SetColor()
+		{
+			for(I, 0, {{{Count_InstancesY-1}}})
+			{
+				for(J ,0, {{{Count_InstancesX-1}}})
+				{
+					declare Integer QuadNumber  = I*{{{Count_InstancesX-1}}}+J;
+					declare Integer IsPair      = QuadNumber%2;
+					if(IsPair == 0)
+					{
+						G_Quad_Screens[I][J].BgColor = {{{Color::GetColorQuadScreen(0)}}};
+					}
+					else
+					{
+						G_Quad_Screens[I][J].BgColor = {{{Color::GetColorQuadScreen(1)}}};
+					}
+				}
+			}
+		}
+
+		Void Blink()
+		{
+			declare Integer TimeStartBlink = 0;
+			for(I, 0, 2)
+			{
+				declare CMlQuad  Quad_Test <=> (Page.GetFirstChild("Test"^I) as CMlQuad);
+				declare Real IndexX = ML::Rand(0,5)*1.;
+				declare Real IndexY = ML::Rand(0,5)*1.;
+				//declare Real IndexX = 5.;
+				//declare Real IndexY = 0.;
+				declare Real PosnX = {{{PosXFirstQuad}}} + IndexX*{{{SizeXQuad}}} + IndexX*{{{MarginX_Button}}}*1. + {{{MarginX_Button}}}/2.;
+				declare Real PosnY = {{{PosYFirstQuad}}} - IndexY*{{{SizeYQuad}}} - IndexY*{{{MarginY_Button}}}*1. - {{{MarginY_Button}}}/2.;
+
+				Quad_Test.RelativePosition = <PosnX, PosnY, 0.>;
+				Quad_Test.Opacity = 0.;
+
+				declare TimeBlink = 10;
+				declare TimeBetweenEachBlink = ML::Rand(5, 15); //200
+				declare Real Blink = ML::Rand(0.3, 0.3);
+				TimeStartBlink += ML::Rand(0, 2000); 
+				declare Integer NextBlink  = 0;
+				declare Integer NextBlink2 = TimeStartBlink;
+				declare Integer NumberOfBlink =  ML::Rand(2, 15);
+				for(J,0,NumberOfBlink)
+				{
+					//declare Integer NextBlink  = (TimeBlink + TimeBetweenEachBlink) * J*2;
+					//declare Integer NextBlink2 = (TimeBlink + TimeBetweenEachBlink) * J*2 + (TimeBlink + TimeBetweenEachBlink);
+					declare Integer Rand = ML::Rand(100, TimeBetweenEachBlink);
+					NextBlink  = NextBlink2 + Rand;
+					declare Integer Rand2 = ML::Rand(100, (TimeBetweenEachBlink/2));
+					NextBlink2 = NextBlink + Rand2;
+					
+					//if(I != 0) continue;
+					//log(J*2^": " ^ NextBlink);
+					//log((J*2)+1^": " ^ NextBlink2);
+
+					LibManialink_SetTargetOpacity(Quad_Test, 0.);
+					LibManialink_PresetAnimInsert(Quad_Test, NextBlink , TimeBlink, "EaseLinear");
+					LibManialink_SetTargetOpacity(Quad_Test, Blink);
+					LibManialink_PresetAnimInsert(Quad_Test, NextBlink2, TimeBlink, "EaseLinear");
+				}
+				declare Integer IsBroken  = ML::Rand(0, 2);
+				if(IsBroken == 0)
+				{
+					declare Integer Rand = ML::Rand(100, TimeBetweenEachBlink);
+					NextBlink  = NextBlink2 + Rand;
+					LibManialink_SetTargetOpacity(Quad_Test, 0.);
+					LibManialink_PresetAnimInsert(Quad_Test, NextBlink , TimeBlink, "EaseLinear");
+				}
+
+				/*
+
+
+				*/
+				/*
+				LibManialink_SetTargetOpacity(Quad_Test, 0.);
+				LibManialink_PresetAnimInsert(Quad_Test, 0 , 200, "EaseLinear");
+				LibManialink_SetTargetOpacity(Quad_Test, Blink);
+				LibManialink_PresetAnimInsert(Quad_Test, 200, 200, "EaseLinear");
+				*/
+			}
+		}
+
+		Void BlinkTest0()
+		{
+			declare CMlQuad  Quad_Test <=> (Page.GetFirstChild("Test0") as CMlQuad);
+			//declare Real IndexX = _IndexX * 1.;
+			//declare Real IndexY = _IndexY * 1.;
+			//declare Real PosnX = {{{PosXFirstQuad}}} + IndexX*{{{SizeXQuad}}} + IndexX*{{{MarginX_Button}}}*1. + {{{MarginX_Button}}}/2.;
+			//declare Real PosnY = {{{PosYFirstQuad}}} - IndexY*{{{SizeYQuad}}} - IndexY*{{{MarginY_Button}}}*1. - {{{MarginY_Button}}}/2.;
+
+			//Quad_Test.RelativePosition = <PosnX, PosnY, 0.>;
+			Quad_Test.Opacity = 0.;
+
+			declare TimeBlink = 10;
+			declare TimeBetweenEachBlink = ML::Rand(50, 100); //200
+			declare Real Blink = ML::Rand(0.8, 0.8);
+			declare Integer TimeStartBlink = 0; 
+			declare Integer NextBlink  = 0;
+			declare Integer NextBlink2 = TimeStartBlink;
+			for(J,0,3)
+			{
+				//declare Integer NextBlink  = (TimeBlink + TimeBetweenEachBlink) * J*2;
+				//declare Integer NextBlink2 = (TimeBlink + TimeBetweenEachBlink) * J*2 + (TimeBlink + TimeBetweenEachBlink);
+				declare Integer Rand  = ML::Rand(100, TimeBetweenEachBlink);
+				NextBlink             = NextBlink2 + Rand;
+				declare Integer Rand2 = ML::Rand(100, (TimeBetweenEachBlink/2));
+				NextBlink2            = NextBlink + Rand2;
+				
+				//if(I != 0) continue;
+				//log(J*2^": " ^ NextBlink);
+				//log((J*2)+1^": " ^ NextBlink2);
+
+				LibManialink_SetTargetOpacity(Quad_Test, 0.);
+				LibManialink_PresetAnimInsert(Quad_Test, NextBlink , TimeBlink, "EaseLinear");
+				LibManialink_SetTargetOpacity(Quad_Test, Blink);
+				LibManialink_PresetAnimInsert(Quad_Test, NextBlink2, TimeBlink, "EaseLinear");
+			}
+			
+			declare Integer Rand = ML::Rand(100, TimeBetweenEachBlink);
+			NextBlink  = NextBlink2 + Rand;
+			LibManialink_SetTargetOpacity(Quad_Test, 0.);
+			LibManialink_PresetAnimInsert(Quad_Test, NextBlink , TimeBlink, "EaseLinear");
+			
+		}
+
+		Void BlinkBlueScreen()
+		{
+			declare CMlQuad Quad_Test       <=> (Page.GetFirstChild("Test0") as CMlQuad);
+			declare CMlQuad Quad_BlueScreen <=> (Page.GetFirstChild("BlueScreen") as CMlQuad);
+			Quad_Test.RelativePosition       = Quad_BlueScreen.RelativePosition;
+			BlinkTest0();
+		}
+
+		Void BlueScreenStep1()
+		{
+			declare CMlQuad Quad_BlueScreen <=> (Page.GetFirstChild("BlueScreen") as CMlQuad);
+			declare CMlQuad BlueScreenLoad  <=> (Page.GetFirstChild("BlueScreenLoad") as CMlQuad);
+			declare CMlQuad BlueScreenLoad2 <=> (Page.GetFirstChild("BlueScreenLoad2") as CMlQuad);
+			Quad_BlueScreen.ChangeImageUrl("{{{IMGBlueScreen}}}");
+			declare Real IndexX              = ML::Rand(0,5)*1.;
+			declare Real IndexY              = ML::Rand(1,4)*1.;
+			declare Real PosnX               = {{{PosXFirstQuad}}} + IndexX*{{{SizeXQuad}}} + IndexX*{{{MarginX_Button}}}*1. + {{{MarginX_Button}}}/2.;
+			declare Real PosnY               = {{{PosYFirstQuad}}} - IndexY*{{{SizeYQuad}}} - IndexY*{{{MarginY_Button}}}*1. - {{{MarginY_Button}}}/2.;
+			Quad_BlueScreen.RelativePosition = <PosnX, PosnY, 0.>;
+			BlueScreenLoad.RelativePosition  = <(PosnX+3.), (PosnY - {{{SizeYQuad/2.}}}), 0.>;
+			BlueScreenLoad2.RelativePosition = <(PosnX+4.), (PosnY - {{{SizeYQuad/2.}}}), 0.>;
+			Quad_BlueScreen.Opacity          = 0.;
+			BlueScreenLoad.Opacity           = 0.;
+			BlueScreenLoad2.Opacity          = 0.;
+
+
+			declare Integer StartTime = ML::Rand(2000, 3000);
+			declare Real Blink        = 1.;
+			LibManialink_SetTargetOpacity(Quad_BlueScreen, Blink);
+			LibManialink_PresetAnimInsert(Quad_BlueScreen, StartTime, 10, "EaseLinear");
+
+			G_TimeStepBlueScreen = Now + StartTime + 2000;
+			G_NextStepBlueScreen = 2;
+		}
+		
+		Void BlueScreenStep2() //Chargement
+		{
+			//continue;
+			declare CMlQuad Quad_BlueScreen <=> (Page.GetFirstChild("BlueScreen") as CMlQuad);
+			declare CMlQuad BlueScreenLoad  <=> (Page.GetFirstChild("BlueScreenLoad") as CMlQuad);
+			declare CMlQuad BlueScreenLoad2 <=> (Page.GetFirstChild("BlueScreenLoad2") as CMlQuad);
+			Quad_BlueScreen.ChangeImageUrl("");
+			Quad_BlueScreen.BgColor  = <0.1, 0.1, 0.1>;
+			BlueScreenLoad.Opacity   = 1.;
+			BlueScreenLoad2.Opacity  = 1.;
+			BlueScreenLoad2.Size.X   = 1.;
+			declare Real TargetSizeX = {{{SizeXQuad-8.}}};
+			declare Integer TimeAnim = 2000;
+
+			LibManialink_SetTargetSize(BlueScreenLoad2, <TargetSizeX ,BlueScreenLoad2.Size.Y>);
+			LibManialink_PresetAnim(BlueScreenLoad2, TimeAnim, "EaseLinear");
+
+			G_TimeStepBlueScreen = Now + TimeAnim + 1000;
+			G_NextStepBlueScreen = 3;
+		}
+
+		Void BlueScreenStep3() //Reprise à la normale
+		{
+			declare CMlQuad Quad_BlueScreen <=> (Page.GetFirstChild("BlueScreen") as CMlQuad);
+			declare CMlQuad BlueScreenLoad  <=> (Page.GetFirstChild("BlueScreenLoad") as CMlQuad);
+			declare CMlQuad BlueScreenLoad2 <=> (Page.GetFirstChild("BlueScreenLoad2") as CMlQuad);
+			Quad_BlueScreen.Opacity = 0.;
+			BlueScreenLoad.Opacity  = 0.;
+			BlueScreenLoad2.Opacity = 0.;
+			BlinkBlueScreen();
+		}
+
+		Void BlueScreen()
+		{
+			BlueScreenStep1();
+		}
+
+		main() {
+			G_TimeNextTick       = -1;
+			G_TimeStepBlueScreen = -1;
+			declare Integer 			Prev_TimeNextTick = G_TimeNextTick;
+
+			G_Frames_Instance.clear();
+			G_Quad_Screens.clear();
+			G_Screens_Etat.clear();
+
+			for(I, 0, {{{Count_InstancesY}}})
+			{
+				G_Frames_Instance[I] = CMlFrame[Integer];
+				G_Quad_Screens[I]    = CMlQuad[];
+				G_Screens_Etat[I]    = Integer[Integer];
+			}
+
+			for(I, 0, {{{Count_InstancesY-1}}})
+			{
+				for(J ,0, {{{Count_InstancesX-1}}})
+				{
+					G_Frames_Instance[I][J] = (Page.MainFrame.GetFirstChild("Frame_Instance"^I^""^J)	as CMlFrame);
+					G_Quad_Screens[I].add((G_Frames_Instance[I][J].GetFirstChild("G_Quad_Screen") 		as CMlQuad));
+					G_Screens_Etat[I][J] = 0;
+				}
+			}
+			SetColor();
+			//StartAnim(5,5);
+			UpdateQuadsScreen();
+			//TickAnim();
+
+			while(True) {
+				yield;
+				if(! PageIsVisible) continue;
+				LibManialink_AnimLoop();
+
+				if(Now > G_TimeNextTick && G_TimeNextTick != Prev_TimeNextTick)
+				{
+					TickAnim();
+					G_TickCount += 1;
+
+					Prev_TimeNextTick = G_TimeNextTick;
+					if(G_TickCount < C_NumberOfTick)
+					{
+						G_TimeNextTick = Now + (C_TimeAnim/C_NumberOfTick);
+					}
+				}
+
+				if(Now > G_TimeStepBlueScreen && G_TimeStepBlueScreen != -1)
+				{
+					G_TimeStepBlueScreen = -1;
+					if(G_NextStepBlueScreen == 2)
+					{
+						BlueScreenStep2();
+					}
+					else if(G_NextStepBlueScreen == 3)
+					{
+						BlueScreenStep3();
+					}
+				}
+
+				foreach(Event in PendingEvents) {
+					switch(Event.Type) {
+						case CMlEvent::Type::PluginCustomEvent: {
+							
+							switch(Event.PluginCustomEventType) {
+								case "Show" : {
+									G_TimeNextTick =-1;
+									{{{_ShowAnim}}}
+									//Test();
+								}
+							
+								case "Hide" : {
+									{{{_HideAnim}}}
+								}
+								case "StartAnim" : {
+									StartAnim(5,5);
+								}
+								case "BlinkScreen" : {
+									//Blink();
+									BlueScreen();
+								}
+								case "BlueScreen" : {
+									BlueScreen();
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	--></script>
+	""";
+	
+	return MLText;
+}

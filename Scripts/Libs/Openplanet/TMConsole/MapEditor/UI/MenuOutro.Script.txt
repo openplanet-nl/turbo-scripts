@@ -1,0 +1,492 @@
+/** 
+ * Menu outro UI
+ */
+
+#Const Version		"2016-02-29"
+#Const ScriptName	"MenuOutro.Script.txt"
+
+#Include "TextLib" as TL
+#Include "Libs/Openplanet/Manialink3.Script.txt" as Manialink
+#Include "Libs/Openplanet/TMConsole/MapEditor/Layers.Script.txt" as Layers
+#Include "Libs/Openplanet/TMConsole/MapEditor/Sound.Script.txt" as Sound
+#Include "Libs/Openplanet/TMConsole/MapEditor/UI/Colors.Script.txt" as Colors
+#Include "Libs/Openplanet/TMConsole/MapEditor/UI/Stylesheet.Script.txt" as Styles
+
+// ---------------------------------- //
+// Constants
+// ---------------------------------- //
+#Const C_DefaultVisibility	False	///< Default visibility
+// Selection
+#Const C_Selection_Null			0
+#Const C_Selection_Validate		1
+#Const C_Selection_Style		2
+#Const C_Selection_EditTrack	3
+#Const C_Selection_EditDeco		4
+#Const C_Selection_Save			5
+#Const C_Selection_Play			6
+#Const C_Selection_Quit			7
+#Const C_Selection_Test			8
+#Const C_Selection_SaveAs		9
+
+#Const C_Selection_Beginner [1, 8, 2, 3, 5, 9, 7]
+#Const C_Selection_Advanced [1, 8, 2, 3, 4, 5, 9, 7]
+/// Events
+#Const C_Event_Hover	"LibMenuOutro_Hover"
+#Const C_Event_Click	"LibMenuOutro_Click"
+
+// ---------------------------------- //
+// Globales
+// ---------------------------------- //
+declare Boolean G_Advanced;
+
+// ---------------------------------- //
+// Functions
+// ---------------------------------- //
+// ---------------------------------- //
+// Private
+// ---------------------------------- //
+// ---------------------------------- //
+/** Get the menu outro manialink
+ *
+ *	@return						The manialink
+ */
+Text Private_GetMenuOutroML() {
+	declare FullHeaderSizeX = Styles::GetHeaderSize2() + 4.;
+	declare MenuSizeX = FullHeaderSizeX - 36.;
+	declare MenuSizeY = 8.;
+	declare MenuPosY = 8.;
+	declare Shift = 0;
+	
+	declare HiddenPos = -92. - Styles::GetPosition2(<0., 1., 0.>, Styles::CircleSize_Bottom()).Y;
+	
+	declare Buttons = """
+<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<0., 0., 0.>, Styles::CircleSize_Bottom()))}}} data-value="{{{C_Selection_Validate}}}">
+	{{{Styles::BuildLine(<0., 0., 0.>, <MenuSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), Colors::Color_Black(), True, True, ["scriptevents" => "1", "id" => "Quad_Button"])}}}
+	{{{Styles::BuildLabel(<0., -0.45, 1.>, <MenuSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftCenter2(), [
+		//L16N [MapEditor] Validate the track
+		"text" => _("Validate track"), "class" => "turbo2-text-menu"
+	])}}}
+</frame>
+<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<0., -1., 0.>, Styles::CircleSize_Bottom()))}}} data-value="{{{C_Selection_Test}}}">
+	{{{Styles::BuildLine(<0., 0., 0.>, <MenuSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), Colors::Color_Black(), True, True, ["scriptevents" => "1", "id" => "Quad_Button"])}}}
+	{{{Styles::BuildLabel(<0., -0.45, 1.>, <MenuSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftCenter2(), [
+		//L16N [MapEditor] Edit mode where the player select a starting point to test the track
+		"text" => _("Test track"), "class" => "turbo2-text-menu"
+	])}}}
+</frame>
+<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<0., -2., 0.>, Styles::CircleSize_Bottom()))}}} data-value="{{{C_Selection_Style}}}">
+	{{{Styles::BuildLine(<0., 0., 0.>, <MenuSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), Colors::Color_Black(), True, True, ["scriptevents" => "1", "id" => "Quad_Button"])}}}
+	{{{Styles::BuildLabel(<0., -0.45, 1.>, <MenuSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftCenter2(), [
+		//L16N [MapEditor] Select a style for the track (tech, lol, fullspeed, ...)
+		"text" => _("Select style"), "class" => "turbo2-text-menu"
+	])}}}
+</frame>
+<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<0., -3., 0.>, Styles::CircleSize_Bottom()))}}} data-value="{{{C_Selection_EditTrack}}}">
+	{{{Styles::BuildLine(<0., 0., 0.>, <MenuSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), Colors::Color_Black(), True, True, ["scriptevents" => "1", "id" => "Quad_Button"])}}}
+	{{{Styles::BuildLabel(<0., -0.45, 1.>, <MenuSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftCenter2(), [
+		//L16N [MapEditor] Edit the track
+		"text" => _("Edit track"), "class" => "turbo2-text-menu"
+	])}}}
+</frame>
+""";
+	
+	if (G_Advanced) {
+		Shift = 1;
+		Buttons ^= """
+<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<0., -4., 0.>, Styles::CircleSize_Bottom()))}}} data-value="{{{C_Selection_EditDeco}}}">
+	{{{Styles::BuildLine(<0., 0., 0.>, <MenuSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), Colors::Color_Black(), True, True, ["scriptevents" => "1", "id" => "Quad_Button"])}}}
+	{{{Styles::BuildLabel(<0., -0.45, 1.>, <MenuSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftCenter2(), [
+		//L16N [MapEditor] Edit the decoration
+		"text" => _("Edit decoration"), "class" => "turbo2-text-menu"
+	])}}}
+</frame>
+""";
+	}
+	
+	Buttons ^= """
+<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<0., -4.-Shift, 0.>, Styles::CircleSize_Bottom()))}}} data-value="{{{C_Selection_Save}}}">
+	{{{Styles::BuildLine(<0., 0., 0.>, <MenuSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), Colors::Color_Black(), True, True, ["scriptevents" => "1", "id" => "Quad_Button"])}}}
+	{{{Styles::BuildLabel(<0., -0.45, 1.>, <MenuSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftCenter2(), [
+		//L16N [MapEditor] Save the track
+		"text" => _("Save"), "class" => "turbo2-text-menu"
+	])}}}
+</frame>
+<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<0., -5.-Shift, 0.>, Styles::CircleSize_Bottom()))}}} data-value="{{{C_Selection_SaveAs}}}">
+	{{{Styles::BuildLine(<0., 0., 0.>, <MenuSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), Colors::Color_Black(), True, True, ["scriptevents" => "1", "id" => "Quad_Button"])}}}
+	{{{Styles::BuildLabel(<0., -0.45, 1.>, <MenuSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftCenter2(), [
+		//L16N [MapEditor] Save the track in a new file
+		"text" => _("Save as new"), "class" => "turbo2-text-menu"
+	])}}}
+</frame>
+<!--<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<0., -6.-Shift, 0.>, Styles::CircleSize_Bottom()))}}} data-value="{{{C_Selection_Play}}}">
+	{{{Styles::BuildLine(<0., 0., 0.>, <MenuSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), Colors::Color_Black(), True, True, ["scriptevents" => "1", "id" => "Quad_Button"])}}}
+	{{{Styles::BuildLabel(<0., -0.45, 1.>, <MenuSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftCenter2(), [
+		//L16N [MapEditor] Play on the track
+		"text" => _("Play"), "class" => "turbo2-text-menu"
+	])}}}
+</frame>-->
+<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<0., -6.-Shift, 0.>, Styles::CircleSize_Bottom()))}}} data-value="{{{C_Selection_Quit}}}">
+	{{{Styles::BuildLine(<0., 0., 0.>, <MenuSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), Colors::Color_Black(), True, True, ["scriptevents" => "1", "id" => "Quad_Button"])}}}
+	{{{Styles::BuildLabel(<0., -0.45, 1.>, <MenuSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftCenter2(), [
+		//L16N [MapEditor] Leave the track editor
+		"text" => _("Quit"), "class" => "turbo2-text-menu"
+	])}}}
+</frame>
+""";
+	
+	return """
+<manialink version="3" name="MapEditor:MenuOutro">
+<stylesheet>
+	{{{Styles::Get()}}}
+</stylesheet>
+<frame id="Frame_Global">
+	<frame pos="0 {{{HiddenPos}}}" hidden="1" id="Frame_MenuOutro">
+		<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<-FullHeaderSizeX*0.5, 0., 0.>, Styles::CircleSize_Bottom()))}}}>
+			{{{Styles::BuildBackground(<0., 0., 0.>, <FullHeaderSizeX, MenuSizeY>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop())}}}
+			<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<0., 0., 1.>, Styles::CircleSize_Bottom()))}}} id="Frame_Buttons">
+				{{{Buttons}}}
+			</frame>
+		</frame>
+	</frame>
+</frame>
+<script><!--
+#Include "TextLib" as TL
+#Include "AnimLib" as AL
+{{{Manialink::DefaultIncludes()}}}
+
+#Const C_Black	{{{Colors::GetColor(Colors::Color_Black())}}}
+#Const C_Red	{{{Colors::GetColor(Colors::Color_Red())}}}
+
+declare Integer[] G_Selectables;
+declare CMlQuad G_QuadSelected;
+
+{{{Manialink::Animations(["EaseOutQuad"])}}}
+
+Void InitSelectables() {
+	G_Selectables.clear();
+	declare Frame_Buttons <=> (Page.GetFirstChild("Frame_Buttons") as CMlFrame);
+	foreach (Control in Frame_Buttons.Controls) {
+		declare Value for Control = -1;
+		Value = TL::ToInteger(Control.DataAttributeGet("value"));
+		G_Selectables.add(Value);
+		
+		declare Frame_Button <=> (Control as CMlFrame);
+		declare Quad_Button <=> (Frame_Button.GetFirstChild("Quad_Button") as CMlQuad);
+		declare ItemKey for Quad_Button = -1;
+		ItemKey = Value;
+	}
+}
+
+Void SelectButton(Integer _Selected) {
+	declare Frame_Buttons <=> (Page.GetFirstChild("Frame_Buttons") as CMlFrame);
+	foreach (Control in Frame_Buttons.Controls) {
+		declare Frame_Button <=> (Control as CMlFrame);
+		declare Quad_Button <=> (Frame_Button.GetFirstChild("Quad_Button") as CMlQuad);
+		declare Value for Frame_Button = -1;
+		declare Color for Frame_Button = 0;
+		if (Value == _Selected && Color == 0) {
+			G_QuadSelected <=> Quad_Button;
+			Color = 1;
+			//LibManialink_Anim(Quad_Button, {{{Manialink::Inject("""<quad colorize="{{{Colors::GetColorML(Colors::Color_Red())}}}" />""")}}}, 250, "EaseOutQuad");
+		} else if (Value != _Selected && Color == 1) {
+			Color = 0;
+			LibManialink_Anim(Quad_Button, {{{Manialink::Inject("""<quad colorize="{{{Colors::GetColorML(Colors::Color_Black())}}}" />""")}}}, 25, "EaseOutQuad");
+		}
+	}
+}
+
+Void SetVisibility(Boolean _Visible) {
+	if (_Visible) {
+		LibManialink_Anim({{{Manialink::Inject("""<frame pos="0 {{{Styles::Margin_Bottom()+Styles::GetSize2(<0., MenuPosY>, Styles::CircleSize_Bottom()).Y}}}" hidden="0" id="Frame_MenuOutro" />""")}}}, 250, "EaseOutQuad");
+	} else {
+		LibManialink_Anim({{{Manialink::Inject("""<frame pos="0 {{{HiddenPos}}}" hidden="1" id="Frame_MenuOutro" />""")}}}, 250, "EaseOutQuad");
+	}
+}
+
+Void SetValidationStatus(CEditorPlugin::ValidationStatus _ValidationStatus) {
+	/*declare Button_Play <=> (Page.GetFirstChild("Button_Play") as CMlFrame);
+	declare Quad_Button <=> (Button_Play.GetFirstChild("Quad_Button") as CMlQuad);
+	declare Label_Button <=> (Button_Play.GetFirstChild("Label_Button") as CMlLabel);
+	
+	if (_ValidationStatus == CEditorPlugin::ValidationStatus::Validated) {
+		Label_Button.TextColor = {{{Colors::GetColor(Colors::Color_White())}}};
+	} else {
+		Label_Button.TextColor = {{{Colors::GetColor(Colors::Color_Grey())}}};
+	}*/
+}
+
+main() {
+	declare L_Visibility for Page = {{{C_DefaultVisibility}}};
+	declare L_SelectedUpdate for Page = -1;
+	declare L_Selected for Page = -1;
+	
+	declare PrevValidationStatus = CEditorPlugin::ValidationStatus::NotValidable;
+	declare PrevVisibility = {{{C_DefaultVisibility}}};
+	declare PrevSelectedUpdate = -1;
+	
+	G_Selectables.clear();
+	
+	InitSelectables();
+	SetValidationStatus(PrevValidationStatus);
+	
+	declare AnimDir = 1;
+	declare AnimStartTime = Now;
+	declare AnimDuration = 350;
+	
+	while (True) {
+		yield;
+		
+		LibManialink_AnimLoop();
+		
+		if (PrevValidationStatus != Editor.ValidationStatus) {
+			PrevValidationStatus = Editor.ValidationStatus;
+			SetValidationStatus(Editor.ValidationStatus);
+		}
+		
+		if (PrevVisibility != L_Visibility) {
+			PrevVisibility = L_Visibility;
+			SetVisibility(L_Visibility);
+		}
+		
+		if (PrevSelectedUpdate != L_SelectedUpdate) {
+			PrevSelectedUpdate = L_SelectedUpdate;
+			SelectButton(L_Selected);
+			
+			AnimDir = 1;
+			AnimStartTime = Now;
+		}
+		
+		foreach (Event in PendingEvents) {
+			if (Event.Type == CMlEvent::Type::MouseOver) {
+				if (Event.Control != Null && Event.ControlId == "Quad_Button") {
+					declare ItemKey for Event.Control = -1;
+					SendCustomEvent("{{{C_Event_Hover}}}", [TL::ToText(ItemKey)]);
+				}
+			} else if (Event.Type == CMlEvent::Type::MouseClick) {
+				if (Event.Control != Null && Event.ControlId == "Quad_Button") {
+					declare ItemKey for Event.Control = -1;
+					SendCustomEvent("{{{C_Event_Click}}}", [TL::ToText(ItemKey)]);
+				}
+			}
+		}
+		
+		if (L_Visibility && G_QuadSelected != Null) {
+			if (AnimDir > 0) {
+				declare X = AL::EaseOutQuad(Now - AnimStartTime, C_Black.X, C_Red.X - C_Black.X, AnimDuration);
+				declare Y = AL::EaseOutQuad(Now - AnimStartTime, C_Black.Y, C_Red.Y - C_Black.Y, AnimDuration);
+				declare Z = AL::EaseOutQuad(Now - AnimStartTime, C_Black.Z, C_Red.Z - C_Black.Z, AnimDuration);
+				
+				G_QuadSelected.Colorize = <X, Y, Z>;
+				if (Now > AnimStartTime + AnimDuration) {
+					AnimDir = -1;
+					AnimStartTime = Now;
+				}
+			} else if (AnimDir < 0) {
+				declare X = AL::EaseOutQuad(Now - AnimStartTime, C_Red.X, C_Black.X - C_Red.X, AnimDuration);
+				declare Y = AL::EaseOutQuad(Now - AnimStartTime, C_Red.Y, C_Black.Y - C_Red.Y, AnimDuration);
+				declare Z = AL::EaseOutQuad(Now - AnimStartTime, C_Red.Z, C_Black.Z - C_Red.Z, AnimDuration);
+				
+				G_QuadSelected.Colorize = <X, Y, Z>;
+				if (Now > AnimStartTime + AnimDuration) {
+					AnimDir = 1;
+					AnimStartTime = Now;
+				}
+			}
+		}
+	}
+}
+--></script>
+</manialink>	
+""";
+}
+
+// ---------------------------------- //
+// Public
+// ---------------------------------- //
+// ---------------------------------- //
+/** Return the version number of the script
+ *
+ *	@return						The version number of the script
+ */
+Text GetScriptVersion() {
+	return Version;
+}
+
+// ---------------------------------- //
+/** Return the name of the script
+ *
+ *	@return						The name of the script
+ */
+Text GetScriptName() {
+	return ScriptName;
+}
+
+// ---------------------------------- //
+/// Get the events constants
+Text Event_Hover() { return C_Event_Hover; }
+Text Event_Click() { return C_Event_Click; }
+
+// ---------------------------------- //
+/// Get the selection constants
+Integer Selection_Validate() { return C_Selection_Validate; }
+Integer Selection_Test() { return C_Selection_Test; }
+Integer Selection_Style() { return C_Selection_Style; }
+Integer Selection_Play() { return C_Selection_Play; }
+Integer Selection_Save() { return C_Selection_Save; }
+Integer Selection_SaveAs() { return C_Selection_SaveAs; }
+Integer Selection_EditTrack() { return C_Selection_EditTrack; }
+Integer Selection_EditDeco() { return C_Selection_EditDeco; }
+Integer Selection_Quit() { return C_Selection_Quit; }
+
+// ---------------------------------- //
+/** Get the available menu selection
+ *
+ *	@return							The available menu selection
+ */
+Integer[] GetMenuSelection() {
+	if (G_Advanced) return C_Selection_Advanced;
+	return C_Selection_Beginner;
+}
+
+// ---------------------------------- //
+/** Select a button in the menu outro
+ *
+ *	@param	_Selection			The button to select
+ *	@param	_PlaySound			Play a sound
+ */
+Void Select(Integer _Selection, Boolean _PlaySound) {
+	if (!GetMenuSelection().exists(_Selection)) return;
+	declare Page <=> Layers::GetPage("MenuOutro");
+	declare L_SelectedUpdate for Page = -1;
+	declare L_Selected for Page = C_Selection_Null;
+	L_Selected = _Selection;
+	L_SelectedUpdate = Now;
+	
+	if (_PlaySound) Sound::Play("EditorMenuMove");
+}
+
+// ---------------------------------- //
+/// Overload Select()
+Void Select(Integer _Selection) {
+	Select(_Selection, False);
+}
+
+// ---------------------------------- //
+/** Select the next or the previous button in the menu outro
+ *
+ *	@param	_Shift				In which direction to shift
+ */
+Void Shift(Integer _Shift) {
+	declare Page <=> Layers::GetPage("MenuOutro");
+	declare L_SelectedUpdate for Page = -1;
+	declare L_Selected for Page = C_Selection_Null;
+	declare Selection = GetMenuSelection();
+	declare Key = Selection.keyof(L_Selected);
+	if (Key < 0) Key = 0;
+	
+	Key += _Shift;
+	if (Key < 0) Key = Selection.count - 1;
+	else if (Key > Selection.count - 1) Key = 0;
+	
+	L_Selected = Selection[Key];
+	L_SelectedUpdate = Now;
+}
+
+// ---------------------------------- //
+/// Go to the next entry in the menu outro
+Void Next() {
+	Sound::Play("EditorMenuMove");
+	Shift(1);
+}
+
+// ---------------------------------- //
+/// Go to the previous entry in the menu outro
+Void Prev() {
+	Sound::Play("EditorMenuMove");
+	Shift(-1);
+}
+
+// ---------------------------------- //
+/** Check if the menu outro is visible
+ *
+ *	@return						True if the menu outro is visible, False otherwise
+ */
+Boolean IsVisible() {
+	declare Page <=> Layers::GetPage("MenuOutro");
+	declare L_Visibility for Page = C_DefaultVisibility;
+	return L_Visibility;
+}
+
+// ---------------------------------- //
+/** Set the menu outro visibility
+ *
+ *	@param	_Visible			Show the menu outro if True
+ */
+Void SetVisibility(Boolean _Visible) {
+	declare Page <=> Layers::GetPage("MenuOutro");
+	declare L_Visibility for Page = C_DefaultVisibility;
+	
+	if (_Visible && !L_Visibility) {	
+		Select(C_Selection_Validate);
+	}
+	
+	L_Visibility = _Visible;
+}
+
+// ---------------------------------- //
+/// Show the menu outro
+Void Show() {
+	SetVisibility(True);
+}
+
+// ---------------------------------- //
+/// Hide the menu outro
+Void Hide() {
+	SetVisibility(False);
+}
+
+// ---------------------------------- //
+/** Valid the current selection
+ *
+ *	@return						The current selection
+ */
+Integer Valid() {
+	declare Page <=> Layers::GetPage("MenuOutro");
+	declare L_Selected for Page = C_Selection_Null;
+	
+	Sound::Play("EditorMenuValid");
+	if (GetMenuSelection().exists(L_Selected)) return L_Selected;
+	return C_Selection_Null;
+}
+
+// ---------------------------------- //
+/// Unload the library
+Void Unload() {
+	Layers::Destroy("MenuOutro");
+	//Layers::Unload();
+}
+
+// ---------------------------------- //
+/** Load the library
+ *
+ *	@param	_Advanced				Load the advanced or beginner menu
+ */
+Void Load(Boolean _Advanced) {
+	Unload();
+	
+	G_Advanced = _Advanced;
+	
+	//Layers::Load();
+	declare LayerMenuOutro <=> Layers::Create("MenuOutro");
+	LayerMenuOutro.ManialinkPage = Private_GetMenuOutroML();
+	
+	declare Page <=> LayerMenuOutro.LocalPage;
+	declare L_Visibility for Page = C_DefaultVisibility;
+	declare L_Selected for Page = C_Selection_Null;
+	declare L_SelectedUpdate for Page = -1;
+	L_Visibility = C_DefaultVisibility;
+	L_Selected = C_Selection_Null;
+	L_SelectedUpdate = -1;
+	
+	Hide();
+}

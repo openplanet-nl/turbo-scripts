@@ -1,0 +1,571 @@
+#Include "Libs/Openplanet/TMConsole/Logger.Script.txt"										as Logger
+#Include "Libs/Openplanet/TMConsole/Menu/MenuLayers.Script.txt"								as Layers
+#Include "Libs/Openplanet/TMConsole/Menu/Controller/Main_CampaignController.Script.txt"		as Main_CampaignController
+#Include "Libs/Openplanet/TMConsole/Menu/Controller/PrivilegeController.Script.txt"			as PrivilegeController
+#Include "Libs/Openplanet/TMConsole/Menu/Controller/SuperSolo_CampaignController.Script.txt"	as SuperSolo_CampaignController
+
+#Const C_REQUESTTYPE_LAUNCHUNLOCKANIM	0
+#Const C_REQUESTTYPE_ALLINFOS			1
+
+#Const C_NbEnviro					4
+#Const C_NbDifficulty				5
+#Const C_NumberOfLvlByBlockY		2
+#Const C_NumberOfLvlByBlockX		5
+
+#Const TMC_MEDAL_AUTHOR   0
+#Const TMC_MEDAL_GOLD     1
+#Const TMC_MEDAL_SILVER   2
+#Const TMC_MEDAL_BRONZE   3
+#Const TMC_MEDAL_NONE     4
+
+#Const C_GameMode					"Solo"
+
+
+
+declare Text				G_LayerToSend;
+declare Integer				G_RequestType;
+declare Text[]				G_ParamToSend;
+
+//Sert à savoir quelle médaile doit être recalculée
+declare Integer				G_PrevDifficulty;
+declare Integer				G_PrevEnviro;
+declare Integer				G_ActualDifficulty;
+declare Integer				G_LastMedal;
+declare Integer				G_ActualEnviro;
+declare Integer				G_ActualLine;
+declare Integer				G_ActualIndex;
+declare Integer				G_ActualInDiffIndex;
+
+
+declare Integer[Integer][Integer][Integer]	G_MapInfoIndex;       //Tableau d'Index déterminant l'ordre d'apparition des des tracks - G_MapInfoIndex[Difficulty][POSY][POSX]
+declare Real[Integer][Integer]				G_CampaignMapIndex;   //Tableau qui permet de donner un ordre d'index pour les CampaignMaps
+
+declare Integer[Integer][Integer]			G_BlocksMedalsToHave;
+declare Integer[Integer][Integer]			G_BlocksMedalTypeNeed;
+
+//Solo
+declare Integer[Integer][Integer]			G_InternalLaunchAnim; //0 - No Anim | 1 - Anim ligne du haut | 2 - Anim ligne du bas
+declare Integer[Integer][Integer]			G_BlocksLocked;       //0 - Lock | 1 - ligne du haut Unlock | 2 - 2 ligne Unlock
+declare Integer[Integer][Integer]			G_MedalsByEnviro;     //MedalsByEnviro[Enviro][MedalToHave]     = NumberOfMedal
+declare Integer[Integer][Integer]			G_MedalsByDifficulty; //MedalsByEnviro[Difficulty][MedalToHave] = NumberOfMedal
+declare Integer[Integer]					G_Medals;
+declare Integer								G_NumberOfMedals;
+declare Integer[Integer]					G_NumberOfMedalsByType;
+declare Boolean								G_CampaignIsLoad;
+declare Text								Prev_MasterServerStatus;
+declare Boolean								G_SkipSynchronize;
+
+Boolean IsNextTrack(Integer _MapNumber)
+{
+	if(ManiaPlanet.TmTurbo_IsDemo && _MapNumber >= 5) return False;
+	declare Integer NextMapNumber = _MapNumber;
+	declare Integer NextMapPosY   = NextMapNumber%10/5; //POSY
+	declare Integer CaseMapPosX   = NextMapNumber%5;    //POSX
+	if(CaseMapPosX == 0 && NextMapPosY == 0) return False;
+	return True;
+}
+
+Text[] Get_NextMapPath(Integer _MapNumber, Integer _DifficultySelect, Integer _EnviroSelect)
+{
+	declare Integer DifficultySelect = _DifficultySelect;
+	declare Integer EnviroSelect = _EnviroSelect;
+	declare Integer NextMapNumber = _MapNumber;
+	declare Integer NextMapPosY   = NextMapNumber%10/5; //POSY
+	declare Integer CaseMapPosX   = NextMapNumber%5;    //POSX
+	if(CaseMapPosX == 0 && NextMapPosY == 0) EnviroSelect += 1;
+	declare Integer NextMapPosX   = NextMapNumber%5+(EnviroSelect)*5;    //POSX
+
+	if(!G_MapInfoIndex.existskey(DifficultySelect))                           return ["",""];
+	if(!G_MapInfoIndex[DifficultySelect].existskey(NextMapPosY))              return ["",""];
+	if(!G_MapInfoIndex[DifficultySelect][NextMapPosY].existskey(NextMapPosX)) return ["",""];
+
+	declare MapIndex = G_MapInfoIndex[DifficultySelect][NextMapPosY][NextMapPosX];
+	//log("G_MapInfoIndex["^DifficultySelect^"]["^NextMapPosY^"]["^NextMapPosX^"]: " ^ MapIndex);
+	declare CMapInfo Map <=> DataMgr.Maps[MapIndex];
+	//log("Map.FileName: " ^ Map.FileName);
+	return [Map.FileName, EnviroSelect^""];
+}
+
+Void Get_MainCampaignInfo()
+{
+	G_MapInfoIndex         = Main_CampaignController::Get_MapInfoIndex();
+	G_CampaignMapIndex     = Main_CampaignController::Get_CampaignMapIndex();
+
+	G_BlocksMedalsToHave   = Main_CampaignController::Get_BlocksMedalsToHave();
+	G_BlocksMedalTypeNeed  = Main_CampaignController::Get_BlocksMedalTypeNeed();
+
+	G_InternalLaunchAnim   = Main_CampaignController::Get_InternalLaunchAnim();
+	G_BlocksLocked         = Main_CampaignController::Get_BlocksLocked();
+	G_MedalsByEnviro       = Main_CampaignController::Get_MedalsByEnviro();
+	G_MedalsByDifficulty   = Main_CampaignController::Get_MedalsByDifficulty();
+	G_Medals               = Main_CampaignController::Get_Medals();
+	G_NumberOfMedals       = Main_CampaignController::Get_NumberOfMedals();
+	G_NumberOfMedalsByType = Main_CampaignController::Get_NumberOfMedalsByType();
+	
+
+	declare Integer SoloGoldMedals      for LocalUser;
+	declare Integer SoloTMMedals        for LocalUser;
+	SoloGoldMedals = G_NumberOfMedalsByType[TMC_MEDAL_GOLD];
+	SoloTMMedals   = G_NumberOfMedalsByType[TMC_MEDAL_AUTHOR];
+}
+
+Boolean IsNotLoaded()
+{
+	declare  CScoreMgr::ELocalScoreStatus ScoreLocalStatus = ScoreMgr.ScoreStatus_GetLocalStatus(DataMgr.MenuUserId);
+	
+	return ScoreLocalStatus == CScoreMgr::ELocalScoreStatus::NotLoaded;
+}
+
+Boolean OnlineReady()
+{
+	declare  CScoreMgr::EMasterServerScoreStatus ScoreLMasterServerStatus = ScoreMgr.ScoreStatus_GetMasterServerStatus(DataMgr.MenuUserId);
+	return(ScoreLMasterServerStatus == CScoreMgr::EMasterServerScoreStatus::Synchronized || ScoreLMasterServerStatus == CScoreMgr::EMasterServerScoreStatus::NotSynchronized);
+}
+
+Boolean OfflineReady()
+{
+	declare  CScoreMgr::ELocalScoreStatus ScoreLocalStatus = ScoreMgr.ScoreStatus_GetLocalStatus(DataMgr.MenuUserId);
+	return(ScoreLocalStatus == CScoreMgr::ELocalScoreStatus::Loaded || ScoreLocalStatus == CScoreMgr::ELocalScoreStatus::NotLoaded);
+}
+
+Boolean SynchFinished()
+{
+	//log(Now ^ " SyncFinished");
+	if(ManiaPlanet.MasterServer_MainMSUser == Null){
+		//log("=>False - 0");
+		return False;
+	}
+	if(!OfflineReady())  {
+		//log("=>False - 1");
+		return False;
+	}
+	if(IsNotLoaded() || ManiaPlanet.MasterServer_MainMSUser.ConnectionStatus == CNetMasterServerUserInfo::EMasterServerConnectionStatus::NotConnected) {
+		//log("=>True - 0: " ^ ManiaPlanet.MasterServer_MainMSUser.ConnectionStatus);
+		return True;
+	}
+	if(OnlineReady() && ManiaPlanet.MasterServer_MainMSUser.ConnectionStatus == CNetMasterServerUserInfo::EMasterServerConnectionStatus::Connected)    {
+		//log("=>True - 1");
+		return True;
+	}
+	
+	//log("=>False - 2");
+	return False;
+	
+}
+
+Void NoConnection()
+{
+	G_SkipSynchronize = True;
+}
+
+Boolean Load(Text _MasterServerStatus)
+{
+	if(Prev_MasterServerStatus == _MasterServerStatus && _MasterServerStatus != "") return False;
+	Prev_MasterServerStatus = _MasterServerStatus;
+
+	// en principe, ne se produit pas par construction
+	if(UserMgr.MainUser == Null) return False;
+	
+	declare persistent Integer[Integer]	Pers_SoloJokers for UserMgr.MainUser;
+	
+	//Pers_SoloJokers.clear();
+	//Pers_SoloJokers = [27=>1];
+
+	Main_CampaignController::Set_Jokers(Pers_SoloJokers);
+
+	Main_CampaignController::Load(C_GameMode);
+	Get_MainCampaignInfo();
+	G_CampaignIsLoad = True;
+	return True;
+}
+
+Void Load()
+{
+	Load("");
+}
+
+Boolean IsCampaignLoad()
+{
+	return G_CampaignIsLoad;
+}
+
+Void InitCampaignLoad()
+{
+	G_CampaignIsLoad = False;
+}
+
+// Functions to call in the Handlers
+//-----------------------------------------------------------//
+/*
+Void SendUnlockAnimationToStart(Integer _Environment, Integer _Difficulty, Text _Layer){
+	if(!G_InternalLaunchAnim.existskey(_Environment)) return;
+	if(!G_InternalLaunchAnim[_Environment].existskey(_Difficulty)) return;
+	
+	declare Integer AnimToLaunch = G_InternalLaunchAnim[_Environment][_Difficulty];
+	if(AnimToLaunch == 0) return;
+	G_InternalLaunchAnim[_Environment][_Difficulty] = 0;
+
+	G_LayerToSend = _Layer;
+	G_ParamToSend.clear();
+	G_ParamToSend = [""^_Environment, ""^_Difficulty, ""^AnimToLaunch];
+	G_RequestType = C_REQUESTTYPE_LAUNCHUNLOCKANIM;
+
+	SendFeedbackToUI(True);
+}
+
+Void SendAllUnlockAnimationsToStart(Text _Layer){
+	
+	declare CUILayer 		LayerToSend 	= Layers::Get(_Layer);
+	if(LayerToSend == Null) return;
+	declare Integer[Integer][Integer]			Net_AnimationsToStart		for LayerToSend.LocalPage;
+
+	Net_AnimationsToStart = G_InternalLaunchAnim;
+
+	G_LayerToSend = _Layer;
+	G_ParamToSend.clear();
+	G_ParamToSend = [""];
+	G_RequestType = C_REQUESTTYPE_LAUNCHUNLOCKANIM;
+
+	SendFeedbackToUI(True);
+}
+*/
+Void SetInfoToMain()
+{
+	// en principe, ne se produit pas par construction
+	if(UserMgr.MainUser == Null) return;
+	
+	declare persistent Integer[Integer]	Pers_SoloJokers for UserMgr.MainUser;
+	
+	//if(Main_GameMode == C_GameMode) return;
+	Main_CampaignController::Set_MapInfoIndex(G_MapInfoIndex);
+	Main_CampaignController::Set_Medals(G_Medals);
+	Main_CampaignController::Set_MedalsByEnviro(G_MedalsByEnviro);
+	Main_CampaignController::Set_MedalsByDifficulty(G_MedalsByDifficulty);
+	Main_CampaignController::Set_NumberOfMedalsByType(G_NumberOfMedalsByType);
+	Main_CampaignController::Set_ActualInDiffIndex(G_ActualInDiffIndex);
+	Main_CampaignController::Set_LastMedal(G_LastMedal);
+	Main_CampaignController::Set_NumberOfMedals(G_NumberOfMedals);
+	Main_CampaignController::Set_Jokers(Pers_SoloJokers);
+}
+
+Void ActualTrackInfo(Integer _Difficulty, Integer _Enviro, Integer _Line, Integer _Index)
+{
+	G_ActualDifficulty  = _Difficulty;
+	G_ActualEnviro      = _Enviro;
+	G_PrevDifficulty    = _Difficulty;
+	G_PrevEnviro        = _Enviro;
+	G_ActualLine        = _Line;
+	G_ActualIndex       = _Index % C_NumberOfLvlByBlockX + (G_ActualEnviro*C_NumberOfLvlByBlockX*C_NumberOfLvlByBlockY) + G_ActualLine*C_NumberOfLvlByBlockX + (G_ActualDifficulty-1)*40;
+	G_ActualInDiffIndex = _Index % C_NumberOfLvlByBlockX + G_ActualEnviro*C_NumberOfLvlByBlockX;
+}
+
+
+Text GetFeedbackText(Boolean _Succeed) {
+	if(G_RequestType == C_REQUESTTYPE_LAUNCHUNLOCKANIM) {
+		return "LaunchUnlockAnim";
+	}
+	else if(G_RequestType == C_REQUESTTYPE_ALLINFOS){
+		return "AllInfosSent";
+	}
+	return "";
+}
+
+Void SendFeedbackToUI(Boolean _Succeed) {
+	declare CUILayer LayerToSend = Layers::Get(G_LayerToSend);
+	if(LayerToSend == Null) return;
+	declare Text FeedbackText = GetFeedbackText(_Succeed);
+	LayerCustomEvent(LayerToSend, FeedbackText, G_ParamToSend);
+}
+
+
+Boolean IsSameEnviro(Integer _Enviro)
+{
+	if(G_PrevEnviro == _Enviro) return True;
+	return False;
+}
+
+Boolean IsSameDifficulty(Integer _Difficulty)
+{
+	if(G_PrevDifficulty == _Difficulty) return True;
+	return False;
+}
+
+Integer GetLastMedal() {
+	return G_LastMedal;
+}
+
+Integer GetPlayerMedals() {
+	return G_NumberOfMedals;
+}
+
+Integer GetMedalByType(Integer _Type)
+{
+	// HACK : décommenter pour afficher le SUPER SOLO
+	// return 200;
+
+	if(_Type > 3) return -1;
+	if(!G_NumberOfMedalsByType.existskey(_Type)) return -1;
+	return G_NumberOfMedalsByType[_Type];
+}
+
+Integer GetJokerByType(Integer _Type)
+{
+	// en principe, ne se produit pas par construction
+	if(UserMgr.MainUser == Null) return 0;
+	
+	declare persistent Integer[Integer]	Pers_SoloJokers for UserMgr.MainUser;
+	declare Integer NbOfMedal = 0;
+	foreach(Joker in Pers_SoloJokers)
+	{
+		if(Joker == _Type) NbOfMedal += 1;
+	}
+	return NbOfMedal;
+}
+
+Integer GetMedalsToHave(Integer _Difficulty)
+{
+	switch(_Difficulty)
+	{
+		case 0: return TMC_MEDAL_BRONZE;
+		case 1: return TMC_MEDAL_BRONZE;
+		case 2: return TMC_MEDAL_SILVER;
+		case 3: return TMC_MEDAL_SILVER;
+		case 4: return TMC_MEDAL_GOLD;
+	}
+	return 0;
+}
+
+
+
+Integer[] GetNextUnlock() {
+	declare Integer NextUnlock = 9999;
+
+	declare Integer CurrentDifficulty = -1;
+	declare Integer NextDifficulty;
+	declare Integer NextEnviro;
+	for(Difficulty, 0, G_BlocksLocked.count-1) {
+		declare DifficultyBlocks = G_BlocksLocked[Difficulty];
+		for(Enviro, 0, DifficultyBlocks.count-1) {
+			if(DifficultyBlocks[Enviro] < 2) {
+				CurrentDifficulty = Difficulty;
+				NextDifficulty = Difficulty;
+				NextEnviro     = Enviro;
+				break;
+			}
+		}
+		if(CurrentDifficulty >= 0) break;
+	}
+	if(CurrentDifficulty < 0) return [-1,-1]; // no map to unlock
+	
+	declare Integer MedalNeeded = GetMedalsToHave(CurrentDifficulty);
+	if(!G_NumberOfMedalsByType.existskey(MedalNeeded)) {
+		Logger::Warn("Unknow medal type: "^MedalNeeded);
+		return [-1,-1];
+	}
+	declare Integer NbMedals	= G_NumberOfMedalsByType[MedalNeeded];
+	declare Integer NbJokers	= GetJokerByType(MedalNeeded);
+	
+	//log("G_BlocksMedalsToHave["^NextDifficulty^"]["^NextEnviro^"]:  "^ G_BlocksMedalsToHave[NextDifficulty][NextEnviro]);
+	NextUnlock = G_BlocksMedalsToHave[NextDifficulty][NextEnviro] - NbMedals - NbJokers;
+	//log("Result: " ^ NextUnlock);
+	/*
+	foreach(Block in G_BlocksMedalsToHave)
+	{
+		foreach(Medal in Block)
+		{
+			if(Medal - NbMedals < NextUnlock && Medal - NbMedals > 0)
+			{
+				NextUnlock = Medal - NbMedals;
+			}
+		}
+	}
+	*/
+	return [NextUnlock, MedalNeeded];
+}
+
+Integer[] GetMapInfoByDifficulty(Integer _DifficultySelect)
+{
+	declare Integer[] MapsIndex;
+	foreach(Maps in G_MapInfoIndex[_DifficultySelect])
+	{
+		foreach(Map in Maps)
+		{
+			MapsIndex.add(Map);
+			
+		}
+	}
+	return MapsIndex;
+}
+
+Integer[] GetMedalsByDifficulty(Integer _Difficulty) {
+	if(G_MedalsByDifficulty.count <= _Difficulty-1) return [0, 0, 0, 0];
+	
+	declare Integer[] Transcript;
+	foreach(MedalCount in G_MedalsByDifficulty[_Difficulty-1]) {
+		Transcript.add(MedalCount);
+	}
+	
+	return Transcript;
+}
+Integer[] GetBlockMedal(Integer _Enviro, Integer _Difficulty, Integer _Line)
+{
+	//declare Integer[Integer] Medals for This;
+	declare Integer[] BlockMedal;
+
+	declare Integer MapNumber = (_Difficulty)*40 + (_Enviro)*10 + _Line*5 - 1;
+	
+	for(I, 1, 5) //Représente les 5 maps d'un Block
+	{
+		declare Integer IndexMap = MapNumber + I;
+		if(G_Medals.existskey(IndexMap))
+		{
+			BlockMedal.add(G_Medals[IndexMap]);
+		}
+	}
+	
+	return BlockMedal;
+}
+
+
+Integer[] GetCurrentDoubleBlockMedals(Integer _Enviro, Integer _Difficulty) {
+	declare Integer[] FirstLine		= GetBlockMedal(_Enviro, _Difficulty-1, 0);
+	declare Integer[] SecondLine	= GetBlockMedal(_Enviro, _Difficulty-1, 1);
+	
+	declare Integer[] Total = [0, 0, 0, 0];
+	
+	for(MapIndex, 0, FirstLine.count-1) {
+		declare Integer MedalsToAdd = 3 - FirstLine[MapIndex];
+		for(I, 0, MedalsToAdd) {
+			declare Integer RevIndex = 3 - I;
+			Total[RevIndex] = Total[RevIndex] + 1;
+		}
+		
+		MedalsToAdd = 3 - SecondLine[MapIndex];
+		for(I, 0, MedalsToAdd) {
+			declare Integer RevIndex = 3 - I;
+			Total[RevIndex] = Total[RevIndex] + 1;
+		}
+	}
+	
+	
+	return Total;
+}
+
+
+Void SendUnlockAnimationToStart(Integer _Environment, Integer _Difficulty, Text _Layer){
+	if(!G_InternalLaunchAnim.existskey(_Environment)) return;
+	if(!G_InternalLaunchAnim[_Environment].existskey(_Difficulty)) return;
+	
+	declare Integer AnimToLaunch = G_InternalLaunchAnim[_Environment][_Difficulty];
+	if(AnimToLaunch == 0) return;
+	G_InternalLaunchAnim[_Environment][_Difficulty] = 0;
+
+	G_LayerToSend = _Layer;
+	G_ParamToSend.clear();
+	G_ParamToSend = [""^_Environment, ""^_Difficulty, ""^AnimToLaunch];
+	G_RequestType = C_REQUESTTYPE_LAUNCHUNLOCKANIM;
+
+	SendFeedbackToUI(True);
+}
+
+Void SendAllUnlockAnimationsToStart(Text _Layer){
+	
+	declare CUILayer 		LayerToSend 	= Layers::Get(_Layer);
+	if(LayerToSend == Null) return;
+	declare Integer[Integer][Integer]			Net_AnimationsToStart		for LayerToSend.LocalPage;
+
+	Net_AnimationsToStart = G_InternalLaunchAnim;
+
+	G_LayerToSend = _Layer;
+	G_ParamToSend.clear();
+	G_ParamToSend = [""];
+	G_RequestType = C_REQUESTTYPE_LAUNCHUNLOCKANIM;
+
+	SendFeedbackToUI(True);
+}
+
+
+Void SendAllInfos(Text _Layer, Boolean _IsAllCampaignMode){
+	declare CUILayer 		LayerToSend 	= Layers::Get(_Layer);
+	if(LayerToSend == Null) return;
+	
+	// en principe, ne se produit pas par construction
+	if(UserMgr.MainUser == Null) return;
+	
+	declare persistent Integer[Integer]			Pers_SoloJokers 			for UserMgr.MainUser;
+	declare Integer[Integer][Integer][Integer]	Net_MapInfoIndex			for LayerToSend.LocalPage;
+	declare Integer[Integer][Integer]			Net_BlocksLocked			for LayerToSend.LocalPage;
+	declare Integer[Integer][Integer]			Net_BlocksMedalsToHave		for LayerToSend.LocalPage;
+	declare Integer[Integer][Integer]			Net_MedalsByEnviro			for LayerToSend.LocalPage;
+	declare Integer[Integer][Integer]			Net_MedalsByDifficulty		for LayerToSend.LocalPage;
+	declare Integer[Integer][Integer]			Net_BlocksMedalTypeNeed		for LayerToSend.LocalPage;
+	declare Integer[Integer]					Net_Medals					for LayerToSend.LocalPage;
+	declare Integer								Net_NumberOfMedals			for LayerToSend.LocalPage;
+	declare Integer[Integer]					Net_NumberOfMedalsByType	for LayerToSend.LocalPage;
+	declare Integer[Integer]					Net_Jokers					for LayerToSend.LocalPage;
+	//Pers_SoloJokers.clear();
+
+	Net_MapInfoIndex         = G_MapInfoIndex;
+	Net_BlocksMedalsToHave   = G_BlocksMedalsToHave;
+	Net_MedalsByEnviro       = G_MedalsByEnviro;
+	Net_MedalsByDifficulty   = G_MedalsByDifficulty;
+	Net_Medals               = G_Medals;
+	Net_NumberOfMedals       = G_NumberOfMedals;
+	Net_NumberOfMedalsByType = G_NumberOfMedalsByType;
+	Net_BlocksMedalTypeNeed  = G_BlocksMedalTypeNeed;
+	Net_Jokers               = Pers_SoloJokers;
+
+	declare Boolean IsTrial = PrivilegeController::IsTrial(False);
+
+	if(IsTrial)                  Net_BlocksLocked = Main_CampaignController::Get_Trial_BlocksLocked();
+	else if(_IsAllCampaignMode)  Net_BlocksLocked = Main_CampaignController::Get_All_BlocksLocked();
+	else                         Net_BlocksLocked = G_BlocksLocked;
+
+	G_LayerToSend = _Layer;
+	G_ParamToSend.clear();
+	G_RequestType = C_REQUESTTYPE_ALLINFOS;
+	SendFeedbackToUI(True);
+	
+	// Logger::Log("All info sent from Solo_CampaignController");
+}
+
+Void SendAllInfos(Text _Layer){
+	SendAllInfos(_Layer, False);
+}
+
+Void Hack_UnlockAllTracks2(Text _Layer){
+	SetInfoToMain();
+
+	Main_CampaignController::Hack_UnlockAllTracks2(C_GameMode);
+	/*
+	Main_CampaignController::Load(C_GameMode);
+	for(Difficulty, 0, C_NbDifficulty-1)
+	{
+		G_BlocksMedalsToHave[Difficulty] = Integer[Integer];
+		for(Enviro, 0, C_NbEnviro-1)
+		{
+			G_BlocksMedalsToHave[Difficulty][Enviro] = 0;
+		}
+	}
+	Main_CampaignController::CheckAllBlockUnlock();
+	*/
+
+	Get_MainCampaignInfo();
+	SendAllInfos(_Layer);
+}
+
+Void CheckNewMedal()
+{
+	declare Prev_NumberOfSoloGold = GetMedalByType(1);
+
+	SetInfoToMain();
+	Main_CampaignController::CheckNewMedal(C_GameMode, G_ActualEnviro, G_ActualDifficulty);
+	Get_MainCampaignInfo();
+	SendAllInfos("BrowseTracks");
+	declare New_NumberOfSoloTM = GetMedalByType(0);
+
+	if(Prev_NumberOfSoloGold != New_NumberOfSoloTM && New_NumberOfSoloTM >= 200) {
+		declare Text MasterServerStatus = ScoreMgr.ScoreStatus_GetMasterServerStatus(DataMgr.MenuUserId)^"";
+		SuperSolo_CampaignController::Load(MasterServerStatus);
+	}
+}

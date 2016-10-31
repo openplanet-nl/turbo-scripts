@@ -1,0 +1,424 @@
+/** 
+ * Block help UI
+ */
+
+#Const Version		"2016-02-10"
+#Const ScriptName	"BlockHelp.Script.txt"
+
+#Include "TextLib" as TL
+#Include "MathLib" as ML
+#Include "Libs/Openplanet/Buttons.Script.txt" as Buttons
+#Include "Libs/Openplanet/Manialink3.Script.txt" as Manialink
+#Include "Libs/Openplanet/TMConsole/MapEditor/Layers.Script.txt" as Layers
+#Include "Libs/Openplanet/TMConsole/MapEditor/UI/Stylesheet.Script.txt" as Styles
+
+// ---------------------------------- //
+// Globales
+// ---------------------------------- //
+declare Boolean G_CanBeVisible;	///< Enable or disable the possibility to display the block help UI
+declare Boolean G_IsVisible;	///< Current UI visibility
+
+// ---------------------------------- //
+// Functions
+// ---------------------------------- //
+// ---------------------------------- //
+// Private
+// ---------------------------------- //
+// ---------------------------------- //
+/** Get the block help manialink
+ *
+ *	@return						The manialink
+ */
+Text Private_GetBlockHelpML() {
+	return """
+<manialink version="3" name="MapEditor:BlockHelp">
+<stylesheet>
+	{{{Styles::Get()}}}
+</stylesheet>
+<framemodel id="Framemodel_OptionRight">
+	{{{Buttons::ML_Button("", ["pos" => "4 0", "size" => "7 7", "id" => "Frame_Button" ])}}}
+	<label pos="10 0" size="60 10" valign="center2" class="turbo2-text-helper" id="Label_Option" />
+</framemodel>
+<framemodel id="Framemodel_OptionLeft">
+	{{{Buttons::ML_Button("", ["pos" => "-4 0", "size" => "7 7", "id" => "Frame_Button" ])}}}
+	<label pos="-10 0" size="60 10" halign="right" valign="center2" class="turbo2-text-helper" id="Label_Option" />
+</framemodel>
+<frame pos="0 10" z-index="1" id="Frame_Global">
+	<frame pos="0 20" z-index="-5">
+		<label halign="center" class="turbo2-text-helper" id="Label_Notification" />
+	</frame>
+	<frame hidden="1" id="Frame_BlockHelp">
+		<frameinstance modelid="Framemodel_OptionRight" />
+		<frameinstance modelid="Framemodel_OptionRight" />
+		<frameinstance modelid="Framemodel_OptionRight" />
+		<frameinstance modelid="Framemodel_OptionRight" />
+		<frameinstance modelid="Framemodel_OptionRight" />
+		<frameinstance modelid="Framemodel_OptionRight" />
+		<frameinstance modelid="Framemodel_OptionRight" />
+		<frameinstance modelid="Framemodel_OptionRight" />
+		<frameinstance modelid="Framemodel_OptionRight" />
+		<frameinstance modelid="Framemodel_OptionRight" />
+		<frameinstance modelid="Framemodel_OptionRight" />
+		<frameinstance modelid="Framemodel_OptionRight" />
+		<frameinstance modelid="Framemodel_OptionRight" />
+		<frameinstance modelid="Framemodel_OptionRight" />
+		<frameinstance modelid="Framemodel_OptionRight" />
+		<frameinstance modelid="Framemodel_OptionRight" />
+		<frameinstance modelid="Framemodel_OptionRight" />
+		<frameinstance modelid="Framemodel_OptionRight" />
+		<frameinstance modelid="Framemodel_OptionRight" />
+		
+		<frameinstance modelid="Framemodel_OptionLeft" />
+		<frameinstance modelid="Framemodel_OptionLeft" />
+		<frameinstance modelid="Framemodel_OptionLeft" />
+		<frameinstance modelid="Framemodel_OptionLeft" />
+		<frameinstance modelid="Framemodel_OptionLeft" />
+		<frameinstance modelid="Framemodel_OptionLeft" />
+		<frameinstance modelid="Framemodel_OptionLeft" />
+		<frameinstance modelid="Framemodel_OptionLeft" />
+	</frame>
+</frame>
+<script><!--
+#Include "TextLib" as TL
+#Include "MathLib" as ML
+{{{Manialink::DefaultIncludes()}}}
+
+#Const C_SideKey 18
+#Const C_ButtonsOrder [
+	"{{{Buttons::Editor_TurnBlock()}}}",
+	"{{{Buttons::Editor_CopyBlock()}}}",
+	"{{{Buttons::Editor_SelectConnector()}}}",
+	"{{{Buttons::Editor_RandomLandscape()}}}",
+	"{{{Buttons::Editor_OpenTest()}}}",
+	"{{{Buttons::Editor_Cancel()}}}",
+	"{{{Buttons::Editor_CancelTest()}}}",
+	"{{{Buttons::Editor_RemoveTerrain()}}}",
+	"{{{Buttons::Editor_RemoveBlock()}}}",
+	"{{{Buttons::Editor_CutBlock()}}}",
+	"{{{Buttons::Editor_Valid()}}}",
+	"{{{Buttons::Editor_StartTest()}}}",
+	"{{{Buttons::Editor_AddTerrain()}}}",
+	"{{{Buttons::Editor_PlaceBlock()}}}",
+	"{{{Buttons::Editor_AutoConnect()}}}",
+	"{{{Buttons::Editor_RaiseBlock()}}}",
+	"{{{Buttons::Editor_LowerBlock()}}}",
+	"{{{Buttons::Editor_RaiseStart()}}}",
+	"{{{Buttons::Editor_LowerStart()}}}",
+	
+	"{{{Buttons::Editor_Redo()}}}",
+	"{{{Buttons::Editor_Undo()}}}",
+	"{{{Buttons::Editor_MoveBlock()}}}",
+	"{{{Buttons::Editor_BrowseBlocks()}}}",
+	"{{{Buttons::Editor_OpenRosaces()}}}",
+	"{{{Buttons::Editor_Disconnect()}}}",
+	"{{{Buttons::Editor_CameraMove()}}}",
+	"{{{Buttons::Editor_CameraZoom()}}}"
+]
+#Const C_Radius 32.
+#Const C_Interval {{{ML::PI() * 0.65 / 6.}}}
+
+{{{Manialink::Animations(["EaseOutQuad"])}}}
+{{{Manialink::Function("AnimRepeat")}}}
+
+{{{Buttons::ML_Functions()}}}
+
+Void PlaceOption(CMlFrame _Frame, Integer _Side, Integer _Index, Integer _Max) {
+	declare L_Radius for Page = 1.;
+	declare Radius = C_Radius * L_Radius;
+	declare Interval = C_Interval * (2. - L_Radius);
+	declare Rot = 0.;
+	if (_Side == 0) Rot = ((_Max - 1) * Interval * 0.5) - ((_Index - 1) * Interval);
+	else Rot = ML::PI() - ((_Max - 1) * Interval * 0.5) + ((_Index - 1) * Interval);
+	declare X = ML::Cos(Rot) * Radius;
+	declare Y = ML::Sin(Rot) * Radius;
+	
+	_Frame.RelativePosition_V3 = <X, Y>;
+}
+
+Void SetOptions(Text[Text] _Options) {
+	declare Frame_BlockHelp <=> (Page.GetFirstChild("Frame_BlockHelp") as CMlFrame);
+	
+	declare Max = [0, 0];
+	foreach (Key => Control in Frame_BlockHelp.Controls) {
+		declare Frame_Option <=> (Control as CMlFrame);
+		declare Action = C_ButtonsOrder[Key];
+		if (_Options.existskey(Action)) {
+			declare Frame_Button <=> (Frame_Option.GetFirstChild("Frame_Button") as CMlFrame);
+			declare Label_Option <=> (Frame_Option.GetFirstChild("Label_Option") as CMlLabel);
+			LibButtons_SetAction(Frame_Button, Action);
+			Label_Option.Value = _Options[Action];
+			Frame_Option.Visible = True;
+			
+			if (Action == "Editor_MoveBlock") {
+				Frame_Button.RelativeScale = 1.2;
+			} /*else if (Action == "Editor_RaiseStart" || Action == "Editor_LowerStart") {
+				Frame_Button.RelativeScale = 1.2;
+			}*/ else {
+				Frame_Button.RelativeScale = 1.;
+			}
+			
+			if (Key <= (C_SideKey)) Max[0] += 1;
+			else Max[1] += 1;
+		} else {
+			Frame_Option.Visible = False;
+		}
+	}
+	
+	declare Count = [0, 0];
+	foreach (Key => Control in Frame_BlockHelp.Controls) {
+		declare Frame_Option <=> (Control as CMlFrame);
+		if (!Frame_Option.Visible) continue;
+		
+		if (Key <= (C_SideKey)) {
+			Count[0] += 1;
+			PlaceOption(Frame_Option, 0, Count[0], Max[0]);
+		} else {
+			Count[1] += 1;
+			PlaceOption(Frame_Option, 1, Count[1], Max[1]);
+		}
+	}
+}
+
+Void DisplayNotification(Text _Notification) {
+	declare Label_Notification <=> (Page.GetFirstChild("Label_Notification") as CMlLabel);
+	Label_Notification.Value = _Notification;
+	Label_Notification.RelativePosition_V3.Y = 0.;
+	Label_Notification.RelativeScale = 0.8;
+	Label_Notification.Opacity = 0.;
+	
+	LibManialink_Anim(Label_Notification, {{{Manialink::Inject("""<label pos="0 5" scale="1" opacity="1" hidden="0" />""")}}}, 500, "EaseOutQuad");
+	LibManialink_AnimInsert(Label_Notification, {{{Manialink::Inject("""<label opacity="0" hidden="1" />""")}}}, 750, 250, "EaseOutQuad");
+}
+
+Void SetVisibility(Boolean _CanBeVisible, Boolean _Visible) {
+	if (_CanBeVisible && _Visible) {
+		if (Editor.ManiaPlanet.HMD_IsActive) {
+			LibManialink_Anim({{{Manialink::Inject("""<frame scale="2" hidden="0" id="Frame_BlockHelp" />""")}}}, 250, "EaseOutQuad");
+		} else {
+			LibManialink_Anim({{{Manialink::Inject("""<frame scale="1" hidden="0" id="Frame_BlockHelp" />""")}}}, 250, "EaseOutQuad");
+		}
+	} else {
+		LibManialink_Anim({{{Manialink::Inject("""<frame scale="0" hidden="1" id="Frame_BlockHelp" />""")}}}, 250, "EaseOutQuad");
+	}
+}
+
+main() {
+	declare L_OptionsUpdate for Page = -1;
+	declare L_Options for Page = Text[Text];
+	declare L_Visibility for Page = False;
+	declare L_CanBeVisible for Page = False;
+	declare L_Radius for Page = 1.;
+	declare L_NotificationUpdate for Page = -1;
+	declare L_Notification for Page = "";
+	
+	declare PrevOptionsUpdate = -1;
+	declare PrevVisibility = False;
+	declare PrevCanBeVisible = False;
+	declare PrevRadius = -1.;
+	declare PrevNotificationUpdate = -1;
+	declare PrevHMD_IsActive = False;
+	
+	LibButtons_Init();
+	
+	while (True) {
+		yield;
+		
+		LibManialink_AnimLoop();
+		LibButtons_Loop();
+		
+		if (
+			PrevOptionsUpdate != L_OptionsUpdate ||
+			PrevRadius != L_Radius ||
+			Editor.ManiaPlanet.HMD_IsActive != PrevHMD_IsActive
+		) {
+			PrevOptionsUpdate = L_OptionsUpdate;
+			PrevRadius = L_Radius;
+			PrevHMD_IsActive = Editor.ManiaPlanet.HMD_IsActive;
+			SetOptions(L_Options);
+		}
+		
+		if (PrevNotificationUpdate != L_NotificationUpdate) {
+			PrevNotificationUpdate = L_NotificationUpdate;
+			DisplayNotification(L_Notification);
+		}
+		
+		if (PrevVisibility != L_Visibility || PrevCanBeVisible != L_CanBeVisible) {
+			PrevVisibility = L_Visibility;
+			PrevCanBeVisible = L_CanBeVisible;
+			SetVisibility(L_CanBeVisible, L_Visibility);
+		}
+	}
+}
+--></script>
+</manialink>
+""";
+}
+
+// ---------------------------------- //
+// Public
+// ---------------------------------- //
+// ---------------------------------- //
+/** Return the version number of the script
+ *
+ *	@return							The version number of the script
+ */
+Text GetScriptVersion() {
+	return Version;
+}
+
+// ---------------------------------- //
+/** Return the name of the script
+ *
+ *	@return							The name of the script
+ */
+Text GetScriptName() {
+	return ScriptName;
+}
+
+// ---------------------------------- //
+/** Set options text and icons
+ *
+ *	@param	_Options				The options to display and their associated icon
+ */
+Void SetOptions(Text[Text] _Options) {
+	declare Page <=> Layers::Get("BlockHelp").LocalPage;
+	declare L_OptionsUpdate for Page = -1;
+	declare L_Options for Page = Text[Text];
+	L_Options.clear();
+	
+	foreach (Path => Name in _Options) {
+		if (TL::Find("/Editor_A.dds", Path, False, False)) L_Options[TL::Replace(Path, "/Editor_A.dds", "/Editor_A_Helper.dds")] = Name;
+		else if (TL::Find("/Editor_B.dds", Path, False, False)) L_Options[TL::Replace(Path, "/Editor_B.dds", "/Editor_B_Helper.dds")] = Name;
+		else if (TL::Find("/Editor_X.dds", Path, False, False)) L_Options[TL::Replace(Path, "/Editor_X.dds", "/Editor_X_Helper.dds")] = Name;
+		else if (TL::Find("/Editor_Y.dds", Path, False, False)) L_Options[TL::Replace(Path, "/Editor_Y.dds", "/Editor_Y_Helper.dds")] = Name;
+		else if (TL::Find("/Editor_Cross.dds", Path, False, False)) L_Options[TL::Replace(Path, "/Editor_Cross.dds", "/Editor_Cross_Helper.dds")] = Name;
+		else if (TL::Find("/Editor_Circle.dds", Path, False, False)) L_Options[TL::Replace(Path, "/Editor_Circle.dds", "/Editor_Circle_Helper.dds")] = Name;
+		else if (TL::Find("/Editor_Square.dds", Path, False, False)) L_Options[TL::Replace(Path, "/Editor_Square.dds", "/Editor_Square_Helper.dds")] = Name;
+		else if (TL::Find("/Editor_Triangle.dds", Path, False, False)) L_Options[TL::Replace(Path, "/Editor_Triangle.dds", "/Editor_Triangle_Helper.dds")] = Name;
+		else if (TL::Find("/Editor_LStickDown.dds", Path, False, False)) L_Options[TL::Replace(Path, "/Editor_LStickDown.dds", "/Editor_LStickDown_Helper.dds")] = Name;
+		else if (TL::Find("/Editor_LStickUp.dds", Path, False, False)) L_Options[TL::Replace(Path, "/Editor_LStickUp.dds", "/Editor_LStickUp_Helper.dds")] = Name;
+		else if (TL::Find("/Editor_DPad.dds", Path, False, False)) L_Options[TL::Replace(Path, "/Editor_DPad.dds", "/Editor_DPad_Helper.dds")] = Name;
+		else L_Options[Path] = Name;
+	}
+	L_OptionsUpdate = Now;
+}
+
+// ---------------------------------- //
+/** Set the ratio to apply to the help radius
+ *
+ *	@param	_Ratio					The ratio to apply, [0., 1.]
+ */
+Void SetRadius(Real _Ratio) {
+	declare Page <=> Layers::Get("BlockHelp").LocalPage;
+	declare L_Radius for Page = 1.;
+	L_Radius = _Ratio;
+	if (L_Radius < 0.) L_Radius = 0.;
+	else if (L_Radius > 1.) L_Radius = 1.;
+}
+
+// ---------------------------------- //
+/** Display a notification above the block 
+ *
+ *	@param	_Notification			The text to display
+ */
+Void Notify(Text _Notification) {
+	declare Page <=> Layers::Get("BlockHelp").LocalPage;
+	declare L_NotificationUpdate for Page = -1;
+	declare L_Notification for Page = "";
+	L_Notification = _Notification;
+	L_NotificationUpdate = Now;
+}
+
+// ---------------------------------- //
+/** Set if the block help UI can be visible or not
+ *
+ *	@param	_CanBeVisible			True to enable display, False to disable it
+ */
+Void CanBeVisible(Boolean _CanBeVisible) {
+	declare Page <=> Layers::Get("BlockHelp").LocalPage;
+	declare L_CanBeVisible for Page = False;
+	L_CanBeVisible = _CanBeVisible;
+	G_CanBeVisible = _CanBeVisible;
+}
+
+// ---------------------------------- //
+/** Check if the block help UI can be visible
+ *
+ *	@return							True if the UI can be visible, False otherwise
+ */
+Boolean CanBeVisible() {
+	return G_CanBeVisible;
+}
+
+// ---------------------------------- //
+/** Set the block help visibility
+ *
+ *	@param	_Visible			Show the block help if True
+ */
+Void SetVisibility(Boolean _Visible) {
+	declare Page <=> Layers::Get("BlockHelp").LocalPage;
+	declare L_Visibility for Page = False;
+	L_Visibility = _Visible;
+	G_IsVisible = _Visible;
+}
+
+// ---------------------------------- //
+/** Check if the block help UI is visible
+ *
+ *	@return							True if the UI is visible, False otherwise
+ */
+Boolean IsVisible() {
+	return G_IsVisible;
+}
+
+
+// ---------------------------------- //
+/// Show the block help
+Void Show() {
+	SetVisibility(True);
+}
+
+// ---------------------------------- //
+/// Hide the block help
+Void Hide() {
+	SetVisibility(False);
+}
+
+// ---------------------------------- //
+/// Unload the library
+Void Unload() {
+	Layers::Destroy("BlockHelp");
+	//Layers::Unload();
+}
+
+// ---------------------------------- //
+/// Load the library
+Void Load() {
+	Unload();
+	
+	Buttons::Load();
+	//Layers::Load();
+	declare LayerBlockHelp <=> Layers::Create("BlockHelp");
+	LayerBlockHelp.ManialinkPage = Private_GetBlockHelpML();
+	Buttons::Unload();
+	
+	declare Page <=> LayerBlockHelp.LocalPage;
+	declare L_OptionsUpdate for Page = -1;
+	declare L_Options for Page = Text[Text];
+	declare L_Visibility for Page = False;
+	declare L_CanBeVisible for Page = False;
+	declare L_Radius for Page = 1.;
+	declare L_NotificationUpdate for Page = -1;
+	declare L_Notification for Page = "";
+	
+	L_OptionsUpdate = -1;
+	L_Options.clear();
+	L_Visibility = False;
+	L_CanBeVisible = False;
+	L_Radius = 1.;
+	L_NotificationUpdate = -1;
+	L_Notification = "";
+	
+	G_CanBeVisible = False;
+	G_IsVisible = False;
+}

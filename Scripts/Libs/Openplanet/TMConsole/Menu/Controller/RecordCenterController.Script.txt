@@ -1,0 +1,32 @@
+
+declare CManiaplanetPluginInterface G_UIPlugin;
+
+
+Void RecordCenterSwitch()
+{
+	//declare Boolean RecordCenterVisible  for LocalUser;
+	//RecordCenterVisible = True;
+	if(G_UIPlugin != Null) {
+		G_UIPlugin.CustomEvent("SetRecordCenter", [""]);
+	}
+}
+
+Void Init() {
+	declare Boolean RecordCenterVisible  for LocalUser;
+	RecordCenterVisible = False;
+	G_UIPlugin = Plugins.GetInterface("UIPlugin");
+}
+
+Void RecordCenterHide()
+{
+	// CB : Pour le moment fait crascher. Comment pour tester d'autres choses.
+	// G_UIPlugin.CustomEvent("HideRecordCenter", [""]);
+}
+
+Void Unload() {
+}
+
+Void Load() {
+	Unload();
+	Init();
+}

@@ -1,0 +1,285 @@
+/** 
+ * Manialink effects
+ */
+#Const Version		"2016-03-14"
+#Const ScriptName	"MLEffects.Script.txt"
+
+#Include "TextLib" as TL
+#Include "Libs/Openplanet/UIPadButtons.Script.txt" as UIPadButtons
+
+// ---------------------------------- //
+// Constants
+// ---------------------------------- //
+#Const C_LibPrefix			"LibMLEffects_"	///< Prefix for the library functions
+#Const C_LibMLClass 		"lib-ml-effects"	///< Class used to detect the controls used by the library
+/// Data properties
+#Const C_Data_Triggers	"data-lib-ml-effects-triggers"
+#Const C_Data_Effects		"data-lib-ml-effects-effects"
+#Const C_Data_Group			"data-lib-ml-effects-group"
+#Const C_DataShort_Triggers	"lib-ml-effects-triggers"
+#Const C_DataShort_Effects	"lib-ml-effects-effects"
+#Const C_DataShort_Group		"lib-ml-effects-group"
+/// Effects
+#Const C_Effect_LabelHover	0
+
+// ---------------------------------- //
+// Globales
+// ---------------------------------- //
+
+// ---------------------------------- //
+// Functions
+// ---------------------------------- //
+// ---------------------------------- //
+/// Get the data constants
+Text Data_Triggers() { return C_Data_Triggers; }
+Text Data_Effects() { return C_Data_Effects; }
+Text Data_Group() { return C_Data_Group; }
+
+// ---------------------------------- //
+/// Get the effect constants
+Integer Effect_LabelHover() { return C_Effect_LabelHover; }
+
+// ---------------------------------- //
+/** Inject the necessary libraries into the manialink
+ *
+ *	@return													The libraries
+ */
+Text ML_Includes() {
+	return """#Include "TextLib" as LibMLE_TL""";
+}
+
+// ---------------------------------- //
+/** Inject the code of the library in the manialink
+ *
+ *	@return													The code of the library
+ */
+Text ML_Functions(Text _LibPrefix) {
+	return """
+declare Integer[][CMlControl][Text] {{{_LibPrefix}}}G_Effects;
+
+{{{UIPadButtons::Inject_SetInputInfoTextSelected()}}}
+
+Void {{{_LibPrefix}}}Effect_{{{C_Effect_LabelHover}}}(CMlControl _Control, CMlEvent::Type _EventType) {
+	if (!(_Control is CMlLabel)) return;
+	declare Label <=> (_Control as CMlLabel);
+	declare {{{_LibPrefix}}}_OriginalColor for Label = <-1., -2., -3.>;
+	if ({{{_LibPrefix}}}_OriginalColor == <-1., -2., -3.>) {
+		{{{_LibPrefix}}}_OriginalColor = Label.TextColor;
+	}
+	
+	switch (_EventType) {
+		case CMlEvent::Type::MouseOver: {
+			SetInputInfoTextSelected(Label, True);
+		}
+		case CMlEvent::Type::MouseOut: {
+			SetInputInfoTextSelected(Label, False);
+			Label.TextColor = {{{_LibPrefix}}}_OriginalColor;
+		}
+	}
+}
+
+Void {{{_LibPrefix}}}Private_CancelEffect(CMlControl _Control, Integer _Effect) {switch (_Effect) {
+		case {{{C_Effect_LabelHover}}}: {
+			{{{_LibPrefix}}}Effect_{{{C_Effect_LabelHover}}}(_Control, CMlEvent::Type::MouseOut);
+		}
+	}
+}
+
+Void {{{_LibPrefix}}}Private_ActiveEffect(CMlControl _Control, Integer _Effect, CMlEvent::Type _EventType) {
+	if (_Control == Null) return;
+	declare {{{_LibPrefix}}}_EffectsEnabled for _Control = True;
+	if (!{{{_LibPrefix}}}_EffectsEnabled) return;
+	
+	switch (_Effect) {
+		case {{{C_Effect_LabelHover}}}: {
+			{{{_LibPrefix}}}Effect_{{{C_Effect_LabelHover}}}(_Control, _EventType);
+		}
+	}
+}
+
+Void {{{_LibPrefix}}}Private_ActiveTrigger(CMlEvent::Type _EventType, Text _TriggerId) {
+	if (!{{{_LibPrefix}}}G_Effects.existskey(_TriggerId)) return;
+	declare Controls = {{{_LibPrefix}}}G_Effects[_TriggerId];
+	foreach (Control => Effects in Controls) {
+		foreach (Effect in Effects) {
+			{{{_LibPrefix}}}Private_ActiveEffect(Control, Effect, _EventType);
+		}
+	}
+}
+
+Void {{{_LibPrefix}}}Init() {
+	Page.GetClassChildren("{{{C_LibMLClass}}}", Page.MainFrame, True);
+	declare CMlFrame[] Frames_Group;
+	foreach (Control in Page.GetClassChildren_Result) {
+		declare NotAReference = Control;
+		if (NotAReference is CMlFrame) {
+			declare GroupId = NotAReference.DataAttributeGet("{{{C_DataShort_Group}}}");
+			if (GroupId != "") {
+				Frames_Group.add((NotAReference as CMlFrame));
+			}
+		}
+	}
+	foreach (Frame_Group in Frames_Group) {
+		declare GroupId = Frame_Group.DataAttributeGet("{{{C_DataShort_Group}}}");
+		Page.GetClassChildren("{{{C_LibMLClass}}}", Frame_Group, True);
+		foreach (Control in Page.GetClassChildren_Result) {
+			declare Effects = Control.DataAttributeGet("{{{C_DataShort_Effects}}}");
+			if (Effects != "") {
+				declare NewEffects = "";
+				declare EffectsArray = LibMLE_TL::Split(",", Effects);
+				foreach (TriggerEffect in EffectsArray) {
+					declare TriggerEffectArray = LibMLE_TL::Split(":", TriggerEffect);
+					if (TriggerEffectArray.count < 2) continue;
+					NewEffects ^= TriggerEffectArray[0]^GroupId^":"^TriggerEffectArray[1];
+				}
+				Control.DataAttributeSet("{{{C_DataShort_Effects}}}", NewEffects);
+			}
+			declare Triggers = Control.DataAttributeGet("{{{C_DataShort_Triggers}}}");
+			if (Triggers != "") {
+				declare NewTriggers = "";
+				declare TriggersArray = LibMLE_TL::Split(",", Triggers);
+				foreach (Trigger in TriggersArray) {
+					if (NewTriggers != "") NewTriggers ^= ",";
+					NewTriggers ^= Trigger^GroupId;
+				}
+				Control.DataAttributeSet("{{{C_DataShort_Triggers}}}", NewTriggers);
+			}
+		}
+	}
+	
+	Page.GetClassChildren("{{{C_LibMLClass}}}", Page.MainFrame, True);
+	foreach (Control in Page.GetClassChildren_Result) {
+		declare NotAReference = Control;
+		declare Effects = NotAReference.DataAttributeGet("{{{C_DataShort_Effects}}}");
+		if (Effects != "") {
+			declare EffectsArray = LibMLE_TL::Split(",", Effects);
+			foreach (TriggerEffect in EffectsArray) {
+				declare TriggerEffectArray = LibMLE_TL::Split(":", TriggerEffect);
+				if (TriggerEffectArray.count < 2) continue;
+				declare Trigger = TriggerEffectArray[0];
+				declare Effect = LibMLE_TL::ToInteger(TriggerEffectArray[1]);
+				if (!{{{_LibPrefix}}}G_Effects.existskey(Trigger)) {
+					{{{_LibPrefix}}}G_Effects[Trigger] = Integer[][CMlControl];
+				}
+				if (!{{{_LibPrefix}}}G_Effects[Trigger].existskey(NotAReference)) {
+					{{{_LibPrefix}}}G_Effects[Trigger][NotAReference] = Integer[];
+				}
+				if (!{{{_LibPrefix}}}G_Effects[Trigger][NotAReference].exists(Effect)) {
+					{{{_LibPrefix}}}G_Effects[Trigger][NotAReference].add(Effect);
+				}
+			}
+		}
+		declare Triggers = NotAReference.DataAttributeGet("{{{C_DataShort_Triggers}}}");
+		if (Triggers != "") {
+			declare {{{_LibPrefix}}}TriggersArray for NotAReference = Text[];
+			{{{_LibPrefix}}}TriggersArray = LibMLE_TL::Split(",", Triggers);
+		}
+	}
+}
+
+Void {{{_LibPrefix}}}Loop() {
+	declare Text[][CMlEvent::Type] Triggered;
+	foreach (Event in PendingEvents) {
+		if (Event.Control == Null || !Event.Control.HasClass("{{{C_LibMLClass}}}")) continue;
+		declare {{{_LibPrefix}}}_TriggersEnabled for Event.Control = True;
+		if ({{{_LibPrefix}}}_TriggersEnabled) {
+			declare Triggers = Event.Control.DataAttributeGet("{{{C_DataShort_Triggers}}}");
+			if (Triggers != "") {
+				declare TriggersArray = LibMLE_TL::Split(",", Triggers);
+				foreach (Trigger in TriggersArray) {
+					if (!Triggered.existskey(Event.Type)) Triggered[Event.Type] = Text[];
+					if (!Triggered[Event.Type].exists(Trigger)) Triggered[Event.Type].add(Trigger);
+				}
+			}
+		}
+	}
+	foreach (EventType => Triggers in Triggered) {
+		foreach (Trigger in Triggers) {
+			{{{_LibPrefix}}}Private_ActiveTrigger(EventType, Trigger);
+		}
+	}
+}
+
+Void {{{_LibPrefix}}}EnableEffects(CMlControl _Control, Boolean _Enable) {
+	if (_Control == Null) return;
+	declare {{{_LibPrefix}}}_EffectsEnabled for _Control = True;
+	{{{_LibPrefix}}}_EffectsEnabled = _Enable;
+	
+	if (!_Enable) {
+		foreach (Trigger => Controls in {{{_LibPrefix}}}G_Effects) {
+			if (!Controls.existskey(_Control)) continue;
+			foreach (Control => Effects in Controls) {
+				foreach (Effect in Effects) {
+					{{{_LibPrefix}}}Private_CancelEffect(Control, Effect);
+				}
+			}
+		}
+	}
+}
+
+Void {{{_LibPrefix}}}EnableEffects(CMlControl _Control) {
+	{{{_LibPrefix}}}EnableEffects(_Control, True);
+}
+
+Void {{{_LibPrefix}}}DisableEffects(CMlControl _Control) {
+	{{{_LibPrefix}}}EnableEffects(_Control, False);
+}
+
+Void {{{_LibPrefix}}}EnableTriggers(CMlControl _Control, Boolean _Enable) {
+	if (_Control == Null) return;
+	declare {{{_LibPrefix}}}_TriggersEnabled for _Control = True;
+	{{{_LibPrefix}}}_TriggersEnabled = _Enable;
+	
+	if (!_Enable) {
+		declare {{{_LibPrefix}}}TriggersArray for _Control = Text[];
+		foreach (TriggerToDisable in {{{_LibPrefix}}}TriggersArray) {
+			if (!{{{_LibPrefix}}}G_Effects.existskey(TriggerToDisable)) continue;
+			declare Controls = {{{_LibPrefix}}}G_Effects[TriggerToDisable];
+			foreach (Control => Effects in Controls) {
+				foreach (Effect in Effects) {
+					{{{_LibPrefix}}}Private_CancelEffect(Control, Effect);
+				}
+			}
+		}
+	}
+}
+
+Void {{{_LibPrefix}}}EnableTriggers(CMlControl _Control) {
+	{{{_LibPrefix}}}EnableTriggers(_Control, True);
+}
+
+Void {{{_LibPrefix}}}DisableTriggers(CMlControl _Control) {
+	{{{_LibPrefix}}}EnableTriggers(_Control, False);
+}
+""";
+}
+
+// ---------------------------------- //
+/** Inject the code of the library in the manialink
+ *
+ *	@return													The code of the library
+ */
+Text ML_Functions() {
+	return ML_Functions(C_LibPrefix);
+}
+
+// ---------------------------------- //
+/** Get the class used to mark the controls affected by the library
+ *
+ *	@return													The class
+ */
+Text ML_Class() {
+	return C_LibMLClass;
+}
+
+// ---------------------------------- //
+/// Unload the library
+Void Unload() {
+	
+}
+
+// ---------------------------------- //
+/// Load the library
+Void Load() {
+	Unload();
+}

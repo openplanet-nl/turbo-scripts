@@ -1,0 +1,113 @@
+#Include "Libs/Openplanet/TMConsole/Menu/MenuLayers.Script.txt"								as Layers
+#Include "Libs/Openplanet/TMConsole/Logger.Script.txt"										as Logger
+#Include "Libs/Openplanet/TMConsole/PopUpManager.Script.txt"									as PopUpManager
+#Include "Libs/Openplanet/TMConsole/Menu/PageHandlers/ConnectionHandler.Script.txt" 			as ConnectionHandler
+#Include "Libs/Openplanet/TMConsole/Menu/Controller/Solo_CampaignController.Script.txt" 		as Solo_CampaignController
+#Include "Libs/Openplanet/TMConsole/Menu/PageHandlers/ZoneHandler.Script.txt"	 			as ZoneHandler
+	
+
+declare CNetMasterServerUserInfo::EMasterServerConnectionStatus    G_PrevConnectionStatus;
+declare Boolean 				                                   G_UpdateIsMainName;
+declare Boolean 				                                   G_IsCampaignsLoad;
+declare Boolean 				                                   G_UpdateIsCampaignsLoad;
+declare Boolean 				                                   G_IsTryToConnect;
+
+Void WarnNotEnoughParams(CMlAppEvent _Event) {
+	Logger::Warn("[Menucontroller] event "^_Event.CustomEventType^": not enough params ["^_Event.CustomEventData^"]");
+}
+
+Void PreLoad()
+{
+	G_UpdateIsMainName 	    = False;
+	G_IsCampaignsLoad       = False;
+	G_UpdateIsCampaignsLoad = False;
+}
+
+Void Load()
+{
+}
+
+Void CampaignsAreLoaded()
+{
+	G_IsCampaignsLoad        = True;
+}
+
+Void TryToConnect(Boolean _Etat)
+{
+	G_IsTryToConnect        = _Etat;
+}
+
+Boolean GetTryToConnect()
+{
+	return G_IsTryToConnect;
+}
+
+Void Loop() {
+
+	if(ManiaPlanet.MasterServer_MainMSUser == Null) return;
+	if(G_PrevConnectionStatus != ManiaPlanet.MasterServer_MainMSUser.ConnectionStatus)
+	{
+		declare CUILayer NextLayer2 <=> Layers::Get("StartDemo");
+		LayerCustomEvent(NextLayer2, "CheckEtatConnection", [ManiaPlanet.MasterServer_MainMSUser.ConnectionStatus^""]);
+		if(ManiaPlanet.MasterServer_MainMSUser.ConnectionStatus == CNetMasterServerUserInfo::EMasterServerConnectionStatus::Connecting && ManiaPlanet.MasterServer_MainMSUser.ConnectionStatus == CNetMasterServerUserInfo::EMasterServerConnectionStatus::NotConnected)
+		{
+			//PopUpManager::AddAskYesNo2(_("Do you want to retry the connection ?"), _("Connection Fail"), "fff", "FailConnection");
+		}
+		G_PrevConnectionStatus = ManiaPlanet.MasterServer_MainMSUser.ConnectionStatus;
+	}
+
+	if(!G_UpdateIsCampaignsLoad && G_IsCampaignsLoad)
+	{
+		G_UpdateIsCampaignsLoad = True;
+	}
+
+	foreach(Event in PendingEvents) {
+		if(Event.Type != CMlAppEvent::EType::LayerCustomEvent) continue;
+		switch(Event.CustomEventType) {
+			case "RequestOnlineEtat" : {
+				declare CUILayer NextLayer2 <=> Layers::Get("StartDemo");
+				LayerCustomEvent(NextLayer2, "CheckEtatConnection", [ManiaPlanet.MasterServer_MainMSUser.ConnectionStatus^""]);
+			}
+			case "CheckMainUser" : {
+				G_UpdateIsMainName = True;
+			}
+			case "FailConnection" : {
+				Solo_CampaignController::NoConnection();			}
+			case "FailConnection_AskYesNo" : {
+				declare CUILayer NextLayer2 <=> Layers::Get("StartDemo");
+				if(Event.CustomEventData[0] == "True")
+				{
+					ConnectionHandler::ConnectionToMasterServer();
+					TryToConnect(True);
+					LayerCustomEvent(NextLayer2, "CheckEtatConnection", [ManiaPlanet.MasterServer_MainMSUser.ConnectionStatus^""]);
+				}
+				else if (Event.CustomEventData[0] == "False")
+				{
+					Solo_CampaignController::NoConnection();
+					TryToConnect(False);
+					//LayerCustomEvent(NextLayer2, "LaunchNextPage", [""]);
+				}
+				
+				
+			}
+		}
+	}
+
+	if(Solo_CampaignController::IsCampaignLoad())
+	{
+		declare CUILayer NextLayer <=> Layers::Get("StartDemo");
+		declare Text NextPage;
+		declare Boolean NeedChangeZone = ZoneHandler::NeedChangeZone();
+		if(NeedChangeZone && ManiaPlanet.MasterServer_MainMSUser.ConnectionStatus == CNetMasterServerUserInfo::EMasterServerConnectionStatus::Connected)
+		{
+			NextPage = "Location";
+			PopUpManager::AddPopUp2(0, _("Welcome to Trackmania Turbo!\n Please choose your ranking zone."), "", False);
+		}
+		else
+		{
+			NextPage = "Main";
+		}
+		LayerCustomEvent(NextLayer, "LaunchNextPage", [NextPage]);
+	}
+
+}

@@ -1,0 +1,1107 @@
+// file://Media/Manialinks/Nadeo/TMConsole/MainMenuArnaud.Script.txt
+#Include "Libs/Openplanet/Manialink2.Script.txt"						as Manialink
+#Include "Libs/Openplanet/TMConsole/LibAudio.Script.txt"				as LibAudio
+#Include "Libs/Openplanet/UIPadButtons.Script.txt" 					as LibUIButtons
+#Include "Libs/Openplanet/TMConsole/PanelParameter.Script.txt"		as PanelParameter
+#Include "Libs/Openplanet/TMConsole/Menu/ClipTransitions.Script.txt"	as ClipTransitions
+#Include "Libs/Openplanet/TMConsole/Volumes.Script.txt"				as Volumes
+#Include "TextLib"												as TL
+#Include "Libs/Openplanet/TMConsole/FontManager.Script.txt"			as Font
+#Include "Libs/Openplanet/TMConsole/Colors.Script.txt"		   		as Colors
+
+#Const C_ImgBase 	"file://Media/Manialinks/Nadeo/TMConsole/Images/"
+ 
+declare Text[][Text]	G_SwitchInfo;
+declare Text[]			G_MenuSetting;
+declare Text[]			G_MenuSettingId;
+declare Text[Text]		G_LayerInfo;
+declare Integer[Text]	G_SettingsIndex;
+
+Void AddSwitch(Text _Name, Text[] _Contains, Integer _Index, Text _Id)
+{
+	G_MenuSetting.add("Switch_"^_Name);
+	G_MenuSettingId.add(_Id);
+	G_SwitchInfo[_Name] = Text[];
+	G_SwitchInfo[_Name] = _Contains;
+	G_SettingsIndex[_Name] = _Index;
+	
+	
+}
+
+Void AddSlider(Text _Name, Integer _Index, Text _Id)
+{
+	G_MenuSetting.add("Slider_"^_Name);
+	G_MenuSettingId.add(_Id);
+	//G_SwitchInfo[_Name] = Text[];
+	G_SettingsIndex[_Name] = _Index;
+}
+
+Void AddLayerBouton(Text _Name, Text _Layer, CMlControl::AlignHorizontal _Alignment)
+{
+	switch(_Alignment) {
+		case CMlControl::AlignHorizontal::Right : G_MenuSetting.add("LayerRightBouton_"^_Name);
+		default 								: G_MenuSetting.add("LayerBouton_"^_Name);
+	}
+	
+	G_MenuSettingId.add(_Layer);
+	G_LayerInfo[_Name] = _Layer;
+
+	//G_SettingsIndex[_Name] = 0; //TODELETE - Ne sert à rien mais il faut clean avant d'enlever
+}
+
+Text Build(Text _ShowAnim, Text _HideAnim) {
+	
+	
+	declare Text    IMGBackground    = C_ImgBase^"Trame_XPLOD.tga";
+	
+	declare Text 	SoundMove        = LibAudio::GetSoundMove();
+	declare Text	SoundSpeedIOMeter= "file://Media/Sounds/TMConsole/event-next.wav";
+
+	declare Integer Platform       = LibUIButtons::GetPlatform();
+	declare Text 	IMGInputCancel = LibUIButtons::GetImage(Platform, CManiaAppEvent::EMenuNavAction::Cancel);
+	declare Text 	IMGInputSelect = LibUIButtons::GetImage(Platform, CManiaAppEvent::EMenuNavAction::Select);
+	declare Text 	IMGPopupArrow  = "file://Media/Manialinks/Nadeo/TMConsole/Images/VR/popup-arrow.png";
+
+	declare Text 	IMG_PC_Select  = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"), CManiaAppEvent::EMenuNavAction::Select);
+	declare Text 	IMG_PS_Select  = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::Select);
+	declare Text 	IMG_XB_Select  = LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::Select);
+	declare Text 	IMG_PC_Cancel  = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"), CManiaAppEvent::EMenuNavAction::Cancel);
+	declare Text 	IMG_PS_Cancel  = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::Cancel);
+	declare Text 	IMG_XB_Cancel  = LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::Cancel);
+	
+	declare Text 	TXTCancel       = _("Back");
+	
+	declare Real	SizeX_Total      = PanelParameter::GetSizePanelX();
+	declare Real	PosYFirstQuad    = 40.95;
+	
+	declare Real	ClipSizeX        =  SizeX_Total;
+	declare Real	ClipSizeY        =  180.;
+	declare Real	ClipPosX         =  320.;
+	declare Real	ClipPosY         =  -10.;
+
+	declare Real	SizeOfSliders    = 50.;
+	/*
+	-Switch - <-A->
+	-SubMenu
+	-OpenLayer
+	-Slider
+	*/
+	//G_MenuSetting = ["Switch_Langue","Slider_Musique"];
+	//AddSlider(_("Ingame Music Volume"), 80 , "Musics");
+	// AddSwitch(_("Ingame Musics"), [_("|Music|On"), _("|Music|Boost"), _("|Music|Off")], 0, "Musics");
+	AddSwitch(_("Ingame Musics"), ["On", _("|Music|Boost"), "Off"], 0, "Musics");
+	//AddSlider(_("Volume Voices"), 100, "Voices");
+	AddSwitch(_("Ingame Voices"), [_("|Voices|On"),_("|Voices|Off")], 0, "Voices");
+	AddLayerBouton(_("Ranking Zone") , "Location", CMlControl::AlignHorizontal::Right);
+	//AddSlider(_("Dead Zone"), 50);
+	//L16N Game developer list of Trackmania Turbo
+	G_MenuSetting.add("SpeedIOMeter_Speed-I/O-Meter");
+	G_MenuSettingId.add("Bob");
+	AddSwitch(_("|Setting to chose the quality of lights computation|Trackbuilder lighting quality"), 
+		[_("|Setting to chose the quality of lights computation|Fast"),
+		_("|Setting to chose the quality of lights computation|Nice"),
+		_("|Setting to chose the quality of lights computation|Always ask")],
+		 0, "Lights");
+	AddLayerBouton(_("Credits"), "Credits", CMlControl::AlignHorizontal::HCenter);
+	//AddLayerBouton("Manuel", "");
+	
+
+	declare Text MLText = """
+	<framemodel id="Frame_Button">
+		<quad  halign="center" valign="center" bgcolor="ff0"
+			sizen="12.0 12.0"  posn="0 0. 1" opacity="0." />
+	</framemodel>
+
+	<framemodel id="Frame_Slider">
+		<quad  halign="left" valign="center" bgcolor="fff"
+			sizen="{{{SizeOfSliders}}} 2.0"  posn="0 0. 1" opacity="1." />
+		<quad id="Quad_Selector" halign="left" valign="center" bgcolor="fff"
+			sizen="2.0 6.0"  posn="0 0. 2" opacity="1." />
+		<label id="Label_Name" halign="right" valign="center" bgcolor="fff" text="Mon Slider"
+			posn="-5. 0.8 1" opacity="1." textfont="{{{Font::GetFontName("Main")}}}" textprefix="$t" textsize="6."/>
+	</framemodel>
+	
+	<framemodel id="Frame_Switch">
+		<quad hidden="1" halign="center" valign="center" style="Icons128x128_1" posn="13 0. 1" rot="180" substyle="Back" sizen="5.0 5.0"/>
+		<quad hidden="1" halign="center" valign="center" style="UIConstruction_Buttons" posn="-13 0. 1"  substyle="Quit" sizen="5.0 5.0"/>
+		
+		<label id="Label_Contain" halign="left" valign="center" bgcolor="fff" text="Mon Switch" textprefix="$t"
+			posn="5. 0.5 1" opacity="1." sizen="60" textfont="{{{Font::GetFontName("Main")}}}" textsize="6."/>
+		<label id="Label_Name" halign="right" valign="center" bgcolor="fff" text="Mon Switch"
+			posn="-5. 0.8 1" textfont="{{{Font::GetFontName("Main")}}}" textprefix="$t" opacity="1." textsize="6." />
+	</framemodel>
+	
+	<framemodel id="Frame_LayerBouton">
+		<label id="Label_Name" halign="center" valign="center" bgcolor="fff" text="Mon Layer Bouton" textsize="6."
+			posn="0. 0.5 1" opacity="1." sizen="80" textfont="{{{Font::GetFontName("Main")}}}" textprefix="$t"/>
+		<label id="Label_Name2" halign="left" valign="center" bgcolor="fff" text="" textsize="2."
+			posn="30. 0.5 1" opacity="1." sizen="120" textfont="{{{Font::GetFontName("MainSmall")}}}" textprefix="$t"/>
+	</framemodel>
+	
+	<framemodel id="Frame_LayerRightBouton">
+		<label id="Label_Name" halign="right" valign="center" bgcolor="fff" text="Mon Layer Bouton" textsize="6."
+			posn="-5. 0.5 1" opacity="1." sizen="80" textfont="{{{Font::GetFontName("Main")}}}" textprefix="$t"/>
+		<label id="Label_Name2" halign="left" valign="center" bgcolor="fff" text="" textsize="6."
+			posn="2. 0.5 1" opacity="1." sizen="150" textfont="{{{Font::GetFontName("Main")}}}" textprefix="$t"/>
+	</framemodel>
+	
+	<framemodel id="Frame_SpeedIOMeter">
+		<quad halign="left" valign="center" bgcolor="{{{TL::ColorToText(Colors::GetColor("White"))}}}" sizen="9 9" posn="0. 0. 3." />
+		<quad halign="left" valign="center" bgcolor="000" sizen="8 8" posn="0.5 0. 3.5" />
+		<quad id="Quad_Beat"  	halign="left" valign="center" bgcolor="{{{TL::ColorToText(Colors::GetColor("White"))}}}" sizen="8 8" posn="0.5 0. 4.5" opacity="0." />
+		""";
+		for (I, 0, 2) {
+			declare Text Image;
+			switch (I) {
+				case LibUIButtons::GetPlatform("PC") 	: Image = IMG_PC_Select;
+				case LibUIButtons::GetPlatform("PS4") 	: Image = IMG_PS_Select;
+				case LibUIButtons::GetPlatform("XB1") 	: Image = IMG_XB_Select;
+			}
+		
+			MLText ^= """<quad id="Quad_Input{{{I}}}"  	halign="left" valign="center" image="{{{Image}}}" sizen="8 8" posn="0.5 0. 5." opacity="1." hidden="1" keepratio="Fit"/>""";
+		
+		}
+	MLText ^= """
+		<label id="Label_Name" 	halign="right" valign="center" bgcolor="{{{TL::ColorToText(Colors::GetColor("White"))}}}" posn="-5. 0.8 1" opacity="1." textfont="{{{Font::GetFontName("Main")}}}" textprefix="$t" textsize="6."/>
+		<label hidden="1" id="Label_Latency_Last" valign="center" bgcolor="fff" posn="50 0.8 1" opacity="1." textfont="{{{Font::GetFontName("Main")}}}" textsize="6."/>
+		<label hidden="1" id="Label_Latency_Average" halign="left" valign="center" bgcolor="fff" posn="12 0.8 1" opacity="1." textfont="{{{Font::GetFontName("Main")}}}" textsize="6."/>
+	</framemodel>
+
+	<frame id="Frame_All" posn="0 0 30" hidden="0">
+		<quad halign="center" valign="center" image="{{{IMGBackground}}}" posn="0 0 0" sizen="320 180"/>
+		<frame id="Frame_Content" posn="0.0 0 1" scale="1.0" clip="False" clipsizen="{{{ClipSizeX}}} {{{ClipSizeY}}}" clipposn="{{{ClipPosX}}} {{{ClipPosY}}}">
+		<frame id="Frame_Cheat" hidden="1" posn="-155 1 0" >
+			<label posn="0 0 0" textfont="{{{Font::GetFontName("MainSmall")}}}" text="{{{_("|I18NInternal|English")}}}" autonewline="1" sizen="300 50"/>
+			<label posn="0 -10 0" text="{{{_("[CharsTest]")}}}" autonewline="1" sizen="300 50"/>
+			<label posn="0 -30 0" text="{{{_("[CharsTest]")}}}" autonewline="1" sizen="300 50" textfont="{{{Font::GetFontName("MainSmall")}}}" />
+			<label posn="0 -50 0" text="{{{_("[CharsTest]")}}}" autonewline="1" sizen="300 50" textfont="{{{Font::GetFontName("Main")}}}" />
+		</frame>
+		
+	""";
+
+	for(I,0,G_MenuSetting.count-1)
+	{
+		declare Real IndexY = I*1.;
+		declare Real PosnY = PosYFirstQuad - IndexY*17.;
+		declare Text[] SplitMenuSetting = TL::Split("_", G_MenuSetting[I]);
+		
+		declare Real PosnX = 0.;
+		MLText^="""
+			<frame posn="{{{PosnX}}} {{{PosnY}}} 5." id="Frame_Instance{{{I}}}" >
+				<frameinstance modelid="Frame_{{{SplitMenuSetting[0]}}}" />
+				<quad  halign="center" valign="center" sizen="250 7.5"  posn="0 0 5" opacity="0." scriptevents="1" id="MouseInput_Setting_{{{I}}}" />
+			</frame>
+		""";
+	}
+	
+	MLText^="""
+
+		</frame>
+
+		<frame id="Frame_ButtonAction2" posn="140 5 2" hidden="0">
+		""";
+		for (I, 0, 2) {
+			declare Text Image;
+			switch (I) {
+				case LibUIButtons::GetPlatform("PC") 	: Image = IMG_PC_Cancel;
+				case LibUIButtons::GetPlatform("PS4") 	: Image = IMG_PS_Cancel;
+				case LibUIButtons::GetPlatform("XB1") 	: Image = IMG_XB_Cancel;
+			}
+		
+			MLText ^= """
+			<quad id="Quad_Cancel{{{I}}}" halign="center" valign="bottom" keepratio="Fit" sizen="8 8" image="{{{Image}}}" posn="0 -88.5 6" hidden="1"/>""";
+		
+		}
+	MLText ^= """
+			<label halign="right" valign="center" style="TextButtonNav" posn="-6 -84.3 6" sizen="70"
+			id="Label_Cancel" textsize="4" text="{{{TXTCancel}}}" textcolor="fff"  textfont="{{{Font::GetFontName("Main")}}}"/>
+			<quad  halign="right" valign="center" sizen="80 7.5"  posn="8 -84.3 7" opacity="0." scriptevents="1" id="MouseInput_Cancel" />
+		</frame>
+	</frame>
+
+	<script><!--
+		#Const DebugName  "L_Settings"
+		#Include "TextLib" as TL
+		#Include "MathLib" as ML
+		
+		#Const C_TimeTransitionPage  {{{PanelParameter::GetTimeTransitionPage()}}}
+		#Const C_TimeStartClip       {{{PanelParameter::GetTimeStartClip()}}}
+		#Const C_TimeAnimClip        {{{PanelParameter::GetTimeAnimClip()}}}
+		#Const C_TimeTransitionPage2 {{{PanelParameter::GetTimeTransitionPage2()}}}
+		#Const C_TimeStartClip2      {{{PanelParameter::GetTimeStartClip2()}}}
+		#Const C_TimeAnimClip2       {{{PanelParameter::GetTimeAnimClip2()}}}
+
+		#Const C_SpeedIOMeter_Period	1000
+		#Const C_SpeedIOMeter_Error		5
+		#Const C_SpeedIOMeter_Size		{{{SizeOfSliders}}}
+		
+		#Const C_MUSICSTATE_ON       0
+		#Const C_MUSICSTATE_BOOST    1
+		#Const C_MUSICSTATE_OFF      2
+		#Const C_VOICESTATE_ON       0
+		#Const C_VOICESTATE_OFF      1
+
+		{{{Manialink::GetIncludes()}}}
+		{{{Manialink::Load()}}}
+		{{{ClipTransitions::Functions(["Frame_Content"])}}}
+		
+		declare Integer			G_LockInput;
+		declare Integer 		G_HideTime;
+		declare Integer			G_IndexSelectY;
+		declare Integer			G_PrevIndexSelectY;
+		declare Integer			G_IndexSelectX;
+		declare Text[]			G_InfoType;
+		declare Text[]			G_InfoName;
+		declare Text[]			G_MenuSettingId;
+		declare Integer[Text]	G_IndexSettings;
+		declare Text[][Text]	G_InfoSwitch;
+		declare Text			G_CurrentType;
+		declare Text			G_CurrentName;
+		declare Text[Text]		G_InfoLayer;
+	
+		//SPEED-IO-METER
+		declare Integer 		G_SpeedIOMeter_LastHalfPeriod;
+		declare Integer 		G_SpeedIOMeter_StartTime;
+		declare Boolean			G_SpeedIOMeter_CurrentInputReceived;
+		declare Text[]			G_SpeedIOMeter_Inputs;
+		declare Text[]			G_SpeedIOMeter_InputsImages;
+		declare Integer			G_SpeedIOMeter_CurrentInput;
+		declare Integer 		G_SpeedIOMeter_InputsToTake;
+		declare Integer 		G_SpeedIOMeter_PerfectStreak;
+		declare Integer			G_ActiveButtonPlatform;
+		declare CMlQuad[] 		QuadButtons;
+		declare CMlLabel[] 		LabelButtons;
+		
+		declare Integer[] 			G_SpeedIOMeter_Latencies;
+		declare Integer[Integer] 	G_SpeedIOMeter_Spikes;
+		
+		{{{LibUIButtons::Inject_SetInputInfoTextSelected()}}}
+		
+		Void UpdateLabelLight(CMlControl _Control)
+		{
+			foreach(I => Button in QuadButtons)
+			{
+				declare Label_LeftInput <=> LabelButtons[I];
+				declare Boolean IsFocus  = False;
+				if (_Control == Button)
+				{
+					IsFocus = True;
+				}
+				else
+				{
+					IsFocus = False;
+				}
+				//log("Button["^Button^"]: " ^ IsFocus);
+				SetInputInfoTextSelected(Label_LeftInput, IsFocus);
+			}
+		}
+	
+		Void UpdateAllLabels()
+		{
+			for(I, 0, {{{G_MenuSetting.count-1}}})
+			{
+				declare CMlFrame Frame_Instance <=> (Page.GetFirstChild("Frame_Instance"^I)     as CMlFrame);
+				declare CMlLabel Label_Name     <=> (Frame_Instance.GetFirstChild("Label_Name") as CMlLabel);
+				declare Text MyName = G_InfoName[I];
+				if(MyName == "Speed-I/O-Meter")
+				{
+					Label_Name.Value = "Speed-I/O-Meter";
+					Label_Name.Size.X = 79.;
+				}
+				else
+				{
+					Label_Name.Value = MyName;
+					Label_Name.Size.X = 150.;
+
+				}
+				//SpeedIOMeter_
+
+				if(G_InfoType[I] == "Slider")
+				{
+					declare CMlQuad Quad_Selector <=> (Frame_Instance.GetFirstChild("Quad_Selector") as CMlQuad);
+					// Quad_Selector.PosnX = (G_IndexSettings[MyName] - {{{SizeOfSliders}}}) /2.2;
+					Quad_Selector.PosnX = G_IndexSettings[MyName] / 2.08;
+				}
+				else if(G_InfoType[I] == "Switch")
+				{
+					declare CMlLabel Label_Contain <=> (Frame_Instance.GetFirstChild("Label_Contain") as CMlLabel);
+					declare Integer MyIndex = G_IndexSettings[MyName];
+					if(!G_InfoSwitch[MyName].existskey(MyIndex)) MyIndex = 0;
+					Label_Contain.Value = G_InfoSwitch[MyName][MyIndex];
+				}
+			}
+		}
+
+		Void ModifParam(Text _Direction)
+		{
+			if(! G_IndexSettings.existskey(G_CurrentName)) return;
+			
+			declare Integer Index = G_IndexSettings[G_CurrentName];
+			declare CMlFrame Frame_Instance <=> (Page.GetFirstChild("Frame_Instance"^G_IndexSelectY) as CMlFrame);
+			
+			switch(G_CurrentType)
+			{
+				case "Slider":
+				{
+					declare CMlQuad Quad_Selector <=> (Frame_Instance.GetFirstChild("Quad_Selector") as CMlQuad);
+					if(_Direction == "Left" && Index > 0)
+					{
+						Index -= 5;
+					}
+					else if(_Direction == "Right" && Index < 100)
+					{
+						Index += 5;
+					}
+					//Todo - Update
+					// Quad_Selector.PosnX = (Index - {{{SizeOfSliders}}}) /2.2;
+					Quad_Selector.PosnX = Index / 2.08;
+					G_IndexSettings[G_CurrentName] = Index;
+					SendCustomEvent("SliderSettings", [G_MenuSettingId[G_IndexSelectY], ""^Index]);
+					
+				}
+				case "Switch":
+				{
+					declare CMlLabel Label_Contain     <=> (Frame_Instance.GetFirstChild("Label_Contain")          as CMlLabel);
+					declare Integer IndexMax = G_InfoSwitch[G_CurrentName].count-1;
+					if(_Direction == "Left" && Index > 0)
+					{
+						Index -= 1;
+					}
+					else if(_Direction == "Right" && Index < IndexMax)
+					{
+						Index += 1;
+					}
+					else if(_Direction == "Left" && Index >= 0)
+					{
+						Index = IndexMax;
+					}
+					else if(_Direction == "Right" && Index >= IndexMax)
+					{
+						Index = 0;
+					}
+					//Todo - Update
+					Label_Contain.Value = G_InfoSwitch[G_CurrentName][Index];
+					G_IndexSettings[G_CurrentName] = Index;
+					SendCustomEvent("SwitchSettings", [G_MenuSettingId[G_IndexSelectY], ""^Index]);
+				}
+			}
+		}
+
+		Void UpdateSelection()
+		{
+			if(G_PrevIndexSelectY != G_IndexSelectY)
+			{
+				declare CMlFrame NewFrame_Instance  <=> (Page.GetFirstChild("Frame_Instance"^G_IndexSelectY)     as CMlFrame);
+				declare CMlFrame PrevFrame_Instance <=> (Page.GetFirstChild("Frame_Instance"^G_PrevIndexSelectY) as CMlFrame);
+				declare CMlLabel NewLabel_Name      <=> (NewFrame_Instance.GetFirstChild("Label_Name")          as CMlLabel);
+				declare CMlLabel NewLabel_Name2     <=> (NewFrame_Instance.GetFirstChild("Label_Name2")          as CMlLabel);
+				if(G_InfoType[G_IndexSelectY] == "LayerBouton") {
+					
+					/*
+					if(G_InfoLayer[InfoName] == "Location") NewLabel_Name2.Value = LocalUser.ZonePath;
+					else NewLabel_Name2.Value = "";
+					*/
+				}
+
+				G_CurrentType = G_InfoType[G_IndexSelectY];
+				G_CurrentName = G_InfoName[G_IndexSelectY];
+				
+				NewLabel_Name.TextColor = {{{Colors::GetColor("Yellow")}}};
+
+				if(PrevFrame_Instance != Null)
+				{
+					declare CMlLabel PrevLabel_Name      <=> (PrevFrame_Instance.GetFirstChild("Label_Name")          as CMlLabel);
+					declare CMlLabel PrevLabel_Name2     <=> (PrevFrame_Instance.GetFirstChild("Label_Name2")          as CMlLabel);
+					PrevLabel_Name.TextColor = {{{Colors::GetColor("White")}}};
+
+					if(G_InfoType[G_PrevIndexSelectY] == "LayerBouton") {
+						PrevLabel_Name2.Value = "";
+					}
+				}
+
+				G_PrevIndexSelectY = G_IndexSelectY;
+			}
+		}
+
+		Void SpeedIOMeter_Start() {
+			G_SpeedIOMeter_Latencies.clear();
+			G_SpeedIOMeter_Spikes.clear();
+			G_SpeedIOMeter_CurrentInput = 0;
+			G_SpeedIOMeter_StartTime = Now;
+			G_SpeedIOMeter_InputsToTake = 20;
+			G_SpeedIOMeter_PerfectStreak = 0;
+			
+			declare CMlFrame 	Frame_SpeedIOMeter <=> (Page.GetFirstChild("Frame_Instance3") as CMlFrame);
+			declare CMlQuad 	Quad_Input <=> (Frame_SpeedIOMeter.GetFirstChild("Quad_Input"^G_ActiveButtonPlatform) as CMlQuad);
+			declare CMlLabel 	Label_Latency_Last <=> (Frame_SpeedIOMeter.GetFirstChild("Label_Latency_Last") as CMlLabel);
+			declare CMlLabel 	Label_Latency_Average <=> (Frame_SpeedIOMeter.GetFirstChild("Label_Latency_Average") as CMlLabel);
+			
+			Label_Latency_Last.Value = "";
+			Label_Latency_Average.Value = "";
+			Label_Latency_Last.Show();
+			Label_Latency_Average.TextColor = <1., 1., 1.>;
+			Label_Latency_Average.Show();
+			
+			G_SpeedIOMeter_LastHalfPeriod = 0;
+			Audio.PlaySoundEvent("{{{SoundSpeedIOMeter}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+		}
+		
+		Void SpeedIOMeter_Update() {
+			if (G_SpeedIOMeter_InputsToTake == 0)
+				return;
+		
+			declare Integer DeltaFromStart = Now - G_SpeedIOMeter_StartTime;
+			declare Integer PeriodsCount = DeltaFromStart / C_SpeedIOMeter_Period;
+			declare Integer TimeInPeriod = DeltaFromStart - PeriodsCount * C_SpeedIOMeter_Period;
+			declare Integer HalfPeriodsCount = (TimeInPeriod * 2) / C_SpeedIOMeter_Period;
+			declare Real Ratio = ML::ToReal(TimeInPeriod) / C_SpeedIOMeter_Period; 
+			
+			declare CMlFrame 	Frame_SpeedIOMeter <=> (Page.GetFirstChild("Frame_Instance3") as CMlFrame);
+			declare CMlQuad		Quad_Input <=> (Frame_SpeedIOMeter.GetFirstChild("Quad_Input"^G_ActiveButtonPlatform) as CMlQuad);
+			declare CMlQuad 	Quad_Beat <=> (Frame_SpeedIOMeter.GetFirstChild("Quad_Beat") as CMlQuad);
+			if (Ratio < 0.25) {
+				Quad_Beat.BgColor = <1., 1., 1.>;
+				Quad_Beat.Opacity = 1. - Ratio * 4.;
+				Quad_Input.Opacity = 0.;
+			} else if (Ratio >= 0.5 && Ratio < 0.75) {
+				Quad_Input.Opacity = 1. - (Ratio - 0.5) * 4.;
+				Quad_Beat.BgColor = <1., 1., 1.>;
+				Quad_Beat.Opacity = 1. - (Ratio - 0.5) * 4.;
+			} else {
+				Quad_Input.Opacity = 0.;
+				Quad_Beat.Opacity = 0.;
+			}
+			if (HalfPeriodsCount != G_SpeedIOMeter_LastHalfPeriod)
+			{	
+				G_SpeedIOMeter_LastHalfPeriod = HalfPeriodsCount;
+				Audio.PlaySoundEvent("{{{SoundSpeedIOMeter}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+				if (HalfPeriodsCount == 0)
+					G_SpeedIOMeter_CurrentInputReceived = False;
+			}
+		}
+		
+		Boolean SpeedIOMeter_IsEnd()
+		{
+			if (G_SpeedIOMeter_InputsToTake != 0)
+				return False;
+			
+			declare Integer			 InputsTaken = G_SpeedIOMeter_Latencies.count;
+			/*declare Integer[Integer] SortedSpikes = G_SpeedIOMeter_Spikes.sort();
+			
+			// récupérer les meilleurs, comparer, décider
+			
+			declare Integer BestCount = -1;
+			declare Integer BestValue = -1;
+			
+			foreach (Value => Count in SortedSpikes) {
+				if (BestCount != -1 && Count != BestCount)
+					break;
+				BestCount = Count;
+				if (BestCount >= ML::CeilingInteger(InputsTaken * 0.5)) {
+					BestValue = Value;
+					break;
+				}
+				declare Integer NeighboorCount = BestCount;
+				if (SortedSpikes.existskey(Value-1))
+					NeighboorCount += SortedSpikes[Value-1];
+				if (SortedSpikes.existskey(Value+1))
+					NeighboorCount += SortedSpikes[Value+1];
+				if (NeighboorCount >= ML::CeilingInteger(InputsTaken * 2./3.)) {
+					BestValue = Value;
+					break;
+				}
+			}
+			
+			if (BestValue != -1)
+			{
+				declare CMlFrame 	Frame_SpeedIOMeter <=> (Page.GetFirstChild("Frame_Instance3") as CMlFrame);
+				declare CMlLabel 	Label_Latency_Average <=> (Frame_SpeedIOMeter.GetFirstChild("Label_Latency_Average") as CMlLabel);
+				declare CMlLabel 	Label_Latency_Last <=> (Frame_SpeedIOMeter.GetFirstChild("Label_Latency_Last") as CMlLabel);
+				
+				declare Real Average = BestValue * 5.;
+				if (Average < 0.) {
+					Label_Latency_Average.Value = _("Try Again");
+					Label_Latency_Average.TextColor = <1., 0., 0.>;
+					Label_Latency_Last.Value = "";
+				} else {
+					Label_Latency_Average.TextColor = <1., 1., 1.>;
+					if (Average < 10.)
+						Label_Latency_Average.Value = "< 10 ms";
+					else
+						Label_Latency_Average.Value = TL::ToText(ML::FloorInteger(Average))^" ±5 ms";
+					Label_Latency_Last.Value = _("|Relative to the latency of inputs (input lag)|Very accurate");
+					Label_Latency_Last.TextColor = <0., 1., 0.>;
+				}
+				return True;
+			}
+			*/
+			
+			if (InputsTaken >= 20)
+			{
+				declare CMlFrame 	Frame_SpeedIOMeter <=> (Page.GetFirstChild("Frame_Instance3") as CMlFrame);
+				declare CMlLabel 	Label_Latency_Average <=> (Frame_SpeedIOMeter.GetFirstChild("Label_Latency_Average") as CMlLabel);
+				declare CMlLabel 	Label_Latency_Last <=> (Frame_SpeedIOMeter.GetFirstChild("Label_Latency_Last") as CMlLabel);
+			
+				declare Integer[] SortedLatencies = G_SpeedIOMeter_Latencies.sort();
+				for (I, 0, 1)
+				{
+					SortedLatencies.removekey(0);
+					SortedLatencies.removekey(SortedLatencies.count - 1);
+				}
+				
+				declare Real Average = 0.;
+				declare Real Variance = 0.;
+				for (I, 0, SortedLatencies.count - 1)
+				Average += SortedLatencies[I];
+				Average = Average / SortedLatencies.count;
+				
+				for (I, 0, SortedLatencies.count - 1)
+					Variance += (SortedLatencies[I] - Average) * (SortedLatencies[I] - Average);
+				Variance = Variance / SortedLatencies.count;
+				
+				declare Integer Error = ML::FloorInteger(5. + ML::Abs(Average / 10.));
+				declare Real Factor = Error / (ML::Sqrt(Variance) / ML::Sqrt(1. * SortedLatencies.count));
+				
+				declare Vec3 FiabilityColor;
+				declare Text FiabilityText;
+				
+				if (Factor >= 1.725) {
+					Error = ML::FloorInteger(1.725 * (ML::Sqrt(Variance) / ML::Sqrt(1. * SortedLatencies.count)));
+					FiabilityColor = <0., 1., 0.>;
+					FiabilityText = _("|Relative to the latency of inputs (input lag)|Very accurate");
+				} else if (Factor >= 1.325) {
+					FiabilityColor = <0.2, 0.8, 0.>;
+					FiabilityText = _("|Relative to the latency of inputs (input lag)|Accurate");
+				} else if (Factor >= 1.064) {
+					FiabilityColor = <0.4, 0.6, 0.>;
+					FiabilityText = _("|Relative to the latency of inputs (input lag)|Rather accurate");
+				} else if (Factor >= 0.860) {
+					FiabilityColor = <0.6, 0.4, 0.>;
+					FiabilityText = _("|Relative to the latency of inputs (input lag)|Not very accurate");
+				} else if (Factor >= 0.687) {
+					FiabilityColor = <0.8, 0.2, 0.>;
+					FiabilityText = _("|Relative to the latency of inputs (input lag)|Inacurrate");
+				} else {
+					FiabilityColor = <1., 0., 0.>;
+					FiabilityText = _("|Relative to the latency of inputs (input lag)|Very inacurrate");
+				}
+				
+				if (Average < -10.) {
+					Label_Latency_Average.Value = _("Try Again");
+					Label_Latency_Average.TextColor = <1., 0., 0.>;
+					Label_Latency_Last.Value = "";
+				} else { 
+					Label_Latency_Average.TextColor = <1., 1., 1.>;
+					if (Average < 10.)
+						Label_Latency_Average.Value = "< 10 ms";
+					else
+						Label_Latency_Average.Value = TL::ToText(ML::FloorInteger(Average))^"±"^Error^" ms";
+					Label_Latency_Last.Value = FiabilityText;
+					Label_Latency_Last.TextColor = FiabilityColor;
+				}	
+				return True;
+			}
+			
+			//G_SpeedIOMeter_InputsToTake += 5;
+			return False;
+		}
+		
+		Void SpeedIOMeter_OnInput(Integer _InputType) {
+			if (G_SpeedIOMeter_CurrentInputReceived || G_SpeedIOMeter_InputsToTake == 0)
+				return;
+				
+			declare Integer DeltaFromStart = Now - G_SpeedIOMeter_StartTime;
+			declare Integer PeriodsCount = DeltaFromStart / C_SpeedIOMeter_Period;
+			declare Integer HalfPeriodsCount = ML::FloorInteger((DeltaFromStart - PeriodsCount * C_SpeedIOMeter_Period) / (C_SpeedIOMeter_Period * 0.5));
+			declare Integer TimeInPeriod = DeltaFromStart - PeriodsCount * C_SpeedIOMeter_Period;
+			
+			declare Integer Latency = TimeInPeriod - C_SpeedIOMeter_Period / 2;
+			
+			G_SpeedIOMeter_CurrentInputReceived = True;
+			
+			//// ADD LATENCY
+			G_SpeedIOMeter_Latencies.add(Latency);
+			//if (G_SpeedIOMeter_Spikes.existskey((Latency * 2 + 5) / 10))
+			//	G_SpeedIOMeter_Spikes[(Latency * 2 + 5) / 10] -= 1;
+			//else
+			//	G_SpeedIOMeter_Spikes[(Latency * 2 + 5) / 10] = -1;
+			
+			G_SpeedIOMeter_InputsToTake -= 1;
+			
+			declare Real Average = 0.;
+			for (I, 0, G_SpeedIOMeter_Latencies.count - 1)
+				Average += G_SpeedIOMeter_Latencies[I];
+			Average = Average / G_SpeedIOMeter_Latencies.count;
+			////
+			
+			//// PERFECT STREAK
+			/*if (G_SpeedIOMeter_Latencies.count >= 5)
+			{
+				declare Boolean IsPerfect = True;
+				declare Real LastInputsAverage = 0.;
+				for (I, 0, 4)
+					LastInputsAverage += G_SpeedIOMeter_Latencies[G_SpeedIOMeter_Latencies.count - I - 1];
+				LastInputsAverage = LastInputsAverage / 5;
+				declare Real Min = (LastInputsAverage - 2) * 0.8;
+				declare Real Max = (LastInputsAverage + 2) * 1.2;
+				if (Max < Min) {
+					declare Real Tmp = Max;
+					Max = Min;
+					Min = Tmp;
+				}
+				
+				for (I, 0, 4) {
+					if (G_SpeedIOMeter_Latencies[G_SpeedIOMeter_Latencies.count - I - 1] < Min || G_SpeedIOMeter_Latencies[G_SpeedIOMeter_Latencies.count - I - 1] > Max)
+					{
+						IsPerfect = False;
+						break;
+					}
+				}
+				
+				if (IsPerfect) {
+					G_SpeedIOMeter_PerfectStreak += 1;
+					G_SpeedIOMeter_InputsToTake = ML::Max(G_SpeedIOMeter_InputsToTake - G_SpeedIOMeter_PerfectStreak, 0);
+				} else
+					G_SpeedIOMeter_PerfectStreak = 0;
+			}*/
+			////
+			
+			if (!SpeedIOMeter_IsEnd()) {
+				declare CMlFrame 	Frame_SpeedIOMeter <=> (Page.GetFirstChild("Frame_Instance3") as CMlFrame);
+				declare CMlLabel 	Label_Latency_Average <=> (Frame_SpeedIOMeter.GetFirstChild("Label_Latency_Average") as CMlLabel);
+				declare CMlLabel 	Label_Latency_Last <=> (Frame_SpeedIOMeter.GetFirstChild("Label_Latency_Last") as CMlLabel);
+			
+				Label_Latency_Average.Value = TL::ToText(G_SpeedIOMeter_InputsToTake);
+			
+				/*if (Average < 0.)
+					Label_Latency_Average.Value = "N/A";
+				else if (Average < 10.)
+					Label_Latency_Average.Value = "< 10 ms";
+				else
+					Label_Latency_Average.Value = TL::ToText(ML::FloorInteger(Average))^" ms";*/
+			}
+		}
+		
+		Void SpeedIOMeter_End() {
+			G_SpeedIOMeter_StartTime = -1;
+			
+			declare CMlFrame 	Frame_SpeedIOMeter <=> (Page.GetFirstChild("Frame_Instance3") as CMlFrame);
+			declare CMlQuad 	Quad_Input <=> (Frame_SpeedIOMeter.GetFirstChild("Quad_Input"^G_ActiveButtonPlatform) as CMlQuad);
+			declare CMlQuad 	Quad_Beat <=> (Frame_SpeedIOMeter.GetFirstChild("Quad_Beat") as CMlQuad);
+			declare CMlLabel 	Label_Latency_Last <=> (Frame_SpeedIOMeter.GetFirstChild("Label_Latency_Last") as CMlLabel);
+			declare CMlLabel 	Label_Latency_Average <=> (Frame_SpeedIOMeter.GetFirstChild("Label_Latency_Average") as CMlLabel);
+			Quad_Input.Opacity = 0.;
+			Quad_Beat.Opacity = 0.;
+			Label_Latency_Last.Hide();
+			Label_Latency_Average.Hide();
+		}
+
+		Void Init()
+		{
+			G_SpeedIOMeter_Inputs = ["Select", "Select"];
+			G_SpeedIOMeter_InputsImages = ["{{{IMGInputSelect}}}", "{{{IMGInputSelect}}}"];
+			G_SpeedIOMeter_StartTime = -1;
+	""";
+	
+	for(I, 0, G_MenuSetting.count-1)
+	{
+		declare Text[] SplitMenuSetting = TL::Split("_", G_MenuSetting[I]);
+		declare Text MyType = SplitMenuSetting[0];
+		declare Text MyName = SplitMenuSetting[1];
+
+		MLText^="""
+		G_InfoType.add("{{{MyType}}}");
+		G_InfoName.add("{{{MyName}}}");
+		G_MenuSettingId.add("{{{G_MenuSettingId[I]}}}");
+		""";
+		switch(MyType)
+		{
+			case "Switch":
+			{
+				MLText^="""G_InfoSwitch["{{{MyName}}}"] = Text[];""";
+				MLText^="""G_IndexSettings["{{{MyName}}}"] = {{{G_SettingsIndex[MyName]}}};""";
+				for(J, 0, G_SwitchInfo[MyName].count-1)
+				{
+					MLText^="""G_InfoSwitch["{{{MyName}}}"].add("{{{G_SwitchInfo[MyName][J]}}}");""";
+				}
+			}
+			case "Slider": 
+			{
+				MLText^="""G_IndexSettings["{{{MyName}}}"] = {{{G_SettingsIndex[MyName]}}};""";
+			}
+			case "LayerBouton": 
+			{
+				MLText^="""G_InfoLayer["{{{MyName}}}"] = "{{{G_LayerInfo[MyName]}}}";""";
+			}
+			case "LayerRightBouton":  // EG: BOF
+			{
+				MLText^="""
+					G_InfoLayer["{{{MyName}}}"] = "{{{G_LayerInfo[MyName]}}}";
+					{
+					declare CMlFrame NewFrame_Instance  <=> (Page.GetFirstChild("Frame_Instance{{{I}}}")     	as CMlFrame);
+					declare CMlLabel NewLabel_Name2     <=> (NewFrame_Instance.GetFirstChild("Label_Name2")     as CMlLabel);
+				""";
+				
+				if(MyName == _("Ranking Zone")) {
+					if(LocalUser.ZonePath == "") {
+						MLText ^= """NewLabel_Name2.SetText(_("Select your Ranking Zone"));}""" ;
+					} else {
+						MLText ^= """NewLabel_Name2.SetText(TL::ReplaceChars( LocalUser.ZonePath, "|", " | "));}""" ;
+					}
+				} else {
+					MLText ^= """NewLabel_Name2.SetText("");}""";
+				}
+				
+			}
+		}
+	}
+
+	MLText^="""
+			G_PrevIndexSelectY = -1;
+			UpdateSelection();
+			UpdateAllLabels();
+		}
+
+		Void HidePage(Text _NextPage)
+		{
+			//declare CMlFrame  Frame_All <=> (Page.GetFirstChild("Frame_All") as CMlFrame);
+			StartSetClipPosition_Frame_Content(<320., 0.>, <0., 0.>, C_TimeStartClip, C_TimeAnimClip);
+			
+			if(_NextPage == "Main")
+			{
+				StartSetClipPosition_Frame_Content(<320., 0.>, <0., 0.>, C_TimeStartClip2, C_TimeAnimClip2);
+				G_HideTime  = Now + C_TimeTransitionPage2;
+				G_LockInput = Now + C_TimeTransitionPage2;
+				SendCustomEvent("LaunchTransition", ["VideoBill2Main"]);
+			}
+			else
+			{
+				G_HideTime  = Now;
+				G_LockInput = Now;
+			}
+			
+		}
+
+		Void ShowPage(Text _PreviousPage)
+		{
+			declare CMlFrame  Frame_All     <=> (Page.GetFirstChild("Frame_All") as CMlFrame);
+			declare CMlFrame  Frame_Content <=> (Page.GetFirstChild("Frame_Content") as CMlFrame);
+			Frame_All.Show();
+
+			/*
+			if(_PreviousPage == "Intro")
+			{
+				Frame_Content.ClipWindowRelativePosition = <0., 0.>;
+			}
+			else
+			{
+			}
+			*/
+			SendCustomEvent("LaunchTransition", ["VideoMain2Bill"]);
+			Frame_Content.ClipWindowRelativePosition = <320., 0.>;
+			StartSetClipPosition_Frame_Content( <0., 0.>, <320., 0.>, C_TimeStartClip, C_TimeAnimClip);
+
+			if(_PreviousPage == "Main")
+			{
+				G_IndexSelectX     = 0;
+				G_IndexSelectY     = 0;
+				G_PrevIndexSelectY = -1;
+			}
+			UpdateSelection();
+		}
+
+		Void Input_Select() {
+			if(G_LockInput + 100 > Now) return;
+			if (G_IndexSelectY == 3)
+				SpeedIOMeter_OnInput(0);
+			//log("Select: " ^ G_InfoType[G_IndexSelectY]);
+			if(G_InfoType[G_IndexSelectY] == "LayerBouton" || G_InfoType[G_IndexSelectY] == "LayerRightBouton")
+			{
+				declare Text MyName  = G_InfoName[G_IndexSelectY];
+				declare Text MyLayer = G_InfoLayer[MyName];
+				
+				
+				if(MyLayer == "") return;
+				SendCustomEvent("GotoPage", [MyLayer]);
+			}
+			if(G_InfoType[G_IndexSelectY] == "Switch")
+			{
+				G_LockInput = Now+200; // Sécurité pour éviter le double input
+				ModifParam("Right");
+			}
+		}
+		
+		Void UpdateHelpersForPlatform(Integer _Platform) {
+			declare Text[] InputIds = [""];
+			declare Text[] AdditionnalInputIds = ["Quad_Input", "Quad_Cancel"];
+	
+			declare CMlQuad  QuadInputIcon;
+			declare CMlFrame Frame_CheatInputs <=> (Page.GetFirstChild("Frame_CheatInputs") as CMlFrame);
+			for(F, 0, 2)
+			{
+				declare CMlFrame Frame_CheatInput <=> (Page.GetFirstChild("Frame_CheatInput"^F) as CMlFrame);
+				for (I, 0, 2) {
+					
+					for (J, 0, AdditionnalInputIds.count-1) {
+						QuadInputIcon <=> (Page.GetFirstChild(AdditionnalInputIds[J]^I) as CMlQuad);
+						if (I == _Platform)
+						{
+							QuadInputIcon.Show();
+						}
+						else
+						{
+							QuadInputIcon.Hide();
+						}
+					}
+				}
+			}
+		}
+		
+		main() {
+			Init();
+			//HACK - A enlever
+			EnableMenuNavigation(True,False,Null,1);
+			//HACKEND
+
+			G_HideTime = -1;
+			
+			
+			declare Text PlayerZone;
+			
+			QuadButtons.add((Page.GetFirstChild("MouseInput_Cancel") as CMlQuad));
+			LabelButtons.add((Page.GetFirstChild("Label_Cancel") as CMlLabel));
+
+
+			while(True) {
+				yield;
+				if(! PageIsVisible) continue;
+				LibManialink_AnimLoop();
+
+				{{{ClipTransitions::InjectInWhile(["Frame_Content"])}}}
+
+				if(LocalUser.ZonePath != PlayerZone)
+				{
+					declare CMlFrame NewFrame_Instance  <=> (Page.GetFirstChild("Frame_Instance2")     	as CMlFrame);
+					declare CMlLabel NewLabel_Name2     <=> (NewFrame_Instance.GetFirstChild("Label_Name2")     as CMlLabel);
+					declare Text[] ZoneSplit = TL::Split("|", LocalUser.ZonePath);
+					declare Text Zone;
+					for(I, 0, ZoneSplit.count -1)
+					{
+						if(I <= 1) Zone ^= TL::GetTranslatedText(ZoneSplit[I]);
+						else  Zone ^= ZoneSplit[I];
+						if(I<ZoneSplit.count -1) Zone ^= " | ";
+					}
+					PlayerZone = LocalUser.ZonePath;
+					declare Integer ZoneLenght = TL::Length(Zone);
+					if(ZoneLenght >= 62) Zone = TL::SubText(Zone, 0, 62)^"...";
+					NewLabel_Name2.SetText(Zone);
+				}
+
+				if(G_HideTime <= Now && G_HideTime != -1)
+				{
+					G_HideTime = -1;
+					G_IndexSelectY = 0;
+					G_IndexSelectX = 0;
+					UpdateSelection();
+
+					SendCustomEvent("DetachPage", ["Settings"]);
+				
+				}
+				
+				if (G_SpeedIOMeter_StartTime != -1)
+				{
+					SpeedIOMeter_Update();
+				}
+
+				if (Input.PendingEvents.count != 0) {
+					declare Integer LastInputPlatform;
+					switch (Input.PendingEvents[Input.PendingEvents.count-1].Pad.Type) {
+						case CInputPad::EPadType::Keyboard 		: LastInputPlatform = {{{LibUIButtons::GetPlatform("PC")}}};
+						case CInputPad::EPadType::PlayStation 	: LastInputPlatform = {{{LibUIButtons::GetPlatform("PS4")}}};
+						case CInputPad::EPadType::XBox 			: LastInputPlatform = {{{LibUIButtons::GetPlatform("XB1")}}};
+						default 								: LastInputPlatform = {{{LibUIButtons::GetPlatform("PC")}}};
+					}
+					if (LastInputPlatform != G_ActiveButtonPlatform)
+					{
+						SendCustomEvent("SetActiveButtonPlaform", ["Settings", TL::ToText(LastInputPlatform)]);
+					}
+				}
+				foreach(Event in PendingEvents) {
+					switch(Event.Type) {
+						case CMlEvent::Type::MouseClick: {
+							declare Text[] InputId = TL::Split("_", Event.ControlId);
+							if (InputId.count < 2 || InputId[0] != "MouseInput")
+								continue;
+							switch (InputId[1]) {
+								case "Setting" : { 
+									declare NewIndexY = TL::ToInteger(InputId[2]);
+									if (G_IndexSelectY != NewIndexY) {
+										if (G_IndexSelectY == 3)
+											SpeedIOMeter_End();
+										G_IndexSelectY = NewIndexY;
+										if (G_IndexSelectY == 3)
+											SpeedIOMeter_Start();
+										UpdateSelection();
+									}
+									Input_Select();
+								}
+								case "Cancel" : {
+									SpeedIOMeter_End();
+									SendCustomEvent("SavePersistent", [""]);
+									SendCustomEvent("GotoPrevious", [""]);
+								}
+								case "AppMenu" : {
+									SpeedIOMeter_End();
+									SendCustomEvent("SavePersistent", [""]);
+									SendCustomEvent("GotoPrevious", [""]);
+								}
+							}
+						}
+						case CMlEvent::Type::MouseOver: {
+							UpdateLabelLight(Event.Control);
+							declare Text[] InputId = TL::Split("_", Event.ControlId);
+							if (InputId.count < 2 || InputId[0] != "MouseInput")
+								continue;
+							switch (InputId[1]) {
+								case "Setting" : { 
+									declare NewIndexY = TL::ToInteger(InputId[2]);
+									if (G_IndexSelectY == NewIndexY)
+										continue;
+									if (G_IndexSelectY == 3)
+										SpeedIOMeter_End();
+									G_IndexSelectY = NewIndexY;
+									if (G_IndexSelectY == 3)
+										SpeedIOMeter_Start();
+									Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+									UpdateSelection();
+								}
+								
+							}
+						}
+						case CMlEvent::Type::PluginCustomEvent: {
+							declare Page = Event.CustomEventData[0];
+							switch(Event.PluginCustomEventType) {
+								case "Show" : {
+									EnableMenuNavigation(True,False,Null,1);
+									ShowPage(Page);
+									//SendCustomEvent("GetSliderInfos", [""]);
+									SendCustomEvent("GetSwitchInfos", [""]);
+									SendCustomEvent("GetActiveButtonPlatform", ["Settings"]);
+									{{{_ShowAnim}}}
+								}
+								case "Hide" : {
+									{{{_HideAnim}}}
+									HidePage(Page);
+								}
+								case "SendSliderInfos" : {
+									declare Integer VolumeMusics = TL::ToInteger(Event.CustomEventData[0]);
+									declare Integer VolumeVoices = TL::ToInteger(Event.CustomEventData[1]);
+									declare Text Slider1 = G_InfoName[0];
+									declare Text Slider2 = G_InfoName[1];
+									G_IndexSettings[Slider1] = VolumeMusics;
+									G_IndexSettings[Slider2] = VolumeVoices;
+									UpdateAllLabels();
+								}
+								case "SendSwitchInfos" : {
+									declare Integer VolumeMusics = TL::ToInteger(Event.CustomEventData[0]);
+									declare Integer VolumeVoices = TL::ToInteger(Event.CustomEventData[1]);
+									declare Integer LightsState  = TL::ToInteger(Event.CustomEventData[2]);
+									declare Text Switch1 = G_InfoName[0];
+									declare Text Switch2 = G_InfoName[1];
+									declare Text Switch3 = G_InfoName[4];
+									G_IndexSettings[Switch1] = VolumeMusics;
+									G_IndexSettings[Switch2] = VolumeVoices;
+									G_IndexSettings[Switch3] = LightsState;
+									UpdateAllLabels();
+								}
+								case "SetActiveButtonPlatform" : {
+									G_ActiveButtonPlatform = TL::ToInteger(Event.CustomEventData[0]);
+									UpdateHelpersForPlatform(G_ActiveButtonPlatform);
+								}
+							}
+						}
+
+						case CMlEvent::Type::MenuNavigation: {
+							//G_LockInput = Now; // Sécurité pour éviter le double input
+							switch(Event.MenuNavAction) {
+								case CMlEvent::EMenuNavAction::Up : {
+									if(G_IndexSelectY > 0)
+									{
+										if (G_IndexSelectY == 3)
+											SpeedIOMeter_End();
+										G_IndexSelectY -= 1;
+										if (G_IndexSelectY == 3)
+											SpeedIOMeter_Start();
+										Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+										UpdateSelection();
+									}
+								}
+								case CMlEvent::EMenuNavAction::Down : {
+									if(G_IndexSelectY < {{{G_MenuSetting.count - 1}}})
+									{
+										if (G_IndexSelectY == 3)
+											SpeedIOMeter_End();
+										G_IndexSelectY += 1;
+										if (G_IndexSelectY == 3)
+											SpeedIOMeter_Start();
+										Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+										UpdateSelection();
+									}
+								}
+								case CMlEvent::EMenuNavAction::Left : {
+									if(G_InfoType[G_IndexSelectY] == "LayerBouton") continue;
+									//ModifParam("Left");
+									/*
+									if(G_IndexSelectX > 1)
+									{
+										G_IndexSelectX -= 1;
+										Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+									}
+									*/
+								}
+								case CMlEvent::EMenuNavAction::Right : {
+									if(G_InfoType[G_IndexSelectY] == "LayerBouton") continue;
+									//ModifParam("Right");
+								}
+								case CMlEvent::EMenuNavAction::Select : {
+									Input_Select();
+								}
+								case CMlEvent::EMenuNavAction::Cancel : {
+									SpeedIOMeter_End();
+									//SendCustomEvent("LaunchTransition", ["VideoBill2Main"]);
+									SendCustomEvent("SavePersistent", [""]);
+									SendCustomEvent("GotoPrevious", [""]);
+								}
+								case CMlEvent::EMenuNavAction::AppMenu : {
+									SpeedIOMeter_End();
+									//SendCustomEvent("LaunchTransition", ["VideoBill2Main"]);
+									SendCustomEvent("SavePersistent", [""]);
+									SendCustomEvent("GotoPrevious", [""]);
+								}
+								case CMlEvent::EMenuNavAction::Action2 : {
+									//SendCustomEvent("ConnectOnline", [""]);
+								}
+								/*
+								// cheat code
+								case CMlEvent::EMenuNavAction::Action1 : {
+									CheatCodeAction1Time += Period;
+									if(CheatCodeAction1Time >= 200) {
+										declare CMlFrame  Frame_Cheat <=> (Page.GetFirstChild("Frame_Cheat") as CMlFrame);
+										Frame_Cheat.Show();
+									}
+								}
+								*/
+							}
+							break;
+						}
+					}
+				}
+			}	
+		}
+		
+
+	--></script>
+	""";
+
+	return MLText;
+}

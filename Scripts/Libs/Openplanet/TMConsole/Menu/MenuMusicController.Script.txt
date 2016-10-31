@@ -1,0 +1,411 @@
+#Include "TextLib" as TL
+#Include "Libs/Openplanet/TMConsole/Menu/MenuLayers.Script.txt" 	as Layers
+#Include "Libs/Openplanet/TMConsole/Volumes.Script.txt" 			as Volumes
+
+// VOLUMES IN dB
+#Const C_MutedVolume				-100.
+#Const C_VolumeMusic 				-3.
+
+	
+#Const C_ChopperSoundId				"Chopper"
+#Const C_PeopleSoundId				"People"
+#Const C_RadioSoundId				"Radio"
+#Const C_ConstructionSoundId		"Construction"
+	
+#Const C_MusicPath					"file://Media/Sounds/TMConsole/Loops/"
+#Const C_SoundPath					"file://Media/Sounds/TMConsole/"
+
+#Const C_MusicMenuSimple 			"110 Pit Stop Twang - Original - Edit 1 Oct 2015.ogg"
+#Const C_MusicMenuSimple2 			"TMT_MENU_B1.ogg"
+#Const C_SoundMenuExit 				"110 Pit Stop Twang - Original Menu End Note.ogg"
+
+#Const C_SoundAmbChopper 			"chopper.ogg"
+#Const C_SoundAmbPeople 			"people.ogg"
+#Const C_SoundAmbRadio 				"amb-menu-online.ogg"
+#Const C_SoundAmbConstruction 		"amb-menu-editors.ogg"
+
+#Const C_SoundAmbCanyon				"amb-menu-env-canyon.ogg"
+//#Const C_SoundAmbValley			"amb-menu-env-valley.ogg"
+//#Const C_SoundAmbLagoon			"amb-menu-env-lagoon.ogg"
+//#Const C_SoundAmbStadium			"amb-menu-env-stadium.ogg"
+
+#Const C_LayerNameMusicManager		"LibTMC_LayerName_MusicManagerMenu"
+
+#Const C_Canyon		0
+#Const C_Valley		1
+#Const C_Lagoon		2
+#Const C_Stadium	3
+
+
+Void Private_CreateLayerMusicManagerMenu(Text _MusicPath) 
+{
+
+	declare Text MusicPath  = C_MusicPath^C_MusicMenuSimple;
+	declare Text MusicPath2 = C_MusicPath^C_MusicMenuSimple2;
+	if(_MusicPath!= "") MusicPath = _MusicPath;
+	
+	declare Text MLText = """
+		
+	<script><!--
+		#Include "TextLib" as TL
+		#Include "MathLib" as ML
+		#Const DebugName "L_MenuMusicControl"
+
+		declare CAudioSource 		G_Ambiance;
+		declare CAudioSource 		G_SFXChopper;
+		declare CAudioSource 		G_SFXPeople;
+		declare CAudioSource 		G_SFXRadio;
+		declare CAudioSource 		G_SFXConstruction;
+// HACK simple music	declare CAudioSourceMusic	 	G_Music; 
+		declare CAudioSource	 	G_Music;
+		declare CAudioSource	 	G_Music1;
+		declare CAudioSource	 	G_Music2;
+		declare CAudioSource	 	G_MusicEventEndNote;
+		
+		Void ResetSFX(Boolean _Play)
+		{
+			if(G_SFXChopper != Null && G_SFXPeople != Null && G_SFXRadio != Null && G_SFXConstruction != Null && G_Ambiance != Null)
+			{
+				G_Ambiance			.Stop();
+				G_SFXChopper		.Stop();
+				G_SFXPeople			.Stop();
+				G_SFXRadio			.Stop();
+				G_SFXConstruction	.Stop();
+				if(_Play)
+				{
+					G_Ambiance			.Play();
+					G_SFXChopper		.Play();
+					G_SFXPeople			.Play();
+					G_SFXRadio			.Play();
+					G_SFXConstruction	.Play();
+				}
+			}
+		}
+		
+		Void LoadSFX()
+		{
+			ResetSFX(False);
+			G_Ambiance 			= Audio.CreateSound("{{{C_SoundPath}}}{{{C_SoundAmbCanyon}}}", {{{Volumes::GetVolumedB("MenuAmbCanyon")}}}, False, True, False);
+			G_SFXChopper 		= Audio.CreateSound("{{{C_SoundPath}}}{{{C_SoundAmbChopper}}}", 0., False, True, True);
+			G_SFXPeople 		= Audio.CreateSound("{{{C_SoundPath}}}{{{C_SoundAmbPeople}}}", 0., False, True, True);
+			G_SFXRadio 			= Audio.CreateSound("{{{C_SoundPath}}}{{{C_SoundAmbRadio}}}", 0., False, True, True);
+			G_SFXConstruction 	= Audio.CreateSound("{{{C_SoundPath}}}{{{C_SoundAmbConstruction}}}", 0., False, True, True);
+			G_Ambiance			.Stop();
+			G_SFXChopper		.Play();
+			G_SFXPeople			.Play();
+			G_SFXRadio			.Play();
+			G_SFXConstruction	.Play();
+		}
+		
+		Void PreloadSounds()
+		{
+			LoadSFX();
+			
+			G_Music1 = Audio.CreateSound("{{{MusicPath}}}", {{{C_MutedVolume}}}, True, True, False);
+			G_Music2 = Audio.CreateSound("{{{MusicPath2}}}", {{{C_MutedVolume}}}, True, True, False);
+
+			//G_Music = G_Music1;
+			declare Rand = ML::Rand(0, 2);
+			if(Rand <= 1) G_Music = G_Music1;
+			else          G_Music = G_Music2;
+			G_Music.FadeDuration = .85;
+			G_MusicEventEndNote = Audio.CreateSound("{{{C_MusicPath^C_SoundMenuExit}}}", {{{C_MutedVolume}}}, True, False, False);
+		}
+		
+		Void MuteSFX() 
+		{
+			G_SFXChopper		.VolumedB = {{{C_MutedVolume}}};
+			G_SFXPeople			.VolumedB = {{{C_MutedVolume}}};
+			G_SFXRadio			.VolumedB = {{{C_MutedVolume}}};
+			G_SFXConstruction	.VolumedB = {{{C_MutedVolume}}};
+			G_Ambiance			.VolumedB = {{{C_MutedVolume}}};
+		}
+		
+		main() 
+		{
+			
+			PreloadSounds();
+			G_Music				.PanRadiusLfe 	= {{{Volumes::GetPanRadiusLfe("MusicMenu")}}};
+			G_MusicEventEndNote	.PanRadiusLfe 	= {{{Volumes::GetPanRadiusLfe("MusicMenu")}}};
+			G_SFXChopper		.PanRadiusLfe 	= {{{Volumes::GetPanRadiusLfe("MenuSFX")}}};
+			G_SFXPeople			.PanRadiusLfe 	= {{{Volumes::GetPanRadiusLfe("MenuSFX")}}};
+			G_SFXConstruction	.PanRadiusLfe 	= {{{Volumes::GetPanRadiusLfe("MenuSFX")}}};
+			G_Ambiance			.PanRadiusLfe 	= {{{Volumes::GetPanRadiusLfe("MenuAmbiance")}}};
+			
+			MuteSFX();
+			
+			while(True) 
+			{
+				yield;
+				if(!PageIsVisible) 
+					continue;
+				
+				foreach(Event in PendingEvents) 
+				{
+					switch(Event.Type)
+					{
+						case CMlEvent::Type::PluginCustomEvent: 
+						{
+							declare Text EventSetting;
+							if(Event.CustomEventData.existskey(0)) EventSetting = Event.CustomEventData[0];
+							switch(Event.PluginCustomEventType) 
+							{
+								
+								case "LoadSFX" : 
+								{
+									LoadSFX();
+								}
+								
+								case "SetTracks" : 
+								{	
+									//on reçoit toujours un tableau de type [0, ..., N] donc on active le segment N qui joue les tracks 0 à N
+									if (Event.CustomEventData.count > 0)
+									{
+
+										G_Music.FadeDuration = .85;
+										G_Music				.PanRadiusLfe 	= {{{Volumes::GetPanRadiusLfe("MusicMenu")}}};
+
+										G_Music.Play();
+									} else {
+										G_Music.Stop();
+									}
+								}
+
+								case "SetVolume" : 
+								{	
+									declare Volume = TL::ToReal(EventSetting);
+									G_Music.VolumedB = Volume;
+								}
+
+								case "SetVolumeSFX" : 
+								{	
+									declare Volume = 0.;
+									if(Event.CustomEventData.existskey(1)) Volume = TL::ToReal(Event.CustomEventData[1]);
+									
+									switch(EventSetting)
+									{
+										case "{{{C_ChopperSoundId}}}" 		: G_SFXChopper		.VolumedB = Volume; 
+										case "{{{C_PeopleSoundId}}}" 		: G_SFXPeople		.VolumedB = Volume; 
+										case "{{{C_RadioSoundId}}}" 		: G_SFXRadio		.VolumedB = Volume; 
+										case "{{{C_ConstructionSoundId}}}" 	: G_SFXConstruction	.VolumedB = Volume; 
+									}
+								}
+
+								case "SetPositionSFX" : 
+								{	
+									declare PosX = 0.;
+									declare PosY = 0.;
+									declare PosZ = 3.;
+									if(Event.CustomEventData.existskey(1)) PosX = TL::ToReal(Event.CustomEventData[1]);
+									if(Event.CustomEventData.existskey(2)) PosY = TL::ToReal(Event.CustomEventData[2]);
+									if(Event.CustomEventData.existskey(3)) PosZ = TL::ToReal(Event.CustomEventData[3]);
+									
+									switch(EventSetting)
+									{
+										case "{{{C_ChopperSoundId}}}" 		: G_SFXChopper		.RelativePosition = <PosX, PosY, PosZ>;
+										case "{{{C_PeopleSoundId}}}" 		: G_SFXPeople		.RelativePosition = <PosX, PosY, PosZ>;
+										case "{{{C_RadioSoundId}}}" 		: G_SFXRadio		.RelativePosition = <PosX, PosY, PosZ>;
+										case "{{{C_ConstructionSoundId}}}" 	: G_SFXConstruction	.RelativePosition = <PosX, PosY, PosZ>;
+									}
+								}
+
+								case "PlaySoundExit" : 
+								{
+									Audio.PlaySoundEvent(G_MusicEventEndNote, {{{Volumes::GetVolumedB("MenuEndNote")}}});
+									MuteSFX();
+									G_Music.Stop();
+								}
+								
+								case "PlayAmbiance" : 
+								{
+									if(!G_Ambiance.IsPlaying)
+										G_Ambiance.Play();
+								}
+
+
+
+								case "StopAmbiance" : 
+								{
+									if(G_Ambiance.IsPlaying)
+										G_Ambiance.Stop();
+								}
+
+
+								case "LPF" : 
+								{
+// HACK simple music				G_Music.HPF_CutoffRatio	= 1.;
+// HACK simple music				G_Music.LPF_CutoffRatio = Ratio;
+								}
+
+								case "NoFilter" :
+								{
+// HACK simple music				G_Music.LPF_CutoffRatio = 1.;
+// HACK simple music				G_Music.HPF_CutoffRatio = 1.;
+								}
+							}
+						}
+					}
+				} 
+			} // end while(true)
+		}
+
+	--></script>
+	""";
+	
+	Layers::Create(C_LayerNameMusicManager, MLText);
+	Layers::Attach(C_LayerNameMusicManager);
+}
+
+
+// Load the library
+Void Load(Text _MusicPath) 
+{
+	Private_CreateLayerMusicManagerMenu(_MusicPath);
+}
+
+Void Load() 
+{
+	Load("");
+}
+
+Void SendEventMusic(Text _EventType, Text[] _Parameters)
+{
+	declare Layer <=> Layers::Get(C_LayerNameMusicManager);
+	LayerCustomEvent(Layer, _EventType, _Parameters);
+}
+
+Void SendEventMusic(Text _EventType)
+{
+	SendEventMusic(_EventType, [""]);
+}
+
+Void MuteMenuSFX()
+{
+	SendEventMusic("SetVolumeSFX",[C_ChopperSoundId, 		""^C_MutedVolume]);
+	SendEventMusic("SetVolumeSFX",[C_PeopleSoundId, 		""^C_MutedVolume]);
+	SendEventMusic("SetVolumeSFX",[C_RadioSoundId, 			""^C_MutedVolume]);
+	SendEventMusic("SetVolumeSFX",[C_ConstructionSoundId,	""^C_MutedVolume]);
+}
+
+Void SetupMainMenuFilter(Integer _MainMenuScreenIndex)
+{
+	switch(_MainMenuScreenIndex)
+	{
+		case 0: 
+		{
+			SendEventMusic("NoFilter");
+			SendEventMusic("SetVolume", 	[""^Volumes::GetVolumedB							("MenuMusicOnline")]);
+			SendEventMusic("SetVolumeSFX",	[C_ChopperSoundId, ""^Volumes::GetVolumedB			("MenuChopperOnline")]);
+			SendEventMusic("SetPositionSFX",[C_ChopperSoundId, ""^Volumes::GetPosX				("MenuChopperOnline")]);
+			SendEventMusic("SetVolumeSFX",	[C_PeopleSoundId,  ""^Volumes::GetVolumedB			("MenuPeopleOnline")]);
+			SendEventMusic("SetPositionSFX",[C_PeopleSoundId,  ""^Volumes::GetPosX				("MenuPeopleOnline")]);
+			SendEventMusic("SetVolumeSFX",	[C_RadioSoundId,  ""^Volumes::GetVolumedB			("MenuRadioOnline")]);
+			SendEventMusic("SetPositionSFX",[C_RadioSoundId,  ""^Volumes::GetPosX				("MenuRadioOnline")]);
+			SendEventMusic("SetVolumeSFX",	[C_ConstructionSoundId,  ""^Volumes::GetVolumedB	("MenuConstructionOnline")]);
+			SendEventMusic("SetPositionSFX",[C_ConstructionSoundId,  ""^Volumes::GetPosX		("MenuConstructionOnline")]);
+		}
+		
+		case 1: 
+		{
+			SendEventMusic("LPF", 			[""^Volumes::GetLPF_CutoffRatio						("MenuMusicLocal")]);
+			SendEventMusic("SetVolume", 	[""^Volumes::GetVolumedB							("MenuMusicLocal")]);
+			SendEventMusic("SetVolumeSFX",	[C_ChopperSoundId, ""^Volumes::GetVolumedB			("MenuChopperLocal")]);
+			SendEventMusic("SetPositionSFX",[C_ChopperSoundId, ""^Volumes::GetPosX				("MenuChopperLocal")]);
+			SendEventMusic("SetVolumeSFX",	[C_PeopleSoundId,  ""^Volumes::GetVolumedB			("MenuPeopleLocal")]);
+			SendEventMusic("SetPositionSFX",[C_PeopleSoundId,  ""^Volumes::GetPosX				("MenuPeopleLocal")]);
+			SendEventMusic("SetVolumeSFX",	[C_RadioSoundId,  ""^Volumes::GetVolumedB			("MenuRadioLocal")]);
+			SendEventMusic("SetPositionSFX",[C_RadioSoundId,  ""^Volumes::GetPosX				("MenuRadioLocal")]);
+			SendEventMusic("SetVolumeSFX",	[C_ConstructionSoundId,  ""^Volumes::GetVolumedB	("MenuConstructionLocal")]);
+			SendEventMusic("SetPositionSFX",[C_ConstructionSoundId,  ""^Volumes::GetPosX		("MenuConstructionLocal")]);
+		}
+		
+		case 2: 
+		{
+			SendEventMusic("NoFilter");
+			SendEventMusic("SetVolume", 	[""^Volumes::GetVolumedB							("MenuMusicSolo")]);
+			SendEventMusic("SetVolumeSFX",	[C_ChopperSoundId, ""^Volumes::GetVolumedB			("MenuChopperSolo")]);
+			SendEventMusic("SetPositionSFX",[C_ChopperSoundId, ""^Volumes::GetPosX				("MenuChopperSolo")]);
+			SendEventMusic("SetVolumeSFX",	[C_PeopleSoundId,  ""^Volumes::GetVolumedB			("MenuPeopleSolo")]);
+			SendEventMusic("SetPositionSFX",[C_PeopleSoundId,  ""^Volumes::GetPosX				("MenuPeopleSolo")]);
+			SendEventMusic("SetVolumeSFX",	[C_RadioSoundId,  ""^Volumes::GetVolumedB			("MenuRadioSolo")]);
+			SendEventMusic("SetPositionSFX",[C_RadioSoundId,  ""^Volumes::GetPosX				("MenuRadioSolo")]);
+			SendEventMusic("SetVolumeSFX",	[C_ConstructionSoundId,  ""^Volumes::GetVolumedB	("MenuConstructionSolo")]);
+			SendEventMusic("SetPositionSFX",[C_ConstructionSoundId,  ""^Volumes::GetPosX		("MenuConstructionSolo")]);
+		}
+		
+		case 3: 
+		{
+			SendEventMusic("NoFilter");
+			SendEventMusic("SetVolume", 	[""^Volumes::GetVolumedB							("MenuMusicEditor")]);
+			SendEventMusic("SetVolumeSFX",	[C_ChopperSoundId, ""^Volumes::GetVolumedB			("MenuChopperEditor")]);
+			SendEventMusic("SetPositionSFX",[C_ChopperSoundId, ""^Volumes::GetPosX				("MenuChopperEditor")]);
+			SendEventMusic("SetVolumeSFX",	[C_PeopleSoundId,  ""^Volumes::GetVolumedB			("MenuPeopleEditor")]);
+			SendEventMusic("SetPositionSFX",[C_PeopleSoundId,  ""^Volumes::GetPosX				("MenuPeopleEditor")]);
+			SendEventMusic("SetVolumeSFX",	[C_RadioSoundId,  ""^Volumes::GetVolumedB			("MenuRadioEditor")]);
+			SendEventMusic("SetPositionSFX",[C_RadioSoundId,  ""^Volumes::GetPosX				("MenuRadioEditor")]);
+			SendEventMusic("SetVolumeSFX",	[C_ConstructionSoundId,  ""^Volumes::GetVolumedB	("MenuConstructionEditor")]);
+			SendEventMusic("SetPositionSFX",[C_ConstructionSoundId,  ""^Volumes::GetPosX		("MenuConstructionEditor")]);
+		}
+		
+		default: 
+		{
+			SendEventMusic("NoFilter");
+			SendEventMusic("SetVolume", 	[""^Volumes::GetVolumedB							("MenuMusicDefault")]);			
+			SendEventMusic("SetVolumeSFX",	[C_ChopperSoundId, 		""^C_MutedVolume]);
+			SendEventMusic("SetVolumeSFX",	[C_PeopleSoundId,  		""^C_MutedVolume]);
+			SendEventMusic("SetVolumeSFX",	[C_RadioSoundId,  		""^C_MutedVolume]);
+			SendEventMusic("SetVolumeSFX",	[C_ConstructionSoundId, ""^C_MutedVolume]);
+		}
+	}
+}
+
+Void SetupNoFilters() {
+	SetupMainMenuFilter(-1);
+}
+
+
+Void PlayPageAmbiance(Text _PageName) {
+	if(_PageName != "Main") {
+		SetupNoFilters();
+	}
+	
+	switch(_PageName)
+	{
+		case "StartDemo":
+		{
+			SendEventMusic("StopAmbiance");
+		}
+		case "Intro":
+		{
+			declare Text[] None; 
+			SendEventMusic("SetTracks", None);  // coupe la musique pour avoir le fade quan on la rallume.
+			SendEventMusic("StopAmbiance");
+		}
+		case "Main":
+		{
+			SendEventMusic("SetTracks", ["0"]);
+			SendEventMusic("PlayAmbiance");
+		}
+		case "MapsOverview":
+		{
+			SendEventMusic("SetVolume", [""^Volumes::GetVolumedB("MenuMusicMapsOverview")]);
+			SendEventMusic("SetTracks", ["0","1","2"]);
+		}
+		
+		case "BrowseTracks":
+		{
+			SendEventMusic("SetVolume", [""^Volumes::GetVolumedB("MenuMusicBrowseTracks")]);
+			SendEventMusic("SetTracks", ["0","1","2","3"]); // EG : si on ne met pas le 3, on n'a pas les cuivres :)
+		}
+		case "BadgeEditor":
+		{
+			SendEventMusic("SetVolume", [""^Volumes::GetVolumedB("EditorMusic")]);
+			SendEventMusic("SetTracks",["0"]);
+		}
+		default:
+		{
+			SendEventMusic("SetVolume", [""^Volumes::GetVolumedB("MenuMusicDefault")]);
+			SendEventMusic("SetTracks",["0"]);
+		}
+	}
+}

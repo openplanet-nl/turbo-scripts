@@ -1,0 +1,403 @@
+/** 
+ * Simple choice UI
+ */
+
+#Const Version		"2016-03-14"
+#Const ScriptName	"SimpleChoice.Script.txt"
+
+#Include "Libs/Openplanet/Buttons.Script.txt" as Buttons
+#Include "Libs/Openplanet/MLEffects.Script.txt" as MLE
+#Include "Libs/Openplanet/Manialink3.Script.txt" as Manialink
+#Include "Libs/Openplanet/TMConsole/MapEditor/Layers.Script.txt" as Layers
+#Include "Libs/Openplanet/TMConsole/MapEditor/UI/Colors.Script.txt" as Colors
+#Include "Libs/Openplanet/TMConsole/MapEditor/UI/Stylesheet.Script.txt" as Styles
+
+// ---------------------------------- //
+// Constants
+// ---------------------------------- //
+#Const C_Style_Default	0
+#Const C_Style_Compact	1
+#Const C_NotClickable	-1	///< Not clickable option
+#Const C_BgAnim False	///< Anim button background on mouse over/out
+#Const C_Event_Click	"LibSimpleChoice_Click"
+
+// ---------------------------------- //
+// Functions
+// ---------------------------------- //
+// ---------------------------------- //
+// Private
+// ---------------------------------- //
+// ---------------------------------- //
+/** Get the simple choice manialink
+ *
+ *	@return						The manialink
+ */
+Text Private_GetSimpleChoiceML() {
+	declare Default_ChoiceSizeX = Styles::GetHeaderSize2() + 4.;
+	declare Default_OptionSize = 15.;
+	declare Default_OptionSizeSmall = (Default_ChoiceSizeX - 4.) / 4.;
+	declare Compact_ChoiceSizeX = 20.;
+	declare Compact_OptionSize = 9.;
+	declare ButtonSize = 0.95;
+	
+	return """
+<manialink version="3" name="MapEditor:SimpleChoice">
+<stylesheet>
+	{{{Styles::Get()}}}
+</stylesheet>
+<framemodel id="Framemodel_Option">
+	{{{Styles::BuildLine(<0., 0., 0.>, <Default_OptionSize, 1.>, Styles::CircleSize_Bottom(), Styles::Align_RightTop(), Colors::Color_Black(), True, True, ["scriptevents" => "1", MLE::Data_Triggers() => "B1", "class" => MLE::ML_Class(), "id" => "Quad_Select"])}}}
+	{{{Styles::BuildButton("", <-0.5, -0.5, 2.>, <ButtonSize, ButtonSize>, Styles::CircleSize_Bottom(), Styles::Align_CenterCenter(), ["id" => "Quad_Icon"])}}}
+	{{{Styles::BuildLabel(<-1., -0.5, 1.>, <Default_OptionSize-1., 1.>, Styles::CircleSize_Bottom(), Styles::Align_RightCenter2(), [MLE::Data_Effects() => """B1:{{{MLE::Effect_LabelHover()}}}""", "class" => """turbo2-text-button {{{MLE::ML_Class()}}}""", "id" => "Label_Option"])}}}
+</framemodel>
+<framemodel id="Framemodel_OptionSmall">
+	{{{Styles::BuildLine(<0., 0., 0.>, <Default_OptionSizeSmall, 1.>, Styles::CircleSize_Bottom(), Styles::Align_RightTop(), Colors::Color_Black(), True, True, ["scriptevents" => "1", MLE::Data_Triggers() => "B2", "class" => MLE::ML_Class(), "id" => "Quad_Select"])}}}
+	{{{Styles::BuildButton("", <-0.5, -0.5, 2.>, <ButtonSize, ButtonSize>, Styles::CircleSize_Bottom(), Styles::Align_CenterCenter(), ["id" => "Quad_Icon"])}}}
+	{{{Styles::BuildLabel(<-1., -0.5, 1.>, <Default_OptionSizeSmall-1., 1.>, Styles::CircleSize_Bottom(), Styles::Align_RightCenter2(), [MLE::Data_Effects() => """B2:{{{MLE::Effect_LabelHover()}}}""", "class" => """turbo2-text-button {{{MLE::ML_Class()}}}""", "id" => "Label_Option"])}}}
+</framemodel>
+<framemodel id="Framemodel_OptionCompact">
+	{{{Styles::BuildLine(<0., 0., 0.>, <Compact_OptionSize, 1.>, Styles::CircleSize_Bottom(), Styles::Align_RightTop(), Colors::Color_Black(), True, True, ["scriptevents" => "1", MLE::Data_Triggers() => "B3", "class" => MLE::ML_Class(), "id" => "Quad_Select"])}}}
+	{{{Styles::BuildButton("", <-0.5, -0.5, 2.>, <ButtonSize, ButtonSize>, Styles::CircleSize_Bottom(), Styles::Align_CenterCenter(), ["id" => "Quad_Icon"])}}}
+	{{{Styles::BuildLabel(<-1., -0.5, 1.>, <Compact_OptionSize-1., 1.>, Styles::CircleSize_Bottom(), Styles::Align_RightCenter2(), [MLE::Data_Effects() => """B3:{{{MLE::Effect_LabelHover()}}}""", "class" => """turbo2-text-button {{{MLE::ML_Class()}}}""", "id" => "Label_Option"])}}}
+</framemodel>
+<frame z-index="1" id="Frame_Global">
+	<frame pos="0 -92" hidden="1" id="Frame_SimpleChoice">
+		<frame id="Frame_Style_Default">
+			{{{Styles::BuildBackground(<0., 0., 0.>, <Default_ChoiceSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_CenterTop())}}}
+			<frame z-index="1" id="Frame_Big">
+				<frameinstance {{{Styles::BuildPosition2(Styles::GetPosition2(<Default_ChoiceSizeX*0.5, 0., 0.>, Styles::CircleSize_Bottom()))}}} modelid="Framemodel_Option" class="{{{MLE::ML_Class()}}}" {{{MLE::Data_Group()}}}="C1" />
+				<frameinstance {{{Styles::BuildPosition2(Styles::GetPosition2(<Default_ChoiceSizeX*0.5-Default_OptionSize-1., 0., 0.>, Styles::CircleSize_Bottom()))}}} modelid="Framemodel_Option" class="{{{MLE::ML_Class()}}}" {{{MLE::Data_Group()}}}="C2" />
+			</frame>
+			<frame z-index="2" id="Frame_Small">
+				<frameinstance {{{Styles::BuildPosition2(Styles::GetPosition2(<Default_ChoiceSizeX*0.5, 0., 0.>, Styles::CircleSize_Bottom()))}}} modelid="Framemodel_OptionSmall" class="{{{MLE::ML_Class()}}}" {{{MLE::Data_Group()}}}="C3" />
+				<frameinstance {{{Styles::BuildPosition2(Styles::GetPosition2(<Default_ChoiceSizeX*0.5-Default_OptionSizeSmall-1., 0., 0.>, Styles::CircleSize_Bottom()))}}} modelid="Framemodel_OptionSmall" class="{{{MLE::ML_Class()}}}" {{{MLE::Data_Group()}}}="C4" />
+				<frameinstance {{{Styles::BuildPosition2(Styles::GetPosition2(<Default_ChoiceSizeX*0.5-Default_OptionSizeSmall*2.-2., 0., 0.>, Styles::CircleSize_Bottom()))}}} modelid="Framemodel_OptionSmall" class="{{{MLE::ML_Class()}}}" {{{MLE::Data_Group()}}}="C5" />
+				<frameinstance {{{Styles::BuildPosition2(Styles::GetPosition2(<Default_ChoiceSizeX*0.5-Default_OptionSizeSmall*3.-3., 0., 0.>, Styles::CircleSize_Bottom()))}}} modelid="Framemodel_OptionSmall" class="{{{MLE::ML_Class()}}}" {{{MLE::Data_Group()}}}="C6" />
+			</frame>
+		</frame>
+		<frame scale="2.2" id="Frame_Style_Compact">
+			{{{Styles::BuildBackground(<0., 0., 0.>, <Compact_ChoiceSizeX, 2.>, Styles::CircleSize_Bottom(), Styles::Align_CenterTop())}}}
+			<frame z-index="1" id="Frame_Message">
+				{{{Styles::BuildLine(<0., 0., 1.>, <Compact_ChoiceSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_CenterTop(), Colors::Color_Purple(), True, True, ["id" => "Quad_Header"])}}}
+				{{{Styles::BuildLabel(<0., -0.45, 2.>, <Compact_ChoiceSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_CenterCenter2(), [
+					//L16N [MapEditor] Title of a pop-up asking the player to choose something to do
+					"class" => "turbo2-text-title", "text" => _("What do you want to do?")
+				])}}}
+			</frame>
+			<frame z-index="2" id="Frame_Big">
+				<frameinstance {{{Styles::BuildPosition2(Styles::GetPosition2(<Compact_ChoiceSizeX*0.5, -1., 0.>, Styles::CircleSize_Bottom()))}}} modelid="Framemodel_OptionCompact" class="{{{MLE::ML_Class()}}}" {{{MLE::Data_Group()}}}="C7" />
+				<frameinstance {{{Styles::BuildPosition2(Styles::GetPosition2(<Compact_ChoiceSizeX*0.5-Compact_OptionSize-1., -1., 0.>, Styles::CircleSize_Bottom()))}}} modelid="Framemodel_OptionCompact" class="{{{MLE::ML_Class()}}}" {{{MLE::Data_Group()}}}="C8" />
+			</frame>
+			<frame z-index="3" id="Frame_Small">
+			</frame>
+		</frame>
+	</frame>
+</frame>
+<script><!--
+{{{Manialink::DefaultIncludes()}}}
+{{{MLE::ML_Includes()}}}
+
+{{{Manialink::Animations(["EaseOutQuad"])}}}
+{{{Manialink::Function("AnimRepeat")}}}
+{{{Buttons::ML_Functions()}}}
+{{{MLE::ML_Functions()}}}
+
+Void SetOptions(Text[Text] _Options, Integer[] _Events, Integer _Style) {
+	declare Options = Text[];
+	declare Icons = Text[];
+	foreach (Icon => Option in _Options) {
+		Options.add(Option);
+		Icons.add(Icon);
+	}
+	
+	declare CMlFrame Frame_Style;
+	declare Frame_Style_Default <=> (Page.GetFirstChild("Frame_Style_Default") as CMlFrame);
+	declare Frame_Style_Compact <=> (Page.GetFirstChild("Frame_Style_Compact") as CMlFrame);
+	if (_Style == {{{C_Style_Default}}}) {
+		Frame_Style <=> Frame_Style_Default;
+		Frame_Style_Default.Visible = True;
+		Frame_Style_Compact.Visible = False;
+	} else {
+		Frame_Style <=> Frame_Style_Compact;
+		Frame_Style_Default.Visible = False;
+		Frame_Style_Compact.Visible = True;
+	}
+	
+	declare CMlFrame Frame_Options;
+	declare Frame_Big <=> (Frame_Style.GetFirstChild("Frame_Big") as CMlFrame);
+	declare Frame_Small <=> (Frame_Style.GetFirstChild("Frame_Small") as CMlFrame);
+	if (_Options.count <= 2) {
+		Frame_Big.Visible = True;
+		Frame_Small.Visible = False;
+		Frame_Options <=> Frame_Big;
+	} else {
+		Frame_Big.Visible = False;
+		Frame_Small.Visible = True;
+		Frame_Options <=> Frame_Small;
+	}
+	
+	foreach (Key => Control in Frame_Options.Controls) {
+		declare Frame_Option <=> (Control as CMlFrame);
+		
+		if (Options.existskey(Key) && Options[Key] != "") {
+			declare Quad_Icon <=> (Frame_Option.GetFirstChild("Quad_Icon") as CMlQuad);
+			declare Label_Option <=> (Frame_Option.GetFirstChild("Label_Option") as CMlLabel);
+			declare Control_Select <=> (Frame_Option.GetFirstChild("Quad_Select"));
+			declare Quad_Select <=> (Control_Select as CMlQuad);
+			LibButtons_SetAction(Quad_Icon, Icons[Key]);
+			Label_Option.Value = Options[Key];
+			Frame_Option.Visible = True;
+			
+			declare EventKey for Quad_Select = {{{C_NotClickable}}};
+			if (_Events.existskey(Key)) EventKey = _Events[Key];
+			else EventKey = {{{C_NotClickable}}};
+			LibMLEffects_EnableTriggers(Control_Select, EventKey != {{{C_NotClickable}}});
+		} else {
+			Frame_Option.Visible = False;
+		}
+	}
+}
+
+Void SetVisibility(Boolean _Visible) {
+	if (_Visible) {
+		declare L_PositionY for Page = 0.;
+		LibManialink_Anim("<frame pos=\"0 "^L_PositionY^"\" hidden=\"0\" id=\"Frame_SimpleChoice\" />", 250, "EaseOutQuad");
+	} else {
+		LibManialink_Anim({{{Manialink::Inject("""<frame pos="0 -92" hidden="1" id="Frame_SimpleChoice" />""")}}}, 250, "EaseOutQuad");
+	}
+}
+
+main() {
+	declare L_OptionsUpdate for Page = -1;
+	declare L_Options for Page = Text[Text];
+	declare L_Events for Page = Integer[];
+	declare L_Visibility for Page = False;
+	declare L_PositionY for Page = 0.;
+	declare L_Style for Page = {{{C_Style_Default}}};
+	
+	declare PrevOptionsUpdate = -1;
+	declare PrevVisibility = False;
+	declare PrevPositionY = -1.;
+	declare PrevStyle = -1;
+	
+	LibButtons_Init();
+  LibMLEffects_Init();
+	
+	while (True) {
+		yield;
+		
+		LibManialink_AnimLoop();
+		LibButtons_Loop();
+    LibMLEffects_Loop();
+		
+		if (PrevOptionsUpdate != L_OptionsUpdate || PrevStyle != L_Style) {
+			PrevOptionsUpdate = L_OptionsUpdate;
+			PrevStyle = L_Style;
+			SetOptions(L_Options, L_Events, L_Style);
+		}
+		
+		if (PrevVisibility != L_Visibility) {
+			PrevVisibility = L_Visibility;
+			SetVisibility(L_Visibility);
+		}
+		
+		if (PrevPositionY != L_PositionY) {
+			PrevPositionY = L_PositionY;
+			SetVisibility(L_Visibility);
+		}
+		
+		foreach (Event in PendingEvents) {
+			if (Event.Type == CMlEvent::Type::MouseClick) {
+				if (Event.Control != Null && Event.ControlId == "Quad_Select") {
+					declare EventKey for Event.Control = {{{C_NotClickable}}};
+					SendCustomEvent("{{{C_Event_Click}}}", [""^EventKey]);
+				}
+			} else if (Event.Type == CMlEvent::Type::MouseOut) {
+				if (Event.Control != Null && Event.ControlId == "Quad_Select") {
+					if ({{{C_BgAnim}}}) LibManialink_Anim(
+						(Event.Control as CMlQuad),
+						{{{Manialink::Inject("""<quad colorize="{{{Colors::GetColorML(Colors::Color_Black())}}}" />""")}}},
+						250,
+						"EaseOutQuad"
+					);
+				}
+			} else if (Event.Type == CMlEvent::Type::MouseOver) {
+				if (Event.Control != Null && Event.ControlId == "Quad_Select") {
+					// Check Event only for mouse over and always allow mouse out
+					declare EventKey for Event.Control = {{{C_NotClickable}}};
+					if (EventKey != {{{C_NotClickable}}}) {
+						if ({{{C_BgAnim}}}) LibManialink_Anim(
+							(Event.Control as CMlQuad),
+							{{{Manialink::Inject("""<quad colorize="{{{Colors::GetColorML(Colors::Color_Red())}}}" />""")}}},
+							250,
+							"EaseOutQuad"
+						);
+					}
+				}
+			}
+		}
+	}
+}
+--></script>
+</manialink>
+""";
+}
+
+// ---------------------------------- //
+// Public
+// ---------------------------------- //
+// ---------------------------------- //
+/** Return the version number of the script
+ *
+ *	@return							The version number of the script
+ */
+Text GetScriptVersion() {
+	return Version;
+}
+
+// ---------------------------------- //
+/** Return the name of the script
+ *
+ *	@return							The name of the script
+ */
+Text GetScriptName() {
+	return ScriptName;
+}
+
+// ---------------------------------- //
+/// Get the options constants
+Integer Option_NotClickable() { return C_NotClickable; }
+
+// ---------------------------------- //
+/// Get the events constants
+Text Event_Click() { return C_Event_Click; }
+
+// ---------------------------------- //
+/** Set the events generated by a click on an option
+ *
+ *	@param	_Events					The event to generate for each option
+ */
+Void SetEvents(Integer[] _Events) {
+	declare Page <=> Layers::Get("SimpleChoice").LocalPage;
+	declare L_OptionsUpdate for Page = -1;
+	declare L_Events for Page = Integer[];
+	L_Events = _Events;
+	L_OptionsUpdate = Now;
+}
+
+// ---------------------------------- //
+/** Set options text and icons
+ *
+ *	@param	_Options				The options to display and their associated icon
+ *	@param	_Events					The event to generate for each option
+ */
+Void SetOptions(Text[Text] _Options, Integer[] _Events) {
+	declare Page <=> Layers::Get("SimpleChoice").LocalPage;
+	declare L_OptionsUpdate for Page = -1;
+	declare L_Options for Page = Text[Text];
+	L_Options = _Options;
+	L_OptionsUpdate = Now;
+	
+	SetEvents(_Events);
+}
+
+// ---------------------------------- //
+/// Overload SetOptions()
+Void SetOptions(Text[Text] _Options) {
+	SetOptions(_Options, Integer[]);
+}
+
+// ---------------------------------- //
+/** Set the position of the UI
+ *
+ *	@param	_PositionY				The position
+ */
+Void SetPositionY(Real _PositionY) {
+	declare Page <=> Layers::Get("SimpleChoice").LocalPage;
+	declare L_PositionY for Page = 0.;
+	L_PositionY = _PositionY;
+}
+
+// ---------------------------------- //
+/// Get the styles constants
+Integer Style_Default() { return C_Style_Default; }
+Integer Style_Compact() { return C_Style_Compact; }
+
+// ---------------------------------- //
+/** Select a style for the UI
+ *
+ *	@param	_Style					The style to use
+ */
+Void SetStyle(Integer _Style) {
+	declare Page <=> Layers::Get("SimpleChoice").LocalPage;
+	declare L_Style for Page = C_Style_Default;
+	L_Style = _Style;
+}
+
+// ---------------------------------- //
+/** Check if the simple choice UI is visible
+ *
+ *	@return							True if the UI is visible, False otherwise
+ */
+Boolean IsVisible() {
+	declare Page <=> Layers::Get("SimpleChoice").LocalPage;
+	declare L_Visibility for Page = False;
+	return L_Visibility;
+}
+
+// ---------------------------------- //
+/** Set the simple choice visibility
+ *
+ *	@param	_Visible			Show the simple choice if True
+ */
+Void SetVisibility(Boolean _Visible) {
+	declare Page <=> Layers::Get("SimpleChoice").LocalPage;
+	declare L_Visibility for Page = False;
+	L_Visibility = _Visible;
+}
+
+// ---------------------------------- //
+/// Show the simple choice
+Void Show() {
+	SetVisibility(True);
+}
+
+// ---------------------------------- //
+/// Hide the simple choice
+Void Hide() {
+	SetVisibility(False);
+}
+
+// ---------------------------------- //
+/// Unload the library
+Void Unload() {
+	Layers::Destroy("SimpleChoice");
+	//Layers::Unload();
+}
+
+// ---------------------------------- //
+/// Load the library
+Void Load() {
+	Unload();
+	
+	//Layers::Load();
+	Buttons::Load();
+	declare LayerSimpleChoice <=> Layers::Create("SimpleChoice");
+	LayerSimpleChoice.ManialinkPage = Private_GetSimpleChoiceML();
+	Buttons::Unload();
+	
+	declare Page <=> LayerSimpleChoice.LocalPage;
+	declare L_OptionsUpdate for Page = -1;
+	declare L_Options for Page = Text[Text];
+	declare L_Events for Page = Integer[];
+	declare L_Visibility for Page = False;
+	declare L_PositionY for Page = 0.;
+	declare L_Style for Page = C_Style_Default;
+	
+	L_OptionsUpdate = -1;
+	L_Options.clear();
+	L_Events.clear();
+	L_Visibility = False;
+	L_PositionY = -90. + Styles::GetSize2(<0., 8.>, Styles::CircleSize_Bottom()).Y;
+	L_Style = C_Style_Default;
+}

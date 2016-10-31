@@ -1,0 +1,763 @@
+/** 
+ * Map editor UI stylesheet
+ */
+
+#Const Version		"2016-03-03"
+#Const ScriptName	"Stylesheet.Script.txt"
+
+#Include "TextLib" as TL
+#Include "MathLib" as ML
+#Include "Libs/Openplanet/Buttons.Script.txt" as Buttons
+#Include "Libs/Openplanet/TMConsole/FontManager.Script.txt" as Font
+#Include "Libs/Openplanet/TMConsole/MapEditor/UI/Colors.Script.txt" as Colors
+
+// ---------------------------------- //
+// Constants
+// ---------------------------------- //
+#Const C_DefaultSize		<1024., 80.>	///< Size of the background image (in px)
+#Const C_DefaultTopMargin	11.				///< Margin at the top of the background image (in px)
+#Const C_DefaultSideMargin	1.				///< Margin on the sides of the background image (in px)
+#Const C_DefaultTextPadding	20.				///< Padding on text label (in px)
+#Const C_DefaultCirclesNb	15				///< Number of circles in the background image
+#Const C_ManialinkRatio		0.1666666667	///< Pixel ratio between source image and manialink size (320. / 1920.)
+#Const C_DefaultCircleRatio	0.45			///< Default multiplier on the circle size
+#Const C_DefaultLabelMargin	0.25			///< Default margin size (circle size ratio)
+#Const C_DefaultQuadMargin	0.1				///< Default margin size (circle size ratio)
+#Const C_DefaultBackgroundImage "file://Media/Images/TMConsole/Ingame/slot-medium-bg-color.dds"	///< Default background image
+#Const C_DefaultForegroundImage	"file://Media/Images/TMConsole/Ingame/slot-medium-fg.dds" ///< Default foreground image
+// Default UI properties
+#Const C_HeaderSize			48
+#Const C_Margin_Top			80.
+#Const C_Margin_Bottom		-77.
+/// Alignements
+#Const C_Align_LeftTop			0
+#Const C_Align_LeftCenter		1
+#Const C_Align_LeftCenter2		2
+#Const C_Align_LeftBottom		3
+#Const C_Align_CenterTop		4
+#Const C_Align_CenterCenter		5
+#Const C_Align_CenterCenter2	6
+#Const C_Align_CenterBottom		7
+#Const C_Align_RightTop			8
+#Const C_Align_RightCenter		9
+#Const C_Align_RightCenter2		10
+#Const C_Align_RightBottom		11
+/// Default circles sizes
+#Const C_CircleSize_Top		0.414
+#Const C_CircleSize_Bottom	0.420
+
+// ---------------------------------- //
+// Functions
+// ---------------------------------- //
+// ---------------------------------- //
+// Private
+// ---------------------------------- //
+// ---------------------------------- //
+/** Get the size of one circle
+ *
+ *	@return							The size of one circle
+ */
+Vec2 Private_GetCircleSize2() {
+	return <(C_DefaultSize.X / C_DefaultCirclesNb), C_DefaultSize.Y> * C_ManialinkRatio;
+}
+
+// ---------------------------------- //
+/** Get the size of the margin at the top of the background
+ *
+ *	@return							The margin
+ */
+Real Private_GetTopMargin() {
+	return C_DefaultTopMargin * C_ManialinkRatio;
+}
+
+// ---------------------------------- //
+/** Get the size of the margin on the sides of the background
+ *
+ *	@return							The margin
+ */
+Real Private_GetSideMargin() {
+	return C_DefaultSideMargin * C_ManialinkRatio;
+}
+
+// ---------------------------------- //
+/** Get the size of the padding on the sides of the texts
+ *
+ *	@return							The padding
+ */
+Real Private_GetTextPadding() {
+	return C_DefaultTextPadding * C_ManialinkRatio;
+}
+
+// ---------------------------------- //
+/** Check if the element is horizontal left align
+ *
+ *	@param	_Align					The alignement to check
+ *
+ *	@return							True if it's horizontal left align, False otherwise
+ */
+Boolean Private_IsHorizontalLeftAlign(Integer _Align) {
+	return (
+		_Align == C_Align_LeftTop ||
+		_Align == C_Align_LeftCenter ||
+		_Align == C_Align_LeftCenter2 ||
+		_Align == C_Align_LeftBottom
+	);
+}
+
+// ---------------------------------- //
+/** Check if the element is horizontal center align
+ *
+ *	@param	_Align					The alignement to check
+ *
+ *	@return							True if it's horizontal center align, False otherwise
+ */
+Boolean Private_IsHorizontalCenterAlign(Integer _Align) {
+	return (
+		_Align == C_Align_CenterTop ||
+		_Align == C_Align_CenterCenter ||
+		_Align == C_Align_CenterCenter2 ||
+		_Align == C_Align_CenterBottom
+	);
+}
+
+// ---------------------------------- //
+/** Check if the element is horizontal right align
+ *
+ *	@param	_Align					The alignement to check
+ *
+ *	@return							True if it's horizontal right align, False otherwise
+ */
+Boolean Private_IsHorizontalRightAlign(Integer _Align) {
+	return (
+		_Align == C_Align_RightTop ||
+		_Align == C_Align_RightCenter ||
+		_Align == C_Align_RightCenter2 ||
+		_Align == C_Align_RightBottom
+	);
+}
+
+// ---------------------------------- //
+/** Check if the element is vertical top align
+ *
+ *	@param	_Align					The alignement to check
+ *
+ *	@return							True if it's vertical top align, False otherwise
+ */
+Boolean Private_IsVerticalTopAlign(Integer _Align) {
+	return (
+		_Align == C_Align_LeftTop ||
+		_Align == C_Align_CenterTop ||
+		_Align == C_Align_RightTop
+	);
+}
+
+// ---------------------------------- //
+/** Check if the element is vertical center align
+ *
+ *	@param	_Align					The alignement to check
+ *
+ *	@return							True if it's vertical center align, False otherwise
+ */
+Boolean Private_IsVerticalCenterAlign(Integer _Align) {
+	return (
+		_Align == C_Align_LeftCenter ||
+		_Align == C_Align_LeftCenter2 ||
+		_Align == C_Align_CenterCenter ||
+		_Align == C_Align_CenterCenter2 ||
+		_Align == C_Align_RightCenter ||
+		_Align == C_Align_RightCenter2
+	);
+}
+
+// ---------------------------------- //
+/** Check if the element is vertical bottom align
+ *
+ *	@param	_Align					The alignement to check
+ *
+ *	@return							True if it's vertical bottom align, False otherwise
+ */
+Boolean Private_IsVerticalBottomAlign(Integer _Align) {
+	return (
+		_Align == C_Align_LeftBottom ||
+		_Align == C_Align_CenterBottom ||
+		_Align == C_Align_RightBottom
+	);
+}
+
+// ---------------------------------- //
+// Public
+// ---------------------------------- //
+// ---------------------------------- //
+/** Return the version number of the script
+ *
+ *	@return							The version number of the script
+ */
+Text GetScriptVersion() {
+	return Version;
+}
+
+// ---------------------------------- //
+/** Return the name of the script
+ *
+ *	@return							The name of the script
+ */
+Text GetScriptName() {
+	return ScriptName;
+}
+
+// ---------------------------------- //
+/** Return the styles for the map editor UI
+ *
+ *	@return							The styles
+ */
+Text Get() {
+	declare FontMain = Font::GetFontName("Main");
+	declare FontMainSmall = Font::GetFontName("MainSmall");
+	declare FontMainSmall2 = Font::GetFontName("MainSmall2");
+	
+	declare SelectorImage = "file://Media/Images/TMConsole/MapEditor/Menu/selector.dds";
+	declare SelectorWideImage = "file://Media/Images/TMConsole/MapEditor/Menu/selector-wide.dds";
+	declare ScreenOverlay = "file://Media/Images/TMConsole/Ingame/rewards-bg.dds";
+	declare ScreenValidation = "file://Media/Images/TMConsole/Ingame/rewards-validation.dds";
+	
+	return """
+<style class="turbo2-text-title-big" textfont="{{{FontMain}}}" textsize="8" textcolor="{{{Colors::GetColorML(Colors::Color_White())}}}" textprefix="$t" />
+<style class="turbo2-text-title" textfont="{{{FontMain}}}" textsize="2" textcolor="{{{Colors::GetColorML(Colors::Color_White())}}}" textprefix="$t" />
+<style class="turbo2-text-category" textfont="{{{FontMainSmall}}}" textsize="2" textcolor="{{{Colors::GetColorML(Colors::Color_Black())}}}" />
+<style class="turbo2-text-helper" textfont="{{{FontMainSmall}}}" textsize="4" textcolor="{{{Colors::GetColorML(Colors::Color_White())}}}" textemboss="1" />
+<style class="turbo2-text-legend" textfont="{{{FontMainSmall2}}}" textsize="1" autonewline="1" maxline="7" textcolor="{{{Colors::GetColorML(Colors::Color_White())}}}" />
+<style class="turbo2-text-rosace" textfont="{{{FontMain}}}" textemboss="1" textcolor="{{{Colors::GetColorML(Colors::Color_White())}}}" textprefix="$t" />
+<style class="turbo2-text-pager" textfont="{{{FontMain}}}" textsize="5" textemboss="1" textcolor="{{{Colors::GetColorML(Colors::Color_White())}}}" textprefix="$t" />
+<style class="turbo2-text-button" textfont="{{{FontMainSmall2}}}" textsize="2" textcolor="{{{Colors::GetColorML(Colors::Color_White())}}}" textprefix="$t" />
+<style class="turbo2-text-gauge" textfont="{{{FontMainSmall2}}}" textsize="2" textcolor="{{{Colors::GetColorML(Colors::Color_Black())}}}" />
+<style class="turbo2-text-popup" textfont="{{{FontMainSmall2}}}" textsize="2" textcolor="{{{Colors::GetColorML(Colors::Color_White())}}}" />
+<style class="turbo2-text-menu" textfont="{{{FontMain}}}" textsize="2" textcolor="{{{Colors::GetColorML(Colors::Color_White())}}}" textprefix="$t" />
+<style class="turbo2-text-progress-description" textfont="{{{FontMainSmall2}}}" textsize="2" textprefix="$t" />
+<style class="turbo2-text-progress-step" textfont="{{{FontMain}}}" textsize="2" textprefix="$t" />
+<style class="turbo2-text-laps" textfont="{{{FontMain}}}" textsize="12" textcolor="{{{Colors::GetColorML(Colors::Color_White())}}}" />
+<style class="turbo2-text-cutpaste-more" textfont="{{{FontMainSmall}}}" textsize="3" textcolor="{{{Colors::GetColorML(Colors::Color_White())}}}" />
+<style class="turbo2-text-cutpaste" textfont="{{{FontMainSmall}}}" textsize="2" textcolor="{{{Colors::GetColorML(Colors::Color_White())}}}" />
+<style class="turbo2-text-validation" textfont="{{{FontMainSmall}}}" textsize="2" textcolor="{{{Colors::GetColorML(Colors::Color_White())}}}" />
+<style class="turbo2-text-pad-title" textfont="{{{FontMain}}}" textsize="11" textcolor="{{{Colors::GetColorML(Colors::Color_White())}}}" textprefix="$t" />
+<style class="turbo2-text-pad-message" textfont="{{{FontMain}}}" textsize="5" textcolor="{{{Colors::GetColorML(Colors::Color_Yellow())}}}" textprefix="$t" />
+
+<style class="turbo2-macroblock-disabled" bgcolor="{{{Colors::GetColorML(Colors::Color_Black())}}}" opacity="0.7" />
+<style class="turbo2-background-text" bgcolor="{{{Colors::GetColorML(Colors::Color_Black())}}}" opacity="0.5" />
+<style class="turbo2-selector" image="{{{SelectorImage}}}" />
+<style class="turbo2-selector-wide" image="{{{SelectorWideImage}}}" />
+<style class="turbo2-screen-overlay" size="320 180" halign="center" valign="center" image="{{{ScreenOverlay}}}" />
+<style class="turbo2-screen-validation" size="320 180" halign="center" valign="center" image="{{{ScreenValidation}}}" />
+""";
+}
+
+// ---------------------------------- //
+/// Get the circle size constants
+Real CircleSize_Top()		{ return C_CircleSize_Top; }
+Real CircleSize_Bottom()	{ return C_CircleSize_Bottom; }
+
+// ---------------------------------- //
+/// Get the margin constants
+Real Margin_Top()		{ return C_Margin_Top; }
+Real Margin_Bottom()	{ return C_Margin_Bottom; }
+
+// ---------------------------------- //
+/** Remove the Z component of a Vec3 variable
+ *
+ *	@param	_Input					The Vec3 variable
+ *
+ *	@return							The Vec2 variable
+ */
+Vec2 Vec3ToVec2(Vec3 _Input) {
+	return <_Input.X, _Input.Y>;
+}
+
+// ---------------------------------- //
+/** Get the default header size
+ *
+ *	@return							The header size
+ */
+Real GetHeaderSize2() {
+	return C_HeaderSize*1.;
+}
+
+// ---------------------------------- //
+/** Get a position
+ *
+ *	@param	_Position				The position of the element
+ *	@param	_CircleSize				The size of the circle
+ *
+ *	@return							The element position
+ */
+Vec3 GetPosition2(
+	Vec3 _Position,
+	Real _CircleSize
+) {
+	declare CircleSize = Private_GetCircleSize2() * _CircleSize;
+	return <
+		_Position.X * CircleSize.X,
+		_Position.Y * CircleSize.Y,
+		_Position.Z
+	>;
+}
+
+// ---------------------------------- //
+/** Build a manialink pos and z-index properties
+ *
+ *	@param	_Position				The position to build
+ *
+ *	@return							The manialink pos and z-index properties
+ */
+Text BuildPosition2(Vec3 _Position) {
+	return "pos=\""^_Position.X^" "^_Position.Y^"\" z-index=\""^_Position.Z^"\"";
+}
+
+// ---------------------------------- //
+/** Get a size
+ *
+ *	@param	_Position				The size of the element
+ *	@param	_CircleSize				The size of the circle
+ *
+ *	@return							The element size
+ */
+Vec2 GetSize2(Vec2 _Size, Real _CircleSize) {
+	declare CircleSize = Private_GetCircleSize2() * _CircleSize;
+	return <
+		_Size.X * CircleSize.X,
+		_Size.Y * CircleSize.Y
+	>;
+}
+
+// ---------------------------------- //
+/** Build a manialink size property
+ *
+ *	@param	_Size					The size to build
+ *
+ *	@return							The manialink size property
+ */
+Text BuildSize2(Vec2 _Size) {
+	return "size=\""^_Size.X^" "^_Size.Y^"\"";
+}
+
+// ---------------------------------- //
+/// Get the alignements constants
+Integer Align_LeftTop()			{ return C_Align_LeftTop; }
+Integer Align_LeftCenter()		{ return C_Align_LeftCenter; }
+Integer Align_LeftCenter2()		{ return C_Align_LeftCenter2; }
+Integer Align_LeftBottom()		{ return C_Align_LeftBottom; }
+Integer Align_CenterTop()		{ return C_Align_CenterTop; }
+Integer Align_CenterCenter()	{ return C_Align_CenterCenter; }
+Integer Align_CenterCenter2()	{ return C_Align_CenterCenter2; }
+Integer Align_CenterBottom()	{ return C_Align_CenterBottom; }
+Integer Align_RightTop()		{ return C_Align_RightTop; }
+Integer Align_RightCenter()		{ return C_Align_RightCenter; }
+Integer Align_RightCenter2()	{ return C_Align_RightCenter2; }
+Integer Align_RightBottom()		{ return C_Align_RightBottom; }
+
+// ---------------------------------- //
+/** Get the valign text parameter
+ *
+ *	@param	_Align					The alignement to get
+ *
+ *	@return							The text align properties
+ */
+Text GetHAlign(Integer _Align) {
+	switch(_Align) {
+		case C_Align_LeftTop: return "left";
+		case C_Align_LeftCenter: return "left";
+		case C_Align_LeftCenter2: return "left";
+		case C_Align_LeftBottom: return "left";
+		case C_Align_CenterTop: return "center";
+		case C_Align_CenterCenter: return "center";
+		case C_Align_CenterCenter2: return "center";
+		case C_Align_CenterBottom: return "center";
+		case C_Align_RightTop: return "right";
+		case C_Align_RightCenter: return "right";
+		case C_Align_RightCenter2: return "right";
+		case C_Align_RightBottom: return "right";
+	}
+	return "top";
+}
+
+// ---------------------------------- //
+/** Get the halign text parameter
+ *
+ *	@param	_Align					The alignement to get
+ *
+ *	@return							The text align properties
+ */
+Text GetVAlign(Integer _Align) {
+	switch(_Align) {
+		case C_Align_LeftTop: return "top";
+		case C_Align_LeftCenter: return "center";
+		case C_Align_LeftCenter2: return "center2";
+		case C_Align_LeftBottom: return "bottom";
+		case C_Align_CenterTop: return "top";
+		case C_Align_CenterCenter: return "center";
+		case C_Align_CenterCenter2: return "center2";
+		case C_Align_CenterBottom: return "bottom";
+		case C_Align_RightTop: return "top";
+		case C_Align_RightCenter: return "center";
+		case C_Align_RightCenter2: return "center2";
+		case C_Align_RightBottom: return "bottom";
+	}
+	return "left";
+}
+
+// ---------------------------------- //
+/** Build a manialink align properties
+ *
+ *	@param	_Align					The alignement to build
+ *
+ *	@return							The manialink align properties
+ */
+Text BuildAlign(Integer _Align) {
+	declare HAlign = "";
+	declare VAlign = "";
+	
+	switch(_Align) {
+		case C_Align_LeftTop: {
+			HAlign = "left";
+			VAlign = "top";
+		}
+		case C_Align_LeftCenter: {
+			HAlign = "left";
+			VAlign = "center";
+		}
+		case C_Align_LeftCenter2: {
+			HAlign = "left";
+			VAlign = "center2";
+		}
+		case C_Align_LeftBottom: {
+			HAlign = "left";
+			VAlign = "bottom";
+		}
+		case C_Align_CenterTop: {
+			HAlign = "center";
+			VAlign = "top";
+		}
+		case C_Align_CenterCenter: {
+			HAlign = "center";
+			VAlign = "center";
+		}
+		case C_Align_CenterCenter2: {
+			HAlign = "center";
+			VAlign = "center2";
+		}
+		case C_Align_CenterBottom: {
+			HAlign = "center";
+			VAlign = "bottom";
+		}
+		case C_Align_RightTop: {
+			HAlign = "right";
+			VAlign = "top";
+		}
+		case C_Align_RightCenter: {
+			HAlign = "right";
+			VAlign = "center";
+		}
+		case C_Align_RightCenter2: {
+			HAlign = "right";
+			VAlign = "center2";
+		}
+		case C_Align_RightBottom: {
+			HAlign = "right";
+			VAlign = "bottom";
+		}
+	}
+	
+	return "halign=\""^HAlign^"\" valign=\""^VAlign^"\"";
+}
+
+// ---------------------------------- //
+/** Build a background manialink
+ *
+ *	@param	_Position				The position of the background
+ *	@param	_Size					The size of the background
+ *	@param	_CircleSize				The size of the circle
+ *	@param	_Align					The alignement of the background
+ *
+ *	@return							The background manialink
+ */
+Text BuildBackground(Vec3 _Position, Vec2 _Size, Real _CircleSize, Integer _Align) {
+	declare DefaultImage = "file://Media/Images/TMConsole/Ingame/menu-bg-1.dds";
+	
+	declare CircleSize = Private_GetCircleSize2() * _CircleSize;
+	
+	declare SizeX = _Size.X * CircleSize.X;
+	declare FullNbX = ML::FloorInteger(_Size.X) / C_DefaultCirclesNb;
+	declare FullSizeX = C_DefaultCirclesNb * CircleSize.X;
+	declare PartialNbX = _Size.X - FullNbX;
+	declare NbX = FullNbX;
+	if (PartialNbX > 0.) NbX += 1;
+	
+	declare SizeY = _Size.Y * CircleSize.Y;
+	declare FullNbY = ML::FloorInteger(_Size.Y);
+	declare FullSizeY = CircleSize.Y;
+	declare PartialNbY = _Size.Y - FullNbY;
+	declare NbY = FullNbY;
+	if (PartialNbY > 0.) NbY += 1;
+	
+	declare Position = GetPosition2(_Position, _CircleSize);
+	if (Private_IsHorizontalCenterAlign(_Align)) {
+		Position.X -= SizeX * 0.5;
+	} else if (Private_IsHorizontalRightAlign(_Align)) {
+		Position.X -= SizeX;
+	}
+	if (Private_IsVerticalCenterAlign(_Align)) {
+		Position.Y += SizeY * 0.5;
+	} else if (Private_IsVerticalBottomAlign(_Align)) {
+		Position.Y += SizeY;
+	}
+	
+	declare Background = "";
+	for (Y, 0, NbY-1) {
+		declare PosY = Y * -CircleSize.Y;
+		for (X, 0, NbX-1) {
+			declare PosX = X * FullSizeX;
+			Background ^= """<quad pos="{{{PosX}}} {{{PosY}}}" size="{{{FullSizeX}}} {{{FullSizeY}}}" image="{{{DefaultImage}}}" />""";
+		}
+	}
+	
+	return """
+<frame {{{BuildPosition2(Position)}}} {{{BuildSize2(<SizeX, SizeY>)}}}>
+	{{{Background}}}
+</frame>""";
+}
+
+// ---------------------------------- //
+/** Build a line manialink
+ *
+ *	@param	_Position				The position of the line
+ *	@param	_Size					The size of the line
+ *	@param	_CircleSize				The size of the circle
+ *	@param	_Align					The line alignement
+ *	@param	_Color					Color of the background
+ *	@param	_Background				Use gradient background
+ *	@param	_Foreground				Add a foreground to the line
+ *	@param	_Custom					Custom parameters
+ *
+ *	@return							The line manialink
+ */
+Text BuildLine(
+	Vec3 _Position,
+	Vec2 _Size,
+	Real _CircleSize,
+	Integer _Align,
+	Integer _Color,
+	Boolean _Background,
+	Boolean _Foreground,
+	Text[Text] _Custom
+) {
+	declare TopMargin = Private_GetTopMargin() * _CircleSize;
+	declare SideMargin = Private_GetSideMargin() * _CircleSize;
+	
+	// Compute quad size and position
+	declare FullPosition = GetPosition2(_Position, _CircleSize);
+	declare FullSize = GetSize2(_Size, _CircleSize);
+	declare QuadPosition = FullPosition;
+	declare QuadSize = FullSize;
+	
+	// Apply margins
+	QuadPosition.X += SideMargin;
+	QuadPosition.Y -= TopMargin;
+	QuadSize.X -= 2 * SideMargin;
+	QuadSize.Y -= TopMargin;
+	
+	// Compute margins size and position
+	declare MarginLeftPosition = QuadPosition;
+	declare MarginRightPosition = QuadPosition + <QuadSize.X, 0., 0.>;
+	declare MarginSize = <SideMargin, QuadSize.Y>;
+	
+	// Apply alignement
+	if (Private_IsHorizontalCenterAlign(_Align)) {
+		QuadPosition.X -= SideMargin;
+		MarginLeftPosition.X -= QuadSize.X * 0.5 + SideMargin;
+		MarginRightPosition.X -= QuadSize.X * 0.5 + SideMargin;
+	} else if (Private_IsHorizontalRightAlign(_Align)) {
+		QuadPosition.X -= 2 * SideMargin;
+		MarginLeftPosition.X -= QuadSize.X + 2 * SideMargin;
+		MarginRightPosition.X -= QuadSize.X + 2 * SideMargin;
+	}
+	if (Private_IsVerticalCenterAlign(_Align)) {
+		QuadPosition.Y += TopMargin * 0.5;
+		MarginLeftPosition.Y += QuadSize.Y * 0.5 + TopMargin * 0.5;
+		MarginRightPosition.Y += QuadSize.Y * 0.5 + TopMargin * 0.5;
+	} else if (Private_IsVerticalBottomAlign(_Align)) {
+		QuadPosition.Y += TopMargin;
+		MarginLeftPosition.Y += QuadSize.Y + TopMargin;
+		MarginRightPosition.Y += QuadSize.Y + TopMargin;
+	}
+	
+	// Background image
+	declare BackgroundImage = "";
+	declare BackgroundColor = "";
+	if (_Background) {
+		BackgroundImage = "image=\""^C_DefaultBackgroundImage^"\"";
+		BackgroundColor = "colorize=\""^Colors::GetColorML(_Color)^"\"";
+	} else {
+		BackgroundColor = "bgcolor=\""^Colors::GetColorML(_Color)^"\"";
+	}
+	
+	// Foreground image
+	declare Foreground = "";
+	if (_Foreground) {
+		Foreground = """<quad {{{BuildPosition2(QuadPosition+<0.,0.,5.>)}}} {{{BuildSize2(QuadSize)}}} {{{BuildAlign(_Align)}}} image="{{{C_DefaultForegroundImage}}}" />""";
+	}
+	
+	// Build custom params
+	declare Params = "";
+	foreach (Param => Value in _Custom) {
+		Params ^= TL::MLEncode(Param)^"=\""^TL::MLEncode(Value)^"\"";
+	}
+		
+	return """
+<quad {{{BuildPosition2(QuadPosition)}}} {{{BuildSize2(QuadSize)}}} {{{BuildAlign(_Align)}}} {{{BackgroundImage}}} {{{BackgroundColor}}} {{{Params}}} />
+<quad {{{BuildPosition2(MarginLeftPosition+<0.,0.,5.>)}}} {{{BuildSize2(MarginSize)}}} halign="right" bgcolor="000" />
+<quad {{{BuildPosition2(MarginRightPosition+<0.,0.,5.>)}}} {{{BuildSize2(MarginSize)}}} halign="left" bgcolor="000" />
+{{{Foreground}}}""";
+}
+
+// ---------------------------------- //
+/** Build a quad manialink
+ *
+ *	@param	_Position				The position of the line
+ *	@param	_Size					The size of the line
+ *	@param	_CircleSize				The size of the circle
+ *	@param	_Align					The line alignement
+ *	@param	_Custom					Custom parameters
+ *
+ *	@return							The quad manialink
+ */
+Text BuildQuad(
+	Vec3 _Position,
+	Vec2 _Size,
+	Real _CircleSize,
+	Integer _Align,
+	Text[Text] _Custom
+) {
+	declare TopMargin = Private_GetTopMargin() * _CircleSize;
+	
+	// Compute quad size and position
+	declare QuadPosition = GetPosition2(_Position, _CircleSize);
+	declare QuadSize = GetSize2(_Size, _CircleSize);
+	
+	// Apply margins
+	QuadPosition.Y -= TopMargin;
+	QuadSize.Y -= TopMargin;
+	
+	// Apply alignement
+	if (Private_IsVerticalCenterAlign(_Align)) {
+		QuadPosition.Y += TopMargin * 0.5;
+	} else if (Private_IsVerticalBottomAlign(_Align)) {
+		QuadPosition.Y += TopMargin;
+	}
+	
+	// Build custom params
+	declare Params = "";
+	foreach (Param => Value in _Custom) {
+		Params ^= TL::MLEncode(Param)^"=\""^TL::MLEncode(Value)^"\"";
+	}
+		
+	return """<quad {{{BuildPosition2(QuadPosition)}}} {{{BuildSize2(QuadSize)}}} {{{BuildAlign(_Align)}}} {{{Params}}} />""";
+}
+
+// ---------------------------------- //
+/** Build a button manialink
+ *
+ *	@param	_Position				The position of the line
+ *	@param	_Size					The size of the line
+ *	@param	_CircleSize				The size of the circle
+ *	@param	_Align					The line alignement
+ *	@param	_Custom					Custom parameters
+ *
+ *	@return							The quad manialink
+ */
+Text BuildButton(
+	Text _ActionName,
+	Vec3 _Position,
+	Vec2 _Size,
+	Real _CircleSize,
+	Integer _Align,
+	Text[Text] _Custom
+) {
+	declare TopMargin = Private_GetTopMargin() * _CircleSize;
+	
+	// Compute quad size and position
+	declare QuadPosition = GetPosition2(_Position, _CircleSize);
+	declare QuadSize = GetSize2(_Size, _CircleSize);
+	
+	// Apply margins
+	QuadPosition.Y -= TopMargin;
+	QuadSize.Y -= TopMargin;
+	
+	// Apply alignement
+	if (Private_IsVerticalCenterAlign(_Align)) {
+		QuadPosition.Y += TopMargin * 0.5;
+	} else if (Private_IsVerticalBottomAlign(_Align)) {
+		QuadPosition.Y += TopMargin;
+	}
+	
+	declare Params = _Custom;
+	Params["pos"] = QuadPosition.X^" "^QuadPosition.Y;
+	Params["z-index"] = TL::ToText(QuadPosition.Z);
+	Params["size"] = QuadSize.X^" "^QuadSize.Y;
+	Params["halign"] = GetHAlign(_Align);
+	Params["valign"] = GetVAlign(_Align);
+	return Buttons::ML_Button(_ActionName, Params);
+}
+
+// ---------------------------------- //
+/** Build a label manialink
+ *
+ *	@param	_Position				The position of the line
+ *	@param	_Size					The size of the line
+ *	@param	_CircleSize				The size of the circle
+ *	@param	_Align					The line alignement
+ *	@param	_Custom					Custom parameters
+ *
+ *	@return							The label manialink
+ */
+Text BuildLabel(
+	Vec3 _Position,
+	Vec2 _Size,
+	Real _CircleSize,
+	Integer _Align,
+	Text[Text] _Custom
+) {
+	declare TopMargin = Private_GetTopMargin() * _CircleSize;
+	declare SideMargin = Private_GetSideMargin() * _CircleSize;
+	declare TextPadding = Private_GetTextPadding() * _CircleSize;
+	
+	// Compute label size and position
+	declare FullPosition = GetPosition2(_Position, _CircleSize);
+	declare FullSize = GetSize2(_Size, _CircleSize);
+	declare LabelPosition = FullPosition;
+	declare LabelSize = FullSize;
+	
+	// Apply margins and padding
+	LabelPosition.X += SideMargin + TextPadding;
+	LabelPosition.Y -= TopMargin + TextPadding;
+	LabelSize.X -= 2 * (SideMargin + TextPadding);
+	LabelSize.Y -= TopMargin + (2 * TextPadding);
+	
+	// Apply alignement
+	if (Private_IsHorizontalCenterAlign(_Align)) {
+		LabelPosition.X -= (SideMargin + TextPadding);
+	} else if (Private_IsHorizontalRightAlign(_Align)) {
+		LabelPosition.X -= 2 * (SideMargin + TextPadding);
+	}
+	if (Private_IsVerticalCenterAlign(_Align)) {
+		LabelPosition.Y += TopMargin * 0.5 + TextPadding;
+	} else if (Private_IsVerticalBottomAlign(_Align)) {
+		LabelPosition.Y += TopMargin + (2 * TextPadding);
+	}
+	
+	// Build custom params
+	declare Params = "";
+	foreach (Param => Value in _Custom) {
+		Params ^= TL::MLEncode(Param)^"=\""^TL::MLEncode(Value)^"\"";
+	}
+		
+	return """
+<label {{{BuildPosition2(LabelPosition)}}} {{{BuildSize2(LabelSize)}}} {{{BuildAlign(_Align)}}} {{{Params}}} />""";
+}

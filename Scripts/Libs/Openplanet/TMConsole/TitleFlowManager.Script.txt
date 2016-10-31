@@ -1,0 +1,66 @@
+#Include "Libs/Openplanet/TMConsole/Menu/LoadingScreen.Script.txt"						as LoadingScreen
+
+#Const Version 		"2014-07-25"
+#Const ScriptName	"TitleDlowManager.Script.txt"
+
+Text GetScriptVersion() {return Version;}
+Text GetScriptName() {return ScriptName;}
+
+Void ExitEditor(Text _EditorPluginScript)
+{
+	declare Text CustomResultType = TitleFlow.CustomResultType;
+	while(True) {
+		log("["^Now^"]CustomResultType: " ^CustomResultType^" | TitleFlow.CustomResultData: " ^ TitleFlow.CustomResultData);
+		if (CustomResultType == "PlayNow") {
+			LoadingScreen::SetLoadingType(0);
+			declare MapPath = TitleFlow.CustomResultData[0];
+			wait(TitleFlow.IsReady);
+			TitleFlow.PlayMap(MapPath, "TMC_TimeAttack", "");
+			wait(TitleFlow.IsReady);
+			LoadingScreen::SetLoadingType(1);
+			TitleFlow.EditMap(MapPath, _EditorPluginScript);
+			wait(TitleFlow.IsReady);
+			CustomResultType = TitleFlow.CustomResultType;
+		}
+		else
+		{
+			assert(TitleFlow.CustomResultType == "");
+			ReshowCurrentPage();
+			//CustomResultType = "";
+			return;
+		}
+	}
+}
+
+Void EditNewMap(Text _Environment, Text _Decoration, Text _ModUrl, Text _PlayerModel, Text _MapType, Text _EditorPluginScript){
+	wait(TitleFlow.IsReady);
+	TitleFlow.EditNewMap(_Environment, _Decoration, _ModUrl, _PlayerModel, _MapType, _EditorPluginScript);
+	wait(TitleFlow.IsReady);
+	ExitEditor(_EditorPluginScript);
+}
+
+Void EditMap(Text _MapPath, Text _EditorPluginScript)
+{
+	LoadingScreen::SetLoadingType(1);
+	TitleFlow.EditMap(_MapPath, _EditorPluginScript);
+	wait(TitleFlow.IsReady);
+	ExitEditor(_EditorPluginScript);
+}
+
+Void PlayMap(Text _MapPath, Text _Mode, Text _SettingsXml, Text _ModeMulti){
+
+	LoadingScreen::SetLoadingType(0);
+	wait(TitleFlow.IsReady);
+	if(_ModeMulti == "SplitScreen")
+	{
+		declare Text[] Maps;
+		Maps.add(_MapPath);
+		TitleFlow.PlaySplitScreen(CTitleFlow::ESplitScreenLayout::Horizontal, Maps, _Mode, _SettingsXml);
+	}
+	else
+	{
+		TitleFlow.PlayMap(_MapPath, _Mode, _SettingsXml);
+	}
+	wait(TitleFlow.IsReady);
+	ReshowCurrentPage();
+}

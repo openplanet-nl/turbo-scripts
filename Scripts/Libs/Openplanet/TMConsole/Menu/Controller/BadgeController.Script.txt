@@ -1,0 +1,54 @@
+
+#Const Default_L_Material "MateralAl"
+#Const Default_L_Color    "Color01"
+#Const Default_SL_Country  "CountryWOR"
+
+#Const Default_S_Mascot "Mascot13"
+#Const Default_S_Number "Number01"
+
+Void CheckUser(Ident UserId)
+{
+	declare Boolean WantSave = False;
+	declare CBadge Badge <=> BadgeManager.BadgeCreate();
+	BadgeManager.BadgeReadFromProfile(Badge, UserId);
+	if(Badge.Layers.count < 1) {
+		WantSave = True;
+		Badge.Layers.add(Default_L_Material);
+		Badge.Layers.add(Default_L_Color);
+		Badge.Layers.add(Default_SL_Country);
+		Badge.SkinName = "";
+	}
+
+	if(Badge.StickerSlot_Get("BadgeSlot_Country") == "") {
+		WantSave = True;
+		Badge.StickerSlot_Set("BadgeSlot_Country", Default_SL_Country);
+	}
+	if(Badge.StickerSlot_Get("BadgeSlot_Number") == "") {
+		WantSave = True;
+		Badge.StickerSlot_Set("BadgeSlot_Number", Default_S_Number);
+	}
+	if(Badge.StickerSlot_Get("BadgeSlot_Mascot") == "") {
+		WantSave = True;
+		Badge.StickerSlot_Set("BadgeSlot_Mascot", Default_S_Mascot);
+	}
+
+	if(WantSave) {
+		Badge.SkinName = "Default";
+		BadgeManager.BadgeWriteToProfile(Badge, DataMgr.MenuUserId);
+	}
+	BadgeManager.BadgeDestroy(Badge);
+}
+
+Void Loop()
+{
+	if(UserMgr.MainUser != Null && UserMgr.MainUser.PersistentIsReady /* && BadgeManager.ProfileIsReady(MainUser.Id) a activer quand l'api sera dans l'exe*/)
+	{
+		declare persistent BadgeHasBeenInitialized for UserMgr.MainUser = False;
+		if(!BadgeHasBeenInitialized) 
+		{
+			CheckUser(UserMgr.MainUser.Id);
+			BadgeHasBeenInitialized = True;
+			UserMgr.MainUser.SavePersistent();
+		}
+	}
+}

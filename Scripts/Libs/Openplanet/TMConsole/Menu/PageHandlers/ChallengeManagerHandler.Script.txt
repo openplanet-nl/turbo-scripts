@@ -1,0 +1,102 @@
+#Include "TextLib"			as TextLib
+#Include "Libs/Openplanet/TMConsole/Menu/MenuLayers.Script.txt"								as Layers
+#Include "Libs/Openplanet/TMConsole/Logger.Script.txt"										as Logger
+#Include "Libs/Openplanet/TMConsole/PopUpManager.Script.txt"									as PopUpManager
+#Include "Libs/Openplanet/TMConsole/Menu/Controller/ChallengeController.Script.txt" 			as ChallengeController
+#Include "Libs/Openplanet/TMConsole/Menu/Controller/UserController.Script.txt" 				as UserController
+#Include "Libs/Openplanet/TMConsole/MenuColor.Script.txt"		   							as MenuColor
+#Include "Libs/Openplanet/TMConsole/Menu/Controller/ServerController.Script.txt" 			as ServerController
+
+declare Integer G_ChallengeId;	
+
+Void WarnNotEnoughParams(CMlAppEvent _Event) {
+	Logger::Warn("[Menucontroller] event "^_Event.CustomEventType^": not enough params ["^_Event.CustomEventData^"]");
+}
+
+Void SetChallengeId(Integer _Id)
+{
+	G_ChallengeId = _Id;
+	declare CUILayer ChallengeManager = Layers::Get("ChallengeManager");
+	declare Boolean IsNewChallenge for ChallengeManager.LocalPage;
+	IsNewChallenge = (_Id == -1);
+	
+	if (IsNewChallenge)
+	{
+		//ChallengeController::GetCanCreateChallenges("ChallengeManager");
+		log("newchallenge");
+		LayerCustomEvent(ChallengeManager, "NewChallenge", Text[]); //en attendant le remplacement éventuel par le feedback de cancreatechallenges
+	} else {
+		ChallengeController::GetChallenge("ChallengeManager", _Id);
+	}
+}
+
+Void SendEditedTrackListToChallengeManager(Text _Style, Text _Duration)
+{
+	declare CUILayer ChallengeManager = Layers::Get("ChallengeManager");
+	declare CUILayer RoomPlaylist = Layers::Get("RoomPlaylist");
+	
+	declare Text[Text][] RequestedRoomMaps for ChallengeManager.LocalPage;
+	declare Text[Text][] TrackList for RoomPlaylist.LocalPage;
+
+	RequestedRoomMaps = TrackList;
+	
+	LayerCustomEvent(ChallengeManager, "TrackListSent", [_Style, _Duration]);
+}
+
+Void SendChallengeData(Text _ChallengeData) {
+	if (G_ChallengeId == -1)
+	{
+		//ManiaPlanet.Authentication_GetToken(ManiaPlanet.MasterServer_MainMSUser.Id, "nadeolive");
+		//wait(ManiaPlanet.Authentication_GetTokenResponseReceived);
+		ChallengeController::CreateChallenge("ChallengeManager", _ChallengeData^"}");
+		
+		// ^", \"token\":\""^ManiaPlanet.Authentication_Token^"\"
+	}
+}
+
+Void RequestBack()
+{	
+	declare Text TitleColor = TextLib::ColorToText(MenuColor::GetMenuColor(2));
+	PopUpManager::AddAskYesNo2(_("Do you want to save your challenge ?"),_("Save Challenge ?"), TitleColor, "ChallengeManager_Save");
+}
+
+Void Loop() {
+	foreach(Event in PendingEvents) {
+		if(Event.Type != CMlAppEvent::EType::LayerCustomEvent) continue;
+		switch(Event.CustomEventType) {
+			case "SendChallengeData" : {
+				log("SendChallengeData");
+				if (Event.CustomEventData.count < 1)
+					WarnNotEnoughParams(Event);
+				else
+					SendChallengeData(Event.CustomEventData[0]);
+			}
+			case "ChallengeManager_Save_AskYesNo" : {
+				if (Event.CustomEventData.count < 1)
+					WarnNotEnoughParams(Event);
+				else {
+					declare CUILayer ChallengeManager = Layers::Get("ChallengeManager");
+					LayerCustomEvent(ChallengeManager, "Quit", [Event.CustomEventData[0]]);
+				}
+			}
+			case "SendTracklistToRoomManager" : {
+				SendEditedTrackListToChallengeManager(Event.CustomEventData[0], Event.CustomEventData[1]);
+			}
+			case "PopUp_EmptyTracklist" : {
+				PopUpManager::AddPopUp2(0,  _("You cannot start a challenge with an empty traklist"), "", False);
+			}
+			case "RequestMenuUserDisplayName" : {
+				UserController::Layer_GetMenuUserDisplayName("ChallengeManager");
+			}
+			case "RequestMapsThumbnails" : {
+				ServerController::GetMapsThumbnails("ChallengeManager", TextLib::Split(";", Event.CustomEventData[0]));
+			}
+			case "SetNewChallenge" : {
+				SetChallengeId(-1);
+			}
+			case "RequestBack" : {
+				RequestBack();
+			}
+		}
+	}
+}

@@ -1,0 +1,13 @@
+#Include "Libs/Openplanet/TMConsole/Logger.Script.txt"										as Logger
+
+Void WarnNotEnoughParams(CMlAppEvent _Event) {
+	Logger::Warn("[Menucontroller] event "^_Event.CustomEventType^": not enough params ["^_Event.CustomEventData^"]");
+}
+
+Void Loop() {
+
+	foreach(Event in PendingEvents) {
+		if(Event.Type != CMlAppEvent::EType::LayerCustomEvent) continue;
+
+	}
+}

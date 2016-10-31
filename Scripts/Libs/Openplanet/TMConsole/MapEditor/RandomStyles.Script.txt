@@ -1,0 +1,1058 @@
+/** 
+ * Random styles library
+ */
+#Const Version		"2016-01-18"
+#Const ScriptName	"RandomStyles.Script.txt"
+
+#Include "TextLib" as TL
+#Include "Libs/Openplanet/TMConsole/MapEditor/Macroblock.Script.txt" as Macroblock
+#Include "Libs/Openplanet/TMConsole/MapEditor/Random.Script.txt" as Random
+#Include "Libs/Openplanet/TMConsole/MapEditor/Collection.Script.txt" as Collection
+
+// ---------------------------------- //
+// Constants
+// ---------------------------------- //
+#Const C_LibRandomStyles_MapLengths [
+	"veryshort" =>	["Canyon" => 600., "Valley" => 500., "Stadium" => 600., "Lagoon" => 600.],
+	"short" =>		["Canyon" => 1200., "Valley" => 1200., "Stadium" => 1200., "Lagoon" => 1200.],
+	"medium" =>		["Canyon" => 2300., "Valley" => 1800., "Stadium" => 1800., "Lagoon" => 2000.],
+	"long"  =>		["Canyon" => 3200., "Valley" => 2400., "Stadium" => 2600., "Lagoon" => 2800.],
+	"verylong"  =>	["Canyon" => 3200., "Valley" => 3000., "Stadium" => 3000., "Lagoon" => 3000.]
+] ///< Distance
+#Const C_LibRandomStyles_MapSpeeds ["slow", "medium", "fast"] ///< Speed
+#Const C_LibRandomStyles_MapStyles ["tech", "lol", "race", "multilaps", "street", "offroad"]	///< Style
+// Default values
+#Const C_LibRandomStyles_Length				1200.	///< Default length
+#Const C_LibRandomStyles_CheckpointsSpacing	200.	///< Default checkpoints spacing
+#Const C_LibRandomStyles_Multiplier			1.		///< Default multipliers
+#Const C_LibRandomStyles_DecoMultiplier		0.5		///< Default decoration multiplier
+/// Values for IsTurning, IsShifting, IsRising and IsTransfert selectors
+#Const C_LibRandomStyles_True	1
+#Const C_LibRandomStyles_False	0
+#Const C_LibRandomStyles_Null	-1
+
+// ---------------------------------- //
+// Globales
+// ---------------------------------- //
+declare Real G_LibRandomStyles_Length;	///< Length of the track
+declare Real G_LibRandomStyles_CheckpointsSpacing;	///< Distance between checkpoints
+declare Text[] G_LibRandomStyles_ClipsPriority;	///< Clips to use in priority
+/// Multipliers values and selectors
+declare Real[] G_LibRandomStyles_Multiplier_Value;
+declare Text[] G_LibRandomStyles_Multiplier_Family;
+declare Text[] G_LibRandomStyles_Multiplier_Type;
+declare Text[] G_LibRandomStyles_Multiplier_Name;
+declare Text[] G_LibRandomStyles_Multiplier_Clip;
+declare Integer[] G_LibRandomStyles_Multiplier_IsTurning;
+declare Integer[] G_LibRandomStyles_Multiplier_IsShifting;
+declare Integer[] G_LibRandomStyles_Multiplier_IsRising;
+declare Integer[] G_LibRandomStyles_Multiplier_IsTransfert;
+/// Decoration multipliers
+declare Real[Text] G_LibRandomStyles_DecoMultipliers;
+
+// ---------------------------------- //
+// Functions
+// ---------------------------------- //
+// ---------------------------------- //
+// Private
+// ---------------------------------- //
+// ---------------------------------- //
+/** Convert a Text to a Boolean value
+ *
+ *	@param	_Text					The Text to convert
+ *
+ *	@return							The Boolean value
+ */
+Boolean Private_ToBoolean(Text _Text) {
+	return (_Text != "False" && _Text != "false" && _Text != "0" && _Text != "");
+}
+
+// ---------------------------------- //
+/** Match the IsTurning, IsShifting, IsRising and IsTransfert selectors
+ *
+ *	@param	_Boolean				Boolean value
+ *	@param	_Integer				Integer value
+ *
+ *	@return							True if the two values match, False otherwise
+ */
+Boolean Private_MatchIsXSelector(Boolean _Boolean, Integer _Integer) {
+	if (_Integer == C_LibRandomStyles_Null) return True;
+	if (_Boolean && _Integer == C_LibRandomStyles_True) return True;
+	if (!_Boolean && _Integer == C_LibRandomStyles_False) return True;
+	
+	return False;
+}
+
+// ---------------------------------- //
+/** Check if a multiplier match the given selectors
+ *
+ *	@param	_Family					Family selector
+ *	@param	_Type					Type selector
+ *	@param	_Name					Name selector
+ *	@param	_Clips					Clips selector
+ *	@param	_IsTurning				IsTurning selector
+ *	@param	_IsShifting				IsShifting selector
+ *	@param	_IsRising				IsRising selector
+ *	@param	_IsTransfert			IsTransfert selector
+ *
+ *	@return						The keys of the matched multiplier if any
+ */
+Integer[] Private_MatchMultiplier(Text _Family, Text _Type, Text _Name, Text[] _Clips, Boolean _IsTurning, Boolean _IsShifting, Boolean _IsRising, Boolean _IsTransfert) {
+	declare MatchedKeys = Integer[];
+	
+	foreach (Key => Value in G_LibRandomStyles_Multiplier_Value) {
+		declare Family = G_LibRandomStyles_Multiplier_Family[Key];
+		declare Type = G_LibRandomStyles_Multiplier_Type[Key];
+		declare Name = G_LibRandomStyles_Multiplier_Name[Key];
+		declare Clip = G_LibRandomStyles_Multiplier_Clip[Key];
+		declare IsTurning = G_LibRandomStyles_Multiplier_IsTurning[Key];
+		declare IsShifting = G_LibRandomStyles_Multiplier_IsShifting[Key];
+		declare IsRising = G_LibRandomStyles_Multiplier_IsRising[Key];
+		declare IsTransfert = G_LibRandomStyles_Multiplier_IsTransfert[Key];
+		
+		if (Family != "" && _Family != Family) continue;
+		if (Type != "" && _Type != Type) continue;
+		if (Name != "" && _Name != Name) continue;
+		if (Clip != "" && !_Clips.exists(Clip)) continue;
+		if (!Private_MatchIsXSelector(_IsTurning, IsTurning)) continue;
+		if (!Private_MatchIsXSelector(_IsShifting, IsShifting)) continue;
+		if (!Private_MatchIsXSelector(_IsRising, IsRising)) continue;
+		if (!Private_MatchIsXSelector(_IsTransfert, IsTransfert)) continue;
+		
+		MatchedKeys.add(Key);
+	}
+	
+	return MatchedKeys;
+}
+
+// ---------------------------------- //
+/** Get a multiplier value
+ *
+ *	@param	_Keys					The keys of the multipliers to get
+ *
+ *	@return							The multiplier value
+ */
+Real Private_GetMultiplier(Integer[] _Keys) {
+	declare Multiplier = C_LibRandomStyles_Multiplier;
+	
+	foreach (Key in _Keys) {
+		if (!G_LibRandomStyles_Multiplier_Value.existskey(Key)) continue;
+		Multiplier *= G_LibRandomStyles_Multiplier_Value[Key];
+	}
+	
+	return Multiplier;
+}
+
+// ---------------------------------- //
+/** Match and get a multiplier value
+ *
+ *	@param	_Family					Family selector
+ *	@param	_Type					Type selector
+ *	@param	_Name					Name selector
+ *	@param	_Clips					Clips selector
+ *	@param	_IsTurning				IsTurning selector
+ *	@param	_IsShifting				IsShifting selector
+ *	@param	_IsRising				IsRising selector
+ *	@param	_IsTransfert			IsTransfert selector
+ *
+ *	@return							The multiplier value if found
+ */
+Real Private_MatchAndGetMultiplier(Text _Family, Text _Type, Text _Name, Text[] _Clips, Boolean _IsTurning, Boolean _IsShifting, Boolean _IsRising, Boolean _IsTransfert) {
+	return Private_GetMultiplier(Private_MatchMultiplier(_Family, _Type, _Name, _Clips, _IsTurning, _IsShifting, _IsRising, _IsTransfert));
+}
+
+// ---------------------------------- //
+/** Add a new multiplier
+ *
+ *	@param	_Value					The value of the multiplier
+ *	@param	_Family					Family selector
+ *	@param	_Type					Type selector
+ *	@param	_Name					Name selector
+ *	@param	_Clip					Clip selector
+ *	@param	_IsTurning				IsTurning selector
+ *	@param	_IsShifting				IsShifting selector
+ *	@param	_IsRising				IsRising selector
+ *	@param	_IsTransfert			IsTransfert selector
+ */
+Void Private_AddMultiplier(Real _Value, Text _Family, Text _Type, Text _Name, Text _Clip, Integer _IsTurning, Integer _IsShifting, Integer _IsRising, Integer _IsTransfert) {
+	G_LibRandomStyles_Multiplier_Value.add(_Value);
+	G_LibRandomStyles_Multiplier_Family.add(_Family);
+	G_LibRandomStyles_Multiplier_Type.add(_Type);
+	G_LibRandomStyles_Multiplier_Name.add(_Name);
+	G_LibRandomStyles_Multiplier_Clip.add(_Clip);
+	G_LibRandomStyles_Multiplier_IsTurning.add(_IsTurning);
+	G_LibRandomStyles_Multiplier_IsShifting.add(_IsShifting);
+	G_LibRandomStyles_Multiplier_IsRising.add(_IsRising);
+	G_LibRandomStyles_Multiplier_IsTransfert.add(_IsTransfert);
+}
+
+// ---------------------------------- //
+/** Remove a multiplier
+ *
+ *	@param	_Key					Key of the multiplier to remove
+ */
+Void Private_RemoveMultiplier(Integer _Key) {
+	declare Boolean Removed;
+	Removed = G_LibRandomStyles_Multiplier_Value.removekey(_Key);
+	Removed = G_LibRandomStyles_Multiplier_Family.removekey(_Key);
+	Removed = G_LibRandomStyles_Multiplier_Type.removekey(_Key);
+	Removed = G_LibRandomStyles_Multiplier_Name.removekey(_Key);
+	Removed = G_LibRandomStyles_Multiplier_Clip.removekey(_Key);
+	Removed = G_LibRandomStyles_Multiplier_IsTurning.removekey(_Key);
+	Removed = G_LibRandomStyles_Multiplier_IsShifting.removekey(_Key);
+	Removed = G_LibRandomStyles_Multiplier_IsRising.removekey(_Key);
+	Removed = G_LibRandomStyles_Multiplier_IsTransfert.removekey(_Key);
+}
+
+// ---------------------------------- //
+/// Bake the multipliers into the macroblocks
+Void Private_BuildMultiplier() {
+	foreach (MacroblockModel in MacroblockModels) {
+		if (!Macroblock::GetValidity(MacroblockModel)) continue;
+		
+		declare Family = Macroblock::GetFamily(MacroblockModel);
+		declare Type = Macroblock::GetType(MacroblockModel);
+		declare Name = Macroblock::GetName(MacroblockModel);
+		declare Clips = Macroblock::GetClipNames(MacroblockModel);
+		declare IsTurning = Macroblock::IsTurning(MacroblockModel);
+		declare IsShifting = Macroblock::IsShifting(MacroblockModel);
+		declare IsRising = Macroblock::IsRising(MacroblockModel);
+		declare IsTransfert = Macroblock::IsTransfert(MacroblockModel);
+		
+		declare LibRandomStyles_Multiplier for MacroblockModel = C_LibRandomStyles_Multiplier;
+		LibRandomStyles_Multiplier = Private_MatchAndGetMultiplier(Family, Type, Name, Clips, IsTurning, IsShifting, IsRising, IsTransfert);
+	}
+}
+
+// ---------------------------------- //
+/** Read a style node
+ *
+ *	@param	_Node					The node to read
+ */
+Void Private_ReadXml_Style(CXmlNode _Node) {
+	if (_Node == Null) return;
+	if (_Node.Name != "style") return;
+	if (
+		!C_LibRandomStyles_MapLengths.existskey(_Node.TextContents)
+		&& !C_LibRandomStyles_MapSpeeds.exists(_Node.TextContents)
+		&& !C_LibRandomStyles_MapStyles.exists(_Node.TextContents)
+	) return;
+	
+	switch (_Node.TextContents) {
+		// Distance
+		case "veryshort": {
+			if (C_LibRandomStyles_MapLengths.existskey("veryshort") && C_LibRandomStyles_MapLengths["veryshort"].existskey(Map.CollectionName)) {
+				G_LibRandomStyles_Length = C_LibRandomStyles_MapLengths["veryshort"][Map.CollectionName];
+			} else {
+				G_LibRandomStyles_Length = 600.;
+			}
+			G_LibRandomStyles_CheckpointsSpacing = C_LibRandomStyles_CheckpointsSpacing;
+		}
+		case "short": {
+			if (C_LibRandomStyles_MapLengths.existskey("short") && C_LibRandomStyles_MapLengths["short"].existskey(Map.CollectionName)) {
+				G_LibRandomStyles_Length = C_LibRandomStyles_MapLengths["short"][Map.CollectionName];
+			} else {
+				G_LibRandomStyles_Length = 1200.;
+			}
+			G_LibRandomStyles_CheckpointsSpacing = C_LibRandomStyles_CheckpointsSpacing;
+		}
+		case "medium": {
+			if (C_LibRandomStyles_MapLengths.existskey("medium") && C_LibRandomStyles_MapLengths["medium"].existskey(Map.CollectionName)) {
+				G_LibRandomStyles_Length = C_LibRandomStyles_MapLengths["medium"][Map.CollectionName];
+			} else {
+				G_LibRandomStyles_Length = 1800.;
+			}
+			G_LibRandomStyles_CheckpointsSpacing = C_LibRandomStyles_CheckpointsSpacing;
+		}
+		case "long": {
+			if (C_LibRandomStyles_MapLengths.existskey("long") && C_LibRandomStyles_MapLengths["long"].existskey(Map.CollectionName)) {
+				G_LibRandomStyles_Length = C_LibRandomStyles_MapLengths["long"][Map.CollectionName];
+			} else {
+				G_LibRandomStyles_Length = 2400.;
+			}
+			G_LibRandomStyles_CheckpointsSpacing = C_LibRandomStyles_CheckpointsSpacing;
+		}
+		case "verylong": {
+			if (C_LibRandomStyles_MapLengths.existskey("verylong") && C_LibRandomStyles_MapLengths["verylong"].existskey(Map.CollectionName)) {
+				G_LibRandomStyles_Length = C_LibRandomStyles_MapLengths["verylong"][Map.CollectionName];
+			} else {
+				G_LibRandomStyles_Length = 3000.;
+			}
+			G_LibRandomStyles_CheckpointsSpacing = C_LibRandomStyles_CheckpointsSpacing;
+		}
+		
+		// Speed
+		case "slow": {
+			// Less turbo
+			Private_AddMultiplier(0.01, "", "Turbos", "", "", C_LibRandomStyles_Null, C_LibRandomStyles_Null, C_LibRandomStyles_Null, C_LibRandomStyles_Null);
+			// Less straight road
+			Private_AddMultiplier(0.5, "", "", "", "", C_LibRandomStyles_False, C_LibRandomStyles_Null, C_LibRandomStyles_Null, C_LibRandomStyles_Null);
+		}
+		case "medium": {
+			// "medium" is already used by length
+		}
+		case "fast": {
+			// More turbo
+			Private_AddMultiplier(5., "", "Turbos", "", "", C_LibRandomStyles_Null, C_LibRandomStyles_Null, C_LibRandomStyles_Null, C_LibRandomStyles_Null);
+			// Less turning road
+			Private_AddMultiplier(0.5, "", "", "", "", C_LibRandomStyles_True, C_LibRandomStyles_Null, C_LibRandomStyles_Null, C_LibRandomStyles_Null);
+			// Less rising road
+			Private_AddMultiplier(0.1, "", "", "", "", C_LibRandomStyles_Null, C_LibRandomStyles_Null, C_LibRandomStyles_True, C_LibRandomStyles_Null);
+		}
+		
+		// Style
+		case "tech": {
+			// Less straight road
+			Private_AddMultiplier(0.5, "", "", "", "", C_LibRandomStyles_False, C_LibRandomStyles_Null, C_LibRandomStyles_Null, C_LibRandomStyles_Null);
+			// More turning road
+			Private_AddMultiplier(5., "", "", "", "", C_LibRandomStyles_True, C_LibRandomStyles_Null, C_LibRandomStyles_Null, C_LibRandomStyles_Null);
+			// More shifting road
+			Private_AddMultiplier(5., "", "", "", "", C_LibRandomStyles_Null, C_LibRandomStyles_True, C_LibRandomStyles_Null, C_LibRandomStyles_Null);
+			
+			if (Map.CollectionName == "Canyon") {
+				
+			} else if (Map.CollectionName == "Valley") {
+				
+			} else if (Map.CollectionName == "Lagoon") {
+				
+			} else if (Map.CollectionName == "Stadium") {
+				
+			}
+		}
+		case "lol": {
+			
+		}
+		case "race": {
+			// Less rising road
+			Private_AddMultiplier(0.25, "", "", "", "", C_LibRandomStyles_Null, C_LibRandomStyles_Null, C_LibRandomStyles_True, C_LibRandomStyles_Null);
+			// Less turning road
+			Private_AddMultiplier(0.75, "", "", "", "", C_LibRandomStyles_True, C_LibRandomStyles_Null, C_LibRandomStyles_Null, C_LibRandomStyles_Null);
+			// More shifting road
+			Private_AddMultiplier(1.25, "", "", "", "", C_LibRandomStyles_Null, C_LibRandomStyles_True, C_LibRandomStyles_Null, C_LibRandomStyles_Null);
+			if (Map.CollectionName == "Canyon") {
+				// Prioritize GP road
+				G_LibRandomStyles_ClipsPriority.add("RoadRaceClipLeft");
+				G_LibRandomStyles_ClipsPriority.add("RoadRaceClipRight");
+				G_LibRandomStyles_ClipsPriority.add("RoadRaceTiltClipRight");
+				G_LibRandomStyles_ClipsPriority.add("RoadRaceTiltClipLeft");
+			} else if (Map.CollectionName == "Valley") {
+				// Prioritize 4Ways road
+				G_LibRandomStyles_ClipsPriority.add("Road4WayClip");
+				G_LibRandomStyles_ClipsPriority.add("HighwayClip");
+			} else if (Map.CollectionName == "Lagoon") {
+				
+			} else if (Map.CollectionName == "Stadium") {
+				
+			}
+		}
+		case "multilaps": {
+			
+		}
+		case "street": {
+			if (Map.CollectionName == "Canyon") {
+				// Prioritize main road
+				G_LibRandomStyles_ClipsPriority.add("RoadMainClip");
+				G_LibRandomStyles_ClipsPriority.add("Cliff12RoadHighClipRight");
+				G_LibRandomStyles_ClipsPriority.add("Cliff12RoadHighClipLeft");
+				G_LibRandomStyles_ClipsPriority.add("Cliff12RoadMedClipRight");
+				G_LibRandomStyles_ClipsPriority.add("Cliff12RoadMedClipLeft");
+				G_LibRandomStyles_ClipsPriority.add("RoadHill2ClipLeft");
+				G_LibRandomStyles_ClipsPriority.add("RoadHill2ClipRight");
+			} else if (Map.CollectionName == "Valley") {
+				
+			} else if (Map.CollectionName == "Lagoon") {
+				
+			} else if (Map.CollectionName == "Stadium") {
+				
+			}
+		}
+		case "offroad": {
+			if (Map.CollectionName == "Canyon") {
+				
+			} else if (Map.CollectionName == "Valley") {
+				
+			} else if (Map.CollectionName == "Lagoon") {
+				
+			} else if (Map.CollectionName == "Stadium") {
+				
+			}
+		}
+	}
+}
+
+// ---------------------------------- //
+/** Read a property node
+ *
+ *	@param	_Node					The node to read
+ */
+Void Private_ReadXml_Property(CXmlNode _Node) {
+	if (_Node == Null) return;
+	
+	switch (_Node.Name) {
+		case "length": {
+			G_LibRandomStyles_Length = TL::ToReal(_Node.TextContents);
+		}
+		case "checkpointsspacing": {
+			G_LibRandomStyles_CheckpointsSpacing = TL::ToReal(_Node.TextContents);
+		}
+		case "clipspriority": {
+			foreach (NodeClip in _Node.Children) {
+				G_LibRandomStyles_ClipsPriority.add(NodeClip.TextContents);
+			}
+		}
+	}
+}
+
+// ---------------------------------- //
+/** Read a multiplier node
+ *
+ *	@param	_Node					The node to read
+ */
+Void Private_ReadXml_TrackMultiplier(CXmlNode _Node) {
+	if (_Node == Null) return;
+	if (_Node.Name != "multiplier") return;
+	
+	declare Family = _Node.GetAttributeText("family", "");
+	declare Type = _Node.GetAttributeText("type", "");
+	declare Name = _Node.GetAttributeText("name", "");
+	declare Clip = _Node.GetAttributeText("clip", "");
+	declare IsTurning = C_LibRandomStyles_Null;
+	declare IsShifting = C_LibRandomStyles_Null;
+	declare IsRising = C_LibRandomStyles_Null;
+	declare IsTransfert = C_LibRandomStyles_Null;
+	
+	declare TextIsTurning = _Node.GetAttributeText("isturning", "");
+	declare TextIsShifting = _Node.GetAttributeText("isshifting", "");
+	declare TextIsRising = _Node.GetAttributeText("isrising", "");
+	declare TextIsTransfert = _Node.GetAttributeText("istransfert", "");
+	if (TextIsTurning != "") {
+		if (Private_ToBoolean(TextIsTurning)) IsTurning = C_LibRandomStyles_True;
+		else IsTurning = C_LibRandomStyles_False;
+	}
+	if (TextIsShifting != "") {
+		if (Private_ToBoolean(TextIsShifting)) IsShifting = C_LibRandomStyles_True;
+		else IsShifting = C_LibRandomStyles_False;
+	}
+	if (TextIsRising != "") {
+		if (Private_ToBoolean(TextIsRising)) IsRising = C_LibRandomStyles_True;
+		else IsRising = C_LibRandomStyles_False;
+	}
+	if (TextIsTransfert != "") {
+		if (Private_ToBoolean(TextIsTransfert)) IsTransfert = C_LibRandomStyles_True;
+		else IsTransfert = C_LibRandomStyles_False;
+	}
+	
+	declare Value = TL::ToReal(_Node.TextContents);
+	
+	Private_AddMultiplier(Value, Family, Type, Name, Clip, IsTurning, IsShifting, IsRising, IsTransfert);
+}
+
+// ---------------------------------- //
+/** Read a multiplier node
+ *
+ *	@param	_Node					The node to read
+ */
+Void Private_ReadXml_DecoMultiplier(CXmlNode _Node) {
+	if (_Node == Null) return;
+	if (_Node.Name != "multiplier") return;
+	
+	declare Type = _Node.GetAttributeText("type", "");
+	declare Value = TL::ToReal(_Node.TextContents);
+	if (Value < 0.) Value = 0.;
+	else if (Value > 1.) Value = 1.;
+	
+	G_LibRandomStyles_DecoMultipliers[Type] = Value;
+}
+
+// ---------------------------------- //
+// Public
+// ---------------------------------- //
+// ---------------------------------- //
+/** Return the version number of the script
+ *
+ *	@return							The version number of the script
+ */
+Text GetScriptVersion() {
+	return Version;
+}
+
+// ---------------------------------- //
+/** Return the name of the script
+ *
+ *	@return							The name of the script
+ */
+Text GetScriptName() {
+	return ScriptName;
+}
+
+// ---------------------------------- //
+/** Get the length of the track
+ *
+ *	@return							The track length
+ */
+Real GetLength() {
+	return G_LibRandomStyles_Length;
+}
+
+// ---------------------------------- //
+/** Get the checkpoints spacing
+ *
+ *	@return							The checkpoint spacing
+ */
+Real GetCheckpointsSpacing() {
+	return G_LibRandomStyles_CheckpointsSpacing;
+}
+
+// ---------------------------------- //
+/** Get the clips priority
+ *
+ *	@return							The clips priority
+ */
+Text[] GetClipsPriority() {
+	return G_LibRandomStyles_ClipsPriority;
+}
+
+// ---------------------------------- //
+/** Get the multiplier applied on a macroblock
+ *
+ *	@param	_MacroblockModel		The macroblock to check
+ *
+ *	@return							The multiplier for the given macroblock
+ */
+Real GetMultiplier(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return C_LibRandomStyles_Multiplier;
+	
+	declare LibRandomStyles_Multiplier for _MacroblockModel = C_LibRandomStyles_Multiplier;
+	return LibRandomStyles_Multiplier;
+}
+
+// ---------------------------------- //
+/** Get the multiplier applied on a decoration type
+ *
+ *	@param	_Type					The type to check
+ *
+ *	@return							The multiplier for the given decoration type
+ */
+Real GetMultiplier(Text _Type) {
+	if (G_LibRandomStyles_DecoMultipliers.existskey(_Type)) return G_LibRandomStyles_DecoMultipliers[_Type];
+	return C_LibRandomStyles_DecoMultiplier;
+}
+
+// ---------------------------------- //
+/** Check if a multiplier is applied on a decoration type
+ *
+ *	@param	_Type					The type to check
+ *
+ *	@return							True if a multiplier is applied, False otherwise
+ */
+Boolean ExistsMultiplier(Text _Type) {
+	return G_LibRandomStyles_DecoMultipliers.existskey(_Type);
+}
+
+// ---------------------------------- //
+/** Get the multiplier applied on all decoration types
+ *
+ *	@return							The multiplier for the all decoration types
+ */
+Real[Text] GetDecoMultipliers() {
+	return G_LibRandomStyles_DecoMultipliers;
+}
+
+// ---------------------------------- //
+/// Clear the current style
+Void ClearStyles() {
+	G_LibRandomStyles_Length = C_LibRandomStyles_Length;
+	G_LibRandomStyles_CheckpointsSpacing = C_LibRandomStyles_CheckpointsSpacing;
+	G_LibRandomStyles_ClipsPriority.clear();
+	G_LibRandomStyles_Multiplier_Value.clear();
+	G_LibRandomStyles_Multiplier_Family.clear();
+	G_LibRandomStyles_Multiplier_Type.clear();
+	G_LibRandomStyles_Multiplier_Name.clear();
+	G_LibRandomStyles_Multiplier_Clip.clear();
+	G_LibRandomStyles_Multiplier_IsTurning.clear();
+	G_LibRandomStyles_Multiplier_IsShifting.clear();
+	G_LibRandomStyles_Multiplier_IsRising.clear();
+	G_LibRandomStyles_Multiplier_IsTransfert.clear();
+	
+	foreach (MacroblockModel in MacroblockModels) {
+		declare LibRandomStyles_Multiplier for MacroblockModel = C_LibRandomStyles_Multiplier;
+		LibRandomStyles_Multiplier = C_LibRandomStyles_Multiplier;
+	}
+	
+	G_LibRandomStyles_DecoMultipliers.clear();
+}
+
+// ---------------------------------- //
+/** Read the xml of a style
+ *
+ *	@param	_Xml					The xml string
+ *	@param	_Reset					Reset the style before applygin the new ones
+ */
+Void ReadStyles(Text _Xml, Boolean _Reset) {
+	if (_Xml == "") return;
+	declare XmlDoc = Xml.Create(_Xml);
+	if (XmlDoc == Null) return;
+	
+	if (_Reset) ClearStyles();
+	
+	if (XmlDoc.Root.Name == "commands") {
+		foreach (NodeCommand in XmlDoc.Root.Children) {
+			switch (NodeCommand.Name) {
+				case "seed": {
+					Random::Init(TL::ToInteger(NodeCommand.TextContents));
+				}
+				case "styles": {
+					foreach (NodeStyle in NodeCommand.Children) {
+						Private_ReadXml_Style(NodeStyle);
+					}
+				}
+				case "properties": {
+					foreach (NodeProperty in NodeCommand.Children) {
+						Private_ReadXml_Property(NodeProperty);
+					}
+				}
+				case "trackmultipliers": {
+					foreach (NodeMultiplier in NodeCommand.Children) {
+						Private_ReadXml_TrackMultiplier(NodeMultiplier);
+					}
+				}
+				case "decomultupliers": {
+					foreach (NodeMultiplier in NodeCommand.Children) {
+						Private_ReadXml_DecoMultiplier(NodeMultiplier);
+					}
+				}
+			}
+		}
+	}
+	
+	Xml.Destroy(XmlDoc);
+	
+	// Build multipliers
+	Private_BuildMultiplier();
+}
+
+// ---------------------------------- //
+/** Apply several map styles
+ *
+ *	@param	_Styles					The styles to apply
+ ù	@param	_Reset					Reset the styles before applying the new ones
+ */
+Void ApplyStyles(Text[] _Styles, Boolean _Reset) {
+	declare Styles = "";
+	foreach (Style in _Styles) {
+		if (Style != "") Styles ^= """<style>{{{Style}}}</style>""";
+	}
+	
+	if (Styles != "") ReadStyles("""<commands><styles>{{{Styles}}}</styles></commands>""", _Reset);
+}
+
+// ---------------------------------- //
+/** Get the available lengths
+ *
+ *	@return							An array containing the available lengths
+ */
+Text[] GetMapLengths() {
+	declare Lengths = Text[];
+	foreach (LengthName => CollectionLengths in C_LibRandomStyles_MapLengths) {
+		Lengths.add(LengthName);
+	}
+	return Lengths;
+}
+
+// ---------------------------------- //
+/** Get the available speeds
+ *
+ *	@return							An array containing the available speed
+ */
+Text[] GetMapSpeeds() {
+	return C_LibRandomStyles_MapSpeeds;
+}
+
+// ---------------------------------- //
+/** Get the available styles
+ *
+ *	@return							An array containing the available styles
+ */
+Text[] GetMapStyles() {
+	return C_LibRandomStyles_MapStyles;
+}
+
+// ---------------------------------- //
+/** Get a macroblock model maximum amount in decoration
+ *
+ *	@param	_MacroblockModel		The macroblock model to check
+ *
+ *	@return							The macroblock model maximum amount
+ */
+Integer GetDecoMaxCount(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return -1;
+	declare LibRandomStyles_DecoMaxCount for _MacroblockModel = -1;
+	return LibRandomStyles_DecoMaxCount;
+}
+
+// ---------------------------------- //
+/** Get a macroblock model decoration rate
+ *
+ *	@param	_MacroblockModel		The macroblock model to check
+ *
+ *	@return							The decoration rate of the macroblock model
+ */
+Real GetDecoRate(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return 1.;
+	declare LibRandomStyles_DecoRate for _MacroblockModel = 1.;
+	return LibRandomStyles_DecoRate;
+}
+
+// ---------------------------------- //
+/** Get the available skins for a macroblock model
+ *
+ *	@param	_MacroblockModel		The macroblock model to check
+ *
+ *	@return							The available skins, if the array is empty all skins are available
+ */
+Text[] GetSkins(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return Text[];
+	declare LibRandomStyles_Skins for _MacroblockModel = Text[];
+	return LibRandomStyles_Skins;
+}
+
+// ---------------------------------- //
+/** Check if the macroblock can be skinned
+ *
+ *	@param	_MacroblockModel		The macroblock model to check
+ *
+ *	@return							True if the macroblock model can be skinned, False otherwise
+ */
+Boolean CanSkin(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return False;
+	declare LibRandomStyles_CanSkin for _MacroblockModel = True;
+	return LibRandomStyles_CanSkin;
+}
+
+// ---------------------------------- //
+/// Load default random styles for the enviro
+Void LoadDefaultStyles() {
+	// Real _Value, Text _Family, Text _Type, Text _Name, Text _Clip, Integer _IsTurning, Integer _IsShifting, Integer _IsRising, Integer _IsTransfert
+	switch (Map.CollectionName) {
+		case "Canyon": {
+			G_LibRandomStyles_DecoMultipliers = [
+				"|Decoration|Technology" => 0.7,
+				"|Decoration|Nature" => 0.25,
+				"|Decoration|International Turbo" => 0.4,
+				"|Decoration|Podium" => 0.
+			];
+			Private_AddMultiplier(0.5, "", "", "", "", C_LibRandomStyles_False, C_LibRandomStyles_False, C_LibRandomStyles_Null, C_LibRandomStyles_Null);
+			Private_AddMultiplier(0.25, "", "", "", "", C_LibRandomStyles_Null, C_LibRandomStyles_Null, C_LibRandomStyles_True, C_LibRandomStyles_Null);
+			Private_AddMultiplier(0.5, "Arena", "Checkpoints", "ArenaLargeCopterStartMidAir", "", C_LibRandomStyles_Null, C_LibRandomStyles_Null, C_LibRandomStyles_Null, C_LibRandomStyles_Null);
+			Private_AddMultiplier(0.5, "Arena", "Checkpoints", "Start", "", C_LibRandomStyles_Null, C_LibRandomStyles_Null, C_LibRandomStyles_Null, C_LibRandomStyles_Null);
+			Private_AddMultiplier(0.5, "Arena", "Checkpoints", "StartHelico", "", C_LibRandomStyles_Null, C_LibRandomStyles_Null, C_LibRandomStyles_Null, C_LibRandomStyles_Null);
+		}
+		case "Valley": {
+			G_LibRandomStyles_DecoMultipliers = [
+				"|Decoration|Technology" => 0.05,
+				"|Decoration|Nature" => 1.,
+				"|Decoration|International Turbo" => 0.25,
+				"|Decoration|Podium" => 0.
+			];
+			Private_AddMultiplier(0.5, "", "", "", "", C_LibRandomStyles_False, C_LibRandomStyles_False, C_LibRandomStyles_Null, C_LibRandomStyles_Null);
+			Private_AddMultiplier(0.25, "", "", "", "", C_LibRandomStyles_Null, C_LibRandomStyles_Null, C_LibRandomStyles_True, C_LibRandomStyles_Null);
+		}
+		case "Stadium": {
+			G_LibRandomStyles_DecoMultipliers = [
+				"|Decoration|Technology" => 0.1,
+				"|Decoration|Nature" => 0.5,
+				"|Decoration|International Turbo" => 0.1,
+				"|Decoration|Inflatables" => 0.2,
+				"|Decoration|Podium" => 0.
+			];
+			Private_AddMultiplier(0.5, "", "", "", "", C_LibRandomStyles_False, C_LibRandomStyles_False, C_LibRandomStyles_Null, C_LibRandomStyles_Null);
+			Private_AddMultiplier(0.25, "", "", "", "", C_LibRandomStyles_Null, C_LibRandomStyles_Null, C_LibRandomStyles_True, C_LibRandomStyles_Null);
+		}
+		case "Lagoon": {
+			G_LibRandomStyles_DecoMultipliers = [
+				"|Decoration|Technology" => 0.25,
+				"|Decoration|Nature" => 0.7,
+				"|Decoration|International Turbo" => 0.25,
+				"|Decoration|Podium" => 0.
+			];
+			Private_AddMultiplier(0.5, "", "", "", "", C_LibRandomStyles_False, C_LibRandomStyles_False, C_LibRandomStyles_Null, C_LibRandomStyles_Null);
+			Private_AddMultiplier(0.25, "", "", "", "", C_LibRandomStyles_Null, C_LibRandomStyles_Null, C_LibRandomStyles_True, C_LibRandomStyles_Null);
+		}
+	}
+	
+	Private_BuildMultiplier();
+}
+
+// ---------------------------------- //
+/// Unload the library
+Void Unload() {
+	ClearStyles();
+}
+
+// ---------------------------------- //
+/// Load the library
+Void Load() {
+	Unload();
+	
+	foreach (Key => MacroblockModel in MacroblockModels) {
+		declare LibRandomStyles_DecoMaxCount for MacroblockModel = -1;
+		declare LibRandomStyles_DecoRate for MacroblockModel = 1.;
+		declare LibRandomStyles_Skins for MacroblockModel = Text[];
+		declare LibRandomStyles_CanSkin for MacroblockModel = True;
+		LibRandomStyles_DecoMaxCount = -1;
+		LibRandomStyles_DecoRate = 1.;
+		LibRandomStyles_Skins = Text[];
+		LibRandomStyles_CanSkin = True;
+		
+		if (Map.CollectionName == "Canyon") {
+			if (Macroblock::GetFamily(MacroblockModel) == "Deco") {
+				declare Name = Macroblock::GetName(MacroblockModel);
+				declare Type = Macroblock::GetType(MacroblockModel);
+				
+				if (Type == "Technology") {
+					if (TL::Find("CoolingTower", Name, False, False)) {
+						LibRandomStyles_DecoMaxCount = 2;
+					} else if (TL::Find("Copter", Name, False, False)) {
+						LibRandomStyles_DecoMaxCount = 1;
+					} else if (TL::Find("Crane", Name, False, False)) {
+						LibRandomStyles_DecoRate = 0.5;
+						if (Name == "CraneContainersAir") {
+							LibRandomStyles_Skins = ["rd_Canyon_skull", "rd_Canyon_skull_Bk"];
+						}
+					} else if (TL::Find("HeliPad", Name, False, False)) {
+						LibRandomStyles_Skins = Collection::GetEnviroSkins(Map.CollectionName, False, True);
+					} else if (TL::Find("Pipeline", Name, False, False)) {
+						LibRandomStyles_DecoMaxCount = 1;
+					} else if (Name == "PowerPlant") {
+						LibRandomStyles_DecoMaxCount = 1;
+					} else if (TL::Find("RadioTower", Name, False, False)) {
+						LibRandomStyles_DecoRate = 0.25;
+					} else if (Name == "SmallReffinery") {
+						LibRandomStyles_DecoMaxCount = 2;
+					}
+				} else if (Type == "International Turbo") {
+					if (Name == "BillboardsHigh" || Name == "BillboardsLow" || Name == "BillboardsMid") {
+						LibRandomStyles_Skins = Collection::GetEnviroSkins(Map.CollectionName, True, False);
+					} else if (TL::Find("Blimp", Name, False, False)) {
+						LibRandomStyles_DecoMaxCount = 1;
+						LibRandomStyles_CanSkin = False;
+					} else if (TL::Find("Copter", Name, False, False)) {
+						LibRandomStyles_Skins = Collection::GetEnviroSkins(Map.CollectionName, True, False);
+						LibRandomStyles_DecoMaxCount = 2;
+					} else if (Name == "Donut") {
+						LibRandomStyles_DecoMaxCount = 3;
+					} else if (TL::Find("Pig", Name, False, False)) {
+						LibRandomStyles_DecoMaxCount = 2;
+					} else if (Name == "TMBuilding") {
+						LibRandomStyles_DecoMaxCount = 1;
+					} else if (TL::Find("Wheel", Name, False, False)) {
+						LibRandomStyles_DecoMaxCount = 1;
+					} else if (TL::Find("WIPBillboard", Name, False, False)) {
+						LibRandomStyles_Skins = Collection::GetEnviroSkins(Map.CollectionName, True, False);
+					} else if (TL::Find("WIPBillboard", Name, False, False)) {
+						LibRandomStyles_Skins = Collection::GetEnviroSkins(Map.CollectionName, True, False);
+						LibRandomStyles_DecoRate = 0.25;
+					} else if (Name == "WIPStructureBillboardsAir") {
+						LibRandomStyles_DecoMaxCount = 1;
+						LibRandomStyles_CanSkin = False;
+					}
+				}
+			}
+		} else if (Map.CollectionName == "Valley") {
+			if (Macroblock::GetFamily(MacroblockModel) == "Deco") {
+				declare Name = Macroblock::GetName(MacroblockModel);
+				declare Type = Macroblock::GetType(MacroblockModel);
+				
+				if (Type == "Nature") {
+					if (Name == "Bridge" || Name == "BusStop") {
+						LibRandomStyles_DecoRate = 0.25;
+					} else if (Name == "Church") {
+						LibRandomStyles_DecoMaxCount = 1;
+					} else if (TL::Find("House", Name, False, False)) {
+						LibRandomStyles_DecoRate = 0.25;
+					} else if (Name == "Square") {
+						LibRandomStyles_DecoRate = 0.25;
+					} else if (TL::Find("WaterMill", Name, False, False)) {
+						LibRandomStyles_DecoMaxCount = 1;
+					}
+				} else if (Type == "Technology") {
+					if (TL::Find("ArenaPillarRoadPaint", Name, False, False)) {
+						LibRandomStyles_Skins = ["rd_BEAR_black", "rd_BEAR_white"];
+					} else if (TL::Find("Copter", Name, False, False)) {
+						LibRandomStyles_DecoMaxCount = 2;
+					} else if (Name == "Crane" || Name == "CraneContainers") {
+						LibRandomStyles_DecoRate = 0.5;
+					} else if (TL::Find("PowerLine", Name, False, False)) {
+						LibRandomStyles_DecoRate = 0.25;
+					} else if (Name == "Windmill") {
+						LibRandomStyles_DecoMaxCount = 20;
+					}
+				} else if (Type == "International Turbo") {
+					if (TL::Find("Blimp", Name, False, False)) {
+						LibRandomStyles_DecoMaxCount = 1;
+						LibRandomStyles_CanSkin = False;
+					} else if (TL::Find("Copter", Name, False, False)) {
+						LibRandomStyles_Skins = Collection::GetEnviroSkins(Map.CollectionName, True, False);
+						LibRandomStyles_DecoMaxCount = 2;
+					} else if (TL::Find("Pig", Name, False, False)) {
+						LibRandomStyles_DecoMaxCount = 2;
+					} else if (TL::Find("Signs", Name, False, False)) {
+						LibRandomStyles_Skins = Collection::GetEnviroSkins(Map.CollectionName, True, False);
+					} else if (Name == "TMBuilding") {
+						LibRandomStyles_DecoMaxCount = 1;
+					} else if (TL::Find("Wheel", Name, False, False)) {
+						LibRandomStyles_DecoMaxCount = 1;
+					}
+				}
+			}
+		} else if (Map.CollectionName == "Stadium") {
+			if (Macroblock::GetFamily(MacroblockModel) == "Deco") {
+				declare Type = Macroblock::GetType(MacroblockModel);
+				declare Name = Macroblock::GetName(MacroblockModel);
+				
+				if (Type == "Technology") {
+					if (TL::Find("Copter", Name, False, False)) {
+						LibRandomStyles_DecoMaxCount = 2;
+					} else if (TL::Find("Crane", Name, False, False)) {
+						LibRandomStyles_DecoRate = 0.25;
+					} else if (Name == "RadioTower") {
+						LibRandomStyles_DecoMaxCount = 2;
+					}
+				} else if (Type == "International Turbo") {
+					if (Name == "Bretzel") {
+						LibRandomStyles_DecoMaxCount = 2;
+					} else if (TL::Find("Copter", Name, False, False)) {
+						LibRandomStyles_Skins = Collection::GetEnviroSkins(Map.CollectionName, True, False);
+						LibRandomStyles_DecoMaxCount = 2;
+					} else if (Name == "CraneBigBillboards") {
+						LibRandomStyles_Skins = Collection::GetEnviroSkins(Map.CollectionName, True, False);
+					} else if (Name == "CraneRussianDolls") {
+						LibRandomStyles_DecoRate = 0.25;
+					} else if (Name == "Donut") {
+						LibRandomStyles_DecoMaxCount = 2;
+					} else if (Name == "Donut+Bretzel") {
+						LibRandomStyles_DecoMaxCount = 1;
+					} else if (TL::Find("FabricSigns", Name, False, False)) {
+						LibRandomStyles_CanSkin = False;
+					} else if (TL::Find("Pig", Name, False, False)) {
+						LibRandomStyles_DecoMaxCount = 1;
+					} else if (Name == "TMBuilding") {
+						LibRandomStyles_DecoMaxCount = 1;
+					} else if (TL::Find("TowerBaseBillboard", Name, False, False)) {
+						LibRandomStyles_Skins = Collection::GetEnviroSkins(Map.CollectionName, True, False);
+					} else if (TL::Find("TowerBillboards", Name, False, False)) {
+						LibRandomStyles_CanSkin = False;
+					} else if (TL::Find("Towers2layers", Name, False, False)) {
+						LibRandomStyles_CanSkin = False;
+					} else if (TL::Find("TowerSpeakers", Name, False, False)) {
+						LibRandomStyles_CanSkin = False;
+					} else if (TL::Find("TowersTwin", Name, False, False)) {
+						LibRandomStyles_CanSkin = False;
+					} else if (TL::Find("Wheel", Name, False, False)) {
+						LibRandomStyles_DecoMaxCount = 1;
+					}
+				} else if (Type == "Inflatables") {
+					if (TL::Find("Blimp", Name, False, False)) {
+						LibRandomStyles_DecoMaxCount = 1;
+						LibRandomStyles_CanSkin = False;
+					} else if (TL::Find("InflatablePig", Name, False, False)) {
+						LibRandomStyles_DecoMaxCount = 1;
+					} else if (Name == "InflatableSigns") {
+						LibRandomStyles_Skins = Collection::GetEnviroSkins(Map.CollectionName, True, False);
+						LibRandomStyles_DecoMaxCount = 3;
+					}
+				}
+			}
+		} else if (Map.CollectionName == "Lagoon") {
+			if (Macroblock::GetFamily(MacroblockModel) == "Deco") {
+				declare Name = Macroblock::GetName(MacroblockModel);
+				declare Type = Macroblock::GetType(MacroblockModel);
+				
+				if (Type == "Nature") {
+					if (TL::Find("Cell", Name, False, False)) {
+						LibRandomStyles_DecoRate = 0.1;
+					}
+				} else if (Type == "Technology") {
+					if (TL::Find("Boat", Name, False, False)) {
+						LibRandomStyles_DecoMaxCount = 1;
+					} else if (TL::Find("Copter", Name, False, False)) {
+						LibRandomStyles_DecoMaxCount = 2;
+					} else if (Name == "Crane" || Name == "CraneContainers") {
+						LibRandomStyles_DecoRate = 0.5;
+					} else if (TL::Find("HeliPad", Name, False, False)) {
+						LibRandomStyles_Skins = ["rd_TM_CN", "rd_TM_CN_Bk"];
+					} else if (TL::Find("ParkWheel", Name, False, False)) {
+						LibRandomStyles_DecoMaxCount = 1;
+					} else if (TL::Find("WoodCrane", Name, False, False)) {
+						LibRandomStyles_Skins = ["rd_Lagoon", "rd_Lagoon_Bk"];
+					}
+				} else if (Type == "International Turbo") {
+					if (TL::Find("Blimp", Name, False, False)) {
+						LibRandomStyles_DecoMaxCount = 1;
+						LibRandomStyles_CanSkin = False;
+					} else if (TL::Find("Copter", Name, False, False)) {
+						LibRandomStyles_DecoMaxCount = 1;
+						LibRandomStyles_Skins = Collection::GetEnviroSkins(Map.CollectionName, True, False);
+					}  else if (Name == "CraneCats") {
+						LibRandomStyles_DecoRate = 0.5;
+					} else if (TL::Find("PigBlack", Name, False, False)) {
+						LibRandomStyles_DecoMaxCount = 1;
+						LibRandomStyles_Skins = Collection::GetEnviroSkins(Map.CollectionName, True, False);
+					} else if (Name == "SignsHigh" || Name == "SignsHighSea" || Name == "SignsWood1" || Name == "SignsWood1Sea") {
+						LibRandomStyles_CanSkin = False;
+					} else if (TL::Find("Signs", Name, False, False)) {
+						LibRandomStyles_Skins = Collection::GetEnviroSkins(Map.CollectionName, True, False);
+					} else if (TL::Find("TMBuilding", Name, False, False)) {
+						LibRandomStyles_DecoMaxCount = 1;
+					} else if (TL::Find("Wheel", Name, False, False)) {
+						LibRandomStyles_DecoMaxCount = 1;
+					}
+				}
+			}
+		}
+		
+		if (Key % 50 == 0) yield;
+	}
+	
+	// @Debug
+	/*declare Test = """
+<commands>
+	<seed>123</seed>
+	<styles>
+		<style>short</style>
+		<style>long</style>
+		
+		<style>fast</style>
+		<style>slow</style>
+		
+		<style>lol</style>
+		<style>race</style>
+		<style>tech</style>
+	</styles>
+	<properties>
+		<length>1500.</length>
+		<checkpointsspacing>200.</checkpointsspacing>
+		<clipspriority>
+			<clip>RoadRaceClipLeft</clip>
+			<clip>RoadRaceClipRight</clip>
+		</clipspriority>
+	</properties>
+	<trackmultipliers>
+		<multiplier>2.</multiplier>
+		<multiplier isturning="1">0.5</multiplier>
+		<multiplier type="Turbos">10.</multiplier>
+		<multiplier clip="RoadMainClip">6.66</multiplier>
+		<multiplier family="RoadRace" type="Turbos" name="TurboLeft" clip="RoadRaceClipLeft" isturning="1" isshifting="1" isrising="1" istransfert="1">1.5</multiplier>
+	</trackmultipliers>
+	<decomultupliers>
+		<multiplier type="Natural">1.</multiplier>
+		<multiplier type="Podium">1.</multiplier>
+		<multiplier type="Structures">0.</multiplier>
+	</decomultupliers>
+</commands>
+""";
+	Test = """
+<commands><styles><style>medium</style><style>fast</style><style>tech</style></styles></commands>
+""";
+	ReadStyles(Test);*/
+}

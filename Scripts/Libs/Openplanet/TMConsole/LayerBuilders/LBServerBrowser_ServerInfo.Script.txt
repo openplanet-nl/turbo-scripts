@@ -1,0 +1,1335 @@
+#Include "Libs/Openplanet/TMConsole/MenuColor.Script.txt"					as MenuColor
+#Include "Libs/Openplanet/TMConsole/FontManager.Script.txt"					as Font
+#Include "Libs/Openplanet/UIPadButtons.Script.txt"							as LibUIButtons
+#Include "Libs/Openplanet/TMConsole/ProgressBar.Script.txt"					as ProgressBar
+#Include "Libs/Openplanet/SystemText.Script.txt"								as SystemText
+#Include "Libs/Openplanet/TMConsole/Menu/LibInputInfos.Script.txt"			as InputInfos
+
+
+#Include "TextLib" as TL
+
+#Const C_ImgBase 	"file://Media/Manialinks/Nadeo/TMConsole/Images/"
+#Const C_ImgBase2	"file://Media/Images/TMConsole/Ingame/"
+#Const C_ImgBaseFlags	"file://Media/Manialinks/Nadeo/TMConsole/Images/Helmets/Drapeaux/NewFlag/"
+
+#Const C_ImgBaseDev "file://Media/Images/"
+
+declare Boolean G_HasOnglet;
+declare Boolean G_IsInvite;
+
+Void Init(Boolean _HasOnglet, Boolean _IsInvite)
+{
+	G_HasOnglet = _HasOnglet;
+	G_IsInvite	= _IsInvite;
+}
+
+Text InjectInManialink () {
+	//IMAGES
+	declare Text 	IMGSlotSmallBg           = C_ImgBase2^"slot-medium-bg.dds";
+	declare Text 	IMGSlotSmallFg           = C_ImgBase2^"slot-medium-fg.dds";
+	declare Text 	IMGSlotMediumBg          = C_ImgBase2^"slot-medium-bg.dds";
+	declare Text 	IMGSlotMediumFg          = C_ImgBase^"slot-medium-fg2.dds";
+	declare Text 	IMGSlotBigBg             = C_ImgBase^"slot-big-bg2.dds";
+	declare Text 	IMGSlotBigFg             = C_ImgBase^"slot-big-fg2.dds";
+	declare Text 	IMGMenuBg                = C_ImgBase2^"menu-bg-1.dds";
+	declare Text 	IMGBackground            = C_ImgBase^"SystemStartBg2.dds";
+
+	declare Integer Platform   = LibUIButtons::GetPlatform();
+	declare Text 	IMGSelect_PC  	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"), CManiaAppEvent::EMenuNavAction::Select);
+	declare Text 	IMGSelect_PS4  	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::Select);
+	declare Text 	IMGSelect_XB1  	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::Select);
+	
+	declare Text 	IMGCancel_PC  	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"), CManiaAppEvent::EMenuNavAction::Cancel);
+	declare Text 	IMGCancel_PS4  	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::Cancel);
+	declare Text 	IMGCancel_XB1  	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::Cancel);
+	
+	declare Text 	IMGAppMenu_PC	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"), CManiaAppEvent::EMenuNavAction::AppMenu);
+	declare Text 	IMGAppMenu_PS4	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::AppMenu);
+	declare Text 	IMGAppMenu_XB1	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::AppMenu);
+	
+	declare Text 	IMGAction2_PC	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"), CManiaAppEvent::EMenuNavAction::Action2);
+	declare Text 	IMGAction2_PS4	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::Action2);
+	declare Text 	IMGAction2_XB1	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::Action2);
+
+	declare Text	IMGEnvironment_Big_Canyon  = C_ImgBase^"Logos/logo_canyon_menu.dds";
+	declare Text	IMGEnvironment_Big_Stadium = C_ImgBase^"Logos/logo_stadium_menu.dds";
+	declare Text	IMGEnvironment_Big_Lagoon  = C_ImgBase^"Logos/logo_lagoon_menu.dds";
+	declare Text	IMGEnvironment_Big_Valley  = C_ImgBase^"Logos/logo_valley_menu.dds";
+
+	declare Text	TitleColor = TL::ColorToText(MenuColor::GetMenuColor(0));
+	
+	//POS & SIZE
+	declare Real	ServerInfo_PosY				= 32.08;
+	declare Real	ServerInfo_Password_PosY	= 16.54;
+	declare Real 	ServerInfo_SizeX			= 215.0;
+	declare Real	ServerInfo_Password_SizeX	= 110.;
+	declare Real	ServerInfo_SizeY			= 8.27;
+	declare Real 	ServerInfo_SizeYElement 	= ServerInfo_SizeY * 0.905;
+	
+	declare Real	ServerInfo_SizeXCircle					= ServerInfo_SizeX * 1. / 30.;
+	
+	declare Integer	ServerInfo_TrackCardCountX				= 4;
+	declare Integer	ServerInfo_TrackCardCountY				= 2;
+	declare Real 	ServerInfo_TrackCardMarginRatio			= 0.05;
+	declare Real	ServerInfo_TrackCardSizeX				= ServerInfo_SizeX * 0.6 / ServerInfo_TrackCardCountX;
+	declare Real	ServerInfo_TrackCardSizeXWithoutMargin 	= ServerInfo_TrackCardSizeX * (1-ServerInfo_TrackCardMarginRatio);
+	declare Real	ServerInfo_TrackCardSizeY				= 8 * ServerInfo_SizeY / ServerInfo_TrackCardCountY;
+	declare Real	ServerInfo_TrackCardSizeYWithoutMargin 	= ServerInfo_TrackCardSizeY * (1-ServerInfo_TrackCardMarginRatio);
+	
+
+	ProgressBar::Init(1./60., 1./3., MenuColor::GetMenuColor(0), 15000);
+	ProgressBar::SetBarSize(<ServerInfo_SizeX * 12 / 30, ServerInfo_SizeYElement>);
+	ProgressBar::AddTag("Start", 3./7.);
+	ProgressBar::AddTag("MS", 4./7.);
+	ProgressBar::AddTag("Join", 2./100.);
+	
+	InputInfos::Init("ServerInfo", ServerInfo_SizeXCircle, ServerInfo_SizeY, 0.5);
+	InputInfos::AddInput(7., "Select");
+	InputInfos::AddInput(7., "Cancel");
+	if (!G_IsInvite)
+	{
+		InputInfos::AddInput(7., "Action1");
+		InputInfos::AddInput(7., "LStickPress");
+	}
+	
+	InputInfos::SetConstantInput("Select"		, _("|16 chars max|TOGGLE"));
+	InputInfos::SetConstantInput("Cancel"		, _("|16 chars max|BACK"));
+	if (!G_IsInvite)
+	{
+		InputInfos::SetConstantInput("Action1"		, _("|16 chars max|MANAGE ROOM"));
+		InputInfos::SetConstantInput("LStickPress"	, _("|16 chars max|REFRESH"));
+	}
+	//////////////////////////////
+	// FRAMEMODELS
+	//////////////////////////////
+	declare MLText = """
+		<framemodel id="Frame_ServerInfoCard">
+			<quad sizen="{{{ServerInfo_SizeX * 12. / 30.}}} {{{ServerInfo_SizeYElement}}}" 	image="{{{IMGSlotMediumBg}}}" 	posn="0 0 2" />
+			<quad sizen="{{{ServerInfo_SizeX * 12. / 30.}}} {{{ServerInfo_SizeYElement}}}" 	image="{{{IMGSlotMediumFg}}}" 	posn="0 0 4" />
+			<quad sizen="{{{ServerInfo_SizeX * 12. / 30.}}} {{{ServerInfo_SizeY}}}"		 	image="{{{IMGMenuBg}}}" 	 	posn="0 0 1" />
+		</framemodel>
+		<framemodel id="FrameModel_ServerInfoCard">
+			<quad 	halign="left" valign="center" 	posn="0 0 2" sizen="45 8" 	style="Bgs1" substyle="BgCardProperty" />
+			<label 	halign="left" valign="center2" 	posn="2 0 3" sizen="34"  	id="Label_Name"	textcolor="ddd" text="Name" textsize="3."/>
+		</framemodel>
+		<framemodel id="FrameModel_ServerInfoTrackCard">
+			<quad 	halign="left" 	valign="top" sizen="{{{ServerInfo_TrackCardSizeXWithoutMargin}}} 		{{{ServerInfo_TrackCardSizeYWithoutMargin}}}" 				bgcolor="fff"									id="Quad_Thumbnail"/>
+		</framemodel>
+		<framemodel id="FrameModel_ServerInfoTracksGroup">
+	""";
+	for (I, 0, ServerInfo_TrackCardCountY - 1)
+	{
+		declare PosnY = -ServerInfo_TrackCardSizeY * I - ServerInfo_TrackCardSizeY * ServerInfo_TrackCardMarginRatio;
+		for(J, 0, ServerInfo_TrackCardCountX - 1)
+		{
+			declare PosnX = ServerInfo_TrackCardSizeX * J + ServerInfo_TrackCardSizeX * ServerInfo_TrackCardMarginRatio;
+			
+			MLText ^= """<frameinstance posn="{{{PosnX}}} {{{PosnY}}} 1" modelid="FrameModel_ServerInfoTrackCard" id="Frame_Track{{{I}}}{{{J}}}" />""";
+		}
+	}
+	MLText ^= "</framemodel>";
+	
+	//////////////////////////////
+	// FRAME SERVER INFO
+	//////////////////////////////
+
+	MLText ^= """<frame id="Frame_ServerInfo" posn="0 {{{ServerInfo_PosY}}} 25" hidden="1">""";
+	
+	/////////////////
+	// FRAME TITLE & BG
+	/////////////////
+	MLText ^= """
+		<frame id="Frame_Title" posn="0 0 0">
+			<quad posn="0 {{{-ServerInfo_PosY}}} -6" halign="center" valign="center" sizen="320 180" image="{{{IMGBackground}}}" />
+			<quad halign="center" valign="bottom" sizen="{{{ServerInfo_SizeX}}} {{{ServerInfo_SizeY*2.}}}"	 image="{{{IMGSlotBigFg}}}"                  posn="0 0 7" opacity="1."/>
+			<quad  halign="center" valign="bottom" sizen="{{{ServerInfo_SizeX}}} {{{ServerInfo_SizeY*2.}}}"	 image="{{{IMGSlotBigBg}}}"                  posn="0 0 5" opacity="1."/>
+			<label halign="left" valign="center" textprefix="$t" textfont="{{{Font::GetFontName("Main")}}}" posn="{{{-(ServerInfo_SizeX-2)/2.}}}  {{{ServerInfo_SizeY + 1.8}}} 6" textcolor="{{{TitleColor}}}" textsize="13." text="{{{
+			//L16N Title of the "Room Information" window
+			_("Room Info")
+			}}}" sizen="{{{ServerInfo_SizeX-2.}}}"  opacity="1.0"/>
+			<quad  	halign="right" valign="center" sizen="{{{ServerInfo_SizeY * 1.6}}} {{{ServerInfo_SizeY * 1.6}}}"										 posn="{{{ServerInfo_SizeX * 0.5 - 5.}}} {{{ServerInfo_SizeY}}} 6" id="Title_Quad_Mode" />
+			<quad  	halign="right" valign="center" sizen="{{{ServerInfo_SizeY * 1.6}}} {{{ServerInfo_SizeY * 1.6}}}"										 posn="{{{ServerInfo_SizeX * 0.5 - 10. - ServerInfo_SizeY * 1.6}}} {{{ServerInfo_SizeY}}} 6" id="Title_Quad_Echelon" />
+		</frame>
+		<frame id="Frame_ChallengeTitle" posn="0 {{{-ServerInfo_SizeY*0.5}}}  3">
+			<quad halign="center" valign="center" sizen="{{{ServerInfo_SizeX}}} {{{ServerInfo_SizeYElement*0.96}}}" image="{{{IMGSlotMediumFg}}}" posn="0 -0.1 5" />
+			<quad halign="center" valign="center" sizen="{{{ServerInfo_SizeX}}} {{{ServerInfo_SizeYElement*0.95}}}" image="{{{IMGSlotMediumBg}}}" posn="0 0 2" />
+			<quad halign="center" valign="center" sizen="{{{ServerInfo_SizeX}}} {{{ServerInfo_SizeYElement*0.96}}}" posn="0. -0.1 3" bgcolor="fff" opacity="0.95"/>
+			<quad halign="left"   valign="center" sizen="{{{ServerInfo_SizeYElement * 0.8}}} {{{ServerInfo_SizeYElement * 0.8}}}" posn="{{{-ServerInfo_SizeX/2. + 2.}}} 0 4" id="Quad_RoomFlag" />
+			<label id="Label_RoomName" posn="{{{-ServerInfo_SizeX/2.+ 4. + ServerInfo_SizeYElement * 0.8}}} 0.6 4" halign="left" valign="center" sizen="{{{ServerInfo_SizeXCircle * 18}}} 7" textcolor="000" textprefix="$t" text="INSERT ROOM NAME HERE" textsize="4."	textfont="{{{Font::GetFontName("Main")}}}" />
+			<frame id="frame_showauthorprofile">
+				<quad 	halign="right"  valign="center" posn="{{{ServerInfo_SizeX/2.}}} 0.2 5" sizen="{{{ServerInfo_SizeXCircle * 9.}}} {{{ServerInfo_SizeY}}}" opacity="0." scriptevents="1" id="MouseInput_ServerInfoInputInfo_Action2"  />
+	""";
+			
+			for (I, 0, 2) {
+			declare Text Image;
+			switch (I) {
+				case LibUIButtons::GetPlatform("PC") 	: Image = IMGAction2_PC;
+				case LibUIButtons::GetPlatform("PS4") 	: Image = IMGAction2_PS4;
+				case LibUIButtons::GetPlatform("XB1") 	: Image = IMGAction2_XB1;
+			}
+		
+			MLText ^= """<quad 	halign="center" valign="center" posn="{{{ServerInfo_SizeX/2.-ServerInfo_SizeXCircle*0.5}}} 0.2 4" sizen="{{{ServerInfo_SizeXCircle*0.9}}} {{{ServerInfo_SizeXCircle*0.9}}} 6" image="{{{Image}}}" id="ServerInfo_ShowGamercardIcon_{{{I}}}" """;
+			if (I != Platform)
+				MLText ^= """ hidden="1" """;
+			MLText ^= "/>";
+		}
+		
+		MLText ^= """
+				<label 	halign="right" valign="center" posn="{{{ServerInfo_SizeX/2.-ServerInfo_SizeXCircle-2.}}}  0.6 4" sizen="{{{ServerInfo_SizeXCircle * 8. - 4. }}}" text="{{{SystemText::GetShowProfileTextForInputCard()}}}" id="Label_Name" textcolor="000"  textsize="4." textfont="{{{Font::GetFontName("Main")}}}" textprefix="$t" />
+			</frame>
+		</frame>
+		<quad posn="0 {{{- 4 * ServerInfo_SizeY}}} 0" image="{{{IMGMenuBg}}}" halign="right" sizen="{{{ServerInfo_SizeX / 2.}}} {{{ServerInfo_SizeY}}}"/>
+		<quad posn="0 {{{- 5 * ServerInfo_SizeY}}} 0" image="{{{IMGMenuBg}}}" halign="right" sizen="{{{ServerInfo_SizeX / 2.}}} {{{ServerInfo_SizeY}}}"/>
+		<quad posn="0 {{{- 6 * ServerInfo_SizeY}}} 0" image="{{{IMGMenuBg}}}" halign="right" sizen="{{{ServerInfo_SizeX / 2.}}} {{{ServerInfo_SizeY}}}"/>
+		<quad posn="0 {{{- 7 * ServerInfo_SizeY}}} 0" image="{{{IMGMenuBg}}}" halign="right" sizen="{{{ServerInfo_SizeX / 2.}}} {{{ServerInfo_SizeY}}}"/>
+		<quad posn="0 {{{- 8 * ServerInfo_SizeY}}} 0" image="{{{IMGMenuBg}}}" halign="right" sizen="{{{ServerInfo_SizeX / 2.}}} {{{ServerInfo_SizeY}}}"/>
+		<quad posn="0 {{{- 9 * ServerInfo_SizeY}}} 0" image="{{{IMGMenuBg}}}" halign="right" sizen="{{{ServerInfo_SizeX / 2.}}} {{{ServerInfo_SizeY}}}"/>
+		<quad posn="0 {{{- 9 * ServerInfo_SizeY}}} 0" image="{{{IMGMenuBg}}}" halign="left" sizen="{{{ServerInfo_SizeX / 2.}}} {{{ServerInfo_SizeY}}}"/>
+		<quad posn="0 {{{-ServerInfo_PosY}}} -4" sizen="320 180" bgcolor="000" halign="center" opacity="0.5" valign="center" hidden="0"/>
+	""";
+	
+	/////////////////
+	// SERVERNAME
+	/////////////////
+	//MLText ^= """
+	//	<frameinstance modelid="Frame_ServerInfoCard" posn="{{{-ServerInfo_SizeX / 2.}}} 0" />
+	//	<label posn="{{{-ServerInfo_SizeX / 2. + 5.}}} {{{-ServerInfo_SizeY /2.}}} 3" sizen="{{{ServerInfo_SizeX * 0.36}}}" textprefix="$t" id="ServerHostName" style="TextValueSmallSm" halign="left" valign="center2" textsize="3."/>
+	//""";	
+	
+	/////////////////
+	// ENVIRONMENTS
+	/////////////////
+	MLText ^= """
+		<frame posn="{{{-ServerInfo_SizeX / 2.}}} {{{-ServerInfo_SizeY}}}">
+			<quad posn="0 0 2" sizen="{{{ServerInfo_SizeX * 12. / 30.}}} {{{ServerInfo_SizeYElement+ServerInfo_SizeY}}}" image="{{{IMGSlotMediumBg}}}" opacity="1.0"/>
+			<quad posn="0 0 4" sizen="{{{ServerInfo_SizeX * 12. / 30.}}} {{{ServerInfo_SizeYElement+ServerInfo_SizeY}}}" image="{{{IMGSlotMediumFg}}}" opacity="1.0"/>
+			<quad posn="0 0 1" sizen="{{{ServerInfo_SizeX * 12. / 30.}}} {{{ServerInfo_SizeY*2}}}" 		  image="{{{IMGMenuBg}}}" opacity="1."/>
+			
+			<quad id="ServerEnv_Canyon" halign="center" valign="center" posn="{{{2.25 / 30. * ServerInfo_SizeX}}} {{{-ServerInfo_SizeY}}} 3" sizen="{{{ServerInfo_SizeX * 2.25 / 30.}}} {{{ServerInfo_SizeX * 2.25 / 30.}}}" image="{{{IMGEnvironment_Big_Canyon}}}" opacity="1."/>
+			<quad id="ServerEnv_Valley" halign="center" valign="center" posn="{{{4.75 / 30. * ServerInfo_SizeX}}} {{{-ServerInfo_SizeY}}} 3" sizen="{{{ServerInfo_SizeX * 2.25 / 30.}}} {{{ServerInfo_SizeX * 2.25 / 30.}}}" image="{{{IMGEnvironment_Big_Valley}}}" opacity="1."/>
+			<quad id="ServerEnv_Lagoon" halign="center" valign="center" posn="{{{7.25 / 30. * ServerInfo_SizeX}}} {{{-ServerInfo_SizeY}}} 3" sizen="{{{ServerInfo_SizeX * 2.25 / 30.}}} {{{ServerInfo_SizeX * 2.25 / 30.}}}" image="{{{IMGEnvironment_Big_Lagoon}}}" opacity="1."/>
+			<quad id="ServerEnv_Stadium" halign="center" valign="center" posn="{{{9.75 / 30. * ServerInfo_SizeX}}} {{{-ServerInfo_SizeY}}} 3" sizen="{{{ServerInfo_SizeX * 2.25 / 30.}}} {{{ServerInfo_SizeX * 2.25 / 30.}}}" image="{{{IMGEnvironment_Big_Stadium}}}" opacity="1."/>
+		</frame>
+	""";
+	
+	/////////////////
+	// GAMEMODE & MISC
+	/////////////////
+	MLText ^= """
+		<frameinstance modelid="Frame_ServerInfoCard" posn="{{{-ServerInfo_SizeX / 2.}}} {{{-ServerInfo_SizeY*3}}}" />
+		<label posn="{{{-ServerInfo_SizeX / 2. + 2.5}}} {{{-ServerInfo_SizeY * 3.5 + 0.2}}} 3" sizen="{{{ServerInfo_SizeX * 12. / 30. - 5.}}}" textprefix="$t" id="ServerGamemode" textfont="{{{Font::GetFontName("Main")}}}" halign="left" valign="center" textsize="3."/>
+		
+		<frame id="FrameAdequacy" posn="0 {{{-ServerInfo_SizeY*4}}}">
+			<frameinstance modelid="Frame_ServerInfoCard" posn="{{{-ServerInfo_SizeX / 2.}}} 0" />
+			<label posn="{{{-ServerInfo_SizeX / 2. + 7.5 + ServerInfo_SizeYElement * 0.8}}} {{{-ServerInfo_SizeY * 0.5 + 0.2}}} 3" sizen="{{{ServerInfo_SizeX * 12. / 30. - 10.}}}" textprefix="$t" textfont="{{{Font::GetFontName("Main")}}}" id="LabelAdequacy" halign="left" valign="center" textsize="3."/>
+			<quad  posn="{{{-ServerInfo_SizeX / 2. + 2.5}}} {{{-ServerInfo_SizeY * 0.5}}} 3"  sizen="{{{ServerInfo_SizeYElement * 0.8}}} {{{ServerInfo_SizeYElement * 0.8}}}" id="QuadAdequacy" style="TextValueSmallSm" valign="center" textsize="2."/>
+		</frame>
+
+		<frame id="FrameAdequacyWarning" hidden="1" posn="0 {{{-ServerInfo_SizeY*5}}}">
+			<frameinstance modelid="Frame_ServerInfoCard" posn="{{{-ServerInfo_SizeX / 2.}}} 0" />
+			<label posn="{{{-ServerInfo_SizeX / 2. + 2.5}}} {{{-ServerInfo_SizeY * 0.5 + 0.2}}} 3" sizen="{{{ServerInfo_SizeX * 12. / 30. - 5.}}}" textprefix="$t" textfont="{{{Font::GetFontName("Main")}}}" text="{{{_("This room cannot improve your ranking.")}}}" halign="left" valign="center" textsize="3."/>
+		</frame>
+		
+		<frame id="FramePrivacy" posn="0 {{{-ServerInfo_SizeY*6}}}">
+			<frameinstance modelid="Frame_ServerInfoCard" posn="{{{-ServerInfo_SizeX / 2.}}} 0" />
+			<label posn="{{{-ServerInfo_SizeX / 2. + 7.5 + ServerInfo_SizeYElement * 0.8}}} {{{-ServerInfo_SizeY * 0.5 + 0.2}}} 3" sizen="{{{ServerInfo_SizeX * 12. / 30. - 10.}}}" textprefix="$t" textfont="{{{Font::GetFontName("Main")}}}" id="LabelPrivacy" text="{{{_("Private")}}}" halign="left" valign="center" textsize="3."/>
+			<quad  posn="{{{-ServerInfo_SizeX / 2. + 2.5}}} {{{-ServerInfo_SizeY * 0.5}}} 3"  sizen="{{{ServerInfo_SizeYElement * 0.8}}} {{{ServerInfo_SizeYElement * 0.8}}}" id="QuadPrivacy" style="TextValueSmallSm" valign="center" textsize="2."/>
+		</frame>
+		
+	""";
+	
+	MLText ^= """
+		<frame id="frame_progressbar" posn="{{{-ServerInfo_SizeX / 2}}} {{{-ServerInfo_SizeY * 8.5}}}" hidden="1">
+			<frameinstance modelid="Frame_ServerInfoCard" posn="0 {{{ServerInfo_SizeY * 1.5}}}" />
+			<label id="progressbar_tag"	valign="center" posn="2.5 {{{ServerInfo_SizeY }}} 3" sizen="{{{ServerInfo_SizeX * 12. / 30. - 5.}}}" textprefix="$t" textfont="{{{Font::GetFontName("Main")}}}" textsize="3" />
+			<frameinstance modelid="Frame_ServerInfoCard" posn="0 {{{ServerInfo_SizeY * 0.5}}}" />
+			{{{ProgressBar::InjectInManialink()}}}
+		</frame>
+	""";
+	
+	/////////////////
+	// MAPS
+	/////////////////
+	MLText ^= """
+		<frame posn="{{{-ServerInfo_SizeX / 10}}} {{{-ServerInfo_SizeY}}} 5" id="Maps" clip="1" clipposn="{{{ServerInfo_SizeX * 0.3}}} {{{-4*ServerInfo_SizeY}}}" clipsizen="{{{ServerInfo_SizeX * 0.6}}} {{{8*ServerInfo_SizeY}}}">
+			<quad bgcolor="000" sizen="{{{ServerInfo_SizeX * 0.6}}} {{{8*ServerInfo_SizeY}}} -2" />
+			<label halign="center" valign="center2" textprefix="$t" textfont="{{{Font::GetFontName("Main")}}}" posn="{{{ServerInfo_SizeX*0.3}}} {{{-4*ServerInfo_SizeY}}} 10" id="Label_LoadingTracks" textsize="13." text="{{{_("Loading")}}}"  opacity="1.0"/>
+			<frameinstance id="ServerInfo_TrackGroup0" modelid="FrameModel_ServerInfoTracksGroup" />
+			<frameinstance id="ServerInfo_TrackGroup1" modelid="FrameModel_ServerInfoTracksGroup" posn="0 {{{-8*ServerInfo_SizeY}}}" />
+		</frame>
+	""";
+	
+	////////////////
+	//INPUT
+	////////////////
+	MLText ^= """<frame id="Frame_InputInfos" posn="{{{ServerInfo_SizeX *0.5}}} {{{- 10 * ServerInfo_SizeY}}} 7">
+			{{{InputInfos::InjectInManialink()}}}
+		</frame>	
+	</frame>
+	""";
+	
+	//////////////////////////////
+	// FRAME SERVER PASSWORD
+	//////////////////////////////
+	
+	MLText ^= """
+	<frame id="Frame_ServerPassword" posn="0 {{{ServerInfo_Password_PosY}}} 35" hidden="1">
+		<frame id="Frame_Title" posn="0 0 0">
+			<quad halign="center" valign="bottom" sizen="{{{ServerInfo_Password_SizeX}}} {{{ServerInfo_SizeY*2.}}}"
+			 image="{{{IMGSlotBigFg}}}"                  posn="0 0 7" opacity="1."/>
+			<quad  halign="center" valign="bottom" sizen="{{{ServerInfo_Password_SizeX}}} {{{ServerInfo_SizeY*2.}}}"
+			 image="{{{IMGSlotBigBg}}}"                  posn="0 0 5" opacity="1."/>
+			<label halign="left" valign="center" textprefix="$t" textfont="{{{Font::GetFontName("Main")}}}" posn="{{{-(ServerInfo_Password_SizeX-2)/2.}}}  {{{ServerInfo_SizeY + 1.8}}} 6" textcolor="{{{TitleColor}}}"
+			 id="Label_Title" textsize="13." text="{{{_("|15 Chars Max - Window Title|Enter Password")}}}" sizen="{{{ServerInfo_Password_SizeX-2.}}}"  opacity="1.0"/>
+		</frame>
+		
+		<frame posn="{{{-ServerInfo_Password_SizeX / 2.}}} 0">
+			<quad sizen="{{{ServerInfo_Password_SizeX}}} {{{ServerInfo_SizeY}}}" image="{{{IMGSlotMediumBg}}}"  posn="0 0 2" />
+			<quad sizen="{{{ServerInfo_Password_SizeX}}} {{{ServerInfo_SizeY}}}" image="{{{IMGSlotMediumFg}}}"  posn="0 0 4" />
+			<quad sizen="{{{ServerInfo_Password_SizeX}}} {{{ServerInfo_SizeY}}}" 		image="{{{IMGMenuBg}}}" posn="0 0 1" />
+			<label posn="5. {{{-ServerInfo_SizeY /2.}}} 3" sizen="{{{ServerInfo_Password_SizeX * 0.3 - 5.}}}" text="{{{_("Password :")}}}" style="TextValueSmallSm" halign="left" valign="center2" textsize="3."/>
+			<entry posn="{{{ServerInfo_Password_SizeX * 0.3 + 4.}}} {{{-ServerInfo_SizeY / 2.}}} 3" sizen="{{{ServerInfo_Password_SizeX * 0.7 - 5.}}}" id="ServerPassword" textformat="Password" style="TextValueSmallSm" valign="center2" textsize="3." scriptevents="1" />
+		</frame>
+		
+		<quad image="{{{IMGMenuBg}}}" halign="left" sizen="{{{ServerInfo_Password_SizeX}}} {{{ServerInfo_SizeY}}}"/>
+		<quad posn="0 {{{-ServerInfo_Password_PosY}}} -1" sizen="320 180" bgcolor="000" halign="center" opacity="0.5" valign="center" />
+
+		<frame id="FrameInputSelect" posn="{{{ServerInfo_Password_SizeX / 2. - 7 * ServerInfo_SizeX / 30.}}} {{{-2*ServerInfo_SizeY}}}" hidden="1" >
+			<quad halign="right" valign="bottom" sizen="{{{6 * ServerInfo_SizeX / 30.}}} {{{ServerInfo_SizeY}}}" image="{{{IMGSlotSmallBg}}}"   posn="0 0 6" />
+			<label halign="right" valign="center" posn="{{{- ServerInfo_SizeX / 30. - 2.}}} 4.5 7" textcolor="ddd" text="{{{_("|16 chars max.|VALIDATE")}}}" id="Label_Name" sizen="{{{5 * ServerInfo_SizeX / 30. - 4.}}}" textsize="4." textfont="{{{Font::GetFontName("Main")}}}" textprefix="$t"/>
+			<quad halign="right" valign="bottom" sizen="{{{6 * ServerInfo_SizeX / 30.}}} {{{ServerInfo_SizeY}}}" image="{{{IMGSlotSmallFg}}}"  posn="0 0 8" scriptevents="1" id="MouseInput_Password_Select" />
+	""";
+	
+		for (I, 0, 2) {
+			declare Text Image;
+			switch (I) {
+				case LibUIButtons::GetPlatform("PC") 	: Image = IMGSelect_PC;
+				case LibUIButtons::GetPlatform("PS4") 	: Image = IMGSelect_PS4;
+				case LibUIButtons::GetPlatform("XB1") 	: Image = IMGSelect_XB1;
+			}
+		
+			MLText ^= """<quad halign="center" valign="center" sizen="{{{ServerInfo_SizeX / 30. * 0.8}}} {{{ServerInfo_SizeX / 30. * 0.8}}}" id="ServerInfo_PasswordSelectIcon_{{{I}}}" image="{{{Image}}}" posn="{{{-ServerInfo_SizeX / 30.*0.5}}} 4 7"   """;
+			if (I != Platform)
+				MLText ^= """ hidden="1" """;
+			MLText ^= "/>";
+		}
+	
+	MLText ^= """
+		</frame>
+		<frame id="FrameInputCancel" posn="{{{ServerInfo_Password_SizeX / 2.}}} {{{-2*ServerInfo_SizeY}}}">
+			<quad halign="right" valign="bottom" sizen="{{{6 * ServerInfo_SizeX / 30.}}} {{{ServerInfo_SizeY}}}" image="{{{IMGSlotSmallBg}}}"   posn="0 0 6" />
+			<label halign="right" valign="center" posn="{{{- ServerInfo_SizeX / 30. - 2.}}} 4.5 7" textcolor="ddd" text="{{{_("BACK")}}}" id="Label_Name" sizen="{{{5 * ServerInfo_SizeX / 30. - 4.}}}" textsize="4." textfont="{{{Font::GetFontName("Main")}}}" textprefix="$t"/>
+			<quad halign="right" valign="bottom" sizen="{{{6 * ServerInfo_SizeX / 30.}}} {{{ServerInfo_SizeY}}}" image="{{{IMGSlotSmallFg}}}"  posn="0 0 8" scriptevents="1" id="MouseInput_Password_Cancel" />
+	""";
+			
+		for (I, 0, 2) {
+			declare Text Image;
+			switch (I) {
+				case LibUIButtons::GetPlatform("PC") 	: Image = IMGAppMenu_PC;
+				case LibUIButtons::GetPlatform("PS4") 	: Image = IMGAppMenu_PS4;
+				case LibUIButtons::GetPlatform("XB1") 	: Image = IMGAppMenu_XB1;
+			}
+		
+			MLText ^= """<quad halign="right" valign="center" sizen="{{{ServerInfo_SizeX / 30. * 0.8}}} {{{ServerInfo_SizeX / 30. * 0.8}}}" id="ServerInfo_PasswordCancelIcon_{{{I}}}" image="{{{Image}}}"  posn="{{{-ServerInfo_SizeX / 30.*0.5}}} 4 7" """;
+			if (I != Platform)
+				MLText ^= """ hidden="1" """;
+			MLText ^= "/>";
+		}
+			
+	MLText ^= """
+		</frame>
+	</frame>
+	""";
+	
+	return MLText;
+}
+
+Text InjectInConst()
+{
+	declare Const = """
+		#Const C_JOINSTATUS_NONE		0
+		#Const C_JOINSTATUS_STATUS		1
+		#Const C_JOINSTATUS_STARTING	2
+		#Const C_JOINSTATUS_PASSWORD	3
+		#Const C_JOINSTATUS_WAITMS		4
+		#Const C_JOINSTATUS_JOIN		5
+		#Const C_JOINSTATUS_ERROR		6
+	
+		{{{ProgressBar::InjectInConst()}}}
+	""";
+	
+	return Const;
+}
+
+Text InjectInGlobals()
+{
+	declare Globals = """
+		declare Boolean	G_MustDisplayServerInfo;
+		
+		declare Boolean	G_CanJoinServer;
+		
+		
+		declare Integer G_ServerInfo_LastAnimTime;
+		declare Integer G_ServerInfo_DisplayedTrackFrameIndex;
+		declare Integer G_ServerInfo_FirstDisplayedTrackIndex;
+		
+		declare Boolean G_ServerInfo_IsCheckingNpAvailabilityForJoin;
+		
+		declare Text	G_ServerInfo_JoinPassword;
+		declare Boolean	G_ServerInfo_IsAskingPassword;
+		
+		declare Boolean	G_Join_Started;
+		declare Integer G_JoinStatus;
+		
+		{{{ProgressBar::InjectInGlobals()}}}
+	""";
+	
+	if (!G_IsInvite)
+		Globals ^= """
+			declare Integer	G_ServerInfo_LastRefreshTime;
+		""";
+	
+	return Globals;
+}
+
+Text InjectInFunctions()
+{
+	declare Real	ServerInfo_SizeY		= 8.27;
+	
+	declare Functions = """
+		{{{ProgressBar::InjectInFunctions()}}}
+		
+		
+		Void ServerInfo_AskPassword_Show()
+		{
+			SendCustomEvent("SetLiveStreamingEnabled", ["False"]);
+			declare CMlFrame Frame_ServerPassword <=> (Page.GetFirstChild("Frame_ServerPassword") as CMlFrame);
+			Frame_ServerPassword.Show();
+			declare CMlEntry Entry_ServerPassword <=> (Frame_ServerPassword.GetFirstChild("ServerPassword") as CMlEntry);
+			Entry_ServerPassword.Value = "";
+			Entry_ServerPassword.Focus();
+			G_ServerInfo_IsAskingPassword = True;
+		}
+		
+		Void ServerInfo_AskPassword_OnValidate()
+		{
+			SendCustomEvent("SetLiveStreamingEnabled", ["True"]);
+			declare CMlFrame Frame_ServerPassword <=> (Page.GetFirstChild("Frame_ServerPassword") as CMlFrame);
+			declare CMlEntry Entry_ServerPassword <=> (Frame_ServerPassword.GetFirstChild("ServerPassword") as CMlEntry);
+			//if (Entry_ServerPassword.Value != "")
+			//{
+				G_ServerInfo_IsAskingPassword = False;
+				Frame_ServerPassword.Hide();
+				//Entry_ServerPassword.Focus();
+				G_ServerInfo_JoinPassword = Entry_ServerPassword.Value;
+				log(G_ServerInfo_JoinPassword);
+				G_RequestJoinServer = True;
+			//}
+		}
+		
+		Void ServerInfo_AskPassword_OnBack()
+		{
+			SendCustomEvent("SetLiveStreamingEnabled", ["True"]);
+			G_ServerInfo_IsAskingPassword = False;
+			declare CMlFrame Frame_ServerPassword <=> (Page.GetFirstChild("Frame_ServerPassword") as CMlFrame);
+			Frame_ServerPassword.Hide();
+		}
+	
+		Void ServerInfo_Hide()
+		{
+			declare CMlFrame FrameServerInfo <=> (Page.GetFirstChild("Frame_ServerInfo") as CMlFrame);
+			FrameServerInfo.Hide();
+		}
+		
+		Void SetJoinStatus(Integer _Status)
+		{
+			G_ServerInfo_IsCheckingNpAvailabilityForJoin = False;
+		
+			declare Text[Text][] RequestedRooms for Page;
+			declare Text[Text] FocusedRoom = RequestedRooms[G_CurrentSelectedRoomIndex];
+		
+			declare CMlLabel Status <=> (Page.GetFirstChild("progressbar_tag") as CMlLabel);
+			declare CMlFrame frame_progressbar <=> (Page.GetFirstChild("frame_progressbar") as CMlFrame);
+			declare CMlFrame Frame_ShowAuthorProfile <=> (Page.GetFirstChild("frame_showauthorprofile") as CMlFrame);
+			declare CMlFrame Frame_Cancel <=> (Page.GetFirstChild("Frame_InputInfo_ServerInfo_Cancel") as CMlFrame);
+			declare CMlFrame Frame_Select <=> (Page.GetFirstChild("Frame_InputInfo_ServerInfo_Select") as CMlFrame);
+		""";
+		
+	if (!G_IsInvite)
+		Functions ^= """
+						declare CMlFrame Frame_LStickPress <=> (Page.GetFirstChild("Frame_InputInfo_ServerInfo_LStickPress") as CMlFrame);
+					""";
+	if (G_HasOnglet && !G_IsInvite)	
+		Functions ^= """declare CMlFrame Frame_Action1 <=> (Page.GetFirstChild("Frame_InputInfo_ServerInfo_Action1") as CMlFrame);""";
+	
+		
+		Functions ^= """
+			switch (_Status)
+			{
+				case C_JOINSTATUS_NONE :
+				{
+					//afficher le bon statut, cacher la barre de progression
+					Status.Value = GetStatus(FocusedRoom["status"]);
+					if (RequestedRooms[G_CurrentSelectedRoomIndex]["author"] == LocalUser.Login)
+						Frame_ShowAuthorProfile.Hide();
+					else
+						Frame_ShowAuthorProfile.Show();
+					ProgressBar_Hide();
+					Frame_Cancel.Show();
+					Frame_Select.Show();
+					frame_progressbar.Hide();
+		""";
+		
+		if (G_HasOnglet && !G_IsInvite)	
+			Functions ^= """if (G_OngletFocus == 2) Frame_Action1.Show();""";
+		
+		if (!G_IsInvite)
+			Functions ^= """
+							Frame_LStickPress.Show();
+						""";
+			
+		Functions ^= """
+				}
+				case C_JOINSTATUS_STATUS :
+				{
+					Frame_Cancel.Show();
+					Frame_Select.Hide();
+					Status.Value = _("|JoinRoom Status Message|Refreshing data");
+					frame_progressbar.Hide();
+					Frame_ShowAuthorProfile.Hide();
+		""";
+		
+		if (G_HasOnglet && !G_IsInvite)	
+			Functions ^= """if (G_OngletFocus == 2) Frame_Action1.Hide();""";
+		
+		if (!G_IsInvite)
+			Functions ^= """
+							Frame_LStickPress.Show();""";
+			
+		Functions ^= """
+				}
+				case C_JOINSTATUS_STARTING :
+				{
+					Frame_Cancel.Show();
+					Status.Value = _("|JoinRoom Status Message|Starting");
+					ProgressBar_SetTagBeginning("Start");
+					frame_progressbar.Show();
+					Frame_Select.Hide();
+					Frame_ShowAuthorProfile.Hide();
+		""";
+		
+		if (G_HasOnglet && !G_IsInvite)	
+			Functions ^= """if (G_OngletFocus == 2) Frame_Action1.Hide();""";
+		
+		if (!G_IsInvite)
+			Functions ^= """
+							Frame_LStickPress.Show();""";
+			
+		Functions ^= """
+				}
+				case C_JOINSTATUS_WAITMS :
+				{
+					Frame_Cancel.Show();
+					Status.Value = _("|JoinRoom Status Message|Waiting MasterServer");
+					ProgressBar_SetTagBeginning("MS");
+					frame_progressbar.Show();
+					Frame_Select.Hide();
+					Frame_ShowAuthorProfile.Hide();
+		""";
+		
+		if (G_HasOnglet && !G_IsInvite)	
+			Functions ^= """if (G_OngletFocus == 2) Frame_Action1.Hide();""";
+		
+		if (!G_IsInvite)
+			Functions ^= """
+							Frame_LStickPress.Show();""";
+			
+		Functions ^= """
+				}
+				case C_JOINSTATUS_PASSWORD :
+				{
+					Frame_Cancel.Show();
+					Frame_Select.Hide();
+					Frame_ShowAuthorProfile.Hide();
+					Status.Value = _("|JoinRoom Status Message|Password");
+		""";
+		
+		if (G_HasOnglet && !G_IsInvite)	
+			Functions ^= """if (G_OngletFocus == 2) Frame_Action1.Hide();""";
+		
+		if (!G_IsInvite)
+			Functions ^= """
+							Frame_LStickPress.Show();""";
+			
+		Functions ^= """
+				}
+				case C_JOINSTATUS_JOIN :
+				{
+					Frame_Cancel.Hide();
+					Status.Value = _("|JoinRoom Status Message|Joining");
+					ProgressBar_SetTagBeginning("Join");
+					frame_progressbar.Show();
+					Frame_Select.Hide();
+					Frame_ShowAuthorProfile.Hide();
+		""";
+		
+		if (G_HasOnglet && !G_IsInvite)	
+			Functions ^= """if (G_OngletFocus == 2) Frame_Action1.Hide();""";
+		
+		if (!G_IsInvite)
+			Functions ^= """
+							Frame_LStickPress.Hide();""";
+			
+		Functions ^= """
+				}
+				case C_JOINSTATUS_ERROR :
+				{
+					if (FocusedRoom["status"] == GetStatus("Running") && FocusedRoom["required_state"] == GetRequiredState(True))
+					{
+						if (TitleFlow.LatestResult == CTitleFlow::EResult::Error_Net_ServerUnreachable)
+							Status.Value = _("|JoinRoom Error Message|Error (cannot join server)");
+						else if (TitleFlow.LatestResult == CTitleFlow::EResult::Error_Net_ServerNotFound)
+							Status.Value = _("|JoinRoom Error Message|Error (server not found)");
+						else
+							Status.Value = _("|JoinRoom Error Message|Error");
+						SendCustomEvent("ServerInfo_TrackmaniaServersFailure", Text[]);
+					} else {
+						Status.Value = _("|JoinRoom Error Message|Error");
+					}
+					Frame_Cancel.Show();
+					ProgressBar_Hide();
+					frame_progressbar.Show();
+					Frame_Select.Show();
+					if (RequestedRooms[G_CurrentSelectedRoomIndex]["author"] == LocalUser.Login)
+						Frame_ShowAuthorProfile.Hide();
+					else
+						Frame_ShowAuthorProfile.Show();
+				""";
+		
+		if (G_HasOnglet && !G_IsInvite)	
+			Functions ^= """if (G_OngletFocus == 2) Frame_Action1.Show();""";
+		
+		if (!G_IsInvite)
+			Functions ^= """
+							Frame_LStickPress.Show();""";
+			
+		Functions ^= """
+				}
+			}
+			G_JoinStatus = _Status;
+			ProgressBar_Update();
+		}
+		
+		Void ServerInfo_UpdateFromStatus()
+		{
+			declare Text[Text][] RequestedRooms for Page;
+			declare Text[Text] FocusedRoom = RequestedRooms[G_CurrentSelectedRoomIndex];
+			
+			if (G_JoinStatus == C_JOINSTATUS_STARTING)
+			{
+				declare Real ProgressionRatio = TL::ToInteger(FocusedRoom["starting_since"]) * 1. / 31.;
+				ProgressBar_SetProgression("Start", ProgressionRatio);
+			} else if (G_JoinStatus == C_JOINSTATUS_NONE) {
+				declare CMlLabel Status <=> (Page.GetFirstChild("progressbar_tag") as CMlLabel);
+				Status.Value = GetStatus(FocusedRoom["status"]);
+			}
+		}
+		
+		
+		
+		Void DisplayServerInfo()
+		{	
+			G_CanJoinServer = False;
+			G_ServerInfo_IsCheckingNpAvailabilityForJoin = False;
+			
+			SetJoinStatus(C_JOINSTATUS_NONE);
+			
+			declare Text[Text][] RequestedRooms for Page;
+			declare Text[Text] FocusedRoom = RequestedRooms[G_CurrentSelectedRoomIndex]; //blinder
+			
+			declare CMlFrame FrameServerInfo <=> (Page.GetFirstChild("Frame_ServerInfo") as CMlFrame);
+	""";
+	if(!G_IsInvite)
+	{
+	
+		Functions ^= """
+				declare CMlFrame FrameInputAction1 <=> (FrameServerInfo.GetFirstChild("Frame_InputInfo_ServerInfo_Action1") as CMlFrame);
+		""";
+		
+		if (G_HasOnglet)
+		{
+			Functions ^= """
+				if(G_OngletFocus == 2)
+					FrameInputAction1.Show();
+				else
+					FrameInputAction1.Hide();
+			""";
+		} else {
+			Functions ^= """
+				FrameInputAction1.Hide();
+			""";
+		}
+	}
+	
+		Functions ^= """
+			//NAME
+			declare CMlLabel Label_RoomName <=> (FrameServerInfo.GetFirstChild("Label_RoomName") as CMlLabel);
+				
+			declare Text Author = FocusedRoom["displayname"]; //hostName
+			declare Text Duration;
+			declare Text Style;
+			
+			if (FocusedRoom.existskey("duration"))
+			{
+				declare Integer DurationId = TL::ToInteger(FocusedRoom["duration"]);
+				if (DurationId != 0)
+					Duration = " - "^TL::GetTranslatedText(G_RoomsDurations[DurationId]);
+			}	
+			
+			if (FocusedRoom.existskey("style"))
+			{
+				Style = " - "^TL::GetTranslatedText(FocusedRoom["style"]);
+			}
+			
+			Label_RoomName.Value = TL::Compose("%1%2%3", Author, Duration, Style)^" #"^FocusedRoom["id"]; //HACK affiche l'id pour LIVE
+			
+			//MODE
+			declare CMlLabel Label_ServerGameMode <=> (FrameServerInfo.GetFirstChild("ServerGamemode") as CMlLabel);
+			declare Integer ModeIndex = TL::ToInteger(FocusedRoom["mode"]);
+			declare Text LabelModeText = G_RoomsGameModesDisplayNames[ModeIndex];
+			switch(ModeIndex)
+			{
+				case 0 : LabelModeText ^= " ("^TL::ToInteger(FocusedRoom["setting_time"]) / 60^" "^TL::GetTranslatedText(_("|minutes|mn"))^")";
+				case 1 : LabelModeText ^= " ("^TL::ToInteger(FocusedRoom["setting_points"])^")";
+				case 2 : LabelModeText ^= " ("^TL::ToInteger(FocusedRoom["setting_laps"])^")";
+				case 3 : LabelModeText ^= " ("^TL::ToInteger(FocusedRoom["setting_time"]) / 60^" "^TL::GetTranslatedText(_("|minutes|mn"))^")";
+				case 4 : LabelModeText ^= " ("^TL::ToInteger(FocusedRoom["setting_points"])^")";
+				case 5 : LabelModeText ^= " ("^TL::ToInteger(FocusedRoom["setting_laps"])^")";
+			}
+			
+			if (FocusedRoom.existskey("player_count") && FocusedRoom["player_count"] != "")
+				LabelModeText ^= " - "^TL::GetTranslatedText(_("Players"))^" : "^FocusedRoom["player_count"];
+			else
+				LabelModeText ^= " - "^TL::GetTranslatedText(_("Players"))^" : "^"0";
+			Label_ServerGameMode.Value = LabelModeText;
+			
+			//ENVIRONMENTS
+			declare Text Environments = FocusedRoom["environments"];
+			declare CMlQuad Quad_Env_Canyon  <=> (FrameServerInfo.GetFirstChild("ServerEnv_Canyon") as CMlQuad);
+			declare CMlQuad Quad_Env_Valley  <=> (FrameServerInfo.GetFirstChild("ServerEnv_Valley") as CMlQuad);
+			declare CMlQuad Quad_Env_Lagoon  <=> (FrameServerInfo.GetFirstChild("ServerEnv_Lagoon") as CMlQuad);
+			declare CMlQuad Quad_Env_Stadium <=> (FrameServerInfo.GetFirstChild("ServerEnv_Stadium") as CMlQuad);
+			Quad_Env_Canyon.ModulateColor = GetEnvironmentColorize(Environments, "Canyon");
+			Quad_Env_Valley.ModulateColor = GetEnvironmentColorize(Environments, "Valley");
+			Quad_Env_Lagoon.ModulateColor = GetEnvironmentColorize(Environments, "Lagoon");
+			Quad_Env_Stadium.ModulateColor = GetEnvironmentColorize(Environments, "Stadium");
+			
+			//ECHELON
+			declare CMlQuad Quad_Echelon <=> (FrameServerInfo.GetFirstChild("Title_Quad_Echelon") as CMlQuad);
+			declare Integer Echelon = TL::ToInteger(FocusedRoom["ladder_limit_min"])/10000;
+			if (Echelon != 0 && G_Images_Echelon.existskey(Echelon))
+			{
+				Quad_Echelon.ImageUrl = "{{{C_ImgBase}}}/Echelons/RNKG_0"^Echelon^"b.dds";
+				Quad_Echelon.Show();
+			} else
+				Quad_Echelon.Hide();
+				
+			declare CMlFrame FrameAdequacyWarning <=> (FrameServerInfo.GetFirstChild("FrameAdequacyWarning") as CMlFrame);
+			if (LocalUser.LadderPoints > TL::ToInteger(FocusedRoom["ladder_limit_max"]))
+				FrameAdequacyWarning.Show();
+			else
+				FrameAdequacyWarning.Hide();
+				
+			log(LocalUser.LadderPoints^":"^ FocusedRoom["ladder_limit_max"]);
+			
+			//MODE
+			declare CMlQuad Quad_Mode <=> (FrameServerInfo.GetFirstChild("Title_Quad_Mode") as CMlQuad);
+			if (ModeIndex == -1 || ModeIndex >= G_RoomsGameModesDisplayNames.count)
+				Quad_Mode.Hide();
+			else {
+				Quad_Mode.Show();
+				declare Text ImageUrl;
+				ImageUrl = "{{{C_ImgBase}}}/Online/BrowseServers/";
+				switch (ModeIndex)
+				{
+					case 0 : ImageUrl ^= "Time Attack";
+					case 1 : ImageUrl ^= "Rounds";
+					case 2 : ImageUrl ^= "Laps";
+					case 3 : ImageUrl ^= "Stunts";
+					case 4 : ImageUrl ^= "Rounds_Stunt";
+					case 5 : ImageUrl ^= "Laps_Stunt";
+				}
+				ImageUrl ^= ".png";
+				Quad_Mode.ImageUrl = ImageUrl;
+			}
+			
+			//FLAG
+			declare CMlQuad Quad_Flag <=> (FrameServerInfo.GetFirstChild("Quad_RoomFlag") as CMlQuad);
+			if (FocusedRoom.existskey("country") && FocusedRoom["country"] != "")
+				Quad_Flag.ImageUrl = "{{{C_ImgBaseFlags}}}"^GetCountryFlag(FocusedRoom["country"]);
+			else
+				Quad_Flag.ImageUrl = "";
+			
+			//ADEQUACY
+			declare CMlFrame Frame_Adequacy <=> (FrameServerInfo.GetFirstChild("FrameAdequacy") as CMlFrame);
+			declare CMlQuad  Quad_Adequacy <=> (Frame_Adequacy.GetFirstChild("QuadAdequacy") as CMlQuad);
+			declare CMlLabel Label_Adequacy <=> (Frame_Adequacy.GetFirstChild("LabelAdequacy") as CMlLabel);
+			if (FocusedRoom["player_count"] != "0" && FocusedRoom["player_count"] != "")
+			{
+				declare Integer[] Classes;
+				Classes.add(TL::ToInteger(FocusedRoom["level_class5"]));
+				Classes.add(TL::ToInteger(FocusedRoom["level_class4"]));
+				Classes.add(TL::ToInteger(FocusedRoom["level_class3"]));
+				Classes.add(TL::ToInteger(FocusedRoom["level_class2"]));
+				Classes.add(TL::ToInteger(FocusedRoom["level_class1"]));
+				declare Integer MaxLadderPoints for Page;
+				if (MaxLadderPoints == -1)
+					MaxLadderPoints = 100000;
+				declare Text Adequacy = GetAdequacy(ML::FloorInteger(LocalUser.LadderPoints), Classes, MaxLadderPoints);
+				Quad_Adequacy.ImageUrl = "{{{C_ImgBase}}}/Online/BrowseServers/Adequacy_"^Adequacy^".png";
+				Label_Adequacy.Value = GetAdequacyComment(Adequacy);
+				Frame_Adequacy.Show();
+			} else {
+				Frame_Adequacy.Hide();
+			}
+			
+			//PRIVACY
+			declare CMlFrame Frame_Privacy <=> (FrameServerInfo.GetFirstChild("FramePrivacy") as CMlFrame);
+			declare CMlQuad  Quad_Privacy <=> (Frame_Privacy.GetFirstChild("QuadPrivacy") as CMlQuad);
+			declare CMlLabel Label_Privacy <=> (Frame_Privacy.GetFirstChild("LabelPrivacy") as CMlLabel);
+			if (FocusedRoom["is_private"] == "true")
+			{
+				Frame_Privacy.Show();
+				Quad_Privacy.ImageUrl = "{{{C_ImgBase}}}/Online/BrowseServers/LevelLock.png";
+				Label_Privacy.Value = _("Private");
+			} else {
+				Frame_Privacy.Hide();
+			}
+	""";
+
+	if (!G_IsInvite)
+	{	//Dans le cas de l'invitation, on a déjà les maps à ce moment là -> Ne pas clear
+		Functions ^= """
+			//MAPS
+			declare Text[Text][] RequestedRoomMaps for Page;
+			RequestedRoomMaps.clear();
+			
+		""";
+	}		
+	
+	Functions ^= """
+			SendCustomEvent("RequestServerMaps", [FocusedRoom["id"]]);
+			declare CMlFrame Frame_Displayed 		<=> (FrameServerInfo.GetFirstChild("ServerInfo_TrackGroup"^G_ServerInfo_DisplayedTrackFrameIndex) as CMlFrame);
+			declare CMlFrame Frame_Hidden	 		<=> (FrameServerInfo.GetFirstChild("ServerInfo_TrackGroup"^(G_ServerInfo_DisplayedTrackFrameIndex + 1)%2) as CMlFrame);
+			LibManialink_AnimStop(Frame_Displayed);
+			LibManialink_AnimStop(Frame_Hidden);
+			Frame_Displayed.RelativePosition.Y = 0.;
+			Frame_Hidden.RelativePosition.Y = {{{-8*ServerInfo_SizeY}}};
+			Frame_Displayed.Hide();
+			Frame_Hidden.Hide();
+			declare CMlLabel Label_LoadingTracks	<=> (FrameServerInfo.GetFirstChild("Label_LoadingTracks") as CMlLabel);
+			Label_LoadingTracks.Show();
+			
+			G_ServerInfo_LastAnimTime = -1;
+			SendCustomEvent("RequestServerStatus", [FocusedRoom["id"]]);
+			FrameServerInfo.Show();
+		}
+		
+		Void ServerInfo_OnJoinServerPrivilegeChecked() {
+			declare Text[Text][] RequestedRooms for Page;
+			if (G_CanJoinServer && (G_JoinStatus == C_JOINSTATUS_NONE || G_JoinStatus == C_JOINSTATUS_ERROR))
+			{
+				if (RequestedRooms[G_CurrentSelectedRoomIndex]["is_private"] == "true" && G_ServerInfo_JoinPassword == "")
+					ServerInfo_AskPassword_Show();
+				else
+					G_RequestJoinServer = True;
+			}
+		}
+		
+		Void ServerInfo_OnServerMapsReceived()	
+		{
+			G_CanJoinServer = True;
+			
+			declare CMlFrame Frame_Input_Select <=> (Page.GetFirstChild("Frame_InputInfo_ServerInfo_Select") as CMlFrame);
+			Frame_Input_Select.Show();
+			
+			//8 tracks affichées / frame
+			declare Text[Text][] RequestedRoomMaps for Page;
+			
+			declare CMlFrame FrameServerInfo 		<=> (Page.GetFirstChild("Frame_ServerInfo") as CMlFrame);
+			declare CMlFrame Frame_Displayed 		<=> (FrameServerInfo.GetFirstChild("ServerInfo_TrackGroup"^G_ServerInfo_DisplayedTrackFrameIndex) as CMlFrame);
+			declare CMlFrame Frame_Hidden	 		<=> (FrameServerInfo.GetFirstChild("ServerInfo_TrackGroup"^(G_ServerInfo_DisplayedTrackFrameIndex + 1)%2) as CMlFrame);
+			declare CMlLabel Label_LoadingTracks	<=> (FrameServerInfo.GetFirstChild("Label_LoadingTracks") as CMlLabel);
+			
+			G_ServerInfo_FirstDisplayedTrackIndex = 0;
+			
+			//Fill Frame_Displayed
+			for (I, 0, 1)
+			{
+				for (J, 0, 3)
+				{
+					declare CMlFrame 	Frame_Track 	<=> (Frame_Displayed.GetFirstChild("Frame_Track"^I^J) as CMlFrame);
+					
+					declare Integer TrackIndex = I*4+J;
+					if (TrackIndex >= RequestedRoomMaps.count)
+					{
+						Frame_Track.Hide();
+					} else  {
+						declare CMlQuad		Quad_Thumbnail 	<=> (Frame_Track.GetFirstChild("Quad_Thumbnail") as CMlQuad);
+						Quad_Thumbnail.ImageUrl = RequestedRoomMaps[TrackIndex]["thumbnail_url"];
+						Quad_Thumbnail.Show();
+						Frame_Track.Show();
+					}
+				}
+			}
+			
+			//Fill Frame_Hidden if Needed
+			if (RequestedRoomMaps.count > 8)
+			{
+				for (I, 0, 1)
+				{
+					for (J, 0, 3)
+					{
+						declare CMlFrame 	Frame_Track 	<=> (Frame_Hidden.GetFirstChild("Frame_Track"^I^J) as CMlFrame);
+						
+						declare Integer TrackIndex = 8+I*4+J;
+						if (TrackIndex >= RequestedRoomMaps.count)
+						{
+							Frame_Track.Hide();
+						} else  {
+							declare CMlQuad		Quad_Thumbnail 	<=> (Frame_Track.GetFirstChild("Quad_Thumbnail") as CMlQuad);
+							Quad_Thumbnail.ImageUrl = RequestedRoomMaps[TrackIndex]["thumbnail_url"];
+							Quad_Thumbnail.Show();
+							Frame_Track.Show();
+						}
+					}
+				}
+			}
+			
+			//Init Anim Info if Needed
+			G_ServerInfo_LastAnimTime = Now;
+			Label_LoadingTracks.Hide();
+			Frame_Displayed.Show();
+			Frame_Hidden.Show();
+		}
+		
+		//////////////////
+		// INPUT INFO
+		//////////////////
+		Void ServerInfo_InitInputsInfo() {
+			declare CMlLabel Label_InputName;
+		
+			declare CMlFrame Frame_ServerInfo <=> (Page.GetFirstChild("Frame_ServerInfo") as CMlFrame);
+			//SELECT
+			declare CMlFrame FrameInputSelect <=> (Frame_ServerInfo.GetFirstChild("Frame_InputInfo_ServerInfo_Select") as CMlFrame);
+			Label_InputName <=> (FrameInputSelect.GetFirstChild("Label_Name") as CMlLabel);
+			//L16N Displayed next to a button icon to explain what it does
+			Label_InputName.Value = _("|16 chars max|JOIN");
+			FrameInputSelect.Show();
+	""";
+	
+	if (!G_IsInvite)
+	{
+	Functions ^= """
+			//ACTION1
+			declare CMlFrame FrameInputAction1 <=> (Frame_ServerInfo.GetFirstChild("Frame_InputInfo_ServerInfo_Action1") as CMlFrame);
+			Label_InputName <=> (FrameInputAction1.GetFirstChild("Label_Name") as CMlLabel);
+			//L16N Displayed next to a button icon to explain what it does
+			Label_InputName.Value = _("|16 chars max|MANAGE ROOM");
+			FrameInputAction1.Hide();
+			//LSTICK
+			declare CMlFrame FrameInputLStick <=> (Frame_ServerInfo.GetFirstChild("Frame_InputInfo_ServerInfo_LStickPress") as CMlFrame);
+			Label_InputName <=> (FrameInputLStick.GetFirstChild("Label_Name") as CMlLabel);
+			Label_InputName.Value = _("|16 chars max|REFRESH");
+			FrameInputLStick.Show();
+		""";
+	}
+	
+	Functions ^= """
+			//CANCEL
+			declare CMlFrame FrameInputCancel <=> (Frame_ServerInfo.GetFirstChild("Frame_InputInfo_ServerInfo_Cancel") as CMlFrame);
+			Label_InputName <=> (FrameInputCancel.GetFirstChild("Label_Name") as CMlLabel);
+			//L16N Displayed next to a button icon to explain what it does
+			Label_InputName.Value = _("|16 chars max|BACK");
+			FrameInputCancel.Show();
+			
+		}
+	
+		Void UpdateDisplayServerInfo()
+		{
+			declare Text[Text][] RequestedRooms for Page;
+			if (RequestedRooms.count <= G_CurrentSelectedRoomIndex)
+				return;
+				
+			declare CMlFrame FrameServerInfo <=> (Page.GetFirstChild("Frame_ServerInfo") as CMlFrame);
+			FrameServerInfo.Show();
+			ToggleInputInfo("Frame_InputInfo_ServerInfo_Cancel", False);		
+			declare CMlFrame Frame_Input_Select <=> (Page.GetFirstChild("Frame_InputInfo_ServerInfo_Select") as CMlFrame);
+			Frame_Input_Select.Hide();
+			ToggleInputInfo("Frame_InputInfo_ServerInfo_Select", False);
+			declare CMlFrame Frame_ShowAuthorProfile <=> (FrameServerInfo.GetFirstChild("frame_showauthorprofile") as CMlFrame);
+			if (RequestedRooms[G_CurrentSelectedRoomIndex]["author"] == LocalUser.Login)
+				Frame_ShowAuthorProfile.Hide();
+			else
+				Frame_ShowAuthorProfile.Show();
+	""";
+
+	if (!G_IsInvite)
+	{
+		Functions ^= """
+			declare CMlFrame FrameInputAction1 <=> (FrameServerInfo.GetFirstChild("Frame_InputInfo_ServerInfo_Action1") as CMlFrame);
+			FrameInputAction1.Hide();
+			ToggleInputInfo("Frame_InputInfo_ServerInfo_Action1", False);
+			ToggleInputInfo("Frame_InputInfo_ServerInfo_LStickPress", False);
+		""";
+	}		
+	
+	Functions ^= """
+			DisplayServerInfo();
+		}
+		
+		Void UpdateServerTracks()
+		{
+			if (G_ServerInfo_LastAnimTime == -1)
+				return;
+		
+			declare Text[Text][] RequestedRoomMaps for Page;
+			if (RequestedRoomMaps.count <= 8)
+				return;
+			
+			declare CMlFrame FrameServerInfo 		<=> (Page.GetFirstChild("Frame_ServerInfo") as CMlFrame);
+			declare CMlFrame Frame_Displayed 		<=> (FrameServerInfo.GetFirstChild("ServerInfo_TrackGroup"^G_ServerInfo_DisplayedTrackFrameIndex) as CMlFrame);
+			declare CMlFrame Frame_Hidden	 		<=> (FrameServerInfo.GetFirstChild("ServerInfo_TrackGroup"^(G_ServerInfo_DisplayedTrackFrameIndex + 1)%2) as CMlFrame);
+			
+			if (Now >= G_ServerInfo_LastAnimTime + 1000 && Frame_Hidden.RelativePosition.Y != {{{-8*ServerInfo_SizeY}}}) //anim terminée, on replace la frame cachée et on la remplit
+			{
+				declare Integer NextFirstTrackIndex;
+				if (G_ServerInfo_FirstDisplayedTrackIndex+8 < RequestedRoomMaps.count)
+					NextFirstTrackIndex = G_ServerInfo_FirstDisplayedTrackIndex+8;
+				else
+					NextFirstTrackIndex = 0;
+			
+				for (I, 0, 1)
+				{
+					for (J, 0, 3)
+					{
+						declare CMlFrame 	Frame_Track 	<=> (Frame_Hidden.GetFirstChild("Frame_Track"^I^J) as CMlFrame);
+						
+						declare Integer TrackIndex = NextFirstTrackIndex+I*4+J;
+						if (TrackIndex >= RequestedRoomMaps.count)
+						{
+							Frame_Track.Hide();
+						} else  {
+							declare CMlQuad		Quad_Thumbnail 	<=> (Frame_Track.GetFirstChild("Quad_Thumbnail") as CMlQuad);
+							Quad_Thumbnail.ImageUrl = RequestedRoomMaps[TrackIndex]["thumbnail_url"];
+							Quad_Thumbnail.Show();
+							Frame_Track.Show();
+						}
+					}
+				}
+				Frame_Hidden.RelativePosition.Y = {{{-8*ServerInfo_SizeY}}};
+			}
+			
+			if (Now >= G_ServerInfo_LastAnimTime + 4000)
+			{
+				LibManialink_SetTargetPosition(Frame_Displayed, <Frame_Displayed.RelativePosition.X, {{{8*ServerInfo_SizeY}}}, Frame_Displayed.RelativePosition.Z>);
+				LibManialink_PresetAnim(Frame_Displayed, 1000, "Linear");
+				
+				LibManialink_SetTargetPosition(Frame_Hidden, <Frame_Hidden.RelativePosition.X, 0., Frame_Hidden.RelativePosition.Z>);
+				LibManialink_PresetAnim(Frame_Hidden, 1000, "Linear");
+				
+				if (G_ServerInfo_FirstDisplayedTrackIndex+8 < RequestedRoomMaps.count)
+					G_ServerInfo_FirstDisplayedTrackIndex += 8;
+				else
+					G_ServerInfo_FirstDisplayedTrackIndex = 0;
+				G_ServerInfo_DisplayedTrackFrameIndex = (G_ServerInfo_DisplayedTrackFrameIndex + 1)%2;
+				G_ServerInfo_LastAnimTime = Now;
+			}
+		}
+		
+		
+		Void ServerInfo_UpdateHelpersForPlatform(Integer _Platform) {
+			declare Text[] InputIds = ["Select", """;
+		
+	if (!G_IsInvite)
+		Functions ^= """ "Action1", "LStickPress", """;
+			
+	Functions ^= """ "Cancel"];
+			declare Text[] AdditionnalInputIds = ["ServerInfo_PasswordSelectIcon_", "ServerInfo_PasswordCancelIcon_", "ServerInfo_ShowGamercardIcon_"];
+	
+			declare CMlQuad  QuadInputIcon;
+			for (I, 0, 2) {
+				for (J, 0, InputIds.count - 1) {
+					declare CMlFrame FrameInput <=> (Page.GetFirstChild("Frame_InputInfo_ServerInfo_"^InputIds[J]) as CMlFrame);
+					QuadInputIcon <=> (FrameInput.GetFirstChild("Quad_InputIcon_"^I) as CMlQuad);
+					if (I == _Platform)
+						QuadInputIcon.Show();
+					else
+						QuadInputIcon.Hide();
+				}
+				for (J, 0, AdditionnalInputIds.count-1) {
+					QuadInputIcon <=> (Page.GetFirstChild(AdditionnalInputIds[J]^I) as CMlQuad);
+					if (I == _Platform)
+						QuadInputIcon.Show();
+					else
+						QuadInputIcon.Hide();
+				}
+			}
+		}
+		
+		Void SetInputInfoNotSelected_Black(Text _Name) {
+			declare CMlFrame FrameInput <=> (Page.GetFirstChild(_Name) as CMlFrame);
+			declare CMlLabel LabelInputInfo <=> (FrameInput.GetFirstChild("Label_Name") as CMlLabel);
+			SetInputInfoTextSelected(LabelInputInfo, False, <0., 0., 0.>);
+		}		
+	""";
+
+	return Functions;
+}
+
+Text InjectInInit()
+{
+	declare Init = """
+		G_MustDisplayServerInfo 		= False;
+		G_ServerInfo_IsAskingPassword 	= False;
+		G_ServerInfo_IsCheckingNpAvailabilityForJoin = False;
+		
+		ServerInfo_InitInputsInfo();
+		{{{ProgressBar::InjectInInit()}}}
+	""";
+	
+	return Init;
+}
+
+Text InjectBeforeLoop()
+{
+	declare BeforeLoop = """
+		declare CMlEntry Entry_ServerPassword <=> (Page.GetFirstChild("ServerPassword") as CMlEntry);
+	""";
+	return BeforeLoop;
+}
+
+Text InjectInLoop()
+{
+	declare Loop = """
+		if (G_ServerBrowserStatus == C_STATUS_INFORMATION && RequestedRoomMaps.count > 8)
+			UpdateServerTracks();
+			
+		if (G_ServerInfo_IsAskingPassword && !Entry_ServerPassword.IsFocused)
+		{
+			ServerInfo_AskPassword_OnBack();
+			SetJoinStatus(C_JOINSTATUS_NONE);
+		}
+			
+		if (G_MustDisplayServerInfo)
+		{
+			G_MustDisplayServerInfo = False;
+			UpdateDisplayServerInfo();
+		}
+		
+		{{{ProgressBar::InjectInLoop()}}}
+		
+		if (G_RequestJoinServer)
+		{
+			UpdateStatusForJoin();
+		}
+	
+		if (G_JoinStatus != C_JOINSTATUS_ERROR && G_JoinStatus != C_JOINSTATUS_STATUS && G_JoinStatus != C_JOINSTATUS_NONE && G_IsServerOnlineRequestLastTime != -1 && Now >= G_IsServerOnlineRequestLastTime + C_IsServerOnlineRequestDelay)
+		{
+			UpdateJoin();
+		}
+	""";
+
+	if (!G_IsInvite)
+	{
+		Loop ^= """
+		foreach (Event in Input.PendingEvents)
+		{
+			if (Event.Type == CInputEvent::EType::PadButtonPress && Event.Button == CInputEvent::EButton::LeftStick && G_ServerBrowserStatus == C_STATUS_INFORMATION && G_ServerInfo_LastRefreshTime + 5000 <= Now)
+			{
+				//LSTICKPRESS
+				G_ServerInfo_LastRefreshTime = Now;
+				SetJoinStatus(C_JOINSTATUS_NONE);
+				UpdateDisplayServerInfo();
+			}
+		}	
+		""";
+	}
+	return Loop;
+}
+
+Text InjectInKeyPress() {
+	declare Text KeyPress = """
+		if (Event.KeyName == "F5" && G_ServerBrowser_LastRefreshTime + 5000 <= Now) {
+			if (ActiveButtonPlatform !=  {{{LibUIButtons::GetPlatform("PC")}}}) { //pas le temps de trouver mieux
+				SendCustomEvent("SetActiveButtonPlaform", ["ServerBrowser", TL::ToText({{{LibUIButtons::GetPlatform("PC")}}})]);
+				SendCustomEvent("SetActiveButtonPlaform", ["PopUp_JoinAFriend", TL::ToText({{{LibUIButtons::GetPlatform("PC")}}})]);
+				SendCustomEvent("SetActiveButtonPlaform", ["JoinAFriend", TL::ToText({{{LibUIButtons::GetPlatform("PC")}}})]);
+			}
+			G_ServerInfo_LastRefreshTime = Now;
+			SetJoinStatus(C_JOINSTATUS_NONE);
+			UpdateDisplayServerInfo();
+		}
+	""";
+	
+	return KeyPress;
+}
+
+Text InjectInMouseClick() {
+	declare MouseClick = """
+		declare Text[] InputId = TL::Split("_", Event.ControlId);
+		if (InputId.count < 2 || InputId[0] != "MouseInput")
+			continue;
+		switch (InputId[1]) {
+			case "ServerInfoInputInfo" : {
+				switch (InputId[2]) {
+					case "Cancel": {
+						SetJoinStatus(C_JOINSTATUS_NONE);
+						ServerBrowserStatus_Switch(C_STATUS_BROWSER);
+					}
+					case "AppMenu": {
+						SetJoinStatus(C_JOINSTATUS_NONE);
+						ServerBrowserStatus_Switch(C_STATUS_BROWSER);
+					}
+					case "Select": {
+						if (!G_CanJoinServer || G_ServerInfo_IsCheckingNpAvailabilityForJoin)
+							continue;
+						if (G_JoinStatus == C_JOINSTATUS_ERROR || G_JoinStatus == C_JOINSTATUS_NONE)
+						{
+							G_ServerInfo_JoinPassword = "";
+							G_ServerInfo_IsCheckingNpAvailabilityForJoin = True;
+							SendCustomEvent("ServerInfo_Check_PlayMultiplayerSession", Text[]);
+						}
+					}
+		""";
+		
+		if (G_HasOnglet && !G_IsInvite)
+		{
+			MouseClick ^= """
+					case "Action1": {
+						if (G_OngletFocus == 2 && (G_JoinStatus == C_JOINSTATUS_ERROR || G_JoinStatus == C_JOINSTATUS_NONE))
+							EditSelectedRoom();
+					}
+			""";
+		}
+		MouseClick ^= """
+					case "Action2": {
+						if (RequestedRooms[G_CurrentSelectedRoomIndex]["author"] != LocalUser.Login && (G_JoinStatus == C_JOINSTATUS_ERROR || G_JoinStatus == C_JOINSTATUS_NONE))
+							SendCustomEvent("ShowProfile", [RequestedRooms[G_CurrentSelectedRoomIndex]["author"]]);
+					}
+					case "LStickPress" : {
+						if (G_ServerInfo_LastRefreshTime + 5000 <= Now) {
+							G_ServerInfo_LastRefreshTime = Now;
+							SetJoinStatus(C_JOINSTATUS_NONE);
+							UpdateDisplayServerInfo();
+						}
+					}
+				}
+			}
+			case "Password" : {
+				switch (InputId[2]) {
+					case "Select" : ServerInfo_AskPassword_OnValidate();
+					case "Cancel" : {
+						ServerInfo_AskPassword_OnBack();
+						SetJoinStatus(C_JOINSTATUS_NONE);
+					}
+					case "AppMenu" : {
+						ServerInfo_AskPassword_OnBack();
+						SetJoinStatus(C_JOINSTATUS_NONE);
+					}
+				}
+			}
+			
+		}
+	""";
+	
+	return MouseClick;
+}
+
+Text InjectInMouseOver() {
+	declare MouseOver = """
+		declare Text[] InputId = TL::Split("_", Event.ControlId);
+		if (InputId.count < 2 || InputId[0] != "MouseInput")
+			continue;
+		switch (InputId[1]) {
+			case "ServerInfoInputInfo" : {
+				if (InputId[2] != "Action2") 
+					ToggleInputInfo("Frame_InputInfo_ServerInfo_"^InputId[2], True);
+				else
+					ToggleInputInfo("frame_showauthorprofile", True);
+			}
+		}
+	""";
+	
+	return MouseOver;
+}
+
+Text InjectInMouseOut() {
+	declare MouseOut = """
+		declare Text[] InputId = TL::Split("_", Event.ControlId);
+		if (InputId.count < 2 || InputId[0] != "MouseInput")
+			continue;
+		switch (InputId[1]) {
+			case "ServerInfoInputInfo" : {
+				if (InputId[2] != "Action2") 
+					ToggleInputInfo("Frame_InputInfo_ServerInfo_"^InputId[2], False);
+				else
+					SetInputInfoNotSelected_Black("frame_showauthorprofile");
+			}
+		}
+	""";
+	
+	return MouseOut;
+}
+
+Text InjectInMenuNavigation()
+{
+	declare MenuNav = """
+		if (G_ServerInfo_IsAskingPassword)
+		{
+			if (Event.MenuNavAction == CMlEvent::EMenuNavAction::AppMenu)
+			{
+				ServerInfo_AskPassword_OnBack();
+				SetJoinStatus(C_JOINSTATUS_NONE);
+			}
+		} else {
+			switch (Event.MenuNavAction) {
+				case CMlEvent::EMenuNavAction::Select : {
+					if (!G_CanJoinServer || G_ServerInfo_IsCheckingNpAvailabilityForJoin)
+						continue;
+					if (G_JoinStatus == C_JOINSTATUS_ERROR || G_JoinStatus == C_JOINSTATUS_NONE)
+					{
+						G_ServerInfo_JoinPassword = "";
+						G_ServerInfo_IsCheckingNpAvailabilityForJoin = True;
+						SendCustomEvent("ServerInfo_Check_PlayMultiplayerSession", Text[]);
+					}
+				}
+				case CMlEvent::EMenuNavAction::Cancel : {
+					SetJoinStatus(C_JOINSTATUS_NONE);
+					ServerBrowserStatus_Switch(C_STATUS_BROWSER);
+				}
+				case CMlEvent::EMenuNavAction::AppMenu : {
+					SetJoinStatus(C_JOINSTATUS_NONE);
+					ServerBrowserStatus_Switch(C_STATUS_BROWSER);
+				}
+			""";
+			if (G_HasOnglet && !G_IsInvite)
+			{
+				MenuNav ^= """
+					case CMlEvent::EMenuNavAction::Action1 : {
+					if (G_OngletFocus == 2 && (G_JoinStatus == C_JOINSTATUS_ERROR || G_JoinStatus == C_JOINSTATUS_NONE))
+						EditSelectedRoom();
+					}
+				""";
+			}
+			MenuNav ^= """
+				case CMlEvent::EMenuNavAction::Action2 : {
+					if (RequestedRooms[G_CurrentSelectedRoomIndex]["author"] != LocalUser.Login && (G_JoinStatus == C_JOINSTATUS_ERROR || G_JoinStatus == C_JOINSTATUS_NONE))
+						SendCustomEvent("ShowProfile", [RequestedRooms[G_CurrentSelectedRoomIndex]["author"]]);
+				}
+		}
+	}
+	""";
+	
+	return MenuNav;
+}

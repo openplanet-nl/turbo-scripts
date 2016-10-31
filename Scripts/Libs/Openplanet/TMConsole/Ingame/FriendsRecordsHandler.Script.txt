@@ -1,0 +1,168 @@
+#Include "TextLib" as TL
+
+#Include "Libs/Openplanet/TMConsole/Logger.Script.txt"					as Logger
+#Include "Libs/Openplanet/TMConsole/PopUpManager.Script.txt"				as PopUpManager
+
+#Const TMC_MEDAL_AUTHOR					0
+#Const TMC_MEDAL_GOLD					1
+#Const TMC_MEDAL_SILVER					2
+#Const TMC_MEDAL_BRONZE					3
+#Const TMC_MEDAL_PLAYER					4
+#Const TMC_MEDAL_NONE					5
+#Const TMC_MEDAL_ANOTHERPLAYER			6
+
+declare Boolean	G_RecordCenterMode;
+declare Boolean G_StatSent;
+
+Void WarnNotEnoughParams(CMlAppEvent _Event) {
+	Logger::Warn("[Menucontroller] event "^_Event.CustomEventType^": not enough params ["^_Event.CustomEventData^"]");
+}
+
+Boolean Get_RecordCenterMode()
+{
+	if(G_RecordCenterMode)
+	{
+		G_RecordCenterMode = False;
+		return True;
+	}
+	return False;
+}
+
+Void ReleaseRecordsTaskResult()
+{
+	declare CUILayer 				Layer_FriendsRecords 		for This;
+	declare CWebServicesTaskResult_BuddiesChallengeRecord	RecordsTaskResult		for Layer_FriendsRecords.LocalPage;
+	declare Boolean					RecordsTaskResultLoaded for Layer_FriendsRecords.LocalPage;
+	
+	if(RecordsTaskResult != Null) {
+		ManiaPlanet.MasterServer_ReleaseMSTaskResult(RecordsTaskResult.Id);
+	}
+}
+
+Integer GetMedalFromTime(Integer _Time) {
+	declare netread Integer[] 	Net_MedalSelectionTime 			for UI;
+	if(Net_MedalSelectionTime.count > 0) {
+		if(_Time <= Net_MedalSelectionTime[TMC_MEDAL_AUTHOR+1]) 
+		{
+			return TMC_MEDAL_AUTHOR;
+		} 
+		else 
+		if(_Time <= Net_MedalSelectionTime[TMC_MEDAL_GOLD+1]) 
+		{
+			return TMC_MEDAL_GOLD;
+		} 
+		else 
+		if(_Time <= Net_MedalSelectionTime[TMC_MEDAL_SILVER+1]) 
+		{
+			return TMC_MEDAL_SILVER;
+		} 
+		else 
+		if(_Time <= Net_MedalSelectionTime[TMC_MEDAL_BRONZE+1]) 
+		{
+			return TMC_MEDAL_BRONZE;
+		} 
+	}
+	return TMC_MEDAL_NONE;
+}
+
+Void GetTrackRecord(Text _SelectedFilter) {
+	declare CUILayer Layer_FriendsRecords for This;
+	declare Text[Text][] RequestedTrackRecord 	for Layer_FriendsRecords.LocalPage;
+
+	declare CWebServicesTaskResult_BuddiesChallengeRecord RecordsTaskResult 		for Layer_FriendsRecords.LocalPage;
+	declare netwrite Integer	FriendsRecordsHandler_RecordsTaskResultUpdate 		for UI;
+	declare netwrite Integer[]	Net_FriendsRecords									for UI;
+	
+	if(RecordsTaskResult == Null) 	return;
+	if(RecordsTaskResult.HasFailed) return;
+	
+	switch(_SelectedFilter) {
+		case "0" : RecordsTaskResult.SortByOpponentRecordTime();
+		case "1" : RecordsTaskResult.SortByOpponentRecordDate();
+		case "2" : RecordsTaskResult.SortByOpponentCount();
+	}
+
+	RequestedTrackRecord.clear();
+	Net_FriendsRecords.clear();
+	
+	foreach(Index => Record in RecordsTaskResult.BuddiesChallengeRecord) {
+		RequestedTrackRecord.add(Text[Text]);
+		RequestedTrackRecord[Index]["OpponentLogin"] 			= Record.OpponentLogin;
+		RequestedTrackRecord[Index]["OpponentDisplayName"] 		= Record.OpponentDisplayName;
+		RequestedTrackRecord[Index]["RecordOnMap"] 				= ""^Record.OpponentRecordTime;
+		
+		Net_FriendsRecords.add(Record.OpponentRecordTime);
+		
+		RequestedTrackRecord[Index]["Medal"] 					= ""^GetMedalFromTime(Record.RecordTime);
+		RequestedTrackRecord[Index]["OpponentBestRecordCount"] 	= ""^Record.OpponentRecordCount;
+		RequestedTrackRecord[Index]["BestRecordCount"] 			= ""^Record.RecordCount;
+		RequestedTrackRecord[Index]["GhostUrl"] 				= Record.OpponentRecordUrl;
+	}
+	
+	for(I, 0, Net_FriendsRecords.count-1) {
+		declare Temp 	= Net_FriendsRecords[I];
+		declare J = I;
+		while(J > 0 && Net_FriendsRecords[J-1] > Temp) {
+			Net_FriendsRecords[J] = Net_FriendsRecords[J-1];
+			J -= 1;
+		}
+		Net_FriendsRecords[J] = Temp;
+	}
+	FriendsRecordsHandler_RecordsTaskResultUpdate += 1;
+	// Net_CanUseTask = True;
+	
+	/*
+	if(RecordsTaskResult != Null ) {
+		if(RecordsTaskResult.HasSucceeded) {
+			
+		} else {
+			Net_FriendsRecords.clear();
+			Net_CanUseTask = False;
+		}
+	} else {
+		Net_CanUseTask = False;
+		Net_FriendsRecords.clear();
+	}
+	*/
+}
+
+Void LoadTrackRecordTaskResult(Text _Filter) {
+	declare CUILayer Layer_FriendsRecords for This;
+	declare CWebServicesTaskResult_BuddiesChallengeRecord RecordsTaskResult for Layer_FriendsRecords.LocalPage;
+	declare netwrite Integer[]	Net_FriendsRecords	for UI;
+	declare netwrite Boolean	Net_CanUseTask		for UI;
+	
+	// declare CWebServicesTaskResult RecordsTaskResult for Layer_FriendsRecords.LocalPage;
+	RecordsTaskResult = ScoreMgr.Campaign_GetBuddiesMapRecord(DataMgr.MenuUserId, Map.MapInfo.MapUid);
+	
+	wait(!RecordsTaskResult.IsProcessing);
+	
+	if(RecordsTaskResult.HasSucceeded) {
+		Net_CanUseTask = True;
+		GetTrackRecord(_Filter);
+	} else {
+		log(Now^">TASK HAS FAILED: "^RecordsTaskResult.HasFailed);
+		//To forbid access to friends' records menu
+		RecordsTaskResult 	= Null;
+		Net_CanUseTask 		= False;
+	}
+}
+
+Void Loop() {
+	foreach(Event in PendingEvents)
+	{
+		if(Event.Type == CMlAppEvent::EType::LayerCustomEvent)
+		{
+			switch(Event.CustomEventType) {
+				case "PopUpRequestError" : {
+					PopUpManager::AddPopUp(0, 0, _("An unexpected error occured. Please refresh this page later."), "", False);
+				}
+				case "GetTrackRecords":
+				{
+					declare SelectedFilter = Event.CustomEventData[0];
+					GetTrackRecord(SelectedFilter);
+				}
+			}
+		}
+	}
+}

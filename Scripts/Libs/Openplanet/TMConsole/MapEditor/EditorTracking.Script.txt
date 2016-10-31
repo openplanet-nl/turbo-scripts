@@ -1,0 +1,13 @@
+
+#Const C_PlayStartEdit		"Edit"
+#Const C_PlayStartValid		"Validation"
+
+Void EditMap() {
+	// Logger::Log("[EditorTracking][EditMap]  DataMgr.MenuUserId: "^DataMgr.MenuUserId);
+	ManiaPlanet.MasterServer_Tracking_ContextPlayStart( DataMgr.MenuUserId, C_PlayStartEdit );
+}
+
+Void MapValidation() {
+	// Logger::Log("[EditorTracking][MapValidation]  DataMgr.MenuUserId: "^DataMgr.MenuUserId);
+	ManiaPlanet.MasterServer_Tracking_ContextPlayStart( DataMgr.MenuUserId, C_PlayStartValid );
+}

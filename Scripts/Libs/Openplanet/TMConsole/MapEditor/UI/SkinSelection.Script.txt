@@ -1,0 +1,710 @@
+/** 
+ * Skin selection UI
+ */
+
+#Const Version		"2016-03-02"
+#Const ScriptName	"SkinSelection.Script.txt"
+
+#Include "TextLib" as TL
+#Include "Libs/Openplanet/Buttons.Script.txt" as Buttons
+#Include "Libs/Openplanet/Manialink3.Script.txt" as Manialink
+#Include "Libs/Openplanet/TMConsole/MapEditor/Utils.Script.txt" as Utils
+#Include "Libs/Openplanet/TMConsole/MapEditor/Layers.Script.txt" as Layers
+#Include "Libs/Openplanet/TMConsole/MapEditor/Sound.Script.txt" as Sound
+#Include "Libs/Openplanet/TMConsole/MapEditor/UI/Colors.Script.txt" as Colors
+#Include "Libs/Openplanet/TMConsole/MapEditor/UI/Stylesheet.Script.txt" as Styles
+
+// ---------------------------------- //
+// Constants
+// ---------------------------------- //
+#Const C_SkinsDisabledJP [
+	"Tower_Flags_A", "Tower_Flags_B", "Tower_Flags_C", "Tower_Flags_D" ///< Disable flags
+]
+#Const C_SkinsFolder	"file://Skins/AnyCE/"
+#Const C_ThumbsFolder	"file://Media/Images/TMConsole/MapEditor/Skins/"
+#Const C_Thumbs [
+	// Blimp
+	"AIE", "Air_control", "ARCADE", "CN_Lagoon", "CUIDADO", "DOUBLE_DRIVER", "HOTSEAT", "LEMON_TRACKMASTER", "NATURE", "SLOW_CN", "SPEED_WHEELS", "Stadium_International", "WELCOME_TM",
+	// Stadium tower
+	"China", "JapRom", "Tower_Flags_A", "Tower_Flags_B", "Tower_Flags_C", "Tower_Flags_D", "Trackmaster",
+	// Video billboards
+	"AD_VID_Gravity", "AD_VID_Gravity_CHN", "AD_VID_if_you_can_CHN", "AD_VID_LiveFast", "AD_VID_NoPain", "AD_VID_Physics", "AD_VID_PreserveNature", "CAUTION_VID_Achtung", "CAUTION_VID_AirControl", "CAUTION_VID_AvoidCenter_01", "CAUTION_VID_BigJump_Us", "CAUTION_VID_Brake", "CAUTION_VID_DriftHere", "CAUTION_VID_Mas_Rapido", "CAUTION_VID_SlowDown", "CAUTION_VID_SlowDown_CHN", "CAUTION_VID_Stay", "CAUTION_VID_Stay_CHN", "CAUTION_VID_StayCenter_01", "CAUTION_VID_Stay_Center_02", "PODIUM_VID_TryHard1", "PODIUM_VID_TryHard2", "PROMO_VID_DoubleDriver", "Series_Black", "Series_Blue", "Series_Green", "Series_Red", "Series_White", "SIGN_VID_Down", "SIGN_VID_Finish", "SIGN_VID_Left", "SIGN_VID_Left_Hand", "SIGN_VID_Right", "SIGN_VID_Right_Hand", "SIGN_VID_Turbo_CHN_Blue", "SIGN_VID_Turbo_CHN_Yellow", "SIGN_VID_Turbo_RUS_Blue", "SIGN_VID_Turbo_RUS_Yellow", "SIGN_VID_Turbo_US_Blue", "SIGN_VID_Turbo_US_Yellow", "SIGN_VID_Up_Sign", "VID_Flags", "VID_Flags2",
+	// Road paints
+	"Sign_Up_",
+	// Stadium circuit screens
+	"BallLeft", "BallRight", "Down", "LaserRedLeft", "LaserRedRight", "LaserTMLeft", "LaserTMRight", "Left", "Right", "Up", "WaveLeft", "WaveRight", "WhiteLeft", "WhiteRight"
+]
+#Const C_LightColors [
+	// Lights
+	"DarkBlue" => <0., 0., 0.5>,
+	"DarkRed" => <0.5, 0., 0.>,
+	//"Green" => <0.2, 1., 0.2>,
+	"LightBlue" => <0.5, 0.85, 0.91>,
+	//"Orange" => <1., 0.5, 0.>,
+	//"White" => <1., 1., 1.>,
+	//"Yellow" => <1., 1., 0.>,
+	// Inflatables
+	"Black" => <0.18, 0.18, 0.18>,
+	"Blue" => <0., 0.3, 0.76>,
+	"Green" => <0.56, 0.87, 0.25>,
+	"Orange" => <1., 0.7, 0.>,
+	"Purple" => <0.43, 0.34, 0.67>,
+	"White" => <0.87, 0.87, 0.87>,
+	"Yellow" => <0.99, 1., 0.>
+]
+#Const C_SkinsNb 8
+/// Events
+#Const C_Event_SkinHover	"LibStyleSkin_SkinHover"
+#Const C_Event_SkinClick	"LibStyleSkin_SkinClick"
+#Const C_Event_SkinNext		"LibStyleSkin_SkinNext"
+#Const C_Event_SkinPrev		"LibStyleSkin_SkinPrev"
+#Const C_Event_SkinRestore	"LibStyleSkin_SkinRestore"
+
+// ---------------------------------- //
+// Constants
+// ---------------------------------- //
+declare Text[] G_Skins;			///< The available skins
+declare Text G_SkinName;		///< The selected skin name
+declare Integer G_SkinIndex;	///< The selected skin index
+declare Integer G_SkinStart;	///< The start of the skin range
+declare Integer G_SkinUpdate;	///< The last skin update time
+declare Int3 G_BlockCoord;		///< The selected block coord
+declare Integer[Ident] G_PreviewBlocks;	///< Coordinates of the blocks with a preview skin
+
+// ---------------------------------- //
+// Functions
+// ---------------------------------- //
+// ---------------------------------- //
+// Private
+// ---------------------------------- //
+// ---------------------------------- //
+/** Get the skin selection manialink
+ *
+ *	@return							The manialink
+ */
+Text Private_GetSkinSelectionML() {
+	declare Skins = "";
+	declare SkinsSizeX = Styles::GetHeaderSize2();
+	declare SkinsNb = 8;
+	declare SkinSize = <SkinsSizeX/SkinsNb, 3., 0.>;
+	declare SkinsPosY = 4.;
+	declare ButtonSize = 2.;
+	declare FullHeaderSizeX = SkinsSizeX + (2 * ButtonSize);
+	for (I, 0, SkinsNb+1) {
+		declare PosX = (I-1) * SkinSize.X;
+		Skins ^= """<frameinstance {{{Styles::BuildPosition2(Styles::GetPosition2(<PosX, 0., 0.>, Styles::CircleSize_Bottom()))}}} modelid="Framemodel_Skin" />""";
+	}
+	
+	declare PrevSkin = Buttons::Editor_PrevSkin();
+	declare NextSkin = Buttons::Editor_NextSkin();
+	
+	return """
+<manialink version="3" name="MapEditor:Skin-selection">
+<stylesheet>
+	{{{Styles::Get()}}}
+</stylesheet>
+<framemodel id="Framemodel_Skin">
+	{{{Styles::BuildQuad(<0., 0., 0.>, <SkinSize.X, SkinSize.Y>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), ["bgcolor" => Colors::GetColorML(Colors::Color_SoftBlack()), "scriptevents" => "1", "id" => "Quad_Select"])}}}
+	{{{Styles::BuildQuad(<SkinSize.X*0.5, -SkinSize.Y*0.5, 1.>, <SkinSize.X, SkinSize.Y>, Styles::CircleSize_Bottom(), Styles::Align_CenterCenter(), ["keepratio" => "fit", "id" => "Quad_Skin"])}}}
+</framemodel>
+<frame id="Frame_Global">
+	<frame pos="0 -92" hidden="1" id="Frame_SkinSelection">
+		<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<-FullHeaderSizeX*0.5, 0., 0.>, Styles::CircleSize_Bottom()))}}}>
+			{{{Styles::BuildQuad(<0., 0., -1.>, <FullHeaderSizeX, SkinSize.Y+1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), ["scriptevents" => "1", "id" => "Quad_SkinZone"])}}}
+			{{{Styles::BuildBackground(<0., 0., 0.>, <FullHeaderSizeX, SkinSize.Y+1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop())}}}
+			{{{Styles::BuildLine(<0., 0., 1.>, <FullHeaderSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), Colors::Color_Purple(), True, True, Text[Text])}}}
+			{{{Styles::BuildLabel(<FullHeaderSizeX*0.5, -0.45, 2.>, <FullHeaderSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_CenterCenter2(), ["class" => "turbo2-text-title", "id" => "Label_Title"])}}}
+			<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<ButtonSize, -1., 3.>, Styles::CircleSize_Bottom()))}}} {{{Styles::BuildSize2(Styles::GetSize2(<SkinsSizeX, SkinSize.Y>, Styles::CircleSize_Bottom()))}}}>
+				<frame z-index="0" id="Frame_Skins">
+					{{{Skins}}}
+				</frame>
+			</frame>
+			<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<0., -1., 4.>, Styles::CircleSize_Bottom()))}}}>
+				{{{Styles::BuildQuad(<0., 0., 0.>, <ButtonSize, SkinSize.Y>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), ["bgcolor" => Colors::GetColorML(Colors::Color_Black())])}}}
+				{{{Styles::BuildButton(PrevSkin, <ButtonSize*0.5, -SkinSize.Y*0.5, 1.>, <ButtonSize-0.5, ButtonSize-0.5>, Styles::CircleSize_Bottom(), Styles::Align_CenterCenter(), ["scriptevents" => "1", "id" => "Button_PrevSkin"])}}}
+			</frame>
+			<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<ButtonSize+SkinsSizeX, -1., 5.>, Styles::CircleSize_Bottom()))}}}>
+				{{{Styles::BuildQuad(<0., 0., 0.>, <ButtonSize, SkinSize.Y>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), ["bgcolor" => Colors::GetColorML(Colors::Color_Black())])}}}
+				{{{Styles::BuildButton(NextSkin, <ButtonSize*0.5, -SkinSize.Y*0.5, 1.>, <ButtonSize-0.5, ButtonSize-0.5>, Styles::CircleSize_Bottom(), Styles::Align_CenterCenter(), ["scriptevents" => "1", "id" => "Button_NextSkin"])}}}
+			</frame>
+			<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<ButtonSize, -1., 15.>, Styles::CircleSize_Bottom()))}}}>
+				<frame id="Frame_Selector">
+					{{{Styles::BuildQuad(<SkinSize.X*0.5, -SkinSize.Y*0.51, 1.>, <SkinSize.X+2.7, SkinSize.Y+1.1>, Styles::CircleSize_Bottom(), Styles::Align_CenterCenter(), ["class" => "turbo2-selector-wide"])}}}
+				</frame>
+			</frame>
+		</frame>
+	</frame>
+</frame>
+<script><!--
+#Include "TextLib" as TL
+{{{Manialink::DefaultIncludes()}}}
+
+#Const C_ClickTick		100
+#Const C_InitTick		500
+#Const C_Thumbs			{{{dump(C_Thumbs)}}}
+#Const C_LightColors	{{{dump(C_LightColors)}}}
+#Const C_Type_Color		0
+#Const C_Type_RoadPaint	1
+#Const C_Type_Billboard	2
+
+declare Integer G_Type;
+
+{{{Manialink::Animations(["EaseOutQuad"])}}}
+{{{Buttons::ML_Functions()}}}
+
+Void SetSkin(CMlFrame _Frame, Text _SkinName, Integer _SkinIndex) {
+	declare SkinPath = "";
+	declare IsVideo = False;
+	declare IsRoad = False;
+	
+	declare RealSkinName = _SkinName;
+	declare SplitSkinName = TL::Split("|", _SkinName);
+	if (SplitSkinName.count > 0) RealSkinName = SplitSkinName[SplitSkinName.count-1];
+		
+	declare Quad_Skin <=> (_Frame.GetFirstChild("Quad_Skin") as CMlQuad);
+	declare Quad_Select <=> (_Frame.GetFirstChild("Quad_Select") as CMlQuad);
+	//declare Video_Skin <=> (_Frame.GetFirstChild("Video_Skin") as CMlMediaPlayer);
+	
+	declare SelectSkin for Quad_Select = -1;
+	SelectSkin = _SkinIndex;
+	
+	if (C_LightColors.existskey(RealSkinName)) {
+		Quad_Skin.RelativeRotation = 0.;
+		//Quad_Skin.RelativePosition_V3 = <0., 0.>;
+		Quad_Skin.ImageUrl = "";
+		Quad_Skin.BgColor = C_LightColors[RealSkinName];
+		Quad_Skin.Visible = True;
+		//Video_Skin.Visible = False;
+		if (G_Type > C_Type_Color) G_Type = C_Type_Color;
+	} else if (C_Thumbs.exists(RealSkinName)) {
+		SkinPath = "{{{C_ThumbsFolder}}}"^RealSkinName^".dds";
+		Quad_Skin.ImageUrl = SkinPath;
+		Quad_Skin.BgColor = <0., 0., 0.>;
+		Quad_Skin.Visible = True;
+		//Video_Skin.Visible = False;
+		if (G_Type > C_Type_Billboard) G_Type = C_Type_Billboard;
+		Quad_Skin.RelativeRotation = 0.;
+		//Quad_Skin.RelativePosition_V3 = <0., 0.>;
+	} else {
+		declare Extension = ".dds";
+		declare Subfolder = "Advertisement/";
+		if (TL::Find("VID_", RealSkinName, False, True)) {
+			Extension = ".webm";
+			IsVideo = True;
+		} else if (TL::SubText(RealSkinName, 0, 3) == "rd_") {
+			Subfolder = "RoadPaint/";
+			IsRoad = True;
+		}
+		
+		SkinPath = "{{{C_SkinsFolder}}}"^Subfolder^RealSkinName^Extension;
+		
+		/*if (IsVideo) {
+			Video_Skin.Url = SkinPath;
+			Quad_Skin.Visible = False;
+			Video_Skin.Visible = True;
+		} else {*/
+			Quad_Skin.ImageUrl = SkinPath;
+			Quad_Skin.BgColor = <0., 0., 0.>;
+			Quad_Skin.Visible = True;
+			//Video_Skin.Visible = False;
+			
+			if (IsRoad) {
+				if (G_Type > C_Type_RoadPaint) G_Type = C_Type_RoadPaint;
+				Quad_Skin.RelativeRotation = 90.;
+				//Quad_Skin.RelativePosition_V3 = <Quad_Skin.Size.X*0.75, -Quad_Skin.Size.Y*0.25>;
+			} else {
+				if (G_Type > C_Type_Billboard) G_Type = C_Type_Billboard;
+				Quad_Skin.RelativeRotation = 0.;
+				//Quad_Skin.RelativePosition_V3 = <0., 0.>;
+			}
+		//}
+	}
+}
+
+Void SetSkins(Text[] _Skins, Integer _Shift, Integer _Selected, Integer[] _SkinsIndexes) {
+	declare Frame_Skins <=> (Page.GetFirstChild("Frame_Skins") as CMlFrame);
+	
+	G_Type = 10;
+	foreach (Key => Control in Frame_Skins.Controls) {
+		declare Frame_Skin <=> (Control as CMlFrame);
+		
+		if (_Skins.existskey(Key)) {
+			SetSkin(Frame_Skin, _Skins[Key], _SkinsIndexes[Key]);
+			Frame_Skin.Visible = True;
+		} else {
+			Frame_Skin.Visible = False;
+		}
+	}
+	
+	declare Label_Title <=> (Page.GetFirstChild("Label_Title") as CMlLabel);
+	if (G_Type == C_Type_Color) {
+		Label_Title.Value = "{{{
+			//L16N [MapEditor] Select a color for the light
+			_("Select a color")
+		}}}";
+	} else if (G_Type == C_Type_Billboard) {
+		Label_Title.Value = "{{{
+			//L16N [MapEditor] Select a picture to apply on the billboard
+			_("Select a billboard")
+		}}}";
+	} else {
+		Label_Title.Value = "{{{
+			//L16N [MapEditor] Select a picture to apply on the road
+			_("Select a road paint")
+		}}}";
+	}
+	
+	declare Frame_Selector <=> (Page.GetFirstChild("Frame_Selector") as CMlFrame);
+	if (_Selected >= 0) {
+		declare CursorPosX = _Selected * {{{Styles::GetSize2(<SkinSize.X, 0.>, Styles::CircleSize_Bottom()).X}}};
+		Frame_Selector.Visible = True;
+		LibManialink_Anim(Frame_Selector, "<frame pos=\""^CursorPosX^" 0\" />", 250, "EaseOutQuad");
+	} else {
+		Frame_Selector.Visible = False;
+	}
+	
+	if (_Shift < 0) {
+		Frame_Skins.RelativePosition_V3.X = {{{-Styles::GetSize2(<SkinSize.X, 0.>, Styles::CircleSize_Bottom()).X}}};
+		LibManialink_Anim({{{Manialink::Inject("""<frame pos="0 0" id="Frame_Skins" />""")}}}, 250, "EaseOutQuad");
+	} else if (_Shift > 0) {
+		Frame_Skins.RelativePosition_V3.X = {{{Styles::GetSize2(<SkinSize.X, 0.>, Styles::CircleSize_Bottom()).X}}};
+		LibManialink_Anim({{{Manialink::Inject("""<frame pos="0 0" id="Frame_Skins" />""")}}}, 250, "EaseOutQuad");
+	}
+}
+
+Void SetVisibility(Boolean _Visible) {
+	if (_Visible) {
+		LibManialink_Anim({{{Manialink::Inject("""<frame pos="0 {{{Styles::Margin_Bottom()+Styles::GetSize2(<0., SkinsPosY>, Styles::CircleSize_Bottom()).Y}}}" hidden="0" id="Frame_SkinSelection" />""")}}}, 250, "EaseOutQuad");
+	} else {
+		LibManialink_Anim({{{Manialink::Inject("""<frame pos="0 -92" hidden="1" id="Frame_SkinSelection" />""")}}}, 250, "EaseOutQuad");
+	}
+}
+
+main() {
+	declare L_SkinsUpdate for Page = -1;
+	declare L_Skins for Page = Text[];
+	declare L_SkinsIndexes for Page = Integer[];
+	declare L_SkinsShift for Page = 0;
+	declare L_SkinSelected for Page = -1;
+	declare L_Visibility for Page = False;
+	
+	G_Type = C_Type_Billboard;
+	
+	declare ClickPage = 0;
+	declare NextClickUpdate = -1;
+	declare PrevSkinsUpdate = -1;
+	declare PrevVisibility = False;
+	
+	LibButtons_Init();
+	
+	while (True) {
+		yield;
+		
+		LibManialink_AnimLoop();
+		LibButtons_Loop();
+		
+		if (PrevSkinsUpdate != L_SkinsUpdate) {
+			PrevSkinsUpdate = L_SkinsUpdate;
+			SetSkins(L_Skins, L_SkinsShift, L_SkinSelected, L_SkinsIndexes);
+		}
+		
+		if (PrevVisibility != L_Visibility) {
+			PrevVisibility = L_Visibility;
+			
+			SetVisibility(L_Visibility);
+		}
+		
+		if (ClickPage != 0) {
+			if (!MouseLeftButton) {
+				ClickPage = 0;
+				NextClickUpdate = -1;
+			}
+			
+			if (NextClickUpdate > 0 && Now >= NextClickUpdate) {
+				if (ClickPage > 0) {
+					SendCustomEvent("{{{C_Event_SkinNext}}}", Text[]);
+					NextClickUpdate = Now + C_ClickTick;
+				} else if (ClickPage < 0) {
+					SendCustomEvent("{{{C_Event_SkinPrev}}}", Text[]);
+					NextClickUpdate = Now + C_ClickTick;
+				}
+			}
+		}
+		
+		declare IsOut = False;
+		declare IsOver = False;
+		foreach (Event in PendingEvents) {
+			if (Event.Type == CMlEvent::Type::MouseOver) {
+				IsOver = True;
+				if (Event.Control != Null && Event.ControlId == "Quad_Select") {
+					declare SelectSkin for Event.Control = -1;
+					SendCustomEvent("{{{C_Event_SkinHover}}}", [TL::ToText(SelectSkin)]);
+				} 
+			} else if (Event.Type == CMlEvent::Type::MouseOut) {
+				IsOut = True;
+			} else if (Event.Type == CMlEvent::Type::MouseClick) {
+				if (Event.Control != Null && Event.ControlId == "Quad_Select") {
+					declare SelectSkin for Event.Control = -1;
+					SendCustomEvent("{{{C_Event_SkinClick}}}", [TL::ToText(SelectSkin)]);
+				} else if (Event.ControlId == "Button_PrevSkin") {
+					SendCustomEvent("{{{C_Event_SkinPrev}}}", Text[]);
+					ClickPage = -1;
+					NextClickUpdate = Now + C_InitTick;
+				} else if (Event.ControlId == "Button_NextSkin") {
+					SendCustomEvent("{{{C_Event_SkinNext}}}", Text[]);
+					ClickPage = 1;
+					NextClickUpdate = Now + C_InitTick;
+				}
+			}
+		}
+		if (IsOut && !IsOver) {
+			SendCustomEvent("{{{C_Event_SkinRestore}}}", Text[]);
+		}
+	}
+}
+--></script>
+</manialink>	
+""";
+}
+
+// ---------------------------------- //
+/** Get the skin id (index + name)
+ *
+ *	@param	_Index					The skin index
+ *	@param	_Name					The skin name
+ *
+ *	@return							The skin id
+ */
+Text Private_GetSkinId(Integer _Index, Text _Name) {
+	return "|"^_Index^"|"^_Name;
+}
+
+// ---------------------------------- //
+/** Extract the skins index from the skin id
+ *
+ *	@param	_SkinId					The skin id
+ *
+ *	@return							The skin index
+ */
+Integer Private_GetSkinIndex(Text _SkinId) {
+	declare SplitSkinName = TL::Split("|", _SkinId);
+	if (SplitSkinName.count >= 2) return TL::ToInteger(SplitSkinName[SplitSkinName.count-2]);
+	
+	return 0;
+}
+
+// ---------------------------------- //
+// Public
+// ---------------------------------- //
+// ---------------------------------- //
+/** Return the version number of the script
+ *
+ *	@return							The version number of the script
+ */
+Text GetScriptVersion() {
+	return Version;
+}
+
+// ---------------------------------- //
+/** Return the name of the script
+ *
+ *	@return							The name of the script
+ */
+Text GetScriptName() {
+	return ScriptName;
+}
+
+// ---------------------------------- //
+/// Get the events constants
+Text Event_SkinHover() { return C_Event_SkinHover; }
+Text Event_SkinClick() { return C_Event_SkinClick; }
+Text Event_SkinNext() { return C_Event_SkinNext; }
+Text Event_SkinPrev() { return C_Event_SkinPrev; }
+Text Event_SkinRestore() { return C_Event_SkinRestore; }
+
+// ---------------------------------- //
+/** Check if the menu is visible
+ *
+ *	@return						True if th emenu is visible, False otherwise
+ */
+Boolean IsVisible() {
+	declare Page <=> Layers::GetPage("SkinSelection");
+	declare L_Visibility for Page = False;
+	return L_Visibility;
+}
+
+// ---------------------------------- //
+/** Select a skin
+ *
+ *	@param	_SkinIndex				The index of the skin to select
+ *	@param	_Shift					Animate the selection
+ *	@param	_PlaySound				Play a sound
+ *	@param	_IsPreview				Only preview the skin
+ */
+Void SelectSkin(Integer _SkinIndex, Integer _Shift, Boolean _PlaySound, Boolean _IsPreview) {
+	// Save skin to restore after preview
+	declare SkinBlock <=> GetBlock(G_BlockCoord);
+	if (SkinBlock != Null) {
+		if (_IsPreview) {
+			if (!G_PreviewBlocks.existskey(SkinBlock.Id)) {
+				G_PreviewBlocks[SkinBlock.Id] = GetBlockSkinIndex(SkinBlock);
+			}
+		} else {
+			declare Removed = G_PreviewBlocks.removekey(SkinBlock.Id);
+		}
+	}
+	
+	declare Page <=> Layers::GetPage("SkinSelection");
+	declare L_SkinsUpdate for Page = -1;
+	declare L_Skins for Page = Text[];
+	declare L_SkinsIndexes for Page = Integer[];
+	declare L_SkinsShift for Page = 0;
+	declare L_SkinSelected for Page = -1;
+	L_Skins.clear();
+	L_SkinsIndexes.clear();
+	L_SkinsShift = 0;
+		
+	if (G_Skins.existskey(_SkinIndex)) {
+		G_SkinName = G_Skins[_SkinIndex];
+		G_SkinIndex = _SkinIndex;
+	} else if (G_Skins.count > 0) {
+		G_SkinName = G_Skins[0];
+		G_SkinIndex = 0;
+	} else {
+		G_SkinName = "";
+		G_SkinIndex = -1;
+	}
+	
+	if (G_SkinIndex > G_SkinStart + C_SkinsNb - 1) {
+		G_SkinStart = G_SkinIndex - C_SkinsNb + 1;
+		L_SkinsShift = 1;
+	} else if (G_SkinIndex < G_SkinStart) {
+		G_SkinStart = G_SkinIndex;
+		L_SkinsShift = -1;
+	}
+	
+	if (G_SkinStart + C_SkinsNb > G_Skins.count) G_SkinStart = G_Skins.count - C_SkinsNb;
+	if (G_SkinStart < 0) G_SkinStart = 0;
+	
+	L_SkinSelected = G_SkinIndex - G_SkinStart;
+	
+	declare Min = G_SkinStart - 1;
+	declare Max = G_SkinStart + C_SkinsNb;
+	for (I, Min, Max) {
+		if (G_Skins.existskey(I)) {
+			L_Skins.add(G_Skins[I]);
+			L_SkinsIndexes.add(I);
+		} else {
+			L_Skins.add("");
+			L_SkinsIndexes.add(-1);
+		}
+	}
+	
+	G_SkinUpdate = Now;
+	L_SkinsUpdate = Now;
+	
+	if (_PlaySound) Sound::Play("EditorMenuMove");
+}
+
+// ---------------------------------- //
+/// Overload SelectSkin()
+Void SelectSkin(Integer _Selection, Integer _Shift, Boolean _IsPreview) {
+	SelectSkin(_Selection, _Shift, False, _IsPreview);
+}
+
+// ---------------------------------- //
+/// Overload SelectSkin()
+Void SelectSkin(Integer _Selection, Boolean _PlaySound, Boolean _IsPreview) {
+	SelectSkin(_Selection, 0, _PlaySound, _IsPreview);
+}
+
+// ---------------------------------- //
+/** Select a skin
+ *
+ *	@param	_SkinIndex				The index of the skin to select
+ *	@param	_IsPreview				Only preview the skin
+ */
+Void SelectSkin(Integer _SkinIndex, Boolean _IsPreview) {
+	SelectSkin(_SkinIndex, 0, _IsPreview);
+}
+
+// ---------------------------------- //
+/** Select the next skin
+ *
+ *	@param	_IsPreview				Only preview the skin
+ */
+Void NextSkin(Boolean _IsPreview) {
+	if (!IsVisible()) return;
+	
+	if (G_SkinIndex >= 0) {
+		G_SkinIndex += 1;
+		if (G_SkinIndex > G_Skins.count - 1) G_SkinIndex = 0;
+		SelectSkin(G_SkinIndex, 1, _IsPreview);
+	} else {
+		SelectSkin(-1, _IsPreview);
+	}
+	Sound::Play("EditorMenuMove");
+}
+
+// ---------------------------------- //
+/** Select the previous skin
+ *
+ *	@param	_IsPreview				Only preview the skin
+ */
+Void PrevSkin(Boolean _IsPreview) {
+	if (!IsVisible()) return;
+	
+	if (G_SkinIndex >= 0) {
+		G_SkinIndex -= 1;
+		if (G_SkinIndex < 0) G_SkinIndex = G_Skins.count - 1;
+		SelectSkin(G_SkinIndex, -1, _IsPreview);
+	} else {
+		SelectSkin(-1, _IsPreview);
+	}
+	Sound::Play("EditorMenuMove");
+}
+
+// ---------------------------------- //
+/** Get the skin last update time
+ *
+ *	@return							The skin update time
+ */
+Integer GetSkinUpdate() {
+	return G_SkinUpdate;
+}
+
+// ---------------------------------- //
+/** Get the currently selected skin index
+ *
+ *	@return							The selected skin index
+ */
+Integer GetSkinIndex() {
+	return Private_GetSkinIndex(G_SkinName);
+}
+
+
+// ---------------------------------- //
+/** Get the currently selected skin name
+ *
+ *	@return							The selected skin name
+ */
+Text GetSkinName() {
+	return G_SkinName;
+}
+
+// ---------------------------------- //
+/** Set the skins to display for a block
+ *
+ *	@param	_BlockCoord				The block coordinates to check
+ */
+Void SetBlockCoord(Int3 _BlockCoord) {
+	declare SkinBlock <=> GetBlock(_BlockCoord);
+	if (SkinBlock == Null) return;
+	
+	G_Skins.clear();
+	G_BlockCoord = _BlockCoord;
+	
+	declare IndexMax = GetNbBlockModelSkins(SkinBlock.BlockModel) - 1;
+	for (Index, 0, IndexMax) {
+		declare SkinName = GetBlockModelSkinName(SkinBlock.BlockModel, Index);
+		if (SystemSkuIdentifier == CManiaApp::ESystemSkuIdentifier::JP && C_SkinsDisabledJP.exists(SkinName)) continue;
+		G_Skins.add(Private_GetSkinId(Index, SkinName));
+	}
+	
+	SelectSkin(GetBlockSkinIndex(SkinBlock), False);
+}
+
+// ---------------------------------- //
+/** Get the currently selected block coordinates
+ *
+ *	@return							The selected block coordinates
+ */
+Int3 GetBlockCoord() {
+	return G_BlockCoord;
+}
+
+// ---------------------------------- //
+/** Check if a block is skinnable
+ *
+ *	@param	_Block					The block to check
+ *
+ *	@return							True if the block is skinnable, False otherwise
+ */
+Boolean IsSkinnable(CBlock _Block) {
+	if (_Block == Null) return False;
+	
+	return (GetNbBlockModelSkins(_Block.BlockModel) > 1);
+}
+
+// ---------------------------------- //
+/// Cancel all skins preview
+Void CancelPreview() {
+	foreach (BlockId => SkinKey in G_PreviewBlocks) {
+		if (!Blocks.existskey(BlockId)) continue;
+		SetBlockSkinIndex(Blocks[BlockId], SkinKey);
+		SelectSkin(SkinKey, False);
+	}
+	G_PreviewBlocks.clear();
+}
+
+// ---------------------------------- //
+/** Set the skin selection visibility
+ *
+ *	@param	_Visible				Show the skin selection if True
+ */
+Void SetVisibility(Boolean _Visible) {
+	declare Page <=> Layers::GetPage("SkinSelection");
+	declare L_Visibility for Page = False;
+	L_Visibility = _Visible;
+}
+
+// ---------------------------------- //
+/// Show the skin selection
+Void Show() {
+	SetVisibility(True);
+}
+
+// ---------------------------------- //
+/// Hide the skin selection
+Void Hide() {
+	SetVisibility(False);
+}
+
+// ---------------------------------- //
+/// Unload the library
+Void Unload() {
+	Layers::Destroy("SkinSelection");
+	//Layers::Unload();
+}
+
+// ---------------------------------- //
+/// Load the library
+Void Load() {
+	Unload();
+	
+	//Layers::Load();
+	Buttons::Load();
+	declare LayerSkinSelection <=> Layers::Create("SkinSelection");
+	LayerSkinSelection.ManialinkPage = Private_GetSkinSelectionML();
+	Buttons::Unload();
+	
+	G_Skins.clear();
+	G_SkinName = "";
+	G_SkinIndex = -1;
+	G_SkinUpdate = Now;
+	G_BlockCoord = Utils::NullCoord();
+		
+	declare Page <=> LayerSkinSelection.LocalPage;
+	declare L_SkinsUpdate for Page = -1;
+	declare L_Skins for Page = Text[];
+	declare L_SkinsIndexes for Page = Integer[];
+	declare L_SkinsShift for Page = 0;
+	declare L_SkinSelected for Page = -1;
+	declare L_Visibility for Page = False;
+	L_Skins.clear();
+	L_SkinsIndexes.clear();
+	L_SkinsShift = 0;
+	L_SkinSelected = -1;
+	L_SkinsUpdate = -1;
+	L_Visibility = False;
+}

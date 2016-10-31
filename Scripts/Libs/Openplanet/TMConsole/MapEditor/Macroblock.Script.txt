@@ -1,0 +1,2745 @@
+/** 
+ * Macroblock library
+ */
+
+#Const C_MacroblocksVersion	"2015-12-31_1"
+#Const Version		"2016-02-29"
+#Const ScriptName	"Macroblock.Script.txt"
+
+#Include "TextLib" as TL
+#Include "MathLib" as ML
+#Include "MapUnits" as MU
+#Include "Libs/Openplanet/TMConsole/MapEditor/Utils.Script.txt" as Utils
+
+// ---------------------------------- //
+// Constants
+// ---------------------------------- //
+#Const C_NullDir			CEditorPlugin::CardinalDirections::North	///< Null value for dir
+#Const C_VariantNull		-1	///< Null
+#Const C_VariantGround		0	///< Ground variant identifier
+#Const C_VariantAir			1	///< Air variant identifier
+#Const C_VariantForest		2	///< Forest (Valley) variant identifier
+#Const C_VariantForestEdge	3	///< Forest edge (Valley) variant identifier
+#Const C_VariantDirt		4	///< Dirt (Stadium) variant identifier
+#Const C_VariantWater		5	///< Water (Lagoon) variant identifier
+
+#Const C_UpdateUidBlock		"DecoExpert\\Flying\\Helico" ///< Full name of the macroblock model to use to udpate the map uid
+
+// List of macroblocks ground offsets
+#Const C_GroundOffsets [
+	"Canyon" => [
+		"CliffLow\\" => 13,
+		"CliffHigh\\" => 13,
+		"Tunnel\\Transitions\\WaterCliff" => 13,
+		"Tunnel\\Transitions\\MainToTunnel" => 5,
+		"Tunnel\\Transitions\\DirtCliff" => 1,
+		"RoadRace\\Bridges\\WaterCliff" => 13,
+		"RoadMain\\Bridges\\WaterCliff" => 13,
+		"Deco\\Desert\\WaterCliff" => 13
+	],
+	"Valley" => [
+		"Tunnel\\Transitions\\GrassFlat" => 2,
+		"Tunnel\\Transitions\\4WayGrassFlat" => 2,
+		"RoadDirt\\Turns\\GTCurve2Pond" => 1,
+		"RoadDirt\\Turns\\GTCurve2Lake" => 1,
+		"RoadDirt\\Roads\\RiverCross" => 1,
+		"RoadDirt\\Roads\\Diag2x2Pond" => 1,
+		"RoadDirt\\Roads\\Diag2x2PondMirror" => 1,
+		"RoadDirt\\Roads\\Diag2x2Lake" => 1,
+		"RoadDirt\\Roads\\Diag2x2Mirror" => 1,
+		"RoadDirt\\Obstacles\\LakeJump" => 1,
+		"RoadDirt\\Obstacles\\CrossRive" => 1, //< Missing "r" is wanted
+		"Offroad\\Roads\\Bridge" => 1,
+		"Deco\\Natural\\TreesRiver" => 1,
+		"Deco\\Natural\\TreesLake" => 1,
+		"Castle\\Transitions\\" => 1
+	],
+	"Stadium" => [
+		"Trench\\" => 1
+	],
+	"Lagoon" => [
+		"Tunnel\\Transitions\\TunnelToRoadMainSlope" => 1,
+		"Tunnel\\Transitions\\TunnelToHighway" => 2,
+		"Tunnel\\Checkpoints\\StartHelicoMedium" => 2
+	]
+]
+
+// List of authorized free clips
+#Const C_AuthorizedFreeClips [
+	"Canyon" => [
+		"RoadCaveDoubleFreeClip",
+		"ArenaBankFreeClipLeft", 
+		"ArenaBankFreeClipRight", 
+		"ArenaBiSlopeEndFreeClipLeft", 
+		"ArenaBiSlopeEndFreeClipRight", 
+		"ArenaBiSlopeStartFreeClipLeft", 
+		"ArenaBiSlopeStartFreeClipRight", 
+		"ArenaBiSlopeStraightFreeClipLeft", 
+		"ArenaBiSlopeStraightFreeClipRight", 
+		//"ArenaBorderBarrierFreeClipLeft", 
+		//"ArenaBorderBarrierFreeClipRight", 
+		//"ArenaBorderFreeClipLeft", 
+		//"ArenaBorderFreeClipRight", 
+		//"ArenaBridgeBaseFreeClip", 
+		//"ArenaCheckpointFreeClip", 
+		//"ArenaFWFreeClipTank", 
+		//"ArenaFWFreeClipTankDown", 
+		//"ArenaFWFreeClipTankLeft", 
+		//"ArenaFWFreeClipTankRight", 
+		//"ArenaFWFreeClipTankUp", 
+		//"ArenaFinishFreeClip2Left", 
+		//"ArenaFinishFreeClip2Right", 
+		//"ArenaFinishFreeClipLeft", 
+		//"ArenaFinishFreeClipRight", 
+		"ArenaFreeClip", 
+		"ArenaHalfBaseFreeClipEst", 
+		"ArenaHalfBaseFreeClipWest", 
+		//"ArenaHallWay2WaysStraightFreeClipLeft", 
+		//"ArenaHallWay2WaysStraightFreeClipRight", 
+		//"ArenaHallWaySlopeStraightFreeClipLeft", 
+		//"ArenaHallWaySlopeStraightFreeClipRight", 
+		"ArenaHallwayFreeClip", 
+		//"ArenaLoopBorderCornerOutFreeClipLeft", 
+		//"ArenaLoopBorderCornerOutFreeClipRight", 
+		//"ArenaLoopStraightFreeClipLeft", 
+		//"ArenaLoopStraightFreeClipRight", 
+		//"ArenaLoopStraightSlope2FreeClip", 
+		//"ArenaLoopStraightSlope2FreeClipMirror", 
+		//"ArenaLoopStraightSlopeFreeClip", 
+		//"ArenaLoopStraightSlopeFreeClipMirror", 
+		//"ArenaPasserelleFreeClip", 
+		//"ArenaPasserelleFreeClip2Left", 
+		//"ArenaPasserelleFreeClip2Right", 
+		//"ArenaPasserelleFreeClipLeft", 
+		//"ArenaPasserelleFreeClipRight", 
+		//"ArenaRampFreeClip", 
+		//"ArenaRampFreeClipLeft", 
+		//"ArenaRampFreeClipRight", 
+		"ArenaSlopeBase2FreeClipLeft", 
+		"ArenaSlopeBase2FreeClipRight", 
+		"ArenaSlopeBase4FreeClipLeft", 
+		"ArenaSlopeBase4FreeClipRight", 
+		"ArenaSlopeBaseFreeClipLeft", 
+		"ArenaSlopeBaseFreeClipRight", 
+		"ArenaSlopeEndFreeClipLeft", 
+		"ArenaSlopeEndFreeClipRight", 
+		"ArenaSlopeStartFreeClipLeft", 
+		"ArenaSlopeStartFreeClipRight", 
+		"ArenaSlopeStraightFreeClipLeft", 
+		"ArenaSlopeStraightFreeClipRight", 
+		//"ArenaStartFreeClipLeft", 
+		//"ArenaStartFreeClipRight", 
+		//"ArenaTransitionFromRoadMain2FreeClip2Left", 
+		//"ArenaTransitionFromRoadMain2FreeClip2Right", 
+		//"ArenaTransitionFromRoadMain2FreeClipLeft", 
+		//"ArenaTransitionFromRoadMain2FreeClipRight", 
+		"ArenaTunnelFreeClip", 
+		"ArenaTunnelOpen1SideFreeClipLeft", 
+		"ArenaTunnelOpen1SideFreeClipRight", 
+		"ArenaTunnelOpen2SidesFreeClip", 
+		"ArenaTunnelOpenFreeClip", 
+		//"ArenaTurbo2FreeClipTank", 
+		//"ArenaTurbo2FreeClipTankDown", 
+		//"ArenaTurbo2FreeClipTankLeft", 
+		//"ArenaTurbo2FreeClipTankRight", 
+		//"ArenaTurbo2FreeClipTankUp", 
+		//"ArenaTurboFreeClipTank", 
+		//"ArenaTurboFreeClipTankDown", 
+		//"ArenaTurboFreeClipTankLeft", 
+		//"ArenaTurboFreeClipTankRemover", 
+		//"ArenaTurboFreeClipTankRemoverLeft", 
+		//"ArenaTurboFreeClipTankRemoverRight", 
+		//"ArenaTurboFreeClipTankRight", 
+		//"ArenaTurboFreeClipTankUp", 
+		//"ArenaWallRideBorderFreeClipLeft", 
+		//"ArenaWallRideBorderFreeClipRight", 
+		"ArenaWallRideLoopEndFreeClip", 
+		"ArenaWallRideLoopEndFreeClipLeft", 
+		"ArenaWallRideLoopEndFreeClipRight", 
+		"ArenaWallRideLoopStartFreeClipLeft", 
+		"ArenaWallRideLoopStartFreeClipRight", 
+		//"ArenaWallRideSlopeStraightFreeClip", 
+		"ArenaWallRideStartCornerFreeClipLeft", 
+		"ArenaWallRideStartCornerFreeClipRight", 
+		"ArenaWallRideStraightFreeClipLeft", 
+		"ArenaWallRideStraightFreeClipRight", 
+		"ArenaWallRideTopFreeClipLeft", 
+		"ArenaWallRideTopFreeClipRight"
+	],
+	"Valley" => [
+		"ArenaBaseFreeClip",
+		"ArenaBaseSlopeBaseLeftFreeClip",
+		"ArenaBaseSlopeBaseRightFreeClip",
+		"ArenaBaseSlopeEndLeftFreeClip",
+		"ArenaBaseSlopeEndRightFreeClip",
+		"ArenaBaseSlopeLeftFreeClip",
+		"ArenaBaseSlopeRightFreeClip",
+		"ArenaBaseSlopeStartLeftFreeClip",
+		"ArenaBaseSlopeStartRightFreeClip",
+		//"ArenaBorderFreeClipCoreLeft",
+		//"ArenaBorderFreeClipCoreRight",
+		//"ArenaBorderFreeClipTopLeft",
+		//"ArenaBorderFreeClipTopRight",
+		//"ArenaBorderSmallFreeClipLeft",
+		"ArenaBorderSmallFreeClipLoopFlipLeft",
+		"ArenaBorderSmallFreeClipLoopFlipRight",
+		"ArenaBorderSmallFreeClipOpenLeft",
+		"ArenaBorderSmallFreeClipOpenRight",
+		//"ArenaBorderSmallFreeClipRight",
+		//"ArenaBorderSmallFreeClipTopLeft",
+		//"ArenaBorderSmallFreeClipTopRight",
+		"ArenaBorderSmallLoopEndFreeClipLeft",
+		"ArenaBorderSmallLoopEndFreeClipRight",
+		"ArenaBorderSmallLoopSmallEndFreeClipLeft",
+		"ArenaBorderSmallLoopSmallEndFreeClipRight",
+		"ArenaBorderSmallLoopSmallStartFreeClipLeft",
+		"ArenaBorderSmallLoopSmallStartFreeClipRight",
+		"ArenaBorderSmallLoopStartFreeClipLeft",
+		"ArenaBorderSmallLoopStartFreeClipRight",
+		"ArenaBorderSmallLoopStraightTopFreeClipLeft",
+		"ArenaBorderSmallLoopStraightTopFreeClipRight",
+		//"ArenaFWFreeClipDownTank",
+		//"ArenaFWFreeClipLeftTank",
+		//"ArenaFWFreeClipRightTank",
+		//"ArenaFWFreeClipTank",
+		//"ArenaFWFreeClipUpTank",
+		"ArenaGT2FreeClipLeft",
+		"ArenaGT2FreeClipRight",
+		"ArenaParkBorderFreeClipLeft",
+		"ArenaParkBorderFreeClipRight",
+		"ArenaParkFreeClip",
+		"ArenaParkRoofBaseFreeClip",
+		//"ArenaParkRoofLoop2GTCurve2ToParkFreeClipLeft",
+		//"ArenaParkRoofLoop2GTCurve2ToParkFreeClipRight",
+		//"ArenaParkRoofLoop2GTCurve2ToRubberFreeClipLeft",
+		//"ArenaParkRoofLoop2GTCurve2ToRubberFreeClipRight",
+		"ArenaParkRoofLoopFreeClipFlip",
+		"ArenaParkRoofLoopFreeClipVLeft",
+		"ArenaParkRoofLoopFreeClipVRight",
+		"ArenaParkRoofSlopeBaseFreeClipLeft",
+		"ArenaParkRoofSlopeBaseFreeClipRight",
+		"ArenaParkRoofSlopeEndFreeClipLeft",
+		"ArenaParkRoofSlopeEndFreeClipRight",
+		"ArenaParkRoofSlopeStartFreeClipLeft",
+		"ArenaParkRoofSlopeStartFreeClipRight",
+		"ArenaParkRoofSlopeStraightFreeClipLeft",
+		"ArenaParkRoofSlopeStraightFreeClipRight",
+		//"ArenaParkToRoad4WayFreeClip",
+		//"ArenaTurboFreeClipDownTank",
+		//"ArenaTurboFreeClipLeftTank",
+		//"ArenaTurboFreeClipLeftTankRemover",
+		//"ArenaTurboFreeClipRightTank",
+		//"ArenaTurboFreeClipRightTankRemover",
+		//"ArenaTurboFreeClipTank",
+		//"ArenaTurboFreeClipTankRemover",
+		//"ArenaTurboFreeClipUpTank",
+		"CastleBorderLakeFreeClipLeft",
+		"CastleBorderLakeFreeClipRight",
+		//"CastleBorderWallFreeClipLeft",
+		//"CastleBorderWallFreeClipRight",
+		"CastleBridgeLakeFreeClip",
+		"CastleCenterLakeFreeClip",
+		"CastleGardenLakeFreeClip",
+		//"RoadCliffSlopeEndFreeClip",
+		//"RoadCliffSlopeEndFreeClipMirror",
+		//"RoadCliffSlopeStartFreeClip",
+		//"RoadCliffSlopeStartFreeClipMirror",
+		"RoadForestLargeFreeClip",
+		"RoadForestLargeGrassFreeClip"
+	],
+	"Stadium" => [
+		//"StadiumCircuitBaseRampBigFreeClipFront",
+		//"StadiumCircuitBaseRampBigFreeClipLeft",
+		//"StadiumCircuitBaseRampBigFreeClipRight",
+		//"StadiumCircuitBaseRampSmall1x05FreeClipFront",
+		//"StadiumCircuitBaseRampSmall1x05FreeClipLeft",
+		//"StadiumCircuitBaseRampSmall1x05FreeClipRight",
+		//"StadiumCircuitBaseRampSmall1x1FreeClipFront",
+		//"StadiumCircuitBaseRampSmall1x1FreeClipLeft",
+		//"StadiumCircuitBaseRampSmall1x1FreeClipRight",
+		//"StadiumCircuitBorderFreeClip2Left",
+		//"StadiumCircuitBorderFreeClip2Right",
+		//"StadiumCircuitBorderFreeClip2bLeft",
+		//"StadiumCircuitBorderFreeClip2bRight",
+		//"StadiumCircuitBorderFreeClipLeft",
+		//"StadiumCircuitBorderFreeClipRight",
+		"StadiumCircuitBorderLoopStartFreeClipLeft",
+		"StadiumCircuitBorderLoopStartFreeClipRight",
+		//"StadiumCircuitBorderSlopeStraightBottomFreeClipLeft",
+		//"StadiumCircuitBorderSlopeStraightBottomFreeClipRight",
+		//"StadiumCircuitBorderSlopeStraightTopFreeClipLeft",
+		//"StadiumCircuitBorderSlopeStraightTopFreeClipRight",
+		"StadiumCircuitFabricFreeClip",
+		"StadiumCircuitFabricPillarFreeClipLeft",
+		"StadiumCircuitFabricPillarFreeClipRight",
+		"StadiumCircuitFabricRampFreeClipLeftAir",
+		"StadiumCircuitFabricRampFreeClipLeftGround",
+		"StadiumCircuitFabricRampFreeClipRightAir",
+		"StadiumCircuitFabricRampFreeClipRightGround",
+		"StadiumCircuitFreeClip",
+		"StadiumCircuitPlatformGridFreeClip",
+		"StadiumCircuitPlatformLoopFreeClip",
+		"StadiumCircuitPlatformWallBorderFront",
+		"StadiumCircuitPlatformWallBorderLeft",
+		"StadiumCircuitPlatformWallBorderRight",
+		"StadiumCircuitSculptArchFreeClipEnd",
+		"StadiumCircuitSculptArchFreeClipEndMirror",
+		"StadiumCircuitSculptArchFreeClipStart",
+		"StadiumCircuitSculptArchFreeClipStartMirror",
+		"StadiumCircuitSculptBridgeFreeClip",
+		"StadiumCircuitSculptBridgeFreeClipMirror",
+		"StadiumCircuitSlopeEndFreeClipLeft",
+		"StadiumCircuitSlopeEndFreeClipRight",
+		"StadiumCircuitSlopeStartFreeClipLeft",
+		"StadiumCircuitSlopeStartFreeClipRight",
+		"StadiumCircuitSlopeStraightFreeClipLeft",
+		"StadiumCircuitSlopeStraightFreeClipRight",
+		"StadiumTrenchFreeClip",
+		"StadiumTrenchToLoopStartFreeClipLeft",
+		"StadiumTrenchToLoopStartFreeClipRight",
+		"StadiumTrenchToPlatformBiSlopeStartFreeClipLeft",
+		"StadiumTrenchToPlatformBiSlopeStartFreeClipRight"
+	],
+	"Lagoon" => [
+		"ArenaBaseFreeClip",
+		"ArenaBorderFreeClipLeft",
+		"ArenaBorderFreeClipRight",
+		//"ArenaFWFreeClip",
+		//"ArenaFWFreeClipTank",
+		//"ArenaFWSlope2FreeClipTankDown",
+		//"ArenaFWSlope2FreeClipTankLeft",
+		//"ArenaFWSlope2FreeClipTankRight",
+		//"ArenaFWSlope2FreeClipTankUp",
+		//"ArenaFWSlope2_FreeClipDown",
+		//"ArenaFWSlope2_FreeClipLeft",
+		//"ArenaFWSlope2_FreeClipRight",
+		//"ArenaFWSlope2_FreeClipUp",
+		"ArenaLoopEndFreeClipLeft",
+		"ArenaLoopEndFreeClipRight",
+		"ArenaLoopFreeClipLeft",
+		"ArenaLoopFreeClipRight",
+		"ArenaLoopStartFreeClipLeft",
+		"ArenaLoopStartFreeClipRight",
+		"ArenaSlope2End_FreeClipLeft",
+		"ArenaSlope2End_FreeClipRight",
+		"ArenaSlope2FreeClipDown",
+		"ArenaSlope2FreeClipUp",
+		"ArenaSlope2Start_FreeClipLeft",
+		"ArenaSlope2Start_FreeClipRight",
+		"ArenaSlope2Straight_FreeClipLeft",
+		"ArenaSlope2Straight_FreeClipRight",
+		"ArenaSlope2Twist3_FreeClipLeft",
+		"ArenaSlope2Twist3_FreeClipRight",
+		"ArenaSlope2TwistEnd_FreeClipLeft",
+		"ArenaSlope2TwistEnd_FreeClipRight",
+		"ArenaSlope2TwistStart_FreeClipLeft",
+		"ArenaSlope2TwistStart_FreeClipRight",
+		"ArenaSlopeBase_FreeClipLeft",
+		"ArenaSlopeBase_FreeClipRight",
+		//"ArenaTurbo2FreeClip",
+		//"ArenaTurbo2FreeClipTank",
+		//"ArenaTurbo2Slope2FreeClipDown",
+		//"ArenaTurbo2Slope2FreeClipTankDown",
+		//"ArenaTurbo2Slope2FreeClipTankUp",
+		//"ArenaTurbo2Slope2FreeClipUp",
+		//"ArenaTurbo2Slope2_FreeClipLeft",
+		//"ArenaTurbo2Slope2_FreeClipRight",
+		//"ArenaTurbo2Slope2_FreeClipTankLeft",
+		//"ArenaTurbo2Slope2_FreeClipTankRight",
+		//"ArenaTurboFreeClip",
+		//"ArenaTurboFreeClipTank",
+		//"ArenaTurboFreeClipTankRemover",
+		//"ArenaTurboSlope2FreeClipDown",
+		//"ArenaTurboSlope2FreeClipTankDown",
+		//"ArenaTurboSlope2FreeClipTankUp",
+		//"ArenaTurboSlope2FreeClipUp",
+		//"ArenaTurboSlope2_FreeClipLeft",
+		//"ArenaTurboSlope2_FreeClipRight",
+		//"ArenaTurboSlope2_FreeClipTankLeft",
+		//"ArenaTurboSlope2_FreeClipTankRemoverLeft",
+		//"ArenaTurboSlope2_FreeClipTankRemoverRight",
+		//"ArenaTurboSlope2_FreeClipTankRight",
+		"CE_ShipFreeClipLeft",
+		"CE_ShipFreeClipLeft_Land",
+		"CE_ShipFreeClipRight",
+		"CE_ShipFreeClipRight_Land",
+		"DecoCityFloor-FreeClip",
+		"DecoCityFloor-FreeClipSmall",
+		"DecoCityFloorSlope-FreeClipLeft",
+		"DecoCityFloorSlope-FreeClipRight",
+		"DecoCityGarden-FreeClip",
+		"DecoCityGardenSlope-FreeClipLeft",
+		"DecoCityGardenSlope-FreeClipRight",
+		//"HighWayFreeClip",
+		"HighWaySlope2FreeClipLeft",
+		"HighWaySlope2FreeClipRight",
+		"HighWaySlope2LoopFreeClipLeft",
+		"HighWaySlope2LoopFreeClipRight",
+		"HighWaySlope2LoopRightFreeClipLeft",
+		"HighWaySlope2LoopRightFreeClipRight",
+		"RoadMainToCityFreeClipLeft",
+		"RoadMainToCityFreeClipRight",
+		"RoadThemeParkWall-FreeClipLeft",
+		"RoadThemeParkWall-FreeClipRight",
+		"TunnelFreeClip"
+		//"TunnelFreeClip2"
+	]
+]
+// List of forbidden clips
+#Const C_ForbiddenClips [
+	"Canyon" => [
+		"RoadMain2Clip"
+	],
+	"Valley" => [""],
+	"Stadium" => [""],
+	"Lagoon" => [""]
+]
+// List of clips suffixes
+#Const C_ClipsSuffixes [
+	"RightUp" => "LeftDown",
+	"RightDown" => "LeftUp",
+	"LeftUp" => "RightDown",
+	"LeftDown" => "RightUp",
+	"Right" => "Left",
+	"Left" => "Right",
+	"Up" => "Down",
+	"Down" => "Up",
+	"Est" => "West",
+	"West" => "Est",
+	"LeftFreeClip" => "RightFreeClip",
+	"RightFreeClip" => "LeftFreeClip"
+]
+#Const C_MacroblocksFolder	"PartyEditor"	///< Folder containing the macroblocks
+#Const C_TerrainsFolder		"Terrain"		///< Folder containing the terrains macroblocks
+#Const C_DecoExpertFolder	"DecoExpert"	///< Folder containing the decoration macroblocks
+#Const C_DecoSimpleFolder	"Deco"			///< Folder containing the simple decoration macroblocks
+
+// ---------------------------------- //
+// Globales
+// ---------------------------------- //
+declare Text[Integer] G_LibMacroblock_SignaturesPool;
+declare Text[] G_LibMacroblock_ClipNamesPool;
+declare Text[][Text] G_LibMacroblock_ConnectableClips;
+declare CMacroblockModel[Text] G_LibMacroblock_MacroblockModelsIds;	///< Cache macroblock models ids
+declare CMacroblockModel[][Text] G_LibMacroblock_MacroblockModelsFullNames; ///< Cache macroblock models names
+declare Text[] G_LibMacroblock_OutClips; ///< List of out clips names
+declare CMacroblockModel G_LibMacroblock_UpdateUidBlock; ///< Macroblock model to use to update the uid of the map
+
+// ---------------------------------- //
+// Functions
+// ---------------------------------- //
+// ---------------------------------- //
+// Public
+// ---------------------------------- //
+// ---------------------------------- //
+/** Return the version number of the script
+ *
+ *	@return							The version number of the script
+ */
+Text GetScriptVersion() {
+	return Version;
+}
+
+// ---------------------------------- //
+/** Return the name of the script
+ *
+ *	@return							The name of the script
+ */
+Text GetScriptName() {
+	return ScriptName;
+}
+
+// ---------------------------------- //
+/// Clear the pool of macroblocks signatures
+Void ClearSignaturesPool() {
+	G_LibMacroblock_SignaturesPool.clear();
+}
+
+// ---------------------------------- //
+/** Find an available signature key in the signature pool
+ *
+ *	@return							A signature key
+ */
+Integer GetAvailableSignatureKey() {
+	G_LibMacroblock_SignaturesPool = G_LibMacroblock_SignaturesPool.sortkey();
+	
+	declare Key = 0;
+	while (True) {
+		if (!G_LibMacroblock_SignaturesPool.existskey(Key)) {
+			return Key;
+		} else {
+			Key += 1;
+		}
+	}
+	
+	return Key;
+}
+
+// ---------------------------------- //
+/// Clear the pool of clip names
+Void ClearClipNamesPool() {
+	G_LibMacroblock_ClipNamesPool.clear();
+}
+
+// ---------------------------------- //
+/** Get the clip id for signature from its name
+ *
+ *	@param	_Name					The name of the clip
+ *
+ *	@return							The id of the clip
+ */
+Integer GetClipId(Text _Name) {
+	declare Key = G_LibMacroblock_ClipNamesPool.keyof(_Name);
+	
+	if (Key < 0) {
+		Key = G_LibMacroblock_ClipNamesPool.count;
+		G_LibMacroblock_ClipNamesPool.add(_Name);
+	}
+	
+	return Key;
+}
+
+// ---------------------------------- //
+/** Get the Null variant identifier
+ *
+ *	@return							The Null variant identifier
+ */
+Integer VariantNull() {
+	return C_VariantNull;
+}
+
+// ---------------------------------- //
+/** Get the ground variant identifier
+ *
+ *	@return							The ground variant identifier
+ */
+Integer VariantGround() {
+	return C_VariantGround;
+}
+
+// ---------------------------------- //
+/** Get the air variant identifier
+ *
+ *	@return							The air variant identifier
+ */
+Integer VariantAir() {
+	return C_VariantAir;
+}
+
+// ---------------------------------- //
+/** Get the forest variant identifier
+ *
+ *	@return							The forest variant identifier
+ */
+Integer VariantForest() {
+	return C_VariantForest;
+}
+
+// ---------------------------------- //
+/** Get the forest edge variant identifier
+ *
+ *	@return							The forest edge variant identifier
+ */
+Integer VariantForestEdge() {
+	return C_VariantForestEdge;
+}
+
+// ---------------------------------- //
+/** Get the dirt variant identifier
+ *
+ *	@return							The dirt variant identifier
+ */
+Integer VariantDirt() {
+	return C_VariantDirt;
+}
+
+// ---------------------------------- //
+/** Get the water variant identifier
+ *
+ *	@return							The water variant identifier
+ */
+Integer VariantWater() {
+	return C_VariantWater;
+}
+
+// ---------------------------------- //
+/** Check if a variant exists
+ *
+ *	@param	_Variant				The variant to check
+ *
+ *	@return							True if the variant exists, False otherwise
+ */
+Boolean VariantExists(Integer _Variant) {
+	return (
+		_Variant == C_VariantNull ||
+		_Variant == C_VariantGround ||
+		_Variant == C_VariantAir ||
+		_Variant == C_VariantForest ||
+		_Variant == C_VariantForestEdge ||
+		_Variant == C_VariantDirt ||
+		_Variant == C_VariantWater
+	);
+}
+
+// ---------------------------------- //
+/** Check if the variant is not null
+ *
+ *	@param	_Variant			The variant to check
+ *
+ *	@return						True if the variant isn't Null, False otherwise
+ */
+Boolean VariantIsNotNull(Integer _Variant) {
+	return (VariantExists(_Variant) && _Variant != C_VariantNull);
+}
+
+// ---------------------------------- //
+/** Get a macroblock model from its id
+ *
+ *	@param	_MacroblockModelId		The id of the macroblock model to get
+ *
+ *	@return							The macroblock model if found, Null otherwise
+ */
+CMacroblockModel GetMacroblockModelFromId(Ident _MacroblockModelId) {
+	if (MacroblockModels.existskey(_MacroblockModelId)) return MacroblockModels[_MacroblockModelId];
+	return Null;
+}
+
+// ---------------------------------- //
+/** Get a macroblock model from its custom id
+ *
+ *	@param	_MacroblockModelId		The custom id of the macroblock model to get
+ *
+ *	@return							The macroblock model if found, Null otherwise
+ */
+CMacroblockModel GetMacroblockModelFromId(Text _MacroblockModelId) {
+	// Get from cache
+	if (G_LibMacroblock_MacroblockModelsIds.existskey(_MacroblockModelId)) return G_LibMacroblock_MacroblockModelsIds[_MacroblockModelId];
+	
+	foreach (MacroblockModel in MacroblockModels) {
+		declare metadata Text PartyEditor_Id for MacroblockModel;
+		if (PartyEditor_Id == _MacroblockModelId) {
+			// Save in cache
+			G_LibMacroblock_MacroblockModelsIds[_MacroblockModelId] = MacroblockModel;
+			
+			return MacroblockModel;
+		}
+	}
+	return Null;
+}
+
+// ---------------------------------- //
+/** Get the full name of a macroblock
+ *
+ *	@param	_MacroblockModel	The macroblock model to search
+ *
+ *	@return		The full name of the macroblock model
+ */
+Text GetFullName(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return "";
+	
+	declare metadata Text PartyEditor_Family for _MacroblockModel;
+	declare metadata Text PartyEditor_Type for _MacroblockModel;
+	declare metadata Text PartyEditor_Name for _MacroblockModel;
+	return PartyEditor_Family^"\\"^PartyEditor_Type^"\\"^PartyEditor_Name;
+}
+
+// ---------------------------------- //
+/** Get macroblock models from their full name
+ *
+ *	@param	_FullName				The full name of the macroblock models to get
+ *
+ *	@return							The macroblock models if found, an an empty array otherwise
+ */
+CMacroblockModel[] GetMacroblockModelsFromFullName(Text _FullName) {
+	// Get from cache
+	if (G_LibMacroblock_MacroblockModelsFullNames.existskey(_FullName)) return G_LibMacroblock_MacroblockModelsFullNames[_FullName];
+	
+	declare CMacroblockModel[] MacroblockModelsFound;
+	foreach (MacroblockModel in MacroblockModels) {
+		if (GetFullName(MacroblockModel) == _FullName) {
+			MacroblockModelsFound.add(MacroblockModel);
+		}
+	}
+	
+	// Save in cache
+	G_LibMacroblock_MacroblockModelsFullNames[_FullName] = MacroblockModelsFound;
+			
+	return MacroblockModelsFound;
+}
+
+// ---------------------------------- //
+/** Get all variants of a macroblockmodel
+ *
+ *	@param	_MacroblockModelFamily	The family of the macroblock model to get
+ *	@param	_MacroblockModelType	The type of the macroblock model to get
+ *	@param	_MacroblockModelName	The name of the macroblock model to get
+ *	@param	_VariantIdentifier		The variant to get
+ *
+ *	@return		The macroblock models if found, Null otherwise
+ */
+CMacroblockModel[][Integer] Private_GetMacroblockModelVariants(Text _MacroblockModelFamily, Text _MacroblockModelType, Text _MacroblockModelName) {
+	declare Result = [
+		C_VariantGround => CMacroblockModel[], 
+		C_VariantAir => CMacroblockModel[],
+		C_VariantForest => CMacroblockModel[], 
+		C_VariantForestEdge => CMacroblockModel[],
+		C_VariantDirt => CMacroblockModel[],
+		C_VariantWater=> CMacroblockModel[]
+	];
+	
+	foreach (MacroblockModel in MacroblockModels) {
+		declare metadata Text PartyEditor_Family for MacroblockModel;
+		declare metadata Text PartyEditor_Type for MacroblockModel;
+		declare metadata Text PartyEditor_Name for MacroblockModel;
+		if (PartyEditor_Family == _MacroblockModelFamily && PartyEditor_Type == _MacroblockModelType && PartyEditor_Name == _MacroblockModelName) {
+			switch (MacroblockModel.Name) {
+				case "Ground"		: Result[C_VariantGround].add(MacroblockModel);
+				case "Air"			: Result[C_VariantAir].add(MacroblockModel);
+				case "Forest"		: Result[C_VariantForest].add(MacroblockModel);
+				case "ForestEdge"	: Result[C_VariantForestEdge].add(MacroblockModel);
+				case "Dirt"			: Result[C_VariantDirt].add(MacroblockModel);
+				case "Water"		: Result[C_VariantWater].add(MacroblockModel);
+			}
+		}
+	}
+	return Result;
+}
+// ---------------------------------- //
+/// Overload Private_GetMacroblockModelVariants()
+CMacroblockModel[][Integer] Private_GetMacroblockModelVariants(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return [
+		C_VariantGround => CMacroblockModel[], 
+		C_VariantAir => CMacroblockModel[],
+		C_VariantForest => CMacroblockModel[], 
+		C_VariantForestEdge => CMacroblockModel[],
+		C_VariantDirt => CMacroblockModel[],
+		C_VariantWater => CMacroblockModel[]
+	];
+	
+	declare metadata Text PartyEditor_Family for _MacroblockModel;
+	declare metadata Text PartyEditor_Type for _MacroblockModel;
+	declare metadata Text PartyEditor_Name for _MacroblockModel;
+	return Private_GetMacroblockModelVariants(PartyEditor_Family, PartyEditor_Type, PartyEditor_Name);
+}
+
+// ---------------------------------- //
+/** Get a defined variant of a macroblockmodel
+ *
+ *	@param	_MacroblockModelFamily	The family of the macroblock model to get
+ *	@param	_MacroblockModelType	The type of the macroblock model to get
+ *	@param	_MacroblockModelName	The name of the macroblock model to get
+ *	@param	_VariantIdentifier		The variant to get
+ *
+ *	@return		The macroblock model if found, Null otherwise
+ */
+CMacroblockModel GetMacroblockModel(Text _MacroblockModelFamily, Text _MacroblockModelType, Text _MacroblockModelName, Integer _VariantIdentifier) {
+	foreach (MacroblockModel in MacroblockModels) {
+		declare metadata Text PartyEditor_Family for MacroblockModel;
+		declare metadata Text PartyEditor_Type for MacroblockModel;
+		declare metadata Text PartyEditor_Name for MacroblockModel;
+		if (PartyEditor_Family == _MacroblockModelFamily && PartyEditor_Type == _MacroblockModelType && PartyEditor_Name == _MacroblockModelName) {
+			if (_VariantIdentifier == C_VariantGround && MacroblockModel.Name == "Ground") {
+				return MacroblockModel;
+			} else if (_VariantIdentifier == C_VariantAir && MacroblockModel.Name == "Air") {
+				return MacroblockModel;
+			} else if (_VariantIdentifier == C_VariantForest && MacroblockModel.Name == "Forest") {
+				return MacroblockModel;
+			} else if (_VariantIdentifier == C_VariantForestEdge && MacroblockModel.Name == "ForestEdge") {
+				return MacroblockModel;
+			} else if (_VariantIdentifier == C_VariantDirt && MacroblockModel.Name == "Dirt") {
+				return MacroblockModel;
+			} else if (_VariantIdentifier == C_VariantWater && MacroblockModel.Name == "Water") {
+				return MacroblockModel;
+			}
+		}
+	}
+	return Null;
+}
+
+// ---------------------------------- //
+/** Get the macroblockmodels with the corresponding name
+ *
+ *	@param	_MacroblockModelName	The name the macroblock model to get
+ *
+ *	@return							The macroblock models if found, an empty array otherwise
+ */
+CMacroblockModel[] GetMacroblockModelsFromName(Text _MacroblockModelName) {
+	declare CMacroblockModel[] MacroblockModels;
+	foreach (MacroblockModel in MacroblockModels) {
+		declare metadata Text PartyEditor_Name for MacroblockModel;
+		if (PartyEditor_Name == _MacroblockModelName) MacroblockModels.add(MacroblockModel);
+	}
+	return MacroblockModels;
+}
+
+// ---------------------------------- //
+/** Get the right variant (air or ground) for a macroblock model
+ *
+ *	@param	_MacroblockModel		The macroblock model to analyse
+ *
+ *	@return							The BlockModelVariant
+ */
+CBlockModelVariant GetBlockModelVariant(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return Null;
+	
+	if (_MacroblockModel.GeneratedBlockModel.VariantGround != Null) {
+		return _MacroblockModel.GeneratedBlockModel.VariantGround;
+	} else {
+		return _MacroblockModel.GeneratedBlockModel.VariantAir;
+	}
+	return Null;
+}
+
+// ---------------------------------- //
+/** Check if a clip is disabled
+ *
+ *	@param	_ClipName				The name of the clip
+ *	@param	_ClipOffset				The offset of the clip
+ *	@param	_ClipDir				The direction of the clip
+ *
+ *	@return							True if the clip is disabled, False otherwise
+ */
+Boolean ClipIsDisabled(CMacroblockModel _MacroblockModel, Text _ClipName, Int3 _ClipOffset, Integer _ClipDir) {
+	if (_MacroblockModel == Null) return False;
+	
+	declare metadata Text[] PartyEditor_DisabledClipsNames for _MacroblockModel;
+	declare metadata Int3[] PartyEditor_DisabledClipsOffsets for _MacroblockModel;
+	declare metadata Integer[] PartyEditor_DisabledClipsDirs for _MacroblockModel;
+	foreach (Key => DisabledClipName in PartyEditor_DisabledClipsNames) {
+		if (DisabledClipName != _ClipName) continue;
+		if (PartyEditor_DisabledClipsOffsets[Key] != _ClipOffset) continue;
+		if (PartyEditor_DisabledClipsDirs[Key] != _ClipDir) continue;
+		return True;
+	}
+	
+	return False;
+}
+
+// ---------------------------------- //
+/** Generate the macroblock model signature for a given direction
+ *
+ *	@param	_MacroblockModel		The macroblock model to check
+ *	@param	_Dir					The direction of the macroblock
+ *
+ *	@return							The variant signature
+ */
+Text GenerateSignature(CMacroblockModel _MacroblockModel, Integer _Dir) {
+	declare Variant <=> GetBlockModelVariant(_MacroblockModel);
+	if (Variant == Null) return "";
+	
+	declare DirOffset = Utils::IntToDir(_Dir);
+	
+	declare metadata Text[] PartyEditor_ClipNames for _MacroblockModel;
+	declare metadata Int3[] PartyEditor_ClipConnections for _MacroblockModel;
+	declare metadata Integer[] PartyEditor_ClipDirs for _MacroblockModel;
+	
+	declare Integer[][Int3] FakeBlockUnitModels;
+	foreach (BlockUnitModel in Variant.BlockUnitModels) {
+		if (!FakeBlockUnitModels.existskey(BlockUnitModel.Offset)) FakeBlockUnitModels[BlockUnitModel.Offset] = Integer[];
+	}
+	foreach (ClipId => BlockUnitOffset in PartyEditor_ClipConnections) {
+		if (!FakeBlockUnitModels.existskey(BlockUnitOffset)) FakeBlockUnitModels[BlockUnitOffset] = Integer[];
+		FakeBlockUnitModels[BlockUnitOffset].add(ClipId);
+	}
+	
+	declare Signature = "";
+	foreach (BlockUnitOffset => ClipsIds in FakeBlockUnitModels) {
+		if (Signature != "") Signature ^= ",";
+		
+		declare RotatedOffset = MU::GetRotatedOffsetPositive(BlockUnitOffset, DirOffset, Variant.Size);
+		
+		Signature ^= "<"^RotatedOffset.X^","^RotatedOffset.Y^","^RotatedOffset.Z^">";
+		declare ClipsDirsIds = Integer[Integer];
+		foreach (ClipId in ClipsIds) {
+			declare ClipName = PartyEditor_ClipNames[ClipId];
+			declare ClipDir = PartyEditor_ClipDirs[ClipId];
+			declare RotatedDir = Utils::DirToInt(MU::AddDirs(Utils::IntToDir(ClipDir), DirOffset));
+			ClipsDirsIds[RotatedDir] = GetClipId(ClipName);
+		}
+		declare ClipsSignature = "";
+		ClipsDirsIds = ClipsDirsIds.sort();
+		foreach (ClipDir => ClipId in ClipsDirsIds) {
+			if (ClipsSignature != "") ClipsSignature ^= ",";
+			ClipsSignature ^= "["^ClipId^","^ClipDir^"]";
+		}
+		Signature ^= "["^ClipsSignature^"]";
+	}
+	
+	return Signature;
+}
+
+// ---------------------------------- //
+/// Reload the signatures pool from the existing macroblocks
+Void ReloadSignaturesPool() {
+	ClearSignaturesPool();
+	ClearClipNamesPool();
+	
+	foreach (MacroblockModel in MacroblockModels) {
+		declare Variant <=> GetBlockModelVariant(MacroblockModel);
+		if (Variant == Null) continue;
+		
+		declare metadata Integer PartyEditor_SignatureKey for MacroblockModel = -1;
+		if (G_LibMacroblock_SignaturesPool.existskey(PartyEditor_SignatureKey)) continue;
+		
+		declare Signature = GenerateSignature(MacroblockModel, 0);
+		
+		G_LibMacroblock_SignaturesPool[PartyEditor_SignatureKey] = Signature;
+	}
+}
+
+// ---------------------------------- //
+/** Reset the metadata of the specified macroblock model
+ *
+ *	@param	_MacroblockModel		The macroblock model to reset
+ */
+Void ResetMetadata(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return;
+	
+	// Don't clear the script metadata, or we will lose all the custom clips
+	//_MacroblockModel.ClearScriptMetadata();
+	
+	declare metadata Text PartyEditor_Id for _MacroblockModel;
+	declare metadata Text PartyEditor_Name for _MacroblockModel;
+	declare metadata Text PartyEditor_Family for _MacroblockModel;
+	declare metadata Text PartyEditor_Type for _MacroblockModel;
+	declare metadata Boolean PartyEditor_IsShifting for _MacroblockModel;
+	declare metadata Boolean PartyEditor_IsTurning for _MacroblockModel;
+	declare metadata Boolean PartyEditor_IsRising for _MacroblockModel;
+	declare metadata Text[Integer] PartyEditor_Variants for _MacroblockModel;
+	declare metadata Boolean[] PartyEditor_ClipCustoms for _MacroblockModel;
+	declare metadata Text[] PartyEditor_ClipNames for _MacroblockModel;
+	declare metadata Int3[] PartyEditor_ClipOffsets for _MacroblockModel;
+	declare metadata Int3[] PartyEditor_ClipConnections for _MacroblockModel;
+	declare metadata Integer[] PartyEditor_ClipDirs for _MacroblockModel;
+	declare metadata Vec3 PartyEditor_ClipsCenter for _MacroblockModel;
+	declare metadata Integer PartyEditor_SignatureKey for _MacroblockModel = -1;
+	declare metadata Real PartyEditor_Length for _MacroblockModel;
+	declare metadata Integer PartyEditor_GroundOffset for _MacroblockModel;
+	declare metadata Text PartyEditor_Version for _MacroblockModel;
+	declare metadata Boolean PartyEditor_Valid for _MacroblockModel;
+	
+	PartyEditor_Id = "";
+	PartyEditor_Name = "";
+	PartyEditor_Family = "";
+	PartyEditor_Type = "";
+	PartyEditor_IsShifting = False;
+	PartyEditor_IsTurning = False;
+	PartyEditor_IsRising = False;
+	PartyEditor_Variants.clear();
+	PartyEditor_ClipsCenter = <0., 0., 0.>;
+	PartyEditor_SignatureKey = -1;
+	PartyEditor_Length = 0.;
+	PartyEditor_GroundOffset = 0;
+	PartyEditor_Version = "";
+	PartyEditor_Valid = False;
+	
+	while (PartyEditor_ClipCustoms.exists(False)) {
+		declare Removed = False;
+		declare Key = PartyEditor_ClipCustoms.keyof(False);
+		Removed = PartyEditor_ClipCustoms.removekey(Key);
+		Removed = PartyEditor_ClipNames.removekey(Key);
+		Removed = PartyEditor_ClipOffsets.removekey(Key);
+		Removed = PartyEditor_ClipConnections.removekey(Key);
+		Removed = PartyEditor_ClipDirs.removekey(Key);
+	}
+	
+	// Incoherent state, some clips are not flagged correctly, remove them
+	while (PartyEditor_ClipCustoms.count != PartyEditor_ClipNames.count) {
+		declare Key = -1;
+		// Remove unnecessary custom clips
+		if (PartyEditor_ClipCustoms.count > PartyEditor_ClipNames.count) {
+			Key = PartyEditor_ClipCustoms.count - 1;
+		} 
+		// Remove unnecessary default clips
+		else if (PartyEditor_ClipNames.count > PartyEditor_ClipCustoms.count) {
+			Key = PartyEditor_ClipNames.count - 1;
+		}
+		
+		if (Key >= 0) {
+			declare Removed = False;
+			Removed = PartyEditor_ClipCustoms.removekey(Key);
+			Removed = PartyEditor_ClipNames.removekey(Key);
+			Removed = PartyEditor_ClipOffsets.removekey(Key);
+			Removed = PartyEditor_ClipConnections.removekey(Key);
+			Removed = PartyEditor_ClipDirs.removekey(Key);
+		} else {
+			break;
+		}
+	}
+}
+
+// ---------------------------------- //
+/** Save the metadata of the specified macroblock model
+ *
+ *	@param	_MacroblockModel		The macroblock model to save
+ */
+Void SaveMetadata(CMacroblockModel _MacroblockModel) {
+	SaveMacroblock(_MacroblockModel);
+}
+
+Void GenerateVariants(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return;
+	
+	declare metadata Text[Integer] PartyEditor_Variants for _MacroblockModel;
+	
+	declare Variants = Private_GetMacroblockModelVariants(_MacroblockModel);
+	if (Variants.existskey(C_VariantGround) && Variants[C_VariantGround].count > 0) {
+		declare metadata Text PartyEditor_Id for Variants[C_VariantGround][0];
+		PartyEditor_Variants[C_VariantGround] = PartyEditor_Id;
+	}
+	
+	if (Variants.existskey(C_VariantAir) && Variants[C_VariantAir].count > 0) {
+		declare metadata Text PartyEditor_Id for Variants[C_VariantAir][0];
+		PartyEditor_Variants[C_VariantAir] = PartyEditor_Id;
+	}
+	
+	if (Variants.existskey(C_VariantForest) && Variants[C_VariantForest].count > 0) {
+		declare metadata Text PartyEditor_Id for Variants[C_VariantForest][0];
+		PartyEditor_Variants[C_VariantForest] = PartyEditor_Id;
+	}
+	
+	if (Variants.existskey(C_VariantForestEdge) && Variants[C_VariantForestEdge].count > 0) {
+		declare metadata Text PartyEditor_Id for Variants[C_VariantForestEdge][0];
+		PartyEditor_Variants[C_VariantForestEdge] = PartyEditor_Id;
+	}
+	
+	if (Variants.existskey(C_VariantDirt) && Variants[C_VariantDirt].count > 0) {
+		declare metadata Text PartyEditor_Id for Variants[C_VariantDirt][0];
+		PartyEditor_Variants[C_VariantDirt] = PartyEditor_Id;
+	}
+	
+	if (Variants.existskey(C_VariantWater) && Variants[C_VariantWater].count > 0) {
+		declare metadata Text PartyEditor_Id for Variants[C_VariantWater][0];
+		PartyEditor_Variants[C_VariantWater] = PartyEditor_Id;
+	}
+}
+
+// ---------------------------------- //
+/** Generate the metadata for a macroblock
+ *
+ *	@param	_MacroblockModel		The macroblock to update
+ *	@param	_SaveMacroblock			Save the metadata inside the macroblock
+ *	@param	_GenerateVariants		Find the variant associated to this macroblock
+ */
+Void GenerateMetadata(CMacroblockModel _MacroblockModel, Boolean _SaveMacroblock, Boolean _GenerateVariants) {
+	if (_MacroblockModel == Null) return;
+	
+	// Extract the root folder, family and type of the macroblock from its id
+	declare RootFolder = "";
+	declare Family = "";
+	declare Type = "";
+	declare Name = "";
+	declare MacroblockId = TL::Split("\\", ""^_MacroblockModel.Id);
+	if (MacroblockId.count >= 5) {
+		RootFolder = MacroblockId[MacroblockId.count-5];
+		Family = MacroblockId[MacroblockId.count-4];
+		Type = MacroblockId[MacroblockId.count-3];
+		Name = MacroblockId[MacroblockId.count-2];
+	}
+	
+	declare metadata Text PartyEditor_Version for _MacroblockModel;
+	PartyEditor_Version = C_MacroblocksVersion;
+	
+	// Only macroblocks in the PartyEditor folder are valid
+	declare metadata Boolean PartyEditor_Valid for _MacroblockModel;
+	PartyEditor_Valid = False;
+	
+	if (RootFolder != C_MacroblocksFolder) {
+		if (_SaveMacroblock) {
+			SaveMetadata(_MacroblockModel);
+		}
+		return;
+	}
+	ResetMetadata(_MacroblockModel);
+	
+	declare metadata Text PartyEditor_Id for _MacroblockModel;
+	declare metadata Text PartyEditor_Name for _MacroblockModel;
+	declare metadata Text PartyEditor_Family for _MacroblockModel;
+	declare metadata Text PartyEditor_Type for _MacroblockModel;
+	declare metadata Boolean PartyEditor_IsShifting for _MacroblockModel;
+	declare metadata Boolean PartyEditor_IsTurning for _MacroblockModel;
+	declare metadata Boolean PartyEditor_IsRising for _MacroblockModel;
+	declare metadata Boolean[] PartyEditor_ClipCustoms for _MacroblockModel;
+	declare metadata Text[] PartyEditor_ClipNames for _MacroblockModel;
+	declare metadata Int3[] PartyEditor_ClipOffsets for _MacroblockModel;
+	declare metadata Int3[] PartyEditor_ClipConnections for _MacroblockModel;
+	declare metadata Integer[] PartyEditor_ClipDirs for _MacroblockModel;
+	declare metadata Vec3 PartyEditor_ClipsCenter for _MacroblockModel;
+	declare metadata Integer PartyEditor_SignatureKey for _MacroblockModel = -1;
+	declare metadata Real PartyEditor_Length for _MacroblockModel;
+	declare metadata Integer PartyEditor_GroundOffset for _MacroblockModel;
+	
+	PartyEditor_Id = ""^_MacroblockModel.Id;
+	PartyEditor_Family = Family;
+	PartyEditor_Type = Type;
+	PartyEditor_Name = Name;
+	PartyEditor_Version = C_MacroblocksVersion;
+	PartyEditor_Valid = True;
+	
+	// Get the right variant
+	declare Variant <=> GetBlockModelVariant(_MacroblockModel);
+	
+	// Find clips info
+	declare ClipCount = 0;
+	foreach (BlockUnitModel in Variant.BlockUnitModels) {
+		foreach (Dir => Clip in BlockUnitModel.Clips) {
+			if (Clip == Null) continue;
+			// Skip forbidden clip
+			if (C_ForbiddenClips[Map.CollectionName].exists(Clip.Name)) continue;
+			// Skip free clip
+			if (TL::Find("FreeClip", Clip.Name, False, False) && !C_AuthorizedFreeClips[Map.CollectionName].exists(Clip.Name)) continue;
+			// Skip disable clip
+			declare ClipOffset = MU::GetNeighbourCoord(BlockUnitModel.Offset, Utils::IntToDir(Dir));
+			if (ClipIsDisabled(_MacroblockModel, Clip.Name, ClipOffset, Dir)) continue;
+			
+			ClipCount += 1;
+			
+			PartyEditor_ClipCustoms.add(False);
+			PartyEditor_ClipNames.add(Clip.Name);
+			PartyEditor_ClipOffsets.add(ClipOffset);
+			PartyEditor_ClipConnections.add(BlockUnitModel.Offset);
+			PartyEditor_ClipDirs.add(Dir);
+		}
+	}
+	
+	// Center of clips if there are clips
+	declare UniqueClipsConnections = Int3[];
+	foreach (ClipConnection in PartyEditor_ClipConnections) {
+		if (!UniqueClipsConnections.exists(ClipConnection)) UniqueClipsConnections.add(ClipConnection);
+	}
+	if (UniqueClipsConnections.count > 0) {
+		PartyEditor_ClipsCenter = <0., 0., 0.>;
+		foreach (ClipOffset in UniqueClipsConnections) {
+			PartyEditor_ClipsCenter += (ClipOffset * 1.);
+		}
+		PartyEditor_ClipsCenter = <
+			(CollectionSquareSize * 0.5) + ((PartyEditor_ClipsCenter.X / UniqueClipsConnections.count) * CollectionSquareSize),
+			(PartyEditor_ClipsCenter.Y / UniqueClipsConnections.count) * CollectionSquareHeight,
+			(CollectionSquareSize * 0.5) + ((PartyEditor_ClipsCenter.Z / UniqueClipsConnections.count) * CollectionSquareSize)
+		>;
+	}
+	// Center of macroblock if there is no clip
+	else {
+		PartyEditor_ClipsCenter = <
+			ML::Abs(Variant.Size.X) * 0.5 * CollectionSquareSize,
+			ML::Abs(Variant.Size.Y) * 0.5 * CollectionSquareHeight,
+			ML::Abs(Variant.Size.Z) * 0.5 * CollectionSquareSize
+		>;
+	}
+	
+	// Generate signature
+	declare Signature = "";
+	declare SignatureFirst = "";
+	declare SignatureExists = False;
+	for (I, 0, 3) {
+		Signature = GenerateSignature(_MacroblockModel, I);
+		
+		if (SignatureFirst == "") SignatureFirst = Signature;
+		
+		if (G_LibMacroblock_SignaturesPool.exists(Signature)) {
+			SignatureExists = True;
+			break;
+		}
+	}
+	
+	if (!SignatureExists) {
+		declare Key = GetAvailableSignatureKey();
+		G_LibMacroblock_SignaturesPool[Key] = SignatureFirst;
+		//PartyEditor_Signature = SignatureFirst;
+		PartyEditor_SignatureKey = Key;
+	} else {
+		//PartyEditor_Signature = Signature;
+		PartyEditor_SignatureKey = G_LibMacroblock_SignaturesPool.keyof(Signature);
+	}
+	
+	// Check if the macroblock is shifting, turning or rising
+	PartyEditor_IsShifting = False;
+	PartyEditor_IsTurning = False;
+	PartyEditor_IsRising = False;
+	
+	declare EntryOffset = <0, 0, 0>;
+	declare EntryDir = 0;
+	declare ClipPositions = Vec3[];
+	foreach (Key => ClipOffset in PartyEditor_ClipOffsets) {
+		if (Key == 0) {
+			EntryOffset = ClipOffset;
+			EntryDir = PartyEditor_ClipDirs[Key];
+		} else {
+			if (!PartyEditor_IsRising && EntryOffset.Y != ClipOffset.Y) {
+				PartyEditor_IsRising = True;
+			}
+			if (!PartyEditor_IsShifting && !PartyEditor_IsTurning) {
+				if (EntryOffset.X != ClipOffset.X && EntryOffset.Z != ClipOffset.Z) {
+					if (MU::GetOpposedDir(Utils::IntToDir(EntryDir)) == Utils::IntToDir(PartyEditor_ClipDirs[Key])) {
+						PartyEditor_IsShifting = True;
+					} else {
+						PartyEditor_IsTurning = True;
+					}
+				}
+			}
+		}
+		
+		// Save clip position
+		declare Dir = Utils::IntToDir(PartyEditor_ClipDirs[Key]);
+		declare Position = <ClipOffset.X * CollectionSquareSize, ClipOffset.Y * CollectionSquareHeight, ClipOffset.Z * CollectionSquareSize>;
+		switch (Dir) {
+			case CEditorPlugin::CardinalDirections::North: {
+				Position.Z -= CollectionSquareSize * 0.5;
+			}
+			case CEditorPlugin::CardinalDirections::West: {
+				Position.X -= CollectionSquareSize * 0.5;
+			}
+			case CEditorPlugin::CardinalDirections::South: {
+				Position.Z += CollectionSquareSize * 0.5;
+			}
+			case CEditorPlugin::CardinalDirections::East: {
+				Position.X += CollectionSquareSize * 0.5;
+			}
+		}
+		ClipPositions.add(Position);
+	}
+	
+	// Compute macroblock length between clips
+	declare Lengths = Real[];
+	while (ClipPositions.count > 1) {
+		declare ClipPositionA = ClipPositions[0];
+		declare Removed = ClipPositions.removekey(0);
+		
+		foreach (ClipPositionB in ClipPositions) {
+			Lengths.add(ML::Distance(ClipPositionA, ClipPositionB));
+		}
+	}
+	declare Length = 0.;
+	if (Lengths.count > 0) {
+		foreach (TmpLength in Lengths) {
+			Length += TmpLength;
+		}
+		Length /= Lengths.count;
+	} else {
+		Length = ML::Distance(
+			<0., 0., 0.>, 
+			<Variant.Size.X * CollectionSquareSize, (Variant.Size.Y - 1) * CollectionSquareHeight, Variant.Size.Z * CollectionSquareSize>
+		);
+	}
+	PartyEditor_Length = Length;
+	
+	PartyEditor_GroundOffset = 0;
+	declare FullName = GetFullName(_MacroblockModel);
+	if (
+		_MacroblockModel.GeneratedBlockModel.VariantGround != Null
+		&& C_GroundOffsets.existskey(Map.CollectionName)
+	) {
+		declare TextsToFind = C_GroundOffsets[Map.CollectionName];
+		foreach (TextToFind => GroundOffset in TextsToFind) {
+			if (TL::Find(TextToFind, FullName, True, True)) {
+				PartyEditor_GroundOffset = GroundOffset;
+				break;
+			}
+		}
+	}
+	
+	if (_GenerateVariants) {
+		GenerateVariants(_MacroblockModel);
+	}
+	
+	if (_SaveMacroblock) {
+		SaveMetadata(_MacroblockModel);
+	}
+}
+
+// ---------------------------------- //
+/** Generate the metadata for all macroblocks
+ *
+ *	@param	_SaveMacroblock			Save the metadata inside the macroblock
+ */
+Void GenerateMetadata(Boolean _SaveMacroblock) {
+	declare ProgressionMax = MacroblockModels.count * 2.;
+	declare Progression = 0;
+	
+	declare ProgressionLayer <=> UILayerCreate();
+	declare LibMacroblock_MetadataProgression for ProgressionLayer.LocalPage = 0.;
+	LibMacroblock_MetadataProgression = 0.;
+	ProgressionLayer.ManialinkPage = """
+<manialink version="3" name="GenerateMetadata">
+<frame pos="0 0" z-index="10000">
+	<quad pos="0 0" z-index="-1" size="320 180" halign="center" valign="center" style="Bgs1" substyle="BgDialogBlur" />
+	<quad pos="0 0" z-index="-2" size="320 180" halign="center" valign="center" bgcolor="000" opacity="0.8" scriptevents="1" />
+	<label pos="0 15" halign="center" textsize="8" text="Progression" />
+	<gauge size="200 20" halign="center" style="BgCard" drawbg="1" drawblockbg="1" id="Gauge_Progression" />
+</frame>
+<script><!--
+main() {
+	declare Gauge_Progression <=> (Page.GetFirstChild("Gauge_Progression") as CMlGauge);
+	declare LibMacroblock_MetadataProgression for Page = 0.;
+	
+	while (True) {
+		yield;
+		Gauge_Progression.Ratio = LibMacroblock_MetadataProgression / 100.;
+	}
+}
+--></script>
+</manialink>
+	""";
+	
+	ReloadSignaturesPool();
+	
+	foreach (MacroblockModel in MacroblockModels) {
+		GenerateMetadata(MacroblockModel, _SaveMacroblock, False);
+		Progression += 1;
+		LibMacroblock_MetadataProgression = Progression / ProgressionMax * 100.;
+		if (Progression % 50 == 0) yield;
+	}
+	foreach (MacroblockModel in MacroblockModels) {
+		GenerateVariants(MacroblockModel);
+		Progression += 1;
+		LibMacroblock_MetadataProgression = Progression / ProgressionMax * 100.;
+		if (Progression % 10 == 0) yield;
+	}
+	
+	UILayerDestroy(ProgressionLayer);
+}
+
+// ---------------------------------- //
+/** Log the metadata from a macroblock model
+ *
+ *	@param	_MacroblockModel		The macroblock model to log
+ */
+Void LogMetadata(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return;
+	
+	declare metadata Text PartyEditor_Id for _MacroblockModel;
+	declare metadata Text PartyEditor_Name for _MacroblockModel;
+	declare metadata Text PartyEditor_Family for _MacroblockModel;
+	declare metadata Text PartyEditor_Type for _MacroblockModel;
+	declare metadata Boolean PartyEditor_IsShifting for _MacroblockModel;
+	declare metadata Boolean PartyEditor_IsTurning for _MacroblockModel;
+	declare metadata Boolean PartyEditor_IsRising for _MacroblockModel;
+	declare metadata Text[Integer] PartyEditor_Variants for _MacroblockModel;
+	declare metadata Boolean[] PartyEditor_ClipCustoms for _MacroblockModel;
+	declare metadata Text[] PartyEditor_DisabledClipsNames for _MacroblockModel;
+	declare metadata Int3[] PartyEditor_DisabledClipsOffsets for _MacroblockModel;
+	declare metadata Integer[] PartyEditor_DisabledClipsDirs for _MacroblockModel;
+	declare metadata Text[] PartyEditor_ClipNames for _MacroblockModel;
+	declare metadata Int3[] PartyEditor_ClipOffsets for _MacroblockModel;
+	declare metadata Int3[] PartyEditor_ClipConnections for _MacroblockModel;
+	declare metadata Integer[] PartyEditor_ClipDirs for _MacroblockModel;
+	declare metadata Vec3 PartyEditor_ClipsCenter for _MacroblockModel;
+	declare metadata Int3[] PartyEditor_CollisionsOffsets for _MacroblockModel;
+	declare metadata Integer PartyEditor_SignatureKey for _MacroblockModel = -1;
+	declare metadata Real PartyEditor_Length for _MacroblockModel;
+	declare metadata Integer PartyEditor_GroundOffset for _MacroblockModel;
+	declare metadata Text PartyEditor_Version for _MacroblockModel;
+	declare metadata Boolean PartyEditor_Valid for _MacroblockModel;
+	
+	Utils::Log("---- BEGIN MACROBLOCK MODEL ----");
+	Utils::Log("Id								: "^_MacroblockModel.Id);
+	Utils::Log("PartyEditor_Id					: "^PartyEditor_Id);
+	Utils::Log("PartyEditor_Name				: "^PartyEditor_Name);
+	Utils::Log("PartyEditor_Family				: "^PartyEditor_Family);
+	Utils::Log("PartyEditor_Type				: "^PartyEditor_Type);
+	Utils::Log("PartyEditor_IsShifting			: "^PartyEditor_IsShifting);
+	Utils::Log("PartyEditor_IsTurning			: "^PartyEditor_IsTurning);
+	Utils::Log("PartyEditor_IsRising			: "^PartyEditor_IsRising);
+	Utils::Log("PartyEditor_Variants			: "^PartyEditor_Variants);
+	Utils::Log("PartyEditor_ClipCustoms			: "^PartyEditor_ClipCustoms);
+	Utils::Log("PartyEditor_DisabledClipsNames	: "^PartyEditor_DisabledClipsNames);
+	Utils::Log("PartyEditor_DisabledClipsOffsets: "^PartyEditor_DisabledClipsOffsets);
+	Utils::Log("PartyEditor_DisabledClipsDirs	: "^PartyEditor_DisabledClipsDirs);
+	Utils::Log("PartyEditor_ClipNames			: "^PartyEditor_ClipNames);
+	Utils::Log("PartyEditor_ClipOffsets			: "^PartyEditor_ClipOffsets);
+	Utils::Log("PartyEditor_ClipConnections		: "^PartyEditor_ClipConnections);
+	Utils::Log("PartyEditor_ClipDirs			: "^PartyEditor_ClipDirs);
+	Utils::Log("PartyEditor_ClipsCenter			: "^PartyEditor_ClipsCenter);
+	Utils::Log("PartyEditor_CollisionsOffsets	: "^PartyEditor_CollisionsOffsets);
+	Utils::Log("PartyEditor_SignatureKey		: "^PartyEditor_SignatureKey);
+	Utils::Log("PartyEditor_Length				: "^PartyEditor_Length);
+	Utils::Log("PartyEditor_GroundOffset		: "^PartyEditor_GroundOffset);
+	Utils::Log("PartyEditor_Version				: "^PartyEditor_Version);
+	Utils::Log("PartyEditor_Valid				: "^PartyEditor_Valid);
+	Utils::Log("---- END MACROBLOCK MODEL ----");
+}
+
+// ---------------------------------- //
+/** Export the metadata of a macroblock model into XML
+ *
+ *	@param	_MacroblockModel		The macroblock model to export
+ *
+ *	@return							The exported metadata in XML
+ */
+Text ExportMetadata(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return "";
+	
+	declare metadata Text PartyEditor_Id for _MacroblockModel;
+	declare metadata Text PartyEditor_Name for _MacroblockModel;
+	declare metadata Text PartyEditor_Family for _MacroblockModel;
+	declare metadata Text PartyEditor_Type for _MacroblockModel;
+	declare metadata Boolean PartyEditor_IsShifting for _MacroblockModel;
+	declare metadata Boolean PartyEditor_IsTurning for _MacroblockModel;
+	declare metadata Boolean PartyEditor_IsRising for _MacroblockModel;
+	declare metadata Text[Integer] PartyEditor_Variants for _MacroblockModel;
+	declare metadata Boolean[] PartyEditor_ClipCustoms for _MacroblockModel;
+	declare metadata Text[] PartyEditor_DisabledClipsNames for _MacroblockModel;
+	declare metadata Int3[] PartyEditor_DisabledClipsOffsets for _MacroblockModel;
+	declare metadata Integer[] PartyEditor_DisabledClipsDirs for _MacroblockModel;
+	declare metadata Text[] PartyEditor_ClipNames for _MacroblockModel;
+	declare metadata Int3[] PartyEditor_ClipOffsets for _MacroblockModel;
+	declare metadata Int3[] PartyEditor_ClipConnections for _MacroblockModel;
+	declare metadata Integer[] PartyEditor_ClipDirs for _MacroblockModel;
+	declare metadata Vec3 PartyEditor_ClipsCenter for _MacroblockModel;
+	declare metadata Int3[] PartyEditor_CollisionsOffsets for _MacroblockModel;
+	declare metadata Integer PartyEditor_SignatureKey for _MacroblockModel = -1;
+	declare metadata Real PartyEditor_Length for _MacroblockModel;
+	declare metadata Integer PartyEditor_GroundOffset for _MacroblockModel;
+	declare metadata Text PartyEditor_Version for _MacroblockModel;
+	declare metadata Boolean PartyEditor_Valid for _MacroblockModel;
+	
+	declare IsShifting = "0";
+	if (PartyEditor_IsShifting) IsShifting = "1";
+	declare IsTurning = "0";
+	if (PartyEditor_IsTurning) IsTurning = "1";
+	declare IsRising = "0";
+	if (PartyEditor_IsRising) IsRising = "1";
+	
+	declare Variants = "";
+	if (PartyEditor_Variants.count > 0) {
+		foreach (VariantId => VariantName in PartyEditor_Variants) {
+			Variants ^= """
+		<variant id="{{{VariantId}}}" name="{{{TL::MLEncode(VariantName)}}}" />""";
+		}
+		Variants = """<variants>{{{Variants}}}
+	</variants>""";
+	}
+	
+	declare Clips = "";
+	if (PartyEditor_ClipCustoms.count > 0) {
+		foreach (ClipKey => ClipCustom in PartyEditor_ClipCustoms) {
+			declare IsCustom = "0";
+			if (ClipCustom) IsCustom = "1";
+			declare ClipOffset = PartyEditor_ClipOffsets[ClipKey];
+			declare Offset = ClipOffset.X^","^ClipOffset.Y^","^ClipOffset.Z;
+			declare ClipConnection = PartyEditor_ClipConnections[ClipKey];
+			declare Connection = ClipConnection.X^","^ClipConnection.Y^","^ClipConnection.Z;
+			declare Dir = PartyEditor_ClipDirs[ClipKey];
+			Clips ^= """
+		<clip custom="{{{IsCustom}}}" name="{{{TL::MLEncode(PartyEditor_ClipNames[ClipKey])}}}" offset="{{{Offset}}}" connection="{{{Connection}}}" dir="{{{Dir}}}" />""";
+		}
+		Clips = """<clips>{{{Clips}}}
+	</clips>""";
+	}
+	
+	declare Collisions = "";
+	if (PartyEditor_CollisionsOffsets.count > 0) {
+		foreach (CollisionKey => CollisionOffset in PartyEditor_CollisionsOffsets) {
+			declare Offset = CollisionOffset.X^","^CollisionOffset.Y^","^CollisionOffset.X;
+			Collisions ^= """<collision offset="{{{Offset}}}" />""";
+		}
+		Collisions = """<collisions>{{{Collisions}}}</collisions>""";
+	}
+	
+	declare DisabledClips = "";
+	if (PartyEditor_DisabledClipsNames.count > 0) {
+		foreach (ClipKey => ClipName in PartyEditor_DisabledClipsNames) {
+			declare ClipOffset = PartyEditor_DisabledClipsOffsets[ClipKey];
+			declare Offset = ClipOffset.X^","^ClipOffset.Y^","^ClipOffset.Z;
+			declare Dir = PartyEditor_DisabledClipsDirs[ClipKey];
+			DisabledClips ^= """
+		<clip name="{{{TL::MLEncode(ClipName)}}}" offset="{{{Offset}}}" dir="{{{Dir}}}" />""";
+		}
+		DisabledClips = """<disabledclips>{{{DisabledClips}}}
+	</disabledclips>""";
+	}
+	
+	declare ClipsCenter = PartyEditor_ClipsCenter.X^","^PartyEditor_ClipsCenter.Y^","^PartyEditor_ClipsCenter.Z;
+	
+	declare Valid = "0";
+	if (PartyEditor_Valid) Valid = "1";
+	
+	return """
+<macroblockmodel id="{{{TL::MLEncode(""^_MacroblockModel.Id)}}}">
+	<id>{{{TL::MLEncode(PartyEditor_Id)}}}</id>
+	<name>{{{TL::MLEncode(PartyEditor_Name)}}}</name>
+	<family>{{{TL::MLEncode(PartyEditor_Family)}}}</family>
+	<type>{{{TL::MLEncode(PartyEditor_Type)}}}</type>
+	<isshifting>{{{IsShifting}}}</isshifting>
+	<isturning>{{{IsTurning}}}</isturning>
+	<isrising>{{{IsRising}}}</isrising>
+	{{{Variants}}}
+	{{{Clips}}}
+	<clipscenter>{{{ClipsCenter}}}</clipscenter>
+	{{{Collisions}}}
+	<signaturekey>{{{PartyEditor_SignatureKey}}}</signaturekey>
+	<length>{{{PartyEditor_Length}}}</length>
+	<groundoffset>{{{PartyEditor_GroundOffset}}}</groundoffset>
+	<version>{{{TL::MLEncode(PartyEditor_Version)}}}</version>
+	<valid>{{{Valid}}}</valid>
+</macroblockmodel>
+""";
+}
+
+// ---------------------------------- //
+/** Import the metadata of a macroblock model from XML
+ *
+ *	@param	_MacroblockModel		The macroblock model to update
+ *	@param	_XmlNode				The XML data to import
+ */
+Void ImportMetadata(CMacroblockModel _MacroblockModel, CXmlNode _XmlNode) {
+	
+}
+
+// ---------------------------------- //
+/** Get the version of a macroblock
+ *
+ *	@param	_MacroblockModel		The macroblock model to search
+ * 
+ *	@return							The version of the macroblock model
+ */
+Text GetVersion(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return "";
+	
+	declare metadata Text PartyEditor_Version for _MacroblockModel;
+	return PartyEditor_Version;
+}
+
+// ---------------------------------- //
+/** Check if a macroblock is at the latest version
+ *
+ *	@param	_MacroblockModel		The macroblock model to search
+ * 
+ *	@return							True if the macroblock model is at the latest version, False otherwise
+ */
+Boolean IsLatestVersion(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return False;
+	
+	declare metadata Text PartyEditor_Version for _MacroblockModel;
+	return (PartyEditor_Version == C_MacroblocksVersion);
+}
+
+// ---------------------------------- //
+/** Get the validity of a macroblock
+ *
+ *	@param	_MacroblockModel		The macroblock model to search
+ * 
+ *	@return							The validity of the macroblock model
+ */
+Boolean GetValidity(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return False;
+	
+	declare metadata Boolean PartyEditor_Valid for _MacroblockModel;
+	return PartyEditor_Valid;
+}
+
+// ---------------------------------- //
+/** Get the custom id of a macroblock
+ *
+ *	@param	_MacroblockModel		The macroblock model to search
+ *
+ *	@return							The custom id of the macroblock model
+ */
+Text GetId(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return "";
+	
+	declare metadata Text PartyEditor_Id for _MacroblockModel;
+	return PartyEditor_Id;
+}
+
+// ---------------------------------- //
+/** Get the name of a macroblock
+ *
+ *	@param	_MacroblockModel		The macroblock model to search
+ *
+ *	@return							The name of the macroblock model
+ */
+Text GetName(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return "";
+	
+	declare metadata Text PartyEditor_Name for _MacroblockModel;
+	return PartyEditor_Name;
+}
+
+// ---------------------------------- //
+/** Get the variants of a macroblock
+ *
+ *	@param	_MacroblockModel		The macroblock model to search
+ *
+ *	@return							The variants of the macroblock model
+ */
+Text[Integer] GetVariants(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return Text[Integer];
+	
+	declare metadata Text[Integer] PartyEditor_Variants for _MacroblockModel;
+	return PartyEditor_Variants;
+}
+
+// ---------------------------------- //
+/** Get the variant identifier of a macroblock
+ *
+ *	@param	_MacroblockModel		The macroblock model to search
+ *
+ *	@return							The variant identifier of the macroblock model
+ */
+Integer GetVariant(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return C_VariantNull;
+	
+	switch (_MacroblockModel.Name) {
+		case "Ground"		: return C_VariantGround;
+		case "Air"			: return C_VariantAir;
+		case "Forest"		: return C_VariantForest;
+		case "ForestEdge"	: return C_VariantForestEdge;
+		case "Dirt"			: return C_VariantDirt;
+		case "Water"		: return C_VariantWater;
+	}
+	
+	return C_VariantNull;
+}
+
+// ---------------------------------- //
+/** Get if a macroblock model has a given variant
+ *
+ *	@param	_MacroblockModel		The macroblock model to check
+ *	@param	_Variant				The variant to search for
+ *
+ *	@return							True if the macroblock model has the variant requested, False otherwise
+ */
+Boolean HasVariant(CMacroblockModel _MacroblockModel, Integer _Variant) {
+	if (_MacroblockModel == Null) return False;
+	
+	declare metadata Text[Integer] PartyEditor_Variants for _MacroblockModel;
+	return PartyEditor_Variants.existskey(_Variant);
+}
+
+// ---------------------------------- //
+/** Get the family of a macroblock
+ *
+ *	@param	_MacroblockModel		The macroblock model to search
+ *
+ *	@return							The family of the macroblock model
+ */
+Text GetFamily(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return "";
+	
+	declare metadata Text PartyEditor_Family for _MacroblockModel;
+	return PartyEditor_Family;
+}
+
+// ---------------------------------- //
+/** Get the type of a macroblock
+ *
+ *	@param	_MacroblockModel		The macroblock model to search
+ *
+ *	@return							The type of the macroblock model
+ */
+Text GetType(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return "";
+	
+	declare metadata Text PartyEditor_Type for _MacroblockModel;
+	return PartyEditor_Type;
+}
+
+// ---------------------------------- //
+/** Check if a macroblock is oriented
+ *
+ *	@param	_MacroblockModel		The macroblock model to check
+ *
+ *	@return							True if the macroblock model is oriented, False otherwise
+ */
+Boolean IsOriented(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return False;
+	
+	declare metadata Text PartyEditor_Type for _MacroblockModel;
+	return (
+		_MacroblockModel.HasCheckpoint ||
+		PartyEditor_Type == "Checkpoints" ||
+		PartyEditor_Type == "Turbos"
+	);
+}
+
+// ---------------------------------- //
+/** Check if a macroblock is shifting
+ *
+ *	@param	_MacroblockModel		The macroblock model to check
+ *
+ *	@return							True if the macroblock model is shifting, False otherwise
+ */
+Boolean IsShifting(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return False;
+	
+	declare metadata Boolean PartyEditor_IsShifting for _MacroblockModel;
+	return PartyEditor_IsShifting;
+}
+
+// ---------------------------------- //
+/** Check if a macroblock is turning
+ *
+ *	@param	_MacroblockModel		The macroblock model to check
+ *
+ *	@return							True if the macroblock model is turning, False otherwise
+ */
+Boolean IsTurning(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return False;
+	
+	declare metadata Boolean PartyEditor_IsTurning for _MacroblockModel;
+	return PartyEditor_IsTurning;
+}
+
+// ---------------------------------- //
+/** Check if a macroblock is rising
+ *
+ *	@param	_MacroblockModel		The macroblock model to check
+ *
+ *	@return							True if the macroblock model is rising, False otherwise
+ */
+Boolean IsRising(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return False;
+	
+	declare metadata Boolean PartyEditor_IsRising for _MacroblockModel;
+	return PartyEditor_IsRising;
+}
+
+// ---------------------------------- //
+/** Check if a macroblock is a transition between different types of clips
+ *
+ *	@param	_MacroblockModel		The macroblock model to check
+ *
+ *	@return							True if the macroblock model is a transition, False otherwise
+ */
+Boolean IsTransfert(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return False;
+	
+	declare metadata Text[] PartyEditor_ClipNames for _MacroblockModel;
+	declare PrevClipName = "";
+	foreach (ClipName in PartyEditor_ClipNames) {
+		if (PrevClipName != "" && PrevClipName != ClipName) return True;
+		PrevClipName = ClipName;
+	}
+	
+	return False;
+}
+
+// ---------------------------------- //
+/** Disable a default clip
+ *
+ *	@param	_MacroblockModel		The macroblock model to edit
+ *	@param	_Name					Name of the clip to disable
+ *	@param	_Offset					Offset of the clip to disable
+ *	@param	_Dir					Direction of the clip to disable
+ */
+Void DisableClip(CMacroblockModel _MacroblockModel, Text _Name, Int3 _Offset, CEditorPlugin::CardinalDirections _Dir) {
+	if (_MacroblockModel == Null) return;
+	
+	declare metadata Text[] PartyEditor_DisabledClipsNames for _MacroblockModel;
+	declare metadata Int3[] PartyEditor_DisabledClipsOffsets for _MacroblockModel;
+	declare metadata Integer[] PartyEditor_DisabledClipsDirs for _MacroblockModel;
+	PartyEditor_DisabledClipsNames.add(_Name);
+	PartyEditor_DisabledClipsOffsets.add(_Offset);
+	PartyEditor_DisabledClipsDirs.add(Utils::DirToInt(_Dir));
+}
+
+// ---------------------------------- //
+/** Enable a default clip
+ *
+ *	@param	_MacroblockModel		The macroblock model to edit
+ *	@param	_Name					Name of the clip to disable
+ *	@param	_Offset					Offset of the clip to disable
+ *	@param	_Dir					Direction of the clip to disable
+ */
+Void EnableClip(CMacroblockModel _MacroblockModel, Text _Name, Int3 _Offset, CEditorPlugin::CardinalDirections _Dir) {
+	if (_MacroblockModel == Null) return;
+	
+	declare metadata Text[] PartyEditor_DisabledClipsNames for _MacroblockModel;
+	declare metadata Int3[] PartyEditor_DisabledClipsOffsets for _MacroblockModel;
+	declare metadata Integer[] PartyEditor_DisabledClipsDirs for _MacroblockModel;
+	declare Integer[] ToRemove;
+	foreach (Key => Name in PartyEditor_DisabledClipsNames) {
+		if (Name != _Name) continue;
+		if (PartyEditor_DisabledClipsOffsets[Key] != _Offset) continue;
+		if (PartyEditor_DisabledClipsDirs[Key] != Utils::DirToInt(_Dir)) continue;
+		ToRemove.add(Key);
+	}
+	
+	declare Shift = 0;
+	foreach (Key in ToRemove) {
+		declare Removed = False;
+		Removed = PartyEditor_DisabledClipsNames.removekey(Key - Shift);
+		Removed = PartyEditor_DisabledClipsOffsets.removekey(Key - Shift);
+		Removed = PartyEditor_DisabledClipsDirs.removekey(Key - Shift);
+		Shift += 1;
+	}
+}
+
+// ---------------------------------- //
+/** Check if a clip is custom
+ *
+ *	@param	_MacroblockModel		The macroblock model to check
+ *	@param	_ClipId					The id of the clip to check
+ *
+ *	@return							True if the it's a custom clip, False otherwise
+ */
+Boolean IsCustomClip(CMacroblockModel _MacroblockModel, Integer _ClipId) {
+	if (_MacroblockModel == Null) return False;
+	
+	declare metadata Boolean[] PartyEditor_ClipCustoms for _MacroblockModel;
+	if (!PartyEditor_ClipCustoms.existskey(_ClipId)) return False;
+	return PartyEditor_ClipCustoms[_ClipId];
+}
+
+// ---------------------------------- //
+/** Check if a macroblock has a custom clip
+ *
+ *	@param	_MacroblockModel		The macroblock model to check
+ */
+Boolean HasCustomClips(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return False;
+	
+	declare metadata Boolean[] PartyEditor_ClipCustoms for _MacroblockModel;
+	return PartyEditor_ClipCustoms.exists(True);
+}
+
+// ---------------------------------- //
+/** Get the names of a macroblock clips
+ *
+ *	@param	_MacroblockModel		The macroblock model to search
+ *
+ *	@return							The names of the clips if found, an empty array otherwise
+ */
+Boolean[] GetClipCustoms(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return Boolean[];
+	
+	declare metadata Boolean[] PartyEditor_ClipCustoms for _MacroblockModel;
+	return PartyEditor_ClipCustoms;
+}
+
+// ---------------------------------- //
+/** Add a new custom clip
+ *
+ *	@param	_MacroblockModel		The macroblock model to edit
+ */
+Void AddClipCustom(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return;
+	
+	declare metadata Boolean[] PartyEditor_ClipCustoms for _MacroblockModel;
+	declare metadata Text[] PartyEditor_ClipNames for _MacroblockModel;
+	declare metadata Int3[] PartyEditor_ClipOffsets for _MacroblockModel;
+	declare metadata Int3[] PartyEditor_ClipConnections for _MacroblockModel;
+	declare metadata Integer[] PartyEditor_ClipDirs for _MacroblockModel;
+	PartyEditor_ClipCustoms.add(True);
+	PartyEditor_ClipNames.add("");
+	PartyEditor_ClipOffsets.add(<0, 0, 0>);
+	PartyEditor_ClipConnections.add(MU::GetNeighbourCoord(<0, 0, 0>, MU::GetOpposedDir(CEditorPlugin::CardinalDirections::North)));
+	PartyEditor_ClipDirs.add(Utils::DirToInt(CEditorPlugin::CardinalDirections::North));
+}
+
+// ---------------------------------- //
+/** Remove a custom clip
+ *
+ *	@param	_MacroblockModel		The macroblock model to edit
+ *	@param	_ClipId					Id of the custom clip to remove
+ */
+Void RemoveClipCustom(CMacroblockModel _MacroblockModel, Integer _ClipId) {
+	if (_MacroblockModel == Null) return;
+	
+	declare metadata Boolean[] PartyEditor_ClipCustoms for _MacroblockModel;
+	if (!PartyEditor_ClipCustoms.existskey(_ClipId)) return;
+	if (!PartyEditor_ClipCustoms[_ClipId]) return;
+	declare Removed = PartyEditor_ClipCustoms.removekey(_ClipId);
+	
+	declare metadata Text[] PartyEditor_ClipNames for _MacroblockModel;
+	declare metadata Int3[] PartyEditor_ClipOffsets for _MacroblockModel;
+	declare metadata Int3[] PartyEditor_ClipConnections for _MacroblockModel;
+	declare metadata Integer[] PartyEditor_ClipDirs for _MacroblockModel;
+	Removed = PartyEditor_ClipNames.removekey(_ClipId);
+	Removed = PartyEditor_ClipOffsets.removekey(_ClipId);
+	Removed = PartyEditor_ClipConnections.removekey(_ClipId);
+	Removed = PartyEditor_ClipDirs.removekey(_ClipId);
+}
+
+// ---------------------------------- //
+/** Edit a custom clip
+ *
+ *	@param	_MacroblockModel		The macroblock model to edit
+ *	@param	_ClipId					Id of the custom clip to edit
+ *	@param	_Name					Name of the custom clip
+ *	@param	_Offset					Offset of the custom clip
+ *	@param	_Dir					Direction of the custom clip
+ */
+Void EditClipCustom(CMacroblockModel _MacroblockModel, Integer _ClipId, Text _Name, Int3 _Offset, CEditorPlugin::CardinalDirections _Dir) {
+	if (_MacroblockModel == Null) return;
+	
+	declare metadata Boolean[] PartyEditor_ClipCustoms for _MacroblockModel;
+	if (!PartyEditor_ClipCustoms.existskey(_ClipId)) return;
+	if (!PartyEditor_ClipCustoms[_ClipId]) return;
+	
+	declare metadata Text[] PartyEditor_ClipNames for _MacroblockModel;
+	declare metadata Int3[] PartyEditor_ClipOffsets for _MacroblockModel;
+	declare metadata Int3[] PartyEditor_ClipConnections for _MacroblockModel;
+	declare metadata Integer[] PartyEditor_ClipDirs for _MacroblockModel;
+	PartyEditor_ClipNames[_ClipId] = _Name;
+	PartyEditor_ClipOffsets[_ClipId] = _Offset;
+	PartyEditor_ClipConnections[_ClipId] = MU::GetNeighbourCoord(_Offset, MU::GetOpposedDir(_Dir));
+	PartyEditor_ClipDirs[_ClipId] = Utils::DirToInt(_Dir);
+}
+
+// ---------------------------------- //
+/** Get the name of a macroblock clip from its id
+ *
+ *	@param	_MacroblockModel		The macroblock model to search
+ *	@param	_ClipId					The id of the clip to get
+ *
+ *	@return							The name of the clip if found, an empty text otherwise
+ */
+Text GetClipName(CMacroblockModel _MacroblockModel, Integer _ClipId) {
+	if (_MacroblockModel == Null) return "";
+	
+	declare metadata Text[] PartyEditor_ClipNames for _MacroblockModel;
+	if (!PartyEditor_ClipNames.existskey(_ClipId)) return "";
+	return PartyEditor_ClipNames[_ClipId];
+}
+
+// ---------------------------------- //
+/** Get the names of a macroblock clips
+ *
+ *	@param	_MacroblockModel		The macroblock model to search
+ *
+ *	@return							The names of the clips if found, an empty array otherwise
+ */
+Text[] GetClipNames(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return Text[];
+	
+	declare metadata Text[] PartyEditor_ClipNames for _MacroblockModel;
+	return PartyEditor_ClipNames;
+}
+
+// ---------------------------------- //
+/** Get the names of a macroblock disabled clips
+ *
+ *	@param	_MacroblockModel		The macroblock model to search
+ *
+ *	@return							The names of the clips if found, an empty array otherwise
+ */
+Text[] GetDisabledClipNames(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return Text[];
+	
+	declare metadata Text[] PartyEditor_DisabledClipsNames for _MacroblockModel;
+	return PartyEditor_DisabledClipsNames;
+}
+
+// ---------------------------------- //
+/** Get the number of clips of a macroblock
+ *
+ *	@param	_MacroblockModel		The macroblock model to search
+ *
+ *	@return							The number of clips found
+ */
+Integer GetClipCount(CMacroblockModel _MacroblockModel) {
+	return GetClipNames(_MacroblockModel).count;
+}
+
+// ---------------------------------- //
+/** Get the offset of a macroblock clip from its id
+ *
+ *	@param	_MacroblockModel		The macroblock model to search
+ *	@param	_ClipId					The id of the clip to get
+ *
+ *	@return							The offset of the clip if found, Utils::NullCoord() otherwise
+ */
+Int3 GetClipOffset(CMacroblockModel _MacroblockModel, Integer _ClipId) {
+	if (_MacroblockModel == Null) return Utils::NullCoord();
+	
+	declare metadata Int3[] PartyEditor_ClipOffsets for _MacroblockModel;
+	if (!PartyEditor_ClipOffsets.existskey(_ClipId)) return Utils::NullCoord();
+	return PartyEditor_ClipOffsets[_ClipId];
+}
+
+// ---------------------------------- //
+/** Get the offsets of a macroblock clips
+ *
+ *	@param	_MacroblockModel		The macroblock model to search
+ *
+ *	@return							The offsets of the clips if found, an empty array otherwise
+ */
+Int3[] GetClipOffsets(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return Int3[];
+	
+	declare metadata Int3[] PartyEditor_ClipOffsets for _MacroblockModel;
+	return PartyEditor_ClipOffsets;
+}
+
+// ---------------------------------- //
+/** Get the offsets of a macroblock disabled clips
+ *
+ *	@param	_MacroblockModel		The macroblock model to search
+ *
+ *	@return							The offsets of the clips if found, an empty array otherwise
+ */
+Int3[] GetDisabledClipOffsets(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return Int3[];
+	
+	declare metadata Int3[] PartyEditor_DisabledClipsOffsets for _MacroblockModel;
+	return PartyEditor_DisabledClipsOffsets;
+}
+
+// ---------------------------------- //
+/** Get the connections of a macroblock clips
+ *
+ *	@param	_MacroblockModel		The macroblock model to search
+ *
+ *	@return							The connections of the clips if found, an empty array otherwise
+ */
+Int3[] GetClipConnections(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return Int3[];
+	
+	declare metadata Int3[] PartyEditor_ClipConnections for _MacroblockModel;
+	return PartyEditor_ClipConnections;
+}
+
+// ---------------------------------- //
+/** Get the position of a macroblock clip connection
+ *
+ *	@param	_MacroblockModel		The macroblock model to search
+ *	@param	_Coord					The coordinates of the macroblock
+ *	@param	_Dir					The direction of the macroblock
+ *	@param	_ClipId					The id of the clip to get
+ *
+ *	@return							The position of the clip connection if found, Utils::NullCoord() otherwise
+ */
+Int3 GetClipConnection(CMacroblockModel _MacroblockModel, Int3 _Coord, CEditorPlugin::CardinalDirections _Dir, Integer _ClipId) {
+	if (_MacroblockModel == Null) return Utils::NullCoord();
+	declare Variant <=> GetBlockModelVariant(_MacroblockModel);
+	if (Variant == Null) return Utils::NullCoord();
+	
+	declare metadata Int3[] PartyEditor_ClipConnections for _MacroblockModel;
+	if (!PartyEditor_ClipConnections.existskey(_ClipId)) return Utils::NullCoord();
+	return _Coord + MU::GetRotatedOffsetPositive(PartyEditor_ClipConnections[_ClipId], _Dir, Variant.Size);
+}
+
+// ---------------------------------- //
+/** Get the position of a macroblock clip
+ *
+ *	@param	_MacroblockModel		The macroblock model to search
+ *	@param	_Coord					The coordinates of the macroblock
+ *	@param	_Dir					The direction of the macroblock
+ *	@param	_ClipId					The id of the clip to get
+ *
+ *	@return							The position of the clip if found, Utils::NullCoord() otherwise
+ */
+Int3 GetClipCoord(CMacroblockModel _MacroblockModel, Int3 _Coord, CEditorPlugin::CardinalDirections _Dir, Integer _ClipId) {
+	if (_MacroblockModel == Null) return Utils::NullCoord();
+	declare Variant <=> GetBlockModelVariant(_MacroblockModel);
+	if (Variant == Null) return Utils::NullCoord();
+	
+	declare metadata Int3[] PartyEditor_ClipOffsets for _MacroblockModel;
+	if (!PartyEditor_ClipOffsets.existskey(_ClipId)) return Utils::NullCoord();
+	return _Coord + MU::GetRotatedOffsetPositive(PartyEditor_ClipOffsets[_ClipId], _Dir, Variant.Size);
+}
+
+// ---------------------------------- //
+/** Get the position of a macroblock clip
+ *
+ *	@param	_MacroblockModel		The macroblock model to search
+ *	@param	_BlockCoord				The coordinates of the macroblock
+ *	@param	_BlockDir				The direction of the macroblock
+ *	@param	_ClipOffset				The offset of the clip
+ *
+ *	@return							The position of the clip if found, Utils::NullCoord() otherwise
+ */
+Int3 GetClipCoord(CMacroblockModel _MacroblockModel, Int3 _BlockCoord, CEditorPlugin::CardinalDirections _BlockDir, Int3 _ClipOffset) {
+	if (_MacroblockModel == Null) return Utils::NullCoord();
+	declare Variant <=> GetBlockModelVariant(_MacroblockModel);
+	if (Variant == Null) return Utils::NullCoord();
+	
+	return _BlockCoord + MU::GetRotatedOffsetPositive(_ClipOffset, _BlockDir, Variant.Size);
+}
+
+// ---------------------------------- //
+/** Get the position of a macroblock clips offsets or connections
+ *
+ *	@param	_MacroblockModel		The macroblock model to search
+ *	@param	_Coord					The coordinates of the macroblock
+ *	@param	_Dir					The direction of the macroblock
+ *	@param	_Connections			True get the connections, False get the offsets
+ *
+ *	@return							The position of the clips if found, an empty array otherwise
+ */
+Int3[] GetClipCoords(CMacroblockModel _MacroblockModel, Int3 _Coord, CEditorPlugin::CardinalDirections _Dir, Boolean _Connections) {
+	declare Int3[] ClipPositions;
+	if (_MacroblockModel == Null) return ClipPositions;
+	declare Variant <=> GetBlockModelVariant(_MacroblockModel);
+	if (Variant == Null) return ClipPositions;
+	
+	declare Clips = Int3[];
+	if (_Connections) {
+		declare metadata Int3[] PartyEditor_ClipConnections for _MacroblockModel;
+		Clips = PartyEditor_ClipConnections;
+	} else {
+		declare metadata Int3[] PartyEditor_ClipOffsets for _MacroblockModel;
+		Clips = PartyEditor_ClipOffsets;
+	}
+	foreach (Clip in Clips) {
+		declare ClipPosition = _Coord + MU::GetRotatedOffsetPositive(Clip, _Dir, Variant.Size);
+		ClipPositions.add(ClipPosition);
+	}
+	
+	return ClipPositions;
+}
+
+// ---------------------------------- //
+/** Get the position of a macroblock clips offsets
+ *
+ *	@param	_MacroblockModel		The macroblock model to search
+ *	@param	_Coord					The coordinates of the macroblock
+ *	@param	_Dir					The direction of the macroblock
+ *
+ *	@return							The position of the clips if found, an empty array otherwise
+ */
+Int3[] GetClipCoords(CMacroblockModel _MacroblockModel, Int3 _Coord, CEditorPlugin::CardinalDirections _Dir) {
+	return GetClipCoords(_MacroblockModel, _Coord, _Dir, False);
+}
+
+// ---------------------------------- //
+/** Get the dir of a macroblock clip from its id
+ *
+ *	@param	_MacroblockModel		The macroblock model to search
+ *	@param	_ClipId					The id of the clip to get
+ *
+ *	@return							The dir of the clip if found, C_NullDir otherwise
+ */
+CEditorPlugin::CardinalDirections GetClipDir(CMacroblockModel _MacroblockModel, Integer _ClipId) {
+	if (_MacroblockModel == Null) return C_NullDir;
+	
+	declare metadata Integer[] PartyEditor_ClipDirs for _MacroblockModel;
+	if (!PartyEditor_ClipDirs.existskey(_ClipId)) return C_NullDir;
+	return Utils::IntToDir(PartyEditor_ClipDirs[_ClipId]);
+}
+
+// ---------------------------------- //
+/** Get the direction of a macroblock clip with a rotation
+ *
+ *	@param	_MacroblockModel		The macroblock model to search
+ *	@param	_Dir					The direction of the macroblock
+ *	@param	_ClipId					The id of the clip to get
+ *
+ *	@return							The dirs of the clips if found, an empty array otherwise
+ */
+CEditorPlugin::CardinalDirections GetClipDir(CMacroblockModel _MacroblockModel, CEditorPlugin::CardinalDirections _Dir, Integer _ClipId) {
+	if (_MacroblockModel == Null) return C_NullDir;
+	
+	declare metadata Integer[] PartyEditor_ClipDirs for _MacroblockModel;
+	if (!PartyEditor_ClipDirs.existskey(_ClipId)) return C_NullDir;
+	return MU::AddDirs(Utils::IntToDir(PartyEditor_ClipDirs[_ClipId]), _Dir);
+}
+
+// ---------------------------------- //
+/** Get the dirs of a macroblock clips
+ *
+ *	@param	_MacroblockModel		The macroblock model to search
+ *
+ *	@return							The dirs of the clips if found, an empty array otherwise
+ */
+CEditorPlugin::CardinalDirections[] GetClipDirs(CMacroblockModel _MacroblockModel) {
+	declare CEditorPlugin::CardinalDirections[] ClipDirs;
+	if (_MacroblockModel == Null) return ClipDirs;
+	
+	declare metadata Integer[] PartyEditor_ClipDirs for _MacroblockModel;
+	foreach (Dir in PartyEditor_ClipDirs) {
+		ClipDirs.add(Utils::IntToDir(Dir));
+	}
+	return ClipDirs;
+}
+
+// ---------------------------------- //
+/** Get the dirs of a macroblock disabled clips
+ *
+ *	@param	_MacroblockModel		The macroblock model to search
+ *
+ *	@return							The dirs of the clips if found, an empty array otherwise
+ */
+CEditorPlugin::CardinalDirections[] GetDisabledClipDirs(CMacroblockModel _MacroblockModel) {
+	declare CEditorPlugin::CardinalDirections[] ClipDirs;
+	if (_MacroblockModel == Null) return ClipDirs;
+	
+	declare metadata Integer[] PartyEditor_DisabledClipsDirs for _MacroblockModel;
+	foreach (Dir in PartyEditor_DisabledClipsDirs) {
+		ClipDirs.add(Utils::IntToDir(Dir));
+	}
+	return ClipDirs;
+}
+
+// ---------------------------------- //
+/** Get the dirs of a macroblock clips with a rotation
+ *
+ *	@param	_MacroblockModel		The macroblock model to search
+ *	@param	_Dir					The direction of the macroblock
+ *
+ *	@return							The dirs of the clips if found, an empty array otherwise
+ */
+CEditorPlugin::CardinalDirections[] GetClipDirs(CMacroblockModel _MacroblockModel, CEditorPlugin::CardinalDirections _Dir) {
+	declare CEditorPlugin::CardinalDirections[] ClipDirs;
+	if (_MacroblockModel == Null) return ClipDirs;
+	
+	declare metadata Integer[] PartyEditor_ClipDirs for _MacroblockModel;
+	foreach (Dir in PartyEditor_ClipDirs) {
+		ClipDirs.add(MU::AddDirs(Utils::IntToDir(Dir), _Dir));
+	}
+	return ClipDirs;
+}
+
+// ---------------------------------- //
+/** Get clips center
+ *
+ *	@param	_MacroblockModel		The macroblock model to check
+ *	@param	_Dir					The direction of the macroblock
+ *
+ *	@return							The clips center
+ */
+Vec3 GetClipsCenter(CMacroblockModel _MacroblockModel, CEditorPlugin::CardinalDirections _Dir) {
+	if (_MacroblockModel == Null) return <0., 0., 0.>;
+	
+	declare metadata Vec3 PartyEditor_ClipsCenter for _MacroblockModel;
+	declare Direction = MU::GetRotatedOffset(<1, 1, 1>, _Dir);
+	if (Direction.X != Direction.Z) {
+		return <
+			ML::Abs(PartyEditor_ClipsCenter.Z * Direction.Z),
+			ML::Abs(PartyEditor_ClipsCenter.Y * Direction.Y),
+			ML::Abs(PartyEditor_ClipsCenter.X * Direction.X)
+		>;
+	}
+	return PartyEditor_ClipsCenter;
+}
+
+// ---------------------------------- //
+/** Check if the clip is an out clip only
+ *
+ *	@param	_ClipName				The name of the clip to check
+ *
+ *	@return							True if it's an out clip, False otherwise
+ */
+Boolean IsOutClip(Text _ClipName) {
+	return G_LibMacroblock_OutClips.exists(_ClipName);
+}
+
+// ---------------------------------- //
+/** Get the names of the clips that can be connected to the provided clip
+ *
+ *	@param	_ClipName				Name of the clip that must be connected
+ *
+ *	@return							The names of the clips that can be connected
+ */
+Text[] GetConnectableClips(Text _ClipName) {
+	// Get from cache
+	if (G_LibMacroblock_ConnectableClips.existskey(_ClipName)) return G_LibMacroblock_ConnectableClips[_ClipName];
+	
+	declare Text[] Clips;
+	declare ClipName = _ClipName;
+	declare ClipNameSuffix = "";
+	declare ClipNameLength = TL::Length(ClipName);
+	declare ClipInOut = "";
+	
+	foreach (InOut in ["-In", "-Out"]) {
+		declare InOutLength = TL::Length(InOut);
+		declare Suffix = TL::SubString(ClipName, ClipNameLength - InOutLength, ClipNameLength);
+		if (InOut == Suffix) {
+			ClipName = TL::SubString(ClipName, 0, ClipNameLength - InOutLength);
+			ClipInOut = Suffix;
+			break;
+		}
+	}
+	
+	// "-In" clip can't be connected to anything
+	//if (ClipInOut == "-In") return Text[];
+	
+	// Check if the clip has a suffix
+	foreach (SuffixLeft => SuffixRight in C_ClipsSuffixes) {
+		declare SuffixLeftLength = TL::Length(SuffixLeft);
+		declare Suffix = TL::SubString(ClipName, ClipNameLength - SuffixLeftLength, ClipNameLength);
+		if (SuffixLeft == Suffix) {
+			ClipName = TL::SubString(ClipName, 0, ClipNameLength - SuffixLeftLength);
+			ClipNameSuffix = Suffix;
+			break;
+		}
+	}
+	
+	// Find connectable suffix
+	if (C_ClipsSuffixes.existskey(ClipNameSuffix)) {
+		ClipNameSuffix = C_ClipsSuffixes[ClipNameSuffix];
+	}
+	
+	// Add connectable clips
+	// Special cases
+	if (Map.CollectionName == "Canyon" && ClipName == "ArenaHalfBaseFreeClip") {
+		Clips.add("ArenaHalfBaseFreeClip"^ClipNameSuffix); ///< ArenaHalfBaseFreeClipEst - ArenaHalfBaseFreeClipWest
+		Clips.add("ArenaFreeClip");
+		Clips.add("ArenaHallwayFreeClip");
+	} else if (Map.CollectionName == "Canyon" && (ClipName == "ArenaFreeClip" || ClipName == "ArenaHallwayFreeClip")) {
+		Clips.add("ArenaHalfBaseFreeClipEst");
+		Clips.add("ArenaHalfBaseFreeClipWest");
+		Clips.add("ArenaFreeClip");
+		Clips.add("ArenaHallwayFreeClip");
+	} else if (Map.CollectionName == "Canyon" && (
+		ClipName == "ArenaTunnelOpen2SidesFreeClip" ||
+		ClipName == "ArenaTunnelOpen1SideFreeClip" ||
+		ClipName == "ArenaTunnelOpenFreeClip" ||
+		ClipName == "ArenaTunnelFreeClip"
+	)) {
+		Clips.add("ArenaTunnelFreeClip");
+		Clips.add("ArenaTunnelOpen2SidesFreeClip");
+		Clips.add("ArenaTunnelOpen1SideFreeClipLeft");
+		Clips.add("ArenaTunnelOpen1SideFreeClipRight");
+		Clips.add("ArenaTunnelOpenFreeClip");
+	} else if (Map.CollectionName == "Canyon" && (ClipName == "RoadRaceClipRight" || ClipName == "RoadRaceClipLeft")) {
+		// Up and down road race
+		if (ClipName == "RoadRaceClipRight") Clips.add("RoadRaceClipLeft"^ClipNameSuffix);
+		if (ClipName == "RoadRaceClipLeft") Clips.add("RoadRaceClipRight"^ClipNameSuffix);
+	} else if (Map.CollectionName == "Valley" && ClipName == "CastleCenterLakeFreeClip") {
+		Clips.add("CastleCenterLakeFreeClip");
+		Clips.add("CastleGardenLakeFreeClip");
+	} else if (Map.CollectionName == "Valley" && ClipName == "CastleBridgeLakeFreeClip") {
+		Clips.add("CastleGardenLakeFreeClip");
+		Clips.add("CastleBridgeLakeFreeClip");
+	} else if (Map.CollectionName == "Valley" && ClipName == "CastleGardenLakeFreeClip") {
+		Clips.add("CastleCenterLakeFreeClip");
+		Clips.add("CastleGardenLakeFreeClip");
+		Clips.add("CastleBridgeLakeFreeClip");
+	} else if (Map.CollectionName == "Valley" && (ClipName == "ArenaParkFreeClip" || ClipName == "ArenaParkRoofBaseFreeClip")) {
+		Clips.add("ArenaParkFreeClip");
+		Clips.add("ArenaParkRoofBaseFreeClip");
+	} else if (Map.CollectionName == "Valley" && (ClipName == "RoadForestLargeTechGrassClip" || ClipName == "RoadForestLargeGrassFreeClip" || ClipName == "RoadForestLargeSlopeGrassClip")) {
+		Clips.add("RoadForestLargeTechGrassClip");
+		Clips.add("RoadForestLargeGrassFreeClip");
+		Clips.add("RoadForestLargeSlopeGrassClip");
+	} else if (Map.CollectionName == "Valley" && (ClipName == "RoadForestLargeTechClip" || ClipName == "RoadForestLargeFreeClip" || ClipName == "RoadForestLargeSlopeClip")) {
+		Clips.add("RoadForestLargeTechClip");
+		Clips.add("RoadForestLargeFreeClip");
+		Clips.add("RoadForestLargeSlopeClip");
+	} else if (Map.CollectionName == "Stadium" && (ClipName == "StadiumCircuitFreeClip" || ClipName == "Platform")) {
+		Clips.add("StadiumCircuitFreeClip");
+		Clips.add("Platform");
+	} else if (Map.CollectionName == "Stadium" && (ClipName == "ArenaSlope"/*+suffix*/ || ClipName == "PlatformSlope"/*+suffix*/)) {
+		if (ClipNameSuffix == "Left" || ClipNameSuffix == "Right") {
+			Clips.add("StadiumCircuitSlopeStraightFreeClip"^ClipNameSuffix);
+			Clips.add("PlatformSlope"^ClipNameSuffix);
+		} else {
+			Clips.add("ArenaSlope"^ClipNameSuffix);
+			Clips.add("PlatformSlope"^ClipNameSuffix);
+		}
+	} else if (Map.CollectionName == "Stadium" && (ClipName == "StadiumCircuitSlopeEndFreeClip"/*+suffix*/ || ClipName == "PlatformSlopeEnd"/*+suffix*/)) {
+		Clips.add("StadiumCircuitSlopeEndFreeClip"^ClipNameSuffix);
+		Clips.add("PlatformSlopeEnd"^ClipNameSuffix);
+	} else if (Map.CollectionName == "Stadium" && (ClipName == "StadiumCircuitSlopeStartFreeClip"/*+suffix*/ || ClipName == "PlatformSlopeStart"/*+suffix*/)) {
+		Clips.add("StadiumCircuitSlopeStartFreeClip"^ClipNameSuffix);
+		Clips.add("PlatformSlopeStart"^ClipNameSuffix);
+	}
+	// Default case
+	else {
+		Clips.add(ClipName^ClipNameSuffix);
+	}
+	
+	// All clips can be connected to their "-In" counterpart
+	declare TmpClips = Clips;
+	foreach (Clip in TmpClips) {
+		Clips.add(Clip^"-In");
+		Clips.add(Clip^"-Out");
+	}
+	
+	// Save in cache
+	G_LibMacroblock_ConnectableClips[_ClipName] = Clips;
+	
+	return Clips;
+}
+
+// ---------------------------------- //
+/** Check if a macroblock has a custom collision
+ *
+ *	@param	_MacroblockModel		The macroblock to check
+ * 
+ *	@return							True if the macroblock has a custom selection, False otherwise
+ */
+Boolean HasCollision(CMacroblockModel _MacroblockModel) {
+	declare metadata Int3[] PartyEditor_CollisionsOffsets for _MacroblockModel;
+	return PartyEditor_CollisionsOffsets.count > 0;
+}
+
+// ---------------------------------- //
+/** Get the collisions offset of a macroblock
+ *
+ *	@param	_MacroblockModel		The macroblock to check
+ * 
+ *	@return							The offsets of the collisions
+ */
+Int3[] GetCollisionsOffsets(CMacroblockModel _MacroblockModel) {
+	declare metadata Int3[] PartyEditor_CollisionsOffsets for _MacroblockModel;
+	return PartyEditor_CollisionsOffsets;
+}
+
+// ---------------------------------- //
+/** Get the collisions coordinates of a macroblock
+ *
+ *	@param	_MacroblockModel	The macroblock model
+ *	@param	_Coord				The macroblock coordinates
+ *	@param	_Dir				The macroblock direction
+ *
+ *	@return						The macroblock collisions coordinates
+ */
+Int3[] GetCollisionsCoords(CMacroblockModel _MacroblockModel, Int3 _Coord, CEditorPlugin::CardinalDirections _Dir) {
+	declare Int3[] CollisionsPositions;
+	if (_MacroblockModel == Null) return CollisionsPositions;
+	declare Variant <=> GetBlockModelVariant(_MacroblockModel);
+	if (Variant == Null) return CollisionsPositions;
+	
+	declare metadata Int3[] PartyEditor_CollisionsOffsets for _MacroblockModel;
+	foreach (CollisionOffset in PartyEditor_CollisionsOffsets) {
+		declare CollisionPosition = _Coord + MU::GetRotatedOffsetPositive(CollisionOffset, _Dir, Variant.Size);
+		CollisionsPositions.add(CollisionPosition);
+	}
+	
+	return CollisionsPositions;
+}
+
+// ---------------------------------- //
+/** Add a new collision
+ *
+ *	@param	_MacroblockModel		The macroblock model to edit
+ */
+Void AddCollision(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return;
+	
+	declare metadata Int3[] PartyEditor_CollisionsOffsets for _MacroblockModel;
+	PartyEditor_CollisionsOffsets.add(<0, 0, 0>);
+}
+
+// ---------------------------------- //
+/** Remove a collision
+ *
+ *	@param	_MacroblockModel		The macroblock model to edit
+ *	@param	_CollisionId			Id of the collision to remove
+ */
+Void RemoveCollision(CMacroblockModel _MacroblockModel, Integer _CollisionId) {
+	if (_MacroblockModel == Null) return;
+	
+	declare metadata Int3[] PartyEditor_CollisionsOffsets for _MacroblockModel;
+	declare Removed = PartyEditor_CollisionsOffsets.removekey(_CollisionId);
+}
+
+// ---------------------------------- //
+/** Edit a collision
+ *
+ *	@param	_MacroblockModel		The macroblock model to edit
+ *	@param	_CollisionId			Id of the collision to edit
+ *	@param	_Offset					Offset of the collision
+ */
+Void EditCollision(CMacroblockModel _MacroblockModel, Integer _CollisionId, Int3 _Offset) {
+	if (_MacroblockModel == Null) return;
+	
+	declare metadata Int3[] PartyEditor_CollisionsOffsets for _MacroblockModel;
+	if (!PartyEditor_CollisionsOffsets.existskey(_CollisionId)) return;
+	PartyEditor_CollisionsOffsets[_CollisionId] = _Offset;
+}
+
+// ---------------------------------- //
+/** Get the blocks contained in a macroblock
+ *
+ *	@param	_MacroblockModel		The macroblock to check
+ *	@param	_Coord					The coordinates of the macroblock
+ *	@param	_Dir					The direction of the macroblock
+ *	@param	_WithTerrain			Keep terrain blocks or not
+ */
+CBlock[] GetBlocks(CMacroblockModel _MacroblockModel, Int3 _Coord, CEditorPlugin::CardinalDirections _Dir, Boolean _WithTerrain) {
+	declare CBlock[] MacroblockBlocks;
+	declare Variant <=> GetBlockModelVariant(_MacroblockModel);
+	if (Variant == Null) return MacroblockBlocks;
+	
+	foreach (BlockUnit in Variant.BlockUnitModels) {
+		declare Coord = _Coord + MU::GetRotatedOffsetPositive(BlockUnit.Offset, _Dir, Variant.Size);
+		declare Block <=> GetBlock(Coord);
+		if (Block == Null) continue;
+		if (!_WithTerrain && Block.BlockModel.IsTerrain) continue;
+		if (!MacroblockBlocks.exists(Block)) MacroblockBlocks.add(Block);
+	}
+	
+	return MacroblockBlocks;
+}
+
+// ---------------------------------- //
+/** Get the coordinates occupied by a macroblock
+ *
+ *	@param	_MacroblockModel	The macroblock model
+ *	@param	_Coord				The macroblock coordinates
+ *	@param	_Dir				The macroblock direction
+ *	@param	_WithCollision		Add the collisions to the coordinates
+ */
+Int3[] GetCoords(CMacroblockModel _MacroblockModel, Int3 _Coord, CEditorPlugin::CardinalDirections _Dir, Boolean _WithCollision) {
+	declare Int3[] Coords;
+	declare Variant <=> GetBlockModelVariant(_MacroblockModel);
+	if (Variant == Null) return Coords;
+	
+	foreach (BlockUnit in Variant.BlockUnitModels) {
+		Coords.add(_Coord + MU::GetRotatedOffsetPositive(BlockUnit.Offset, _Dir, Variant.Size));
+	}
+	
+	// Add custom collisions
+	if (_WithCollision) {
+		declare metadata Int3[] PartyEditor_CollisionsOffsets for _MacroblockModel;
+		foreach (CollisionOffset in PartyEditor_CollisionsOffsets) {
+			Coords.add(_Coord + MU::GetRotatedOffsetPositive(CollisionOffset, _Dir, Variant.Size));
+		}
+	}
+	
+	return Coords;
+}
+
+// ---------------------------------- //
+/** Get the coordinates occupied by a macroblock
+ *
+ *	@param	_MacroblockModel	The macroblock model
+ *	@param	_Coord				The macroblock coordinates
+ *	@param	_Dir				The macroblock direction
+ */
+Int3[] GetCoords(CMacroblockModel _MacroblockModel, Int3 _Coord, CEditorPlugin::CardinalDirections _Dir) {
+	return GetCoords(_MacroblockModel, _Coord, _Dir, True);
+}
+
+// ---------------------------------- //
+/** Get the coordinates of one block unit
+ *
+ *	@param	_MacroblockModel	The macroblock model
+ *	@param	_Coord				The macroblock coordinates
+ *	@param	_Dir				The macroblock direction
+ */
+Int3 GetBlockUnitCoord(CMacroblockModel _MacroblockModel, Int3 _Coord, CEditorPlugin::CardinalDirections _Dir) {
+	declare Variant <=> GetBlockModelVariant(_MacroblockModel);
+	if (Variant == Null) return Utils::NullCoord();
+	
+	foreach (BlockUnit in Variant.BlockUnitModels) {
+		return _Coord + MU::GetRotatedOffsetPositive(BlockUnit.Offset, _Dir, Variant.Size);
+	}
+	
+	return Utils::NullCoord();
+}
+
+// ---------------------------------- //
+/** Check if two macroblocks collide
+ *
+ *	@param	_MacroblockModel1	The first macroblock model
+ *	@param	_Coord1				The first macroblock coordinates
+ *	@param	_Dir1				The first macroblock direction
+ *	@param	_MacroblockModel2	The second macroblock model
+ *	@param	_Coord2				The second macroblock coordinates
+ *	@param	_Dir2				The second macroblock direction
+ *
+ *	@return						True if they collide, False otherwise
+ */
+Boolean Collide(
+	CMacroblockModel _MacroblockModel1, Int3 _Coord1, CEditorPlugin::CardinalDirections _Dir1,
+	CMacroblockModel _MacroblockModel2, Int3 _Coord2, CEditorPlugin::CardinalDirections _Dir2
+) {
+	declare Coords1 = GetCoords(_MacroblockModel1, _Coord1, _Dir1);
+	declare Coords2 = GetCoords(_MacroblockModel2, _Coord2, _Dir2);
+	
+	return Coords1.containsoneof(Coords2);
+}
+
+// ---------------------------------- //
+/** Get the signature key of a macroblock
+ *
+ *	@param	_MacroblockModel		The macroblock model to check
+ *
+ *	@return							The signature key of the macroblock model
+ */
+Integer GetSignatureKey(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return -1;
+	
+	declare metadata Integer PartyEditor_SignatureKey for _MacroblockModel = -1;
+	return PartyEditor_SignatureKey;
+}
+
+// ---------------------------------- //
+/** Get the length of a macroblock
+ *
+ *	@param	_MacroblockModel		The macroblock model to check
+ *
+ *	@return							The length of the macroblock model
+ */
+Real GetLength(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return 0.;
+	
+	declare metadata Real PartyEditor_Length for _MacroblockModel;
+	return PartyEditor_Length;
+}
+
+// ---------------------------------- //
+/** Get the ground offset of a macroblock
+ *
+ *	@param	_MacroblockModel		The macroblock model to check
+ *
+ *	@return							The ground offset of the macroblock model
+ */
+Integer GetGroundOffset(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return 0;
+	
+	declare metadata Integer PartyEditor_GroundOffset for _MacroblockModel;
+	return PartyEditor_GroundOffset;
+}
+
+// ---------------------------------- //
+/** Remove a macroblock from the map
+ *
+ *	@param	_MacroblockModel		The model of macroblock
+ *	@param	_Coord					The coord of the macroblock
+ *	@param	_Dir					The dir of the macroblock
+ *
+ *	@return							True if the macroblock was removed, false otherwise
+ */
+Boolean Remove(CMacroblockModel _MacroblockModel, Int3 _Coord, CEditorPlugin::CardinalDirections _Dir) {
+	return RemoveMacroblock_NoTerrain(_MacroblockModel, _Coord, _Dir);
+	
+	// Old version
+	declare Removed = False;
+	
+	if (!Removed && Map.CollectionName == "Stadium") {
+		if (_MacroblockModel == Null) return False;
+		declare Variant <=> GetBlockModelVariant(_MacroblockModel);
+		if (Variant == Null) return False;
+		
+		foreach (BlockUnit in Variant.BlockUnitModels) {
+			declare Coord = _Coord + MU::GetRotatedOffsetPositive(BlockUnit.Offset, _Dir, Variant.Size);
+			declare BlockUnitRemoved = RemoveBlock(Coord);
+			/* @Tmp : Do not remove terrain
+			if (!BlockUnitRemoved) {
+				declare Block <=> GetBlock(Coord);
+				if (Block == Null) continue;
+				if (Block.BlockModel.IsTerrain) {
+					BlockUnitRemoved = RemoveTerrainBlocks(Coord-<0,1,0>, Coord+<0,1,0>);
+					//BlockUnitRemoved = RemoveTerrainBlocks(Coord, Coord);
+					//declare Placed = PlaceTerrainBlocks(FlatTerrain, Coord-<0,1,0>, Coord+<0,1,0>);
+				}
+			}
+			*/
+			if (!Removed && BlockUnitRemoved) Removed = True;
+		}
+	}
+	
+	return Removed;
+}
+
+// ---------------------------------- //
+/** Check if a macroblock can be used as a spawn
+ *
+ *	@param	_MacroblockModel		The model of macroblock
+ *
+ *	@return							True if the macroblock can be used as a spawn, False otherwise
+ */
+Boolean IsSpawnable(CMacroblockModel _MacroblockModel) {
+	return (
+		_MacroblockModel != Null && 
+		(
+			_MacroblockModel.HasCheckpoint || 
+			_MacroblockModel.HasStart || 
+			_MacroblockModel.HasMultilap
+		)
+	);
+}
+
+// ---------------------------------- //
+/** Check if the macroblock model is a terrain macroblock
+ *
+ *	@param	_MacroblockModel		The macroblock model to check
+ *
+ *	@return							True if the macroblock model is a terrain macroblock, False otherwise
+ */
+Boolean IsTerrain(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return False;
+	
+	declare metadata Text PartyEditor_Family for _MacroblockModel;
+	return (PartyEditor_Family == C_TerrainsFolder);
+}
+
+// ---------------------------------- //
+/** Check if the macroblock model is a decoration macroblock
+ *
+ *	@param	_MacroblockModel		The macroblock model to check
+ *
+ *	@return							True if the macroblock model is a decoration macroblock, False otherwise
+ */
+Boolean IsDeco(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return False;
+	
+	declare metadata Text PartyEditor_Family for _MacroblockModel;
+	return (PartyEditor_Family == C_DecoExpertFolder || PartyEditor_Family == C_DecoSimpleFolder);
+}
+
+// ---------------------------------- //
+/** Check if the macroblock model is a simple decoration macroblock
+ *
+ *	@param	_MacroblockModel		The macroblock model to check
+ *
+ *	@return							True if the macroblock model is a simple decoration macroblock, False otherwise
+ */
+Boolean IsSimpleDeco(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return False;
+	
+	declare metadata Text PartyEditor_Family for _MacroblockModel;
+	return (PartyEditor_Family == C_DecoSimpleFolder);
+}
+
+// ---------------------------------- //
+/**	Get the block to use to udpate the uid of the map
+ *
+ *	@return							The macroblock model
+ */
+CMacroblockModel GetUpdateUidBlock() {
+	if (G_LibMacroblock_UpdateUidBlock == Null) {
+		foreach (Key => MacroblockModel in MacroblockModels) {
+			declare FullName = GetFullName(MacroblockModel);
+			
+			// Assign the block to use to update the uid of the track
+			if (FullName == C_UpdateUidBlock && MacroblockModel.Name == "Air") {
+				G_LibMacroblock_UpdateUidBlock <=> MacroblockModel;
+			}
+		}
+	}
+	return G_LibMacroblock_UpdateUidBlock;
+}
+
+// ---------------------------------- //
+/// Unload the library
+Void Unload() {
+	ClearSignaturesPool();
+	ClearClipNamesPool();
+	G_LibMacroblock_ConnectableClips.clear();
+	G_LibMacroblock_MacroblockModelsIds.clear();
+	G_LibMacroblock_MacroblockModelsFullNames.clear();
+}
+
+// ---------------------------------- //
+/// Load the library
+Void Load() {
+	Unload();
+	
+	// Create macroblock models text ids cache
+	declare ClipsDone = Text[];
+	foreach (Key => MacroblockModel in MacroblockModels) {
+		declare metadata Text PartyEditor_Id for MacroblockModel;
+		G_LibMacroblock_MacroblockModelsIds[PartyEditor_Id] = MacroblockModel;
+		
+		declare FullName = GetFullName(MacroblockModel);
+		if (!G_LibMacroblock_MacroblockModelsFullNames.existskey(FullName)) G_LibMacroblock_MacroblockModelsFullNames[FullName] = [MacroblockModel];
+		else G_LibMacroblock_MacroblockModelsFullNames[FullName].add(MacroblockModel);
+		
+		declare metadata Text[] PartyEditor_ClipNames for MacroblockModel;
+		foreach (ClipName in PartyEditor_ClipNames) {
+			if (ClipsDone.exists(ClipName)) continue;
+			
+			declare ClipNameLength = TL::Length(ClipName);
+			declare Suffix = TL::SubString(ClipName, ClipNameLength - 4, ClipNameLength);
+			if (Suffix == "-Out") {
+				G_LibMacroblock_OutClips.add(ClipName);
+			}
+			ClipsDone.add(ClipName);
+		}
+		
+		// Assign the block to use to update the uid of the track
+		if (FullName == C_UpdateUidBlock && MacroblockModel.Name == "Air") {
+			G_LibMacroblock_UpdateUidBlock <=> MacroblockModel;
+		}
+		
+		if (Key % 50 == 0) yield;
+	}
+}

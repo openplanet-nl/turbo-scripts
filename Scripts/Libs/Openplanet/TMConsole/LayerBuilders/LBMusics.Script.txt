@@ -1,0 +1,1194 @@
+
+#Include "Libs/Openplanet/Manialink2.Script.txt"						as Manialink
+#Include "Libs/Openplanet/TMConsole/BuilderHelper.Script.txt"		as BuilderHelper
+#Include "Libs/Openplanet/UIPadButtons.Script.txt"					as LibUIButtons
+#Include "Libs/Openplanet/TMConsole/LibAudio.Script.txt"				as LibAudio
+#Include "Libs/Openplanet/TMConsole/Volumes.Script.txt"				as Volumes
+#Include "Libs/Openplanet/TMConsole/PanelParameter.Script.txt"	  	as PanelParameter
+#Include "Libs/Openplanet/TMConsole/Selector.Script.txt"				as Selector
+#Include "Libs/Openplanet/TMConsole/Colors.Script.txt"			    as Colors
+#Include "Libs/Openplanet/TMConsole/FontManager.Script.txt"			as Font
+#Include "Libs/Openplanet/TMConsole/Prompter2.Script.txt"			as Prompter2
+
+#Const C_ParallaxBase	 "file://Media/Manialinks/Nadeo/TMConsole/Images/MainMenu/Parallax/"
+#Const C_ImgBase		 "file://Media/Manialinks/Nadeo/TMConsole/Images/"
+#Const C_ImgBase2		 "file://Media/Images/TMConsole/Ingame/"
+#Const SoundPathLoops	 "file://Media/Sounds/TMConsole/Loops/"
+#Const SoundPathPreviews "file://Media/Sounds/TMConsole/Previews Musics/"
+#Const C_SizePanelX   6.
+#Const C_SizePanelY   6.
+#Const C_RATIO        12.962
+ 
+#Const IMGGaragePig				"tmce_pig_pink.dds"
+#Const IMGGaragePigBlack		"tmce_pig_black.dds"
+
+Text Build(Text _ShowAnim, Text _HideAnim) {
+
+
+	declare Integer Count_InstancesY            = 3;
+	declare Integer Count_InstancesX            = 2;
+	declare Real	SizeX_Total                 = 102.5; //102.5
+	declare Real	MarginY_Button              = -2.0; //0.6;
+	declare Real	MarginX_Button              = 0.6; //0.6;
+	declare Real	PosYFirstQuad               = 52.5; //52.67;
+	declare Real	PosXFirstQuad               = 88.7;  //88.7;
+	
+	declare Real	SizeXQuad                   = (SizeX_Total - Count_InstancesX*MarginX_Button) / Count_InstancesX;
+	declare Real	SizeYQuad                   = 50.7;
+	declare Integer Count_InstancesX_SubMenuMax = 8;
+	declare Integer Count_InstancesY_SubMenuMax = 15;
+	
+	declare Real	SizeX_SubMTotal             = PanelParameter::GetSizePanelX(Count_InstancesX*1.25*1.2);
+	declare Real	SizeY_SubMTotal             = PanelParameter::GetSizePanelY(C_SizePanelY*1.2);
+	declare Real	SizeXSubQuad                = (SizeX_SubMTotal - Count_InstancesX*MarginX_Button) / Count_InstancesX*1.;
+	declare Real	SizeYSubQuad                = (SizeY_SubMTotal - Count_InstancesY*MarginY_Button) / Count_InstancesY*1.;
+	declare Real	SM_SizeX                    = 102.2;
+	declare Real	SM_SizeY                    = SM_SizeX / C_RATIO;
+	
+	//Musics
+	declare Integer Count_InstancesY_Musics     = 7;
+	declare Integer Count_InstancesX_Musics     = 7;
+	declare Real	MarginX_Musics              = 0.2;
+	declare Real	MarginY_Musics              = 0.1;
+	declare Real	SizeX_MusicsTotal           = 102.5;
+	declare Real	SizeY_MusicsTotal           = 100.6;
+	declare Real	SizeXQuad_Musics            = (SizeX_MusicsTotal - Count_InstancesX_Musics*MarginX_Musics) / Count_InstancesX_Musics*1.;
+	declare Real	SizeYQuad_Musics            = (SizeY_MusicsTotal - Count_InstancesY_Musics*MarginY_Musics) / Count_InstancesY_Musics*1.;
+	declare Real	PosXFirstQuad_Musics        = 97.7;
+	declare Real	PosYFirstQuad_Musics        = 62.0;
+	//declare Text 	IMGVinyl                    = "file://Media/Painter/Stickers/mascot67/DO.dds";
+	declare Text 	IMGVinyl                    = "file://Media/Painter/Stickers/mascot40/DO.dds";
+	declare Text 	IMGBgMusics                 = C_ImgBase^"Helmets/Base/Mascot.dds";
+	declare Text 	IMGSoundLightCarre          = C_ImgBase^"Musics/sound_light_carre.tga";
+	declare Text 	IMGSoundLightLarge          = C_ImgBase^"Musics/sound_light_large.tga";
+	declare Text 	IMGMenu_sound               = C_ImgBase^"Musics/menu_sound.tga";
+	
+	declare Text 	IMGSlotMediumBg             = C_ImgBase2^"slot-medium-bg.dds";
+	declare Text 	IMGSlotMediumFg             = C_ImgBase2^"slot-medium-fg.dds";
+	declare Text 	IMGMenuBg                   = C_ImgBase2^"menu-bg-1.dds";
+	
+	declare Real	SM_BaseSizeX                = SM_SizeX;
+	
+
+	declare Text 	SFX_UI_MusicEditor_AddToTrackList    = LibAudio::GetSound("SFX_UI_MusicEditor_AddToTrackList");
+	declare Text 	SFX_UI_MusicEditor_Cursor            = LibAudio::GetSound("SFX_UI_MusicEditor_Cursor");
+	declare Text 	SFX_UI_MusicEditor_CutMusic_1        = LibAudio::GetSound("SFX_UI_MusicEditor_CutMusic_1");
+	declare Text 	SFX_UI_MusicEditor_CutMusic_2        = LibAudio::GetSound("SFX_UI_MusicEditor_CutMusic_2");
+	declare Text 	SFX_UI_MusicEditor_CutMusic_3        = LibAudio::GetSound("SFX_UI_MusicEditor_CutMusic_3");
+	declare Text 	SFX_UI_MusicEditor_Enter             = LibAudio::GetSound("SFX_UI_MusicEditor_Enter");
+	declare Text 	SFX_UI_MusicEditor_Exit              = LibAudio::GetSound("SFX_UI_MusicEditor_Exit");
+	declare Text 	SFX_UI_MusicEditor_RemoveToTrackList = LibAudio::GetSound("SFX_UI_MusicEditor_RemoveToTrackList");
+	
+	declare Real	SM_SizeYElement             = 6.74;
+
+	declare Integer Platform   = LibUIButtons::GetPlatform();
+	declare Text 	IMGSelect  = LibUIButtons::GetImage(Platform, CManiaAppEvent::EMenuNavAction::Select);
+	declare Text 	IMGCancel  = LibUIButtons::GetImage(Platform, CManiaAppEvent::EMenuNavAction::Cancel);
+	declare Text 	IMGAction1 = LibUIButtons::GetImage(Platform, CManiaAppEvent::EMenuNavAction::Action1);
+	declare Text 	IMGAction2 = LibUIButtons::GetImage(Platform, CManiaAppEvent::EMenuNavAction::Action2);
+
+
+	declare Text 	IMG_PC_Action2                      = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"), CManiaAppEvent::EMenuNavAction::Action2);
+	declare Text 	IMG_PC_Action1                      = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"), CManiaAppEvent::EMenuNavAction::Action1);
+	declare Text 	IMG_PC_Select                       = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"), CManiaAppEvent::EMenuNavAction::Select);
+	declare Text 	IMG_PC_Cancel                       = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"), CManiaAppEvent::EMenuNavAction::Cancel);
+
+	declare Text 	IMG_PS_Action2                      = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::Action2);
+	declare Text 	IMG_PS_Action1                      = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::Action1);
+	declare Text 	IMG_PS_Select                       = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::Select);
+	declare Text 	IMG_PS_Cancel                       = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::Cancel);
+
+	declare Text 	IMG_XB_Action2                      = LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::Action2);
+	declare Text 	IMG_XB_Action1                      = LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::Action1);
+	declare Text 	IMG_XB_Select                       = LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::Select);
+	declare Text 	IMG_XB_Cancel                       = LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::Cancel);
+
+	declare Text MLText = """
+	
+	<framemodel id="Frame_SubButton">
+		<quad halign="center" valign="center" image="{{{IMGSoundLightCarre}}}" posn="{{{-SizeXSubQuad}}} {{{-0.5}}} 3"
+		 id="Quad_SubIconBase" opacity="1.0"  scale="1."/>
+
+		<quad halign="center" valign="center" sizen="5 5" bgcolor="fff" posn="{{{-SizeXSubQuad}}} {{{0}}}"
+		 id="Quad_SubNew" opacity="1.0"  scale="1."/>
+
+		<quad halign="center" valign="center" sizen="{{{SizeXSubQuad}}} {{{SizeYSubQuad}}}" bgcolor="a00" posn="{{{-SizeXSubQuad}}} {{{0}}}"
+		 id="Quad_SubLock" opacity="1.0"  scale="1.0" hidden="0"/>
+
+		<quad halign="center" valign="center" sizen="{{{SizeXQuad_Musics}}} {{{SizeYQuad_Musics}}}" posn="{{{-SizeXSubQuad}}} {{{0}}}"
+		 id="Quad_Activation" opacity="1."  scale="1.0" hidden="0"/>
+
+		<quad halign="center" valign="center" sizen="{{{SizeXQuad_Musics}}} {{{SizeYQuad_Musics}}}" posn="{{{-SizeXSubQuad}}} {{{0}}}"
+		 id="Quad_ModePlay" opacity="0.6"  scale="1.0" hidden="1"/>
+	</framemodel>
+	
+	<framemodel id="FrameModel_InputInfo">
+		<quad halign="center" valign="bottom" sizen="33 {{{SM_SizeYElement}}}"
+		 image="{{{IMGSlotMediumBg}}}"   posn="0 0 6" opacity="1." id="Quad_Button" scriptevents="1"/>
+		<label halign="right" valign="center" posn="9 4.0 7" textprefix="$t"
+		 id="Label_Name" textsize="3."  sizen="22"  opacity="1.0" textfont="{{{Font::GetFontName("Main")}}}"/>
+		<quad halign="center" valign="bottom" sizen="32.9 {{{SM_SizeYElement}}}"
+		 image="{{{IMGSlotMediumFg}}}"  posn="0 0 8" opacity="1.0"/>""";
+		for (I, 0, 2) {
+			MLText ^= """
+		<quad halign="center" valign="center" sizen="6 6"
+		 id="Quad_Icon{{{I}}}" image=""  posn="12.5 3.5 7" opacity="1.0"/>
+			""";
+		}
+	MLText ^= """
+	</framemodel>
+		
+	
+	<frame id="Frame_All" posn="0. 0. 10">
+		
+		<frame id="Pig">
+			<quad id="Garage2" halign="center" valign="center" opacity="1." keepratio="Fit"
+				sizen="135 173" image="{{{C_ParallaxBase}}}{{{IMGGaragePig}}}" posn="76 -8 -3" />
+			<quad id="Garage3" halign="center" valign="center" opacity="1." keepratio="Fit"
+			sizen="44 51" image="{{{C_ParallaxBase}}}{{{IMGGaragePigBlack}}}" posn="14 54 -4" />
+		</frame>
+		
+		
+		<frame id="Frame_SubMenu" hidden="1" posn="-170 0 0">
+			<frame id="Frame_Selector">
+				{{{Selector::InsertFrameworkInManialink(6, SizeXQuad_Musics,  SizeYQuad_Musics,  0., 0., MarginX_Musics,  MarginY_Musics,  "Frame_Selector", 1.8)}}}
+			</frame>
+			<quad id="Quad_Vinyl" halign="center" valign="center" opacity="1." keepratio="Fit"
+			sizen="0 0" image="{{{IMGVinyl}}}" posn="89 20 27" />
+			<quad id="Quad_BG" halign="left" valign="top" keepratio="Fit" sizen="{{{SM_BaseSizeX}}} 180"  posn="38 {{{76.6 - 1*(SM_SizeY-0.)}}} 0" opacity="0.0" />
+
+			
+			<quad id="Quad_Base" halign="center" valign="center" keepratio="Fit"
+			sizen="102.0 129.6" posn="89.1 11.3 1" image="{{{IMGMenu_sound}}}" opacity="1.0" />
+		""";
+	//Création de l'écran SubMenu
+	for(I,0,Count_InstancesY_SubMenuMax-1)
+	{
+		declare Real IndexY = I*1.;
+		declare Real PosnY = PosYFirstQuad - IndexY*SizeYQuad - IndexY*MarginY_Button*1. - MarginY_Button/2. + 10.0;
+		for(J,0,Count_InstancesX_SubMenuMax-1)
+		{
+			declare Real IndexJ = J*1.;
+			declare Real PosnX = PosXFirstQuad+ IndexJ*SizeXQuad + IndexJ*MarginX_Button*1.;
+			MLText^="""
+				<frame posn="{{{PosnX}}} {{{PosnY}}} 2." id="Frame_InstanceSubMenu{{{I}}}{{{J}}}" >
+					<frameinstance modelid="Frame_SubButton" />
+					<quad halign="center" valign="center" sizen="{{{SizeXQuad_Musics}}} {{{SizeYQuad_Musics}}}" posn="{{{-SizeXSubQuad}}} 0 1" opacity="0." scriptevents="1" id="MouseInput_Track_{{{I}}}:{{{J}}}" />
+				</frame>
+			""";
+		}
+	}
+
+	declare Real PosnX = PosXFirstQuad+ SizeXQuad + MarginX_Button*1.+0.4;
+	declare Real PosnY = PosYFirstQuad - 0.*SizeYQuad - 0.*MarginY_Button*1. - MarginY_Button/2.+23.5;
+
+	MLText^="""
+			<quad halign="right" valign="top" sizen="{{{SM_SizeX}}} {{{SM_SizeY}}}" image="{{{IMGSlotMediumFg}}}" opacity="1." posn="{{{PosnX}}} {{{PosnY-0.4}}} 3"/>
+			<quad halign="right" valign="top" sizen="{{{SM_SizeX}}} {{{SM_SizeY}}}" bgcolor="fff"                 opacity="1." posn="{{{PosnX}}} {{{PosnY-0.4}}} 1"/>
+			
+			<frame posn="1.5 73.0 2">
+			{{{Prompter2::InjectInManialink("PromptInfoMusic", <19. , 0.6, 0.>, <SM_SizeX-3., 84.>, 5, Font::GetFontName("MainSmall"), """ """)}}}
+			</frame>
+			
+			<frame id="Frame_MusicInfos" posn="0 0">
+				<label hidden="1" id="Label_SubLegend"  halign="left" valign="center" style="TextButtonNav" posn="42 -33.9 5" textsize="3." textcolor="f00" sizen="130"/>
+				<label hidden="1" id="Label_SubLegend2" halign="left" valign="center" style="TextButtonNav" posn="42 -40.9 5" textsize="3." textcolor="f00" sizen="130"/>
+				<label hidden="1" id="Label_SubLegend3" halign="left" valign="center" style="TextButtonNav" posn="42 -47.9 5" textsize="3." textcolor="f00" sizen="130"/>
+				<label text="{{{_("Music Mix")}}}" halign="left" valign="center" textfont="{{{Font::GetFontName("Main")}}}" posn="42 -36.9 5" textsize="12." textcolor="000" sizen="96" textprefix="$t"/>
+
+				<quad halign="right" valign="top" sizen="{{{SM_SizeX}}} {{{13.8}}}" bgcolor="f00" posn="{{{PosnX-0.1}}} {{{-31.6}}} 4" opacity="0.0"/>
+				<quad opacity="0.4" halign="right" valign="top" sizen="{{{SM_SizeX}}} {{{SM_SizeX}}}" image="{{{IMGSoundLightLarge}}}" keepratio="Fit" posn="{{{PosnX}}} {{{-31.8}}} 7"/>
+
+				<quad halign="right" valign="top" sizen="{{{SM_SizeX}}} {{{SM_SizeY-0.3}}}" bgcolor="000" opacity="1." posn="{{{PosnX}}} {{{-SizeYQuad-10.6-SM_SizeY}}} 1" />
+				
+				<quad halign="right" valign="top" sizen="{{{SM_SizeX}}} {{{SM_SizeY}}}" image="{{{IMGMenuBg}}}" opacity="1." posn="{{{PosnX}}} {{{-SizeYQuad+4.9}}} 30"/>
+				<quad halign="right" valign="top" sizen="{{{SM_SizeX}}} {{{SM_SizeY}}}" image="{{{IMGMenuBg}}}" opacity="1." posn="{{{PosnX}}} {{{-SizeYQuad+4.9-SM_SizeY}}} 30"/>
+				<quad halign="right" valign="top" sizen="{{{SM_SizeX}}} {{{SM_SizeY}}}" image="{{{IMGMenuBg}}}" opacity="1." posn="{{{PosnX}}} {{{-SizeYQuad+4.9-SM_SizeY*2.}}} 30"/>
+						""";
+	/////////////////////////
+	// INPUT INFOS
+	/////////////////////////
+	MLText ^= """<frame id="Frame_InputInfos" posn="0 {{{-68.9-SM_SizeY}}} 7">
+	""";
+	for(I, 0, 2) {
+		declare Real PosnX = 123.4 - I*34.4;
+		MLText ^= """
+			<frame posn="{{{PosnX}}}" id="FrameInstance_InputInfo{{{I}}}" >
+					<frameinstance  modelid="FrameModel_InputInfo"  />
+					<quad halign="center" valign="bottom" sizen="33 {{{SM_SizeYElement}}}" posn="0 0 9" opacity="0." scriptevents="1" id="MouseInput_InputInfo" />
+			</frame>
+		""";
+	}
+	MLText ^= """
+				</frame>
+			</frame>
+		</frame>
+
+
+	</frame>
+	
+	
+	<script><!--
+		#Const DebugName  "L_Music"
+		#Const C_EtatLock      0
+		#Const C_EtatDontLike  1
+		#Const C_EtatUnlock    2
+		#Const C_EtatLike      3
+		#Include "MathLib" as ML
+		
+		{{{Manialink::GetIncludes()}}}
+		{{{Manialink::Load()}}}
+		{{{BuilderHelper::MLCommonFunctions()}}}
+
+		declare Integer[Integer][Integer]	G_MusicsEtat;
+		declare Integer 					G_HideTime;
+		declare Integer 					G_LockInput;
+		declare Integer 					G_SubMenuControlled;
+		declare Integer 					G_SubMenuIndexX;
+		declare Integer 					G_SubMenuIndexY;
+		declare Integer						G_IndexMaxX;
+		declare Integer						G_IndexMaxY;
+		declare Integer[Integer]			G_SubIndex;
+		declare Integer						G_DeclareVarationSelector;
+		declare CAudioSource				G_Music;
+		//declare CAudioSource				G_MusicSound;
+		declare Integer						G_MusicPlay;
+		declare Integer						G_MusicTimePlay;
+		declare Integer						G_LastMusicChange;
+		declare CMlQuad[] 					LabelsButtons;
+		declare CMlFrame[] 					FrameButtons;
+		
+
+		{{{Prompter2::InjectInGlobals()}}}
+		{{{Prompter2::InjectInFunctions()}}}
+		{{{LibUIButtons::Inject_SetInputInfoTextSelected()}}}
+
+
+
+		Integer GetIndex()
+		{
+			declare Integer Index = G_SubMenuIndexY * G_IndexMaxX + G_SubMenuIndexX;
+			return Index;
+		}
+
+		Integer GetIndex(Integer _I, Integer _J)
+		{
+			declare Integer Index = _I * G_IndexMaxX + _J;
+			return Index;
+		}
+
+		Boolean CanLock()
+		{
+			declare Integer Count = 0;
+			foreach(Line in G_MusicsEtat)
+			{
+				foreach(MusicEtat in Line)
+				{
+					if(MusicEtat == C_EtatUnlock)
+					{
+						Count +=1;
+						if(Count>= 2) return True;
+					}
+				}
+
+			}
+			return False;
+		}
+
+		Void UpdateLabelLegend(Integer _SubMenuIndex, Integer _Index)
+		{
+			declare Text[Integer]	Page_MusicsName		for Page;
+			declare Text[Integer]	Page_MusicsLabel	for Page;
+			declare Text[Integer]	Page_MusicsAuthor	for Page;
+			
+			//declare CMlLabel Label_Legend   <=> (Frame_Content.GetFirstChild("Label_Legend") as CMlLabel);
+			declare CMlLabel Label_SubLegend   <=> (Page.GetFirstChild("Label_SubLegend") as CMlLabel);
+			declare CMlLabel Label_SubLegend2   <=> (Page.GetFirstChild("Label_SubLegend2") as CMlLabel);
+			declare CMlLabel Label_SubLegend3   <=> (Page.GetFirstChild("Label_SubLegend3") as CMlLabel);
+
+			if(!Page_MusicsName.existskey(_Index)) return;
+			Label_SubLegend.Value  = Page_MusicsName[_Index];
+			Label_SubLegend2.Value = Page_MusicsAuthor[_Index];
+			Label_SubLegend3.Value = Page_MusicsLabel[_Index];
+
+			declare Text PrompterText = "       "^Page_MusicsAuthor[_Index]^" \""^Page_MusicsName[_Index]^"\" - "^Page_MusicsLabel[_Index];
+			Prompter_SetBanner("PromptInfoMusic", PrompterText, 5000, 2, <0., 0., 0.>);
+			Prompter_SetBannerIsActive("PromptInfoMusic", True, False);
+
+		}
+		
+		Void SetModePlay(Boolean _Active)
+		{
+			declare CMlQuad  Quad_Vinyl <=> (Page.GetFirstChild("Quad_Vinyl") as CMlQuad);
+			
+			declare Integer IndexSelect = GetIndex();
+			declare Text[Integer]		Page_MusicsPreviews		for Page;
+			declare Integer[Integer]	Page_MusicsEtat		for Page;
+			
+			for(I, 0, {{{Count_InstancesY_SubMenuMax-1}}})
+			{
+				
+				for(J, 0, {{{Count_InstancesX_SubMenuMax-1}}})
+				{
+					declare CMlFrame Frames_SubMenu         <=> (Page.GetFirstChild("Frame_SubMenu")                       as CMlFrame);
+					declare CMlFrame Frames_InstanceSubMenu <=> (Frames_SubMenu.GetFirstChild("Frame_InstanceSubMenu"^I^J) as CMlFrame);
+					declare CMlQuad  Quad_ModePlay              <=> (Frames_InstanceSubMenu.GetFirstChild("Quad_ModePlay")  as CMlQuad);
+					Quad_ModePlay.Visible = _Active;
+				}
+			}
+			declare CMlFrame Frame_Selector         <=> (Page.GetFirstChild("Frame_Selector")                       as CMlFrame);
+			Frame_Selector.Visible = !_Active;
+			declare CMlFrame FrameInputSelect <=> (Page.GetFirstChild("FrameInstance_InputInfo1") as CMlFrame);
+			declare CMlLabel Label_InputName <=> (FrameInputSelect.GetFirstChild("Label_Name") as CMlLabel);
+			if(_Active)
+			{
+				//L16N Stop the music
+				Label_InputName.Value = _("Stop");
+				declare Vec2 VinylSize = <44., 51.>;
+				Quad_Vinyl.Size  = <0., 0.>;
+				LibManialink_SetTargetSize(Quad_Vinyl, VinylSize);
+				LibManialink_PresetAnim(Quad_Vinyl, 400, "EaseOutBack");
+
+				if(G_MusicPlay != -1)
+				{
+					G_Music.Stop();
+
+				}
+
+				declare Text MusicPath = "{{{SoundPathPreviews}}}" ^ Page_MusicsPreviews[IndexSelect];
+				//MusicPath = "file://Media/Sounds/TMConsole/MapEditor/TMT_Trackbuilder_1.ogg";
+				G_Music = Audio.CreateSound(MusicPath);
+				//G_Music = Audio.CreateMusic("{{{SoundPathLoops}}}" ^ "127 Polar.zip");
+
+				G_MusicPlay          = IndexSelect;
+				G_Music.VolumedB     = {{{Volumes::GetVolumedB("VolumeMusicsEditor")}}};
+				G_Music.PanRadiusLfe = {{{Volumes::GetPanRadiusLfe("MusicMenu")}}};
+				G_Music.Play();
+				//G_Music.UpdateMode = CAudioSourceMusic::EUpdateMode::OnNextBar;
+				//G_Music.EnableSegment("lap");
+				//Audio.LimitMusicVolumedB = 0.;
+			}
+			else
+			{
+				Label_InputName.Value = _("|Music|Play");
+				
+
+				declare Vec2 VinylSize = <0., 0.>;
+				if(Quad_Vinyl.Size != <0., 0.>)
+				{
+					Quad_Vinyl.Size  = <44., 51.>;
+				}
+				LibManialink_SetTargetSize(Quad_Vinyl, VinylSize);
+				LibManialink_PresetAnim(Quad_Vinyl, 200, "EaseLinear");
+
+				Audio.LimitMusicVolumedB = -100.;
+				if(G_Music == Null) return;
+				G_Music.Stop();
+				G_MusicPlay = -1;
+				G_Music = Null;
+
+			}
+			G_MusicTimePlay = 0;
+		}
+		
+		Vec2 GetSubMenuIndexPosition(Integer _SubMenuIndex)
+		{
+			declare Vec2    IndexPosition;
+			declare Integer MaxX  = G_IndexMaxX;
+			declare Integer Index = G_SubIndex[_SubMenuIndex];
+			
+			IndexPosition.X = Index % MaxX*1.;
+			IndexPosition.Y = Index / MaxX*1.;
+			return IndexPosition;
+		}
+
+		Integer GetSubMenuIndex(Integer _SubMenuIndex ,Integer _SelectorPositionX, Integer _SelectorPositionY)
+		{
+			declare Integer MaxX    = G_IndexMaxX;
+			declare Integer Index =  _SelectorPositionY*MaxX + _SelectorPositionX+1 + _SelectorPositionX/MaxX*MaxX -1;
+			return Index;
+		}
+
+		Text GetSoundCut()
+		{
+			declare Integer Rand = ML::Rand(0, 2);
+			switch(Rand)
+			{
+				case 0: return "{{{SFX_UI_MusicEditor_CutMusic_1}}}";
+				case 1: return "{{{SFX_UI_MusicEditor_CutMusic_2}}}";
+				case 2: return "{{{SFX_UI_MusicEditor_CutMusic_3}}}";
+			}
+			return "";
+		}
+		
+		Real GetSoundCutVolume(Text _Sound)
+		{
+			switch(_Sound)
+			{
+				case "{{{SFX_UI_MusicEditor_CutMusic_1}}}": return {{{Volumes::GetVolumedB("SFX_UI_MusicEditor_CutMusic_1")}}};
+				case "{{{SFX_UI_MusicEditor_CutMusic_2}}}": return {{{Volumes::GetVolumedB("SFX_UI_MusicEditor_CutMusic_2")}}};
+				case "{{{SFX_UI_MusicEditor_CutMusic_3}}}": return {{{Volumes::GetVolumedB("SFX_UI_MusicEditor_CutMusic_3")}}};
+			}
+			return 0.;
+		}
+	
+		/////////////////////
+		// INPUT INFOS
+		/////////////////////
+		Void InitInputsInfo() {
+			declare CMlLabel Label_InputName;
+		
+			//CANCEL
+			declare CMlFrame FrameInputCancel <=> (Page.GetFirstChild("FrameInstance_InputInfo0") as CMlFrame);
+			Label_InputName <=> (FrameInputCancel.GetFirstChild("Label_Name") as CMlLabel);
+			Label_InputName.Value = _("BACK");
+			//SELECT
+			declare CMlFrame FrameInputSelect <=> (Page.GetFirstChild("FrameInstance_InputInfo1") as CMlFrame);
+			Label_InputName <=> (FrameInputSelect.GetFirstChild("Label_Name") as CMlLabel);
+			Label_InputName.Value = _("Play");
+			//ACTION1
+			declare CMlFrame FrameInputAction1 <=> (Page.GetFirstChild("FrameInstance_InputInfo2") as CMlFrame);
+			Label_InputName <=> (FrameInputAction1.GetFirstChild("Label_Name") as CMlLabel);
+			Label_InputName.Value = "";
+			//ACTION2
+			//declare CMlFrame FrameInputAction2 <=> (Page.GetFirstChild("FrameInstance_InputInfo3") as CMlFrame);
+			//Label_InputName <=> (FrameInputAction2.GetFirstChild("Label_Name") as CMlLabel);
+			//Label_InputName.Value = _("REFRESH");
+
+			declare CMlQuad  Quad_InputIcon;
+			for(I,0,2)
+			{
+				declare Text IMGCancel;
+				declare Text IMGSelect;
+				declare Text IMGAction1;
+				//declare Text IMGAction2;
+				switch(I)
+				{
+					case 0:
+					{
+						IMGCancel  = "{{{IMG_PS_Cancel}}}";
+						IMGSelect  = "{{{IMG_PS_Select}}}";
+						IMGAction1 = "{{{IMG_PS_Action1}}}";
+						//IMGAction2 = "{{{IMG_PS_Action2}}}";
+					}
+					case 1:
+					{
+						IMGCancel  = "{{{IMG_XB_Cancel}}}";
+						IMGSelect  = "{{{IMG_XB_Select}}}";
+						IMGAction1 = "{{{IMG_XB_Action1}}}";
+						//IMGAction2 = "{{{IMG_XB_Action2}}}";
+					}
+					case 2:
+					{
+						IMGCancel  = "{{{IMG_PC_Cancel}}}";
+						IMGSelect  = "{{{IMG_PC_Select}}}";
+						IMGAction1 = "{{{IMG_PC_Action1}}}";
+						//IMGAction2 = "{{{IMG_PC_Action2}}}";
+					}
+				}
+				Quad_InputIcon <=> (FrameInputCancel.GetFirstChild("Quad_Icon"^I) as CMlQuad);
+				Quad_InputIcon.ImageUrl = IMGCancel;
+				Quad_InputIcon <=> (FrameInputSelect.GetFirstChild("Quad_Icon"^I) as CMlQuad);
+				Quad_InputIcon.ImageUrl = IMGSelect;
+				Quad_InputIcon <=> (FrameInputAction1.GetFirstChild("Quad_Icon"^I) as CMlQuad);
+				Quad_InputIcon.ImageUrl = IMGAction1;
+				//Quad_InputIcon <=> (FrameInputAction2.GetFirstChild("Quad_Icon"^I) as CMlQuad);
+				//Quad_InputIcon.ImageUrl = IMGAction2;
+			}
+
+		}
+		
+		Void UpdateInputButton(Integer _SelectorPositionX, Integer _SelectorPositionY)
+		{
+
+			declare CMlFrame FrameInputAction1 <=> (Page.GetFirstChild("FrameInstance_InputInfo2") as CMlFrame);
+			declare CMlLabel Label_InputName <=> (FrameInputAction1.GetFirstChild("Label_Name") as CMlLabel);
+			if(!G_MusicsEtat.existskey(_SelectorPositionY)) return;
+			if(G_MusicsEtat[_SelectorPositionY][_SelectorPositionX] == 1)
+			{
+				Label_InputName.Value = _("|music track in the music mix|Add");
+			}
+			else
+			{
+				Label_InputName.Value = _("|music track in the music mix|Remove");
+			}
+		}
+
+		Void UpdateIndexSub(Integer _SubMenuIndex, Integer _SelectorPositionX, Integer _SelectorPositionY)
+		{
+			//declare CMlFrame Frames_SubMenu   <=> (Page.GetFirstChild("Frame_Sub"^_SubMenuIndex)                                              as CMlFrame);
+			//declare CMlFrame Frames_Instance1 <=> (Frames_SubMenu.GetFirstChild("Frame_InstanceSub"^_SelectorPositionY^""^_SelectorPositionX) as CMlFrame);
+			//declare CMlFrame Frames_Instance2 <=> (Frames_SubMenu.GetFirstChild("Frame_InstanceSub"^G_SubMenuIndexY^""^G_SubMenuIndexX)       as CMlFrame);
+			
+			
+			//G_ActualSelector
+			declare CMlFrame Frames_Selector_SubMenu <=> (Page.GetFirstChild("Frame_Selector")                                                    as CMlFrame);
+			declare CMlFrame Frames_SubMenu          <=> (Page.GetFirstChild("Frame_SubMenu")                                                     as CMlFrame);
+			declare CMlFrame Frames_InstanceSubMenu  <=> (Frames_SubMenu.GetFirstChild("Frame_InstanceSubMenu"^_SelectorPositionY^_SelectorPositionX) as CMlFrame);
+			declare CMlQuad  Quad_Selector           <=> (Frames_Selector_SubMenu.GetFirstChild("Quad_Selector")                                   as CMlQuad);
+			
+			Frames_Selector_SubMenu.RelativePosition.X = Frames_InstanceSubMenu.RelativePosition.X;
+			Frames_Selector_SubMenu.RelativePosition.Y = Frames_InstanceSubMenu.RelativePosition.Y;
+			Quad_Selector.RelativePosition = <{{{-SizeXSubQuad}}},0.,0.>;
+
+
+			declare Real PosnY = {{{PosYFirstQuad}}} - _SelectorPositionY*{{{SizeYQuad}}} - _SelectorPositionY*{{{MarginY_Button}}}*1. - {{{MarginY_Button}}}/2. ;
+			declare Real PosnX = {{{PosXFirstQuad}}} + _SelectorPositionX*{{{SizeXQuad}}} + _SelectorPositionX*{{{MarginX_Button}}}*1. + {{{MarginX_Button}}}/2.;
+
+			declare Integer SubMenuIndex = GetSubMenuIndex(_SubMenuIndex, _SelectorPositionX, _SelectorPositionY);
+			UpdateLabelLegend(_SubMenuIndex, SubMenuIndex);
+			
+			/*
+			LibManialink_SetTargetOpacity(Quad_Icon1, 0.40);
+			LibManialink_PresetAnim(Quad_Icon1, 250, "EaseLinear");
+			if(_SelectorPositionX != G_SubMenuIndexX || _SelectorPositionY != G_SubMenuIndexY)
+			{
+				LibManialink_SetTargetOpacity(Quad_Icon2, 0.);
+				LibManialink_PresetAnim(Quad_Icon2, 250, "EaseLinear");
+			}
+			*/
+
+			G_SubMenuIndexX = _SelectorPositionX;
+			G_SubMenuIndexY = _SelectorPositionY;
+
+			G_DeclareVarationSelector = Now - 157;
+
+			declare CMlFrame FrameInputAction1 <=> (Page.GetFirstChild("FrameInstance_InputInfo2") as CMlFrame);
+			declare CMlLabel Label_InputName <=> (FrameInputAction1.GetFirstChild("Label_Name") as CMlLabel);
+			if(!G_MusicsEtat.existskey(_SelectorPositionY)) return;
+			if(G_MusicsEtat[_SelectorPositionY][_SelectorPositionX] == 1)
+			{
+				Label_InputName.Value = _("|music track in the music mix|Add");
+			}
+			else
+			{
+				Label_InputName.Value = _("|music track in the music mix|Remove");
+			}
+
+			UpdateInputButton(_SelectorPositionX, _SelectorPositionY);
+
+		}
+
+		Boolean IsUnlock(Integer _I, Integer _J)
+		{
+			return True;
+		}
+
+		Boolean IsNew(Integer _I, Integer _J)
+		{
+			return False;
+		}
+
+
+		Boolean CanCurseurMove(Integer _SubMenuIndexX, Integer _SubMenuIndexY)
+		{
+			declare Text[Integer]		Page_MusicsFileName		for Page;
+
+			if(G_MusicPlay != -1)                 return False;
+			if(_SubMenuIndexX > G_IndexMaxX - 1)  return False;
+			if(_SubMenuIndexX < 0 )              return False;
+			declare Integer Index = GetIndex(_SubMenuIndexY, _SubMenuIndexX);
+			if(!Page_MusicsFileName.existskey(Index)) return False;
+			
+			return True;
+		}
+
+		Void CreateSubMenu()
+		{ 
+			declare Integer	  ItemCount_InstancesY;
+			declare Integer	  ItemCount_InstancesX;
+			declare Real	  SizeYQuad;
+			declare Real	  SizeXQuad;
+			declare Real	  MarginY_Button;
+			declare Real	  MarginX_Button;
+			declare Real	  PosYFirstQuad;
+			declare Real	  PosXFirstQuad;
+			declare Vec3	  LockedPosition;
+			declare Vec2	  LockedSize;
+			declare CMlQuad  Quad_BG <=> (Page.GetFirstChild("Quad_BG")                                         as CMlQuad);
+			//SetSubSelector(_SubMenuIndex);
+
+			//declare ImgLock = GetLockImg(_SubMenuIndex);
+
+	
+			ItemCount_InstancesX       = {{{Count_InstancesX_Musics}}};
+			ItemCount_InstancesY       = {{{Count_InstancesY_Musics}}};
+			MarginX_Button             = {{{MarginX_Musics}}};
+			MarginY_Button             = {{{MarginY_Musics}}};
+			SizeXQuad                  = {{{SizeXQuad_Musics}}};
+			SizeYQuad                  = {{{SizeYQuad_Musics}}};
+			PosXFirstQuad              = {{{PosXFirstQuad_Musics}}};
+			PosYFirstQuad              = {{{PosYFirstQuad_Musics}}};
+			Quad_BG.ChangeImageUrl("{{{IMGBgMusics}}}");
+			Quad_BG.RelativePosition.Y = 76.6 - 1*{{{SM_SizeY}}};
+			LockedPosition             = <{{{-SizeXSubQuad}}}+0.0,-0.2,0.>;
+			LockedSize                 = <SizeXQuad,SizeYQuad+0.4>;
+			G_IndexMaxX                = {{{Count_InstancesX_Musics}}};
+			G_IndexMaxY                = {{{Count_InstancesY_Musics}}};
+			G_SubMenuIndexY            = 0;
+			G_SubMenuIndexX            = 0;
+
+			for(I, 0, {{{Count_InstancesY_SubMenuMax-1}}})
+			{
+				declare Real IndexY = I*1.;
+				declare Real PosnY = PosYFirstQuad - IndexY*SizeYQuad - IndexY*MarginY_Button*1.-0.1;
+				
+				for(J, 0, {{{Count_InstancesX_SubMenuMax-1}}})
+				{
+					declare Real IndexJ = J*1.;
+					declare Real PosnX = PosXFirstQuad+ IndexJ*SizeXQuad + IndexJ*MarginX_Button*1. + SizeXQuad/2;
+					
+					declare CMlFrame Frames_SubMenu         <=> (Page.GetFirstChild("Frame_SubMenu")                       as CMlFrame);
+					declare CMlFrame Frames_InstanceSubMenu <=> (Frames_SubMenu.GetFirstChild("Frame_InstanceSubMenu"^I^J) as CMlFrame);
+					declare CMlQuad  Quad_SubIconBase       <=> (Frames_InstanceSubMenu.GetFirstChild("Quad_SubIconBase")  as CMlQuad);
+					declare CMlQuad  Quad_SubNew            <=> (Frames_InstanceSubMenu.GetFirstChild("Quad_SubNew")       as CMlQuad);
+					declare CMlQuad  Quad_Lock              <=> (Frames_InstanceSubMenu.GetFirstChild("Quad_SubLock")      as CMlQuad);
+					declare CMlQuad  Quad_Activation    	<=> (Frames_InstanceSubMenu.GetFirstChild("Quad_Activation")      as CMlQuad);
+					
+					if(I <= ItemCount_InstancesY - 1 && J <= ItemCount_InstancesX - 1)
+					{
+						Frames_InstanceSubMenu.Show();
+						if(I >= 6 && J >= 1) Quad_SubIconBase.Hide();
+						//Quad_SubIconBase.Opacity             = 0.8;
+						Quad_SubIconBase.Size                  = <SizeXQuad,SizeYQuad+0.4>;
+						Frames_InstanceSubMenu.RelativePosition.X = PosnX;
+						Frames_InstanceSubMenu.RelativePosition.Y = PosnY;
+						
+						
+						Quad_Activation.Show();
+						Quad_Activation.Size             = LockedSize;
+						Quad_Activation.RelativePosition = LockedPosition;
+
+						if(IsUnlock(I, J))
+						{
+							Quad_Lock.Hide();
+							//Quad_SubIconBase.Show();
+							if(IsNew(I, J))
+							{
+								Quad_SubNew.Show();
+								Quad_SubNew.RelativePosition      = <{{{-SizeXSubQuad}}} + SizeXQuad/2.6, SizeYQuad/2.6, Quad_SubNew.RelativePosition.Z>;
+								Quad_SubNew.Size                  = <SizeXQuad/3.,SizeXQuad/3.>;
+							}
+							else
+							{
+								Quad_SubNew.Hide();
+							}
+						}
+						else
+						{
+							//Quad_Lock.ChangeImageUrl(ImgLock);
+							Quad_Lock.Show();
+							Quad_Lock.Size             = LockedSize;
+							Quad_Lock.RelativePosition = LockedPosition;
+							//Quad_SubIconBase.Hide();
+						}
+						
+					}
+					else
+					{
+						Frames_InstanceSubMenu.Hide();
+					}
+				}
+			}
+			UpdateIndexSub(G_SubMenuControlled, G_SubMenuIndexX, G_SubMenuIndexY);
+		}
+
+		Void UpdateEtat(Integer _I, Integer _J)
+		{
+			declare CMlFrame Frames_SubMenu         <=> (Page.GetFirstChild("Frame_SubMenu")                       as CMlFrame);
+			declare CMlFrame Frames_InstanceSubMenu <=> (Frames_SubMenu.GetFirstChild("Frame_InstanceSubMenu"^_I^_J) as CMlFrame);
+			declare CMlQuad  Quad_SubIconBase       <=> (Frames_InstanceSubMenu.GetFirstChild("Quad_SubIconBase")  as CMlQuad);
+			if(Frames_InstanceSubMenu == Null) return;
+			declare CMlQuad  Quad_Activation    	<=> (Frames_InstanceSubMenu.GetFirstChild("Quad_Activation")      as CMlQuad);
+			if(G_MusicsEtat[_I][_J] == 1)
+			{
+				Quad_Activation.Show();
+				Quad_Activation.BgColor= <0.,0.,0.>;
+				Quad_Activation.Opacity= 0.7;
+			}
+			else if(G_MusicsEtat[_I][_J] == 0)
+			{
+				//Quad_SubIconBase.Show();
+				Quad_SubIconBase.Hide();
+				Quad_Activation.Show();
+				Quad_Activation.BgColor= <0.,0.,0.>;
+				Quad_Activation.Opacity= 0.0; //Hack 1.0
+			}
+			else if(G_MusicsEtat[_I][_J] == 2)
+			{
+				Quad_Activation.Show();
+				Quad_Activation.BgColor= <0.,0.,0.>;
+				Quad_Activation.Opacity= 0.0;
+			}
+			else Quad_Activation.Hide();
+
+			UpdateInputButton(_J, _I);
+
+		}
+
+		Void LoadMusicsEtat()
+		{
+			declare Text[Integer]		Page_MusicsFileName		for Page;
+			declare Integer[Integer]	Page_MusicsGain		for Page;
+			declare Integer[Integer]	Page_MusicsEtat		for Page;
+			//declare Text[Integer]	Page_MusicsName			for Page;
+			//declare Text[Integer]	Page_MusicsLabel		for Page;
+			//declare Text[Integer]	Page_MusicsAuthor		for Page;
+			for(I, 0, {{{Count_InstancesY_Musics - 1}}})
+			{
+				G_MusicsEtat[I] = Integer[Integer];
+				for(J, 0, {{{Count_InstancesX_Musics - 1}}})
+				{
+					declare Integer Index = GetIndex(I, J);
+					
+					if(Page_MusicsEtat.existskey(Index))	G_MusicsEtat[I][J] = Page_MusicsEtat[Index];
+					else 	G_MusicsEtat[I][J] = 0;
+					UpdateEtat(I, J);
+				}
+			}
+			
+			UpdateIndexSub(G_SubMenuControlled, G_SubMenuIndexX, G_SubMenuIndexY);
+		}
+	
+		Void UpdateHelpersForPlatform(Integer _Platform) {
+			declare Text[] InputIds = ["Select"];
+			declare Text[] AdditionnalInputIds = ["FrameInstance_InputInfo0","FrameInstance_InputInfo1","FrameInstance_InputInfo2"];
+
+			declare CMlQuad  QuadInputIcon;
+			declare CMlFrame FrameInput;
+			for (I, 0, AdditionnalInputIds.count-1) {
+				FrameInput    <=> (Page.GetFirstChild(AdditionnalInputIds[I]) as CMlFrame);
+				for (J, 0, 2) {
+					QuadInputIcon <=> (FrameInput.GetFirstChild("Quad_Icon"^J) as CMlQuad);
+					if (J == _Platform)
+						QuadInputIcon.Show();
+					else
+						QuadInputIcon.Hide();
+				}
+			}
+		}
+
+		Void UpdateLabelLight(CMlControl _Control)
+		{
+			foreach(I => Button in LabelsButtons)
+			{
+				declare Label_LeftInput <=> (FrameButtons[I].GetFirstChild("Label_Name") 	  as CMlLabel);
+				//declare Boolean IsFocus  = ButtonSelected == Null && (I == 0 && Event.Control.ControlId == "ButtonInput_Sort" || I == 1 && Event.Control.ControlId == "ButtonInput_Cancel");
+				declare Boolean IsFocus  = False;
+				if (_Control == Button)
+				{
+					IsFocus = True;
+				}
+				else
+				{
+					IsFocus = False;
+				}
+				//log("Button["^Button^"]: " ^ IsFocus);
+				SetInputInfoTextSelected(Label_LeftInput, IsFocus);
+			}
+		}
+		
+		Void Input_Cancel()
+		{
+			if(G_MusicPlay != -1)
+			{
+				SetModePlay(False);
+				return;
+			}
+			Audio.LimitMusicVolumedB = 0.;
+			Audio.PlaySoundEvent("{{{SFX_UI_MusicEditor_Exit}}}", {{{Volumes::GetVolumedB("SFX_UI_MusicEditor_Exit")}}});
+			SendCustomEvent("SavePersistent", [""]);
+			SendCustomEvent("GotoPrevious", [""]);
+		}
+		
+		Void Input_Action1()
+		{
+			if(G_MusicsEtat[G_SubMenuIndexY][G_SubMenuIndexX] == C_EtatUnlock)
+			{
+				if(CanLock())
+				{
+					Audio.PlaySoundEvent("{{{SFX_UI_MusicEditor_RemoveToTrackList}}}", {{{Volumes::GetVolumedB("SFX_UI_MusicEditor_RemoveToTrackList")}}});
+					G_MusicsEtat[G_SubMenuIndexY][G_SubMenuIndexX] = C_EtatDontLike;
+					declare Integer Index = GetIndex();
+					SendCustomEvent("SetMusicEtat", [Index^"", C_EtatDontLike^""]);
+					
+				}
+			}
+			else
+			{
+				Audio.PlaySoundEvent("{{{SFX_UI_MusicEditor_AddToTrackList}}}", {{{Volumes::GetVolumedB("SFX_UI_MusicEditor_AddToTrackList")}}});
+				G_MusicsEtat[G_SubMenuIndexY][G_SubMenuIndexX] = C_EtatUnlock;
+				declare Integer Index = GetIndex();
+				SendCustomEvent("SetMusicEtat", [Index^"", C_EtatUnlock^""]);
+			}
+			UpdateEtat(G_SubMenuIndexY, G_SubMenuIndexX);
+		}
+
+		Void Input_Select()
+		{
+			declare Integer IndexSelect = GetIndex();
+			declare Text[Integer]		Page_MusicsFileName		for Page;
+			declare Integer[Integer]	Page_MusicsEtat			for Page;
+			
+			if(Page_MusicsEtat.existskey(IndexSelect))
+				if(Page_MusicsEtat[IndexSelect] == 0)
+					return;
+
+			declare Text Sound       = GetSoundCut();
+			declare Real SoundVolume = GetSoundCutVolume(Sound);
+			Audio.PlaySoundEvent(Sound, SoundVolume);
+
+			if(IndexSelect != G_MusicPlay) {
+				SetModePlay(True);
+				G_LastMusicChange = Now;
+			} else {
+				SetModePlay(False);	
+			}
+		}
+
+
+		main() {
+			{{{Prompter2::InjectInInit()}}}
+			{{{BuilderHelper::MLEnableMenuNavigationInputs()}}}
+			//LoadMusicsEtat();
+
+			G_LastMusicChange = Now;
+			
+			G_MusicPlay =-1;
+
+			declare CMlQuad  Quad_Vinyl <=> (Page.GetFirstChild("Quad_Vinyl") as CMlQuad);
+
+			declare CMlQuad  Garage2 <=> (Page.GetFirstChild("Garage2") as CMlQuad);
+			declare Real PositionBaseQuadGarage2 = Garage2.RelativePosition.Y;
+			declare CMlQuad  Garage3 <=> (Page.GetFirstChild("Garage3") as CMlQuad);
+			declare Real PositionBaseQuadGarage3 = Garage3.RelativePosition.Y;
+
+			declare CMlQuad  Quad_Selector <=> (Page.GetFirstChild("Quad_Selector") as CMlQuad);
+			Quad_Selector.Colorize = {{{Colors::GetColor("White")}}};
+
+			InitInputsInfo();
+			G_HideTime = -1;
+			
+			declare FrameInstance_InputInfo0 <=> (Page.MainFrame.GetFirstChild("FrameInstance_InputInfo0") 	as CMlFrame);
+			declare FrameInstance_InputInfo1 <=> (Page.MainFrame.GetFirstChild("FrameInstance_InputInfo1") 	as CMlFrame);
+			declare FrameInstance_InputInfo2 <=> (Page.MainFrame.GetFirstChild("FrameInstance_InputInfo2") 	as CMlFrame);
+			
+			
+			LabelsButtons.add((FrameInstance_InputInfo0.GetFirstChild("MouseInput_InputInfo") as CMlQuad));
+			FrameButtons.add(FrameInstance_InputInfo0);
+			LabelsButtons.add((FrameInstance_InputInfo1.GetFirstChild("MouseInput_InputInfo") as CMlQuad));
+			FrameButtons.add(FrameInstance_InputInfo1);
+			LabelsButtons.add((FrameInstance_InputInfo2.GetFirstChild("MouseInput_InputInfo") as CMlQuad));
+			FrameButtons.add(FrameInstance_InputInfo2);
+
+			declare Integer ActiveButtonPlatform = {{{Platform}}};
+
+			while(True) {
+				yield;
+				if(! PageIsVisible) continue;
+				LibManialink_AnimLoop();
+				
+				{{{Prompter2::InjectInLoop()}}}
+				{{{Selector::InsertInLoop()}}}
+				
+				// log(Now^">Here");
+				
+				/*
+				//décommenter ce code pour que la musique change automatiquement toutes les 2 mesures
+				if (G_Music != Null && (Now > (G_LastMusicChange + 8*G_Music.BeatDuration*1000)) && G_Music.IsPlaying)
+				{
+					G_LastMusicChange = Now;
+					declare Random = ML::Rand(0, 100);
+					if (Random < 5)
+					{
+						G_Music.EnableSegment("lap");
+					} else if (Random < 8) {
+						G_Music.EnableSegment("freewheel");
+					} else if (Random < 100) {
+						G_Music.EnableSegment("loop");
+						G_Music.NextVariant();
+					}
+				}
+				*/
+				
+				if(G_MusicPlay != -1)
+				{
+					declare Real ButtonSelectedSinVar2  = Now/36*4.;
+					Quad_Vinyl.RelativeRotation = ButtonSelectedSinVar2;
+					G_MusicTimePlay += 1;
+				}
+
+				if(G_Music != Null && G_Music.IsPlaying && G_Music.PlayCursor >= 28.8)
+				{
+					SetModePlay(False);
+				}
+
+				if(G_HideTime< Now && G_HideTime != -1)
+				{
+					G_HideTime = -1;
+					//SetModePlay(False);
+					SendCustomEvent("DetachPage", ["Musics", "Board"]);
+				}
+
+
+				declare Real ButtonSelectedSinVar2  = ML::Sin(Now * 0.001) * 3.;
+				Garage2.RelativePosition.Y = PositionBaseQuadGarage2 + ButtonSelectedSinVar2;
+				declare Real ButtonSelectedSinVar3  = ML::Sin((Now+1953) * 0.00065) * 2.;
+				Garage3.RelativePosition.Y = PositionBaseQuadGarage3 + ButtonSelectedSinVar3;
+
+				if (Input.PendingEvents.count != 0) {
+					declare Integer LastInputPlatform;
+					switch (Input.PendingEvents[Input.PendingEvents.count-1].Pad.Type) {
+						case CInputPad::EPadType::Keyboard 		: LastInputPlatform = {{{LibUIButtons::GetPlatform("PC")}}};
+						case CInputPad::EPadType::PlayStation 	: LastInputPlatform = {{{LibUIButtons::GetPlatform("PS4")}}};
+						case CInputPad::EPadType::XBox 			: LastInputPlatform = {{{LibUIButtons::GetPlatform("XB1")}}};
+						default 								: LastInputPlatform = {{{LibUIButtons::GetPlatform("PC")}}};
+					}
+					if (LastInputPlatform != ActiveButtonPlatform)
+					{
+						SendCustomEvent("SetActiveButtonPlaform", ["Musics", TL::ToText(LastInputPlatform)]);
+					}
+				}
+
+				foreach(Event in PendingEvents) {
+					switch(Event.Type) {
+
+						case CMlEvent::Type::MenuNavigation: {
+							if(G_LockInput + 150 > Now) continue;
+							G_LockInput = Now;
+							switch(Event.MenuNavAction) {
+								case CMlEvent::EMenuNavAction::Up : {
+									if(!CanCurseurMove(G_SubMenuIndexX, G_SubMenuIndexY - 1)) continue;
+									Audio.PlaySoundEvent("{{{SFX_UI_MusicEditor_Cursor}}}", {{{Volumes::GetVolumedB("SFX_UI_MusicEditor_Cursor")}}});
+									UpdateIndexSub(G_SubMenuControlled, G_SubMenuIndexX, G_SubMenuIndexY - 1);
+								}
+								case CMlEvent::EMenuNavAction::Down : {
+									if(!CanCurseurMove(G_SubMenuIndexX, G_SubMenuIndexY + 1)) continue;
+									Audio.PlaySoundEvent("{{{SFX_UI_MusicEditor_Cursor}}}", {{{Volumes::GetVolumedB("SFX_UI_MusicEditor_Cursor")}}});
+									UpdateIndexSub(G_SubMenuControlled, G_SubMenuIndexX, G_SubMenuIndexY + 1);
+								}
+								case CMlEvent::EMenuNavAction::Left : {
+									if(!CanCurseurMove(G_SubMenuIndexX - 1, G_SubMenuIndexY)) continue;
+									Audio.PlaySoundEvent("{{{SFX_UI_MusicEditor_Cursor}}}", {{{Volumes::GetVolumedB("SFX_UI_MusicEditor_Cursor")}}});
+									UpdateIndexSub(G_SubMenuControlled, G_SubMenuIndexX - 1, G_SubMenuIndexY);
+								}
+								case CMlEvent::EMenuNavAction::Right : {
+									if(!CanCurseurMove(G_SubMenuIndexX + 1, G_SubMenuIndexY)) continue;
+									Audio.PlaySoundEvent("{{{SFX_UI_MusicEditor_Cursor}}}", {{{Volumes::GetVolumedB("SFX_UI_MusicEditor_Cursor")}}});
+									UpdateIndexSub(G_SubMenuControlled, G_SubMenuIndexX + 1, G_SubMenuIndexY);
+								}
+								case CMlEvent::EMenuNavAction::Action1 : {
+									Input_Action1();
+									
+								}
+								case CMlEvent::EMenuNavAction::Action2 : {
+									//rien
+								}
+								case CMlEvent::EMenuNavAction::Cancel : {
+									Input_Cancel();
+									
+								}
+								case CMlEvent::EMenuNavAction::AppMenu : {
+									if(G_MusicPlay != -1)
+									{
+										SetModePlay(False);
+										continue;
+									}
+									Audio.LimitMusicVolumedB = 0.;
+									Audio.PlaySoundEvent("{{{SFX_UI_MusicEditor_Exit}}}", {{{Volumes::GetVolumedB("SFX_UI_MusicEditor_Exit")}}});
+									SendCustomEvent("SavePersistent", [""]);
+									SendCustomEvent("GotoPrevious", [""]);
+								}
+								case CMlEvent::EMenuNavAction::Select : {
+									Input_Select();
+									
+								}
+							}
+						}
+						
+						case CMlEvent::Type::MouseClick: {
+							declare Text[] InputId = TL::Split("_", Event.ControlId);
+							if (InputId.count < 2 || InputId[0] != "MouseInput")
+								continue;
+							
+							if(InputId[1] == "InputInfo")
+							{
+								foreach(I => Button in LabelsButtons)
+								{
+									if(Button == Event.Control)
+									{
+										switch(I)
+										{
+											case 0: Input_Cancel();
+											case 1: Input_Select();
+											case 2: Input_Action1();
+										}
+									}
+								}
+
+								continue;
+							}
+							switch (InputId[1]) {
+								case "Track" : {
+
+									declare Text[] Position = TL::Split(":", InputId[2]);
+									declare Integer IndexY = TL::ToInteger(Position[0]);
+									declare Integer IndexX = TL::ToInteger(Position[1]);
+									log("Here");
+									if(G_MusicPlay != -1)
+									{
+										SetModePlay(False);	
+										continue;
+									}
+									if (IndexX != G_SubMenuIndexX || IndexY != G_SubMenuIndexY)
+									{
+										if(!CanCurseurMove(IndexX, IndexY ))
+											continue;
+										Audio.PlaySoundEvent("{{{SFX_UI_MusicEditor_Cursor}}}", {{{Volumes::GetVolumedB("SFX_UI_MusicEditor_Cursor")}}});
+										UpdateIndexSub(G_SubMenuControlled, IndexX, IndexY);
+									}
+									declare Integer IndexSelect = GetIndex();
+									declare Text[Integer]		Page_MusicsFileName		for Page;
+									declare Integer[Integer]	Page_MusicsEtat			for Page;
+									
+									if(Page_MusicsEtat.existskey(IndexSelect))
+										if(Page_MusicsEtat[IndexSelect] == 0)
+											return;
+
+
+									declare Text Sound       = GetSoundCut();
+									declare Real SoundVolume = GetSoundCutVolume(Sound);
+									Audio.PlaySoundEvent(Sound, SoundVolume);
+
+									log("IndexSelect["^IndexSelect^"] | G_MusicPlay["^G_MusicPlay^"] ");
+									if(IndexSelect != G_MusicPlay) {
+										SetModePlay(True);
+										G_LastMusicChange = Now;
+									} else {
+										SetModePlay(False);	
+									}
+								}
+								case "InputInfo" : {
+									declare Integer InputInfoId = TL::ToInteger(InputId[2]);
+									switch (InputInfoId) {
+										case 0 : {
+											if(G_MusicPlay != -1)
+											{
+												SetModePlay(False);
+												continue;
+											}
+											Audio.LimitMusicVolumedB = 0.;
+											Audio.PlaySoundEvent("{{{SFX_UI_MusicEditor_Exit}}}", {{{Volumes::GetVolumedB("SFX_UI_MusicEditor_Exit")}}});
+											SendCustomEvent("SavePersistent", [""]);
+											SendCustomEvent("GotoPrevious", [""]);
+										}
+										case 1 : {
+											declare Integer IndexSelect = GetIndex();
+											declare Text[Integer]		Page_MusicsFileName		for Page;
+											declare Integer[Integer]	Page_MusicsEtat			for Page;
+											
+											if(Page_MusicsEtat.existskey(IndexSelect))
+												if(Page_MusicsEtat[IndexSelect] == 0)
+													return;
+
+											declare Text Sound       = GetSoundCut();
+											declare Real SoundVolume = GetSoundCutVolume(Sound);
+											Audio.PlaySoundEvent(Sound, SoundVolume);
+
+											if(IndexSelect != G_MusicPlay) {
+												SetModePlay(True);
+												G_LastMusicChange = Now;
+											} else {
+												SetModePlay(False);	
+											}
+										}
+										case 2 : {
+											if(G_MusicsEtat[G_SubMenuIndexY][G_SubMenuIndexX] == C_EtatUnlock)
+											{
+												Audio.PlaySoundEvent("{{{SFX_UI_MusicEditor_RemoveToTrackList}}}", {{{Volumes::GetVolumedB("SFX_UI_MusicEditor_RemoveToTrackList")}}});
+												G_MusicsEtat[G_SubMenuIndexY][G_SubMenuIndexX] = C_EtatDontLike;
+												declare Integer Index = GetIndex();
+												SendCustomEvent("SetMusicEtat", [Index^"", C_EtatDontLike^""]);
+											}
+											else
+											{
+												Audio.PlaySoundEvent("{{{SFX_UI_MusicEditor_AddToTrackList}}}", {{{Volumes::GetVolumedB("SFX_UI_MusicEditor_AddToTrackList")}}});
+												G_MusicsEtat[G_SubMenuIndexY][G_SubMenuIndexX] = C_EtatUnlock;
+												declare Integer Index = GetIndex();
+												SendCustomEvent("SetMusicEtat", [Index^"", C_EtatUnlock^""]);
+											}
+											UpdateEtat(G_SubMenuIndexY, G_SubMenuIndexX);
+										}
+									}
+								}
+							}
+						}
+						
+						case CMlEvent::Type::MouseOver: {
+							UpdateLabelLight(Event.Control);
+							declare Text[] InputId = TL::Split("_", Event.ControlId);
+							if (InputId.count < 2 || InputId[0] != "MouseInput")
+								continue;
+							
+							switch (InputId[1]) {
+								case "Track" : {
+									declare Text[] Position = TL::Split(":", InputId[2]);
+									declare Integer IndexY = TL::ToInteger(Position[0]);
+									declare Integer IndexX = TL::ToInteger(Position[1]);
+									if (IndexX != G_SubMenuIndexX || IndexY != G_SubMenuIndexY)
+									{
+										if(!CanCurseurMove(IndexX, IndexY ))
+											continue;
+										Audio.PlaySoundEvent("{{{SFX_UI_MusicEditor_Cursor}}}", {{{Volumes::GetVolumedB("SFX_UI_MusicEditor_Cursor")}}});
+										UpdateIndexSub(G_SubMenuControlled, IndexX, IndexY);
+									}
+								}
+							}
+						}
+						
+						case CMlEvent::Type::PluginCustomEvent: {
+							
+							switch(Event.PluginCustomEventType) {
+								case "Show" : {
+									EnableMenuNavigation(True,False,Null,1);
+									G_LockInput              = Now;
+									Audio.LimitMusicVolumedB = -100.;
+									Audio.PlaySoundEvent("{{{SFX_UI_MusicEditor_Enter}}}", {{{Volumes::GetVolumedB("SFX_UI_MusicEditor_Enter")}}});
+									Quad_Vinyl.Size = <0., 0.>;
+									SetModePlay(False);
+									{{{_ShowAnim}}}
+									CreateSubMenu();
+									declare CMlFrame Frame_SubMenu   <=> (Page.GetFirstChild("Frame_SubMenu")   as CMlFrame);
+									Frame_SubMenu.Visible   = True;
+									sleep(100);
+									SendCustomEvent("GetMusicsUnlock", [""]);
+									SendCustomEvent("GetActiveButtonPlatform", ["Musics"]);
+								}
+								case "SentAllInfo" : {
+									LoadMusicsEtat();
+								}
+								case "Hide" : {
+									{{{_HideAnim}}}
+									G_HideTime = Now + 300;
+								}
+								case "StopMusic" : {
+									if(G_MusicPlay != -1)
+									{
+										SetModePlay(False);
+									}
+								}
+								case "SetActiveButtonPlatform" : {
+									ActiveButtonPlatform = TL::ToInteger(Event.CustomEventData[0]);
+									UpdateHelpersForPlatform(ActiveButtonPlatform);
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	--></script>
+	""";
+	
+	return MLText;
+}

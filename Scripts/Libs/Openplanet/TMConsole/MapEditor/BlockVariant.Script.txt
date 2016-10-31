@@ -1,0 +1,74 @@
+/** 
+ * Block variant library
+ */
+
+#Const Version		"2015-11-25"
+#Const ScriptName	"BlockVariant.Script.txt"
+
+#Include "Libs/Openplanet/TMConsole/MapEditor/Macroblock.Script.txt" as Macroblock
+
+// ---------------------------------- //
+// Globales
+// ---------------------------------- //
+
+
+// ---------------------------------- //
+// Functions
+// ---------------------------------- //
+// ---------------------------------- //
+// Private
+// ---------------------------------- //
+
+
+// ---------------------------------- //
+// Public
+// ---------------------------------- //
+// ---------------------------------- //
+/** Return the version number of the script
+ *
+ *	@return						The version number of the script
+ */
+Text GetScriptVersion() {
+	return Version;
+}
+
+// ---------------------------------- //
+/** Return the name of the script
+ *
+ *	@return						The name of the script
+ */
+Text GetScriptName() {
+	return ScriptName;
+}
+
+// ---------------------------------- //
+/** Get the variant identifier needed to place a macroblock on this block
+ *
+ *	@param	_Block				The block
+ *
+ *	@return						The variant identifier
+ */
+Integer GetVariant(CBlock _Block) {
+	if (_Block == Null) return Macroblock::VariantAir();
+	switch (_Block.BlockModel.Name) {
+		case "Forest": return Macroblock::VariantForest();
+		case "ForestHill1": return Macroblock::VariantForest();
+		case "GrassToForest": return Macroblock::VariantForestEdge();
+		case "Sea": return Macroblock::VariantWater();
+	}
+	
+	if (_Block.BlockModel.IsTerrain) return Macroblock::VariantGround();
+	
+	return Macroblock::VariantNull();
+}
+
+// ---------------------------------- //
+/** Get the variant identifier needed to place a macroblock at this coordinates
+ *
+ *	@param	_Coord				The coordinates
+ *
+ *	@return						The variant identifier
+ */
+Integer GetVariant(Int3 _Coord) {
+	return GetVariant(GetBlock(_Coord));
+}

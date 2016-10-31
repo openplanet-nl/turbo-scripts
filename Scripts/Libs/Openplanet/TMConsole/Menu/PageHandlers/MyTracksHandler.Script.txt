@@ -1,0 +1,379 @@
+#Include "TextLib"			as TextLib
+#Include "Libs/Openplanet/TMConsole/Menu/MenuLayers.Script.txt"								as Layers
+#Include "Libs/Openplanet/TMConsole/Logger.Script.txt"										as Logger
+#Include "Libs/Openplanet/TMConsole/Live/LiveHelpers.Script.txt" 							as LiveHelpers
+
+#Include "Libs/Openplanet/TMConsole/Menu/ModeName.Script.txt"								as ModeName
+#Include "Libs/Openplanet/TMConsole/PopUpManager.Script.txt"									as PopUpManager
+
+#Include "Libs/Openplanet/TMConsole/Live/LiveAuth.Script.txt"								as LiveAuth
+
+#Include "Libs/Openplanet/TMConsole/Menu/Controller/ModeController.Script.txt" 				as ModeController
+#Include "Libs/Openplanet/TMConsole/Menu/IngameAccessController.Script.txt"					as IngameAccessController
+#Include "Libs/Openplanet/TMConsole/Menu/Controller/TrackController.Script.txt"				as TrackController
+#Include "Libs/Openplanet/TMConsole/MenuColor.Script.txt"		   							as MenuColor
+#Include "Libs/Openplanet/TMConsole/TMTEnvironments.Script.txt"		   						as TMTEnvironments
+#Include "Libs/Openplanet/TMConsole/Menu/Controller/PrivilegeController.Script.txt"			as PrivilegeController
+#Include "Libs/Openplanet/TMConsole/Menu/Controller/OnlinePrivilegeController.Script.txt"	as OnlinePrivilegeController
+#Include "Libs/Openplanet/TMConsole/Menu/PageHandlers/ConnectionHandler.Script.txt"			as ConnectionHandler
+#Include "Libs/Openplanet/TMConsole/Menu/LoadingScreen.Script.txt"							as LoadingScreen
+
+declare Boolean G_MustUploadTrack;
+declare Text	G_TrackToUpload;
+declare Boolean	G_IsPrivateUpload;
+
+declare Boolean G_MustDeleteTrack;
+declare Text	G_TrackToDelete;
+
+declare Boolean	G_MustEditTrack;
+declare Boolean G_CheckingDiskSpace;
+declare Text	G_TrackToEdit;
+declare Text	G_EditorPluginToUse;
+
+Void WarnNotEnoughParams(CMlAppEvent _Event) {
+	Logger::Warn("[Menucontroller] event "^_Event.CustomEventType^": not enough params ["^_Event.CustomEventData^"]");
+}
+
+Void RequestUploadedTracks(Integer _Offset, Integer _Length) {
+	TrackController::GetUploadedTracks("MyTracks", _Offset, _Length);
+}
+
+Void AfterEditor(Text _EditorPluginScript)
+{
+	declare Text CustomResultType = TitleFlow.CustomResultType;
+	while(CustomResultType == "PlayNow") {
+		declare MapPath = TitleFlow.CustomResultData[0];
+		declare Text ModeSelect     = TitleFlow.CustomResultData[1];
+		declare Text ScriptModeName = ModeName::GetModeScript(ModeSelect);
+
+		//UIManager.HoldLoadingScreen = True;
+		wait(TitleFlow.IsReady);
+		LoadingScreen::SetLoadingType(0);
+		TitleFlow.PlayMap(MapPath, ScriptModeName, "");
+
+		wait(TitleFlow.IsReady);
+		// HACK EG : à remettre
+		// TitleFlow.EditMap(MapPath, _EditorPluginScript);
+		
+		wait(TitleFlow.IsReady);
+		CustomResultType = TitleFlow.CustomResultType;
+	}
+	
+	declare CUILayer MyTracks = Layers::Get("MyTracks");
+	LayerCustomEvent(MyTracks, "RefreshTracks", Text[]);
+	
+	//recharger le datamgr
+	//WorkshopController::ReloadLayer();
+	
+	//LayerCustomEvent(MyTracks, "MSConnectionStatus", [TextLib::ToText(ConnectionHandler::CheckIsConnected())]);
+	LayerCustomEvent(MyTracks, "OnExitEditTrack", Text[]);
+}
+
+Void EditTrack(Text _MapPath, Text _EditorPluginScript, Text _Arg)
+{
+	// HACK EG : à remettre
+	wait(TitleFlow.IsReady); //&& DataMgr.Ready
+	LoadingScreen::SetLoadingType(1);
+	TitleFlow.EditMap(_MapPath, _EditorPluginScript, _Arg);
+	wait(TitleFlow.IsReady);
+	AfterEditor(_EditorPluginScript);
+}
+
+Void EditTrack(Text _MapPath, Text _EditorPluginScript)
+{
+	declare persistent Integer Pers_SettingLightsState for UserMgr.MainUser = 0;
+	declare Text Args;
+	declare Integer ShadowQuality;
+	switch(Pers_SettingLightsState)
+	{
+		case 0: ShadowQuality   = 1;
+		case 1: ShadowQuality   = 2;
+		case 2: ShadowQuality   = 0;
+		default : ShadowQuality = 1;
+	}
+	Args = """
+	<mode_script_settings>
+		<setting name="S_ShadowQuality" value="{{{ShadowQuality}}}" type="integer"/>
+	</mode_script_settings>
+	""";
+	
+	EditTrack(_MapPath, _EditorPluginScript, Args);
+
+}
+
+Void UploadTrack()
+{
+	G_MustUploadTrack = False;
+	wait(DataMgr.Ready);
+	declare Text Body = "{\"private\":";
+	if (G_IsPrivateUpload)
+		Body ^= "true";
+	else
+		Body ^= "false";
+	Body ^= "}";
+	
+	DataMgr.UploadUserFile(LiveHelpers::GetAPIUrl()^"me/maps", G_TrackToUpload, Body, LiveAuth::Auth_GetLinearizedHeader());
+	wait(DataMgr.Ready);
+	if (DataMgr.LatestResult == CDataMgr::EResult::Finished_Ok)
+	{
+		DataMgr.DeleteFile(G_TrackToUpload);
+		wait(DataMgr.Ready);
+	}
+	G_TrackToUpload = "";
+	declare CUILayer MyTracks = Layers::Get("MyTracks");
+	LayerCustomEvent(MyTracks, "TrackUploaded", Text[]);
+}
+
+Void DeleteTrack() {
+	G_MustDeleteTrack = False;
+	wait(DataMgr.Ready);
+	DataMgr.DeleteFile(G_TrackToDelete);
+	wait(DataMgr.Ready);
+	G_TrackToDelete = "";
+	declare CUILayer MyTracks = Layers::Get("MyTracks");
+	LayerCustomEvent(MyTracks, "TrackDeleted", Text[]);	
+}
+
+Void Loop() {
+	if (G_MustUploadTrack)
+		UploadTrack();
+	if (G_MustDeleteTrack)
+		DeleteTrack();
+	if (G_MustEditTrack && DataMgr.Ready)
+	{
+		if (G_CheckingDiskSpace)
+		{
+			if (DataMgr.HasFreeSpaceForNewMap)
+				EditTrack(G_TrackToEdit, G_EditorPluginToUse);
+			else {
+				PopUpManager::AddPopUp2(0, _("You have no more space to edit tracks. You must delete or upload some tracks before editing some."), "", False);
+				declare CUILayer MyTracks = Layers::Get("MyTracks");
+				LayerCustomEvent(MyTracks, "OnExitEditTrack", Text[]);	
+			}
+			G_MustEditTrack = False;
+		} else {
+			G_CheckingDiskSpace = True;
+			DataMgr.QueryHasFreeSpaceForNewMap(DataMgr.MenuUserId);
+		}
+	}
+		
+	foreach(Event in PendingEvents) {
+		if(Event.Type != CMlAppEvent::EType::LayerCustomEvent) continue;
+		switch(Event.CustomEventType) {
+			case "RequestMyTracks" : {
+				RequestUploadedTracks(TextLib::ToInteger(Event.CustomEventData[0]), TextLib::ToInteger(Event.CustomEventData[1]));
+			}
+			case "PopUpUpload" : {
+				declare Text TitleColor = TextLib::ColorToText(MenuColor::GetMenuColor(3));
+				//L16N Title of a ask Yes/No window before uploading a track
+				declare Text PopUpTitle = _("Upload track ?");
+				//L16N Text of a ask Yes/No window before uploading a track
+				declare Text PopUpText = _("You won't be able to edit nor to remove it from the cloud. You won't be able to make a public track private.");
+				PopUpManager::AddAskYesNo(PopUpText, PopUpTitle, TitleColor, "MyTracksUpload", _("Public Upload"), _("Private Upload"), True);
+				
+			}
+			case "MyTracksUpload_AskYesNo" : {
+				if (Event.CustomEventData.count < 1)
+					WarnNotEnoughParams(Event);
+				else {
+					declare CUILayer MyTracks = Layers::Get("MyTracks");
+					LayerCustomEvent(MyTracks, "UploadTrack", [Event.CustomEventData[0]]);
+				}
+			}
+			case "PopUpPublicize" : {
+				declare Text TitleColor = TextLib::ColorToText(MenuColor::GetMenuColor(3));
+				//L16N Title of a ask Yes/No window before publicizing a track
+				declare Text PopUpTitle = _("Make track public ?");
+				//L16N Text of a ask Yes/No window before publicizing a track
+				declare Text PopUpText = _("Do you want to upload this track ? You won't be able to make it private again.");
+				PopUpManager::AddAskYesNo2(PopUpText, PopUpTitle, TitleColor, "MyTracksPublicize" );
+			}
+			case "MyTracksPublicize_AskYesNo" : {
+				if (Event.CustomEventData.count < 1)
+					WarnNotEnoughParams(Event);
+				else {
+					if (Event.CustomEventData[0] == "True")
+					{
+						declare CUILayer MyTracks = Layers::Get("MyTracks");
+						LayerCustomEvent(MyTracks, "PublicizeTrack", [Event.CustomEventData[0]]);
+					}
+				}
+			}
+			
+			case "PopUpDelete" : {
+				declare Text TitleColor = TextLib::ColorToText(MenuColor::GetMenuColor(3));
+				//L16N Title of a ask Yes/No window before deleting a track
+				declare Text PopUpTitle = _("Delete track ?");
+				declare Text PopUpText;
+				
+				if (Event.CustomEventData[0] == "true")
+				{
+					//L16N Text of a ask Yes/No window before deleting a track
+					PopUpText = _("Do you want to delete the track? Local data will be deleted, but it's online counterpart will remain accessible.");
+				} else {
+					//L16N Text of a ask Yes/No window before deleting a track
+					PopUpText = _("Do you want to delete the track?");
+				}
+				PopUpManager::AddAskYesNo2(PopUpText, PopUpTitle, TitleColor, "MyTracksDelete");
+			}
+			case "PopUpEditCopy" : {
+				declare Text TitleColor = TextLib::ColorToText(MenuColor::GetMenuColor(3));
+				G_TrackToEdit 		= Event.CustomEventData[0];
+				G_EditorPluginToUse = Event.CustomEventData[1];
+				//L16N Title of a ask Yes/No window before copy and edit a track
+				declare Text PopUpTitle = _("Edit a Copy ?");
+				declare Text PopUpText = _("Do you want to edit a copy?");
+				PopUpManager::AddAskYesNo2(PopUpText, PopUpTitle, TitleColor, "MyTracksEditCopy");
+			}
+			case "MyTracksDelete_AskYesNo" : {
+				if (Event.CustomEventData.count < 1)
+					WarnNotEnoughParams(Event);
+				else {
+					if (Event.CustomEventData[0] == "True")
+					{
+						declare CUILayer MyTracks = Layers::Get("MyTracks");
+						LayerCustomEvent(MyTracks, "DeleteTrack", [Event.CustomEventData[0]]);
+					}
+				}
+			}
+
+			case "MyTracksEditCopy_AskYesNo" : {
+				if (Event.CustomEventData[0] == "True")
+				{
+					declare persistent Integer Pers_SettingLightsState for UserMgr.MainUser = 0;
+					declare Integer ShadowQuality;
+					switch(Pers_SettingLightsState)
+					{
+						case 0: ShadowQuality   = 1;
+						case 1: ShadowQuality   = 2;
+						case 2: ShadowQuality   = 0;
+						default : ShadowQuality = 1;
+					}
+
+					declare Args = """
+						<mode_script_settings>
+							<setting name="S_ShadowQuality" value="{{{ShadowQuality}}}" type="integer"/>
+							<setting name="S_CreateCopy" value="1" type="boolean"/>
+						</mode_script_settings>
+						""";
+
+					EditTrack(G_TrackToEdit, G_EditorPluginToUse, Args);
+				}
+			}
+			case "PopUpUploadFailed" : {
+				declare Text Message = TextLib::GetTranslatedText(_("Error: the track could not be uploaded."));
+				Message ^= " "^TextLib::GetTranslatedText(_("The connection to the Trackmania Servers has been lost."))^" "^TextLib::GetTranslatedText(_("Please try again later or visit support.ubi.com"));
+				PopUpManager::AddPopUp2(0, Message, "", False);
+			}
+			case "PopUpUploadSucceeded" : {
+				PopUpManager::AddPopUp2(0, _("Upload succeeded !"), "", False);
+			}
+			case "PopUpDeleteFailed" : {
+				PopUpManager::AddPopUp2(0, _("|track deletion|Deletion failed."), "", False);
+			}
+			case "PopUpDeleteSucceeded" : {
+				PopUpManager::AddPopUp2(0, _("|track deletion|Deletion succeeded!"), "", False);
+			}
+			case "PopUpTrackPublicized" : {
+				PopUpManager::AddPopUp2(0, _("Track made public!"), "", False);
+			}
+			case "GetMode" : {
+				declare Text Page = Event.CustomEventData[0];
+				ModeController::SendModeName(Page);
+			}
+			case "UploadUserFile" : {
+				if (Event.CustomEventData.count < 2) {
+					WarnNotEnoughParams(Event);
+					continue;
+				}
+				G_MustUploadTrack = True;
+				G_TrackToUpload = Event.CustomEventData[0];
+				if (Event.CustomEventData[1] == "True")
+					G_IsPrivateUpload = True;
+				else
+					G_IsPrivateUpload = False;
+			}
+			case "DeleteUserFile" : {
+				G_MustDeleteTrack = True;
+				G_TrackToDelete = Event.CustomEventData[0];
+			}
+			case "PlayTrack" : {
+				if (!PrivilegeController::IsTrial(True)) {
+					if (Event.CustomEventData.count < 2) {
+						WarnNotEnoughParams(Event);
+						continue;
+					}
+										
+					declare Text MapPath       = Event.CustomEventData[0];
+					declare Text MapEnviroText = Event.CustomEventData[1];
+					
+					declare Integer MapEnviro   = TMTEnvironments::GetEnviroIndex(MapEnviroText);	
+					declare Text Mode        = ModeController::GetModeName();
+					declare Text MultiMode   = ModeController::GetModeMultiScreen();
+					declare Text SettingsXml = "";
+					
+					if(PrivilegeController::CanIGotoEnviro(MapEnviro))
+						IngameAccessController::PlayTrack(MapPath, Mode, SettingsXml, MultiMode, True, MapEnviro, True);
+				}
+				declare CUILayer MyTracks = Layers::Get("MyTracks");
+				LayerCustomEvent(MyTracks, "OnExitPlayTrack", Text[]);
+			}
+			case "EditTrack" : {
+				if(Event.CustomEventData.count < 3) {
+					WarnNotEnoughParams(Event);
+					continue;
+				}
+				
+				declare Text TrackStyle    = Event.CustomEventData[3];
+				if(TrackStyle == "Random")
+				{
+					if (PrivilegeController::IsTrial(True))
+					{	
+						declare CUILayer MyTracks = Layers::Get("MyTracks");
+						LayerCustomEvent(MyTracks, "OnExitEditTrack", Text[]);	
+						continue;
+					}
+				}
+				
+				declare Text MapEnviro = Event.CustomEventData[2];
+				if(PrivilegeController::CanIGotoEnviro(MapEnviro)) {
+					G_MustEditTrack = True;
+					G_CheckingDiskSpace = False;
+					G_TrackToEdit 		= Event.CustomEventData[0];
+					G_EditorPluginToUse = Event.CustomEventData[1];
+				} else {
+					declare CUILayer MyTracks = Layers::Get("MyTracks");
+					LayerCustomEvent(MyTracks, "OnExitEditTrack", Text[]);	
+				}
+			}
+			case "MyTracks_Check_UploadUgc" : {
+				OnlinePrivilegeController::Check_UploadUgc("MyTracks");
+			}
+			case "MyTracks_CheckMasterServerConnection" : {
+				declare CUILayer MyTracks = Layers::Get("MyTracks");
+				LayerCustomEvent(MyTracks, "MSConnectionStatus", [TextLib::ToText(ConnectionHandler::CheckIsConnected())]);
+			}
+			case "RequestPublicizeTrack" : {
+				TrackController::PublicizeTrack("MyTracks", Event.CustomEventData[0]);
+			}
+			case "RequestUploadedMapsUids" : {
+				TrackController::RequestUploadedMapsUids("MyTracks");
+			}
+			case "IsUbisoftClub" : {
+				declare CUILayer MyTracks = Layers::Get("MyTracks");
+				if (PrivilegeController::IsUbisoftClub(True, "MyTracks"))
+					LayerCustomEvent(MyTracks, "IsUbisoftClub", Text[]);
+				else
+					LayerCustomEvent(MyTracks, "IsNotUbisoftClubOrIsTrial", Text[]);
+			}
+			case "MyTracks_IsTrial" : {
+				declare CUILayer MyTracks = Layers::Get("MyTracks");
+				if (!PrivilegeController::IsTrial(True))
+					LayerCustomEvent(MyTracks, "IsNotTrial", Text[]);
+				else
+					LayerCustomEvent(MyTracks, "IsNotUbisoftClubOrIsTrial", Text[]);
+			}
+			case "RequestReconnection" : ConnectionHandler::AskConnectionToMasterServer("MyTracks", Event.CustomEventData[0]);
+		}
+	}
+}

@@ -1,0 +1,390 @@
+/** 
+ * History of macroblocks
+ */
+
+#Const Version		"2015-03-12"
+#Const ScriptName	"History.Script.txt"
+
+// ---------------------------------- //
+// Constants
+// ---------------------------------- //
+#Const C_LibHistory_MaxSteps		100
+#Const C_LibHistory_Action_Null		-1
+#Const C_LibHistory_Action_Add		0
+#Const C_LibHistory_Action_Remove	1
+
+// ---------------------------------- //
+// Globales
+// ---------------------------------- //
+declare Integer[Text] G_LibHistory_MaxSteps; ///< Maximum number of steps in the history
+declare Integer[Text] G_LibHistory_Cursor;	///< Cursor position in the history
+declare Integer[][Text] G_LibHistory_Action; ///< Action used
+declare Ident[][Text] G_LibHistory_MacroblockModelId; ///< Id of the macroblock
+declare Int3[][Text] G_LibHistory_MacroblockModelCoord; ///< Coordinates of the macroblock
+declare CEditorPlugin::CardinalDirections[][Text] G_LibHistory_MacroblockModelDir; ///< Direction of the macroblock
+
+// ---------------------------------- //
+// Functions
+// ---------------------------------- //
+// ---------------------------------- // 
+// Private
+// ---------------------------------- //
+// ---------------------------------- //
+/** Get a unique history id
+ *
+ *	@return						The unique history id
+ */
+Text Private_GetUniqueHistoryId() {
+	declare LibHistory_UniqueId_PrevNow for This = 0;
+	declare LibHistory_UniqueId_Count for This = 0;
+	
+	if (LibHistory_UniqueId_PrevNow != Now) {
+		LibHistory_UniqueId_Count = 0;
+	} else {
+		LibHistory_UniqueId_Count += 1;
+	}
+	LibHistory_UniqueId_PrevNow = Now;
+	
+	return LibHistory_UniqueId_PrevNow^"_"^LibHistory_UniqueId_Count;
+}
+
+// ---------------------------------- //
+/** Check if an history exists
+ *
+ *	@param	_Id 				Id of the history to check
+ *
+ *	@return						True if the history exists, False otherwise
+ */
+Boolean Private_HistoryExists(Text _Id) {
+	return G_LibHistory_Cursor.existskey(_Id);
+}
+
+// ---------------------------------- //
+/** Remove the content of the history after a given cursor position
+ *
+ *	@param	_Id 				Id of the history to update
+ */
+Void Private_HistorySplice(Text _Id) {
+	if (!Private_HistoryExists(_Id)) return;
+	declare Cursor = G_LibHistory_Cursor[_Id];
+	if (Cursor >= G_LibHistory_Action[_Id].count - 1) return;
+	
+	declare Target = Cursor + 1;
+	
+	while (G_LibHistory_Action[_Id].count > Target) {
+		declare KeyToRemove = G_LibHistory_Action[_Id].count - 1;
+		declare Boolean Removed;
+		Removed = G_LibHistory_Action[_Id].removekey(KeyToRemove);
+		Removed = G_LibHistory_MacroblockModelId[_Id].removekey(KeyToRemove);
+		Removed = G_LibHistory_MacroblockModelCoord[_Id].removekey(KeyToRemove);
+		Removed = G_LibHistory_MacroblockModelDir[_Id].removekey(KeyToRemove);
+	}
+	
+	G_LibHistory_Cursor[_Id] = G_LibHistory_Action[_Id].count - 1;
+}
+
+// ---------------------------------- //
+/** Remove steps that are over the maximum steps limit
+ *
+ *	@param	_Id					Id of the history to check
+ */
+Void Private_RemoveExcess(Text _Id) {
+	if (!Private_HistoryExists(_Id)) return;
+	
+	// Remove first step if we hit the maximum save step
+	while (G_LibHistory_Action[_Id].count > G_LibHistory_MaxSteps[_Id]) {
+		declare Boolean Removed;
+		Removed = G_LibHistory_Action[_Id].removekey(0);
+		Removed = G_LibHistory_MacroblockModelId[_Id].removekey(0);
+		Removed = G_LibHistory_MacroblockModelCoord[_Id].removekey(0);
+		Removed = G_LibHistory_MacroblockModelDir[_Id].removekey(0);
+	}
+}
+
+// ---------------------------------- //
+/** Get the cursor position of an history
+ *
+ *	@param	_Id					Id of the history to check
+ *
+ *	@return						The cursor position
+ */
+Integer Private_GetCursor(Text _Id) {
+	if (!Private_HistoryExists(_Id)) return -1;
+	
+	return G_LibHistory_Cursor[_Id];
+}
+
+// ---------------------------------- //
+// Public
+// ---------------------------------- //
+// ---------------------------------- //
+/** Return the version number of the script
+ *
+ *	@return						The version number of the script
+ */
+Text GetScriptVersion() {
+	return Version;
+}
+
+// ---------------------------------- //
+/** Return the name of the script
+ *
+ *	@return						The name of the script
+ */
+Text GetScriptName() {
+	return ScriptName;
+}
+
+// ---------------------------------- //
+/** Return the actions constants
+ *
+ *	@return						The action constant
+ */
+Integer Action_Null() { return C_LibHistory_Action_Null; }
+Integer Action_Add() { return C_LibHistory_Action_Add; }
+Integer Action_Remove() { return C_LibHistory_Action_Remove; }
+
+// ---------------------------------- //
+/** Get all the histories ids
+ *
+ *	@return						A list of all existing histories ids
+ */
+Text[] List() {
+	declare Ids = Text[];
+	
+	foreach (Id => Cursor in G_LibHistory_Cursor) {
+		Ids.add(Id);
+	}
+	
+	return Ids;
+}
+
+// ---------------------------------- //
+/** Create a new history with a specific id
+ *	If the id is already used, the previous history will be overwrited
+ *
+ *	@param	_NewId				The id of the history
+ */
+Void New(Text _NewId) {
+	G_LibHistory_MaxSteps[_NewId] = C_LibHistory_MaxSteps;
+	G_LibHistory_Cursor[_NewId] = -1;
+	G_LibHistory_Action[_NewId] = Integer[];
+	G_LibHistory_MacroblockModelId[_NewId] = Ident[];
+	G_LibHistory_MacroblockModelCoord[_NewId] = Int3[];
+	G_LibHistory_MacroblockModelDir[_NewId] = CEditorPlugin::CardinalDirections[];
+}
+
+// ---------------------------------- //
+/** Create a new history
+ *
+ *	@return						The id of the new history
+ */
+Text New() {
+	declare Id = Private_GetUniqueHistoryId();
+	
+	New(Id);
+	
+	return Id;
+}
+
+// ---------------------------------- //
+/** Delete an history
+ *
+ *	@param	_Id					Id of the history to delete
+ */
+Void Delete(Text _Id) {
+	if (!Private_HistoryExists(_Id)) return;
+
+	declare Boolean Removed;
+	Removed = G_LibHistory_MaxSteps.removekey(_Id);
+	Removed = G_LibHistory_Cursor.removekey(_Id);
+	Removed = G_LibHistory_Action.removekey(_Id);
+	Removed = G_LibHistory_MacroblockModelId.removekey(_Id);
+	Removed = G_LibHistory_MacroblockModelCoord.removekey(_Id);
+	Removed = G_LibHistory_MacroblockModelDir.removekey(_Id);
+}
+
+// ---------------------------------- //
+/// Delete all histories
+Void DeleteAll() {
+	G_LibHistory_MaxSteps.clear();
+	G_LibHistory_Cursor.clear();
+	G_LibHistory_Action.clear();
+	G_LibHistory_MacroblockModelId.clear();
+	G_LibHistory_MacroblockModelCoord.clear();
+	G_LibHistory_MacroblockModelDir.clear();
+}
+
+// ---------------------------------- //
+/** Save a new state in the history
+ *
+ *	@param	_Id						Id of the history to save
+ *	@param	_Action					The action to save
+ *	@param	_MacroblockModelId		The id of the macroblock
+ *	@param	_MacroblockModelCoord	The coordinates of the macroblock
+ *	@param	_MacroblockModelDir		The direction of the macroblock
+ */
+Void Save(Text _Id, Integer _Action, Ident _MacroblockModelId, Int3 _MacroblockModelCoord, CEditorPlugin::CardinalDirections _MacroblockModelDir) {
+	if (!Private_HistoryExists(_Id)) return;
+	if (_Action != C_LibHistory_Action_Add && _Action != C_LibHistory_Action_Remove) return;
+	
+	// Overwrite the history after the cursor
+	Private_HistorySplice(_Id);
+	
+	G_LibHistory_Action[_Id].add(_Action);
+	G_LibHistory_MacroblockModelId[_Id].add(_MacroblockModelId);
+	G_LibHistory_MacroblockModelCoord[_Id].add(_MacroblockModelCoord);
+	G_LibHistory_MacroblockModelDir[_Id].add(_MacroblockModelDir);
+	
+	Private_RemoveExcess(_Id);
+	
+	G_LibHistory_Cursor[_Id] = G_LibHistory_Action[_Id].count - 1;
+}
+
+// ---------------------------------- //
+/** Clear all states from the history
+ *
+ *	@param	_Id					Id of the history to clear
+ */
+Void Clear(Text _Id) {
+	if (!Private_HistoryExists(_Id)) return;
+	
+	G_LibHistory_Cursor[_Id] = -1;
+	G_LibHistory_Action[_Id] = Integer[];
+	G_LibHistory_MacroblockModelId[_Id] = Ident[];
+	G_LibHistory_MacroblockModelCoord[_Id] = Int3[];
+	G_LibHistory_MacroblockModelDir[_Id] = CEditorPlugin::CardinalDirections[];
+}
+
+// ---------------------------------- //
+/** Get the action at the cursor
+ *
+ *	@param	_Id					Id of the history to check
+ *
+ *	@return						The action
+ */
+Integer GetAction(Text _Id) {
+	declare Cursor = Private_GetCursor(_Id);
+	if (Cursor < 0) return C_LibHistory_Action_Null;
+	
+	return G_LibHistory_Action[_Id][Cursor];
+}
+
+// ---------------------------------- //
+/** Get the macroblock model id at the cursor
+ *
+ *	@param	_Id					Id of the history to check
+ *
+ *	@return						The macroblock model id
+ */
+Ident GetMacroblockModelId(Text _Id) {
+	declare Cursor = Private_GetCursor(_Id);
+	if (Cursor < 0) return NullId;
+	
+	return G_LibHistory_MacroblockModelId[_Id][Cursor];
+}
+
+// ---------------------------------- //
+/** Get the macroblock model coordinates at the cursor
+ *
+ *	@param	_Id					Id of the history to check
+ *
+ *	@return						The macroblock model coordinates
+ */
+Int3 GetMacroblockModelCoord(Text _Id) {
+	declare Cursor = Private_GetCursor(_Id);
+	if (Cursor < 0) return <0, 0, 0>;
+	
+	return G_LibHistory_MacroblockModelCoord[_Id][Cursor];
+}
+
+// ---------------------------------- //
+/** Get the macroblock model direction at the cursor
+ *
+ *	@param	_Id					Id of the history to check
+ *
+ *	@return						The macroblock model direction
+ */
+CEditorPlugin::CardinalDirections GetMacroblockModelDir(Text _Id) {
+	declare Cursor = Private_GetCursor(_Id);
+	if (Cursor < 0) return CEditorPlugin::CardinalDirections::North;
+	
+	return G_LibHistory_MacroblockModelDir[_Id][Cursor];
+}
+
+// ---------------------------------- //
+/** Move the cursor backward in the history
+ *
+ *	@param	_Id					Id of the history to update
+ *
+ *	@return						True if undo succeed, False otherwise
+ */
+Boolean Undo(Text _Id) {
+	declare Cursor = Private_GetCursor(_Id);
+	if (Cursor < 0) return False;
+	
+	Cursor -= 1;
+	G_LibHistory_Cursor[_Id] = Cursor;
+	
+	return True;
+}
+
+// ---------------------------------- //
+/** Move the cursor forward in the history
+ *
+ *	@param	_Id					Id of the history to update
+ *
+ *	@return						True if redo succeed, False otherwise
+ */
+Boolean Redo(Text _Id) {
+	if (!Private_HistoryExists(_Id)) return False;
+	
+	declare Cursor = Private_GetCursor(_Id);
+	if (Cursor >= G_LibHistory_Action[_Id].count - 1) return False;
+	
+	Cursor += 1;
+	G_LibHistory_Cursor[_Id] = Cursor;
+	
+	return True;
+}
+
+// ---------------------------------- //
+/** Set the maximum number of steps of an history
+ *	If the history has more steps than the new maximum
+ *	then remove the first steps
+ *
+ *	@param	_Id					Id of the history to update
+ *	@param	_MaxSteps			Maximum number of steps
+ */
+Void SetMaxSteps(Text _Id, Integer _MaxSteps) {
+	if (!Private_HistoryExists(_Id)) return;
+	
+	G_LibHistory_MaxSteps[_Id] = _MaxSteps;
+	
+	Private_RemoveExcess(_Id);
+}
+
+// ---------------------------------- //
+/** Get the maximum number of steps of an history
+ *
+ *	@param	_Id					Id of the history to check
+ *
+ *	@return						The maximum number of steps of the history
+ */
+Integer GetMaxSteps(Text _Id) {
+	if (!Private_HistoryExists(_Id)) return 0;
+	
+	return G_LibHistory_MaxSteps[_Id];
+}
+
+// ---------------------------------- //
+/// Unload the library
+Void Unload() {
+	DeleteAll();
+}
+
+// ---------------------------------- //
+/// Load the library
+Void Load() {
+	Unload();
+}

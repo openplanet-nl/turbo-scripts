@@ -1,0 +1,62 @@
+#Include "TextLib"			as TextLib
+#Include "Libs/Openplanet/TMConsole/Logger.Script.txt"										as Logger
+#Include "Libs/Openplanet/TMConsole/Menu/Controller/MusicsController.Script.txt"				as MusicsController
+#Include "Libs/Openplanet/TMConsole/Menu/LibMusics.Script.txt"								as LibMusics
+	
+
+declare Boolean G_LoadPersistent;
+
+Void WarnNotEnoughParams(CMlAppEvent _Event) {
+	Logger::Warn("[MusicHandler] event "^_Event.CustomEventType^": not enough params ["^_Event.CustomEventData^"]");
+}
+
+Void Load(){
+	G_LoadPersistent = False;
+}
+
+Void Loop() {
+	if(UserMgr.MainUser == Null) return;
+
+	if(!G_LoadPersistent && UserMgr.MainUser.PersistentIsReady){
+		declare persistent Integer[Integer]	Pers_MusicsEtat2 for UserMgr.MainUser;
+		declare Integer MusicsCount = LibMusics::Get_AllMusics().count;
+		for(I,0, MusicsCount -1)
+		{
+			if(!Pers_MusicsEtat2.existskey(I))
+			{
+				Pers_MusicsEtat2[I] = 2;
+			}
+		}
+		G_LoadPersistent = True;
+	}
+
+	foreach(Event in PendingEvents) {
+		if(Event.Type != CMlAppEvent::EType::LayerCustomEvent) continue;
+		switch(Event.CustomEventType) {
+			case "GetMusicsUnlock" : {
+				//log("GetMusicsUnlock(): " ^ MusicsController::GetMusicsUnlock());
+				MusicsController::GetMusicsEtatToUI("Musics");
+			}
+			case "SetMusicsActivate" : {
+				/*
+				if(Event.CustomEventData.count < 0) {
+					WarnNotEnoughParams(Event);
+					continue;
+				}
+				declare Text EditedPlaylistId = Event.CustomEventData[0];
+				//EditedPlaylistId              = G_EditedPlaylistId;
+				//PlaylistController::SetEditedPlaylist(G_EditedPlaylistId);
+				*/
+			}
+			case "SetMusicEtat" : {
+				if(Event.CustomEventData.count < 1) {
+					WarnNotEnoughParams(Event);
+					continue;
+				}
+				declare Integer Index = TextLib::ToInteger(Event.CustomEventData[0]);
+				declare Integer Etat = TextLib::ToInteger(Event.CustomEventData[1]);
+				MusicsController::SetMusicEtat(Index, Etat);
+			}
+		}
+	}
+}

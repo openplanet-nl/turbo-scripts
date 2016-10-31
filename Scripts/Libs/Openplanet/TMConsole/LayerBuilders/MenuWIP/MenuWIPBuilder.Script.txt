@@ -1,0 +1,288 @@
+
+// file://Media/Manialinks/Nadeo/TMConsole/MainMenuArnaud.Script.txt
+#Include "Libs/Openplanet/Manialink2.Script.txt"						as Manialink
+#Include "Libs/Openplanet/TMConsole/PanelParameter.Script.txt"		as PanelParameter
+
+
+
+Text CreateMLText(Text _ShowAnim, Text _HideAnim, Integer _Count_InstancesY, Integer _Count_InstancesX, Real _MarginY_Button, Real _MarginX_Button, Real _SizeX_Total, Real _SizeY_Total, Real _PosXFirstQuad, Real _PosYFirstQuad, Text[Integer][Integer] _MenuName, Text[Integer][Integer] _MenuGotoPage, Text _LabelTitle, Text _ImgBackground, Text[] _LayerToDetach) {
+
+	//declare Text IMGPopupBg           = C_ImgBase^"popup-bg.dds";
+	
+
+	declare Text    LabelTitle       = _LabelTitle;
+	declare Text    ImgBackground    = _ImgBackground;
+	declare Integer Count_InstancesY = _Count_InstancesY;
+	declare Integer Count_InstancesX = _Count_InstancesX;
+	declare Real	MarginY_Button   = _MarginY_Button;
+	declare Real	MarginX_Button   = _MarginX_Button;
+	declare Real	SizeX_Total      = _SizeX_Total;
+	declare Real	SizeY_Total      = _SizeY_Total;
+	declare Real	SizeXQuad        = (SizeX_Total - Count_InstancesX*MarginX_Button) / Count_InstancesX;
+	declare Real	SizeYQuad        = (SizeY_Total - Count_InstancesY*MarginY_Button) / Count_InstancesY;
+	declare Real	PosXFirstQuad    = _PosXFirstQuad;
+	declare Real	PosYFirstQuad    = _PosYFirstQuad;
+	
+	declare Text[Integer][Integer]	MenuName     = _MenuName;
+	declare Text[Integer][Integer]	MenuGotoPage = _MenuGotoPage;
+
+	
+
+	declare Text MLText = """
+	
+	<framemodel id="Frame_Bouton">
+		<label id="Label_Name" halign="center" valign="center" bgcolor="fff" text="Trackmania" posn="0. 0.5 2" opacity="1." sizen="{{{SizeXQuad-2}}}"/>
+		<quad halign="center" valign="center" sizen="{{{SizeXQuad}}} {{{SizeYQuad}}}" bgcolor="009" id="Quad_Icon" />
+	</framemodel>
+	
+
+	<frame id="Frame_All" posn="0 0 0" hidden="0">
+		<quad halign="center" valign="center" sizen="{{{SizeXQuad}}} {{{SizeYQuad}}}" bgcolor="099" id="Quad_Selector" posn="0 0 6" />
+		<quad  halign="center" valign="center" sizen="220 124" id="Quad_ImgBackground" posn="-40 0 4" image="{{{ImgBackground}}}" />
+		<label halign="left"   valign="center" text="{{{LabelTitle}}}" id="Quad_Selector" posn="-150 80 6" />
+
+	""";
+
+	//MLText^="""{{{XmlBuilder::GetXml()}}}""";
+
+	for(I,0,Count_InstancesY-1)
+	{
+		declare Real IndexY = I*1.;
+		declare Real PosnY = PosYFirstQuad - IndexY*SizeYQuad - IndexY*MarginY_Button*1. - MarginY_Button/2.;
+		
+		for(J,0,Count_InstancesX-1)
+		{
+			declare Real IndexJ = J*1.;
+			declare Real PosnX = PosXFirstQuad + IndexJ*SizeXQuad + IndexJ*MarginX_Button*1. + MarginX_Button/2.;
+			MLText^="""<frameinstance modelid="Frame_Bouton" posn="{{{PosnX}}} {{{PosnY}}} 5." id="Frame_Instance{{{I}}}{{{J}}}" />""";
+		}
+	}
+	MLText^="""
+	</frame>
+
+	<script><!--
+		
+		#Const C_TimeTransitionPage2 {{{PanelParameter::GetTimeTransitionPage2()}}}
+		#Const C_TimeStartClip2      {{{PanelParameter::GetTimeStartClip2()}}}
+		#Const C_TimeAnimClip2       {{{PanelParameter::GetTimeAnimClip2()}}}
+
+		{{{Manialink::GetIncludes()}}}
+		{{{Manialink::Load()}}}
+		
+		declare Integer						G_PrevIndexSelectY;
+		declare Integer						G_IndexSelectY;
+		declare Integer						G_IndexSelectX;
+		declare Integer						G_LockInput;
+		declare Text[Integer][Integer]		G_NextPage;
+		declare Integer 					G_HideTime;
+		declare Text[] 						G_LayerToDetach;
+
+		Void UpdateSelection()
+		{
+			declare CMlFrame NewFrame_Instance <=> (Page.GetFirstChild("Frame_Instance"^G_IndexSelectY^G_IndexSelectX) as CMlFrame);
+			declare CMlQuad  Quad_Selector     <=> (Page.GetFirstChild("Quad_Selector")                                as CMlQuad);
+			Quad_Selector.RelativePosition.X    = NewFrame_Instance.RelativePosition.X;
+			Quad_Selector.RelativePosition.Y    = NewFrame_Instance.RelativePosition.Y;
+			
+			if(G_PrevIndexSelectY != G_IndexSelectY)
+			{
+				declare CMlFrame PrevFrame_Instance <=> (Page.GetFirstChild("Frame_Instance"^G_PrevIndexSelectY) as CMlFrame);
+				//declare CMlLabel NewLabel_Name       <=> (NewFrame_Instance.GetFirstChild("Label_Name")          as CMlLabel);
+
+				//NewLabel_Name.TextColor = <0.4, 0.4, 1.0>;
+
+				if(PrevFrame_Instance != Null)
+				{
+					//declare CMlLabel PrevLabel_Name       <=> (PrevFrame_Instance.GetFirstChild("Label_Name")          as CMlLabel);
+					//PrevLabel_Name.TextColor = <1., 1., 1.>;
+				}
+
+				G_PrevIndexSelectY = G_IndexSelectY;
+			}
+		}
+		
+		Void Init()
+		{
+			G_IndexSelectX = 0;
+			G_IndexSelectY = 0;
+
+			declare Text[Integer][Integer] Bouttons;
+			""";
+
+			for(I, 0, Count_InstancesY - 1)
+			{
+				MLText ^="""
+			Bouttons[{{{I}}}] = Text[Integer];
+			G_NextPage[{{{I}}}] = Text[Integer];
+				""";
+				if(MenuName.count <= 0) continue;
+				for(J, 0, MenuName[I].count - 1)
+				{
+					MLText ^="""
+			Bouttons[{{{I}}}][{{{J}}}]   = "{{{MenuName[I][J]}}}";
+			G_NextPage[{{{I}}}][{{{J}}}] = "{{{MenuGotoPage[I][J]}}}";
+					""";
+				}
+			}
+
+
+			MLText ^="""
+
+			for(I, 0, {{{Count_InstancesY - 1}}})
+			{
+				for(J, 0, {{{Count_InstancesX - 1}}})
+				{
+					declare CMlFrame Frame_Instance <=> (Page.GetFirstChild("Frame_Instance"^I^J) as CMlFrame);
+					declare CMlLabel Label_Name     <=> (Frame_Instance.GetFirstChild("Label_Name")         as CMlLabel);
+					if(!Bouttons.existskey(I))    continue;
+					if(!Bouttons[I].existskey(J)) continue;
+
+					Label_Name.Value = Bouttons[I][J];
+				}
+			}
+
+
+			UpdateSelection();
+		}
+
+		Void HidePage(Text _NextPage)
+		{
+
+			if(_NextPage == "Main")
+			{
+				//StartSetClipPosition_Frame_Content(<320., 0.>, <0., 0.>, C_TimeStartClip2, C_TimeAnimClip2);
+				G_HideTime  = Now + C_TimeTransitionPage2;
+				G_LockInput = Now + C_TimeTransitionPage2;
+			}
+			else
+			{
+				SendCustomEvent("DetachPage", G_LayerToDetach);
+			}
+		}
+
+		Void ShowPage(Text _PreviousPage)
+		{
+			//declare CMlFrame  Frame_All     <=> (Page.GetFirstChild("Frame_All") as CMlFrame);
+			//declare CMlFrame  Frame_Content <=> (Page.GetFirstChild("Frame_Content") as CMlFrame);
+			//declare Vec3 OldFramePos         = <Frame_All.RelativePosition.X, -200. ,Frame_All.RelativePosition.Z>;
+			//declare Vec3 NewFramePos         = <Frame_All.RelativePosition.X, 0., Frame_All.RelativePosition.Z>;
+			Init();
+		}
+
+		Void Preload()
+		{
+			
+			PreloadImage("{{{ImgBackground}}}");
+		}
+
+		main() {
+
+			""";
+
+
+			foreach(Layer in _LayerToDetach)
+			{
+				MLText ^="""
+				G_LayerToDetach.add("{{{Layer}}}");
+				""";
+			}
+
+			MLText ^= """
+			
+			Preload();
+			Init();
+			//HACK - A enlever
+			EnableMenuNavigation(True,False,Null,1);
+			//HACKEND
+
+			G_HideTime = -1;
+
+			while(True) {
+				yield;
+				if(! PageIsVisible) continue;
+				LibManialink_AnimLoop();
+
+
+				if(G_HideTime <= Now && G_HideTime != -1)
+				{
+					G_HideTime = -1;
+					SendCustomEvent("DetachPage", G_LayerToDetach);
+				
+				}
+
+				foreach(Event in PendingEvents) {
+					switch(Event.Type) {
+
+						case CMlEvent::Type::PluginCustomEvent: {
+							declare Page = Event.CustomEventData[0];
+							switch(Event.PluginCustomEventType) {
+								case "Show" : {
+									ShowPage(Page);
+									{{{_ShowAnim}}}
+								}
+								case "Hide" : {
+									{{{_HideAnim}}}
+									HidePage(Page);
+								}
+							}
+						}
+						case CMlEvent::Type::MenuNavigation: {
+							if(G_LockInput + 50 > Now) continue;
+							G_LockInput = Now; // Sécurité pour éviter le double input
+							switch(Event.MenuNavAction) {
+								case CMlEvent::EMenuNavAction::Up : {
+									if(G_IndexSelectY > 0)
+									{
+										G_IndexSelectY -= 1;
+										UpdateSelection();
+									}
+								}
+								case CMlEvent::EMenuNavAction::Down : {
+									if(G_IndexSelectY < {{{Count_InstancesY - 1}}})
+									{
+										G_IndexSelectY += 1;
+										UpdateSelection();
+									}
+								}
+								case CMlEvent::EMenuNavAction::Left : {
+									if(G_IndexSelectX > 0)
+									{
+										G_IndexSelectX -= 1;
+										UpdateSelection();
+									}
+								}
+								case CMlEvent::EMenuNavAction::Right : {
+									if(G_IndexSelectX < {{{Count_InstancesX - 1}}})
+									{
+										G_IndexSelectX += 1;
+										UpdateSelection();
+									}
+								}
+								case CMlEvent::EMenuNavAction::Select : {
+
+									if(!G_NextPage.existskey(G_IndexSelectY))                 break;
+									if(!G_NextPage[G_IndexSelectY].existskey(G_IndexSelectX)) break;
+									if(G_NextPage[G_IndexSelectY][G_IndexSelectX] == "") break;
+									log("GoToPage: " ^ G_NextPage[G_IndexSelectY][G_IndexSelectX]);
+									SendCustomEvent("GotoPage", [G_NextPage[G_IndexSelectY][G_IndexSelectX]]);
+								}
+								case CMlEvent::EMenuNavAction::Cancel : {
+									SendCustomEvent("GotoPrevious", [""]);
+								}
+								case CMlEvent::EMenuNavAction::AppMenu : {
+									SendCustomEvent("GotoPrevious", [""]);
+								}
+							}
+							break;
+						}
+					}
+				}
+			}	
+		}
+		
+
+	--></script>
+	""";
+	
+	return MLText;
+}

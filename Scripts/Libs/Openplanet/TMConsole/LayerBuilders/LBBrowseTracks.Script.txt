@@ -1,0 +1,2064 @@
+
+#Include "TextLib" 											as TextLib
+#Include "Libs/Openplanet/Manialink2.Script.txt"					as Manialink
+#Include "Libs/Openplanet/TMConsole/BuilderHelper.Script.txt"	as BuilderHelper
+#Include "Libs/Openplanet/TMConsole/MapsManager.Script.txt"		as MapsManager
+#Include "Libs/Openplanet/UIPadButtons.Script.txt"				as LibUIButtons
+#Include "Libs/Openplanet/TMConsole/Selector.Script.txt"			as Selector
+#Include "Libs/Openplanet/TMConsole/Colors.Script.txt"		    as Colors
+#Include "Libs/Openplanet/TMConsole/Menu/ModeName.Script.txt"	as ModeName
+#Include "Libs/Openplanet/TMConsole/PanelParameter.Script.txt"	as PanelParameter
+#Include "Libs/Openplanet/TMConsole/LibAudio.Script.txt"			as LibAudio
+#Include "Libs/Openplanet/TMConsole/FontManager.Script.txt"		as Font
+#Include "Libs/Openplanet/TMConsole/Volumes.Script.txt"			as Volumes
+#Include "Libs/Openplanet/TMConsole/Prompter2.Script.txt"		as Prompter2
+#Include "Libs/Openplanet/TMConsole/Menu/MenuText.Script.txt"	as MenuText
+#Include "Libs/Openplanet/TMConsole/MenuColor.Script.txt"		as MenuColor
+#Include "Libs/Openplanet/TMConsole/Menu/MenuVersion.Script.txt"	as MenuVersion
+
+#Const C_ImgBase	  		 "file://Media/Manialinks/Nadeo/TMConsole/Images/"
+#Const C_ImgBase2	  		 "file://Media/Images/TMConsole/Ingame/"
+#Const C_VideoBase			 "file://Media/Manialinks/Nadeo/TMConsole/Video/"
+
+#Const C_SoundBase			 "file://Media/Sounds/TMConsole/Ambiances/"
+#Const EditorPlugin	  		 "PartyEditor2.Script.txt"
+#Const C_NbDifficulty 		 5
+#Const C_NbEnviro     		 4
+#Const C_SizePanelX          4.8
+#Const C_SizePanelY          4.
+
+Text Build(Text _ShowAnim, Text _HideAnim) {
+	
+	declare Text SoundMove              = LibAudio::GetSound("Move");
+	declare Text SoundBackToMenu        = LibAudio::GetSound("FinishLine");
+	declare Text SoundPageBack       	= LibAudio::GetSound("PageBack");
+	declare Text SoundStartRace      	= LibAudio::GetSound("StartRace");
+	declare Text SoundToLeft      		= LibAudio::GetSound("MapToLeft");
+	declare Text SoundToRight      		= LibAudio::GetSound("MapToRight");
+
+	declare Text SoundAmbianceCanyon        = C_SoundBase ^ "AMB_MenuTracks_Canyon.ogg";
+	declare Text SoundAmbianceValley        = C_SoundBase ^ "AMB_MenuTracks_Valley.ogg";
+	declare Text SoundAmbianceLagoon        = C_SoundBase ^ "AMB_MenuTracks_Lagoon.ogg";
+	declare Text SoundAmbianceStadium       = C_SoundBase ^ "AMB_MenuTracks_Stadium.ogg";
+	
+	declare Text IMGQuadTrackAdd        = C_ImgBase^"board-tile-add.dds";
+	declare Text IMGQuadFolderOpen      = C_ImgBase^"board-tile-open.dds";
+	declare Text IMGQuadFolderClosed    = C_ImgBase^"board-tile-open-off.dds";
+
+	declare Text IMGMedalNoMedal        = C_ImgBase2^"medal-empty.dds";
+	declare Text IMGMedalBronze         = C_ImgBase2^"medal-bronze.dds";
+	declare Text IMGMedalSilver         = C_ImgBase2^"medal-silver.dds";
+	declare Text IMGMedalGold           = C_ImgBase2^"medal-gold.dds";
+	declare Text IMGMedalBronzeJoker    = C_ImgBase2^"medal-bronze-joker.dds";
+	declare Text IMGMedalSilverJoker    = C_ImgBase2^"medal-silver-joker.dds";
+	declare Text IMGMedalGoldJoker      = C_ImgBase2^"medal-gold-joker.dds";
+	declare Text IMGMedalTrackmaster    = C_ImgBase2^"medal-author.dds";
+	
+	
+	declare Text IMGEnvCanyon           = C_VideoBase ^ "BrowseTracks_Enviro/tmce_billboard_video_track_select_Canyon.webm";
+	declare Text IMGEnvValley           = C_VideoBase ^ "BrowseTracks_Enviro/tmce_billboard_video_track_select_Valley.webm";
+	declare Text IMGEnvLagoon           = C_VideoBase ^ "BrowseTracks_Enviro/tmce_billboard_video_track_select_Lagoon.webm";
+	declare Text IMGEnvStadium          = C_VideoBase ^ "BrowseTracks_Enviro/tmce_billboard_video_track_select_Stadium.webm";
+	declare Text ImgLogoCanyon          = C_ImgBase   ^ "Logos/logo_canyon_menu.dds";
+	declare Text ImgLogoValley          = C_ImgBase   ^ "Logos/logo_valley_menu.dds";
+	declare Text ImgLogoLagoon          = C_ImgBase   ^ "Logos/logo_lagoon_menu.dds";
+	declare Text ImgLogoStadium         = C_ImgBase   ^ "Logos/logo_stadium_menu.dds";
+	
+	declare Text IMGLocked              = C_ImgBase^"locked-2x2.dds";
+	declare Text IMGGrille              = C_ImgBase^"Grille_BrowseTracks.dds";
+	declare Text IMGMultiLap            = C_ImgBase^"Multilap.png";
+	
+	
+	declare Integer NumberOfYShow       = 2;
+	declare Integer NumberOfXShow       = 5;
+	declare Integer Count_InstancesX    = NumberOfXShow*(C_NbDifficulty-1);
+	declare Integer Count_InstancesY    = 10;
+	declare Real 	MarginY_Button      = 0.4;
+	declare Real 	MarginX_Button      = 0.45;
+	
+	declare Real	SizeX_Total         = PanelParameter::GetSizePanelX(C_SizePanelX)*(C_NbDifficulty);
+	declare Real	SizeY_Total         = PanelParameter::GetSizePanelY(C_SizePanelY)*(C_NbDifficulty);
+	declare Real	SizeX_Screen        = PanelParameter::GetSizePanelX();
+	declare Real	SizeY_Screen        = PanelParameter::GetOneScreenSizeY();
+	declare Real	SizeX_QuadWait      = PanelParameter::GetSizePanelX(C_SizePanelX+1.2);
+	declare Real	SizeY_QuadWait      = PanelParameter::GetSizePanelY(C_SizePanelY)+23;
+
+	
+	declare Real	SizeXQuad           = (SizeX_Total - Count_InstancesX*MarginX_Button) / Count_InstancesX;
+	declare Real	SizeYQuad           = (SizeY_Total - Count_InstancesY*MarginY_Button) / Count_InstancesY;
+	declare Real	PosnXLabel          = SizeXQuad/2. - 17;
+	declare Real	PosnYLabel          = -5.0;
+	declare Real	PosXFirstQuad       = -120.5;
+	declare Real	PosYFirstQuad       = 26.0;
+	declare Integer NumberOfQuadCreateX = Count_InstancesX;
+	declare Integer NumberOfQuadCreateY = Count_InstancesY;
+	
+	declare Text 	IMGAction2          = LibUIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Action2);
+	declare Text 	IMGAction1          = LibUIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Action1);
+	declare Integer ActualVersion       = MenuVersion::GetVersion();
+
+	declare Text[]    Prompt_Id         = ["Prompt_Env_0", "Prompt_Env_1", "Prompt_Env_2", "Prompt_Env_3"];
+	//declare Vec3[]    Prompt_Position = [<0., -17.0, 4.>, <0., -17.0, 0.>, <0., -17.0, 4.>, <0., -17.0, 4.>];
+	declare Integer   Prompt_TextSize   =  4;
+	declare Text      Prompt_TextFont   =  Font::GetFontName("Main");
+	declare Vec2      Prompt_ClipSizen2 = <64.5, 80.>;
+	
+	
+	declare Text ColorTextYellow       = TextLib::ColorToText(Colors::GetColor("Yellow"));
+	declare Text ColorTextWhite        = TextLib::ColorToText(Colors::GetColor("White"));
+	
+	
+	
+	declare Text MLText = """
+	
+	<framemodel id="Frame_Button">
+		<quad halign="left" valign="top" sizen="{{{SizeXQuad+0.5}}} {{{SizeYQuad+0.5}}}" image="{{{IMGLocked}}}" posn="-0.5 -0.3 6" opacity="1.0" bgcolor="000" id="Quad_Locked" hidden="1"/>
+		<label halign="left" valign="center"  textfont="{{{Font::GetFontName("NumberBig")}}}" posn="{{{PosnXLabel}}} {{{PosnYLabel}}} 2"
+		 id="Label_Name" text="" hidden="0" sizen="{{{SizeXQuad/2. + 3.}}}"/>
+		<label halign="right" valign="center"  textfont="{{{Font::GetFontName("Main")}}}" posn="{{{PosnXLabel}}} {{{PosnYLabel+1.5}}} 2"
+		 text="#" textsize="6" hidden="0" sizen="{{{SizeXQuad-5.}}}"/>
+		<quad halign="left" valign="top" sizen="{{{SizeXQuad}}} {{{SizeYQuad}}}" bgcolor="000" id="G_Quad_Icon"/>
+		<quad halign="left" valign="top" sizen="{{{SizeXQuad}}} 11" bgcolor="000" opacity="1.0" posn="0 0 2"/>
+		<quad halign="right" valign="top" sizen="11.0 11.0" posn="{{{SizeYQuad+1}}} 0 5" image="{{{IMGMedalNoMedal}}}" bgcolor="0009" id="Quad_Medal"/>
+
+		<quad halign="right" valign="top" sizen="{{{SizeXQuad}}} 11.0" posn="{{{SizeYQuad+3.}}} -11.0 5" image="{{{IMGMultiLap}}}" id="Quad_Multilap" keepratio="Fit" opacity="1.0"/>
+	</framemodel>
+	
+		
+	<frame id="Frame_AllBrowseTrack" posn="0 0 2" hidden="1">
+		<quad posn="0 0 50" sizen="320 180" id="Quad_Black" bgcolor="000" halign="center" opacity="1." valign="center" hidden="1"/>
+		<quad posn="{{{PosXFirstQuad-1}}} {{{PosYFirstQuad+22}}} 23" sizen="{{{SizeX_QuadWait+1}}} {{{SizeY_QuadWait}}}" id="Quad_Wait" bgcolor="000" halign="left" valign="up"
+		 opacity="1."/>
+
+		<frame id="Frame_ButtonAction2" posn="-45 0 2" hidden="1">
+			<quad halign="center" valign="bottom" keepratio="Fit"
+			sizen="8 8" image="{{{IMGAction2}}}" posn="0 -88.5 6"
+			/>
+			<label halign="right" valign="center" style="TextButtonNav" posn="-5 -84 6" 
+			id="Label_Action2" textsize="4" text="Editer Track" textcolor="fff"/>
+		</frame>
+
+		<frame id="Frame_ButtonAction1" posn="60 0 2" hidden="0">
+			<quad halign="center" valign="bottom" keepratio="Fit"
+			sizen="8 8" image="{{{IMGAction1}}}" posn="0 -88.5 6"
+			/>
+			<label halign="right" valign="center" style="TextButtonNav" posn="-5 -84 6" 
+			id="Label_Action1" textsize="4" text="Delete Track" textcolor="fff"/>
+		</frame>
+
+
+		<frame id="Frame_Content" posn="0 0 0" scale="1.0">
+			<quad posn="{{{-SizeX_Screen/2.-0.5}}} {{{SizeY_Screen*6./2.+3.}}} 20" halign="left" valign="top" bgcolor="fff"
+			sizen="{{{SizeX_Screen+1.4}}} {{{SizeY_Screen*6.+0.5}}}" image="{{{IMGGrille}}}"/>
+
+			<frame posn="0. 0. 0">
+				{{{Selector::InsertFrameworkInManialink(1, SizeXQuad, SizeYQuad, PosXFirstQuad, PosYFirstQuad, MarginX_Button, MarginY_Button)}}}
+				
+				<quad id="BoardTitleText" halign="left" valign="top" keepratio="Fit"
+					sizen="{{{SizeXQuad}}} {{{SizeYQuad}}}" opacity="0."
+					posn="-137.8 77.4 11."
+				/>
+
+				<frame id="Clip_Buttons" posn="0. 0. 0." clip="true" clipsizen="{{{SizeX_Screen-0.1}}} {{{SizeY_Screen*6.}}}" clipposn="0 3">
+
+					<frame id="Frame_Loading" posn="0 0 40" hidden="1">
+						<label id="Label_Loading" halign="center" valign="center" text="Loading" textsize="10."/>
+						<quad halign="center" valign="center" bgcolor="000" sizen="{{{SizeX_Screen}}} {{{SizeY_Screen*6.}}}" />
+					</frame>
+					<frame id="FrameAll_Buttons" posn="-4.5 0.0 0.">
+
+		""";
+	for(I,0,C_NbEnviro -1 ) //Le 3 représente les 3 enviro disponible
+	{
+		declare Real PosnX     = 0 + I*SizeX_Screen;
+		declare Real PosnY     = PosYFirstQuad;
+		declare Vec3 PromptPos2 = <PosnX/2.-55.9-0.60*I, PosnY+6., 4.>;
+		//declare Vec3 PromptPos  = <PosnX- SizeXQuad - MarginX_Button+156.0-6.5*J, PosnY+70.8, 11.>;
+		//declare Vec3 PromptPos2 = <PosnX/2.- SizeXQuad/2.+52.5-1.64*J, 70.7,11.>;
+		MLText^="""
+		<quad posn="{{{PosnX}}} {{{PosnY}}} 3" sizen="{{{SizeX_Screen-0.3}}} {{{SizeY_Screen*2.-1.6}}}" id="Quad_Enviro{{{I}}}"
+		halign="center" opacity="1." valign="bottom"/>
+		<quad posn="{{{PosnX+115}}} {{{PosnY+39}}} 4" sizen="30 30" id="Quad_EnviroLogo{{{I}}}" keepratio="Fit"
+		halign="right" valign="top" opacity="1." bgcolor="fff"/>
+		<label textemboss="0" posn="{{{PosnX-115}}} {{{PosnY+29}}} 4"  halign="left" valign="bottom" textfont="{{{Font::GetFontName("Main")}}}"
+		id="Label_Enviro{{{I}}}" textsize="11" textprefix="$t" text="" textcolor="{{{Colors::GetColor("White")}}}"/>
+		<label textemboss="0" posn="{{{PosnX-115}}} {{{PosnY+31.0}}} 4"  halign="left" valign="top" textfont="{{{Font::GetFontName("Main")}}}"
+		id="Label_Diff{{{I}}}" textsize="11" textprefix="$t" text="" textcolor="{{{Colors::GetColor("White")}}}"/>
+		{{{Prompter2::InjectInManialink2(Prompt_Id[I]^"2", PromptPos2, Prompt_ClipSizen2, Prompt_TextSize, Prompt_TextFont)}}}
+		""";
+		
+	}
+	
+	MLText^="""
+
+	""";
+	for(I,0,NumberOfQuadCreateY-1)
+	{
+		declare Real IndexY = I*1.;
+		declare Real PosnY = PosYFirstQuad - IndexY*SizeYQuad - IndexY*MarginY_Button*1. - MarginY_Button/2.;
+		MLText^="""
+		""";
+		for(J,0,NumberOfQuadCreateX-1)
+		{
+			declare Real IndexJ = J*1.;
+			declare Real PosnX = PosXFirstQuad + IndexJ*SizeXQuad + IndexJ*MarginX_Button*1. + MarginX_Button/2.;
+			MLText^="""
+				<frame posn="{{{PosnX}}} {{{PosnY}}} 5." id="Frame_Instance{{{I}}}{{{J}}}" >
+					<frameinstance modelid="Frame_Button" />
+					<quad halign="left" valign="top" sizen="{{{SizeXQuad+0.5}}} {{{SizeYQuad+0.5}}}" posn="-0.5 -0.3 5" opacity="0." scriptevents="1" id="MouseInput_Track_{{{I}}}:{{{J}}}" />
+				</frame>
+			""";
+		}
+	}
+	
+	MLText^="""
+					</frame>
+				</frame>
+			</frame>
+		</frame>
+	</frame>
+	
+	<script><!--
+
+		#Const DebugName  "L_BrowseTracks"
+		
+		#Const C_NbDifficulty        {{{C_NbDifficulty}}}
+		#Const C_NumberOfQuadCreateY {{{NumberOfQuadCreateY}}}
+		#Const C_TimeTransitionPage  {{{PanelParameter::GetTimeTransitionPage()}}}
+		#Const C_TimeStartClip       {{{PanelParameter::GetTimeStartClip()}}}
+		#Const C_TimeAnimClip        {{{PanelParameter::GetTimeAnimClip()}}}
+		#Const C_TimeTransitionPage2 {{{PanelParameter::GetTimeTransitionPage2()}}}
+		#Const C_TimeStartClip2      {{{PanelParameter::GetTimeStartClip2()}}}
+		#Const C_TimeAnimClip2       {{{PanelParameter::GetTimeAnimClip2()}}}
+		#Const C_TimeTransitionMaps  {{{PanelParameter::GetTimeTransitionMaps()}}}
+		#Const TMC_MEDAL_AUTHOR   0
+		#Const TMC_MEDAL_GOLD     1
+		#Const TMC_MEDAL_SILVER   2
+		#Const TMC_MEDAL_BRONZE   3
+		#Const TMC_MEDAL_NONE     4
+		#Const C_VideoCanyon      0
+		#Const C_VideoValley      1
+		#Const C_VideoLagoon      2
+		#Const C_VideoStadium     3
+
+		{{{Manialink::GetIncludes()}}}
+		{{{Manialink::Load()}}}
+		{{{BuilderHelper::MLCommonFunctions()}}}
+		{{{MapsManager::MLMapsManager(C_NbEnviro)}}}
+		{{{ModeName::MLModeName()}}}
+		
+		declare CMlFrame[Integer][Integer]		G_Frames_Instance;
+		declare Boolean[Integer][Integer]		G_ActiveQuad;
+		declare CMlLabel[][Integer]				G_Labels_Name;
+		declare CMlQuad[][Integer]				G_Quad_Icon;
+		declare CMlQuad[][Integer]				G_Medal;
+		declare Integer 						G_IndexSelectY;
+		declare Integer 						G_IndexSelectX;
+		declare Integer							G_PositionsFramesY;
+		declare Integer							G_PositionsFramesX;
+		declare Integer							G_IndexMaxX;
+		declare Integer							G_IndexMaxY;
+		declare Integer							G_UpdateContent;
+		declare Integer							G_ShowFrameAll;
+		declare Text[Integer][Integer]			G_MapPath;
+		declare Text[Integer][Integer]			G_ButtonAction;
+		declare Integer[Integer][Integer]		G_ButtonEnviro;
+		declare Integer							G_NumberOfMap;
+		//declare Vec3[Integer]					G_QuadHeaderColor;
+		declare Text[Integer]					G_Difficulty;
+		declare Integer							G_PreviousIndexX;
+		declare Integer							G_Enviro;
+		declare Integer 						G_LockInput;
+		declare Integer 						G_ShowTime;
+		declare Integer 						G_HideTime;
+		declare Integer 						G_ShowSelectorTime;
+		declare Integer 						G_LaunchMap;
+		declare Integer 						G_EndTransitionTime;
+		declare Text							G_NextPage;
+		declare Boolean[Integer]				G_MedalsSet; //Indique si l'update de medals à déjà été pour un enviro
+		declare Boolean[Integer]				G_IsThumbnailSet; //Indique si la miniature à déjà été mise sur le quad
+		declare Integer 						G_NextAnimUnlock;
+		declare Integer							G_AnimUnlock;
+		declare Integer							G_LineToUnlock;
+		declare Text[Integer]					G_EnviroText;
+		declare Text[Integer]					G_DifficultyText;
+		declare CAudioSource					G_AmbianceEnviro;
+		declare Integer[Text][Integer]			G_MapsRanking;
+		declare Integer[Text][Integer]			G_MapsRankingPlayerCount;
+		declare Integer 						G_TimeSendMapsRankingInfos;
+		
+
+		declare CVideo[]						G_Videos;
+		{{{Prompter2::InjectInGlobals()}}}
+
+		{{{Prompter2::InjectInFunctions()}}}
+
+		Void LoadVideos()
+		{
+			assert(G_Videos.count == 0);
+			G_Videos.add(Video.CreateVideo("{{{IMGEnvCanyon}}}" , True, True));
+			G_Videos.add(Video.CreateVideo("{{{IMGEnvValley}}}" , True, True));
+			G_Videos.add(Video.CreateVideo("{{{IMGEnvLagoon}}}" , True, True));
+			G_Videos.add(Video.CreateVideo("{{{IMGEnvStadium}}}", True, True));
+		}
+		
+		Void Preload()
+		{
+			PreloadImage("{{{IMGQuadTrackAdd}}}");
+			PreloadImage("{{{IMGQuadFolderOpen}}}");
+			PreloadImage("{{{IMGQuadFolderClosed}}}");
+			PreloadImage("{{{IMGMedalNoMedal}}}");
+			PreloadImage("{{{IMGMedalBronze}}}");
+			PreloadImage("{{{IMGMedalSilver}}}");
+			PreloadImage("{{{IMGMedalGold}}}");
+			PreloadImage("{{{IMGMedalTrackmaster}}}");
+			PreloadImage("{{{IMGAction2}}}");
+			PreloadImage("{{{IMGAction1}}}");
+			PreloadImage("{{{IMGLocked}}}");	
+		}
+
+		Void StopAllVideos() {
+			foreach (V in G_Videos) {
+				if (V == Null) continue;
+				V.Stop();
+			}
+		}
+
+		Text GetEnviroLogoImg(Integer _Enviro)
+		{
+			switch(_Enviro)
+			{
+				case 0: return "{{{ImgLogoCanyon}}}";
+				case 1: return "{{{ImgLogoValley}}}";
+				case 2: return "{{{ImgLogoLagoon}}}";
+				case 3: return "{{{ImgLogoStadium}}}";
+			}
+			return "";
+		}
+
+		Text GetPlayerModel(Integer _Index)
+		{
+			declare Text PlayerModel;
+			switch(_Index) {
+				case 0	: PlayerModel = "CanyonCar";
+				case 1	: PlayerModel = "ValleyCar";
+				case 2	: PlayerModel = "LagoonCar";
+				case 3 	: PlayerModel = "StadiumCar";
+			}
+
+			return PlayerModel;
+		}
+
+		Text GetImgMedal(Integer _MyMedal)
+		{
+			switch(_MyMedal)
+			{
+				case 3	: return "{{{IMGMedalBronze}}}";
+				case 2	: return "{{{IMGMedalSilver}}}";
+				case 1	: return "{{{IMGMedalGold}}}";
+				case 0 	: return "{{{IMGMedalTrackmaster}}}";
+			}
+
+			return "{{{IMGMedalNoMedal}}}";
+		}
+		Text GetImgMedalJoker(Integer _MyMedal)
+		{
+			switch(_MyMedal)
+			{
+				case 3	: return "{{{IMGMedalBronzeJoker}}}";
+				case 2	: return "{{{IMGMedalSilverJoker}}}";
+				case 1	: return "{{{IMGMedalGoldJoker}}}";
+				case 0 	: return "{{{IMGMedalGold}}}";
+			}
+
+			return "{{{IMGMedalNoMedal}}}";
+		}
+
+		Void AnimUnlock(Integer _Enviro)
+		{
+			declare Integer QuadFocus = _Enviro*5 + G_NextAnimUnlock;
+			if(G_NextAnimUnlock > 4)
+			{
+				G_AnimUnlock = -1;
+			}
+			else
+			{
+				declare CMlQuad Quad_Locked <=> (G_Frames_Instance[G_LineToUnlock][QuadFocus].GetFirstChild("Quad_Locked") as CMlQuad);
+				LibManialink_SetTargetOpacity(Quad_Locked, 0.);
+				LibManialink_PresetAnim(Quad_Locked, 1000, "EaseLinear");
+				G_AnimUnlock = Now + 150;
+				G_LockInput  = G_AnimUnlock+10;
+				G_NextAnimUnlock += 1;
+			}
+			
+		}
+
+
+		Void CheckAnimUnlock(Integer _Enviro, Integer _Difficulty)
+		{
+			SendCustomEvent("IsUnlockAnim", [""^_Enviro, ""^_Difficulty]);
+			return;
+			//TODO - Vérifier si on doit lancer l'Unlock des tracks
+			G_NextAnimUnlock = 0;
+			G_LineToUnlock   = 1;
+			G_AnimUnlock     = Now;
+			G_LockInput      = G_AnimUnlock+10;
+		}
+
+		Void PreUnlockAnim(Integer _Enviro, Integer _LineToUnlock)
+		{
+			for(I,0,4)
+			{
+				declare PositionX = _Enviro*5 + I;
+				declare CMlQuad Quad_Locked <=> (G_Frames_Instance[_LineToUnlock][PositionX].GetFirstChild("Quad_Locked") as CMlQuad);
+				Quad_Locked.Show();
+				Quad_Locked.Opacity = 1.;
+			}
+		}
+									
+
+		Void InitFrameLvlPosition()
+		{
+			declare CMlFrame	FrameAll_Buttons   <=> (Page.GetFirstChild("FrameAll_Buttons")		as CMlFrame);
+			declare Real NewPosnX = 0*{{{SizeXQuad+MarginX_Button}}};
+			declare Vec3 NewFramePosition = <-NewPosnX, FrameAll_Buttons.RelativePosition.Y, FrameAll_Buttons.RelativePosition.Z>;
+			FrameAll_Buttons.RelativePosition = NewFramePosition;
+		}
+
+		Boolean IsG_ActiveQuad(Integer _IndexY, Integer _IndexX)
+		{
+			if(!G_ActiveQuad.existskey(_IndexY)) return False;
+			if(!G_ActiveQuad[_IndexY].existskey(_IndexX)) return False;
+			return G_ActiveQuad[_IndexY][_IndexX];
+		}
+
+		Boolean IsCanMove(Integer _IndexY, Integer _IndexX, Boolean _IsUp)
+		{
+			declare Integer DifficultySelect for This;
+			if(DifficultySelect != 0) return False;
+			declare Integer TargetY = _IndexY;
+			if(_IsUp)
+			{
+				TargetY -= 1;
+			}
+			else
+			{
+				TargetY += 1;
+			}
+			if(!G_ActiveQuad.existskey(TargetY) || _IndexY < 0) return False;
+			if(!G_ActiveQuad[TargetY][0]) return False;
+
+			return True;
+
+		}
+
+		Integer NearestIndexSelectX(Integer _IndexY)
+		{
+			declare Integer NearestIndexSelectX = 0;
+			if(!G_ActiveQuad.existskey(_IndexY)) return 0;
+			if(G_ActiveQuad[_IndexY][G_PreviousIndexX])
+			{ 
+				return G_PreviousIndexX;
+			}
+
+			for(I, 0, G_ActiveQuad[_IndexY].count - 1)
+			{
+				if(G_ActiveQuad[_IndexY][I])
+				{
+					NearestIndexSelectX = I;
+				}
+				else
+				{
+					break;
+				}
+			}
+			return NearestIndexSelectX;
+		}
+
+		/*
+		Void UpdateHeaderTitle()
+		{
+			declare Integer DifficultySelect for This;
+			declare Vec3 HeaderInfo_LabelTitleColor for This;
+			if(DifficultySelect == 1)
+			{
+				HeaderInfo_LabelTitleColor = <0.0, 0.0, 0.0>;
+			}
+			else
+			{
+				HeaderInfo_LabelTitleColor = <1.0, 1.0, 1.0>;
+			}
+
+			declare Text HeaderInfo_LabelTitle for This;
+			HeaderInfo_LabelTitle = G_Difficulty[DifficultySelect] ^ " SERIES";
+			declare Vec3 NextColorHeaderInfo for This;
+			NextColorHeaderInfo = G_QuadHeaderColor[DifficultySelect];
+
+			SendCustomEvent("UpdateHeaderTitle", [""]);
+		}
+		*/
+
+		//TODO - Relier fonction aux maps
+		Integer GetMyStar(Integer _MyPosition, Integer _PositionMax)
+		{
+
+			declare Real Max = _PositionMax * 1.;
+			declare Integer StarMax = 9;
+
+			declare Real Etat = 0.;
+			for(I, 0, 8)
+			{
+				Max = Max/2.;
+				Etat = Etat + Max;
+				if(_MyPosition <= Etat) return StarMax-I;
+			}
+			return StarMax - 9;
+		}
+
+		Void UpdateMapsInfoRanking()
+		{
+			declare Integer	Net_MapRankingInfos_Index		for Page;
+			
+			declare Text[] PlayerZones = TL::Split("|", LocalUser.ZonePath);
+			if(PlayerZones.count <=0 || !G_MapsRanking.existskey(Net_MapRankingInfos_Index) || PlayerZones.count < G_MapsRanking[Net_MapRankingInfos_Index].count) return;
+			
+
+			if(!G_MapsRanking.existskey(Net_MapRankingInfos_Index) || !G_MapsRankingPlayerCount.existskey(Net_MapRankingInfos_Index)) return;
+			declare Text BannerContent = "";
+			for(I, 0, G_MapsRanking[Net_MapRankingInfos_Index].count - 1)
+			{
+				if(I != 0 && BannerContent != "") BannerContent ^= "      ";
+				
+				// test s'il existe un ranking sur cette map.
+				if(!G_MapsRanking[Net_MapRankingInfos_Index].existskey("Zone"^I)) continue;
+				if(!G_MapsRankingPlayerCount[Net_MapRankingInfos_Index].existskey("Zone"^I)) continue;
+				
+				if(I <= 1) BannerContent ^= TL::GetTranslatedText(PlayerZones[I]);
+				else       BannerContent ^= PlayerZones[I];
+				
+				BannerContent ^= ": ${{{ColorTextYellow}}}"^G_MapsRanking[Net_MapRankingInfos_Index]["Zone"^I]^"${{{ColorTextWhite}}}/"^G_MapsRankingPlayerCount[Net_MapRankingInfos_Index]["Zone"^I];
+			}
+
+			for(Enviro, 0, {{{C_NbEnviro - 1}}})
+			{
+				//Banner_SetContent("Prompt_Env_"^Enviro,  BannerContent);
+				///////////////
+				// SET BANNERS
+				///////////////
+				Prompter_SetBanner("Prompt_Env_"^Enviro^"2", BannerContent, 3000, 20);
+				Prompter_SetBannerIsActive("Prompt_Env_"^Enviro^"2", True, False);
+			}
+		}
+		Void UpdateSelectedTrack(Integer SelectorPositionX, Integer SelectorPositionY)
+		{
+			declare Integer DifficultySelect for This;
+
+			declare CMlFrame	FrameAll_Buttons   		<=> (Page.GetFirstChild("FrameAll_Buttons")		as CMlFrame);
+			//declare CMlQuad		Quad_ArrowNext     		<=> (Page.GetFirstChild("Quad_ArrowNext")		as CMlQuad);
+			//declare CMlQuad		Quad_ArrowPrevious 		<=> (Page.GetFirstChild("Quad_ArrowPrevious")	as CMlQuad);
+			declare CMlFrame	Frame_Selector	<=> (Page.GetFirstChild("Frame_Selector")	as CMlFrame);
+			
+			// Scroll sur Y si elles ne tiennent pas toutes dans les cases disponibles
+			if(G_PositionsFramesY-SelectorPositionY < -1 && G_PositionsFramesY < G_IndexMaxY-{{{NumberOfYShow}}}-1)
+			{
+				G_PositionsFramesY + =1;
+				
+				declare Real NewPosnY = G_PositionsFramesY*{{{SizeYQuad+MarginY_Button}}};
+				declare Vec3 NewFramePosition = <FrameAll_Buttons.RelativePosition.X, NewPosnY, FrameAll_Buttons.RelativePosition.Z>;
+				LibManialink_SetTargetPosition(FrameAll_Buttons, NewFramePosition);
+				LibManialink_PresetAnim(FrameAll_Buttons, 500, "QuintOut");
+			}
+			else if(G_PositionsFramesY-SelectorPositionY > -1  && G_PositionsFramesY > 0)
+			{
+				G_PositionsFramesY - =1;
+
+				declare Real NewPosnY = G_PositionsFramesY*{{{SizeYQuad+MarginY_Button}}};
+				declare Vec3 NewFramePosition = <FrameAll_Buttons.RelativePosition.X, NewPosnY, FrameAll_Buttons.RelativePosition.Z>;
+				LibManialink_SetTargetPosition(FrameAll_Buttons, NewFramePosition);
+				LibManialink_PresetAnim(FrameAll_Buttons, 500, "QuintOut");
+			}
+			declare Real PosnX = {{{PosXFirstQuad}}} - (G_PositionsFramesX-SelectorPositionX)*{{{SizeXQuad}}} - (G_PositionsFramesX-SelectorPositionX)*{{{MarginX_Button}}}*1. - {{{MarginX_Button}}}/2.+0.30;
+			declare Real PosnY = {{{PosYFirstQuad}}} + (G_PositionsFramesY-SelectorPositionY)*{{{SizeYQuad}}} + (G_PositionsFramesY-SelectorPositionY)*{{{MarginY_Button}}}*1. - {{{MarginY_Button}}}/2.-0.4;
+			
+			declare Vec3 NewFrameArrowPosition = <PosnX, PosnY, Frame_Selector.RelativePosition.Z>;
+			Frame_Selector.RelativePosition = NewFrameArrowPosition;
+			
+
+			
+
+			//declare Integer DifficultySelect for This;
+			declare Integer[Integer][Integer][Integer]	Net_MapInfoIndex	for Page;
+			
+			if(Net_MapInfoIndex.count <= 0) return;
+
+			declare Integer	Net_MapRankingInfos_Index		for Page;
+			declare Integer QuadNumber          = SelectorPositionY*{{{Count_InstancesX}}}+SelectorPositionX;
+			declare Integer ArrayPosY           = QuadNumber/{{{Count_InstancesX}}}; //QuadPosY
+			declare Integer MapIndex            = QuadNumber%{{{Count_InstancesX}}}; //QuadPosX
+			
+			declare Index = Net_MapInfoIndex[DifficultySelect][ArrayPosY][MapIndex];
+			Net_MapRankingInfos_Index = Index;
+
+			for(Enviro, 0, {{{C_NbEnviro - 1}}})
+			{
+				///////////////
+				// SET BANNERS
+				///////////////
+				Prompter_SetBanner("Prompt_Env_"^Enviro^"2", "", 3000, 20);
+				Prompter_SetBannerIsActive("Prompt_Env_"^Enviro^"2", True, False);
+			}
+			declare Integer[Integer]	Net_Medals	for Page;
+			declare Text GameSelect for This;
+			
+			if(Net_Medals[Index] >= 4 || (GameSelect != "Solo" && GameSelect != "SuperSolo")) return;
+			if(!G_MapsRankingPlayerCount.existskey(Index))
+			{
+				G_TimeSendMapsRankingInfos = Now + 500;
+			}
+			else
+			{
+				UpdateMapsInfoRanking();
+			}
+		}
+
+		Void MoveCursor(Integer _NumberOfNextTracks)
+		{
+			declare Integer Save_IndexSelectX  = G_IndexSelectX;
+			declare Integer IndexSelectXInCase = G_IndexSelectX%5;
+			for(I, 0, _NumberOfNextTracks-1)
+			{
+				
+				IndexSelectXInCase += 1;
+				G_IndexSelectX     += 1;
+				if(IndexSelectXInCase > 4)
+				{
+					if(G_IndexSelectY == 0)
+					{
+						IndexSelectXInCase = 0;
+						G_IndexSelectX =  0 + G_Enviro*5;
+						G_IndexSelectY += 1;
+					}
+					else
+					{
+						G_IndexSelectX = Save_IndexSelectX;
+					}
+				}
+			}
+			G_PreviousIndexX = G_IndexSelectX;
+			UpdateSelectedTrack(G_IndexSelectX, G_IndexSelectY);
+		}
+
+
+		Text GetButtonAction(Integer _IndexSelectX, Integer _IndexSelectY)
+		{
+			return G_ButtonAction[_IndexSelectY][_IndexSelectX];
+		}
+
+		Integer GetButtonEnviro(Integer _IndexSelectX, Integer _IndexSelectY)
+		{
+			return G_ButtonEnviro[_IndexSelectY][_IndexSelectX];
+		}
+
+		Void UpdateMedalMap(Integer _Difficulty, Integer _ArrayPosY, Integer _MapIndex)
+		{
+			declare Integer[Integer]					Net_Medals			for Page;
+			declare Integer[Integer][Integer][Integer]	Net_MapInfoIndex	for Page;
+			
+			
+			declare Text GameSelect for This;
+			declare Index = Net_MapInfoIndex[_Difficulty][_ArrayPosY][_MapIndex];
+			
+			declare Text ImgMedal;
+			
+			//declare Integer MyMedal = GetMyMedal(_Difficulty, _ArrayPosY, _MapIndex);
+			
+			declare Integer MyMedal;
+			if(Net_Medals.existskey(Index)) MyMedal = Net_Medals[Index];
+			else MyMedal = 4;
+			
+			declare Integer[Integer]	Net_Jokers for Page;
+			ImgMedal = GetImgMedal(MyMedal);
+			if(Net_Jokers.existskey(Index)) {
+				declare Integer MedalJoker = Net_Jokers[Index];
+				ImgMedal = GetImgMedalJoker(MedalJoker);
+			}
+			
+			G_Medal[_ArrayPosY][_MapIndex].ChangeImageUrl(ImgMedal);
+			G_Medal[_ArrayPosY][_MapIndex].Show();
+			//if(_ArrayPosY == 0 && _MapIndex== 4) log("Map["^Index^"]: " ^ MyMedal);
+		}
+
+
+
+		Void ChangeEnviro(Boolean _AnimTransition)
+		{
+			declare CMlFrame FrameAll_Buttons    <=> (Page.GetFirstChild("FrameAll_Buttons")		as CMlFrame);
+			declare Text GameSelect for This;
+
+			declare Real NewPosnX = G_PositionsFramesX*{{{SizeXQuad+MarginX_Button}}};
+			declare Vec3 NewFramePosition = <-NewPosnX, FrameAll_Buttons.RelativePosition.Y, FrameAll_Buttons.RelativePosition.Z>;
+			if(_AnimTransition)
+			{
+				LibManialink_SetTargetPosition(FrameAll_Buttons, NewFramePosition);
+				LibManialink_PresetAnim(FrameAll_Buttons, 500, "QuintOut");
+			}
+			else
+			{
+				FrameAll_Buttons.RelativePosition = NewFramePosition;
+			}
+			declare Integer DifficultySelect for This;
+
+			//HACK - Le Frame_Loading sert pour le chargement beaucoup trop long des InfoMedals
+			declare CMlFrame Frame_Loading <=> (Page.GetFirstChild("Frame_Loading")          as CMlFrame);
+			declare CMlLabel Label_Loading <=> (Frame_Loading.GetFirstChild("Label_Loading") as CMlLabel);
+			declare Integer NumberOfMedalLoad = 0;
+			declare Integer NumberOfMedalMax = 0;
+
+			for(Enviro, 0, {{{C_NbEnviro - 1}}})
+			{
+				declare CMlQuad Quad_Enviro  <=> (Page.GetFirstChild("Quad_Enviro"^Enviro)  as CMlQuad);
+				//if(Enviro == G_Enviro)	Quad_Enviro.Video_IsPlaying = True;
+				//else					Quad_Enviro.Video_IsPlaying = False;
+				
+				if(Enviro == G_Enviro)	G_Videos[Enviro].Play();
+				else					G_Videos[Enviro].Stop();
+				
+			}
+
+			if(!G_MedalsSet[G_Enviro])
+			{
+				Frame_Loading.Show();
+				if(G_LockInput < Now) G_LockInput = Now + 500;
+
+				//HACK - Compte le nombre de map par Enviro
+				for(PosY,0, G_ActiveQuad.count - 1) //représente les deux lignes de maps par enviro
+				{
+					for(PosX,0,G_ActiveQuad[PosY].count - 1) //Les 5 niveaux par ligne
+					{
+						declare Integer Enviro = GetButtonEnviro(PosX, PosY);
+						if(Enviro == G_Enviro)
+						{
+							NumberOfMedalMax += 1;
+						}
+					}
+				}
+			}
+
+
+			//Rend les bons Quads actif/inactif
+			for(PosY,0, G_ActiveQuad.count - 1) //représente les deux lignes de maps par enviro
+			{
+				for(PosX,0,G_ActiveQuad[PosY].count - 1) //Les 5 niveaux par ligne
+				{
+					declare Integer QuadNumber          = PosY*{{{Count_InstancesX}}}+PosX;
+					declare Integer ArrayPosY           = QuadNumber/{{{Count_InstancesX}}}; //QuadPosY
+					declare Integer MapIndex            = QuadNumber%{{{Count_InstancesX}}}; //QuadPosX
+					declare Integer Enviro              = GetButtonEnviro(PosX, PosY);
+
+					if(Enviro == G_Enviro && IsMapFound(MapIndex, ArrayPosY, DifficultySelect))
+					{
+						G_ActiveQuad[PosY][PosX]   = True;
+
+						if((GameSelect == "Duo"|| GameSelect == "Solo" || GameSelect == "SuperSolo") && !G_MedalsSet[Enviro])
+						{
+							UpdateMedalMap(DifficultySelect, ArrayPosY, MapIndex);
+							NumberOfMedalLoad += 1;
+							Label_Loading.Value = "Loading - ("^NumberOfMedalLoad^"/"^NumberOfMedalMax^")";
+						}
+						//else
+						//{
+						//	declare Text ImgMedal = GetImgMedal(4);
+						//	G_Medal[PosY][PosX].ChangeImageUrl(ImgMedal);
+						//}
+
+						
+						if(!G_IsThumbnailSet[G_Enviro])
+						{
+							if(DifficultySelect != 0)
+							{
+								declare Integer[Integer][Integer][Integer]	Net_MapInfoIndex		for Page;
+								DataMgr.LoadMapThumbnail(Net_MapInfoIndex[DifficultySelect][ArrayPosY][MapIndex]);
+							}
+							else
+							{
+								declare Integer[Integer][Integer]			CustomMapsInfoIndex for This;
+								DataMgr.LoadMapThumbnail(G_CustomMapsInfoIndex[ArrayPosY][MapIndex]);
+							}
+							G_Quad_Icon[ArrayPosY][MapIndex].Image = DataMgr.MapThumbnail;
+						}
+					}
+					else
+					{
+						G_ActiveQuad[PosY][PosX] = False;
+					}
+
+
+				}
+			}
+			G_IsThumbnailSet[G_Enviro] = True;
+
+			//CheckAnimUnlock(G_Enviro, DifficultySelect);
+
+			Frame_Loading.Hide();
+			if(!G_MedalsSet[G_Enviro]) G_MedalsSet[G_Enviro] = True;
+			
+		}
+
+		Text GetMapPath(Integer _IndexSelectX, Integer _IndexSelectY)
+		{
+			return G_MapPath[_IndexSelectY][_IndexSelectX];
+		}
+
+		Vec3 GetMenuColor(Text _IndexMenu) {
+			switch(_IndexMenu)
+			{
+				case "TMC_Menu_Online":            return {{{MenuColor::GetMenuColor(0)}}};
+				case "TMC_Menu_Multiplayer":       return {{{MenuColor::GetMenuColor(1)}}};
+				case "TMC_Menu_Campaign":          return {{{MenuColor::GetMenuColor(2)}}};
+				case "TMC_Menu_Editors":           return {{{MenuColor::GetMenuColor(3)}}};
+				case "TMC_Menu_GlobalLeaderBoard": return {{{MenuColor::GetMenuColor(4)}}};
+			}
+			return <0., 0., 0.>;
+		}
+
+		Void UpdateMaps()
+		{
+			declare Integer DifficultySelect for This;
+			declare Integer[Integer][Integer][Integer]	Net_MapInfoIndex	for Page;
+			declare Text 								GameSelect 			for This;
+			declare Integer[Integer][Integer] 			Net_BlocksLocked 	for Page;
+			declare Boolean[Integer] IsAddTrack;
+			declare Boolean[Integer] IsOpenFolder;
+
+			// HACK EG
+			declare Integer[Integer][Integer] Net_MedalsByEnviro		for Page;
+			declare Integer[Integer][Integer] Net_MedalsByDifficulty	for Page;
+
+			IsAddTrack.clear();
+			IsOpenFolder.clear();
+			
+			declare Integer MapMaxX = 0;
+			declare Integer MapMaxY = 0;
+			if(DifficultySelect != 0)
+			{
+				declare Text Difficulty = GetDifficulty(DifficultySelect);
+
+				declare Text FilterPath;
+				//FilterPath = CreateFilterPath(Difficulty, "");
+				FilterPath = CreateFilterPath("", "");
+				
+				LoadCampaignMaps(FilterPath);
+				for(I, 0, Net_MapInfoIndex.count-1)
+				{
+					declare count = 1;
+					for(J, 0, Net_MapInfoIndex[I].count-1)
+					{
+						count +=1;
+						if(MapMaxX < count)
+						{
+							MapMaxX = count;
+						}
+					}
+				}
+			}
+			else
+			{
+
+				LoadUserMaps();
+				for(I, 0, G_CustomMapsInfoIndex.count-1)
+				{
+					declare count = 1;
+					for(J, 0, G_CustomMapsInfoIndex[I].count-1)
+					{
+						count +=1;
+						if(MapMaxX < count)
+						{
+							MapMaxX = count;
+						}
+					}
+				}
+
+
+				declare countY = 1;
+				for(I, 0, G_CustomMapsInfoIndex.count-1)
+				{
+					if(G_CustomMapsInfoIndex[I].count > 0)
+					{
+						countY +=1;
+						if(MapMaxY < countY)
+						{
+							MapMaxY = countY;
+						}
+					}
+				}
+			}
+
+			if(MapMaxX > {{{Count_InstancesX}}})
+			{
+				G_IndexMaxX = {{{Count_InstancesX}}};
+			}
+			else
+			{
+				G_IndexMaxX = {{{Count_InstancesX}}};
+			}
+
+			if(MapMaxY > {{{Count_InstancesY}}})
+			{
+				G_IndexMaxY = MapMaxY +1;
+				G_IndexMaxY = {{{NumberOfQuadCreateY}}};
+			}
+			else
+			{
+				G_IndexMaxY = {{{NumberOfQuadCreateY}}};
+			}
+			for(I, 0, G_IndexMaxY+1)
+			{
+				G_Frames_Instance[I] = CMlFrame[Integer];
+				G_ActiveQuad[I]      = Boolean[Integer];
+				G_Labels_Name[I]     = CMlLabel[];
+				G_Medal[I]           = CMlQuad[];
+				G_Quad_Icon[I]       = CMlQuad[];
+				G_MapPath[I]         = Text[Integer];
+				G_ButtonAction[I]    = Text[Integer];
+				G_ButtonEnviro[I]    = Integer[Integer];
+				IsAddTrack[I]        = False;
+				IsOpenFolder[I]      = False;
+			}
+
+			declare ActualEnviro             = 0;
+			declare Integer QuadMaxY         = 0; //Indique la longueur du tableau affiché (tenant compte des tracks affichées) sur Y
+			declare Integer[Integer] OpenFolderPosition;
+			
+
+
+			for(I, 0, {{{NumberOfYShow-1}}})
+			{
+				for(J, 0, {{{Count_InstancesX-1}}})
+				{
+					declare Integer QuadNumber = I*{{{Count_InstancesX}}}+J;
+					declare Integer ArrayPosY  = QuadNumber/{{{Count_InstancesX}}}; //QuadPosY
+					declare Integer MapIndex   = QuadNumber%{{{Count_InstancesX}}}; //QuadPosX	
+					declare Integer Difficulty = QuadNumber/40; //QuadPosX	
+					
+					G_Frames_Instance[ArrayPosY][MapIndex] = (Page.MainFrame.GetFirstChild("Frame_Instance"^ArrayPosY^""^MapIndex) as CMlFrame);
+					if(G_Frames_Instance[ArrayPosY][MapIndex] == Null) continue;
+					G_Quad_Icon[ArrayPosY].add( (G_Frames_Instance[ArrayPosY][MapIndex].GetFirstChild("G_Quad_Icon") 	as CMlQuad));
+					G_Medal[ArrayPosY].add(     (G_Frames_Instance[ArrayPosY][MapIndex].GetFirstChild("Quad_Medal") 	    as CMlQuad));
+					
+					declare CMlQuad Quad_Multilap <=> (G_Frames_Instance[ArrayPosY][MapIndex].GetFirstChild("Quad_Multilap")  as CMlQuad);
+					if(MapIndex % 5 == 4)                       Quad_Multilap.Show();
+					else                                        Quad_Multilap.Hide();
+					if(DifficultySelect == 5 && ArrayPosY == 1) Quad_Multilap.Hide();
+
+					G_ActiveQuad[ArrayPosY][MapIndex] = False;
+					declare CMlQuad Quad_Locked <=> (G_Frames_Instance[ArrayPosY][MapIndex].GetFirstChild("Quad_Locked") as CMlQuad);
+					
+					if(IsMapFound(MapIndex, ArrayPosY, DifficultySelect))
+					{
+						G_Frames_Instance[ArrayPosY][MapIndex].Show();
+						G_ActiveQuad[ArrayPosY][MapIndex] = True;
+						G_Labels_Name[ArrayPosY].add( (G_Frames_Instance[ArrayPosY][MapIndex].GetFirstChild("Label_Name") 		as CMlLabel));
+						declare CMapInfo Map = GetMapInfo(DifficultySelect, ArrayPosY, MapIndex);
+
+						G_ButtonEnviro[ArrayPosY][MapIndex] = GetEnviroIndex(Map.CollectionName);
+						declare Integer Enviro = G_ButtonEnviro[ArrayPosY][MapIndex];
+						
+						declare Text MapColor;
+						switch(DifficultySelect)
+						{
+							case 0 : MapColor = TL::ColorToText({{{Colors::GetColor("Black")}}});
+							case 1 : MapColor = TL::ColorToText({{{Colors::GetColor("White")}}});
+							case 2 : MapColor = TL::ColorToText({{{Colors::GetColor("Green")}}});
+							case 3 : MapColor = TL::ColorToText({{{Colors::GetColor("Blue")}}});
+							case 4 : MapColor = TL::ColorToText({{{Colors::GetColor("Red")}}});
+							case 5 : MapColor = TL::ColorToText({{{Colors::GetColor("Black")}}});
+						}
+						declare Integer NewName = (DifficultySelect-1)*40 + I*5 + J+1 + (J)/5*5;
+						declare Text Prefix = "";
+						if(NewName < 10) Prefix ="0";
+						
+
+						//Hack - Sert à Spécifier si la map est une map modifiée par François 
+						declare Text[] SplitMapName = TL::Split("_", Map.Name);
+						declare Text SuffixeName;
+						if(SplitMapName.count >1)
+						{
+							if(SplitMapName[1] == "CE")
+							{
+								SuffixeName = "_CE";
+							}
+						}
+						G_Labels_Name[ArrayPosY][MapIndex].Value = "$"^MapColor^TL::StripFormatting(Prefix^NewName^SuffixeName);
+						//HackEnd
+
+						//HACKE3
+						if(({{{ActualVersion}}} == 1 || {{{ActualVersion}}} == 4) && DifficultySelect == 1 && I == 0 && (Enviro == 2 || Enviro == 3))
+						{
+							//log("NewName: "^ NewName);
+							switch(NewName)
+							{
+								case 21 : G_Labels_Name[ArrayPosY][MapIndex].Value = "$"^TL::ColorToText({{{Colors::GetColor("White")}}})^  TL::StripFormatting("21");
+								case 22 : G_Labels_Name[ArrayPosY][MapIndex].Value = "$"^TL::ColorToText({{{Colors::GetColor("White")}}})^  TL::StripFormatting("28");
+								case 23 : G_Labels_Name[ArrayPosY][MapIndex].Value = "$"^TL::ColorToText({{{Colors::GetColor("Green")}}}) ^ TL::StripFormatting("63");
+								case 24 : G_Labels_Name[ArrayPosY][MapIndex].Value = "$"^TL::ColorToText({{{Colors::GetColor("Green")}}})^   TL::StripFormatting("70");
+								case 25 : G_Labels_Name[ArrayPosY][MapIndex].Value = "$"^TL::ColorToText({{{Colors::GetColor("Blue")}}})^    TL::StripFormatting("106");
+								case 31 : G_Labels_Name[ArrayPosY][MapIndex].Value = "$"^TL::ColorToText({{{Colors::GetColor("White")}}})^  TL::StripFormatting("34");
+								case 32 : G_Labels_Name[ArrayPosY][MapIndex].Value = "$"^TL::ColorToText({{{Colors::GetColor("White")}}})^  TL::StripFormatting("40");
+								case 33 : G_Labels_Name[ArrayPosY][MapIndex].Value = "$"^TL::ColorToText({{{Colors::GetColor("Green")}}})^  TL::StripFormatting("72");
+								case 34 : G_Labels_Name[ArrayPosY][MapIndex].Value = "$"^TL::ColorToText({{{Colors::GetColor("Green")}}})^  TL::StripFormatting("77");
+								case 35 : G_Labels_Name[ArrayPosY][MapIndex].Value = "$"^TL::ColorToText({{{Colors::GetColor("Green")}}})^   TL::StripFormatting("79");
+							}
+						}
+						//HACKEND
+
+
+						G_Labels_Name[ArrayPosY][MapIndex].TextSize = 8;
+
+						G_MapPath[ArrayPosY][MapIndex] = Map.FileName;
+						G_ButtonAction[ArrayPosY][MapIndex] = "Map";
+						//if(Net_BlocksLocked[DifficultySelect-1][Enviro] == 1 && Line == 1) 
+						declare Integer Line       = ((NewName-1)/{{{Count_InstancesX/4}}})%2;
+
+
+						// HACK EG
+						declare Boolean G_HACK_UnlockAllMedal for This;
+						//declare Boolean OnlyTopLineOpen = Net_BlocksLocked[DifficultySelect-1][Enviro] == 1; //HACK - Première version d'unlock
+						declare Boolean OnlyTopLineOpen = Net_BlocksLocked[DifficultySelect-1][Enviro] >= 1;
+						
+
+
+						
+						//declare Boolean AllLinesOpen = NbBronzeEnv >= (5 + (10*(DifficultySelect-1))); //HACK - Première version d'unlock
+						declare Boolean AllLinesOpen = Net_BlocksLocked[DifficultySelect-1][Enviro] == 2;
+					
+
+						if(G_HACK_UnlockAllMedal)
+						{
+							AllLinesOpen = True;
+						}
+
+						if(AllLinesOpen || (OnlyTopLineOpen && Line == 0))
+						{
+							Quad_Locked.Hide();
+							Quad_Locked.Opacity = 0.;
+						}
+						else
+						{
+							Quad_Locked.Show();
+							Quad_Locked.Opacity = 1.;
+						}
+
+						
+						wait(DataMgr.Ready);
+
+						declare Text GameSelect for This;
+						if(GameSelect == "Solo" || GameSelect == "Duo" || GameSelect == "SuperSolo")
+						{
+							//HACK
+							//declare Integer MyMedal = GetMyMedal(Map);
+							//HACKEND
+							/*
+							declare Text ImgMedal = GetImgMedal(MyMedal);
+							G_Medal[ArrayPosY][MapIndex].ChangeImageUrl(ImgMedal);
+							G_Medal[ArrayPosY][MapIndex].Show();
+							*/
+						}
+						else
+						{
+							G_Medal[ArrayPosY][MapIndex].Hide();
+						}
+
+
+						if(Map.Unlocked)
+						{
+							G_Quad_Icon[ArrayPosY][MapIndex].Opacity = 1.;
+						}
+						else
+						{
+							G_Quad_Icon[ArrayPosY][MapIndex].Opacity = 0.4;
+						}
+						if(IsAddTrack[3])
+						{
+							QuadMaxY = ArrayPosY;
+						}
+					}
+					else
+					{
+						//Permet de rajouter le Bouton "Add Track"
+						if(DifficultySelect == 0 && !IsAddTrack[ActualEnviro] && MapIndex == 0 && ActualEnviro < 4)
+						{
+							G_Frames_Instance[ArrayPosY][MapIndex].Show();
+							G_ActiveQuad[ArrayPosY][MapIndex] = True;
+							G_ButtonEnviro[ArrayPosY][MapIndex] = -1;
+							G_Labels_Name[ArrayPosY].add( (G_Frames_Instance[ArrayPosY][MapIndex].GetFirstChild("Label_Name") 		as CMlLabel));
+							
+							G_Labels_Name[ArrayPosY][MapIndex].Value = "New "^GetEnviro(ActualEnviro)^" Map";
+							G_Labels_Name[ArrayPosY][MapIndex].TextSize = 5;
+							G_MapPath[ArrayPosY][MapIndex] = "";
+							G_ButtonAction[ArrayPosY][MapIndex] = "Add Track";
+							G_ButtonEnviro[ArrayPosY][MapIndex] = ActualEnviro;
+
+							G_Quad_Icon[ArrayPosY][MapIndex].Image = Null;
+							G_Quad_Icon[ArrayPosY][MapIndex].ChangeImageUrl("{{{IMGQuadTrackAdd}}}");
+							IsAddTrack[ActualEnviro] = True;
+							
+							if(G_NumberOfMapByEnviro[ActualEnviro] > 4)
+							{
+								OpenFolderPosition[ActualEnviro] = ArrayPosY;
+
+							}
+
+							QuadMaxY = ArrayPosY;
+							ActualEnviro += 1;
+						}
+						else
+						{
+
+							G_Labels_Name[ArrayPosY].add( (G_Frames_Instance[ArrayPosY][MapIndex].GetFirstChild("Label_Name") 		as CMlLabel));
+							G_Labels_Name[ArrayPosY][MapIndex].Value = "";
+							G_Frames_Instance[ArrayPosY][MapIndex].Show();
+							G_ActiveQuad[ArrayPosY][MapIndex] = False;
+							G_ButtonEnviro[ArrayPosY][MapIndex] = -1;
+							G_Quad_Icon[ArrayPosY][MapIndex].Image = Null;
+						}
+						
+						G_Medal[ArrayPosY][MapIndex].Hide();
+					}
+				}
+			}
+
+
+			//Rajoute tout les boutons "Open Folder"
+			foreach (Enviro => PosY in OpenFolderPosition)
+			{
+				G_ActiveQuad[PosY][4] = True;
+				G_MapPath[PosY][4] = "";
+				if(!G_IsEnviroFolderOpen[Enviro])
+				{
+					G_ButtonAction[PosY][4] = "Open Folder";
+					G_Labels_Name[PosY][4].Value = "Open Folder";
+					G_Quad_Icon[PosY][4].ChangeImageUrl("{{{IMGQuadFolderOpen}}}");
+				}
+				else
+				{
+					G_ButtonAction[PosY][4] = "Close Folder";
+					G_Labels_Name[PosY][4].Value = "Close Folder";
+					G_Quad_Icon[PosY][4].ChangeImageUrl("{{{IMGQuadFolderClosed}}}");
+				}
+				G_Medal[PosY][4].Hide();
+
+				G_Labels_Name[PosY][4].TextSize = 5;
+				G_ButtonEnviro[PosY][4] = Enviro;
+				G_Quad_Icon[PosY][4].Image = Null;
+			}
+
+			declare CMlFrame FrameAll_Buttons    <=> (Page.GetFirstChild("FrameAll_Buttons")		as CMlFrame);
+			FrameAll_Buttons.RelativePosition.X = 0.;
+			FrameAll_Buttons.RelativePosition.Y = 0.;
+				
+			//Définis la bonne longueur du tableau de quad sur Y
+			if(DifficultySelect == 0)
+			{
+				G_IndexMaxY = QuadMaxY+2;
+			}
+			else
+			{
+				//LoadVideos();
+				ChangeEnviro(False);
+			}
+
+			//Enleve le Quad wait qui permet de cacher le chargement des maps au lancement du layer
+			declare CMlQuad Quad_Wait  <=> (Page.GetFirstChild("Quad_Wait") as CMlQuad);
+			Quad_Wait.Hide();
+		}
+
+		Text GetBannerContent()
+		{
+			declare Integer DifficultySelect for This;
+			//HACKE3
+			if(({{{ActualVersion}}} == 1 || {{{ActualVersion}}} == 4)) return "Trackmania Turbo - Easy to pick up hard to master - ";
+			//HACKEnd
+
+			switch(DifficultySelect-1)
+			{
+				case 0: return "{{{MenuText::GetDifficutyLegend(0)}}}";
+				case 1: return "{{{MenuText::GetDifficutyLegend(1)}}}";
+				case 2: return "{{{MenuText::GetDifficutyLegend(2)}}}";
+				case 3: return "{{{MenuText::GetDifficutyLegend(3)}}}";
+				case 4: return "{{{MenuText::GetDifficutyLegend(4)}}}";
+			}
+			return "";
+		}
+
+		Void SetBannerContent()
+		{
+			declare Text BannerContent = GetBannerContent();
+			
+			for(Enviro, 0, {{{C_NbEnviro - 1}}})
+			{
+				//Banner_SetContent("Prompt_Env_"^Enviro,  BannerContent);
+				///////////////
+				// SET BANNERS
+				///////////////
+				Prompter_SetBanner("Prompt_Env_"^Enviro^"2", BannerContent, 3000, 20);
+				Prompter_SetBannerIsActive("Prompt_Env_"^Enviro^"2", True, False);
+			}
+		}
+
+		Text GetSoundAmbiance()
+		{
+			switch(G_Enviro)
+			{
+				case 0: return "{{{SoundAmbianceCanyon}}}";
+				case 1: return "{{{SoundAmbianceValley}}}";
+				case 2: return "{{{SoundAmbianceLagoon}}}";
+				case 3: return "{{{SoundAmbianceStadium}}}";
+			}
+			return "";
+		}
+		
+		
+		Real GetSoundAmbianceVolume()
+		{
+			switch(G_Enviro)
+			{
+				case 0: return {{{Volumes::GetVolumedB("AMB_MenuTracks_Canyon")}}};
+				case 1: return {{{Volumes::GetVolumedB("AMB_MenuTracks_Lagoon")}}};
+				case 2: return {{{Volumes::GetVolumedB("AMB_MenuTracks_Stadium")}}};
+				case 3: return {{{Volumes::GetVolumedB("AMB_MenuTracks_Valley")}}};
+			}
+			return 0.;
+		}
+		
+		
+		
+		
+
+		Void UpdateAmbianceEnviro()
+		{
+			declare Text SoundAmbiance       = GetSoundAmbiance();
+			declare Real SoundAmbianceVolume = GetSoundAmbianceVolume();
+			if(Audio.Sounds.count > 0) {
+				Audio.DestroySound(G_AmbianceEnviro);
+			}
+			
+			G_AmbianceEnviro = Audio.CreateSound(SoundAmbiance, SoundAmbianceVolume, False, True, False);
+			G_AmbianceEnviro.Stop();
+			G_AmbianceEnviro.Play();
+		}
+
+		Void StopAmbianceEnviro()
+		{
+			G_AmbianceEnviro.Stop();
+		}
+
+		Void InitPage()
+		{
+			declare Integer EnviroSelect for This;
+
+			G_UpdateContent    = 0;
+			G_ShowFrameAll     = 0;
+			G_NumberOfMap      = 20;
+			G_PositionsFramesX = EnviroSelect*5;
+			G_Enviro           = EnviroSelect;
+			declare Integer DifficultySelect for This;
+
+			//G_EnviroText
+			//G_DifficultyText
+
+			if(DifficultySelect <= 0)
+			{
+				G_NumberOfMap = 7;
+			}
+			
+			declare Real QuadIconOpacity   = 0.;
+			
+			QuadIconOpacity = 1.;
+
+			declare Text GameSelect for This;
+			declare CMlFrame Frame_ButtonAction1      <=> (Page.GetFirstChild("Frame_ButtonAction1")  as CMlFrame);
+			declare CMlFrame Frame_ButtonAction2      <=> (Page.GetFirstChild("Frame_ButtonAction2")  as CMlFrame);
+			if(DifficultySelect == 0)
+			{
+				Frame_ButtonAction1.Show();
+			}
+			else
+			{
+				Frame_ButtonAction1.Hide();
+			}
+
+			if(GameSelect == "EditMap" || DifficultySelect != 0)
+			{
+				Frame_ButtonAction2.Hide();
+			}
+
+			for(Enviro, 0, {{{C_NbEnviro - 1}}})
+			{
+				declare CMlLabel Label_Enviro <=> (Page.GetFirstChild("Label_Enviro"^Enviro) as CMlLabel);
+				declare CMlLabel Label_Diff   <=> (Page.GetFirstChild("Label_Diff"  ^Enviro) as CMlLabel);
+				Label_Enviro.Value = G_EnviroText[Enviro];
+				Label_Diff.Value   = G_DifficultyText[DifficultySelect-1];
+
+				declare CMlQuad Quad_Enviro     <=> (Page.GetFirstChild("Quad_Enviro"^Enviro)  as CMlQuad);
+				declare CMlQuad Quad_EnviroLogo <=> (Page.GetFirstChild("Quad_EnviroLogo"^Enviro)  as CMlQuad);
+
+				declare Text ImgLogo     = GetEnviroLogoImg(Enviro);
+				Quad_Enviro.Image        = G_Videos[Enviro].Image;
+				Quad_EnviroLogo.ChangeImageUrl(ImgLogo);
+				G_MedalsSet[Enviro]      = False;
+				G_IsThumbnailSet[Enviro] = False;
+			}
+
+			declare Vec3[Integer] G_ColorArrows;
+			G_ColorArrows[0] = <1., 0.5, 0.>;
+			G_ColorArrows[1] = <1., 1., 1.>;
+			G_ColorArrows[2] = <0., 1., 0.>;
+			G_ColorArrows[3] = <0., 0., 1.>;
+			G_ColorArrows[4] = <1., 0., 0.>;
+			G_ColorArrows[5] = <0., 0., 0.>;
+
+
+			//Reinit Value
+			G_Frames_Instance.clear();
+			G_ActiveQuad.clear();
+			G_Labels_Name.clear();
+			G_Medal.clear();
+			G_Quad_Icon.clear();
+			G_MapPath.clear();
+		}
+
+
+		Void PressSelect(Integer _IndexSelectX, Integer _IndexSelectY)
+		{
+			declare Text ButtonAction;
+			ButtonAction = GetButtonAction(_IndexSelectX, _IndexSelectY);
+			declare Text MapSelect = GetMapPath(_IndexSelectX, _IndexSelectY);
+			if(ButtonAction == "Add Track")
+			{
+				declare Integer Enviro = GetButtonEnviro(_IndexSelectX, _IndexSelectY);
+				declare Integer EnviroSelect for This;
+				EnviroSelect = Enviro;
+
+				//Hack - le if empeche de lancer l'éditeur pour Valley, Stadium et pour Lagoon
+				
+				SendCustomEvent("GotoPage", ["Mood"]);
+				
+
+			}
+			else if(ButtonAction == "Map")
+			{
+				declare Text GameSelect for This;
+				declare Text SplitScreenNumber  for This;
+				declare Text MapSelect = GetMapPath(_IndexSelectX, _IndexSelectY);
+				if(GameSelect == "EditMap")
+				{
+
+					declare CMlQuad Quad_Black <=> (Page.GetFirstChild("Quad_Black") as CMlQuad);
+					Quad_Black.Show();
+
+					//Hack - le if empeche de lancer l'éditeur pour Valley, Stadium et pour Lagoon
+					declare Integer Enviro = GetButtonEnviro(_IndexSelectX, _IndexSelectY);
+					if(Enviro == 0)
+					{
+						SendCustomEvent("EditMap", [MapSelect, "{{{EditorPlugin}}}"]);
+					}
+				}
+				else
+				{
+					declare Integer DifficultySelect for This;
+
+			  		declare CMlQuad Quad_Black <=> (Page.GetFirstChild("Quad_Black") as CMlQuad);
+					Quad_Black.Show();
+					//declare Text Mode            = GetModeScript(GameSelect);
+					//declare Text ModeMultiScreen = GetModeMulti(SplitScreenNumber);
+					
+					declare Integer Enviro = GetButtonEnviro(_IndexSelectX, _IndexSelectY);
+					
+					StopAmbianceEnviro();
+					SendCustomEvent("PlayMap", [MapSelect, ""^DifficultySelect, ""^Enviro, ""^_IndexSelectY, ""^_IndexSelectX]);
+					{
+						declare Sound = Audio.CreateSound("{{{SoundStartRace}}}");
+						Sound.PanRadiusLfe 	= {{{Volumes::GetPanRadiusLfe("MenuStartRace")}}};
+						Audio.PlaySoundEvent(Sound, {{{Volumes::GetVolumedB("MenuStartRace")}}}, 0);
+					}
+				}
+				 
+			
+			}
+			else if(ButtonAction == "Open Folder")
+			{
+				declare Integer Enviro = GetButtonEnviro(_IndexSelectX, _IndexSelectY);
+				G_ButtonAction[_IndexSelectY][_IndexSelectX] = "Close Folder";
+				OpenCustomFolder(Enviro);
+				InitPage();
+			}
+			else if(ButtonAction == "Close Folder")
+			{
+				declare Integer Enviro = GetButtonEnviro(_IndexSelectX, _IndexSelectY);
+				G_ButtonAction[_IndexSelectY][_IndexSelectX] = "Open Folder";
+				CloseCustomFolder(Enviro);
+				InitPage();
+				
+			}
+
+
+		}
+
+		Void ShowPage(Text _PreviousPage)
+		{
+			declare CMlFrame  Frame_All    <=> (Page.GetFirstChild("Frame_AllBrowseTrack") as CMlFrame);
+			declare CMlFrame Frame_Selector	<=> (Page.GetFirstChild("Frame_Selector")	as CMlFrame);
+			Frame_Selector.Hide();
+
+			if(_PreviousPage == "")
+			{
+				declare Sound = Audio.CreateSound("{{{SoundBackToMenu}}}");
+				Sound.PanRadiusLfe 	= {{{Volumes::GetPanRadiusLfe("MenuUISpreadLarge")}}};
+				Audio.PlaySoundEvent(Sound, {{{Volumes::GetVolumedB("MenuBackToMenu")}}}, 0);
+			}
+
+			//SendCustomEvent("DetachPage", ["Mood"]);
+			
+			Frame_All.Hide();
+			
+			if(_PreviousPage == "Main")
+			{
+				G_ShowTime  = Now + C_TimeStartClip + C_TimeAnimClip;
+				G_LockInput = Now + C_TimeStartClip + C_TimeAnimClip;
+			}
+			else if(_PreviousPage == "MapsOverview")
+			{
+				declare Integer EnviroSelect for This;
+				declare Text Transition;
+				switch(EnviroSelect)
+				{
+					case 0  : Transition = "VideoBillCanyon";
+					case 1  : Transition = "VideoBillValley";
+					case 2  : Transition = "VideoBillLagoon";
+					case 3  : Transition = "VideoBillStadium";
+					default : Transition = "VideoBill2TracksA";
+				}
+				G_ShowTime      = Now + C_TimeTransitionMaps/2-300;
+				G_LockInput     = Now + C_TimeTransitionMaps;
+			}
+			else
+			{
+				Frame_All.Show();
+			}
+			G_MapsRanking.clear();
+			G_MapsRankingPlayerCount.clear();
+			G_HideTime = -1;
+		}
+
+		Void HidePage(Text _NextPage)
+		{
+			declare CMlFrame  Frame_All <=> (Page.GetFirstChild("Frame_AllBrowseTrack") as CMlFrame);
+			declare CMlFrame Frame_Selector	<=> (Page.GetFirstChild("Frame_Selector")	as CMlFrame);
+			Frame_Selector.Hide();
+
+			G_NextPage = _NextPage;
+			if(_NextPage == "Main")
+			{
+				G_LockInput = Now + C_TimeTransitionMaps;
+				G_HideTime  = Now + C_TimeTransitionMaps;
+			}
+			else
+			{
+				G_LockInput = Now + C_TimeTransitionMaps/7;
+				G_HideTime  = Now + C_TimeTransitionMaps/7;
+			}
+			G_ShowTime = -1;
+		}
+		
+		Void Input_Select() {
+			declare Integer DifficultySelect for This;
+			declare Integer[Integer][Integer] Net_BlocksLocked for Page;
+			declare Integer Enviro = G_IndexSelectX / 5;
+			
+			// HACK EG
+			declare Boolean AllLinesOpen    = Net_BlocksLocked[DifficultySelect-1][Enviro] == 2;
+			declare Boolean OnlyTopLineOpen = Net_BlocksLocked[DifficultySelect-1][Enviro] == 1;
+			
+			declare Boolean G_HACK_UnlockAllMedal for This;
+
+			if(G_HACK_UnlockAllMedal)
+			{
+				AllLinesOpen = True;
+			}
+				
+			for(Enviro, 0, {{{C_NbEnviro - 1}}})
+			{
+				G_MedalsSet[Enviro] = False;
+			}
+
+			/*
+			declare Integer NbBronzeEnv = Net_MedalsByEnviro[Enviro][3];
+			declare Integer NbBronzeDif = Net_MedalsByDifficulty[DifficultySelect-1][3];
+
+			declare Boolean AllLinesOpen = NbBronzeEnv >= (5 + (10*(DifficultySelect-1)));
+			declare Boolean OnlyTopLineOpen = 
+				(DifficultySelect == 1 && Enviro == 0) ||
+				(NbBronzeDif >= 10*Enviro) ||
+				(NbBronzeEnv >= 10*(DifficultySelect-1));
+			*/
+			// HACK EG pour le playtest
+			// if(Net_BlocksLocked[DifficultySelect-1][Enviro] == 2 || Net_BlocksLocked[DifficultySelect-1][Enviro] == 1 && G_IndexSelectY == 0)
+			if(AllLinesOpen || (OnlyTopLineOpen && G_IndexSelectY == 0)) {
+				StopAllVideos();
+				PressSelect(G_IndexSelectX, G_IndexSelectY);
+			}
+		}
+
+		main() {
+
+		{{{BuilderHelper::MLEnableMenuNavigationInputs()}}}
+		{{{Prompter2::InjectInInit()}}}
+
+
+			G_AmbianceEnviro 				= Audio.CreateSound("{{{SoundAmbianceCanyon}}}", {{{Volumes::GetVolumedB("AMB_MenuTracks_Canyon")}}}, False, True, False);
+			G_AmbianceEnviro.PanRadiusLfe 	= {{{Volumes::GetPanRadiusLfe("MenuUISpreadLarge")}}};
+
+
+
+
+			LoadVideos();
+			
+			declare Text GameSelect for This;
+			declare Integer DifficultySelect for This;
+			
+			G_IndexSelectY                     = 0;
+			G_IndexSelectX                     = 0;
+			declare Integer Prev_UpdateContent = 0;
+			declare Integer Prev_ShowFrameAll  = 0;
+			G_PositionsFramesY                 = 0;
+			G_PositionsFramesX                 = 0;
+			G_IndexMaxY                        = {{{NumberOfQuadCreateY}}};
+			G_IndexMaxX                        = {{{Count_InstancesX}}};
+			G_Difficulty[0]                    = "CUSTOM MAPS";
+			G_Difficulty[1]                    = "WHITE";
+			G_Difficulty[2]                    = "GREEN";
+			G_Difficulty[3]                    = "BLUE";
+			G_Difficulty[4]                    = "RED";
+			G_Difficulty[5]                    = "BLACK";
+			G_ShowTime                         = -1;
+			G_HideTime                         = -1;
+			G_LaunchMap                        = -1;
+			G_EndTransitionTime                = -1;
+			G_NextPage                         = "";
+			G_LockInput                        = -1;
+			G_ShowSelectorTime                 = -1;
+			G_AnimUnlock                       = -1;
+			G_EnviroText[0]                    = "{{{MenuText::GetEnvTitle(0)}}}";
+			G_EnviroText[1]                    = "{{{MenuText::GetEnvTitle(1)}}}";
+			G_EnviroText[2]                    = "{{{MenuText::GetEnvTitle(2)}}}";
+			G_EnviroText[3]                    = "{{{MenuText::GetEnvTitle(3)}}}";
+			G_DifficultyText[0]                = "{{{MenuText::GetDifficutyTitle(0)}}}";
+			G_DifficultyText[1]                = "{{{MenuText::GetDifficutyTitle(1)}}}";
+			G_DifficultyText[2]                = "{{{MenuText::GetDifficutyTitle(2)}}}";
+			G_DifficultyText[3]                = "{{{MenuText::GetDifficutyTitle(3)}}}";
+			G_DifficultyText[4]                = "{{{MenuText::GetDifficutyTitle(4)}}}";
+			G_DifficultyText[5]                = "{{{MenuText::GetDifficutyTitle(5)}}}";
+			
+			if(({{{ActualVersion}}} == 1 || {{{ActualVersion}}} == 4))
+			{
+				G_DifficultyText[0] = "Special Series";
+				G_DifficultyText[1] = "Special Series";
+				G_DifficultyText[2] = "Special Series";
+				G_DifficultyText[3] = "Special Series";
+				G_DifficultyText[4] = "Special Series";
+				G_DifficultyText[5] = "Special Series";
+			}
+
+
+			declare Text[Integer][Integer] TextButton;
+			declare Text[Integer][Integer] QuadImageUrl;
+			for(I, 0, {{{Count_InstancesY-1}}})
+			{
+				TextButton[I]   =  Text[Integer];
+				QuadImageUrl[I] =  Text[Integer];
+			}
+			TextButton[0][0] = "Browse";
+			TextButton[0][1] = "Create";
+
+			// HACK EG
+			declare Integer[Integer][Integer] Net_MedalsByEnviro		for Page;
+			declare Integer[Integer][Integer] Net_MedalsByDifficulty	for Page;
+			
+			while(True) {
+				yield;
+				if(! PageIsVisible) continue;
+				LibManialink_AnimLoop();
+
+				{{{Selector::InsertInLoop()}}}
+				{{{Prompter2::InjectInLoop()}}}
+				
+				if(G_TimeSendMapsRankingInfos <= Now && G_TimeSendMapsRankingInfos != -1)
+				{
+					SendCustomEvent("SendMapsRankingInfos", ["BrowseTracks"]);
+					G_TimeSendMapsRankingInfos = -1;
+				}
+				
+				if(G_ShowTime <= Now && G_ShowTime != -1)
+				{
+					declare CMlFrame  Frame_All <=> (Page.GetFirstChild("Frame_AllBrowseTrack") as CMlFrame);
+					Frame_All.Show();
+					declare Integer DifficultySelect for This;
+					CheckAnimUnlock(G_Enviro, DifficultySelect);
+					G_ShowTime = -1;
+				}
+
+				if(G_ShowSelectorTime <= Now && G_ShowSelectorTime != -1)
+				{
+					declare CMlFrame Frame_Selector	<=> (Page.GetFirstChild("Frame_Selector")	as CMlFrame);
+					Frame_Selector.Show();
+					declare Integer DifficultySelect for This;
+					declare Integer[Integer][Integer][Integer]	Net_MapInfoIndex	for Page;
+					declare Integer[Integer]	Net_Medals	for Page;
+
+					declare Integer QuadNumber          = G_IndexSelectY*{{{Count_InstancesX}}}+G_IndexSelectX;
+					declare Integer ArrayPosY           = QuadNumber/{{{Count_InstancesX}}}; //QuadPosY
+					declare Integer MapIndex            = QuadNumber%{{{Count_InstancesX}}}; //QuadPosX
+					declare Index = Net_MapInfoIndex[DifficultySelect][ArrayPosY][MapIndex];
+				
+					if(Net_Medals[Index] < 4 && (GameSelect == "Solo" || GameSelect == "SuperSolo"))
+					{
+						SendCustomEvent("SendMapsRankingInfos", ["BrowseTracks"]);
+						G_ShowSelectorTime = -1;
+					}
+				}
+
+				if(G_HideTime <= Now && G_HideTime != -1)
+				{
+					G_HideTime = -1;
+					declare CMlFrame  Frame_All    <=> (Page.GetFirstChild("Frame_AllBrowseTrack") as CMlFrame);
+					Frame_All.Hide();
+
+
+					if(G_NextPage == "MapsOverview")
+					{
+						SendCustomEvent("DetachPage", ["BrowseTracks"]);
+					}
+					else
+					{
+						SendCustomEvent("DetachPage", ["BrowseTracks", "Board"]);
+					}
+				}
+				
+				if(G_AnimUnlock < Now && G_AnimUnlock != -1)
+				{
+					AnimUnlock(G_Enviro);
+				}
+
+				if(G_LaunchMap <= Now && G_LaunchMap != -1)
+				{
+
+				}
+
+				if(G_EndTransitionTime <= Now && G_EndTransitionTime != -1)
+				{
+					declare CMlFrame Frame_Content  <=> (Page.GetFirstChild("Frame_Content") as CMlFrame);
+					declare NewFrameContent = <0., Frame_Content.RelativePosition.Y, Frame_Content.RelativePosition.Z>;
+
+					Frame_Content.RelativePosition    = NewFrameContent;
+					G_EndTransitionTime = -1;
+				}
+
+
+				if(G_UpdateContent < Now && G_UpdateContent != Prev_UpdateContent)
+				{
+					declare CMlFrame Frame_Content  <=> (Page.GetFirstChild("Frame_Content") as CMlFrame);
+
+					Frame_Content.RelativePosition.X *= -1;
+
+					declare NewFrameContent = <0., Frame_Content.RelativePosition.Y, Frame_Content.RelativePosition.Z>;
+					declare Integer TransitionTime = 300;
+					LibManialink_SetTargetPosition(Frame_Content, NewFrameContent);
+					LibManialink_PresetAnim(Frame_Content, TransitionTime, "EaseLinear");
+					G_IndexSelectX = 0;
+					G_IndexSelectY = 0;
+
+					InitPage();
+					UpdateSelectedTrack(G_IndexSelectX, G_IndexSelectY);
+					G_ShowFrameAll = Now + TransitionTime;
+
+					Prev_UpdateContent = G_UpdateContent;
+				}
+
+				if(G_ShowFrameAll < Now && G_ShowFrameAll != Prev_ShowFrameAll)
+				{
+					declare CMlFrame FrameAll_Buttons      <=> (Page.GetFirstChild("FrameAll_Buttons")  as CMlFrame);
+					FrameAll_Buttons.Show();
+					G_PositionsFramesX = 0;
+
+					InitFrameLvlPosition();
+
+					UpdateSelectedTrack(G_IndexSelectX, G_IndexSelectY);
+					Prev_ShowFrameAll = G_ShowFrameAll;
+				}
+
+				foreach(Event in Input.PendingEvents)
+				{
+					if(G_LockInput + 100 > Now) continue;
+					switch(Event.Button) {
+						case CInputEvent::EButton::View : {
+							//SendCustomEvent("SwitchRecordCenter", [""]);
+							//G_LockInput + 500;
+						}
+					}
+				}
+
+				foreach(Event in PendingEvents) {
+					switch(Event.Type) {
+						case CMlEvent::Type::MouseClick: {
+							declare Text[] InputId = TL::Split("_", Event.ControlId);
+							if (InputId.count < 2 || InputId[0] != "MouseInput")
+								continue;
+							switch (InputId[1]) {
+								case "Track" : {
+									declare Text[] Position = TL::Split(":", InputId[2]);
+									declare Integer NewIndexY = TL::ToInteger(Position[0]);
+									declare Integer NewIndexX = TL::ToInteger(Position[1]);
+									if(!IsG_ActiveQuad(NewIndexY, NewIndexX) && !IsCanMove(G_IndexSelectY, G_IndexSelectX, True))
+										continue;
+									if (NewIndexY != G_IndexSelectY || NewIndexX != G_IndexSelectX) {
+										G_IndexSelectX = NewIndexX;
+										G_IndexSelectY = NewIndexY;
+										Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+										UpdateSelectedTrack(G_IndexSelectX, G_IndexSelectY);
+									}
+									Input_Select();
+								}
+							}
+						}
+						case CMlEvent::Type::MouseOver: {
+							declare Text[] InputId = TL::Split("_", Event.ControlId);
+							if (InputId.count < 2 || InputId[0] != "MouseInput")
+								continue;
+							switch (InputId[1]) {
+								case "Track" : {
+									declare Text[] Position = TL::Split(":", InputId[2]);
+									declare Integer NewIndexY = TL::ToInteger(Position[0]);
+									declare Integer NewIndexX = TL::ToInteger(Position[1]);
+									if(!IsG_ActiveQuad(NewIndexY, NewIndexX) && !IsCanMove(G_IndexSelectY, G_IndexSelectX, True))
+										continue;
+									if (NewIndexY != G_IndexSelectY || NewIndexX != G_IndexSelectX) {
+										G_IndexSelectX = NewIndexX;
+										G_IndexSelectY = NewIndexY;
+										Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+										UpdateSelectedTrack(G_IndexSelectX, G_IndexSelectY);
+									}
+								}
+							}
+						}
+						case CMlEvent::Type::MenuNavigation: {
+							if(G_LockInput + 100 > Now) continue;
+							G_LockInput = Now; // Sécurité pour éviter le double input
+							switch(Event.MenuNavAction) {
+								case CMlEvent::EMenuNavAction::Up : {
+									if(!IsG_ActiveQuad(G_IndexSelectY-1, G_IndexSelectX) && !IsCanMove(G_IndexSelectY, G_IndexSelectX, True)) continue;
+									
+									G_IndexSelectY -= 1;
+									G_IndexSelectX  = NearestIndexSelectX(G_IndexSelectY);
+									Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+									
+									UpdateSelectedTrack(G_IndexSelectX, G_IndexSelectY);
+									
+									
+								}
+								case CMlEvent::EMenuNavAction::Down : {
+									if(!IsG_ActiveQuad(G_IndexSelectY+1, G_IndexSelectX) && !IsCanMove(G_IndexSelectY, G_IndexSelectX, False)) continue;
+									
+									G_IndexSelectY += 1;
+									G_IndexSelectX  = NearestIndexSelectX(G_IndexSelectY);
+									Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+									
+									UpdateSelectedTrack(G_IndexSelectX, G_IndexSelectY);
+									
+								}
+								case CMlEvent::EMenuNavAction::Left : {
+									if(!IsG_ActiveQuad(G_IndexSelectY, G_IndexSelectX-1)) continue;
+									if(G_IndexSelectX > 0 && G_ActiveQuad[G_IndexSelectY][G_IndexSelectX-1])
+									{
+										G_IndexSelectX -= 1;
+										G_PreviousIndexX = G_IndexSelectX;
+										Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+										
+										UpdateSelectedTrack(G_IndexSelectX, G_IndexSelectY);
+									}
+								}
+								case CMlEvent::EMenuNavAction::Right : {
+									if(!IsG_ActiveQuad(G_IndexSelectY, G_IndexSelectX+1)) continue;
+									if(G_IndexSelectX < G_IndexMaxX-1 && G_ActiveQuad[G_IndexSelectY][G_IndexSelectX+1])
+									{
+										G_IndexSelectX += 1;
+										G_PreviousIndexX = G_IndexSelectX;
+										Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+										UpdateSelectedTrack(G_IndexSelectX, G_IndexSelectY);
+									}
+								}
+								case CMlEvent::EMenuNavAction::Select : Input_Select();
+								case CMlEvent::EMenuNavAction::Action1 : {
+									//MoveCursor(1);
+									/*
+									log("Action1");
+									declare CMlQuad Quad_Black <=> (Page.GetFirstChild("Quad_Black") as CMlQuad);
+									Quad_Black.Show();
+									//SendCustomEvent("Hack_JoinFriend", [""]);
+									
+									declare Text MapPath = GetMapPath(G_IndexSelectX, G_IndexSelectY);
+									if(DifficultySelect == 0 && MapPath != "")
+									{
+										SendCustomEvent("DeleteMap", [MapPath]);
+									}
+									*/
+								}
+								case CMlEvent::EMenuNavAction::Action2 : {
+									
+									G_NextAnimUnlock = 0;
+									AnimUnlock(G_Enviro);
+									//SendCustomEvent("ConnectOnline", [""]);
+									/* Servait à éditer la map sélectionnée
+									if(GameSelect != "EditMap" && DifficultySelect == 0)
+									{
+										declare Text MapPath = GetMapPath(G_IndexSelectX, G_IndexSelectY);
+										if(MapPath != "")
+										{
+										    declare CMlQuad Quad_Black <=> (Page.GetFirstChild("Quad_Black") as CMlQuad);
+										    Quad_Black.Show();
+
+											
+											SendCustomEvent("EditMap", [MapPath, "{{{EditorPlugin}}}"]);
+											
+										}
+									}
+									*/
+								}
+								case CMlEvent::EMenuNavAction::Cancel : {
+									//Show le Quad wait qui permet de cacher le chargement des maps au lancement du layer
+									//Quad_Wait.Show();
+									declare Integer EnviroSelect for This;
+									EnviroSelect = G_Enviro;
+									StopAllVideos();
+									SendCustomEvent("GotoPrevious", [""]);
+									// Sounds
+									{
+										declare Sound = Audio.CreateSound("{{{SoundPageBack}}}");
+										Sound.PanRadiusLfe 	= {{{Volumes::GetPanRadiusLfe("MenuUISpreadLarge")}}};
+										Audio.PlaySoundEvent(Sound, {{{Volumes::GetVolumedB("MenuPageBack")}}}, 0);			
+									}
+								}
+								case CMlEvent::EMenuNavAction::AppMenu : {
+									//Show le Quad wait qui permet de cacher le chargement des maps au lancement du layer
+									//Quad_Wait.Show();
+									declare Integer EnviroSelect for This;
+									EnviroSelect = G_Enviro;
+									StopAllVideos();
+									SendCustomEvent("GotoPrevious", [""]);
+									// Sounds
+									{
+										declare Sound = Audio.CreateSound("{{{SoundPageBack}}}");
+										Sound.PanRadiusLfe 	= {{{Volumes::GetPanRadiusLfe("MenuUISpreadLarge")}}};
+										Audio.PlaySoundEvent(Sound, {{{Volumes::GetVolumedB("MenuPageBack")}}}, 0);			
+									}
+								}
+								case CMlEvent::EMenuNavAction::PageUp : {
+									if(({{{ActualVersion}}} == 1 || {{{ActualVersion}}} == 4) && G_Enviro <= 2) continue;
+									declare Integer DifficultySelect for This;
+									if(DifficultySelect != 0 && G_UpdateContent == Prev_UpdateContent && GameSelect != "EditMap" && G_PositionsFramesX >= 5)
+									{
+										G_PositionsFramesX -=5;
+										G_Enviro           -=1;
+										G_IndexSelectX       -=5;
+										G_PreviousIndexX = G_IndexSelectX;
+										ChangeEnviro(True);
+										UpdateAmbianceEnviro();
+										CheckAnimUnlock(G_Enviro, DifficultySelect);
+										UpdateSelectedTrack(G_IndexSelectX, G_IndexSelectY);
+										// Sounds
+										{
+											declare Sound = Audio.CreateSound("{{{SoundToLeft}}}");
+											Sound.PanRadiusLfe 	= {{{Volumes::GetPanRadiusLfe("MenuUISpreadLarge")}}};
+											Audio.PlaySoundEvent(Sound, {{{Volumes::GetVolumedB("MenuMapToLeft")}}}, 0);			
+										}
+									}
+								}
+								case CMlEvent::EMenuNavAction::PageDown : {
+									if(({{{ActualVersion}}} == 1 || {{{ActualVersion}}} == 4) && G_Enviro >= 3) continue;
+									declare Integer DifficultySelect for This;
+									if(DifficultySelect != 0 && G_UpdateContent == Prev_UpdateContent && GameSelect != "EditMap"  && G_PositionsFramesX < 15)
+									{
+										G_PositionsFramesX +=5;
+										G_Enviro           +=1;
+										G_IndexSelectX       +=5;
+										G_PreviousIndexX = G_IndexSelectX;
+										ChangeEnviro(True);
+										UpdateAmbianceEnviro();
+										CheckAnimUnlock(G_Enviro, DifficultySelect);
+										UpdateSelectedTrack(G_IndexSelectX, G_IndexSelectY);
+										// Sounds
+										{
+											declare Sound = Audio.CreateSound("{{{SoundToRight}}}");
+											Sound.PanRadiusLfe 	= {{{Volumes::GetPanRadiusLfe("MenuUISpreadLarge")}}};
+											Audio.PlaySoundEvent(Sound, {{{Volumes::GetVolumedB("MenuMapToRight")}}}, 0);			
+										}
+									}
+								}
+							}
+							break;
+						}
+						case CMlEvent::Type::KeyPress: {
+							switch(Event.KeyName) {
+								case "F1" : {
+									//G_LockInput + 500;
+									//SendCustomEvent("SwitchRecordCenter", [""]);
+								}
+							}
+						}
+
+
+
+						case CMlEvent::Type::PluginCustomEvent: {
+							switch(Event.PluginCustomEventType) {
+								case "Show" : {
+									declare PageName = Event.CustomEventData[0];
+									{{{_ShowAnim}}}
+									ShowPage(PageName);
+									declare Integer DifficultySelect for This;
+									declare Integer	Net_DifficultySelect		for Page;
+									Net_DifficultySelect = DifficultySelect;
+									sleep(100);
+									//HACK
+									//SendCustomEvent("BrowseTracksShow", [""]); //?
+									//HACKEND
+									//SendCustomEvent("SendMapsRankingInfos", ["BrowseTracks"]); //?
+
+									EnableMenuNavigation(True,False,Null,1);
+
+									declare CMlQuad Quad_Black 			  <=> (Page.GetFirstChild("Quad_Black") as CMlQuad);
+									Quad_Black.Hide();
+
+									//SetBannerContent();
+									
+									if(PageName == "Difficulty" || PageName == "MapsOverview" || PageName == "Main")
+									{
+										declare Integer EnviroSelect for This;
+
+										G_IndexSelectY       = 0;
+										G_IndexSelectX       = EnviroSelect*5;
+										G_PositionsFramesY = 0;
+										G_Enviro           = EnviroSelect;
+										G_PositionsFramesX = EnviroSelect*5;
+										G_PreviousIndexX   = G_IndexSelectX;
+										InitPage();
+									}
+									else
+									{
+										
+										for(Enviro, 0, {{{C_NbEnviro - 1}}})
+										{
+											G_MedalsSet[Enviro] = False;
+										}
+									}
+									UpdateAmbianceEnviro();
+
+									SendCustomEvent("GetAllInfos", ["BrowseTracks"]);
+									UpdateSelectedTrack(G_IndexSelectX, G_IndexSelectY);
+									//UpdateHeaderTitle();
+								}
+							
+								case "Hide" : {
+									StopAmbianceEnviro();
+									declare PageName = Event.CustomEventData[0];
+									HidePage(PageName);
+									{{{_HideAnim}}}
+								}
+								case "AllInfosSent" : {
+									UpdateAmbianceEnviro();
+									declare Integer Net_NumberOfMedals for Page;
+									//log("AllInfosSent: " ^ Net_NumberOfMedals);
+									G_ShowSelectorTime = Now + 100;
+
+									UpdateMaps();
+								}
+								case "ModeName" : {
+									declare Text Net_MenuSelect for Page;
+									declare Vec3 MenuColor = GetMenuColor(Net_MenuSelect);
+									declare CMlQuad  Quad_Selector <=> (Page.GetFirstChild("Quad_Selector") as CMlQuad);
+									Quad_Selector.Colorize = MenuColor;
+
+								}
+								case "LaunchUnlockAnim" : {
+									declare Enviro       = TL::ToInteger(Event.CustomEventData[0]);
+									declare LineToUnlock = TL::ToInteger(Event.CustomEventData[2]) - 1;
+
+									PreUnlockAnim(Enviro, LineToUnlock);
+
+									G_NextAnimUnlock = 0;
+									G_LineToUnlock   = LineToUnlock;
+									G_AnimUnlock     = Now+500;
+									G_LockInput      = G_AnimUnlock+10;
+
+								}
+								case "HideBlackQuad" : {
+									declare Integer NumberOfNextTracks= TL::ToInteger(Event.CustomEventData[0]);
+									MoveCursor(NumberOfNextTracks);
+									declare CMlQuad Quad_Black <=> (Page.GetFirstChild("Quad_Black") as CMlQuad);
+									Quad_Black.Hide();
+									declare Integer DifficultySelect for This;
+									declare Integer[Integer][Integer][Integer]	Net_MapInfoIndex	for Page;
+									declare Integer[Integer]	Net_Medals	for Page;
+									declare Integer QuadNumber          = G_IndexSelectY*{{{Count_InstancesX}}}+G_IndexSelectX;
+									declare Integer ArrayPosY           = QuadNumber/{{{Count_InstancesX}}}; //QuadPosY
+									declare Integer MapIndex            = QuadNumber%{{{Count_InstancesX}}}; //QuadPosX
+									declare Index = Net_MapInfoIndex[DifficultySelect][ArrayPosY][MapIndex];
+
+									if(Net_Medals[Index] < 4 && (GameSelect == "Solo" || GameSelect == "SuperSolo")) {
+										SendCustomEvent("SendMapsRankingInfos", ["BrowseTracks"]);
+										G_ShowSelectorTime = -1;
+									}
+								}
+								case "MapsRankingSent" : {
+									
+									declare Integer DifficultySelect for This;
+									declare Integer[Integer][Integer][Integer]	Net_MapInfoIndex	for Page;
+									declare Integer[Integer]	Net_Medals	for Page;
+									declare Integer QuadNumber          = G_IndexSelectY*{{{Count_InstancesX}}}+G_IndexSelectX;
+									declare Integer ArrayPosY           = QuadNumber/{{{Count_InstancesX}}}; //QuadPosY
+									declare Integer MapIndex            = QuadNumber%{{{Count_InstancesX}}}; //QuadPosX
+									declare Index = Net_MapInfoIndex[DifficultySelect][ArrayPosY][MapIndex];
+									if(!(Net_Medals[Index] < 4 && (GameSelect == "Solo" || GameSelect == "SuperSolo"))) continue;
+									
+
+									declare Integer[Text][Integer] Net_MapsRanking for Page;
+									declare Integer[Text][Integer] Net_MapsRankingPlayerCount for Page;
+
+									foreach(Index => MapRanking in Net_MapsRanking)
+									{
+										if(!G_MapsRanking.existskey(Index))
+										{
+											G_MapsRanking[Index] = Integer[Text];
+											G_MapsRanking[Index] = MapRanking;
+										}
+									}
+									foreach(Index => MapsRankingPlayerCount in Net_MapsRankingPlayerCount)
+									{
+										if(!G_MapsRankingPlayerCount.existskey(Index))
+										{
+											G_MapsRankingPlayerCount[Index] = Integer[Text];
+											G_MapsRankingPlayerCount[Index] = MapsRankingPlayerCount;
+										}
+									}
+									UpdateMapsInfoRanking();
+								}
+								
+							}
+						}
+					}
+				}
+			}
+		}
+	--></script>
+	""";
+	
+	return MLText;
+}

@@ -1,0 +1,593 @@
+/** 
+ * Header UI
+ */
+
+#Const Version		"2016-03-11"
+#Const ScriptName	"Header.Script.txt"
+
+#Include "TextLib" as TL
+#Include "Libs/Openplanet/Buttons.Script.txt" as Buttons
+#Include "Libs/Openplanet/MLEffects.Script.txt" as MLE
+#Include "Libs/Openplanet/Manialink3.Script.txt" as Manialink
+#Include "Libs/Openplanet/TMConsole/MapEditor/Layers.Script.txt" as Layers
+#Include "Libs/Openplanet/TMConsole/MapEditor/UI/Colors.Script.txt" as Colors
+#Include "Libs/Openplanet/TMConsole/MapEditor/UI/Stylesheet.Script.txt" as Styles
+
+// ---------------------------------- //
+// Constants
+// ---------------------------------- //
+#Const C_MaxModes	3
+/// Title bar statuses
+#Const C_Status_Message	0
+#Const C_Status_Alert	1
+#Const C_Status_Error	2
+/// Editor levels
+#Const C_Editor_Random		0
+#Const C_Editor_Beginner	1
+#Const C_Editor_Advanced	2
+#Const C_Editor_Expert		3
+/// Events
+#Const C_Event_SwitchMode	"LibUIHeader_SwitchMode"
+#Const C_Event_SelectMode	"LibUIHeader_SelectMode"
+
+// ---------------------------------- //
+// Functions
+// ---------------------------------- //
+// ---------------------------------- //
+// Private
+// ---------------------------------- //
+// ---------------------------------- //
+/** Get the header manialink
+ *
+ *	@return						The manialink
+ */
+Text Private_GetHeaderML() {
+	declare Modes = "";
+	declare HeaderSizeX = Styles::GetHeaderSize2();
+	declare ButtonSize = 2.;
+	declare FullHeaderSizeX = HeaderSizeX + (2. * ButtonSize);
+	declare ModeSizeX = (FullHeaderSizeX - ButtonSize) / C_MaxModes;
+	for (I, 0, C_MaxModes-1) {
+		declare PosX = ModeSizeX * I;
+		Modes ^= """<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<PosX, 0., 0.>, Styles::CircleSize_Bottom()))}}}>""";
+		Modes ^= Styles::BuildQuad(<ModeSizeX*0.5, 0., 1.>, <ModeSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_CenterTop(), ["bgcolor" => Colors::GetColorML(Colors::Color_Purple()), "scriptevents" => "1", MLE::Data_Triggers() => "T"^I, "class" => MLE::ML_Class(), "id" => "Quad_Mode"]);
+		Modes ^= Styles::BuildLabel(<ModeSizeX*0.5, -0.5, 2.>, <ModeSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_CenterCenter2(), [MLE::Data_Effects() => """T{{{I}}}:{{{MLE::Effect_LabelHover()}}}""", "class" => """turbo2-text-title {{{MLE::ML_Class()}}}""", "id" => "Label_Mode"]);
+		Modes ^= """</frame>""";
+	}
+	
+	declare TitleSizeX = 14.;
+	declare TitleMargin = 2.;
+	
+	declare ModesHelpImage = Buttons::Editor_BuildMode();
+	
+	return """
+<manialink version="3" name="MapEditor:Header">
+<stylesheet>
+	{{{Styles::Get()}}}
+</stylesheet>
+<frame z-index="-1" id="Frame_Global">
+	<frame pos="{{{-Styles::GetSize2(<TitleSizeX+TitleMargin, 0.>, Styles::CircleSize_Top()).X}}} {{{Styles::Margin_Top()}}}" hidden="1" id="Frame_Info">
+		{{{Styles::BuildBackground(<0., 0., 0.>, <TitleSizeX+TitleMargin, 2.>, Styles::CircleSize_Top(), Styles::Align_LeftTop())}}}
+		<frame id="Frame_InfoLong">
+			{{{Styles::BuildBackground(<0., -2., 0.>, <TitleSizeX+TitleMargin, 1.>, Styles::CircleSize_Top(), Styles::Align_LeftTop())}}}
+		</frame>
+		{{{Styles::BuildLine(<2., 0., 1.>, <TitleSizeX, 2.>, Styles::CircleSize_Top(), Styles::Align_LeftTop(), Colors::Color_Purple(), True, True, Text[Text])}}}
+		<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<2.1, 0., 2.>, Styles::CircleSize_Top()))}}} {{{Styles::BuildSize2(Styles::GetSize2(<TitleSizeX-0.2, 2.>, Styles::CircleSize_Top()))}}}>
+		<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<0., -1., 3.>, Styles::CircleSize_Top()))}}} id="Frame_Editor">
+			{{{Styles::BuildLabel(<0., 0., 2.>, <100., 2.>, Styles::CircleSize_Top(), Styles::Align_LeftCenter2(), ["class" => "turbo2-text-title-big", "id" => "Label_Editor"])}}}
+			{{{Styles::BuildLabel(<0., 0., 2.>, <100., 2.>, Styles::CircleSize_Top(), Styles::Align_LeftCenter2(), ["class" => "turbo2-text-title-big", "id" => "Label_Editor2"])}}}
+		</frame>
+		</frame>
+		<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<2., -2., 3.>, Styles::CircleSize_Top()))}}} hidden="1" id="Frame_Limit">
+			{{{Styles::BuildLine(<0., 0., 0.>, <TitleSizeX, 1.>, Styles::CircleSize_Top(), Styles::Align_LeftTop(), Colors::Color_Black(), True, True, Text[Text])}}}
+			{{{Styles::BuildQuad(<0., 0., 1.>, <0., 1.>, Styles::CircleSize_Top(), Styles::Align_LeftTop(), ["bgcolor" => Colors::GetColorML(Colors::Color_Red()), "id" => "Quad_Limit"])}}}
+			{{{Styles::BuildLabel(<TitleSizeX*0.5, -0.45, 2.>, <TitleSizeX, 1.>, Styles::CircleSize_Top(), Styles::Align_CenterCenter2(), ["class" => "turbo2-text-title", "id" => "Label_Limit"])}}}
+		</frame>
+	</frame>
+	<frame pos="0 -92" hidden="1" id="Frame_Header">
+		{{{Styles::BuildBackground(<0., 0., 0.>, <FullHeaderSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_CenterTop())}}}
+		<frame z-index="1" id="Frame_Message">
+			{{{Styles::BuildLine(<0., 0., 1.>, <FullHeaderSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_CenterTop(), Colors::Color_Purple(), True, True, ["id" => "Quad_Header"])}}}
+			{{{Styles::BuildLabel(<0., -0.45, 2.>, <FullHeaderSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_CenterCenter2(), ["class" => "turbo2-text-title", "id" => "Label_Title"])}}}
+		</frame>
+		<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<-FullHeaderSizeX*0.5, 0., 2.>, Styles::CircleSize_Bottom()))}}} hidden="1" id="Frame_Expert">
+			{{{Styles::BuildBackground(<0., -1., 0.>, <FullHeaderSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop())}}}
+			{{{Styles::BuildQuad(<0., 0., 1.>, <ButtonSize, ButtonSize>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), ["bgcolor" => Colors::GetColorML(Colors::Color_Black()), "scriptevents" => "1", "id" => "Quad_Switch"])}}}
+			{{{Styles::BuildButton(ModesHelpImage, <1., -1., 2.>, <ButtonSize-0.5, ButtonSize-0.5>, Styles::CircleSize_Bottom(), Styles::Align_CenterCenter(), ["image" => ModesHelpImage])}}}
+			<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<2., 0., 3.>, Styles::CircleSize_Bottom()))}}} id="Frame_Modes">
+				{{{Modes}}}
+			</frame>
+			{{{Styles::BuildLine(<ButtonSize, 0., 4.>, <FullHeaderSizeX-ButtonSize, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), Colors::Color_Purple(), False, True, ["hidden" => "1"])}}}
+		</frame>
+	</frame>
+</frame>
+<script><!--
+#Include "TextLib" as TL
+#Include "MathLib" as ML
+#Include "AnimLib" as AL
+{{{Manialink::DefaultIncludes()}}}
+{{{MLE::ML_Includes()}}}
+
+{{{Manialink::Animations(["EaseOutQuad"])}}}
+{{{Manialink::Functions(["AnimRepeat"])}}}
+{{{Buttons::ML_Functions()}}}
+{{{MLE::ML_Functions()}}}
+
+declare Real G_MessageSize;
+declare Integer G_AnimDuration;
+
+Void SetTitle(Text _Title, Boolean _Full, Integer _Status) {
+	declare Frame_Header <=> (Page.GetFirstChild("Frame_Header") as CMlFrame);
+	declare Label_Title <=> (Frame_Header.GetFirstChild("Label_Title") as CMlLabel);
+	Label_Title.Value = _Title;
+	
+	switch (_Status) {
+		case {{{C_Status_Message}}}: {
+			LibManialink_AnimStop(Label_Title);
+			LibManialink_Anim(Label_Title, "<label opacity=\"1\" />", 250, "EaseOutQuad");
+		}
+		default: {
+			LibManialink_AnimStop(Label_Title);
+			LibManialink_AnimRepeatStart(2000);
+			LibManialink_Anim(Label_Title, "<label opacity=\"0.1\" />", 400, "EaseOutQuad");
+			LibManialink_AnimChain(Label_Title, "<label opacity=\"1\" />", 400, "EaseOutQuad");
+			LibManialink_AnimRepeatEnd();
+		}
+	}
+}
+
+Void SetModes(Text[] _Modes) {
+	declare Frame_Message <=> (Page.GetFirstChild("Frame_Message") as CMlFrame);
+	declare Frame_Expert <=> (Page.GetFirstChild("Frame_Expert") as CMlFrame);
+	declare Frame_Modes <=> (Page.GetFirstChild("Frame_Modes") as CMlFrame);
+	
+	if (_Modes.count > 0) {
+		foreach (Key => Control in Frame_Modes.Controls) {
+			declare Frame_Mode <=> (Control as CMlFrame);
+			declare Quad_Mode <=> (Frame_Mode.GetFirstChild("Quad_Mode") as CMlQuad);
+			declare Label_Mode <=> (Frame_Mode.GetFirstChild("Label_Mode") as CMlLabel);
+			if (_Modes.existskey(Key)) {
+				Label_Mode.Value = _Modes[Key];
+				Frame_Mode.Visible = True;
+				
+				declare SelectMode for Quad_Mode = "";
+				SelectMode = _Modes[Key];
+			} else {
+				Frame_Mode.Visible = False;
+			}
+		}
+		
+		Frame_Message.Visible = False;
+		Frame_Expert.Visible = True;
+	} else {
+		Frame_Message.Visible = True;
+		Frame_Expert.Visible = False;
+	}
+}
+
+Void SelectMode(Text _Mode) {
+	declare Frame_Modes <=> (Page.GetFirstChild("Frame_Modes") as CMlFrame);
+	foreach (Key => Control in Frame_Modes.Controls) {
+		declare Frame_Mode <=> (Control as CMlFrame);
+		declare Quad_Mode <=> (Frame_Mode.GetFirstChild("Quad_Mode") as CMlQuad);
+		declare Label_Mode <=> (Frame_Mode.GetFirstChild("Label_Mode") as CMlLabel);
+		
+		if (Label_Mode.Value == _Mode) {
+			LibManialink_Anim(
+				Quad_Mode, {{{Manialink::Inject("""<quad bgcolor="{{{Colors::GetColorML(Colors::Color_Purple())}}}" />""")}}}, 250, "EaseOutQuad"
+			);
+		} else {
+			LibManialink_Anim(
+				Quad_Mode, {{{Manialink::Inject("""<quad bgcolor="{{{Colors::GetColorML(Colors::Color_DarkPurple())}}}" />""")}}}, 250, "EaseOutQuad"
+			);
+		}
+	}
+}
+
+Void SetVisibility(Boolean _HeaderVisible, Boolean _InfoVisible) {
+	if (_HeaderVisible) {
+		declare L_PositionY for Page = -1.;
+		LibManialink_Anim("<frame pos=\"0 "^L_PositionY^"\" hidden=\"0\" id=\"Frame_Header\" />", 250, "EaseOutQuad");
+	} else {
+		LibManialink_Anim({{{Manialink::Inject("""<frame pos="0 -92" hidden="1" id="Frame_Header" />""")}}}, 250, "EaseOutQuad");
+	}
+	
+	if (_InfoVisible) {
+		LibManialink_Anim({{{Manialink::Inject("""<frame pos="-160 {{{Styles::Margin_Top()}}}" hidden="0" id="Frame_Info" />""")}}}, 250, "EaseOutQuad");
+	} else {
+		LibManialink_Anim({{{Manialink::Inject("""<frame pos="-260 {{{Styles::Margin_Top()}}}" hidden="1" id="Frame_Info" />""")}}}, 250, "EaseOutQuad");
+	}
+}
+
+Void SetEditor(Integer _Editor) {
+	declare Frame_InfoLong <=> (Page.GetFirstChild("Frame_InfoLong") as CMlFrame);
+	declare Frame_Editor <=> (Page.GetFirstChild("Frame_Editor") as CMlFrame);
+	declare Label_Editor <=> (Frame_Editor.GetFirstChild("Label_Editor") as CMlLabel);
+	declare Label_Editor2 <=> (Frame_Editor.GetFirstChild("Label_Editor2") as CMlLabel);
+	
+	declare Message = "";
+	if (_Editor == {{{C_Editor_Random}}}) {
+		Message = "{{{TL::Compose("%1  %2", 
+			_("Trackbuilder"), 
+			//L16N [MapEditor] Random track generator
+			_("Random generator")
+		)}}}";
+		Frame_InfoLong.Visible = True;
+	} else if (_Editor == {{{C_Editor_Beginner}}}) {
+		Message = "{{{TL::Compose("%1  %2", 
+			_("Trackbuilder"), 
+			//L16N [MapEditor] Beginner mode of the map editor
+			_("Beginner mode"))
+		}}}";
+		Frame_InfoLong.Visible = True;
+	} else if (_Editor == {{{C_Editor_Advanced}}}) {
+		Message = "{{{TL::Compose("%1  %2", 
+			_("Trackbuilder"), 
+			//L16N [MapEditor] Normal mode of the map editor
+			_("Normal mode"))
+		}}}";
+		Frame_InfoLong.Visible = True;
+	} else {
+		Message = "{{{TL::Compose("%1  %2", 
+			_("Trackbuilder"), 
+			//L16N [MapEditor] Advanced mode of the map editor
+			_("Advanced mode"))
+		}}}";
+		Frame_InfoLong.Visible = True;
+	}
+	Label_Editor.Value = Message;
+	Label_Editor2.Value = Message;
+	
+	G_MessageSize = Label_Editor.ComputeWidth(Message, True) + 10.;
+	G_AnimDuration = ML::NearestInteger(G_MessageSize * 80);
+}
+
+Void SetLimit(Integer _Limit) {
+	declare Frame_Limit <=> (Page.GetFirstChild("Frame_Limit") as CMlFrame);
+	declare Quad_Limit <=> (Frame_Limit.GetFirstChild("Quad_Limit") as CMlQuad);
+	declare Label_Limit <=> (Frame_Limit.GetFirstChild("Label_Limit") as CMlLabel);
+	
+	declare CopperPrice = Editor.Map.CopperPrice;
+	if (CopperPrice > _Limit) CopperPrice = _Limit;
+	if (_Limit != 0) Quad_Limit.Size.X = (CopperPrice / (_Limit * 1.)) * {{{Styles::GetSize2(<TitleSizeX, 0.>, Styles::CircleSize_Top()).X}}};
+	Label_Limit.Value = CopperPrice^"/"^_Limit;
+}
+
+main() {
+	declare Frame_Limit <=> (Page.GetFirstChild("Frame_Limit") as CMlFrame);
+	declare Frame_Editor <=> (Page.GetFirstChild("Frame_Editor") as CMlFrame);
+	declare Label_Editor <=> (Frame_Editor.GetFirstChild("Label_Editor") as CMlLabel);
+	declare Label_Editor2 <=> (Frame_Editor.GetFirstChild("Label_Editor2") as CMlLabel);
+	
+	declare L_Title for Page = "";
+	declare L_FullTitle for Page = False;
+	declare L_TitleStatus for Page = {{{C_Status_Message}}};
+	declare L_ModesUpdate for Page = -1;
+	declare L_Modes for Page = Text[];
+	declare L_ModesSelectedUpdate for Page = -1;
+	declare L_ModesSelected for Page = "";
+	declare L_Editor for Page = {{{C_Editor_Beginner}}};
+	declare L_HeaderVisibility for Page = False;
+	declare L_InfoVisibility for Page = False;
+	declare L_PositionY for Page = -1.;
+	declare L_Limit for Page = 0;
+	declare L_LimitVisibility for Page = False;
+	
+	declare PrevTitle = "";
+	declare PrevModesUpdate = -1;
+	declare PrevModesSelectedUpdate = -1;
+	declare PrevEditor = -1;
+	declare PrevHeaderVisibility = False;
+	declare PrevInfoVisibility = False;
+	declare PrevPositionY = -1.;
+	declare PrevLimit = 0;
+	declare PrevCopperPrice = 0;
+	declare PrevLimitVisibility = False;
+	
+	declare AnimStartTime = Now;
+	
+	SetEditor(L_Editor);
+	LibButtons_Init();
+	LibMLEffects_Init();
+	
+	while (True) {
+		yield;
+		
+		LibManialink_AnimLoop();
+		LibButtons_Loop();
+		LibMLEffects_Loop();
+		
+		if (PrevTitle != L_Title) {
+			PrevTitle = L_Title;
+			SetTitle(L_Title, L_FullTitle, L_TitleStatus);
+		}
+		
+		if (PrevModesUpdate != L_ModesUpdate) {
+			PrevModesUpdate = L_ModesUpdate;
+			SetModes(L_Modes);
+		}
+		
+		if (PrevModesSelectedUpdate != L_ModesSelectedUpdate) {
+			PrevModesSelectedUpdate = L_ModesSelectedUpdate;
+			SelectMode(L_ModesSelected);
+		}
+		
+		if (PrevEditor != L_Editor) {
+			PrevEditor = L_Editor;
+			SetEditor(L_Editor);
+		}
+		
+		if (PrevHeaderVisibility != L_HeaderVisibility || PrevInfoVisibility != L_InfoVisibility || PrevPositionY != L_PositionY) {
+			PrevHeaderVisibility = L_HeaderVisibility;
+			PrevInfoVisibility = L_InfoVisibility;
+			PrevPositionY = L_PositionY;
+			SetVisibility(L_HeaderVisibility, L_InfoVisibility);
+			if (L_HeaderVisibility) SelectMode(L_ModesSelected);
+			SetEditor(L_Editor);
+		}
+		
+		if (PrevLimit != L_Limit || PrevCopperPrice != Editor.Map.CopperPrice) {
+			PrevLimit = L_Limit;
+			PrevCopperPrice = Editor.Map.CopperPrice;
+			SetLimit(L_Limit);
+		}
+		
+		if (PrevLimitVisibility != L_LimitVisibility) {
+			PrevLimitVisibility = L_LimitVisibility;
+			Frame_Limit.Visible = L_LimitVisibility;
+		}
+		
+		if (L_InfoVisibility) {
+			if (Now > AnimStartTime + G_AnimDuration) {
+				AnimStartTime = Now;
+			}
+			
+			declare X = -AL::EaseLinear(Now - AnimStartTime, 0., G_MessageSize, G_AnimDuration);
+			Label_Editor.RelativePosition_V3.X = X;
+			Label_Editor2.RelativePosition_V3.X = X + G_MessageSize;
+		}
+		
+		foreach (Event in PendingEvents) {
+			if (Event.Type == CMlEvent::Type::MouseClick) {
+				if (Event.Control != Null && Event.ControlId == "Quad_Mode") {
+					declare SelectMode for Event.Control = "";
+					SendCustomEvent("{{{C_Event_SelectMode}}}", [SelectMode]);
+				} else if (Event.ControlId == "Quad_Switch") {
+					SendCustomEvent("{{{C_Event_SwitchMode}}}", Text[]);
+				}
+			}
+		}
+	}
+}
+--></script>
+</manialink>
+""";
+}
+
+// ---------------------------------- //
+// Public
+// ---------------------------------- //
+// ---------------------------------- //
+/** Return the version number of the script
+ *
+ *	@return						The version number of the script
+ */
+Text GetScriptVersion() {
+	return Version;
+}
+
+// ---------------------------------- //
+/** Return the name of the script
+ *
+ *	@return						The name of the script
+ */
+Text GetScriptName() {
+	return ScriptName;
+}
+
+// ---------------------------------- //
+/// Get the events constants
+Text Event_SelectMode() { return C_Event_SelectMode; }
+Text Event_SwitchMode() { return C_Event_SwitchMode; }
+
+// ---------------------------------- //
+/// Get the status constants
+Integer Status_Message() { return C_Status_Message; }
+Integer Status_Alert() { return C_Status_Alert; }
+Integer Status_Error() { return C_Status_Error; }
+
+// ---------------------------------- //
+/** Set the title in the header
+ *
+ *	@param	_Title				The title
+ *	@param	_FullTitle			Display wide title
+ *	@param	_Status				Title bar status (message, alert, error, ...)
+ */
+Void SetTitle(Text _Title, Boolean _FullTitle, Integer _Status) {
+	declare Page <=> Layers::GetPage("Header");
+	declare L_Title for Page = "";
+	declare L_FullTitle for Page = False;
+	declare L_TitleStatus for Page = C_Status_Message;
+	L_Title = _Title;
+	L_FullTitle = _FullTitle;
+	L_TitleStatus = _Status;
+}
+
+// ---------------------------------- //
+/** Set the title in the header
+ *
+ *	@param	_Title				The title
+ *	@param	_FullTitle			Display wide title
+ */
+Void SetTitle(Text _Title, Boolean _FullTitle) {
+	SetTitle(_Title, _FullTitle, C_Status_Message);
+}
+
+// ---------------------------------- //
+/** Set the title in the header
+ *
+ *	@param	_Title				The title
+ */
+Void SetTitle(Text _Title) {
+	SetTitle(_Title, False);
+}
+
+// ---------------------------------- //
+/** Set the modes in the header
+ * 
+ *	@param	_Modes				The modes
+ */
+Void SetModes(Text[] _Modes) {
+	declare Page <=> Layers::GetPage("Header");
+	declare L_ModesUpdate for Page = -1;
+	declare L_Modes for Page = Text[];
+	L_Modes = _Modes;
+	L_ModesUpdate = Now;
+}
+
+// ---------------------------------- //
+/** Select a mode in the header
+ *
+ *	@param	_Mode				The mode to select
+ */
+Void SelectMode(Text _Mode) {
+	declare Page <=> Layers::GetPage("Header");
+	declare L_ModesSelectedUpdate for Page = -1;
+	declare L_ModesSelected for Page = "";
+	L_ModesSelected = _Mode;
+	L_ModesSelectedUpdate = Now;
+}
+
+// ---------------------------------- //
+/// Get editor levels
+Integer Editor_Random() { return C_Editor_Random; }
+Integer Editor_Beginner() { return C_Editor_Beginner; }
+Integer Editor_Advanced() { return C_Editor_Advanced; }
+Integer Editor_Expert() { return C_Editor_Expert; }
+
+// ---------------------------------- //
+/** Set the editor level
+ *
+ *	@param	_Editor					The editor (beginner, normal, expert)
+ */
+Void SetEditor(Integer _Editor) {
+	declare Page <=> Layers::GetPage("Header");
+	declare L_Editor for Page = C_Editor_Beginner;
+	L_Editor = _Editor;
+}
+
+// ---------------------------------- //
+/** Set the position of the UI
+ *
+ *	@param	_PositionY				The position
+ */
+Void SetPositionY(Real _PositionY) {
+	declare Page <=> Layers::GetPage("Header");
+	declare L_PositionY for Page = 0.;
+	L_PositionY = _PositionY;
+}
+
+// ---------------------------------- //
+/** Set the copper price limit for the map
+ *
+ *	@param	_Limit					The limit to use
+ */
+Void SetLimit(Integer _Limit) {
+	declare Page <=> Layers::GetPage("Header");
+	declare L_Limit for Page = 0;
+	L_Limit = _Limit;
+}
+
+// ---------------------------------- //
+/** Show/hide the copper price limit
+ *
+ *	@param	_Visible				True to show, False to hide
+ */
+Void SetLimitVisibility(Boolean _Visible) {
+	declare Page <=> Layers::GetPage("Header");
+	declare L_LimitVisibility for Page = False;
+	L_LimitVisibility = _Visible;
+}
+
+// ---------------------------------- //
+/** Check if the simple menu is visible
+ *
+ *	@return						True if the simple menu is visible, False otherwise
+ */
+Boolean IsVisible() {
+	declare Page <=> Layers::GetPage("Header");
+	declare L_HeaderVisibility for Page = False;
+	return L_HeaderVisibility;
+}
+
+// ---------------------------------- //
+/** Set the header visibility
+ *
+ *	@param	_Visible			Show the header if True
+ */
+Void SetVisibility(Boolean _HeaderVisible, Boolean _InfoVisible) {
+	declare Page <=> Layers::GetPage("Header");
+	declare L_HeaderVisibility for Page = False;
+	declare L_InfoVisibility for Page = False;
+	L_HeaderVisibility = _HeaderVisible;
+	L_InfoVisibility = _InfoVisible;
+}
+
+// ---------------------------------- //
+/// Show the header
+Void Show() {
+	SetVisibility(True, True);
+}
+
+// ---------------------------------- //
+/// Hide the header
+Void Hide() {
+	SetVisibility(False, False);
+}
+
+// ---------------------------------- //
+/// Unload the library
+Void Unload() {
+	Layers::Destroy("Header");
+	//Layers::Unload();
+}
+
+// ---------------------------------- //
+/// Load the library
+Void Load() {
+	Unload();
+	
+	//Layers::Load();
+	Buttons::Load();
+	declare LayerHeader <=> Layers::Create("Header");
+	LayerHeader.ManialinkPage = Private_GetHeaderML();
+	Buttons::Unload();
+	
+	declare Page <=> LayerHeader.LocalPage;
+	declare L_Title for Page = "";
+	declare L_FullTitle for Page = False;
+	declare L_TitleStatus for Page = C_Status_Message;
+	declare L_ModesUpdate for Page = -1;
+	declare L_Modes for Page = Text[];
+	declare L_ModesSelectedUpdate for Page = -1;
+	declare L_ModesSelected for Page = "";
+	declare L_Editor for Page = C_Editor_Beginner;
+	declare L_HeaderVisibility for Page = False;
+	declare L_InfoVisibility for Page = False;
+	declare L_PositionY for Page = -1.;
+	declare L_Limit for Page = 0;
+	declare L_LimitVisibility for Page = False;
+	L_Title = "";
+	L_FullTitle = False;
+	L_TitleStatus = C_Status_Message;
+	L_Modes.clear();
+	L_ModesSelected = "";
+	L_ModesSelectedUpdate = -1;
+	L_ModesUpdate = -1;
+	L_Editor = C_Editor_Beginner;
+	L_HeaderVisibility = False;
+	L_InfoVisibility = False;
+	L_PositionY = -90. + Styles::GetSize2(<0., 8.>, Styles::CircleSize_Bottom()).Y;
+	L_Limit = 0;
+	L_LimitVisibility = False;
+}

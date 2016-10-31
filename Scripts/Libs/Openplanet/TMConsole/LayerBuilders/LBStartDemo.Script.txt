@@ -1,0 +1,417 @@
+
+#Include "Libs/Openplanet/Manialink2.Script.txt"						as Manialink
+#Include "Libs/Openplanet/TMConsole/BuilderHelper.Script.txt"		as BuilderHelper
+#Include "Libs/Openplanet/TMConsole/LibAudio.Script.txt"				as LibAudio
+#Include "Libs/Openplanet/UIPadButtons.Script.txt"					as LibUIButtons
+#Include "Libs/Openplanet/TMConsole/Menu/MenuVersion.Script.txt"		as MenuVersion
+#Include "Libs/Openplanet/TMConsole/FontManager.Script.txt" 			as Font
+#Include "Libs/Openplanet/TMConsole/Colors.Script.txt" 				as Colors
+#Include "Libs/Openplanet/TMConsole/Volumes.Script.txt"				as Volumes
+
+#Const C_ImgBase	"file://Media/Manialinks/Nadeo/TMConsole/Images/"
+#Const C_ImgBase2	"file://Media/Images/TMConsole/Ingame/"
+#Const Period 10000
+#Const MinSpace 1.
+
+Text Build(Text _ShowAnim, Text _HideAnim) {
+
+
+	declare Text IMGInsterCoin1    = C_ImgBase^"StartDemo/insert_coins_3b-0_B.png";
+	declare Text IMGInsterCoin2    = C_ImgBase2^"insert-coin-blink.dds";
+	declare Text IMGTrame          = C_ImgBase^"Trame_XPLOD.tga";
+	declare Text HotSeatRandDemo1  = C_ImgBase^"StartDemo/HotSeatRandDemo1.png";
+	declare Text HotSeatRandDemo2  = C_ImgBase^"StartDemo/HotSeatRandDemo2.png";
+	declare Text HotSeatRandDemo3  = C_ImgBase^"StartDemo/HotSeatRandDemo3.png";
+	
+	declare Text SoundInsertCoin  = LibAudio::GetSound("InsertCoin");
+	declare Integer ActualVersion = MenuVersion::GetVersion();
+	
+	//declare Text 	IMGSelect     = LibUIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Select);
+	declare Text 	IMGSelect     = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"), CManiaAppEvent::EMenuNavAction::Select);
+	declare Text 	ImgLoading    = C_ImgBase^"Load.tga";
+
+	declare Text MLText = """
+	
+	
+	<frame id="Frame_All"  posn="0 0 10">
+	
+		<quad halign="center" valign="center" image="{{{IMGTrame}}}" sizen="320 180"  posn="0 0 0" opacity="1.0"/>
+		<frame id="Frame_InsertCoin"  posn="0 0 0">
+			<quad halign="center" valign="center" image="{{{IMGInsterCoin1}}}" sizen="220 51" keepratio="Fit" posn="1 6 7" opacity="1.0" id="Quad_InsertCoin1"/>
+			<label halign="center" valign="center" textemboss="1" posn="0 -21.8 8" textfont="{{{Font::GetFontName("Main")}}}" textprefix="$t"
+			id="Label_InsertCoin" textsize="6." textcolor="{{{Colors::GetColorHexa("Yellow")}}}" sizen="130" opacity="1."/>
+			<quad halign="center" valign="center" sizen="11 11" keepratio="Fit" posn="0 -32 7" opacity="1.0" id="Quad_InsertCoin2"/>
+			<quad id="ButtonClick_Select" halign="center" valign="center" sizen="66 20" keepratio="Fit" posn="0 -28 12" bgcolor="900" opacity="0." scriptevents="1"/>
+
+			<label halign="center" valign="center" sizen="11 11" posn="0 -40 8" opacity="1.0" id="Label_LoadingPercentage" textfont="{{{Font::GetFontName("Main")}}}"/>
+		</frame>
+		<frame id="Frame_HotSeatRandDemo"  hidden="1">
+			<quad halign="center" valign="center" image="{{{HotSeatRandDemo1}}}" sizen="320 180"  posn="0 0 1" opacity="1.0" id="Quad_HotSeatRandDemo1"/>
+			<quad halign="center" valign="center" image="{{{HotSeatRandDemo2}}}" sizen="320 180"  posn="0 0 1" opacity="1.0" id="Quad_HotSeatRandDemo2"/>
+			<quad halign="center" valign="center" image="{{{HotSeatRandDemo3}}}" sizen="320 180"  posn="0 0 1" opacity="1.0" id="Quad_HotSeatRandDemo3"/>
+			<frame id="Frame_HSRG_InsertCoin">
+				<quad halign="center" valign="center" image="{{{IMGInsterCoin1}}}" sizen="82 84" keepratio="Fit" posn="0 -56 7" opacity="1.0" id="Quad_InsertCoin1"/>
+				<quad halign="center" valign="center" image="{{{IMGInsterCoin2}}}" sizen="82 10" keepratio="Fit" posn="0 -78.5 7" opacity="1.0" id="Quad_InsertCoin2"/>
+			</frame>
+		</frame>
+	</frame>
+
+	
+	
+	<script><!--
+			#Const DebugName  "L_StartDemo"
+			#Include "TextLib" as TL
+			#Include "MathLib" as MathLib
+		
+		{{{Manialink::GetIncludes()}}}
+		{{{Manialink::Load()}}}
+		{{{BuilderHelper::MLCommonFunctions()}}}
+		declare Integer G_LockInput;
+		declare Integer G_TimeLaunchGCVersion;
+		declare Integer G_RequestOnlineEtatTime;
+		declare Integer G_RequestCheckMainUser;
+		declare Text    G_EtatConnection;
+		declare Boolean G_IsMainName;
+		declare Boolean G_IsTryingToConnect;
+		declare Integer G_HideTime;
+
+		Void Preload()
+		{
+			PreloadImage("{{{IMGTrame}}}");
+			PreloadImage("{{{IMGInsterCoin1}}}");
+			PreloadImage("{{{IMGInsterCoin2}}}");
+
+		}
+
+		Void ShowPage(Integer _StartTime)
+		{
+			G_RequestOnlineEtatTime = Now + 100;
+			if({{{ActualVersion}}} == 4)
+			{
+				//HACK
+				sleep(1000);
+				SendCustomEvent("GotoPage", ["Main"]);
+				return;
+				//HACKEND
+
+				declare CMlFrame Frame_HotSeatRandDemo <=> (Page.GetFirstChild("Frame_HotSeatRandDemo") as CMlFrame);
+				declare CMlFrame Frame_HSRG_InsertCoin <=> (Frame_HotSeatRandDemo.GetFirstChild("Frame_HSRG_InsertCoin") as CMlFrame);
+				declare CMlQuad  Quad_HotSeatRandDemo1 <=> (Frame_HotSeatRandDemo.GetFirstChild("Quad_HotSeatRandDemo1") as CMlQuad);
+				declare CMlQuad  Quad_HotSeatRandDemo2 <=> (Frame_HotSeatRandDemo.GetFirstChild("Quad_HotSeatRandDemo2") as CMlQuad);
+				declare CMlQuad  Quad_HotSeatRandDemo3 <=> (Frame_HotSeatRandDemo.GetFirstChild("Quad_HotSeatRandDemo3") as CMlQuad);
+
+				Frame_HSRG_InsertCoin.RelativePosition = <0., -150., 0.>;
+				Quad_HotSeatRandDemo1.RelativePosition = <-300., 0., 0.>;
+				Quad_HotSeatRandDemo2.RelativePosition = <300., 0., 0.>;
+				//Quad_HotSeatRandDemo3.RelativePosition = <300., 0., 0.>;
+				Quad_HotSeatRandDemo3.Opacity = 0.;
+
+				declare Vec3 NewQuadPos  =  <0., 0., 0.>;
+
+				LibManialink_SetTargetPosition(Frame_HSRG_InsertCoin, NewQuadPos);
+				LibManialink_PresetAnimInsert(Frame_HSRG_InsertCoin, _StartTime + 1600, 720, "EaseOutQuint");
+				LibManialink_SetTargetPosition(Quad_HotSeatRandDemo1, NewQuadPos);
+				LibManialink_PresetAnimInsert(Quad_HotSeatRandDemo1, _StartTime + 500, 720, "EaseInOutBack");
+				LibManialink_SetTargetPosition(Quad_HotSeatRandDemo2, NewQuadPos);
+				LibManialink_PresetAnimInsert(Quad_HotSeatRandDemo2, _StartTime + 500, 720, "EaseInOutBack");
+				//LibManialink_SetTargetPosition(Quad_HotSeatRandDemo3, NewQuadPos);
+				//LibManialink_PresetAnimInsert(Quad_HotSeatRandDemo3, _StartTime + 600, 720, "EaseInOutBack");
+
+				LibManialink_SetTargetOpacity(Quad_HotSeatRandDemo3, 1.);
+				LibManialink_PresetAnimInsert(Quad_HotSeatRandDemo3, _StartTime + 1200, 720, "EaseOutQuint");
+				Frame_HotSeatRandDemo.Show();
+			}
+		}
+
+		Void ShowPage()
+		{
+			ShowPage(0);
+		}
+
+		Void Init()
+		{
+			SendCustomEvent("MuteSFX", [""]);
+			if({{{ActualVersion}}} == 4)
+			{
+				declare CMlFrame Frame_InsertCoin      <=> (Page.GetFirstChild("Frame_InsertCoin") 		as CMlFrame);
+				declare CMlFrame Frame_HotSeatRandDemo <=> (Page.GetFirstChild("Frame_HotSeatRandDemo") as CMlFrame);
+				Frame_InsertCoin.Hide();
+				Frame_HotSeatRandDemo.Show();
+			}
+			ShowPage(2000);
+		}
+
+		Void UpdateEtat()
+		{
+			declare CMlLabel Label_InsertCoin <=> (Page.GetFirstChild("Label_InsertCoin") as CMlLabel);
+			declare CMlQuad  Quad_InsertCoin2 <=> (Page.GetFirstChild("Quad_InsertCoin2") as CMlQuad);
+			if(G_EtatConnection == "NoUser")
+			{
+				//L16N For: "Or Press the button X"
+				Label_InsertCoin.Value = _("Or press");
+				Label_InsertCoin.Opacity = 1.;
+				Quad_InsertCoin2.ChangeImageUrl("{{{IMGSelect}}}");
+				Quad_InsertCoin2.Opacity = 1.;
+				//Quad_InsertCoin2.RelativeRotation = 0.;
+			}
+			else if(G_EtatConnection == "Connecting")
+			{
+				Label_InsertCoin.Value = _("Loading");
+				Label_InsertCoin.Opacity = 1.;
+				Quad_InsertCoin2.ChangeImageUrl("{{{ImgLoading}}}");
+				Quad_InsertCoin2.Opacity = 1.;
+				Quad_InsertCoin2.RelativeRotation = 0.;
+			}
+			else if(G_EtatConnection == "Wait_AutoJoin")
+			{
+				Label_InsertCoin.Value = _("Joining server");
+				Label_InsertCoin.Opacity = 1.;
+				Quad_InsertCoin2.ChangeImageUrl("{{{ImgLoading}}}");
+				Quad_InsertCoin2.Opacity = 1.;
+				Quad_InsertCoin2.RelativeRotation = 0.;
+			}
+			else if(G_EtatConnection == "Connected")
+			{
+				Label_InsertCoin.Value = _("Synchronizing");
+				Label_InsertCoin.Opacity = 1.;
+				Quad_InsertCoin2.ChangeImageUrl("{{{ImgLoading}}}");
+				Quad_InsertCoin2.Opacity = 1.;
+				Quad_InsertCoin2.RelativeRotation = 0.;
+				/*
+				Quad_InsertCoin2.ChangeImageUrl("{{{IMGSelect}}}");
+				Quad_InsertCoin2.RelativeRotation = 0.;
+				Quad_InsertCoin2.ChangeImageUrl("");
+				Label_InsertCoin.Value = "";
+			
+				return;
+				Audio.PlaySoundEvent("{{{SoundInsertCoin}}}", {{{Volumes::GetVolumedB("MenuInsertCoin")}}});
+				sleep(100);
+				SendCustomEvent("GotoPage", ["Main"]);
+				*/
+			}
+			else if(G_EtatConnection == "NotConnected")
+			{
+				Label_InsertCoin.Value = _("Or press");
+				Label_InsertCoin.Opacity = 1.;
+				Quad_InsertCoin2.ChangeImageUrl("{{{IMGSelect}}}");
+				Quad_InsertCoin2.Opacity = 1.;
+				Quad_InsertCoin2.RelativeRotation = 0.;
+				SendCustomEvent("FailConnection", ["StartDemo"]);
+				if(G_IsTryingToConnect)
+				{
+					//G_IsTryingToConnect = False;	
+				}
+			}
+			else
+			{
+				//L16N: this is a fragmented text. It it added below "insert coin" (which will not be translated) and above the button to press ("A" or "cross")
+				Label_InsertCoin.Value = _("Or press");
+				Quad_InsertCoin2.ChangeImageUrl("{{{IMGSelect}}}");
+				Quad_InsertCoin2.RelativeRotation = 0.;
+
+			}
+		}
+
+
+		Void Input_Select()
+		{
+
+			if({{{ActualVersion}}} == 1)
+			{
+				SendCustomEvent("SetMode", ["Arcade"]);
+				sleep(100);
+				SendCustomEvent("GotoPage", ["MapsOverview"]);
+			}
+			else if({{{ActualVersion}}} == 4)
+			{
+				SendCustomEvent("LaunchTransition", ["BigBillBoardTransition"]);
+				G_TimeLaunchGCVersion = Now + 240;
+			}
+			else
+			{
+				if((G_EtatConnection == "Connecting" || G_EtatConnection == "") || !G_IsMainName)
+				{
+					return;
+				}
+				else
+				{
+					return;
+					SendCustomEvent("GotoPage", ["Main"]);
+					
+				}
+			}
+			Audio.PlaySoundEvent("{{{SoundInsertCoin}}}", {{{Volumes::GetVolumedB("MenuInsertCoin")}}});
+		}
+
+
+
+
+		main() {
+			Preload();
+			{{{BuilderHelper::MLEnableMenuNavigationInputs()}}}
+			EnableMenuNavigation(True,False,Null,1);
+			
+			declare CMlQuad Quad_InsertCoin2;
+			declare CMlLabel Label_InsertCoin <=> (Page.GetFirstChild("Label_InsertCoin") as CMlLabel);
+			declare CMlLabel Label_LoadingPercentage <=> (Page.GetFirstChild("Label_LoadingPercentage") as CMlLabel);
+			if({{{ActualVersion}}} == 4)
+			{
+				declare CMlFrame Frame_HotSeatRandDemo <=> (Page.GetFirstChild("Frame_HotSeatRandDemo") as CMlFrame);
+				Quad_InsertCoin2 <=> (Frame_HotSeatRandDemo.GetFirstChild("Quad_InsertCoin2") as CMlQuad);
+			}
+			else
+			{
+				Quad_InsertCoin2 <=> (Page.GetFirstChild("Quad_InsertCoin2") as CMlQuad);
+			}
+			Init();
+			
+			G_TimeLaunchGCVersion   = -1;
+			G_RequestOnlineEtatTime = -1;
+			G_RequestCheckMainUser	= -1;
+			G_HideTime	            = -1;
+			G_EtatConnection        = "NoUser";
+			G_IsMainName			= False;
+			G_IsTryingToConnect		= False;
+			UpdateEtat();
+			
+			declare Integer TotalTime = 0;
+
+			while(True) {
+				yield;
+				if(! PageIsVisible) continue;
+				LibManialink_AnimLoop();
+				
+				declare Real ButtonSelectedSinVar  = MathLib::Sin(Now * 0.01) * 0.5 + 0.5;
+				declare Real ButtonSelectedOpacity = 0.0 + ButtonSelectedSinVar * 1.;
+				
+				if(G_EtatConnection == "Connecting" || G_EtatConnection == "Connected" || G_EtatConnection == "Wait_AutoJoin")
+				{
+					Quad_InsertCoin2.RelativeRotation = Now/360.*100.;
+					TotalTime += Period;
+					if(TotalTime >= 45000) {
+						declare Integer SecondsTotal 	= TotalTime / 1000;
+						declare Integer LoadingPercent	= MathLib::NearestInteger((SecondsTotal / 140.) * 100.);
+						if(LoadingPercent > 100) 	LoadingPercent = 100;
+						if(LoadingPercent < 0) 		LoadingPercent = 0;
+						Label_LoadingPercentage.SetText(LoadingPercent^"%");
+					}
+				}
+				else
+				{
+					Quad_InsertCoin2.Opacity = ButtonSelectedOpacity;
+					Label_InsertCoin.Opacity = ButtonSelectedOpacity;
+					Label_LoadingPercentage.SetText("");
+				}
+				
+				//LaunchGCVersion
+				if(G_TimeLaunchGCVersion < Now && G_TimeLaunchGCVersion != -1)
+				{
+					G_TimeLaunchGCVersion = -1;
+
+					declare CMlFrame Frame_HotSeatRandDemo <=> (Page.GetFirstChild("Frame_HotSeatRandDemo") as CMlFrame);
+					Frame_HotSeatRandDemo.Hide();
+					SendCustomEvent("LaunchGCVersion", [""]);
+				}
+
+				if(G_RequestCheckMainUser < Now && G_RequestCheckMainUser != -1)
+				{
+					G_IsTryingToConnect = True;
+					SendCustomEvent("CheckMainUser", [""]);
+					G_RequestCheckMainUser = -1;
+				}
+
+				if(G_RequestOnlineEtatTime < Now && G_RequestOnlineEtatTime != -1)
+				{
+					SendCustomEvent("RequestOnlineEtat", [""]);
+					G_RequestOnlineEtatTime = -1;
+				}
+
+				if(G_HideTime < Now && G_HideTime != -1)
+				{
+					SendCustomEvent("DetachPage", ["StartDemo"]);
+					G_HideTime = -1;
+				}
+
+				foreach(Event in PendingEvents) {
+					if(G_LockInput + 100 > Now) continue;
+					switch(Event.Type) {
+
+						case CMlEvent::Type::MenuNavigation: {
+							switch(Event.MenuNavAction) {
+								case CMlEvent::EMenuNavAction::Select : {
+									Input_Select();
+								}
+								//HACK
+								case CMlEvent::EMenuNavAction::Action2 : {
+									//G_EtatConnection = "Connected";
+									//UpdateEtat();
+								}
+							}
+						}
+						case CMlEvent::Type::MouseClick: {
+							log("Event.Control.ControlId: " ^ Event.Control.ControlId);
+							if(Event.Control.ControlId == "ButtonClick_Select")
+							{
+								Input_Select();
+							}
+						}
+						
+						case CMlEvent::Type::PluginCustomEvent: {
+							
+							declare PreviousPage = Event.CustomEventData[0];
+							switch(Event.PluginCustomEventType) {
+								case "Show" : {
+									EnableMenuNavigation(True,False,Null,1);
+									Audio.LimitMusicVolumedB = 0.;
+									G_LockInput              = Now;
+									{{{_ShowAnim}}}
+									ShowPage();
+									//G_RequestCheckMainUser = Now + 100;
+								}
+								
+								case "Hide" : {
+									if(PreviousPage == "Location")
+									{
+										G_HideTime = Now + 300;
+									}
+									else
+									{
+										G_HideTime = Now;
+									}
+									TotalTime = 0;
+
+									{{{_HideAnim}}}
+								}
+								case "ReShowPage" : {
+									ShowPage();
+								}
+								case "IsMainName" : {
+									G_IsMainName = True;
+									G_RequestOnlineEtatTime = Now + 100;
+								}
+								case "CheckEtatConnection" : {
+									declare Text[] EtatConnection = TL::Split("::", Event.CustomEventData[0]);
+									G_EtatConnection = EtatConnection[2];
+									UpdateEtat();
+									//CheckEtatConnection(EtatConnection[2]);
+								}
+								case "Wait_AutoJoin" : {
+									G_EtatConnection = "Wait_AutoJoin";
+									UpdateEtat();
+								}
+								case "LaunchNextPage" : {
+									declare Text NextPage = Event.CustomEventData[0];
+									Audio.PlaySoundEvent("{{{SoundInsertCoin}}}", {{{Volumes::GetVolumedB("MenuInsertCoin")}}});
+									SendCustomEvent("GotoPage", [NextPage]);
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	--></script>
+	""";
+	
+	return MLText;
+}

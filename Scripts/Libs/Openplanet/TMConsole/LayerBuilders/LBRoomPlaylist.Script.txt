@@ -1,0 +1,3230 @@
+#Include "Libs/Openplanet/Manialink2.Script.txt"								as Manialink
+#Include "Libs/Openplanet/TMConsole/Menu/LibLoading.Script.txt"				as Loading
+#Include "Libs/Openplanet/TMConsole/FontManager.Script.txt"					as Font
+#Include "Libs/Openplanet/TMConsole/Menu/LibOnlineGameplay.Script.txt"		as GamePlay
+#Include "Libs/Openplanet/UIPadButtons.Script.txt"							as LibUIButtons
+#Include "Libs/Openplanet/TMConsole/Selector.Script.txt"						as Selector
+#Include "Libs/Openplanet/TMConsole/MenuColor.Script.txt"					as MenuColor
+#Include "TextLib" 														as TextLib
+#Include "Libs/Openplanet/TMConsole/LibAudio.Script.txt"						as LibAudio
+#Include "Libs/Openplanet/TMConsole/Volumes.Script.txt"						as Volumes
+#Include "Libs/Openplanet/TMConsole/Live/LiveHelpers.Script.txt"				as LiveHelpers
+
+#Include "Libs/Openplanet/TMConsole/Menu/LibInputInfos.Script.txt"			as InputInfos
+#Include "Libs/Openplanet/SystemText.Script.txt"								as SystemText
+
+#Const C_ImgBase 	"file://Media/Manialinks/Nadeo/TMConsole/Images/"
+#Const C_ImgBase2	"file://Media/Images/TMConsole/Ingame/"
+
+#Const C_ImgBaseDev "file://Media/Images/"
+
+#Const C_BrowseSlot_SlotNb			10
+#Const C_BrowseSlot_Landmark		4
+
+#Const C_DifficultyWhite 		<1., 1., 1.>
+#Const C_DifficultyGreen 		<0., 1., 0.>
+#Const C_DifficultyBlue  		<0., 0.2, 1.>
+#Const C_DifficultyRed   		<1., 0., 0.>
+#Const C_DifficultyBlack 		<0.25, 0.25, 0.25>
+
+Text Build(Text _ShowAnim, Text _HideAnim) {
+
+	//IMAGES
+	declare Text 	IMGSlotSmallBg           = C_ImgBase2^"slot-medium-bg.dds";
+	declare Text 	IMGSlotSmallFg           = C_ImgBase2^"slot-medium-fg.dds";
+	declare Text 	IMGSlotMediumBg          = C_ImgBase2^"slot-medium-bg.dds";
+	declare Text 	IMGSlotMediumFg          = C_ImgBase^"slot-medium-fg2.dds";
+	//declare Text 	IMGSlotBigBg             = "file://Media/_ERR_.dds";	//C_ImgBase^"slot-big-bg2.dds";
+	declare Text 	IMGSlotBigBg             = C_ImgBase^"slot-big-bg2.dds";
+	declare Text 	IMGSlotBigFg             = C_ImgBase^"slot-big-fg2.dds";
+	declare Text 	IMGMenuBg                = C_ImgBase2^"menu-bg-1.dds";
+	declare Text	IMGBoard                 = C_ImgBase^"board_Empty.tga";
+	declare Text	IMGSeparateurH			 = C_ImgBase^"Online/Tracklist/separateur_h.tga";
+	declare Text	IMGSeparateurV			 = C_ImgBase^"Online/Tracklist/separateur_v.tga";
+	
+	declare Integer Platform   = LibUIButtons::GetPlatform();
+	declare Text 	IMGR1_PC      	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"), CManiaAppEvent::EMenuNavAction::PageUp);
+	declare Text 	IMGR1_PS4      	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::PageUp);
+	declare Text 	IMGR1_XB1      	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::PageUp);
+	
+	declare Text 	IMGL1_PC      	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"), CManiaAppEvent::EMenuNavAction::PageDown);
+	declare Text 	IMGL1_PS4      	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::PageDown);
+	declare Text 	IMGL1_XB1      	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::PageDown);
+	
+	declare Text 	IMGSelect_PC  	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"), CManiaAppEvent::EMenuNavAction::Select);
+	declare Text 	IMGSelect_PS4  	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::Select);
+	declare Text 	IMGSelect_XB1  	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::Select);
+	
+	declare Text 	IMGCancel_PC  	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"), CManiaAppEvent::EMenuNavAction::Cancel);
+	declare Text 	IMGCancel_PS4  	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::Cancel);
+	declare Text 	IMGCancel_XB1  	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::Cancel);
+
+	declare Text 	SoundMove                   = LibAudio::GetSoundMove();
+	declare Text 	SoundClicInterfaceLeftRight = LibAudio::GetSound("ClicInterfaceLeftRight");
+	declare Text 	SoundBack                   = LibAudio::GetSound("PageBack");
+	declare Text 	SoundSelect                 = LibAudio::GetSound("Select");
+
+	declare Text	TitleColor = TextLib::ColorToText(MenuColor::GetMenuColor(0));
+	
+	declare Text 	IMGBackground         		= "file://Media/_ERR_.dds";	//C_ImgBase^"PlaceHolder/small-lago1.jpg";
+	declare Text 	IMGPopupArrow         		= "file://Media/Manialinks/Nadeo/TMConsole/Images/VR/popup-arrow.png"; //"file://Media/_ERR_.dds";	//
+	declare Text	IMGEmptyTracklist			= C_ImgBaseDev^"EmptyTracklist.png";
+	declare Text	IMGRequestError				= C_ImgBaseDev^"RequestError.png";
+	
+	//declare Text	IMGEnvironment_Canyon		= "file://Media/Manialinks/Nadeo/TMConsole/Images/Logos/logo_canyon_menu.dds";
+	//declare Text	IMGEnvironment_Stadium		= "file://Media/Manialinks/Nadeo/TMConsole/Images/Logos/logo_stadium_menu.dds";
+	//declare Text	IMGEnvironment_Lagoon		= "file://Media/Manialinks/Nadeo/TMConsole/Images/Logos/logo_lagoon_menu.dds";
+	//declare Text	IMGEnvironment_Valley		= "file://Media/Manialinks/Nadeo/TMConsole/Images/Logos/logo_valley_menu.dds";
+	declare Text	IMGEnvironment_Canyon		= C_ImgBase^"Online/Tracklist/logos_enviro/canyon_1024.tga";
+	declare Text	IMGEnvironment_Stadium		= C_ImgBase^"Online/Tracklist/logos_enviro/stadium_1024.tga";
+	declare Text	IMGEnvironment_Lagoon		= C_ImgBase^"Online/Tracklist/logos_enviro/lagoon_1024.tga";
+	declare Text	IMGEnvironment_Valley		= C_ImgBase^"Online/Tracklist/logos_enviro/valley_1024.tga";
+	
+	//SIZES
+	//declare Real	SM_SizeTotalX     			= 200.0;
+	declare Real	SM_SizeTotalX     			= 259.0;
+	declare Real	SM_SizeTotalY     			= 150.;
+	declare Real	SM_SizeOngletInfoX			= 17.5; //c'est la largeur de L1/R1 (je suppose)
+	declare Real	SM_SizeX          			= SM_SizeTotalX * 0.69;
+	declare Real	SM_SizeY          			= 8.27;
+	declare Real	SM_Separator      			= SM_SizeY * 0.095;
+	declare Real	SM_SizeYElement   			= SM_SizeY; // - SM_Separator;
+	
+	declare Real	PopUp_SizeX					= SM_SizeTotalX / 36. * 15.;
+	
+	//POSITIONS
+	declare Real	SM_PosY               		= 60.;
+	declare Real	SM_PosYElementAlignTop		= SM_PosY - SM_Separator;	
+	declare Real	PositionFirstQuadX    		= SM_SizeTotalX/2. - SM_SizeX/2.;
+	declare Real	PositionFirstQuadY    		= 4 * SM_SizeY;
+	
+	//TRACKLIST VALUES
+	declare Real	TrackList_ArrowHeight 		= 5.;
+	declare Integer TrackList_ColumnsCount 		= 6;
+	declare Integer TrackList_LinesCount		= 3;
+	declare Real	TrackList_PosY				= PositionFirstQuadY;
+	declare Real	TrackList_TrackWidth		= (SM_SizeX) / TrackList_ColumnsCount;
+	declare Real	TrackList_TrackHeight		= (SM_SizeY * 12. - 2 * TrackList_ArrowHeight) /  TrackList_LinesCount;
+	
+	//SETTINGS & TRACKLIST ARRAY VALUES
+
+	Loading::Init(<SM_SizeTotalX, TrackList_LinesCount * TrackList_TrackHeight + 2*TrackList_ArrowHeight>, <0., TrackList_PosY - TrackList_TrackHeight * TrackList_LinesCount / 2>, 200, _("Retrieving Tracks. Please wait."));
+
+	InputInfos::Init("Main", SM_SizeTotalX / 36., SM_SizeY, 1.);
+	InputInfos::AddInput(5., "Select");
+	InputInfos::AddInput(5., "Cancel");
+	InputInfos::AddInput(7., "Action1");
+	InputInfos::AddInput(8., "Action2");
+	InputInfos::AddInput(7., "LStickPress");
+	
+	InputInfos::SetConstantInput("Cancel"		, _("|16 chars max|BACK"));
+	InputInfos::SetConstantInput("Action1"		, _("|16 chars max|CRITERIA"));
+	InputInfos::SetConstantInput("LStickPress"	, _("|16 chars max|REFRESH"));
+	// InputInfos::SetConstantInput("Action2"		, SystemText::GetShowProfileTextForInputCard());
+	
+	/////////////////////////
+	// FRAMEMODELS
+	/////////////////////////
+	declare MLText = """
+	<framemodel id="FrameModel_Landmark">
+		<label id="Label_LandmarkName" posn="0 0 1" halign="center" valign="center" textfont="{{{Font::GetFontName("Main")}}}" sizen="50 7" textcolor="000" textprefix="$t" />
+		<quad id="Quad_LandmarkName" halign="center" valign="center" sizen="{{{(SM_SizeTotalX - SM_SizeOngletInfoX)/C_BrowseSlot_Landmark-0.2}}} {{{SM_SizeYElement*0.95}}}" posn="-0.2 -0.7 1" bgcolor="00E2FF" opacity="0.6"/>
+	</framemodel>
+	
+	<framemodel id="Frame_SubMenu">
+		<quad halign="center" valign="center" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeYElement}}}" image="{{{IMGSlotMediumBg}}}" opacity="1.0" posn="0 0 2" />
+		<quad halign="center" valign="center" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeYElement}}}" image="{{{IMGSlotMediumFg}}}" opacity="1.0" posn="0 0 4" />
+		<quad halign="center" valign="center" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeY}}}" image="{{{IMGMenuBg}}}" opacity="1." posn="0 0 1" />
+	</framemodel>
+	
+	<framemodel id="FrameModel_Filter">
+		<quad 	halign="right"	valign="bottom" sizen="{{{SM_SizeTotalX / 36.*9.}}} {{{SM_SizeY}}}" image="{{{IMGSlotSmallBg}}}"	posn="0 0 6" />
+		<quad 	halign="right"	valign="bottom" sizen="{{{SM_SizeTotalX / 36.*9.}}} {{{SM_SizeY}}}" image="{{{IMGSlotSmallFg}}}"	posn="0 0 8" />
+		<label 	halign="left"  	valign="center2" posn="{{{-SM_SizeTotalX / 36.*8+4.}}} {{{SM_SizeY*0.5}}} 7" textcolor="ddd"  id="Label_FilterName" textsize="4." sizen="{{{SM_SizeTotalX / 36.*7.-8.}}}" textfont="{{{Font::GetFontName("Main")}}}" textprefix="$t" />
+		<label 	halign="center" valign="center2" posn="{{{-SM_SizeTotalX / 36.*8.5}}} {{{SM_SizeY*0.5}}} 7" textcolor="ddd"  id="Label_FilterPrio" textsize="4." sizen="{{{SM_SizeTotalX / 36.-4.}}}" textfont="{{{Font::GetFontName("Main")}}}" textprefix="$t" />	
+	</framemodel>
+	
+	<framemodel id="FrameModel_CampaignEnv">
+		<quad 	halign="right"	valign="bottom" sizen="{{{SM_SizeTotalX / 36.*7.}}} {{{SM_SizeY}}}" image="{{{IMGSlotSmallBg}}}"	posn="0 0 6" />
+		<quad 	halign="right"	valign="bottom" sizen="{{{SM_SizeTotalX / 36.*7.}}} {{{SM_SizeY}}}" bgcolor="{{{TitleColor}}}"		posn="0 0 6.5" id="Quad_CampaignEnvSelected" hidden="1" />
+		<quad 	halign="right"	valign="bottom" sizen="{{{SM_SizeTotalX / 36.*7.}}} {{{SM_SizeY}}}" image="{{{IMGSlotSmallFg}}}"	posn="0 0 8" />
+		<label 	halign="left"  	valign="center2" posn="{{{-SM_SizeTotalX / 36.*7+4.}}} {{{SM_SizeY*0.5}}} 7" textcolor="ddd"  id="Label_CampaignEnvName" textsize="4." sizen="{{{SM_SizeTotalX / 36.*7.-8.}}}" textfont="{{{Font::GetFontName("Main")}}}" textprefix="$t" />
+	</framemodel>
+	
+	<framemodel id="Frame_Track">
+		<quad halign="center" valign="center" sizen="{{{TrackList_TrackWidth}}} {{{TrackList_TrackHeight}}}" image="{{{IMGSlotMediumBg}}}" opacity="1.0" posn="0 0 2" hidden="1"/>
+		<quad halign="center" valign="center" sizen="{{{TrackList_TrackWidth}}} {{{TrackList_TrackHeight}}}" image="{{{IMGSlotMediumFg}}}" opacity="1.0" posn="0 0 4" hidden="1" />
+		<quad id="Track_Thumbnail" 	halign="center" valign="center" sizen="{{{TrackList_TrackWidth*0.98}}} {{{TrackList_TrackHeight*0.98}}}" posn="0 0 3" />
+		<quad  id="Quad_NameBg"		halign="center" valign="center" sizen="{{{TrackList_TrackWidth*0.98}}} {{{TrackList_TrackHeight*0.98 * 0.2}}}" bgcolor="00E2FF" posn="0 {{{-TrackList_TrackHeight*0.98 * 0.4}}} 3.1" />
+		<label id="Track_Name" 		halign="center" valign="center2" sizen="{{{TrackList_TrackWidth * 0.95}}}" text="Test Map Name" style="BgMainMenuTitleHeader" textsize="2" posn="0 {{{- TrackList_TrackHeight*0.98 * 0.4}}} 3.2" textcolor="000" />
+	</framemodel>	
+	
+	<framemodel id="Frame_TracksGroup">
+	""";
+		
+	for (I, 0, TrackList_LinesCount-1)
+	{
+		declare Real TracksPosY = - TrackList_ArrowHeight - TrackList_TrackHeight * (I-0.5);
+		for (J, 0, TrackList_ColumnsCount-1)
+		{
+			MLText ^= """
+				<frame id="Frame_Track{{{I*TrackList_ColumnsCount+J}}}" posn="{{{- SM_SizeX / 2. + ((J + 0.5) * TrackList_TrackWidth)}}} {{{TracksPosY}}}" >
+					<frameinstance modelid="Frame_Track" />
+					<quad id="MouseInput_Track_{{{I*TrackList_ColumnsCount+J}}}" halign="center" valign="center" sizen="{{{TrackList_TrackWidth}}} {{{TrackList_TrackHeight}}}" opacity="0." scriptevents="1" posn="0 0 5" />
+				</frame>
+			""";
+		}
+	}
+	
+	MLText ^= """
+	</framemodel>
+	
+	<framemodel id="FrameModel_PopUpLine">
+		<quad halign="center" valign="top" sizen="{{{PopUp_SizeX}}} {{{SM_SizeYElement}}}" 	image="{{{IMGSlotMediumBg}}}" 	posn="0 0 2" />
+		<quad halign="center" valign="top" sizen="{{{PopUp_SizeX}}} {{{SM_SizeYElement}}}" 	image="{{{IMGSlotMediumFg}}}" 	posn="0 0 4" />
+		<quad halign="center" valign="top" sizen="{{{PopUp_SizeX}}} {{{SM_SizeY}}}" 		image="{{{IMGMenuBg}}}" 		posn="0 0 1" />
+		<label id="Label_Value" posn="{{{-PopUp_SizeX/2.+2.}}} {{{-SM_SizeY*0.5}}} 3" halign="left" 	valign="center2" sizen="{{{PopUp_SizeX * 0.7 - 2.}}} 10" 	textcolor="fff" textprefix="$t" textsize="4." textfont="{{{Font::GetFontName("Main")}}}" />
+		<label id="Label_Ratio" posn="{{{PopUp_SizeX/2.-2.}}}  {{{-SM_SizeY*0.5}}} 3" halign="right" 	valign="center2" sizen="{{{PopUp_SizeX * 0.25 - 2.}}} 10" 	textcolor="fff" textprefix="$t" textsize="4." textfont="{{{Font::GetFontName("Main")}}}" />
+	</framemodel>
+	
+	<framemodel id="FrameModel_PopUpLineEmpty">
+		<quad halign="center" valign="top" sizen="{{{PopUp_SizeX}}} {{{SM_SizeY}}}" 		image="{{{IMGMenuBg}}}" 		posn="0 0 1" />
+	</framemodel>
+
+	/////////////////////////
+	// MANIALINK
+	/////////////////////////
+	<frame id="Frame_General">
+		<quad id="Quad_Board"	posn="0 0 0" halign="center" valign="center" sizen="{{{259.5}}} {{{SM_SizeTotalY}}}" opacity="1.0" image="{{{IMGBoard}}}" />
+		<quad posn="{{{-SM_SizeTotalX*0.5}}} {{{PositionFirstQuadY - SM_SizeY * 12. * 0.8}}} 5" halign="left" 	valign="center" sizen="{{{SM_SizeTotalX - SM_SizeX}}} {{{SM_SizeY}}}" 	image="{{{IMGSeparateurH}}}" keepratio="Fit" />
+		<quad posn="{{{SM_SizeTotalX * 0.5 - SM_SizeX}}} {{{PositionFirstQuadY}}} 5" 			halign="center" valign="top" 	sizen="{{{100.}}} {{{SM_SizeY * 12.}}}" 				image="{{{IMGSeparateurV}}}" keepratio="Fit" />
+	""";
+			
+	/////////////////////////
+	// TITLE
+	/////////////////////////
+	MLText^="""
+	<frame id="Frame_Title" posn="0 1.0 0">
+		<quad halign="center" valign="bottom" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeY*2.}}}" image="{{{IMGSlotBigFg}}}" posn="0 {{{SM_PosY-2.8}}} 7" opacity="1."/>
+		<quad  halign="center" valign="bottom" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeY*2.}}}" image="{{{IMGSlotBigBg}}}" posn="0 {{{SM_PosY-2.8}}} 5" opacity="1."/>
+		<label halign="left" valign="center"  textfont="{{{Font::GetFontName("Main")}}}" posn="{{{-(SM_SizeTotalX-2)/2.}}}  {{{SM_PosY + SM_SizeY - 1.}}} 6" id="Label_Title" textsize="13." textprefix="$t" sizen="{{{SM_SizeTotalX-2.}}}"  opacity="1.0"/>
+	</frame>
+	""";
+	
+	/////////////////////////
+	// LOADING
+	/////////////////////////
+	MLText ^= """
+	{{{Loading::InjectInManialink()}}}
+	""";
+	
+	/////////////////////////
+	// ROOM TITLE
+	/////////////////////////		
+	MLText ^= """
+	<frame id="Frame_RoomTitle" posn="0 53.3 3">
+		<quad halign="center" valign="center" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeYElement*0.96}}}" image="{{{IMGSlotMediumFg}}}" posn="0 -0.1 5" />
+		<quad halign="center" valign="center" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeYElement*0.95}}}" image="{{{IMGSlotMediumBg}}}" posn="0 0 2" />
+		<label id="RoomName" posn="{{{-SM_SizeTotalX/2.+2.}}} 0.6 4" halign="left" valign="center" sizen="150 7" textcolor="000" textprefix="$t" textsize="4." textfont="{{{Font::GetFontName("Main")}}}" />
+		<label id="Label_TracksCount"	posn="{{{SM_SizeTotalX/2.-2.}}} 0.6 4"	halign="right" valign="center" sizen="30 7" textcolor="000"	textprefix="$t"	text="" textsize="4." textfont="{{{Font::GetFontName("Main")}}}" />
+		<quad halign="center" valign="center" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeYElement*0.96}}}" posn="0. -0.1 3" bgcolor="fff" opacity="0.95"/>
+	</frame>
+	""";
+	/////////////////////////
+	// ONGLETS
+	/////////////////////////
+	
+	//BG + highlight + L1R1
+	MLText^= """
+	<frame id="Frame_Onglet" posn="0 {{{-5.6 - SM_SizeY}}} 0">
+		<quad halign="center" valign="center" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeYElement*0.95}}}" image="{{{IMGSlotMediumFg}}}" posn="0 {{{SM_PosYElementAlignTop}}} 5" opacity="1.0"/>
+		<quad halign="left" valign="center" sizen="{{{(SM_SizeTotalX - SM_SizeOngletInfoX)/C_BrowseSlot_Landmark-0.2}}} {{{SM_SizeYElement*0.95}}}" posn="{{{-SM_SizeTotalX/2.}}} {{{SM_PosYElementAlignTop}}} 4" bgcolor="00E2FF" opacity="1.0" id="OngletFocus" />
+		<quad halign="center" valign="center" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeYElement*0.95}}}" image="{{{IMGSlotMediumBg}}}" posn="0 {{{SM_PosYElementAlignTop}}} 2" opacity="1.0" />
+	""";
+	
+	for (I, 0, 2) {
+		declare Text ImageR1;
+		declare Text ImageL1;
+		switch (I) {
+			case LibUIButtons::GetPlatform("PC") : {
+				ImageR1 = IMGR1_PC;
+				ImageL1 = IMGL1_PC;
+			}				
+			case LibUIButtons::GetPlatform("PS4") : {
+				ImageR1 = IMGR1_PS4;
+				ImageL1 = IMGL1_PS4;
+			}
+			case LibUIButtons::GetPlatform("XB1") : {
+				ImageR1 = IMGR1_XB1;
+				ImageL1 = IMGL1_XB1;
+			}
+		}
+		
+		MLText ^= """<quad id="MouseInput_NextTab_{{{I}}}" scriptevents="1" halign="center" valign="center" sizen="8 8" image="{{{ImageR1}}}" keepratio="Fit" posn="124.9 {{{SM_PosYElementAlignTop+0.2}}} 3"  /> """;
+		if (I != Platform)
+			MLText ^= """ hidden="1" """;
+		MLText ^= """/>
+			<quad id="MouseInput_PrevTab_{{{I}}}" scriptevents="1" halign="center" valign="center" sizen="8 8" image="{{{ImageL1}}}" keepratio="Fit" posn="-125.1 {{{SM_PosYElementAlignTop+0.2}}} 3" """;
+		if (I != Platform)
+			MLText ^= """ hidden="1" """;
+		MLText ^= "/>";
+	}
+	MLText ^= "</frame>";
+	
+	//Tabs
+	for(I, 0, C_BrowseSlot_Landmark-1) {
+		declare Real PosnX = - SM_SizeTotalX / 2 + (I + 0.5) * ((SM_SizeTotalX/C_BrowseSlot_Landmark)-4.4)+8.8; 
+		MLText ^= """
+			<frameinstance modelid="FrameModel_Landmark" posn="{{{PosnX}}} {{{54.3-SM_SizeY}}} 5" halign="center" valign="center" id="FrameInstance_Landmark{{{I}}}" />
+			<quad id="MouseInput_Landmark_{{{I}}}" halign="center" valign="center" sizen="{{{(SM_SizeTotalX - SM_SizeOngletInfoX)/C_BrowseSlot_Landmark-0.2}}} {{{SM_SizeYElement*0.95}}}" posn="{{{PosnX-0.2}}} {{{53.6-SM_SizeY}}} 2" opacity="0." scriptevents="1"/>
+		""";
+	}
+	
+	/////////////////////////
+	// CRITERIA
+	/////////////////////////
+	MLText ^= """
+	<frame id="Frame_RoomTitle" posn="0 {{{4.5 * SM_SizeY}}} 3">
+		<quad halign="center" valign="center" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeYElement*0.96}}}" image="{{{IMGSlotMediumFg}}}" posn="0 -0.1 5" />
+		<quad halign="center" valign="center" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeYElement*0.95}}}" image="{{{IMGSlotMediumBg}}}" posn="0 0 2" />
+		<label id="BrowseLocation"	posn="{{{-SM_SizeTotalX/2.+2.}}} 0.6 4" halign="left" valign="center" sizen="{{{SM_SizeTotalX * 0.9}}} 7" 	textcolor="000" textprefix="$t" textsize="4." textfont="{{{Font::GetFontName("Main")}}}" />
+		<label id="BrowseFilters" 	posn="0 0.6 4"							halign="left" valign="center" sizen="0 7" 							textcolor="888"	textprefix="$t"	textsize="4." textfont="{{{Font::GetFontName("Main")}}}" />
+		<quad halign="center" valign="center" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeYElement*0.96}}}" posn="0. -0.1 3" bgcolor="fff" opacity="0.95"/>
+	</frame>
+	""";
+	
+	
+	/////////////////////////
+	// INPUT INFOS
+	/////////////////////////
+	MLText ^= """<frame id="Frame_InputInfos" posn="{{{SM_SizeTotalX * 0.5}}} {{{-SM_SizeY * 9.}}} 7">
+		{{{InputInfos::InjectInManialink()}}}
+		<frame id="Frame_Filters" posn="{{{-SM_SizeTotalX / 3.}}} {{{SM_SizeY}}} 30" hidden="1">
+			<frame id="Frame_FilterSelector" posn="0 0 6.5">
+				<quad halign="right" 	valign="bottom" bgcolor="{{{TitleColor}}}" sizen="{{{SM_SizeTotalX / 36.*9.}}} {{{SM_SizeY}}}" id="Quad_FilterSelector" />	
+	""";
+		
+		for (I, 0, 2) {
+			declare Text Image;
+			switch (I) {
+				case LibUIButtons::GetPlatform("PC") 	: Image = IMGSelect_PC;
+				case LibUIButtons::GetPlatform("PS4") 	: Image = IMGSelect_PS4;
+				case LibUIButtons::GetPlatform("XB1") 	: Image = IMGSelect_XB1;
+			}
+		
+			MLText ^= """<quad id="QuadInputIcon_FilterSelect_{{{I}}}" halign="center" 	valign="center" posn="{{{-SM_SizeTotalX / 36.*0.5}}} {{{SM_SizeY*0.5}}} 1"  sizen="{{{SM_SizeTotalX / 36.*0.8}}} {{{SM_SizeTotalX / 36.*0.8}}}"	image="{{{Image}}}" """;
+			if (I != Platform)
+				MLText ^= """ hidden="1" """;
+			MLText ^= "/>";
+		}
+	
+	MLText ^= "</frame>";
+	for (I, 0, 4)
+		MLText ^= """
+			<frame id="Frame_Filter{{{I}}}" posn="0 {{{SM_SizeY *I}}}">
+				<frameinstance modelid="FrameModel_Filter" />
+				<quad id="MouseInput_Filter_{{{I}}}" halign="right"	valign="bottom" sizen="{{{SM_SizeTotalX / 36.*9.}}} {{{SM_SizeY}}}" posn="0 0 9" opacity="0." scriptevents="1" />
+			</frame>
+		""";
+	MLText ^= """
+		</frame>
+		<frame id="Frame_CampaignEnvs" posn="{{{-SM_SizeTotalX / 3.}}} {{{SM_SizeY}}} 30" hidden="1">
+		<frame id="Frame_CampaignEnvsSelector" posn="0 0 6.5">
+			<quad halign="right" 	valign="bottom" bgcolor="{{{TitleColor}}}" sizen="{{{SM_SizeTotalX / 36.*7.}}} {{{SM_SizeY}}}" id="Quad_CampaignEnvsSelector" />	
+	""";
+	
+		for (I, 0, 2) {
+			declare Text Image;
+			switch (I) {
+				case LibUIButtons::GetPlatform("PC") 	: Image = IMGSelect_PC;
+				case LibUIButtons::GetPlatform("PS4") 	: Image = IMGSelect_PS4;
+				case LibUIButtons::GetPlatform("XB1") 	: Image = IMGSelect_XB1;
+			}
+		
+			MLText ^= """<quad id="QuadInputIcon_CampaignEnvSelect_{{{I}}}" halign="center" 	valign="center" posn="{{{-SM_SizeTotalX / 36.*0.5}}} {{{SM_SizeY*0.5}}} 1"  sizen="{{{SM_SizeTotalX / 36.*0.8}}} {{{SM_SizeTotalX / 36.*0.8}}}"	image="{{{Image}}}" """;
+			if (I != Platform)
+				MLText ^= """ hidden="1" """;
+			MLText ^= "/>";
+		}
+			
+	MLText ^= "</frame>";
+	for (I, 0, 3)
+		MLText ^= """
+			<frame id="Frame_CampaignEnv{{{I}}}" posn="0 {{{SM_SizeY *I}}}">
+				<frameinstance modelid="FrameModel_CampaignEnv" />
+				<quad id="MouseInput_CampaignEnv_{{{I}}}" halign="right" valign="bottom" sizen="{{{SM_SizeTotalX / 36.*7.}}} {{{SM_SizeY}}}" posn="0 0 9" opacity="0." scriptevents="1" />
+			</frame>
+		""";
+	MLText ^= """
+		</frame>
+	</frame>""";
+	
+	/////////////////////////
+	// TRACKLIST
+	/////////////////////////
+	MLText ^= """
+		<label halign="center" valign="center2" textprefix="$t" textfont="{{{Font::GetFontName("Main")}}}" posn="{{{PositionFirstQuadX}}} {{{PositionFirstQuadY - TrackList_ArrowHeight - TrackList_TrackHeight * TrackList_LinesCount / 2.}}} 10" id="Label_LoadingTracks" textsize="13." text="{{{_("Loading")}}}"  opacity="1.0"/>
+		<quad bgcolor="000F" halign="center" valign="center" posn="{{{PositionFirstQuadX}}} {{{PositionFirstQuadY - TrackList_ArrowHeight - TrackList_TrackHeight * TrackList_LinesCount / 2.}}} 10" sizen="{{{TrackList_TrackWidth * TrackList_ColumnsCount}}} {{{TrackList_TrackHeight * TrackList_LinesCount + 2*TrackList_ArrowHeight}}}" />
+		<frame id="Frame_TrackList" posn="{{{PositionFirstQuadX}}} {{{PositionFirstQuadY}}} 10" >
+			<quad halign="center"   valign="center" sizen="{{{TrackList_ArrowHeight*0.75}}} {{{TrackList_ArrowHeight*0.75}}}" posn="0 {{{- TrackList_ArrowHeight / 2.}}} 3" image="{{{IMGPopupArrow}}}" rot="180" id="MouseInput_PrevPage" scriptevents="1" />
+			<quad halign="center"   valign="center" sizen="{{{TrackList_ArrowHeight*0.75}}} {{{TrackList_ArrowHeight*0.75}}}" posn="0 {{{- TrackList_TrackHeight * TrackList_LinesCount - TrackList_ArrowHeight * 1.5}}} 3" image="{{{IMGPopupArrow}}}" id="MouseInput_NextPage" scriptevents="1" />
+			<frame id="Frame_Tracks" clip="1" clipsizen="{{{TrackList_TrackWidth * TrackList_ColumnsCount}}} {{{TrackList_TrackHeight * TrackList_LinesCount}}}" clipposn="0 {{{- TrackList_TrackHeight * TrackList_LinesCount / 2. - TrackList_ArrowHeight}}}" >
+				<frameinstance id="SubFrame_Tracks_1" modelid="Frame_TracksGroup" posn="0 {{{TrackList_LinesCount * (TrackList_TrackHeight-1)}}}" />
+				<frameinstance id="SubFrame_Tracks_0" modelid="Frame_TracksGroup" posn="0 {{{-TrackList_TrackHeight}}}"/>
+			</frame>
+			<frame posn="0 0 5">
+				{{{Selector::InsertFrameworkInManialink(13, TrackList_TrackWidth*0.97, TrackList_TrackHeight*0.97, -TrackList_TrackWidth/2., TrackList_TrackHeight/2., 0., 0.)}}}
+			</frame>
+		</frame>
+		<quad bgcolor="000F" halign="center" valign="center" posn="{{{PositionFirstQuadX}}} {{{PositionFirstQuadY - TrackList_ArrowHeight - TrackList_TrackHeight * TrackList_LinesCount / 2.}}} 9" sizen="{{{TrackList_TrackWidth * TrackList_ColumnsCount}}} {{{TrackList_TrackHeight * TrackList_LinesCount + 2*TrackList_ArrowHeight}}}" />
+		
+		<quad posn="{{{-SM_SizeTotalX/2.}}} {{{PositionFirstQuadY}}} 1" 																					sizen="{{{(SM_SizeTotalX - SM_SizeX)}}} {{{(TrackList_TrackHeight * TrackList_LinesCount + 2*TrackList_ArrowHeight) * 2. / 3.}}}" 	bgcolor="000F" />
+		<quad posn="{{{-SM_SizeTotalX/2.}}} {{{PositionFirstQuadY- (TrackList_TrackHeight * TrackList_LinesCount + 2*TrackList_ArrowHeight) * 2. / 3.}}} 1" sizen="{{{(SM_SizeTotalX - SM_SizeX)}}} {{{(TrackList_TrackHeight * TrackList_LinesCount + 2*TrackList_ArrowHeight) / 3.}}}" 		bgcolor="000F" />
+		
+		<frame id="Frame_TrackInfo" posn="{{{-SM_SizeTotalX/2.}}} {{{PositionFirstQuadY}}} 2" hidden="1">
+			<frame>				
+				<quad posn="{{{(SM_SizeTotalX - SM_SizeX) * 0.5}}} -{{{(SM_SizeTotalX - SM_SizeX) * 0.35 + 3.}}}" 	halign="center" valign="center"   id="Quad_TrackEnvironment"	sizen="{{{(SM_SizeTotalX - SM_SizeX) * 0.7}}} {{{(SM_SizeTotalX - SM_SizeX) * 0.7}}}"  colorize="FFF" />
+				<label posn="{{{(SM_SizeTotalX - SM_SizeX) * 0.5}}} 	-{{{(SM_SizeTotalX - SM_SizeX) * 0.7 + 8.}}}" 	halign="center" valign="center2"  id="Label_TrackAuthor" 		sizen="{{{(SM_SizeTotalX - SM_SizeX) * 0.75}}}" textfont="{{{Font::GetFontName("Main")}}}" textprefix="$t"/>
+				<label posn="{{{(SM_SizeTotalX - SM_SizeX) * 0.5}}} 	-{{{(SM_SizeTotalX - SM_SizeX) * 0.7 + 14.}}}" 	halign="center" valign="center2"  id="Label_TrackState" 		sizen="{{{(SM_SizeTotalX - SM_SizeX) * 0.75}}}" textfont="{{{Font::GetFontName("Main")}}}" textprefix="$t"/>
+			</frame>
+			<frame posn="0 {{{-(TrackList_TrackHeight * TrackList_LinesCount + 2*TrackList_ArrowHeight) * 0.8}}}" id="frame_additionnaltracksinfo" >
+				<label posn="{{{(SM_SizeTotalX - SM_SizeX) * 0.05}}} -{{{(TrackList_TrackHeight * TrackList_LinesCount + 2*TrackList_ArrowHeight) * 0.8 * 0.07}}}" 					valign="center2" sizen="{{{(SM_SizeTotalX - SM_SizeX) * 0.3}}}" textfont="{{{Font::GetFontName("Main")}}}"	 textprefix="$t" text="{{{_("|Track Information|Length")}}}" />
+				<label posn="{{{(SM_SizeTotalX - SM_SizeX) * 0.95}}} -{{{(TrackList_TrackHeight * TrackList_LinesCount + 2*TrackList_ArrowHeight) * 0.8 * 0.07}}}" halign="right"	valign="center2" sizen="{{{(SM_SizeTotalX - SM_SizeX) * 0.6}}}" textfont="{{{Font::GetFontName("Main")}}}" textprefix="$t" id="Label_TrackLength"/>
+				<label posn="{{{(SM_SizeTotalX - SM_SizeX) * 0.05}}} -{{{(TrackList_TrackHeight * TrackList_LinesCount + 2*TrackList_ArrowHeight) * 0.8 * 0.17}}}" 					valign="center2" sizen="{{{(SM_SizeTotalX - SM_SizeX) * 0.3}}}" textfont="{{{Font::GetFontName("Main")}}}" textprefix="$t" text="{{{_("|Track Information|Style")}}}" />
+				<label posn="{{{(SM_SizeTotalX - SM_SizeX) * 0.95}}} -{{{(TrackList_TrackHeight * TrackList_LinesCount + 2*TrackList_ArrowHeight) * 0.8 * 0.17}}}" halign="right"	valign="center2" sizen="{{{(SM_SizeTotalX - SM_SizeX) * 0.6}}}" textfont="{{{Font::GetFontName("Main")}}}" textprefix="$t" id="Label_TrackStyle"/>
+			</frame>
+		</frame>
+	</frame>
+	""";
+	
+	/////////////////////////
+	// STYLES AND DURATIONS
+	/////////////////////////
+	
+	MLText ^= """
+	
+	<frame id="Frame_StyleAndDuration" posn="0 {{{3 * SM_SizeY}}} 25" hidden="0">
+		<quad	halign="center"		valign="center" sizen="320 180" opacity="0.6" bgcolor="000" posn="0 {{{-3*SM_SizeY}}} -1" />
+		<quad 	halign="center" 	valign="top" sizen="{{{PopUp_SizeX}}} {{{SM_SizeY*2.}}}" image="{{{IMGSlotBigFg}}}" posn="0 0 7" />
+		<quad  	halign="center" 	valign="top" sizen="{{{PopUp_SizeX}}} {{{SM_SizeY*2.}}}" image="{{{IMGSlotBigBg}}}" posn="0 0 5" />
+		<label 	halign="left" 		valign="center2"  textfont="{{{Font::GetFontName("Main")}}}" posn="{{{-(PopUp_SizeX-2)/2.}}}  {{{-SM_SizeY}}} 6" id="Label_Title" textsize="13." textcolor="{{{TitleColor}}}" textprefix="$t" sizen="{{{PopUp_SizeX-2.}}}" text="{{{_("Style and duration")}}}"/>
+			
+		<frame id="Frame_Choices" posn="0 {{{-2*SM_SizeY}}}">
+			<quad id="quad_selector" halign="center" bgcolor="{{{TitleColor}}}" sizen="{{{PopUp_SizeX}}} {{{SM_SizeY}}}" posn="0 0 2.5" />
+			<frameinstance modelid="FrameModel_PopUpLineEmpty" />
+			<frameinstance modelid="FrameModel_PopUpLineEmpty" posn="0 {{{-SM_SizeY}}}" />
+			<frameinstance modelid="FrameModel_PopUpLineEmpty" posn="0 {{{-2*SM_SizeY}}}" />
+			
+			<frame id="Frame_Choice0">
+				<frameinstance modelid="FrameModel_PopUpLine" />
+				<quad halign="center" valign="top" sizen="{{{PopUp_SizeX}}} {{{SM_SizeYElement}}}" opacity="0."	scriptevents="1" posn="0 0 5" id="MouseInput_Choice_0" />
+			</frame>
+			<frame id="Frame_Choice1" posn="0 {{{-SM_SizeY}}}" >
+				<frameinstance  modelid="FrameModel_PopUpLine" />
+				<quad halign="center" valign="top" sizen="{{{PopUp_SizeX}}} {{{SM_SizeYElement}}}" opacity="0."	scriptevents="1" posn="0 0 5" id="MouseInput_Choice_1" />
+			</frame>
+			<frame id="Frame_Choice2" posn="0 {{{-2*SM_SizeY}}}" >
+				<frameinstance  modelid="FrameModel_PopUpLine" />
+				<quad halign="center" valign="top" sizen="{{{PopUp_SizeX}}} {{{SM_SizeYElement}}}" opacity="0."	scriptevents="1" posn="0 0 5" id="MouseInput_Choice_2" />
+			</frame>
+			
+			<frame posn="0 {{{-3*SM_SizeY}}}" id="Frame_InputInfo" >
+				<frameinstance modelid="FrameModel_PopUpLineEmpty"  />
+				<frame id="Frame_InputInfo_Select" posn="{{{PopUp_SizeX * 0.5}}} {{{-SM_SizeY}}}">
+					<quad 	halign="right" valign="bottom" posn="0 0 6" sizen="{{{7. * SM_SizeTotalX / 36.}}} {{{SM_SizeY}}}" image="{{{IMGSlotSmallBg}}}"   />
+					<quad 	halign="right" valign="bottom" posn="0 0 8" sizen="{{{7. * SM_SizeTotalX / 36.}}} {{{SM_SizeY}}}" image="{{{IMGSlotSmallFg}}}" scriptevents="1" id="MouseInput_ChoiceInputInfo_Select" />
+	""";
+	
+		for (I, 0, 2) {
+			declare Text Image;
+			switch (I) {
+				case LibUIButtons::GetPlatform("PC") 	: Image = IMGSelect_PC;
+				case LibUIButtons::GetPlatform("PS4") 	: Image = IMGSelect_PS4;
+				case LibUIButtons::GetPlatform("XB1") 	: Image = IMGSelect_XB1;
+			}
+		
+			MLText ^= """<quad id="QuadInputIcon_StyleAndDurationSelect_{{{I}}}" halign="center" valign="center" posn="{{{-SM_SizeTotalX / 36.*0.5}}} 	{{{SM_SizeY*0.5}}} 7" 	sizen="{{{SM_SizeTotalX / 36.*0.8}}} {{{SM_SizeTotalX / 36.*0.8}}} 6" 	image="{{{Image}}}" """;
+			if (I != Platform)
+				MLText ^= """ hidden="1" """;
+			MLText ^= "/>";
+		}
+					
+					
+	MLText ^= """
+					<label 	id="Label_StyleAndDurationSelect" halign="right" valign="center2" posn="{{{-SM_SizeTotalX / 36.-2.}}} 	{{{SM_SizeY*0.5}}} 7" 	sizen="{{{6 * SM_SizeTotalX / 36. - 4. }}}" text="{{{_("|16 chars max.|SELECT")}}}" textcolor="ddd"  textsize="4." textfont="{{{Font::GetFontName("Main")}}}" textprefix="$t" />
+				</frame>
+				
+				<frame id="Frame_InputInfo_Back" posn="{{{PopUp_SizeX * 0.5 - 8. * SM_SizeTotalX / 36.}}} {{{-SM_SizeY}}}" >
+					<quad 	halign="right" valign="bottom" posn="0 0 6" sizen="{{{7. * SM_SizeTotalX / 36.}}} {{{SM_SizeY}}}" image="{{{IMGSlotSmallBg}}}"   />
+					<quad 	halign="right" valign="bottom" posn="0 0 8" sizen="{{{7. * SM_SizeTotalX / 36.}}} {{{SM_SizeY}}}" image="{{{IMGSlotSmallFg}}}"  scriptevents="1" id="MouseInput_ChoiceInputInfo_Cancel" />
+	""";
+					
+					
+		for (I, 0, 2) {
+			declare Text Image;
+			switch (I) {
+				case LibUIButtons::GetPlatform("PC") 	: Image = IMGCancel_PC;
+				case LibUIButtons::GetPlatform("PS4") 	: Image = IMGCancel_PS4;
+				case LibUIButtons::GetPlatform("XB1") 	: Image = IMGCancel_XB1;
+			}
+		
+			MLText ^= """<quad 	id="QuadInputIcon_StyleAndDurationCancel_{{{I}}}" halign="center" valign="center" posn="{{{-SM_SizeTotalX / 36.*0.5}}} 	{{{SM_SizeY*0.5}}} 7" 	sizen="{{{SM_SizeTotalX / 36.*0.8}}} {{{SM_SizeTotalX / 36.*0.8}}} 6" 	image="{{{Image}}}" """;
+			if (I != Platform)
+				MLText ^= """ hidden="1" """;
+			MLText ^= "/>";
+		}
+					
+	MLText ^= """
+					<label id="Label_StyleAndDurationCancel" halign="right" valign="center2" posn="{{{-SM_SizeTotalX / 36.-2.}}} 	{{{SM_SizeY*0.5}}} 7" 	sizen="{{{6 * SM_SizeTotalX / 36. - 4. }}}" text="{{{_("|16 chars max.|SKIP")}}}" textcolor="ddd"  textsize="4." textfont="{{{Font::GetFontName("Main")}}}" textprefix="$t" />
+				</frame>
+			</frame>
+		</frame>
+	</frame>
+			
+	<script><!--
+		#Const DebugName  "L_RoomPlaylist"
+		
+		#Const C_TrackFramesCount 2
+		#Const C_DisplayedTrackFramesCount {{{TrackList_ColumnsCount * TrackList_LinesCount}}}
+		#Const C_TrackFrameHeight {{{TrackList_TrackHeight * TrackList_LinesCount}}}
+		
+		#Const C_LocalTracks_None		 0
+		#Const C_LocalTracks_MustRequest 1
+		#Const C_LocalTracks_Requesting	 2
+		
+		#Const C_Onglet_MyTracks			0
+		#Const C_Onglet_Buddies				1
+		#Const C_Onglet_Favorites			2
+		#Const C_Onglet_Campaign			3
+		
+		#Const C_BrowseFilters_Environments	0
+		#Const C_BrowseFilters_Styles		1
+		#Const C_BrowseFilters_Durations	2
+		#Const C_BrowseFilters_Authors		3
+		#Const C_BrowseFilters_Dates		4
+		
+		#Const C_StyleAndDurationStatus_Hidden		0
+		#Const C_StyleAndDurationStatus_Style		1
+		#Const C_StyleAndDurationStatus_Duration	2
+		
+		#Include "TextLib" as TL
+		#Include "MathLib" as ML
+		
+		{{{Manialink::GetIncludes()}}}
+		{{{Manialink::Load()}}}
+		
+		declare Integer						G_LockInput;
+		declare Integer						G_TrackFrameTransitionStartTime;
+		
+		//BROWSING
+		declare Integer[]					G_BrowseLocation;
+		declare Integer[]					G_BrowseFilters;
+		declare Integer[Integer]			G_BrowseMap;
+		declare Integer[Integer]			G_BrowseMap_ChildsCount;
+		declare Integer[Integer]			G_BrowseMap_FilterValue;
+		declare Boolean						G_SelectingFilter;
+		declare Integer						G_Filter_FocusIndex;
+		
+		//CAMPAIGNENVS
+		declare Text						G_SelectedCampaignEnv;
+		declare Boolean						G_SelectingCampaignEnvs;
+		declare Integer						G_CampaignEnvs_FocusIndex;
+		
+		//ONGLETS
+		declare Integer						G_OngletMax;
+		declare Integer						G_IndexFocusX;
+		declare Integer						G_IndexFocusY;
+		declare Text[]						G_Onglets;
+		declare Integer						G_OngletFocus;
+		declare Integer						G_TimeSwitchOnglet;
+		declare Boolean						G_AreFavoriteAuthorsOrElseTracks;
+		
+		//TRACKLIST
+		declare Integer			G_MaxTracksCount;
+		declare Text[]			G_AlreadyAddedTracks;
+		declare Integer			G_FirstDisplayedTrackIndex;		//Index de la track affichée en haut à gauche
+		declare Integer			G_DisplayedTrackFrameIndex;		//pour savoir quelle est la frameinstance visible et quelle est celle qui est cachée
+		
+		//ATTRIBUTES
+		declare Text[]			G_TracksStyles;
+		declare Text[]			G_TracksDurations;
+		declare Text[]			G_TracksEnvironments;
+		declare Text[]			G_TracksAuthors;
+		declare Text[]			G_TracksDisplayNames;
+		declare Integer[]		G_TracksDates;
+		declare Text[]			G_TracksDurations_Live;
+		
+		declare CMlQuad			G_QuadToBlink;
+		declare CMlLabel		G_LabelToBlink;
+		
+		//STYLE & DURATION
+		declare Integer[]		G_TopStylesIndexes;
+		declare Real[]			G_TopStylesRatios;
+		declare Integer[]		G_TopDurationsIndexes;
+		declare Real[]			G_TopDurationsRatios;
+		
+		declare Integer 		G_StyleAndDurationStatus;
+		declare Text			G_SelectedStyle;
+		declare Integer			G_SelectedDuration;
+		declare Integer			G_StyleAndDuration_FocusIndex;
+		declare CMlQuad			G_SelectorToAnimate;
+		
+		//REQUESTS
+		declare Integer			G_LastRefreshTime;
+		declare Boolean			G_RequestError;
+		declare Boolean			G_IsUploading;
+		declare Text			G_UploadedMapUid;
+		declare Integer			G_MyLocalTracksRequest;
+		declare Boolean			G_RequestMyTracks_OnlineCompleted;
+		declare Boolean			G_RequestMyTracks_LocalCompleted;
+		
+		declare Integer[Integer]	G_LocalThumbnailsToLoad;
+		declare Boolean				G_LocalThumbnails_IsLoading;
+		
+		declare Text[]			G_BuddiesLoginsToUse;
+		
+		{{{Loading::InjectInGlobals()}}}
+		{{{InputInfos::InjectInGlobals()}}}
+		
+		{{{Loading::InjectInFunctions()}}}
+		{{{InputInfos::InjectInFunctions()}}}
+		{{{LiveHelpers::InjectConverters()}}}
+		
+		Boolean IsLocalTrackUploaded(Text _Uid)
+		{
+			declare Text[Text][] RequestedTracks for Page;
+			for (I, 0, RequestedTracks.count - 1)
+			{
+				if (RequestedTracks[I]["uid"] == _Uid)
+					return True;
+			}
+			return False;
+		}
+		
+		Integer GetLocalTrackUploadedIndex(Text _Uid)
+		{
+			declare Text[Text][] RequestedTracks for Page;
+			for (I, 0, RequestedTracks.count - 1)
+			{
+				if (RequestedTracks[I]["uid"] == _Uid)
+					return I;
+			}
+			return -1;
+		}
+		
+		{{{LibUIButtons::Inject_SetInputInfoTextSelected()}}}
+		
+		/////////////////////
+		// STYLE & DURATION
+		/////////////////////
+		Void StyleAndDuration_UpdateSelection()
+		{
+			declare CMlFrame Frame_StyleAndDuration <=> (Page.GetFirstChild("Frame_StyleAndDuration") as CMlFrame);
+			declare CMlFrame Frame_Choices 			<=> (Frame_StyleAndDuration.GetFirstChild("Frame_Choices") as CMlFrame);
+			declare CMlQuad Quad_Selector 	<=> (Frame_Choices.GetFirstChild("quad_selector") as CMlQuad);
+			
+			Quad_Selector.Show();
+			G_SelectorToAnimate <=> Quad_Selector;
+			declare CMlFrame CurrentFrame <=> (Frame_Choices.GetFirstChild("Frame_Choice"^G_StyleAndDuration_FocusIndex) as CMlFrame);
+			Quad_Selector.RelativePosition.X = CurrentFrame.RelativePosition.X;
+			Quad_Selector.RelativePosition.Y = CurrentFrame.RelativePosition.Y;
+		}
+		
+		Void ShowStylesAndDurations() {
+			G_TopStylesIndexes.clear();
+			G_TopStylesRatios.clear();
+			G_TopDurationsIndexes.clear();
+			G_TopDurationsRatios.clear();
+			
+			declare CMlLabel LabelName <=> (Page.GetFirstChild("Label_StyleAndDurationSelect") as CMlLabel);
+			SetInputInfoTextSelected(LabelName, False);
+			LabelName <=> (Page.GetFirstChild("Label_StyleAndDurationCancel") as CMlLabel);
+			SetInputInfoTextSelected(LabelName, False);
+			
+			declare Real[Text] 		Styles;
+			declare Real[Integer] 	Durations;
+			
+			declare Text[Text][] TrackList for Page;
+			
+			if (TrackList.count == 0)
+			{
+				Audio.PlaySoundEvent("{{{SoundBack}}}", {{{Volumes::GetVolumedB("MenuPageBack")}}});
+				SendCustomEvent("SendTracklistToRoomManager", ["", ""]);
+				SendCustomEvent("GotoPrevious", [""]);
+				{{{_HideAnim}}}
+				SendCustomEvent("DetachPage", ["RoomPlaylist"]);
+				return;
+			}
+			
+			for (I, 0, TrackList.count-1)
+			{
+				if (Styles.existskey(TrackList[I]["style"]))
+					Styles[TrackList[I]["style"]] += 1.;
+				else
+					Styles[TrackList[I]["style"]] = 1.;
+				if (Durations.existskey(TL::ToInteger(TrackList[I]["duration"])))
+					Durations[TL::ToInteger(TrackList[I]["duration"])] += 1.;
+				else
+					Durations[TL::ToInteger(TrackList[I]["duration"])] = 1.;	
+			}
+			
+			foreach (Style=>Count in Styles)
+				Styles[Style] = - Count / TrackList.count * 100.;
+			foreach (Duration=>Count in Durations)
+				Durations[Duration] = - Count / TrackList.count * 100.;
+				
+			Styles 		= Styles.sort();
+			Durations 	= Durations.sort();
+			
+			declare CMlFrame Frame_StyleAndDuration <=> (Page.GetFirstChild("Frame_StyleAndDuration") as CMlFrame);
+			declare CMlLabel Label_Title			<=> (Frame_StyleAndDuration.GetFirstChild("Label_Title") as CMlLabel);
+			Label_Title.Value = _("|Window title, 20 chars max.|Style suggestion");
+			declare CMlFrame Frame_Choices 			<=> (Frame_StyleAndDuration.GetFirstChild("Frame_Choices") as CMlFrame);
+			
+			declare RoomsStyles 	= {{{dump(GamePlay::GetRoomStyles())}}};
+			
+			declare Count = 0;
+			declare Boolean VariousAdded = False;
+			foreach(Style => Ratio in Styles)
+			{
+				if (Count >= 3)
+					break;
+				if (!RoomsStyles.exists(Style))
+					continue;
+				declare Real TrueRatio = -Ratio;
+				declare Frame_Choice <=> (Frame_Choices.GetFirstChild("Frame_Choice"^Count) as CMlFrame);
+				Frame_Choice.Show();
+				declare Label_Value <=> (Frame_Choice.GetFirstChild("Label_Value") as CMlLabel);
+				declare Label_Ratio <=> (Frame_Choice.GetFirstChild("Label_Ratio") as CMlLabel);
+				
+				if (TrueRatio >= 50. || VariousAdded)
+				{
+					G_TopStylesIndexes.add(RoomsStyles.keyof(Style));
+					G_TopStylesRatios.add(TrueRatio);
+					Label_Value.Value = TL::GetTranslatedText(Style);
+					Label_Ratio.Value = TL::ToText(ML::FloorInteger(TrueRatio))^"%";
+					Label_Ratio.Show();
+				} else {
+					G_TopStylesIndexes.add(0);
+					G_TopStylesRatios.add(50.);
+					Label_Value.Value = TL::GetTranslatedText(_("Various"));
+					Label_Ratio.Hide();
+					VariousAdded = True;
+					Count += 1;
+					
+					if (Count < 3)
+					{
+						Frame_Choice <=> (Frame_Choices.GetFirstChild("Frame_Choice"^Count) as CMlFrame);
+						Frame_Choice.Show();
+						Label_Value <=> (Frame_Choice.GetFirstChild("Label_Value") as CMlLabel);
+						Label_Ratio <=> (Frame_Choice.GetFirstChild("Label_Ratio") as CMlLabel);
+						
+						G_TopStylesIndexes.add(RoomsStyles.keyof(Style));
+						G_TopStylesRatios.add(TrueRatio);
+						Label_Value.Value = TL::GetTranslatedText(Style);
+						Label_Ratio.Value = TL::ToText(ML::FloorInteger(TrueRatio))^"%";
+						Label_Ratio.Show();
+					}
+				}
+				Count += 1;
+			}
+			
+			if (Count == 0) //On peut avoir des styles de tracks qui ne sont pas des styles de rooms !
+				G_StyleAndDurationStatus = C_StyleAndDurationStatus_Duration;
+			else
+				G_StyleAndDurationStatus = C_StyleAndDurationStatus_Style;
+			
+			if (Count < 3)
+				for(I, Count, 2)
+				{
+					declare CMlFrame Frame_Choice <=> (Frame_Choices.GetFirstChild("Frame_Choice"^I) as CMlFrame);
+					Frame_Choice.Hide();
+				}
+			
+			Count = 0;
+			VariousAdded = False;
+			
+			declare RoomsDurations = {{{dump(GamePlay::GetDurations())}}};
+			
+			foreach(Duration => Ratio in Durations)
+			{
+				if (Count >= 3)
+					break;
+				if (Duration >= RoomsDurations.count)
+					continue;
+				declare Real TrueRatio = -Ratio;
+				declare Frame_Choice <=> (Frame_Choices.GetFirstChild("Frame_Choice"^Count) as CMlFrame);
+				if (G_StyleAndDurationStatus == C_StyleAndDurationStatus_Duration)
+					Frame_Choice.Show();
+				declare Label_Value <=> (Frame_Choice.GetFirstChild("Label_Value") as CMlLabel);
+				declare Label_Ratio <=> (Frame_Choice.GetFirstChild("Label_Ratio") as CMlLabel);
+					
+				if (TrueRatio >= 50.)
+				{
+					if (G_StyleAndDurationStatus == C_StyleAndDurationStatus_Duration)
+					{
+						Label_Value.Value = TL::GetTranslatedText(RoomsDurations[Duration]);
+						Label_Ratio.Value = TL::ToText(ML::FloorInteger(TrueRatio))^"%";
+						Label_Ratio.Show();
+					}
+					G_TopDurationsIndexes.add(Duration);
+					G_TopDurationsRatios.add(TrueRatio);
+					
+				} else {
+					if (!VariousAdded) {
+						G_TopDurationsIndexes.add(0);
+						G_TopDurationsRatios.add(50.);
+						VariousAdded = True;
+						Count += 1;
+						if (G_StyleAndDurationStatus == C_StyleAndDurationStatus_Duration) {
+							Label_Value.Value = TL::GetTranslatedText(_("Various"));
+							Label_Ratio.Hide();
+						}
+					}
+					if (Count < 3)
+					{
+						if (G_StyleAndDurationStatus == C_StyleAndDurationStatus_Duration)
+						{
+							Frame_Choice <=> (Frame_Choices.GetFirstChild("Frame_Choice"^Count) as CMlFrame);
+							Frame_Choice.Show();
+							Label_Value <=> (Frame_Choice.GetFirstChild("Label_Value") as CMlLabel);
+							Label_Ratio <=> (Frame_Choice.GetFirstChild("Label_Ratio") as CMlLabel);
+							Label_Value.Value = TL::GetTranslatedText(RoomsDurations[Duration]);
+							Label_Ratio.Value = TL::ToText(ML::FloorInteger(TrueRatio))^"%";
+							Label_Ratio.Show();
+						}
+						G_TopDurationsIndexes.add(Duration);
+						G_TopDurationsRatios.add(TrueRatio);
+					}
+				}
+				Count += 1;
+			}
+			
+			G_SelectedStyle = "";
+			G_SelectedDuration = -1;
+			G_StyleAndDuration_FocusIndex = 0;
+			StyleAndDuration_UpdateSelection();
+			
+			Frame_StyleAndDuration.Show();
+			declare CMlFrame Frame_SelectorTrack <=> (Page.GetFirstChild("Frame_Selector")          as CMlFrame);
+			Frame_SelectorTrack.Hide();
+		}
+		
+		Void StyleAndDuration_Next() {
+			declare CMlFrame Frame_StyleAndDuration <=> (Page.GetFirstChild("Frame_StyleAndDuration") as CMlFrame);
+			if (G_StyleAndDurationStatus == C_StyleAndDurationStatus_Style)
+			{
+				declare CMlLabel Label_Title			<=> (Frame_StyleAndDuration.GetFirstChild("Label_Title") as CMlLabel);
+				Label_Title.Value = _("|Window title, 20 chars max.|Duration suggestion");
+				declare RoomsDurations = {{{dump(GamePlay::GetDurations())}}};
+				G_StyleAndDurationStatus = C_StyleAndDurationStatus_Duration;
+				G_StyleAndDuration_FocusIndex = 0;
+				declare CMlFrame Frame_Choices 			<=> (Frame_StyleAndDuration.GetFirstChild("Frame_Choices") as CMlFrame);
+				for (I, 0, G_TopDurationsIndexes.count-1)
+				{
+					declare Frame_Choice <=> (Frame_Choices.GetFirstChild("Frame_Choice"^I) as CMlFrame);
+					Frame_Choice.Show();
+					declare Label_Value <=> (Frame_Choice.GetFirstChild("Label_Value") as CMlLabel);
+					declare Label_Ratio <=> (Frame_Choice.GetFirstChild("Label_Ratio") as CMlLabel);				
+					if (G_TopDurationsIndexes[I] == 0)
+					{
+						Label_Value.Value = TL::GetTranslatedText(_("Various"));
+						Label_Ratio.Hide();
+					} else {
+						Label_Value.Value = TL::GetTranslatedText(RoomsDurations[G_TopDurationsIndexes[I]]);
+						Label_Ratio.Value = TL::ToText(ML::FloorInteger(G_TopDurationsRatios[I]))^"%";
+						Label_Ratio.Show();
+					}
+				}
+				
+				for (I, G_TopDurationsIndexes.count, 2)
+				{
+					declare Frame_Choice <=> (Frame_Choices.GetFirstChild("Frame_Choice"^I) as CMlFrame);
+					Frame_Choice.Hide();
+				}
+				
+				StyleAndDuration_UpdateSelection();
+			} else {
+				G_StyleAndDurationStatus = C_StyleAndDurationStatus_Hidden;
+				Frame_StyleAndDuration.Hide();
+				Audio.PlaySoundEvent("{{{SoundBack}}}", {{{Volumes::GetVolumedB("MenuPageBack")}}});
+				SendCustomEvent("SendTracklistToRoomManager", [G_SelectedStyle, TL::ToText(G_SelectedDuration)]);
+				SendCustomEvent("GotoPrevious", Text[]);
+				{{{_HideAnim}}}
+				SendCustomEvent("DetachPage", ["RoomPlaylist"]);
+			}
+		}
+		
+		Void StyleAndDuration_OnSelect() {
+			if (G_StyleAndDurationStatus == C_StyleAndDurationStatus_Style)
+			{
+				declare RoomsStyles 	= {{{dump(GamePlay::GetRoomStyles())}}};
+				G_SelectedStyle = RoomsStyles[G_TopStylesIndexes[G_StyleAndDuration_FocusIndex]];
+			} else if (G_StyleAndDurationStatus == C_StyleAndDurationStatus_Duration)
+				G_SelectedDuration = G_TopDurationsIndexes[G_StyleAndDuration_FocusIndex];
+			StyleAndDuration_Next();
+		}
+		
+		Void StyleAndDuration_OnSkip() {
+			StyleAndDuration_Next();
+		}
+		
+		Void StyleAndDuration_OnUp() {
+			if (G_StyleAndDuration_FocusIndex > 0)
+			{
+				G_StyleAndDuration_FocusIndex -= 1;
+				StyleAndDuration_UpdateSelection();
+			}
+		}
+		
+		Void StyleAndDuration_OnDown() {
+			if (G_StyleAndDurationStatus == C_StyleAndDurationStatus_Style && G_StyleAndDuration_FocusIndex < G_TopStylesIndexes.count-1 || G_StyleAndDurationStatus == C_StyleAndDurationStatus_Duration && G_StyleAndDuration_FocusIndex < G_TopDurationsIndexes.count-1)
+			{
+				G_StyleAndDuration_FocusIndex += 1;
+				StyleAndDuration_UpdateSelection();
+			}
+		}
+		
+		/////////////////////
+		// SELECTION
+		/////////////////////		
+		Void UpdateSelection()
+		{
+			if (G_StyleAndDurationStatus != C_StyleAndDurationStatus_Hidden)
+				return;
+		
+			declare CMlFrame FrameTracksDisplayed = (Page.GetFirstChild("SubFrame_Tracks_"^G_DisplayedTrackFrameIndex) as CMlFrame);
+			declare CMlFrame Frame_SelectorTrack <=> (Page.GetFirstChild("Frame_Selector")          as CMlFrame);
+			Frame_SelectorTrack.Show();
+			
+			declare CMlFrame Frame_Track <=> (FrameTracksDisplayed.GetFirstChild("Frame_Track"^(G_IndexFocusY*{{{TrackList_ColumnsCount}}}+G_IndexFocusX)) as CMlFrame);
+			if (Frame_Track == Null) {
+				G_IndexFocusX = 0;
+				G_IndexFocusY = 0;
+				Frame_Track <=> (FrameTracksDisplayed.GetFirstChild("Frame_Track"^(G_IndexFocusY*{{{TrackList_ColumnsCount}}}+G_IndexFocusX)) as CMlFrame);
+			}
+			Frame_SelectorTrack.RelativePosition.X = Frame_Track.RelativePosition.X - {{{TrackList_TrackWidth/2.}}} + 0.6;
+			Frame_SelectorTrack.RelativePosition.Y = Frame_Track.RelativePosition.Y - {{{TrackList_TrackHeight/2.}}} - 0.5;
+			
+			declare Text[Text][] FilteredTracksToDisplay for Page;
+			declare CMlFrame Frame_TrackInfo <=> (Page.GetFirstChild("Frame_TrackInfo") as CMlFrame);
+			
+			if (FilteredTracksToDisplay.count == 0)
+			{
+				Frame_TrackInfo.Hide();
+				if (G_LabelToBlink != Null)
+				{
+					G_LabelToBlink.Opacity = 1.;
+					G_LabelToBlink = Null;
+				}
+				if (G_QuadToBlink != Null)
+				{
+					G_QuadToBlink.Opacity = 1.;
+					G_QuadToBlink = Null;
+				}
+			} else {
+				declare CMlFrame frame_additionnaltracksinfo <=> (Frame_TrackInfo.GetFirstChild("frame_additionnaltracksinfo") as CMlFrame);
+				if (G_OngletFocus == C_Onglet_Campaign)
+					frame_additionnaltracksinfo.Hide();
+				else
+					frame_additionnaltracksinfo.Show();
+				
+				declare Integer SelectedTrackIndex = G_FirstDisplayedTrackIndex + G_IndexFocusY * {{{TrackList_ColumnsCount}}} + G_IndexFocusX;
+				declare Boolean IsFolder = FilteredTracksToDisplay[SelectedTrackIndex].existskey("is_folder");
+				if (IsFolder)
+				{
+					declare CMlQuad Quad_TrackEnvironment 		<=> (Frame_TrackInfo.GetFirstChild("Quad_TrackEnvironment") as CMlQuad);
+					declare CMlLabel Label_TrackLength 			<=> (Frame_TrackInfo.GetFirstChild("Label_TrackLength") as CMlLabel);
+					declare CMlLabel Label_TrackStyle 			<=> (Frame_TrackInfo.GetFirstChild("Label_TrackStyle") as CMlLabel);
+					declare CMlLabel Label_TrackAuthor 			<=> (Frame_TrackInfo.GetFirstChild("Label_TrackAuthor") as CMlLabel);
+					declare CMlLabel Label_TrackState 			<=> (Frame_TrackInfo.GetFirstChild("Label_TrackState") as CMlLabel);
+					Label_TrackState.Value = "";
+					
+					Quad_TrackEnvironment.Hide();
+					Frame_TrackInfo.Show();
+					Label_TrackLength.Hide();
+					Label_TrackStyle.Hide();
+					Label_TrackAuthor.Hide();
+					
+					declare Integer Index = 0;
+					for (I, 0, G_BrowseLocation.count-1)
+					{
+						Index = G_BrowseMap[Index]+G_BrowseLocation[I];	
+						switch (G_BrowseFilters[I])
+						{
+							case C_BrowseFilters_Styles 		:
+							{
+								Label_TrackStyle.Value = TL::GetTranslatedText(G_TracksStyles[G_BrowseMap_FilterValue[Index]]);
+								Label_TrackStyle.Show();
+							}
+							case C_BrowseFilters_Durations 		: 
+							{
+								Label_TrackLength.Value = TL::GetTranslatedText(G_TracksDurations[G_BrowseMap_FilterValue[Index]]);
+								Label_TrackLength.Show();
+							}
+							case C_BrowseFilters_Environments 	: 
+							{
+								Quad_TrackEnvironment.Show();
+								switch(G_TracksEnvironments[G_BrowseMap_FilterValue[Index]])
+								{
+									case "Stadium": Quad_TrackEnvironment.ImageUrl = "{{{IMGEnvironment_Stadium}}}";
+									case "Lagoon": Quad_TrackEnvironment.ImageUrl = "{{{IMGEnvironment_Lagoon}}}";
+									case "Canyon": Quad_TrackEnvironment.ImageUrl = "{{{IMGEnvironment_Canyon}}}";
+									case "Valley": Quad_TrackEnvironment.ImageUrl = "{{{IMGEnvironment_Valley}}}";
+								}
+							}
+							case C_BrowseFilters_Authors 		: 
+							{
+								Label_TrackAuthor.Value = G_TracksDisplayNames[G_BrowseMap_FilterValue[Index]];
+								Label_TrackAuthor.Show();
+							}
+						}
+					}
+					Index = G_BrowseMap[Index] + G_IndexFocusY * {{{TrackList_ColumnsCount}}} + G_IndexFocusX;
+					switch (G_BrowseFilters[G_BrowseLocation.count])
+					{
+						case C_BrowseFilters_Styles 		: 
+						{
+							Label_TrackStyle.Value = TL::GetTranslatedText(G_TracksStyles[G_BrowseMap_FilterValue[Index]]);
+							Label_TrackStyle.Show();
+							if (G_LabelToBlink != Null && G_LabelToBlink != Label_TrackStyle)
+								G_LabelToBlink.Opacity = 1.;
+							G_LabelToBlink <=> Label_TrackStyle;
+							if (G_QuadToBlink != Null)
+							{
+								G_QuadToBlink.Opacity = 1.;
+								G_QuadToBlink = Null;
+							}
+						}
+						case C_BrowseFilters_Durations 		:
+						{
+							Label_TrackLength.Value = TL::GetTranslatedText(G_TracksDurations[G_BrowseMap_FilterValue[Index]]);
+							Label_TrackLength.Show();
+							if (G_LabelToBlink != Null && G_LabelToBlink != Label_TrackLength)
+								G_LabelToBlink.Opacity = 1.;
+							G_LabelToBlink <=> Label_TrackLength;
+							if (G_QuadToBlink != Null)
+							{
+								G_QuadToBlink.Opacity = 1.;
+								G_QuadToBlink = Null;
+							}
+						}
+						case C_BrowseFilters_Environments 	: 
+						{
+							Quad_TrackEnvironment.Show();
+							switch(G_TracksEnvironments[G_BrowseMap_FilterValue[Index]])
+							{
+								case "Stadium": Quad_TrackEnvironment.ImageUrl = "{{{IMGEnvironment_Stadium}}}";
+								case "Lagoon": Quad_TrackEnvironment.ImageUrl = "{{{IMGEnvironment_Lagoon}}}";
+								case "Canyon": Quad_TrackEnvironment.ImageUrl = "{{{IMGEnvironment_Canyon}}}";
+								case "Valley": Quad_TrackEnvironment.ImageUrl = "{{{IMGEnvironment_Valley}}}";
+							}
+							if (G_QuadToBlink != Null && G_QuadToBlink != Quad_TrackEnvironment)
+								G_QuadToBlink.Opacity = 1.;
+							G_QuadToBlink <=> Quad_TrackEnvironment;
+							if (G_LabelToBlink != Null)
+							{
+								G_LabelToBlink.Opacity = 1.;
+								G_LabelToBlink = Null;
+							}
+						}
+						case C_BrowseFilters_Authors 		: 
+						{
+							Label_TrackAuthor.Value = G_TracksDisplayNames[G_BrowseMap_FilterValue[Index]];
+							Label_TrackAuthor.Show();
+							if (G_LabelToBlink != Null && G_LabelToBlink != Label_TrackAuthor)
+								G_LabelToBlink.Opacity = 1.;
+							G_LabelToBlink <=> Label_TrackAuthor;
+							if (G_QuadToBlink != Null)
+							{
+								G_QuadToBlink.Opacity = 1.;
+								G_QuadToBlink = Null;
+							}
+						}
+					}
+				} else {
+					declare CMlQuad Quad_TrackEnvironment 	<=> (Frame_TrackInfo.GetFirstChild("Quad_TrackEnvironment") as CMlQuad);
+					declare CMlLabel Label_TrackLength 		<=> (Frame_TrackInfo.GetFirstChild("Label_TrackLength") as CMlLabel);
+					declare CMlLabel Label_TrackStyle 		<=> (Frame_TrackInfo.GetFirstChild("Label_TrackStyle") as CMlLabel);
+					declare CMlLabel Label_TrackAuthor 		<=> (Frame_TrackInfo.GetFirstChild("Label_TrackAuthor") as CMlLabel);
+					declare CMlLabel Label_TrackState 		<=> (Frame_TrackInfo.GetFirstChild("Label_TrackState") as CMlLabel);
+					Quad_TrackEnvironment.Show();
+					Label_TrackLength.Show();
+					Label_TrackStyle.Show();
+					Label_TrackAuthor.Show();
+					
+					if (G_LabelToBlink != Null)
+					{
+						G_LabelToBlink.Opacity = 1.;
+						G_LabelToBlink = Null;
+					}
+					if (G_QuadToBlink != Null)
+					{
+						G_QuadToBlink.Opacity = 1.;
+						G_QuadToBlink = Null;
+					}
+					
+					switch(FilteredTracksToDisplay[SelectedTrackIndex]["environment"])
+					{
+						case "Stadium": Quad_TrackEnvironment.ImageUrl = "{{{IMGEnvironment_Stadium}}}";
+						case "Lagoon": Quad_TrackEnvironment.ImageUrl = "{{{IMGEnvironment_Lagoon}}}";
+						case "Canyon": Quad_TrackEnvironment.ImageUrl = "{{{IMGEnvironment_Canyon}}}";
+						case "Valley": Quad_TrackEnvironment.ImageUrl = "{{{IMGEnvironment_Valley}}}";
+					}
+					Label_TrackLength.Value = G_TracksDurations[TL::ToInteger(FilteredTracksToDisplay[SelectedTrackIndex]["duration"]) - 1];
+					Label_TrackStyle.Value = TL::GetTranslatedText(FilteredTracksToDisplay[SelectedTrackIndex]["style"]);
+				
+					if (G_OngletFocus == C_Onglet_MyTracks)
+					{
+						if (FilteredTracksToDisplay[SelectedTrackIndex].existskey("state"))
+						{
+							switch(FilteredTracksToDisplay[SelectedTrackIndex]["state"])
+							{
+								case "Validated" : Label_TrackState.Value = TL::Compose( "$090%1", _("|Track status|Validated") );
+								case "Unfinished": Label_TrackState.Value = TL::Compose( "$900%1", _("|Track status|Unfinished") );
+							}
+						} else {
+							Label_TrackState.Value = TL::Compose( "$090%1", _("|Track status|Uploaded") );
+						}
+						Label_TrackState.Show();
+						Label_TrackAuthor.Value = LocalUser.Name;
+					} else {
+						if (FilteredTracksToDisplay[SelectedTrackIndex].existskey("displayname"))
+							Label_TrackAuthor.Value = FilteredTracksToDisplay[SelectedTrackIndex]["displayname"];
+						else
+							Label_TrackAuthor.Value = "";
+						Label_TrackState.Hide();
+					}
+					Frame_TrackInfo.Show();
+				}
+			}
+		}
+		
+		Void ToggleInputInfo(Text _Input, Boolean _IsHovered) {
+			declare CMlFrame FrameInput <=> (Page.GetFirstChild("Frame_InputInfo_Main_"^_Input) as CMlFrame);
+			declare CMlLabel LabelInputInfo <=> (FrameInput.GetFirstChild("Label_Name") as CMlLabel);
+			SetInputInfoTextSelected(LabelInputInfo, _IsHovered);
+		}
+		
+		Void ResetInputInfos() {
+			ToggleInputInfo("Select", False);
+			ToggleInputInfo("Action1", False);
+			ToggleInputInfo("Action2", False);
+			ToggleInputInfo("Cancel", False);
+			ToggleInputInfo("LStickPress", False);
+		}
+
+		Void UpdateInputsInfo() {	
+			declare Text[Text][] FilteredTracksToDisplay for Page;
+			declare TrackIndex = G_FirstDisplayedTrackIndex + G_IndexFocusX + G_IndexFocusY * {{{TrackList_ColumnsCount}}};
+			
+			declare CMlFrame Frame_Select	<=> (Page.GetFirstChild("Frame_InputInfo_Main_Select") as CMlFrame);
+			declare CMlFrame Frame_Action1 	<=> (Page.GetFirstChild("Frame_InputInfo_Main_Action1") as CMlFrame);
+			declare CMlFrame Frame_Action2 	<=> (Page.GetFirstChild("Frame_InputInfo_Main_Action2") as CMlFrame);
+			declare CMlLabel Label_Name;
+			if (G_SelectingCampaignEnvs)
+			{
+				Frame_Select.Hide();
+				Frame_Action2.Hide();
+			} else if (G_SelectingFilter) {
+				Frame_Select.Hide();
+				Frame_Action2.Show();
+				Label_Name <=> (Frame_Action2.GetFirstChild("Label_Name") as CMlLabel);
+				if (G_OngletFocus == C_Onglet_Favorites)
+				{
+					if (G_AreFavoriteAuthorsOrElseTracks)
+						Label_Name.Value = _("Favorite Tracks");
+					else
+						Label_Name.Value = _("Favorite Authors");
+				} else {
+					Label_Name.Value = _("|16 chars max, select a folder|RESET");
+				}
+			} else {
+				if (FilteredTracksToDisplay.count == 0)
+				{
+					Frame_Select.Hide();
+					Frame_Action2.Hide();
+				} else {
+					declare Boolean IsFolder = FilteredTracksToDisplay[TrackIndex].existskey("is_folder");
+					if (IsFolder)
+					{
+						Label_Name <=> (Frame_Select.GetFirstChild("Label_Name") as CMlLabel);
+						Label_Name.Value = _("|16 chars max, select a folder|SELECT");
+						Frame_Select.Show();
+						Frame_Action2.Hide();
+					} else {
+						if (G_OngletFocus == C_Onglet_MyTracks || G_OngletFocus == C_Onglet_Campaign || FilteredTracksToDisplay[TrackIndex]["author"] == "Nadeo")
+							Frame_Action2.Hide();
+						else
+							Frame_Action2.Show();
+							
+						Label_Name <=> (Frame_Action2.GetFirstChild("Label_Name") as CMlLabel);
+						Label_Name.Value = "{{{SystemText::GetShowProfileTextForInputCard()}}}";
+						
+						if (G_AlreadyAddedTracks.exists(FilteredTracksToDisplay[TrackIndex]["uid"])) {
+							Label_Name <=> (Frame_Select.GetFirstChild("Label_Name") as CMlLabel);
+							Label_Name.Value = _("|16 chars max|REMOVE");
+							Frame_Select.Show();
+						} else {
+							if (G_AlreadyAddedTracks.count < G_MaxTracksCount)
+							{
+								Label_Name <=> (Frame_Select.GetFirstChild("Label_Name") as CMlLabel);
+								Label_Name.Value = _("|16 chars max|ADD");
+								Frame_Select.Show();
+							} else
+								Frame_Select.Hide();
+						}
+					}
+				}
+				
+				Label_Name <=> (Frame_Action1.GetFirstChild("Label_Name") as CMlLabel);
+				if (G_OngletFocus == C_Onglet_Campaign)
+					Label_Name.Value = _("|16 chars max.|ENVIRONMENTS");
+				else
+					Label_Name.Value = _("|16 chars max|CRITERIA");
+			}
+		}
+		
+		Void UpdateLabelTracksCount()
+		{
+			declare CMlLabel TracksCount <=> (Page.GetFirstChild("Label_TracksCount") as CMlLabel);
+			TracksCount.Value = G_AlreadyAddedTracks.count ^" / "^G_MaxTracksCount;
+			if (G_AlreadyAddedTracks.count == G_MaxTracksCount)
+				TracksCount.TextColor = <0.6, 0., 0.>;
+			else
+				TracksCount.TextColor = <0., 0., 0.>;
+		}
+		
+		/////////////////////
+		// TRACKLIST
+		/////////////////////
+		Void SendRequestNextPage()
+		{
+			declare Text[Text][] RequestedTracks for Page;
+			
+			declare CMlFrame Frame_TrackList	<=> (Page.GetFirstChild("Frame_TrackList") as CMlFrame);
+			Frame_TrackList.Hide();
+			declare CMlLabel Label_LoadingTracks <=> (Page.GetFirstChild("Label_LoadingTracks") as CMlLabel);
+			Label_LoadingTracks.Show();
+			declare CMlQuad  Quad_Selector <=> (Page.GetFirstChild("Quad_Selector") as CMlQuad);
+			Quad_Selector.Hide();
+			declare CMlFrame Frame_TrackInfo <=> (Page.GetFirstChild("Frame_TrackInfo") as CMlFrame);
+			Frame_TrackInfo.Hide();
+			
+			declare Text Offset = TL::ToText(RequestedTracks.count);
+			
+			switch (G_OngletFocus)
+			{	
+				case C_Onglet_Favorites: {
+					if (G_AreFavoriteAuthorsOrElseTracks)
+						SendCustomEvent("RoomPlaylist_RequestFavoriteAuthorsTracks", [Offset, "54"]);
+					else
+						SendCustomEvent("RoomPlaylist_RequestFavoriteTracks", [Offset, "54"]);
+				}
+				case C_Onglet_Campaign: {
+					SendCustomEvent("RoomPlaylist_RequestCampaignTracks", [Offset, "54", G_SelectedCampaignEnv]);
+				}
+				case C_Onglet_Buddies : {
+					SendCustomEvent("RoomPlaylist_RequestBuddiesTracks", [Offset, "54", TL::Join(",", G_BuddiesLoginsToUse)]);
+				}
+				case C_Onglet_MyTracks : {
+					SendCustomEvent("RoomPlaylist_RequestUploadedTracks", [Offset, "54"]);
+				}
+			}
+		}
+		
+		Void TrackList_UpdateAlreadyAddedTracks() {
+			declare Text[Text][] TrackList for Page;
+			
+			G_AlreadyAddedTracks.clear();
+			
+			for (I, 0, TrackList.count - 1)
+			{
+				G_AlreadyAddedTracks.add(TrackList[I]["uid"]);
+			}
+		}
+
+		Integer Recurse_GenerateTracksMap(Integer[] _MapIndexes, Integer _RecursionLevel, Integer _ParentIndexInMap, Integer _StartIndex) {
+			declare Text 	FilterName;
+			declare Text[] 	FilterValues;
+			switch (G_BrowseFilters[_RecursionLevel])
+			{
+				case C_BrowseFilters_Styles :
+				{
+					FilterName 		= "style";
+					FilterValues 	= G_TracksStyles;
+				}
+				case C_BrowseFilters_Durations :
+				{
+					FilterName		= "duration";
+					FilterValues 	= ["1", "2", "3", "4", "5"];
+				}
+				case C_BrowseFilters_Environments :
+				{
+					FilterName		= "environment";
+					FilterValues	= G_TracksEnvironments;
+				}
+				case C_BrowseFilters_Authors :
+				{
+					FilterName		= "author";
+					FilterValues	= G_TracksAuthors;
+				}
+			}
+			declare Text[Text][] TracksToDisplay for Page;
+			declare Integer[] FilterValueIndexes;
+			declare Integer[][] SubMapIndexes;
+			
+			if (G_BrowseFilters[_RecursionLevel] != C_BrowseFilters_Dates)
+			{
+				for (I, 0, _MapIndexes.count-1)
+				{
+					declare Text FilterValue;
+					if (TracksToDisplay[_MapIndexes[I]].existskey(FilterName))
+						FilterValue = TracksToDisplay[_MapIndexes[I]][FilterName];
+					else
+						FilterValue = "unknown"; //tempo, normalement on devrait gérer date comme il faut à terme
+					
+					if (FilterValues.exists(FilterValue))
+					{
+						declare Integer FilterValueIndex = FilterValues.keyof(FilterValue);
+						if (FilterValueIndexes.exists(FilterValueIndex))
+							SubMapIndexes[FilterValueIndexes.keyof(FilterValueIndex)].add(_MapIndexes[I]);
+						else {
+							SubMapIndexes.add([_MapIndexes[I]]);
+							FilterValueIndexes.add(FilterValueIndex);
+						}
+					} else {
+						FilterValues.add(FilterValue);
+						FilterValueIndexes.add(FilterValues.count-1);
+						SubMapIndexes.add([_MapIndexes[I]]);
+						if (G_BrowseFilters[_RecursionLevel] == C_BrowseFilters_Authors)
+							G_TracksDisplayNames.add(TracksToDisplay[_MapIndexes[I]]["displayname"]);
+					}
+				}
+			} else {
+				for (I, 0, _MapIndexes.count-1)
+				{
+					declare Text FilterValue;
+					declare Integer Date;
+					if (TracksToDisplay[_MapIndexes[I]].existskey("date"))
+						FilterValue = TracksToDisplay[_MapIndexes[I]]["date"];
+					else {
+						FilterValue = "unknown";
+						Date = -1; //tempo, normalement on devrait gérer date comme il faut à terme
+					}
+				 
+					if (FilterValue != "unknown")
+					{
+						FilterValue = TL::Split("T", FilterValue)[0];
+						declare Text[] SplitDate = TL::Split("-", FilterValue);
+						Date = TL::ToInteger(SplitDate[0]) * 10000 + TL::ToInteger(SplitDate[1]) * 100 + TL::ToInteger(SplitDate[2]);
+					}
+					
+					declare Integer FilterValueIndex = Date;
+					if (FilterValueIndexes.exists(FilterValueIndex))
+							SubMapIndexes[FilterValueIndexes.keyof(FilterValueIndex)].add(_MapIndexes[I]);
+					else {
+						//cas -1 ? normalement on n'en aura plus une fois gérées les dates locales !
+						if (FilterValueIndexes.count != 0)
+						{
+							for (J, 0, FilterValueIndexes.count-1)
+							{
+								if (FilterValueIndexes[J] < Date)
+								{
+									SubMapIndexes.add(Integer[]);
+									FilterValueIndexes.add(-1);
+									for (K, 0, FilterValueIndexes.count - 2 - J)
+									{
+										SubMapIndexes[FilterValueIndexes.count - 1 - K]			= SubMapIndexes[FilterValueIndexes.count - 2 - K];
+										FilterValueIndexes[FilterValueIndexes.count - 1 - K]	= FilterValueIndexes[FilterValueIndexes.count - 2 - K];
+									}
+									SubMapIndexes[J] = [_MapIndexes[I]];
+									FilterValueIndexes[J] = FilterValueIndex;
+									break;
+								}
+								if (J == FilterValueIndexes.count-1)
+								{
+									FilterValueIndexes.add(FilterValueIndex);
+									SubMapIndexes.add([_MapIndexes[I]]);
+								}
+							}
+						} else {
+							FilterValueIndexes.add(FilterValueIndex);
+							SubMapIndexes.add([_MapIndexes[I]]);
+						}
+					}
+				}
+			}
+			
+			switch (G_BrowseFilters[_RecursionLevel])
+			{
+				case C_BrowseFilters_Styles :
+				{
+					declare StartIndex = G_TracksStyles.count;
+					for (I, 0, FilterValues.count - G_TracksStyles.count -1)
+						G_TracksStyles.add(FilterValues[StartIndex+I]);
+				}
+				case C_BrowseFilters_Durations :
+				{
+					declare StartIndex = G_TracksDurations_Live.count;
+					for (I, 0, FilterValues.count - G_TracksDurations_Live.count -1)
+						G_TracksDurations_Live.add(FilterValues[StartIndex+I]);
+				}
+				case C_BrowseFilters_Environments :
+				{
+					declare StartIndex = G_TracksEnvironments.count;
+					for (I, 0, FilterValues.count - G_TracksEnvironments.count -1)
+						G_TracksEnvironments.add(FilterValues[StartIndex+I]);
+				}
+				case C_BrowseFilters_Authors :
+				{
+					declare StartIndex = G_TracksAuthors.count;
+					for (I, 0, FilterValues.count - G_TracksAuthors.count -1)
+						G_TracksAuthors.add(FilterValues[StartIndex+I]);
+				}
+				//case C_BrowseFilters_Dates : 
+				//{
+				//	declare StartIndex = G_TracksDates.count;
+				//	for (I, 0, FilterValues.count - G_TracksDates.count-1)
+				//		G_TracksDates.add(FilterValues[StartIndex+I]);
+				//}
+			}
+			
+			G_BrowseMap_ChildsCount[_ParentIndexInMap] = SubMapIndexes.count;
+			
+			declare Integer TotalChildsCount = 0;
+			if (_RecursionLevel < G_BrowseFilters.count-1)
+			{
+				for (I, 0, SubMapIndexes.count-1)
+				{
+					G_BrowseMap[_StartIndex+I] 				= _StartIndex+SubMapIndexes.count+TotalChildsCount;
+					G_BrowseMap_FilterValue[_StartIndex+I] 	= FilterValueIndexes[I];
+					TotalChildsCount += Recurse_GenerateTracksMap(SubMapIndexes[I], _RecursionLevel+1, _StartIndex+I, _StartIndex+SubMapIndexes.count+TotalChildsCount);
+				}
+			} else {
+				for (I, 0, SubMapIndexes.count-1)
+				{
+					G_BrowseMap[_StartIndex+I] = _StartIndex+SubMapIndexes.count+TotalChildsCount;
+					G_BrowseMap_ChildsCount[_StartIndex+I] = SubMapIndexes[I].count;
+					G_BrowseMap_FilterValue[_StartIndex+I] = FilterValueIndexes[I];
+					for (J, 0, SubMapIndexes[I].count-1)
+					{
+						G_BrowseMap[_StartIndex+SubMapIndexes.count+TotalChildsCount+J] = SubMapIndexes[I][J];
+						G_BrowseMap_ChildsCount[_StartIndex+SubMapIndexes.count+TotalChildsCount+J] = 0;
+						G_BrowseMap_FilterValue[_StartIndex+SubMapIndexes.count+TotalChildsCount+J] = -1;
+					}
+					TotalChildsCount += SubMapIndexes[I].count;
+				}
+			}
+			return TotalChildsCount + SubMapIndexes.count;
+		}
+		
+		Void TrackList_UpdateTracksMap() {
+			if (G_BrowseFilters.count == 0 || G_OngletFocus == C_Onglet_Campaign)
+				return;
+				
+			G_BrowseMap.clear();
+			G_BrowseMap_ChildsCount.clear();
+			G_BrowseMap_FilterValue.clear();
+			
+			G_BrowseMap[0] = 1;
+			G_BrowseMap_FilterValue[0] = -1;
+			
+			G_TracksAuthors.clear(); //pour l'instant je clear à chaque refresh, mais normalement faire ça que au show
+			G_TracksDisplayNames.clear();
+			
+			declare Text[Text][] TracksToDisplay for Page;
+			declare Integer[] MapIndexes;
+			for (I, 0, TracksToDisplay.count-1)
+				MapIndexes.add(I);
+			Recurse_GenerateTracksMap(MapIndexes, 0, 0, 1);
+			
+			//for (I, 0, TracksToDisplay.count-1)
+			
+			//log(G_BrowseMap.sortkey());
+			//log(G_BrowseMap_ChildsCount.sortkey());
+			//log(G_BrowseMap_FilterValue.sortkey());
+		}
+		
+		Void SetQuadImageForFolder(CMlQuad _Quad, Integer _FolderIndexInMap, Integer _TrackCardIndex)
+		{
+			declare Integer Index = _FolderIndexInMap;
+			while (G_BrowseMap_ChildsCount[Index] != 0)
+				Index = G_BrowseMap[Index];
+			Index = G_BrowseMap[Index]; //on récupère donc l'index de la track dont on veut afficher le thumbnail
+			declare Text[Text][] TracksToDisplay for Page;
+			if (TracksToDisplay[Index].existskey("thumbnail_url")) {
+				_Quad.ImageUrl = TracksToDisplay[Index]["thumbnail_url"];
+				_Quad.Image = Null;
+			} else if (TracksToDisplay[Index].existskey("mapinfo")) {
+				declare MapInfoIndex = TL::ToInteger(TracksToDisplay[Index]["mapinfo"]);
+				if (MapInfoIndex < DataMgr.Maps.count && DataMgr.Maps[MapInfoIndex].MapUid == TracksToDisplay[Index]["uid"])
+				{
+					G_LocalThumbnailsToLoad[_TrackCardIndex] = MapInfoIndex;
+					_Quad.ImageUrl = "";
+				}	
+			}		
+		}
+		
+		Void TrackList_UpdateTracksToDisplay() {
+			declare Text[Text][] TracksToDisplay for Page;
+			declare Text[Text][] ValidatedTracks for Page;
+			declare Text[Text][] RequestedTracks for Page;
+			
+			TracksToDisplay.clear();
+			if (G_OngletFocus == C_Onglet_MyTracks)
+			{
+				for (I, 0, ValidatedTracks.count -1)
+				{
+					if (!IsLocalTrackUploaded(ValidatedTracks[I]["uid"]))
+						TracksToDisplay.add(ValidatedTracks[I]);
+				}
+				for (I, 0, RequestedTracks.count -1)
+				{
+					TracksToDisplay.add(RequestedTracks[I]);
+				}
+			} else {
+				TracksToDisplay = RequestedTracks;
+			}
+			
+			TrackList_UpdateTracksMap();
+		}
+		
+		Void TrackList_SetArrowsVisibility(Boolean _IsLeftArrowVisible, Boolean _IsRightArrowVisible)
+		{
+			declare CMlQuad LeftArrow <=> (Page.GetFirstChild("MouseInput_PrevPage") as CMlQuad);
+			declare CMlQuad RightArrow <=> (Page.GetFirstChild("MouseInput_NextPage") as CMlQuad);
+			if (_IsLeftArrowVisible != LeftArrow.Visible)
+			{
+				if (_IsLeftArrowVisible)
+					LeftArrow.Show();
+				else
+					LeftArrow.Hide();
+			}
+			if (_IsRightArrowVisible != RightArrow.Visible)
+			{
+				if (_IsRightArrowVisible)
+					RightArrow.Show();
+				else
+					RightArrow.Hide();
+			}
+		}
+		
+		Void TrackList_Hide()
+		{
+			declare CMlFrame FrameTracksDisplayed = (Page.GetFirstChild("SubFrame_Tracks_"^G_DisplayedTrackFrameIndex) as CMlFrame);
+			for (I, 0, C_DisplayedTrackFramesCount-1)
+			{
+				declare CMlFrame Frame_Track <=> (FrameTracksDisplayed.GetFirstChild("Frame_Track"^I) as CMlFrame);
+				Frame_Track.Hide();
+			}
+		}
+		
+		Void TrackList_ResetSelection()
+		{
+			declare Text[Text][] FilteredTracksToDisplay for Page;
+			G_IndexFocusX = 0;
+			G_IndexFocusY = 0;
+			G_FirstDisplayedTrackIndex = 0;
+			if (FilteredTracksToDisplay.count != 0)
+			{
+				UpdateSelection();
+			}
+			TrackList_SetArrowsVisibility(False, FilteredTracksToDisplay.count > C_DisplayedTrackFramesCount);
+		}
+	
+		Void TrackList_SetFromResult()
+		{	
+			tuningmark("UpdateTracksMap");
+			TrackList_UpdateTracksMap();
+		
+			tuningmark("FilterTracksToDisplay");
+		
+			G_LocalThumbnailsToLoad.clear();
+			G_LocalThumbnails_IsLoading = False;
+			
+			declare Text[Text][] TracksToDisplay for Page;
+			
+			declare Text[Text][] FilteredTracksToDisplay for Page;
+			if (G_BrowseFilters.count == 0) {
+				tuningmark("ArrayCopy");
+				FilteredTracksToDisplay = TracksToDisplay;
+			} else {
+				FilteredTracksToDisplay.clear();
+				declare Integer Index = 0;
+				for (I, 0, G_BrowseLocation.count-1)
+					Index = G_BrowseMap[Index]+G_BrowseLocation[I];	
+				//arrivés ici, Index vaut l'index du premier élément à afficher (track ou folder)
+				
+				if (G_BrowseLocation.count < G_BrowseFilters.count) {	
+					//Folder
+					declare Text[] FilterValues;
+					switch (G_BrowseFilters[G_BrowseLocation.count])
+					{
+						case C_BrowseFilters_Styles 		: FilterValues 	= G_TracksStyles;
+						case C_BrowseFilters_Durations 		: FilterValues 	= G_TracksDurations;
+						case C_BrowseFilters_Environments 	: FilterValues	= G_TracksEnvironments;
+						case C_BrowseFilters_Authors 		: FilterValues	= G_TracksDisplayNames;
+						//case C_BrowseFilters_Dates			: FilterValues 	= G_TracksDates;
+					}
+					
+					for (I, 0, G_BrowseMap_ChildsCount[Index]-1)
+					{
+						declare Text Name;
+						if (G_BrowseFilters[G_BrowseLocation.count] != C_BrowseFilters_Dates)
+							Name = FilterValues[G_BrowseMap_FilterValue[G_BrowseMap[Index]+I]];
+						else {
+							declare Integer Date = G_BrowseMap_FilterValue[G_BrowseMap[Index]+I];
+							if (Date != -1)
+							{
+								declare YearText = TL::ToText(Date / 10000);
+								declare MonthText = TL::ToText((Date/100)%100);
+								declare DayText = TL::ToText(Date%100);
+								Name = 	TL::Compose(_("|upload date of a track, year-month-day|%1-%2-%3"), YearText, MonthText, DayText);
+							} else {
+								Name = "Local";
+							}
+						}
+						FilteredTracksToDisplay.add(["name"=>Name, "index_in_map"=>TL::ToText(G_BrowseMap[Index]+I), "is_folder"=>"1"]);
+					}
+				} else {
+					//Tracks
+					for (I, 0, G_BrowseMap_ChildsCount[Index]-1)
+					{
+						FilteredTracksToDisplay.add(TracksToDisplay[G_BrowseMap[G_BrowseMap[Index]+I]]);
+					}
+				}
+			}
+			
+			while (G_FirstDisplayedTrackIndex >= FilteredTracksToDisplay.count)
+				G_FirstDisplayedTrackIndex -= {{{TrackList_ColumnsCount * TrackList_LinesCount}}};
+			if(G_FirstDisplayedTrackIndex < 0)
+				G_FirstDisplayedTrackIndex = 0;
+				
+			if (G_FirstDisplayedTrackIndex + G_IndexFocusX + (G_IndexFocusY)*{{{TrackList_ColumnsCount}}} >= FilteredTracksToDisplay.count)
+			{
+				if ((FilteredTracksToDisplay.count - G_FirstDisplayedTrackIndex - 1) / {{{TrackList_ColumnsCount}}} >= 0)
+					G_IndexFocusY = ML::Min(G_IndexFocusY, (FilteredTracksToDisplay.count - G_FirstDisplayedTrackIndex - 1) / {{{TrackList_ColumnsCount}}});
+				if ((FilteredTracksToDisplay.count - G_FirstDisplayedTrackIndex - G_IndexFocusY*{{{TrackList_ColumnsCount}}} - 1) >= 0)
+					G_IndexFocusX = ML::Min(G_IndexFocusX, (FilteredTracksToDisplay.count - G_FirstDisplayedTrackIndex - G_IndexFocusY*{{{TrackList_ColumnsCount}}} - 1));
+			}
+			
+			declare CMlFrame FrameTracksDisplayed = (Page.GetFirstChild("SubFrame_Tracks_"^G_DisplayedTrackFrameIndex) as CMlFrame);
+			
+			declare CMlFrame Frame_TrackList	<=> (Page.GetFirstChild("Frame_TrackList") as CMlFrame);
+			Frame_TrackList.Show();
+			declare CMlLabel Label_LoadingTracks <=> (Page.GetFirstChild("Label_LoadingTracks") as CMlLabel);
+			Label_LoadingTracks.Hide();
+			
+			if (FilteredTracksToDisplay.count == 0)
+			{
+				//on affiche une frame ("empty tracklist") et on cache les autres		
+				declare CMlFrame Frame_EmptyTrackList <=> (FrameTracksDisplayed.GetFirstChild("Frame_Track0") as CMlFrame);
+				Frame_EmptyTrackList.Show();
+				declare CMlQuad Quad_Thumbnail <=> (Frame_EmptyTrackList.GetFirstChild("Track_Thumbnail") as CMlQuad);
+				if (G_RequestError)
+				{
+					Quad_Thumbnail.ImageUrl = "{{{IMGRequestError}}}";
+					Quad_Thumbnail.Image = Null;
+				} else {
+					Quad_Thumbnail.ImageUrl = "{{{IMGEmptyTracklist}}}";
+					Quad_Thumbnail.Image = Null;
+				}
+				declare CMlLabel Label_TrackName <=> (Frame_EmptyTrackList.GetFirstChild("Track_Name") as CMlLabel);
+				Label_TrackName.Value = _("No Tracks");
+				Label_TrackName.TextColor = <0., 0., 0.>;
+				
+				declare CMlQuad Quad_NameBg <=> (Frame_EmptyTrackList.GetFirstChild("Quad_NameBg") as CMlQuad);
+				Quad_NameBg.BgColor = <0., 0.88, 1.>;
+				
+				for (I, 1, C_DisplayedTrackFramesCount-1)
+				{
+					declare CMlFrame Frame_Track <=> (FrameTracksDisplayed.GetFirstChild("Frame_Track"^I) as CMlFrame);
+					Frame_Track.Hide();
+				}
+				
+				TrackList_SetArrowsVisibility(False, False);
+				UpdateSelection();
+				return;
+			}
+				
+			// -> On remplit les N frames visibles
+			for (I, 0, C_DisplayedTrackFramesCount-1)
+			{
+				declare CMlFrame Frame_Track <=> (FrameTracksDisplayed.GetFirstChild("Frame_Track"^I) as CMlFrame);
+				if (I+G_FirstDisplayedTrackIndex >= FilteredTracksToDisplay.count)
+				{					
+					Frame_Track.Hide();
+				} else {
+					declare CMlQuad Quad_Thumbnail <=> (Frame_Track.GetFirstChild("Track_Thumbnail") as CMlQuad);
+					declare Boolean IsFolder = FilteredTracksToDisplay[I+G_FirstDisplayedTrackIndex].existskey("is_folder");
+					if (IsFolder)
+					{
+						SetQuadImageForFolder(Quad_Thumbnail, TL::ToInteger(FilteredTracksToDisplay[I+G_FirstDisplayedTrackIndex]["index_in_map"]), I);
+					} else if (FilteredTracksToDisplay[I+G_FirstDisplayedTrackIndex].existskey("thumbnail_url")) {
+						Quad_Thumbnail.ImageUrl = FilteredTracksToDisplay[I+G_FirstDisplayedTrackIndex]["thumbnail_url"];
+						Quad_Thumbnail.Image = Null;
+					} else if (FilteredTracksToDisplay[I+G_FirstDisplayedTrackIndex].existskey("mapinfo")) {
+						declare MapInfoIndex = TL::ToInteger(FilteredTracksToDisplay[I+G_FirstDisplayedTrackIndex]["mapinfo"]);
+						if (MapInfoIndex < DataMgr.Maps.count && DataMgr.Maps[MapInfoIndex].MapUid == FilteredTracksToDisplay[I+G_FirstDisplayedTrackIndex]["uid"])
+						{
+							G_LocalThumbnailsToLoad[I] = MapInfoIndex;
+							Quad_Thumbnail.ImageUrl = "";
+						}	
+					}
+					declare CMlLabel Label_TrackName <=> (Frame_Track.GetFirstChild("Track_Name") as CMlLabel);
+					if (IsFolder)
+						Label_TrackName.Value = TL::GetTranslatedText(FilteredTracksToDisplay[G_FirstDisplayedTrackIndex + I]["name"]);
+					else
+						Label_TrackName.Value = FilteredTracksToDisplay[G_FirstDisplayedTrackIndex + I]["name"];
+					Label_TrackName.TextColor = <0., 0., 0.>;
+					declare CMlQuad Quad_NameBg <=> (Frame_Track.GetFirstChild("Quad_NameBg") as CMlQuad);
+					if (!IsFolder)
+					{
+						if (G_AlreadyAddedTracks.exists(FilteredTracksToDisplay[I+G_FirstDisplayedTrackIndex]["uid"]))
+							Quad_NameBg.BgColor = <1., 1., 0.>;
+						else if (G_OngletFocus == C_Onglet_Campaign) {
+							declare Index = TL::ToInteger(FilteredTracksToDisplay[I+G_FirstDisplayedTrackIndex]["name"]);
+							if (Index <= 40)
+								Quad_NameBg.BgColor = <1., 1., 1.>;
+							else if (Index <= 80)
+								Quad_NameBg.BgColor = <0., 1., 0.>;
+							else if (Index <= 120)
+								Quad_NameBg.BgColor = <0., 0.2, 1.>;
+							else if (Index <= 160)
+								Quad_NameBg.BgColor = <1., 0., 0.>;
+							else {
+								Label_TrackName.TextColor = <1., 1., 1.>;
+								Quad_NameBg.BgColor = <0.25, 0.25, 0.25>;
+							}
+						} else
+							Quad_NameBg.BgColor = <0., 0.88, 1.>;
+					} else
+						Quad_NameBg.BgColor = <0., 0.88, 1.>;
+					Frame_Track.Show();
+				}
+			}
+			
+			tuningmark("Finalize");
+			
+			declare CMlQuad  Quad_Selector <=> (Page.GetFirstChild("Quad_Selector") as CMlQuad);
+			Quad_Selector.Show();
+		
+			TrackList_SetArrowsVisibility(G_FirstDisplayedTrackIndex > 0, FilteredTracksToDisplay.count > G_FirstDisplayedTrackIndex + {{{TrackList_ColumnsCount}}} * {{{TrackList_LinesCount}}});
+			UpdateSelection();
+			UpdateInputsInfo();
+		}
+		
+		Void TrackList_OnDown()
+		{
+			
+			declare Text[Text][] FilteredTracksToDisplay for Page;	
+
+			declare CMlFrame FrameTracksDisplayed = (Page.GetFirstChild("SubFrame_Tracks_"^G_DisplayedTrackFrameIndex) as CMlFrame);
+			declare CMlFrame FrameTracksHidden = 	(Page.GetFirstChild("SubFrame_Tracks_"^((G_DisplayedTrackFrameIndex+1)%C_TrackFramesCount)) as CMlFrame);
+		
+			if (FilteredTracksToDisplay.count == 0)
+				return;
+			// -> Check si il faut scroll
+			if (G_FirstDisplayedTrackIndex + C_DisplayedTrackFramesCount >= FilteredTracksToDisplay.count && G_IndexFocusY == {{{TrackList_LinesCount-1}}})
+				return; //La sélection est le plus en bas possible, impossible de continuer
+			if (G_IndexFocusY < {{{TrackList_LinesCount-1}}}) //lastindex
+			{
+				if (G_FirstDisplayedTrackIndex + (G_IndexFocusY+1) * {{{TrackList_ColumnsCount}}} <= FilteredTracksToDisplay.count - 1)
+				{
+					G_IndexFocusY += 1;
+					G_IndexFocusX = ML::Min(G_IndexFocusX, FilteredTracksToDisplay.count - 1 - G_FirstDisplayedTrackIndex - (G_IndexFocusY) * {{{TrackList_ColumnsCount}}});
+				} else {
+					return; //la dernière map de la tracklist est sélectionnée, on ne peut pas aller plus loin
+				}
+			} else {
+				//si on peut, il faut scroll
+				if(G_FirstDisplayedTrackIndex + C_DisplayedTrackFramesCount < FilteredTracksToDisplay.count)
+				{
+					G_LocalThumbnailsToLoad.clear();
+					G_LocalThumbnails_IsLoading = False;
+				
+					FrameTracksDisplayed.RelativePosition.Y = -32.5033;
+
+					//remplir la frameinstance cachée et la mettre en dessous
+					FrameTracksHidden.RelativePosition.Y = FrameTracksDisplayed.RelativePosition.Y - C_TrackFrameHeight;
+					FrameTracksHidden.Show();
+					
+					for (I, 0, C_DisplayedTrackFramesCount-1)
+					{
+						declare CMlFrame Frame_Track <=> (FrameTracksHidden.GetFirstChild("Frame_Track"^I) as CMlFrame);
+						if (G_FirstDisplayedTrackIndex + C_DisplayedTrackFramesCount + I < FilteredTracksToDisplay.count)
+						{						
+							declare Boolean IsFolder = FilteredTracksToDisplay[G_FirstDisplayedTrackIndex + C_DisplayedTrackFramesCount + I].existskey("is_folder");
+							declare CMlQuad Quad_Thumbnail <=> (Frame_Track.GetFirstChild("Track_Thumbnail") as CMlQuad);
+							if (IsFolder)
+							{
+								SetQuadImageForFolder(Quad_Thumbnail, TL::ToInteger(FilteredTracksToDisplay[I+C_DisplayedTrackFramesCount+G_FirstDisplayedTrackIndex]["index_in_map"]), I);
+							} else if (FilteredTracksToDisplay[G_FirstDisplayedTrackIndex + C_DisplayedTrackFramesCount + I].existskey("thumbnail_url")) {
+								Quad_Thumbnail.ImageUrl = FilteredTracksToDisplay[G_FirstDisplayedTrackIndex + C_DisplayedTrackFramesCount + I]["thumbnail_url"];
+								Quad_Thumbnail.Image = Null;
+							} else if (FilteredTracksToDisplay[G_FirstDisplayedTrackIndex + C_DisplayedTrackFramesCount + I].existskey("mapinfo")) {
+								declare MapInfoIndex = TL::ToInteger(FilteredTracksToDisplay[G_FirstDisplayedTrackIndex + C_DisplayedTrackFramesCount + I]["mapinfo"]);
+								if (MapInfoIndex < DataMgr.Maps.count && DataMgr.Maps[MapInfoIndex].MapUid == FilteredTracksToDisplay[G_FirstDisplayedTrackIndex + C_DisplayedTrackFramesCount + I]["uid"])
+								{
+									G_LocalThumbnailsToLoad[I] = MapInfoIndex;
+									Quad_Thumbnail.ImageUrl = "";
+								}	
+							}
+							declare CMlLabel Label_TrackName <=> (Frame_Track.GetFirstChild("Track_Name") as CMlLabel);
+							if (IsFolder)
+								Label_TrackName.Value = TL::GetTranslatedText(FilteredTracksToDisplay[G_FirstDisplayedTrackIndex + C_DisplayedTrackFramesCount + I]["name"]);
+							else
+								Label_TrackName.Value = FilteredTracksToDisplay[G_FirstDisplayedTrackIndex + C_DisplayedTrackFramesCount + I]["name"];
+							Label_TrackName.TextColor = <0., 0., 0.>;
+							declare CMlQuad Quad_NameBg <=> (Frame_Track.GetFirstChild("Quad_NameBg") as CMlQuad);
+							if (!IsFolder)
+							{
+								if (G_AlreadyAddedTracks.exists(FilteredTracksToDisplay[I+G_FirstDisplayedTrackIndex+C_DisplayedTrackFramesCount]["uid"]))
+									Quad_NameBg.BgColor = <1., 1., 0.>;
+								else if (G_OngletFocus == C_Onglet_Campaign) {
+									declare Index = TL::ToInteger(FilteredTracksToDisplay[I+G_FirstDisplayedTrackIndex+C_DisplayedTrackFramesCount]["name"]);
+									if (Index <= 40)
+										Quad_NameBg.BgColor = <1., 1., 1.>;
+									else if (Index <= 80)
+										Quad_NameBg.BgColor = <0., 1., 0.>;
+									else if (Index <= 120)
+										Quad_NameBg.BgColor = <0., 0.2, 1.>;
+									else if (Index <= 160)
+										Quad_NameBg.BgColor = <1., 0., 0.>;
+									else {
+										Label_TrackName.TextColor = <1., 1., 1.>;
+										Quad_NameBg.BgColor = <0.25, 0.25, 0.25>;
+									}
+								} else
+									Quad_NameBg.BgColor = <0., 0.88, 1.>;
+							} else
+								Quad_NameBg.BgColor = <0., 0.88, 1.>;
+								
+							Frame_Track.Show();
+						} else {
+							Frame_Track.Hide();
+						}
+					}
+					G_IndexFocusY = 0;
+					G_FirstDisplayedTrackIndex += C_DisplayedTrackFramesCount;
+					G_DisplayedTrackFrameIndex = ((G_DisplayedTrackFrameIndex + 1) % C_TrackFramesCount);
+					G_IndexFocusX = ML::Min(G_IndexFocusX, FilteredTracksToDisplay.count - 1 - G_FirstDisplayedTrackIndex - (G_IndexFocusY) * {{{TrackList_ColumnsCount}}});
+					
+					declare Real FrameTracksDisplayed_NewPosY 	= {{{-TrackList_TrackHeight}}} + C_TrackFrameHeight;
+					declare Real FrameTracksHidden_NewPosY		= {{{-TrackList_TrackHeight}}};
+
+					//anims
+					declare Vec3 NewDisplayedFramePos = <FrameTracksDisplayed.RelativePosition.X, FrameTracksDisplayed_NewPosY, FrameTracksDisplayed.RelativePosition.Z>;
+					LibManialink_SetTargetPosition(FrameTracksDisplayed, NewDisplayedFramePos);
+					LibManialink_PresetAnim(FrameTracksDisplayed, 200, "EaseOutQuint"); //EaseOutQuint
+					
+					declare Vec3 NewHiddenFramePos = <FrameTracksDisplayed.RelativePosition.X, FrameTracksHidden_NewPosY, FrameTracksHidden.RelativePosition.Z>;
+					LibManialink_SetTargetPosition(FrameTracksHidden, NewHiddenFramePos);
+					LibManialink_PresetAnim(FrameTracksHidden, 200, "EaseOutQuint"); //EaseOutQuint
+					
+					G_TrackFrameTransitionStartTime = Now;
+					
+					TrackList_SetArrowsVisibility(True, FilteredTracksToDisplay.count > G_FirstDisplayedTrackIndex + C_DisplayedTrackFramesCount);
+					
+					if (G_FirstDisplayedTrackIndex + 18 >= FilteredTracksToDisplay.count && (G_OngletFocus != C_Onglet_Campaign || (G_SelectedCampaignEnv == "" && FilteredTracksToDisplay.count < 200 || G_SelectedCampaignEnv != "" && FilteredTracksToDisplay.count < 50 )))
+						SendRequestNextPage();
+				}
+			}
+			UpdateSelection();
+			UpdateInputsInfo();
+		}
+		
+		Void TrackList_OnUp()
+		{
+			tuningmark("Tracklist_OnUp_DeclareFor");
+			declare Text[Text][] FilteredTracksToDisplay for Page;	
+			tuningmark("Tracklist_OnUp_Suite");
+			
+			declare CMlFrame FrameTracksDisplayed = (Page.GetFirstChild("SubFrame_Tracks_"^G_DisplayedTrackFrameIndex) as CMlFrame);
+			declare CMlFrame FrameTracksHidden = 	(Page.GetFirstChild("SubFrame_Tracks_"^((G_DisplayedTrackFrameIndex+1)%C_TrackFramesCount)) as CMlFrame);
+			
+			if (FilteredTracksToDisplay.count == 0)
+				return;
+			// -> Check si il faut scroll
+			if (G_FirstDisplayedTrackIndex == 0 && G_IndexFocusY == 0)
+				return; //la première ligne de la tracklist est sélectionnée, on ne peut pas aller plus loin
+			if (G_IndexFocusY > 0)
+			{
+				G_IndexFocusY -= 1;
+			} else {
+				//si on peut, il faut scroll
+				if(G_FirstDisplayedTrackIndex > 0)
+				{
+					G_LocalThumbnailsToLoad.clear();
+					G_LocalThumbnails_IsLoading = False;
+					
+					//remplir la frameinstance cachée et la placer au dessus
+					FrameTracksHidden.RelativePosition.Y = FrameTracksDisplayed.RelativePosition.Y + C_TrackFrameHeight;
+					FrameTracksHidden.Show();
+					
+					tuningmark("Tracklist_OnUp_Fill");
+					for (I, 0, C_DisplayedTrackFramesCount-1)
+					{
+						tuningmark("Tracklist_OnUp_Fill_Declares");
+						declare CMlFrame Frame_Track <=> (FrameTracksHidden.GetFirstChild("Frame_Track"^I) as CMlFrame);
+						declare Boolean IsFolder = FilteredTracksToDisplay[G_FirstDisplayedTrackIndex - C_DisplayedTrackFramesCount + I].existskey("is_folder");
+						declare CMlQuad Quad_Thumbnail <=> (Frame_Track.GetFirstChild("Track_Thumbnail") as CMlQuad);
+						tuningmark("Tracklist_OnUp_Fill_Image");
+						if (IsFolder)
+						{
+							SetQuadImageForFolder(Quad_Thumbnail, TL::ToInteger(FilteredTracksToDisplay[I-C_DisplayedTrackFramesCount+G_FirstDisplayedTrackIndex]["index_in_map"]), I);
+						} else if (FilteredTracksToDisplay[G_FirstDisplayedTrackIndex - C_DisplayedTrackFramesCount + I].existskey("thumbnail_url")) {
+							Quad_Thumbnail.ImageUrl = FilteredTracksToDisplay[G_FirstDisplayedTrackIndex - C_DisplayedTrackFramesCount + I]["thumbnail_url"];
+							Quad_Thumbnail.Image = Null;
+						} else if (FilteredTracksToDisplay[G_FirstDisplayedTrackIndex - C_DisplayedTrackFramesCount + I].existskey("mapinfo")) {
+							declare MapInfoIndex = TL::ToInteger(FilteredTracksToDisplay[G_FirstDisplayedTrackIndex - C_DisplayedTrackFramesCount + I]["mapinfo"]);
+							if (MapInfoIndex < DataMgr.Maps.count && DataMgr.Maps[MapInfoIndex].MapUid == FilteredTracksToDisplay[G_FirstDisplayedTrackIndex - C_DisplayedTrackFramesCount + I]["uid"])
+							{
+								G_LocalThumbnailsToLoad[I] = MapInfoIndex;
+								Quad_Thumbnail.ImageUrl = "";
+							}	
+						}
+						tuningmark("Tracklist_OnUp_Fill_Label");
+						declare CMlLabel Label_TrackName <=> (Frame_Track.GetFirstChild("Track_Name") as CMlLabel);
+						if (IsFolder)
+							Label_TrackName.Value = TL::GetTranslatedText(FilteredTracksToDisplay[G_FirstDisplayedTrackIndex - C_DisplayedTrackFramesCount + I]["name"]);
+						else
+							Label_TrackName.Value = FilteredTracksToDisplay[G_FirstDisplayedTrackIndex - C_DisplayedTrackFramesCount + I]["name"];
+							
+						tuningmark("Tracklist_OnUp_Fill_Color");
+						Label_TrackName.TextColor = <0., 0., 0.>;
+						declare CMlQuad Quad_NameBg <=> (Frame_Track.GetFirstChild("Quad_NameBg") as CMlQuad);
+						if (!IsFolder)
+						{
+							if (G_AlreadyAddedTracks.exists(FilteredTracksToDisplay[I+G_FirstDisplayedTrackIndex-C_DisplayedTrackFramesCount]["uid"]))
+								Quad_NameBg.BgColor = <1., 1., 0.>;
+							else if (G_OngletFocus == C_Onglet_Campaign) {
+								declare Index = TL::ToInteger(FilteredTracksToDisplay[I+G_FirstDisplayedTrackIndex-C_DisplayedTrackFramesCount]["name"]);
+								if (Index <= 40)
+									Quad_NameBg.BgColor = <1., 1., 1.>;
+								else if (Index <= 80)
+									Quad_NameBg.BgColor = <0., 1., 0.>;
+								else if (Index <= 120)
+									Quad_NameBg.BgColor = <0., 0.2, 1.>;
+								else if (Index <= 160)
+									Quad_NameBg.BgColor = <1., 0., 0.>;
+								else {
+									Label_TrackName.TextColor = <1., 1., 1.>;
+									Quad_NameBg.BgColor = <0.25, 0.25, 0.25>;
+								}
+							} else
+								Quad_NameBg.BgColor = <0., 0.88, 1.>;
+						} else
+							Quad_NameBg.BgColor = <0., 0.88, 1.>;
+								
+						Frame_Track.Show();
+					}
+					
+					tuningmark("Tracklist_OnUp_Anim");
+					
+					//scroll le tout
+					G_IndexFocusY = {{{TrackList_LinesCount-1}}};
+					G_FirstDisplayedTrackIndex -= C_DisplayedTrackFramesCount;
+					G_DisplayedTrackFrameIndex = (G_DisplayedTrackFrameIndex + C_TrackFramesCount - 1) % C_TrackFramesCount;
+					
+					declare Real FrameTracksDisplayed_NewPosY = {{{-TrackList_TrackHeight}}} - C_TrackFrameHeight;
+					declare Real FrameTracksHidden_NewPosY    = {{{-TrackList_TrackHeight}}};
+
+					declare Vec3 NewDisplayedFramePos = <FrameTracksDisplayed.RelativePosition.X, FrameTracksDisplayed_NewPosY, FrameTracksDisplayed.RelativePosition.Z>;
+					LibManialink_SetTargetPosition(FrameTracksDisplayed, NewDisplayedFramePos);
+					LibManialink_PresetAnim(FrameTracksDisplayed, 200, "EaseOutQuint"); //EaseOutQuint
+					
+					declare Vec3 NewHiddenFramePos = <FrameTracksDisplayed.RelativePosition.X, FrameTracksHidden_NewPosY, FrameTracksHidden.RelativePosition.Z>;
+					LibManialink_SetTargetPosition(FrameTracksHidden, NewHiddenFramePos);
+					LibManialink_PresetAnim(FrameTracksHidden, 200, "EaseOutQuint"); //EaseOutQuint
+					
+					G_TrackFrameTransitionStartTime = Now;
+					
+					TrackList_SetArrowsVisibility(G_FirstDisplayedTrackIndex > 0, True);
+				}
+			}
+			UpdateSelection();
+			UpdateInputsInfo();
+		}
+	
+		Void TrackList_OnRight() {
+			declare Text[Text][] FilteredTracksToDisplay for Page;
+			if (G_IndexFocusX < {{{TrackList_ColumnsCount-1}}})
+			{
+				if (G_FirstDisplayedTrackIndex + G_IndexFocusX + (G_IndexFocusY)*{{{TrackList_ColumnsCount}}} + 1 < FilteredTracksToDisplay.count)
+				{
+					G_IndexFocusX += 1;
+					UpdateSelection();
+					UpdateInputsInfo();
+				}
+			}
+		}
+		
+		Void TrackList_OnLeft() {
+			if (G_IndexFocusX > 0)
+			{
+				G_IndexFocusX -= 1;
+				UpdateSelection();
+				UpdateInputsInfo();
+			}
+		}
+		
+		/////////////////////
+		//FILTERS
+		/////////////////////
+		Void UpdateBrowseInformation() {
+			declare CMlLabel Label_BrowseLocation 	<=> (Page.GetFirstChild("BrowseLocation") as CMlLabel);
+			declare CMlLabel Label_BrowseFilters 	<=> (Page.GetFirstChild("BrowseFilters") as CMlLabel);
+			
+			declare Text LocationText = _("Tracks");
+			declare Integer Index = 0;
+			for (I, 0, G_BrowseLocation.count-1)
+			{
+				declare Text[] FilterValues;
+				switch (G_BrowseFilters[I])
+				{
+					case C_BrowseFilters_Styles 		: FilterValues 	= G_TracksStyles;
+					case C_BrowseFilters_Durations 		: FilterValues 	= G_TracksDurations;
+					case C_BrowseFilters_Environments 	: FilterValues	= G_TracksEnvironments;
+					case C_BrowseFilters_Authors 		: FilterValues	= G_TracksDisplayNames;
+					//case C_BrowseFilters_Dates			: FilterValues	= G_TracksDates;
+				}
+				Index = G_BrowseMap[Index]+G_BrowseLocation[I];	
+				if (G_BrowseFilters[I] != C_BrowseFilters_Dates)
+					LocationText ^= ">>"^TL::GetTranslatedText(FilterValues[G_BrowseMap_FilterValue[Index]]);
+				else {
+					declare Integer Date = G_BrowseMap_FilterValue[Index];
+					declare Text Name;
+					if (Date != -1)
+					{
+						declare Text YearText = TL::ToText(Date / 10000);
+						declare Text MonthText = TL::ToText((Date/100)%100);
+						declare Text DayText = TL::ToText(Date%100);
+						Name = 	TL::Compose(_("|upload date of a track, year-month-day|%1-%2-%3"), YearText, MonthText, DayText);
+					} else {
+						Name = "Local";
+					}
+					LocationText ^= ">>"^TL::GetTranslatedText(Name);
+				}
+			}
+			
+			Label_BrowseLocation.Value = LocationText;
+			declare Real Width = Label_BrowseLocation.ComputeWidth(Label_BrowseLocation.Value, True);
+			Label_BrowseLocation.Size.X = Width;
+			Label_BrowseFilters.RelativePosition.X = Label_BrowseLocation.RelativePosition.X + Width;
+			Label_BrowseFilters.Size.X = {{{SM_SizeTotalX * 0.9}}} - Width;
+			declare Text FiltersText;
+			for (I, G_BrowseLocation.count, G_BrowseFilters.count-1)
+			{
+				declare Text FilterName;
+				switch (G_BrowseFilters[I])
+				{
+					case C_BrowseFilters_Styles 		: FilterName = _("|16 chars max.|STYLES");
+					case C_BrowseFilters_Durations 		: FilterName = _("|16 chars max.|DURATIONS");
+					case C_BrowseFilters_Environments	: FilterName = _("|16 chars max.|ENVIRONMENTS");
+					case C_BrowseFilters_Authors		: FilterName = _("|16 chars max.|AUTHORS");
+					case C_BrowseFilters_Dates			: FilterName = _("|16 chars max.|DATES");
+				}
+				FiltersText ^= ">>"^TL::GetTranslatedText(FilterName);
+			}
+			Label_BrowseFilters.Value = FiltersText;
+		}
+		
+		Void UpdateFilterSelection() {
+			declare CMlQuad Frame_FilterSelector <=> (Page.GetFirstChild("Frame_FilterSelector") as CMlQuad);
+			declare Vec3 NewFramePos = Frame_FilterSelector.RelativePosition;
+			NewFramePos.Y = 8.27 * G_Filter_FocusIndex;
+			LibManialink_SetTargetPosition(Frame_FilterSelector, NewFramePos);
+			LibManialink_PresetAnim(Frame_FilterSelector, 100, "EaseOutQuint");
+		}
+		
+		Void FilterSelection_OnUp() {
+			if (G_Filter_FocusIndex < 4 && G_OngletFocus != C_Onglet_Campaign)
+			{
+				G_Filter_FocusIndex += 1;
+				UpdateFilterSelection();
+			}
+		}
+		
+		Void FilterSelection_OnDown() {
+			if (G_Filter_FocusIndex > 0 && G_OngletFocus != C_Onglet_Campaign)
+			{
+				G_Filter_FocusIndex -= 1;
+				UpdateFilterSelection();
+			}
+		}
+		
+		Void OnExitFilterSelection() {
+			G_SelectingFilter = False;
+			declare CMlFrame Frame_Filters <=> (Page.GetFirstChild("Frame_Filters") as CMlFrame);
+			Frame_Filters.Hide();
+			UpdateInputsInfo();
+			if (G_RequestMyTracks_LocalCompleted && G_RequestMyTracks_OnlineCompleted)
+			{
+				TrackList_SetFromResult();
+			}
+			UpdateBrowseInformation();
+		}
+		
+		Void OnValidateFilterSelection() {
+			OnExitFilterSelection();
+		}
+		
+		Void UpdateFiltersPrio() {
+			declare CMlFrame Frame_Filters <=> (Page.GetFirstChild("Frame_Filters") as CMlFrame);
+			for (I, 0, 4)
+			{
+				declare CMlFrame Frame_Filter <=> (Frame_Filters.GetFirstChild("Frame_Filter"^I) as CMlFrame);	
+				declare CMlLabel Label_FilterPrio <=> (Frame_Filter.GetFirstChild("Label_FilterPrio") as CMlLabel);
+				if (G_BrowseFilters.exists(I))
+					Label_FilterPrio.Value = TL::ToText(G_BrowseFilters.keyof(I)+1);
+				else
+					Label_FilterPrio.Value = "-";
+			}
+		}
+		
+		Void ResetFilters() {
+			G_BrowseLocation.clear();
+			G_BrowseFilters.clear();
+			if (G_SelectingFilter)
+			{
+				UpdateFiltersPrio();
+			} else {
+				TrackList_SetFromResult();
+			}
+			UpdateBrowseInformation();
+		}
+		
+		Void OnFilterSelected() {
+			if (G_BrowseFilters.exists(G_Filter_FocusIndex))
+				G_BrowseFilters.remove(G_Filter_FocusIndex);
+			else
+				G_BrowseFilters.add(G_Filter_FocusIndex);
+			G_BrowseLocation.clear();
+			UpdateFiltersPrio();
+			UpdateBrowseInformation();
+			if (G_OngletFocus == C_Onglet_Campaign)
+				OnValidateFilterSelection();
+		}
+		
+		Text GetTextForFilter (Integer _Filter) {
+			switch (_Filter)
+			{
+				case C_BrowseFilters_Styles 		: return _("|16 chars max.|STYLES");
+				case C_BrowseFilters_Durations 		: return _("|16 chars max.|DURATIONS");
+				case C_BrowseFilters_Environments	: return _("|16 chars max.|ENVIRONMENTS");
+				case C_BrowseFilters_Authors		: return _("|16 chars max.|AUTHORS");
+				case C_BrowseFilters_Dates			: return _("|16 chars max.|DATES");
+			}
+			return "";
+		}
+		
+		Void OnStartFilterSelection() {
+			G_SelectingFilter = True;
+			declare CMlFrame Frame_Filters <=> (Page.GetFirstChild("Frame_Filters") as CMlFrame);
+			Frame_Filters.Show();
+			G_Filter_FocusIndex = 0;
+			declare CMlQuad Frame_FilterSelector <=> (Page.GetFirstChild("Frame_FilterSelector") as CMlQuad);
+			Frame_FilterSelector.RelativePosition.Y = 0.;
+			UpdateFilterSelection();
+			
+			for (I, 0, 4)
+			{
+				declare CMlFrame Frame_Filter <=> (Frame_Filters.GetFirstChild("Frame_Filter"^I) as CMlFrame);
+				if (G_OngletFocus == C_Onglet_Campaign && I != 0)
+					Frame_Filter.Hide();
+				else {
+					declare CMlLabel Label_FilterName <=> (Frame_Filter.GetFirstChild("Label_FilterName") as CMlLabel);
+					Label_FilterName.Value = GetTextForFilter(I);
+					declare CMlLabel Label_FilterPrio <=> (Frame_Filter.GetFirstChild("Label_FilterPrio") as CMlLabel);
+					if (G_BrowseFilters.exists(I))
+						Label_FilterPrio.Value = TL::ToText(G_BrowseFilters.keyof(I)+1);
+					else
+						Label_FilterPrio.Value = "-";
+					Frame_Filter.Show();
+				}
+			}
+			UpdateInputsInfo();
+		}
+	
+		/////////////////////
+		// INIT
+		/////////////////////
+		Void Init()
+		{
+			G_Onglets.clear();
+			for (I, 0, {{{C_BrowseSlot_Landmark-1}}})
+				G_Onglets.add("");
+			G_Onglets[C_Onglet_MyTracks] 		= _("My Tracks");
+			G_Onglets[C_Onglet_Favorites] 		= _("Favorites");
+			G_Onglets[C_Onglet_Campaign] 		= _("Campaign");
+			G_Onglets[C_Onglet_Buddies] 		= _("Friends");
+			
+			for(I, 0, G_Onglets.count - 1)
+			{
+				declare CMlFrame  FrameInstance_Landmark <=> (Page.GetFirstChild("FrameInstance_Landmark"^I) as CMlFrame);
+				declare CMlLabel  Label_LandmarkName <=> (FrameInstance_Landmark.GetFirstChild("Label_LandmarkName") as CMlLabel);
+				Label_LandmarkName.Value = G_Onglets[I];
+				
+			}
+			
+			{{{InputInfos::InjectInInit()}}}
+			{{{Loading::InjectInInit()}}}
+			
+			G_TracksStyles 			= {{{dump(GamePlay::GetTrackStyles())}}};
+			G_TracksDurations 		= {{{dump(GamePlay::GetTrackDurations())}}};
+			G_TracksEnvironments 	= {{{dump(GamePlay::GetRoomEnvironments())}}};
+			G_TracksDurations_Live 	= ["1", "2", "3", "4", "5"];
+			G_TracksAuthors.clear();
+			G_TracksDates.clear();
+			G_TracksDisplayNames.clear();
+			
+			G_LabelToBlink 	= Null;
+			G_QuadToBlink	= Null;
+			G_SelectorToAnimate = Null;
+			
+			G_SelectingFilter = False;
+			G_SelectingCampaignEnvs = False;
+			
+			G_AreFavoriteAuthorsOrElseTracks = False;
+			
+			G_FirstDisplayedTrackIndex = 0; 
+			G_DisplayedTrackFrameIndex = 0; 
+			
+			G_RequestError = False;
+			G_IsUploading  = False;
+			G_UploadedMapUid = "";
+			G_RequestMyTracks_LocalCompleted = False;
+			G_RequestMyTracks_OnlineCompleted = False;
+		}   
+		
+		/////////////////////
+		// ONGLETS
+		/////////////////////
+		Void SwitchOnglet()
+		{
+			Audio.PlaySoundEvent("{{{SoundClicInterfaceLeftRight}}}", {{{Volumes::GetVolumedB("MenuClicInterfaceLeftRight")}}});
+			declare CMlQuad  OngletFocus <=> (Page.GetFirstChild("OngletFocus") as CMlQuad);
+			//declare Real NewFramePosX = {{{-SM_SizeTotalX/2.}}} + G_OngletFocus *  {{{SM_SizeTotalX/C_BrowseSlot_Landmark-0.02}}};
+			declare Real NewFramePosX = 8.7 + G_OngletFocus *  {{{(SM_SizeTotalX - SM_SizeOngletInfoX)/C_BrowseSlot_Landmark}}} - {{{SM_SizeTotalX/2.}}};
+			declare Vec3 NewFramePos  = <NewFramePosX, OngletFocus.RelativePosition.Y, OngletFocus.RelativePosition.Z>;
+			LibManialink_SetTargetPosition(OngletFocus, NewFramePos);
+			LibManialink_PresetAnim(OngletFocus, 250, "EaseOutQuint");
+			G_TimeSwitchOnglet = Now; //+ 500;
+		}
+
+		Void SetOnglet()
+		{
+			declare CMlQuad  OngletFocus <=> (Page.GetFirstChild("OngletFocus") as CMlQuad);
+			//declare Real NewFramePosX = {{{-SM_SizeTotalX/2.}}} + G_OngletFocus *  {{{SM_SizeTotalX/C_BrowseSlot_Landmark}}};
+			declare Real NewFramePosX = 8.7 + G_OngletFocus *  {{{(SM_SizeTotalX - SM_SizeOngletInfoX)/C_BrowseSlot_Landmark}}} - {{{SM_SizeTotalX/2.}}};
+			declare Vec3 NewFramePos  = <NewFramePosX, OngletFocus.RelativePosition.Y, OngletFocus.RelativePosition.Z>;
+			OngletFocus.RelativePosition = NewFramePos;
+		}
+	
+		/////////////////////
+		// REQUEST
+		/////////////////////
+		Void Update_LocalTracksRequest()
+		{
+			switch (G_MyLocalTracksRequest)
+			{
+				case C_LocalTracks_MustRequest :
+				{
+					if (DataMgr.Ready)
+					{
+						G_LocalThumbnailsToLoad.clear();
+						G_LocalThumbnails_IsLoading = False;
+						DataMgr.RetrieveUserFiles (DataMgr.MenuUserId, "", CDataMgr::EFileType::Map);
+						G_MyLocalTracksRequest = C_LocalTracks_Requesting;
+						return;
+					}
+				}
+				case C_LocalTracks_Requesting :
+				{
+					if (DataMgr.Ready)
+					{
+						declare Text[Text][] ValidatedTracks for Page;
+						ValidatedTracks.clear();
+						for (I, 0, DataMgr.Maps.count-1)
+						{
+							declare CMapInfo Map <=> DataMgr.Maps[I];
+							if (Map.IsPlayable)
+							{
+								declare Index = ValidatedTracks.count;
+								ValidatedTracks.add(Text[Text]);
+								ValidatedTracks[Index]["uid"] 			= Map.MapUid;
+								ValidatedTracks[Index]["name"] 			= Map.Name;
+								ValidatedTracks[Index]["style"] 		= Map.MapStyle;
+								ValidatedTracks[Index]["duration"] 		= TL::ToText(GetTrackDurationIndex(Map.TMObjective_GoldTime, Map.TMObjective_IsLapRace));
+								ValidatedTracks[Index]["environment"] 	= Map.CollectionName;
+								ValidatedTracks[Index]["file_url"] 		= Map.FileName;
+								ValidatedTracks[Index]["author"]		= LocalUser.Login;
+								ValidatedTracks[Index]["displayname"]	= LocalUser.Name;
+								ValidatedTracks[Index]["state"]			= "Validated";
+								ValidatedTracks[Index]["mapinfo"] 		= TL::ToText(I); //utilisé pour aller récupérer le thumbnail. (DataMgr.Maps change) <=> (on passe ici)
+							}
+						}
+						G_MyLocalTracksRequest = C_LocalTracks_None;
+						
+						G_RequestMyTracks_LocalCompleted = True;
+						if (G_RequestMyTracks_OnlineCompleted)
+						{
+							TrackList_UpdateTracksToDisplay();
+							TrackList_SetFromResult();
+						}
+					}
+				}
+			}
+		}
+		
+		Void RetrieveLocalTracks()
+		{
+			G_MyLocalTracksRequest = C_LocalTracks_MustRequest;
+		}
+		
+		Void UploadTrack(Text _Feedback) {
+			if (_Feedback == "Cancel")
+				return;
+			
+			declare Text[Text][] FilteredTracksToDisplay for Page;
+			if (G_OngletFocus != C_Onglet_MyTracks)
+				return;
+			declare Integer SelectedTrackIndex = G_FirstDisplayedTrackIndex + G_IndexFocusY * {{{TrackList_ColumnsCount}}} + G_IndexFocusX;
+			if (SelectedTrackIndex >= FilteredTracksToDisplay.count)
+				return;
+			if (IsLocalTrackUploaded(FilteredTracksToDisplay[SelectedTrackIndex]["uid"]))
+				return;
+			G_IsUploading = True;
+			Loading_SetText(_("Uploading track. Please wait."));
+			Loading_SetIsLoading(True);
+			G_UploadedMapUid = FilteredTracksToDisplay[SelectedTrackIndex]["uid"];
+			SendCustomEvent("RoomPlaylist_UploadUserFile", [FilteredTracksToDisplay[SelectedTrackIndex]["file_url"], _Feedback]);
+		}
+		
+		Void SendRequest()
+		{
+			declare Text[Text][] RequestedTracks for Page;
+			RequestedTracks.clear();
+			
+			declare CMlFrame Frame_TrackList	<=> (Page.GetFirstChild("Frame_TrackList") as CMlFrame);
+			Frame_TrackList.Hide();
+			declare CMlLabel Label_LoadingTracks <=> (Page.GetFirstChild("Label_LoadingTracks") as CMlLabel);
+			Label_LoadingTracks.Show();
+			declare CMlQuad  Quad_Selector <=> (Page.GetFirstChild("Quad_Selector") as CMlQuad);
+			Quad_Selector.Hide();
+			declare CMlFrame Frame_TrackInfo <=> (Page.GetFirstChild("Frame_TrackInfo") as CMlFrame);
+			Frame_TrackInfo.Hide();
+			
+			switch (G_OngletFocus)
+			{
+				case C_Onglet_Favorites : {
+					if (G_AreFavoriteAuthorsOrElseTracks)
+						SendCustomEvent("RoomPlaylist_RequestFavoriteAuthorsTracks", ["0", "36"]);
+					else
+						SendCustomEvent("RoomPlaylist_RequestFavoriteTracks", ["0", "36"]);
+				}
+				case C_Onglet_Campaign : {
+					SendCustomEvent("RoomPlaylist_RequestCampaignTracks", ["0", "54", G_SelectedCampaignEnv]);
+				}
+				case C_Onglet_Buddies : {
+					SendCustomEvent("RoomPlaylist_RequestBuddiesTracks", ["0", "36", TL::Join(",", G_BuddiesLoginsToUse)]);
+				}
+				case C_Onglet_MyTracks : { //my tracks
+					
+					//G_RequestMyTracks_LocalCompleted = False;
+					G_RequestMyTracks_OnlineCompleted = False;
+					if (!G_RequestMyTracks_LocalCompleted)
+						RetrieveLocalTracks();
+					SendCustomEvent("RoomPlaylist_RequestUploadedTracks", ["0", "36"]);
+				}
+			}
+		}
+		
+		Void SetOngletMax(Integer _OngletMax)
+		{
+			G_OngletMax = _OngletMax;
+			for (I, 0, 3)
+			{
+				declare CMlFrame  FrameInstance_Landmark <=> (Page.GetFirstChild("FrameInstance_Landmark"^I) as CMlFrame);
+				declare CMlQuad   Quad_LandmarkName <=> (FrameInstance_Landmark.GetFirstChild("Quad_LandmarkName") as CMlQuad);
+				if (I <= G_OngletMax)
+				{
+					Quad_LandmarkName.BgColor = <0., 226./256., 1.>;
+				} else {
+					Quad_LandmarkName.BgColor = <.6, .6, .6>;
+				}
+			}
+		}
+		
+		Void ToggleFavoritesState()
+		{
+			if (G_OngletFocus != C_Onglet_Favorites)
+				return;
+			
+			G_AreFavoriteAuthorsOrElseTracks = !G_AreFavoriteAuthorsOrElseTracks;
+			
+			declare CMlFrame  FrameInstance_Landmark <=> (Page.GetFirstChild("FrameInstance_Landmark"^C_Onglet_Favorites) as CMlFrame);
+			declare CMlLabel  Label_LandmarkName <=> (FrameInstance_Landmark.GetFirstChild("Label_LandmarkName") as CMlLabel);
+			if (G_AreFavoriteAuthorsOrElseTracks)
+				Label_LandmarkName.Value = _("Favorite Authors");
+			else
+				Label_LandmarkName.Value = _("Favorite Tracks");
+			SendRequest();
+			UpdateInputsInfo();
+		}
+	
+		/////////////////////
+		// CAMPAIGN ENVS
+		/////////////////////
+		Void UpdateCampaignEnvsSelection() {
+			declare CMlFrame Frame_CampaignEnvsSelector <=> (Page.GetFirstChild("Frame_CampaignEnvsSelector") as CMlFrame);
+			declare Vec3 NewFramePos = Frame_CampaignEnvsSelector.RelativePosition;
+			NewFramePos.Y = 8.27 * G_CampaignEnvs_FocusIndex;
+			LibManialink_SetTargetPosition(Frame_CampaignEnvsSelector, NewFramePos);
+			LibManialink_PresetAnim(Frame_CampaignEnvsSelector, 100, "EaseOutQuint");
+		}
+		
+		Void CampaignEnvsSelection_OnUp() {
+			if (G_CampaignEnvs_FocusIndex < 3)
+			{
+				G_CampaignEnvs_FocusIndex += 1;
+				UpdateCampaignEnvsSelection();
+			}
+		}
+		
+		Void CampaignEnvsSelection_OnDown() {
+			if (G_CampaignEnvs_FocusIndex > 0)
+			{
+				G_CampaignEnvs_FocusIndex -= 1;
+				UpdateCampaignEnvsSelection();
+			}
+		}
+		
+		Void OnExitCampaignEnvsSelection() {
+			G_SelectingCampaignEnvs = False;
+			declare CMlFrame Frame_CampaignEnvs <=> (Page.GetFirstChild("Frame_CampaignEnvs") as CMlFrame);
+			Frame_CampaignEnvs.Hide();
+			UpdateInputsInfo();
+		}
+		
+		Void OnValidateCampaignEnvsSelection() {
+			if (G_SelectedCampaignEnv != G_TracksEnvironments[G_CampaignEnvs_FocusIndex])
+				G_SelectedCampaignEnv = G_TracksEnvironments[G_CampaignEnvs_FocusIndex];
+			else
+				G_SelectedCampaignEnv = "";
+				
+			declare Text[Text][] TracksToDisplay 			for Page;
+			declare Text[Text][] RequestedTracks 			for Page;
+			declare Text[Text][] FilteredTracksToDisplay 	for Page;
+			TracksToDisplay.clear();
+			RequestedTracks.clear();
+			FilteredTracksToDisplay.clear();
+			SendRequest();
+			TrackList_ResetSelection();
+			OnExitCampaignEnvsSelection();
+		}
+		
+		Void ResetCampaignEnvsSelection() {
+			if (G_SelectedCampaignEnv != "")
+			{
+				G_SelectedCampaignEnv = "";
+				if (G_OngletFocus == C_Onglet_Campaign) {
+					G_FirstDisplayedTrackIndex = 0;
+					G_IndexFocusX = 0;
+					G_IndexFocusY = 0;
+					SendRequest();
+				}
+			}
+			ResetFilters();
+		}
+		
+		Void OnStartCampaignEnvsSelection() {
+			G_SelectingCampaignEnvs = True;
+			declare CMlFrame Frame_CampaignEnvs <=> (Page.GetFirstChild("Frame_CampaignEnvs") as CMlFrame);
+			Frame_CampaignEnvs.Show();
+			if (G_SelectedCampaignEnv != "")
+				G_CampaignEnvs_FocusIndex = G_TracksEnvironments.keyof(G_SelectedCampaignEnv);
+			else
+				G_CampaignEnvs_FocusIndex = 0;
+			//Frame_CampaignEnvsSelector.RelativePosition.Y = 0.;
+			UpdateCampaignEnvsSelection();
+			
+			for (I, 0, 3)
+			{
+				declare CMlFrame Frame_CampaignEnv <=> (Frame_CampaignEnvs.GetFirstChild("Frame_CampaignEnv"^I) as CMlFrame);
+				
+				declare CMlLabel Label_CampaignEnvName <=> (Frame_CampaignEnv.GetFirstChild("Label_CampaignEnvName") as CMlLabel);
+				declare CMlQuad Quad_CampaignEnvSelected <=> (Frame_CampaignEnv.GetFirstChild("Quad_CampaignEnvSelected") as CMlQuad);
+				Label_CampaignEnvName.Value = G_TracksEnvironments[I];
+				if (G_SelectedCampaignEnv == G_TracksEnvironments[I])
+					Quad_CampaignEnvSelected.Show();
+				else
+					Quad_CampaignEnvSelected.Hide();
+			}
+			UpdateInputsInfo();
+		}
+		
+		Void Input_SwitchOnglet(Integer _Target) {
+			if (G_StyleAndDurationStatus != C_StyleAndDurationStatus_Hidden)
+				return;
+			if (G_SelectingFilter)
+				OnExitFilterSelection();
+			if (G_SelectingCampaignEnvs)
+				OnExitCampaignEnvsSelection();
+			if(_Target < 0 || _Target > G_OngletMax || _Target == G_OngletFocus)
+				return;
+				
+			if(G_OngletFocus == C_Onglet_Campaign || _Target == C_Onglet_Campaign)
+				ResetCampaignEnvsSelection();
+			
+			G_OngletFocus = _Target;
+			SwitchOnglet();
+		}
+		
+		Void Input_Select() {
+			declare Text[Text][] FilteredTracksToDisplay for Page;
+			declare Text[Text][] TrackList for Page;
+		
+			if (G_SelectingCampaignEnvs)
+				OnValidateCampaignEnvsSelection();
+			else if (G_SelectingFilter)
+				OnFilterSelected();
+			else if (G_StyleAndDurationStatus != C_StyleAndDurationStatus_Hidden) {
+				StyleAndDuration_OnSelect();
+			} else if (FilteredTracksToDisplay.count !=0 && G_RequestMyTracks_OnlineCompleted && G_RequestMyTracks_LocalCompleted) {
+				if (G_BrowseLocation.count < G_BrowseFilters.count)
+				{
+					G_BrowseLocation.add(G_IndexFocusX + G_IndexFocusY * {{{TrackList_ColumnsCount}}});
+					UpdateBrowseInformation();
+					TrackList_SetFromResult();
+					TrackList_ResetSelection();
+				} else {
+					//on est sur une track, on try de l'ajouter à la playlist si elle n'y est pas (ou bien on toggle ?)
+					Audio.PlaySoundEvent("{{{SoundSelect}}}", {{{Volumes::GetVolumedB("MenuValidate")}}});
+					
+					if (G_AlreadyAddedTracks.count >= G_MaxTracksCount && !G_AlreadyAddedTracks.exists(FilteredTracksToDisplay[G_FirstDisplayedTrackIndex+G_IndexFocusX + G_IndexFocusY * {{{TrackList_ColumnsCount}}}]["uid"])) {
+						SendCustomEvent("PopUpCantAddTracks", Text[]);
+					} else {
+						if (G_OngletFocus == C_Onglet_MyTracks && FilteredTracksToDisplay.count != 0 && !IsLocalTrackUploaded(FilteredTracksToDisplay[G_FirstDisplayedTrackIndex+G_IndexFocusX + G_IndexFocusY * {{{TrackList_ColumnsCount}}}]["uid"]))
+							SendCustomEvent("RoomPlaylist_Check_UploadUgc", Text[]);
+						else {
+							declare Text[Text] Track = FilteredTracksToDisplay[G_FirstDisplayedTrackIndex+G_IndexFocusX + G_IndexFocusY * {{{TrackList_ColumnsCount}}}];
+							declare CMlFrame FrameTracksDisplayed <=> (Page.GetFirstChild("SubFrame_Tracks_"^G_DisplayedTrackFrameIndex) as CMlFrame);
+						
+							declare CMlFrame Frame_Track <=> (FrameTracksDisplayed.GetFirstChild("Frame_Track"^(G_IndexFocusX + G_IndexFocusY * {{{TrackList_ColumnsCount}}})) as CMlFrame);		
+							declare CMlQuad Quad_NameBg <=> (Frame_Track.GetFirstChild("Quad_NameBg") as CMlQuad);
+							declare CMlLabel Label_TrackName <=> (Frame_Track.GetFirstChild("Track_Name") as CMlLabel);
+							
+							if (G_AlreadyAddedTracks.exists(Track["uid"]))
+							{
+								//remove from tracklist ?
+								for (I, 0, TrackList.count)
+								{
+									if (TrackList[I]["uid"] == Track["uid"])
+									{
+										TrackList.removekey(I);
+										break;
+									}
+								}
+								G_AlreadyAddedTracks.remove(Track["uid"]);
+								
+								if (G_OngletFocus == C_Onglet_Campaign) {
+									declare Index = TL::ToInteger(Track["name"]);
+									if (Index <= 40)
+										Quad_NameBg.BgColor = <1., 1., 1.>;
+									else if (Index <= 80)
+										Quad_NameBg.BgColor = <0., 1., 0.>;
+									else if (Index <= 120)
+										Quad_NameBg.BgColor = <0., 0.2, 1.>;
+									else if (Index <= 160)
+										Quad_NameBg.BgColor = <1., 0., 0.>;
+									else {
+										Label_TrackName.TextColor = <1., 1., 1.>;
+										Quad_NameBg.BgColor = <0.25, 0.25, 0.25>;
+									}
+								} else
+									Quad_NameBg.BgColor = <0., 0.88, 1.>;
+							} else {
+								TrackList.add(Track);
+								G_AlreadyAddedTracks.add(Track["uid"]);
+								Label_TrackName.TextColor = <0., 0., 0.>;
+								Quad_NameBg.BgColor = <1., 1., 0.>;
+							}
+							UpdateLabelTracksCount();
+							UpdateInputsInfo();
+						}
+					}
+				}
+			}
+		}
+		
+		Void Input_Cancel() {
+			if (G_SelectingCampaignEnvs)
+				OnExitCampaignEnvsSelection();
+			else if (G_SelectingFilter)
+				OnValidateFilterSelection();
+			else if (G_BrowseLocation.count != 0) {	
+				declare SelectedIndex = G_BrowseLocation[G_BrowseLocation.count-1];
+				G_BrowseLocation.removekey(G_BrowseLocation.count-1);
+				UpdateBrowseInformation();
+				G_FirstDisplayedTrackIndex = SelectedIndex / C_DisplayedTrackFramesCount;
+				G_IndexFocusY = (SelectedIndex - C_DisplayedTrackFramesCount * G_FirstDisplayedTrackIndex) / {{{TrackList_ColumnsCount}}};
+				G_IndexFocusX = SelectedIndex - (C_DisplayedTrackFramesCount * G_FirstDisplayedTrackIndex) - G_IndexFocusY * {{{TrackList_ColumnsCount}}};
+				TrackList_SetFromResult();
+			} else if (G_BrowseFilters.count != 0) {
+				ResetFilters();
+			} else if (G_StyleAndDurationStatus != C_StyleAndDurationStatus_Hidden) {
+				StyleAndDuration_OnSkip();
+			} else {
+				ResetCampaignEnvsSelection();
+				ShowStylesAndDurations();
+			}
+		}
+		
+		Void Input_Action1() {
+			if (G_StyleAndDurationStatus != C_StyleAndDurationStatus_Hidden)
+				return;
+			if (G_SelectingCampaignEnvs)
+				OnExitCampaignEnvsSelection();
+			else if (G_SelectingFilter)
+				OnValidateFilterSelection();
+			else {
+				if (G_OngletFocus == C_Onglet_Campaign)
+					OnStartCampaignEnvsSelection();
+				else
+					OnStartFilterSelection();
+			}
+		}
+		
+		Void Input_Action2() {
+			declare Text[Text][] FilteredTracksToDisplay for Page;
+		
+			if (G_StyleAndDurationStatus != C_StyleAndDurationStatus_Hidden)
+				return;
+			if (G_SelectingCampaignEnvs)
+				return;
+			if (G_SelectingFilter)
+				if (G_OngletFocus == C_Onglet_Favorites)
+					ToggleFavoritesState();
+				else
+					ResetFilters();
+			else {
+				if (FilteredTracksToDisplay.count == 0 || G_BrowseLocation.count < G_BrowseFilters.count)
+					return;
+				if (G_OngletFocus == C_Onglet_MyTracks || G_OngletFocus == C_Onglet_Campaign)
+					return;
+				
+				declare Text[Text] Track = FilteredTracksToDisplay[G_FirstDisplayedTrackIndex+G_IndexFocusX + G_IndexFocusY * {{{TrackList_ColumnsCount}}}];
+				if (Track["author"] != "Nadeo")
+					SendCustomEvent("ShowProfile", [Track["author"]]);
+			}
+		}
+		
+		Void Input_LStickPress() {
+			if (G_StyleAndDurationStatus != C_StyleAndDurationStatus_Hidden || G_LastRefreshTime + 5000 > Now)
+				return;
+				
+			G_LastRefreshTime = Now;
+			G_FirstDisplayedTrackIndex = 0;
+			G_IndexFocusX = 0;
+			G_IndexFocusY = 0;
+			SendRequest();
+		}
+		
+		Void UpdateHelpersForPlatform(Integer _Platform) {
+			declare Text[] InputIds = ["Select", "Cancel", "Action1", "Action2", "LStickPress"];
+			declare Text[] AdditionnalInputIds = ["QuadInputIcon_FilterSelect_", "QuadInputIcon_CampaignEnvSelect_", "QuadInputIcon_StyleAndDurationSelect_", "QuadInputIcon_StyleAndDurationCancel_", "MouseInput_NextTab_", "MouseInput_PrevTab_"];
+		
+			declare CMlQuad  QuadInputIcon;
+			for (I, 0, 2) {
+				for (J, 0, InputIds.count - 1) {
+					declare CMlFrame FrameInput <=> (Page.GetFirstChild("Frame_InputInfo_Main_"^InputIds[J]) as CMlFrame);
+					QuadInputIcon <=> (FrameInput.GetFirstChild("Quad_InputIcon_"^I) as CMlQuad);
+					if (I == _Platform)
+						QuadInputIcon.Show();
+					else
+						QuadInputIcon.Hide();
+				}
+				for (J, 0, AdditionnalInputIds.count-1) {
+					QuadInputIcon <=> (Page.GetFirstChild(AdditionnalInputIds[J]^I) as CMlQuad);
+					if (I == _Platform)
+						QuadInputIcon.Show();
+					else
+						QuadInputIcon.Hide();
+				}
+			}
+		}
+		
+		/////////////////////
+		// MAIN
+		/////////////////////
+		main() {
+			Init();
+			Main_InitInputInfos("");
+			TrackList_ResetSelection();
+			
+			declare Boolean	     TrackListReceived = False;
+			declare Integer      Prev_TimeSwitchOnglet;
+			declare Integer      PrevOngletFocus;
+
+			G_IndexFocusX = 0; declare Prev_IndexFocusX = G_IndexFocusX;
+			G_IndexFocusY = 0; declare Prev_IndexFocusY = G_IndexFocusY;
+			
+			declare Text[Text][] RequestedTracks 			for Page;
+			declare Text[Text][] TracksToDisplay 			for Page;
+			declare Text[Text][] FilteredTracksToDisplay 	for Page;
+			declare Text[Text][] ValidatedTracks 			for Page;
+			declare Text[Text][] RequestedBuddies 			for Page;
+			declare Text[Text][] TrackList for Page;
+			
+			declare Integer ActiveButtonPlatform = {{{Platform}}};
+			
+			G_OngletFocus = 0;
+			PrevOngletFocus = G_OngletFocus;
+			
+			declare CMlQuad	Quad_FilterSelector <=> (Page.GetFirstChild("Quad_FilterSelector") as CMlQuad);
+			declare CMlQuad	Quad_CampaignEnvsSelector <=> (Page.GetFirstChild("Quad_CampaignEnvsSelector") as CMlQuad);
+			declare CMlFrame FrameTracksHidden;
+			
+			while(True) {
+				yield;
+				if(! PageIsVisible) continue;
+				LibManialink_AnimLoop();	
+			
+				{{{Loading::InjectInLoop()}}}
+				{{{Selector::InsertInLoop()}}}
+			
+				FrameTracksHidden <=> (Page.GetFirstChild("SubFrame_Tracks_"^((G_DisplayedTrackFrameIndex+1)%C_TrackFramesCount)) as CMlFrame);
+				if (FrameTracksHidden.Visible && (FrameTracksHidden.RelativePosition.Y >= {{{-TrackList_TrackHeight}}} + C_TrackFrameHeight || FrameTracksHidden.RelativePosition.Y <= {{{-TrackList_TrackHeight}}} - C_TrackFrameHeight))
+					FrameTracksHidden.Hide();
+			
+				Update_LocalTracksRequest();
+				
+				if (G_LocalThumbnailsToLoad.count != 0 && DataMgr.Ready)
+				{
+					foreach (CardIndex => MapInfoIndex in G_LocalThumbnailsToLoad)
+					{
+						if (G_LocalThumbnails_IsLoading)
+						{
+							declare CMlFrame FrameTracksDisplayed = (Page.GetFirstChild("SubFrame_Tracks_"^G_DisplayedTrackFrameIndex) as CMlFrame);
+							declare CMlFrame Frame_Track <=> (FrameTracksDisplayed.GetFirstChild("Frame_Track"^CardIndex) as CMlFrame);
+							declare CMlQuad Quad_Thumbnail <=> (Frame_Track.GetFirstChild("Track_Thumbnail") as CMlQuad);
+							Quad_Thumbnail.Image = DataMgr.MapThumbnail;
+							G_LocalThumbnailsToLoad.removekey(CardIndex);
+						} else {
+							DataMgr.LoadMapThumbnail(MapInfoIndex);
+						}
+						G_LocalThumbnails_IsLoading = !G_LocalThumbnails_IsLoading;
+						break;
+					}
+				}
+			
+				if(Prev_TimeSwitchOnglet != G_TimeSwitchOnglet && G_TimeSwitchOnglet < Now && PrevOngletFocus != G_OngletFocus)
+				{
+					Prev_TimeSwitchOnglet = G_TimeSwitchOnglet;
+					PrevOngletFocus = G_OngletFocus;
+					G_BrowseLocation.clear();
+					UpdateBrowseInformation();
+					TracksToDisplay.clear();
+					FilteredTracksToDisplay.clear();
+					SendRequest();
+					TrackList_ResetSelection(); //hide & show loading ou un truc dans ce genre ?
+				}
+
+				
+				if (G_SelectingFilter)
+				{
+					declare Real QuadSelectedSinVar  = ML::Sin(Now * 0.01) * 0.5 + 0.5;
+					declare Real QuadSelectedOpacity = 0.0 + QuadSelectedSinVar * 1.;
+					Quad_FilterSelector.Opacity = QuadSelectedOpacity;
+				}
+				if (G_SelectingCampaignEnvs)
+				{
+					declare Real QuadSelectedSinVar  = ML::Sin(Now * 0.01) * 0.5 + 0.5;
+					declare Real QuadSelectedOpacity = 0.0 + QuadSelectedSinVar * 1.;
+					Quad_CampaignEnvsSelector.Opacity = QuadSelectedOpacity;
+				}
+				
+				declare Real BlinkOpacity = ML::Sin(Now * 0.0075) * 0.4 + 0.6;
+				if (G_QuadToBlink != Null)
+					G_QuadToBlink.Opacity = BlinkOpacity;
+				if (G_LabelToBlink != Null)
+					G_LabelToBlink.Opacity = BlinkOpacity;
+				if (G_SelectorToAnimate != Null)
+				{
+					declare Real QuadSelectedSinVar  = ML::Sin(Now * 0.01) * 0.5 + 0.5;
+					declare Real QuadSelectedOpacity = 0.0 + QuadSelectedSinVar * 1.;
+					G_SelectorToAnimate.Opacity = QuadSelectedOpacity;
+				}
+				
+				foreach (Event in Input.PendingEvents)
+					if (Event.Type == CInputEvent::EType::PadButtonPress && Event.Button == CInputEvent::EButton::LeftStick && G_StyleAndDurationStatus == C_StyleAndDurationStatus_Hidden && G_LastRefreshTime + 5000 <= Now)
+						Input_LStickPress();
+						
+				if (Input.PendingEvents.count != 0) {
+					declare Integer LastInputPlatform;
+					switch (Input.PendingEvents[Input.PendingEvents.count-1].Pad.Type) {
+						case CInputPad::EPadType::Keyboard 		: LastInputPlatform = {{{LibUIButtons::GetPlatform("PC")}}};
+						case CInputPad::EPadType::PlayStation 	: LastInputPlatform = {{{LibUIButtons::GetPlatform("PS4")}}};
+						case CInputPad::EPadType::XBox 			: LastInputPlatform = {{{LibUIButtons::GetPlatform("XB1")}}};
+						default 								: LastInputPlatform = {{{LibUIButtons::GetPlatform("PC")}}};
+					}
+					if (LastInputPlatform != ActiveButtonPlatform)
+						SendCustomEvent("SetActiveButtonPlaform", ["RoomPlaylist", TL::ToText(LastInputPlatform)]);
+				}
+				
+				foreach(Event in PendingEvents) {
+					switch(Event.Type) {
+						case CMlEvent::Type::KeyPress: {
+							if (Event.KeyName == "F5") {
+								if (ActiveButtonPlatform !=  {{{LibUIButtons::GetPlatform("PC")}}})
+									SendCustomEvent("SetActiveButtonPlaform", ["RoomPlaylist", TL::ToText({{{LibUIButtons::GetPlatform("PC")}}})]);
+								Input_LStickPress();
+							}
+						}
+						case CMlEvent::Type::MouseClick: {
+							if (ActiveButtonPlatform !=  {{{LibUIButtons::GetPlatform("PC")}}})
+								SendCustomEvent("SetActiveButtonPlaform", ["RoomPlaylist", TL::ToText({{{LibUIButtons::GetPlatform("PC")}}})]);
+							if (G_IsUploading) continue;
+							declare Text[] InputId = TL::Split("_", Event.ControlId);
+							if (InputId.count < 2 || InputId[0] != "MouseInput")
+								continue;
+							switch (InputId[1]) {
+								case "Landmark" 		: Input_SwitchOnglet(TL::ToInteger(InputId[2]));
+								case "PrevTab"			: Input_SwitchOnglet(G_OngletFocus-1);
+								case "NextTab"			: Input_SwitchOnglet(G_OngletFocus+1);
+								case "PrevPage"			: {
+									if (G_StyleAndDurationStatus != C_StyleAndDurationStatus_Hidden)
+										continue;
+									if (G_SelectingCampaignEnvs) {
+										OnExitCampaignEnvsSelection();
+										continue;
+									}
+									if (G_SelectingFilter) {
+										OnExitFilterSelection();
+										continue;
+									}
+									G_IndexFocusY = 0;
+									TrackList_OnUp();
+								}
+								case "NextPage"			: {
+									if (G_StyleAndDurationStatus != C_StyleAndDurationStatus_Hidden)
+										continue;
+									if (G_SelectingCampaignEnvs) {
+										OnExitCampaignEnvsSelection();
+										continue;
+									}
+									if (G_SelectingFilter) {
+										OnExitFilterSelection();
+										continue;
+									}
+									G_IndexFocusY = {{{TrackList_LinesCount - 1}}};
+									TrackList_OnDown();
+								}
+								case "MainInputInfo"	: {
+									if (G_StyleAndDurationStatus != C_StyleAndDurationStatus_Hidden)
+										continue;
+									switch (InputId[2]) {
+										case "Select"		: Input_Select();
+										case "Cancel"		: Input_Cancel();
+										case "AppMenu"		: Input_Cancel();
+									    case "Action1"		: Input_Action1();
+									    case "Action2"		: Input_Action2();
+										case "LStickPress"	: Input_LStickPress();
+									}
+								}
+								case "ChoiceInputInfo" : {
+									switch (InputId[2]) {
+										case "Select"		: StyleAndDuration_OnSelect();
+										case "Cancel"		: StyleAndDuration_OnSkip();
+										case "AppMenu"		: StyleAndDuration_OnSkip();
+									}
+								}
+								case "CampaignEnv" : {
+									G_CampaignEnvs_FocusIndex = TL::ToInteger(InputId[2]);
+									OnValidateCampaignEnvsSelection();
+								}
+								case "Filter" : {
+									G_Filter_FocusIndex = TL::ToInteger(InputId[2]);
+									OnFilterSelected();
+								}
+								case "Track" : {
+									if (G_StyleAndDurationStatus != C_StyleAndDurationStatus_Hidden)
+										continue;
+									if (Now < G_TrackFrameTransitionStartTime + 200)
+										continue;
+									if (G_SelectingCampaignEnvs) {
+										OnExitCampaignEnvsSelection();
+										continue;
+									}
+									if (G_SelectingFilter) {
+										OnExitFilterSelection();
+										continue;
+									}
+									declare Integer Index = TL::ToInteger(InputId[2]);
+									G_IndexFocusY = Index / {{{TrackList_ColumnsCount}}};
+									G_IndexFocusX = Index - G_IndexFocusY * {{{TrackList_ColumnsCount}}};
+									UpdateSelection();
+									UpdateInputsInfo();
+									Input_Select();
+								}
+								case "Choice" : {
+									G_StyleAndDuration_FocusIndex = TL::ToInteger(InputId[2]);
+									StyleAndDuration_OnSelect();
+								}
+							}
+						}
+						case CMlEvent::Type::MouseOver: {
+							if (G_IsUploading) continue;
+							declare Text[] InputId = TL::Split("_", Event.ControlId);
+							if (InputId.count < 2 || InputId[0] != "MouseInput")
+								continue;
+							switch (InputId[1]) {
+								case "CampaignEnv" : {
+									G_CampaignEnvs_FocusIndex = TL::ToInteger(InputId[2]);
+									UpdateCampaignEnvsSelection();
+								}
+								case "Filter" : {
+									G_Filter_FocusIndex = TL::ToInteger(InputId[2]);
+									UpdateFilterSelection();
+								}
+								case "Track" : {
+									if (G_StyleAndDurationStatus != C_StyleAndDurationStatus_Hidden)
+										continue;
+									if (Now < G_TrackFrameTransitionStartTime + 200)
+										continue;
+									if (G_SelectingCampaignEnvs || G_SelectingFilter)
+										continue;
+									declare Integer Index = TL::ToInteger(InputId[2]);
+									G_IndexFocusY = Index / {{{TrackList_ColumnsCount}}};
+									G_IndexFocusX = Index - G_IndexFocusY * {{{TrackList_ColumnsCount}}};
+									UpdateSelection();
+									UpdateInputsInfo();
+								}
+								case "Choice" : {
+									G_StyleAndDuration_FocusIndex = TL::ToInteger(InputId[2]);
+									StyleAndDuration_UpdateSelection();
+								}
+								case "MainInputInfo" : ToggleInputInfo(InputId[2], True);
+								case "NextTab" : {
+									for (I, 0, 2) {	
+										declare CMlQuad QuadInputIcon <=> (Page.GetFirstChild("MouseInput_NextTab_"^I) as CMlQuad);
+										QuadInputIcon.Opacity = 0.6;
+										QuadInputIcon.Scale = 0.95;
+									}
+								}
+								case "PrevTab" : {
+									for (I, 0, 2) {	
+										declare CMlQuad QuadInputIcon <=> (Page.GetFirstChild("MouseInput_PrevTab_"^I) as CMlQuad);
+										QuadInputIcon.Opacity = 0.6;
+										QuadInputIcon.Scale = 0.95;
+									}
+								}
+								case "ChoiceInputInfo" : {
+									declare LabelName <=> (Page.GetFirstChild("Label_StyleAndDuration"^InputId[2]) as CMlLabel);
+									SetInputInfoTextSelected(LabelName, True);
+								}
+							}
+						}
+						case CMlEvent::Type::MouseOut: {
+							declare Text[] InputId = TL::Split("_", Event.ControlId);
+							if (InputId.count < 2 || InputId[0] != "MouseInput")
+								continue;
+							switch (InputId[1]) {
+								case "MainInputInfo" : ToggleInputInfo(InputId[2], False);
+								case "NextTab" : {
+									for (I, 0, 2) {	
+										declare CMlQuad QuadInputIcon <=> (Page.GetFirstChild("MouseInput_NextTab_"^I) as CMlQuad);
+										QuadInputIcon.Opacity = 1.;
+										QuadInputIcon.Scale = 1.;
+									}
+								}
+								case "PrevTab" : {
+									for (I, 0, 2) {	
+										declare CMlQuad QuadInputIcon <=> (Page.GetFirstChild("MouseInput_PrevTab_"^I) as CMlQuad);
+										QuadInputIcon.Opacity = 1.;
+										QuadInputIcon.Scale = 1.;
+									}
+								}
+								case "ChoiceInputInfo" : {
+									declare LabelName <=> (Page.GetFirstChild("Label_StyleAndDuration"^InputId[2]) as CMlLabel);
+									SetInputInfoTextSelected(LabelName, False);
+								}
+							}
+						}
+						case CMlEvent::Type::PluginCustomEvent: {
+							switch(Event.PluginCustomEventType) {
+								case "Show" : {
+									G_LastRefreshTime = Now;
+									ResetInputInfos();
+									SendCustomEvent("RequestGetBuddies", Text[]);
+									TrackListReceived = False;
+									SendCustomEvent("GetContextAndTrackList", Text[]);
+									{{{_ShowAnim}}}
+									EnableMenuNavigation(True,False,Null,2);
+									TrackList_ResetSelection();
+									G_OngletFocus = 0;
+									PrevOngletFocus = 0;
+									SetOnglet();
+									UpdateBrowseInformation();
+									G_BuddiesLoginsToUse.clear();
+									declare CMlFrame Frame_StyleAndDuration <=> (Page.GetFirstChild("Frame_StyleAndDuration") as CMlFrame);
+									Frame_StyleAndDuration.Hide();
+									declare CMlFrame Frame_TrackList	<=> (Page.GetFirstChild("Frame_TrackList") as CMlFrame);
+									Frame_TrackList.Hide();
+									declare CMlLabel Label_LoadingTracks <=> (Page.GetFirstChild("Label_LoadingTracks") as CMlLabel);
+									Label_LoadingTracks.Hide();
+									declare CMlQuad  Quad_Selector <=> (Page.GetFirstChild("Quad_Selector") as CMlQuad);
+									Quad_Selector.Hide();
+									declare CMlFrame Frame_TrackInfo <=> (Page.GetFirstChild("Frame_TrackInfo") as CMlFrame);
+									Frame_TrackInfo.Hide();
+									SetOngletMax(3);
+									SendCustomEvent("GetActiveButtonPlatform", ["RoomPlaylist"]);
+								}
+								case "SetActiveButtonPlatform" : {
+									ActiveButtonPlatform = TL::ToInteger(Event.CustomEventData[0]);
+									UpdateHelpersForPlatform(ActiveButtonPlatform);
+								}
+								case "Hide" : {
+									{{{_HideAnim}}}
+									EnableMenuNavigation(True,False,Null,0);
+									SendCustomEvent("DetachPage", ["RoomPlaylist"]);
+								}
+								case "BuddiesSent" : {
+									//SendCustomEvent("RoomPlaylist_Check_ViewUgc", Text[]);
+									G_BuddiesLoginsToUse.clear();
+									for (I, 0, RequestedBuddies.count-1)
+										G_BuddiesLoginsToUse.add(RequestedBuddies[I]["login"]);
+									SendRequest();
+								}
+								case "Check_UploadUgc_Succeeded" : {
+									SendCustomEvent("RoomPlaylist_PopUpUpload", Text[]);
+								}
+								case "RefreshTracks" :
+								{
+									SendRequest();
+								}
+								case "UploadTrack" : {
+									if (Event.CustomEventData.count < 1)
+										continue;
+									UploadTrack(Event.CustomEventData[0]);
+								}
+								case "TrackUploaded" :
+								{
+									G_IsUploading = False;
+									Loading_SetIsLoading(False);
+									if (DataMgr.LatestResult == CDataMgr::EResult::Finished_Ok)
+									{
+										G_RequestMyTracks_LocalCompleted = False;
+										
+										SendRequest();
+										SendCustomEvent("RoomPlaylist_PopUpUploadSucceeded", [""]);
+										
+										declare Text[Text] Track = FilteredTracksToDisplay[G_FirstDisplayedTrackIndex+G_IndexFocusX + G_IndexFocusY * {{{TrackList_ColumnsCount}}}];
+										declare CMlFrame FrameTracksDisplayed <=> (Page.GetFirstChild("SubFrame_Tracks_"^G_DisplayedTrackFrameIndex) as CMlFrame);
+									
+										declare CMlFrame Frame_Track <=> (FrameTracksDisplayed.GetFirstChild("Frame_Track"^(G_IndexFocusX + G_IndexFocusY * {{{TrackList_ColumnsCount}}})) as CMlFrame);		
+										declare CMlQuad Quad_NameBg <=> (Frame_Track.GetFirstChild("Quad_NameBg") as CMlQuad);
+							
+										if (G_AlreadyAddedTracks.count < G_MaxTracksCount)
+										{
+											TrackList.add(Track);
+											G_AlreadyAddedTracks.add(Track["uid"]);
+											Quad_NameBg.BgColor = <1., 1., 0.>;
+											UpdateLabelTracksCount();
+											UpdateInputsInfo();	
+										}
+									} else
+										SendCustomEvent("RoomPlaylist_PopUpUploadFailed", [""]);		
+									G_UploadedMapUid = "";
+								}
+								case "UploadedTracksSent" :  
+								{
+									G_RequestError = False;
+									G_RequestMyTracks_OnlineCompleted = True;
+									if (G_RequestMyTracks_LocalCompleted && G_OngletFocus == C_Onglet_MyTracks)
+									{
+										TrackList_UpdateTracksToDisplay();
+										TrackList_SetFromResult();
+										UpdateInputsInfo();
+									}
+								}
+								case "UploadedTracksNotSent" : {
+									G_RequestError = True;
+									G_RequestMyTracks_OnlineCompleted = True;
+									if (G_RequestMyTracks_LocalCompleted && G_OngletFocus == C_Onglet_MyTracks)
+									{
+										TrackList_SetFromResult();
+										UpdateInputsInfo();
+									}
+								}
+								case "Request_GetCampaignTracks_Success" : {
+									G_RequestError = False;
+									Loading_SetIsLoading(False);
+									if (G_OngletFocus != C_Onglet_Campaign)
+										continue;
+									TrackList_UpdateTracksToDisplay();
+									TrackList_SetFromResult();
+									UpdateInputsInfo();
+								}
+								case "Request_GetCampaignTracks_Failure" : {
+									G_RequestError = True;
+									TrackList_UpdateTracksToDisplay();
+									TrackList_SetFromResult();
+									UpdateInputsInfo();
+								}
+								case "FavoriteTracksSent" : {
+									G_RequestError = False;
+									Loading_SetIsLoading(False);
+									if (G_OngletFocus != C_Onglet_Favorites || G_AreFavoriteAuthorsOrElseTracks)
+										continue;
+									TrackList_UpdateTracksToDisplay();
+									TrackList_SetFromResult();
+									UpdateSelection();
+									UpdateInputsInfo();
+								}
+								case "FavoriteAuthorsTracksSent" : {
+									G_RequestError = False;
+									Loading_SetIsLoading(False);
+									if (G_OngletFocus != C_Onglet_Favorites || !G_AreFavoriteAuthorsOrElseTracks)
+										continue;
+									TrackList_UpdateTracksToDisplay();
+									TrackList_SetFromResult();
+									UpdateSelection();
+									UpdateInputsInfo();
+								}
+								case "BuddiesTracksSent" : {
+									G_RequestError = False;
+									Loading_SetIsLoading(False);
+									if (G_OngletFocus != C_Onglet_Buddies)
+										continue;
+									TrackList_UpdateTracksToDisplay();
+									TrackList_SetFromResult();
+									UpdateSelection();
+									UpdateInputsInfo();
+								}
+								case "UploadedTracksNotSent" : {
+									G_RequestError = True;
+									TrackList_UpdateTracksToDisplay();
+									TrackList_SetFromResult();
+									UpdateInputsInfo();
+								}
+								case "FavoriteTracksNotSent" : {
+									G_RequestError = True;
+									TrackList_UpdateTracksToDisplay();
+									TrackList_SetFromResult();
+									UpdateInputsInfo();
+								}
+								case "FavoriteAuthorsTracksNotSent" : {
+									G_RequestError = True;
+									TrackList_UpdateTracksToDisplay();
+									TrackList_SetFromResult();
+									UpdateInputsInfo();
+								}
+								case "BuddiesTracksNotSent" : {
+									G_RequestError = True;
+									TrackList_UpdateTracksToDisplay();
+									TrackList_SetFromResult();
+									UpdateInputsInfo();
+								}
+								case "TrackListSent" : { //from manager
+									TrackList_UpdateAlreadyAddedTracks();
+									if (!Loading_GetIsLoading())
+										TrackList_SetFromResult();
+									UpdateInputsInfo();
+									TrackListReceived = True;
+									
+									declare CMlLabel Name <=> (Page.GetFirstChild("RoomName") as CMlLabel);
+									Name.Value = Event.CustomEventData[0];
+									declare CMlLabel Title <=> (Page.GetFirstChild("Label_Title") as CMlLabel);
+									Title.Value = Event.CustomEventData[1];
+									
+									declare Vec3 MenuColor;
+									if (Event.CustomEventData[1] == "{{{_("Challenge - Tracklist")}}}")
+										MenuColor = {{{MenuColor::GetMenuColor(2)}}};
+									else
+										MenuColor = {{{MenuColor::GetMenuColor(0)}}};
+									//Title.TextColor = TL::ToColor(Event.CustomEventData[2]);
+									G_MaxTracksCount = TL::ToInteger(Event.CustomEventData[3]);
+									UpdateLabelTracksCount();
+									
+									declare CMlFrame 	Frame_StyleAndDuration 			<=> (Page.GetFirstChild("Frame_StyleAndDuration") as CMlFrame);
+									declare CMlLabel 	Label_Title 					<=> (Frame_StyleAndDuration.GetFirstChild("Label_Title") as CMlLabel);
+									declare CMlQuad 	Quad_StyleAndDurationSelector 	<=> (Frame_StyleAndDuration.GetFirstChild("quad_selector") as CMlQuad);
+									declare CMlQuad  Quad_Selector <=> (Page.GetFirstChild("Quad_Selector") as CMlQuad);
+									Quad_Selector.Colorize = MenuColor;
+									Quad_FilterSelector.BgColor = MenuColor;
+									Title.TextColor  = MenuColor;
+									Label_Title.TextColor = MenuColor;
+									Quad_StyleAndDurationSelector.BgColor = MenuColor;
+								}
+							}
+						}
+						case CMlEvent::Type::MenuNavigation: {
+							if(G_LockInput + 50 > Now) continue;
+							G_LockInput = Now; // sécurité pour éviter le double input
+							if (G_IsUploading)
+								continue;
+							switch(Event.MenuNavAction) {
+								case CMlEvent::EMenuNavAction::PageUp   : Input_SwitchOnglet(G_OngletFocus-1);
+								case CMlEvent::EMenuNavAction::PageDown : Input_SwitchOnglet(G_OngletFocus+1);
+								case CMlEvent::EMenuNavAction::Up : {
+									if (G_SelectingCampaignEnvs) {
+										Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+										CampaignEnvsSelection_OnUp();
+									} else if (G_SelectingFilter) {
+										FilterSelection_OnUp();
+										Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+									} else if (G_StyleAndDurationStatus != C_StyleAndDurationStatus_Hidden) {
+										Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+										StyleAndDuration_OnUp();
+									} else {
+										Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+										TrackList_OnUp(); //le défilement est géré là dedans
+									}
+								}
+								case CMlEvent::EMenuNavAction::Down : {
+									if (G_SelectingCampaignEnvs) {
+										Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+										CampaignEnvsSelection_OnDown();
+									} else if (G_SelectingFilter) {
+										FilterSelection_OnDown();
+										Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+									} else if (G_StyleAndDurationStatus != C_StyleAndDurationStatus_Hidden) {
+										Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+										StyleAndDuration_OnDown();
+									} else {
+										Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+										TrackList_OnDown(); //le défilement est géré là dedans
+									}
+								}
+								case CMlEvent::EMenuNavAction::Left : {
+									if (G_SelectingFilter || G_SelectingCampaignEnvs || G_StyleAndDurationStatus != C_StyleAndDurationStatus_Hidden)
+										continue;
+									Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+									TrackList_OnLeft();
+								}
+								case CMlEvent::EMenuNavAction::Right : {
+									if (G_SelectingFilter || G_SelectingCampaignEnvs || G_StyleAndDurationStatus != C_StyleAndDurationStatus_Hidden)
+										continue;
+									Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+									TrackList_OnRight();
+								}
+								case CMlEvent::EMenuNavAction::Select : Input_Select();
+								case CMlEvent::EMenuNavAction::Cancel : Input_Cancel();
+								case CMlEvent::EMenuNavAction::AppMenu : Input_Cancel();
+								case CMlEvent::EMenuNavAction::Action1 : Input_Action1();
+								case CMlEvent::EMenuNavAction::Action2 : Input_Action2();
+							}
+						}
+					}
+				}
+			}
+		}
+	--></script>
+	""";
+	
+	return MLText;
+}

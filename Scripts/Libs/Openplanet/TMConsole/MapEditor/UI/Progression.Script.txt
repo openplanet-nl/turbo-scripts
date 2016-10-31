@@ -1,0 +1,378 @@
+/** 
+ * Progession UI
+ */
+
+#Const Version		"2016-02-29"
+#Const ScriptName	"Progression.Script.txt"
+
+#Include "TextLib" as TL
+#Include "Libs/Openplanet/Manialink3.Script.txt" as Manialink
+#Include "Libs/Openplanet/TMConsole/MapEditor/Layers.Script.txt" as Layers
+#Include "Libs/Openplanet/TMConsole/MapEditor/UI/Colors.Script.txt" as Colors
+#Include "Libs/Openplanet/TMConsole/MapEditor/UI/Stylesheet.Script.txt" as Styles
+
+// ---------------------------------- //
+// Constants
+// ---------------------------------- //
+/// Steps index
+#Const C_Step_Landscape		0
+#Const C_Step_Start			1
+#Const C_Step_Track			2
+#Const C_Step_Finish		3
+#Const C_Step_Deco			4
+#Const C_Step_Validation	5
+#Const C_Step_Save			6
+#Const C_Step_Complete		7
+/// Steps names
+#Const C_StepsNames [
+	//L16N [MapEditor] The track creation process is divided into several steps, this is the name of the first step
+	_("Landscape"), 
+	//L16N [MapEditor] The track creation process is divided into several steps, this is the name of the second step
+	_("|BlockInfo|Start"), 
+	//L16N [MapEditor] The track creation process is divided into several steps, this is the name of the third step
+	_("Track"), 
+	//L16N [MapEditor] The track creation process is divided into several steps, this is the name of the fourth step
+	_("|BlockInfo|Finish"), 
+	//L16N [MapEditor] The track creation process is divided into several steps, this is the name of the fifth step
+	_("Decoration"), 
+	//L16N [MapEditor] The track creation process is divided into several steps, this is the name of the sixth step
+	_("Validation"), 
+	//L16N [MapEditor] The track creation process is divided into several steps, this is the name of the seventh step
+	_("Save")
+]
+#Const C_StepsDetails [
+	//L16N [MapEditor] The track creation process is divided into several steps, this is the description of the first step
+	_("Select a landscape. When you find one that please you, you can start your track."), ///< Landscape
+	//L16N [MapEditor] The track creation process is divided into several steps, this is the description of the second step
+	_("Move the start block and choose where you want to start your track."), ///< Start
+	//L16N [MapEditor] The track creation process is divided into several steps, this is the description of the third step
+	_("Build your track and place a finish block to complete it."), ///< Track
+	//...
+	_(""), ///< Finish
+	//L16N [MapEditor] The track creation process is divided into several steps, this is the description of the fifth step
+	_("Choose what kind of decoration you want and generate it. When you find one that please you, you can validate your track."), ///< Decoration
+	//L16N [MapEditor] The track creation process is divided into several steps, this is the description of the sixth step
+	_("Validate your track to be able to play it oustide the editor."), ///< Validation
+	//L16N [MapEditor] The track creation process is divided into several steps, this is the description of the seventh step
+	_("Don't forget to save your track!"), ///< Save
+	//L16N [MapEditor] The track creation process is divided into several steps, this is the description of the eigth step
+	_("Track completed.") ///< Complete
+]
+
+// ---------------------------------- //
+// Functions
+// ---------------------------------- //
+// ---------------------------------- //
+// Private
+// ---------------------------------- //
+// ---------------------------------- //
+/** Get the progression manialink
+ *
+ *	@param	_Advanced				Use the advanced timeline
+ *
+ *	@return							The manialink
+ */
+Text Private_GetProgressionML(Boolean _Advanced) {
+	declare VecColorComplete = Colors::GetColor(Colors::Color_LightGrey());
+	declare VecColorIncomplete = Colors::GetColor(Colors::Color_Black());
+	declare VecColorBg = Colors::GetColor(Colors::Color_Grey());
+	declare ColorComplete = TL::ColorToText(VecColorComplete);
+	declare ColorIncomplete = TL::ColorToText(VecColorIncomplete);
+	declare ColorBg = TL::ColorToText(VecColorBg);
+	
+	declare Steps = "";
+	
+	declare StepSize = 6.;
+	declare InnerStepSize = StepSize * (72. / 192.);
+	declare LinkSize = StepSize * (46./*60.*/ / 192.);
+	
+	declare BackgroundSizeX = 36.;
+	declare BackgroundSizeY = 5.;
+	declare DescriptionSizeY = 2.;
+	declare TimelineSizeX = BackgroundSizeX - 6.;
+	
+	declare HiddenPos = -92. - Styles::GetPosition2(<0., 1., 0.>, Styles::CircleSize_Bottom()).Y;
+	
+	if (_Advanced) {
+		Steps = """
+<frameinstance modelid="Framemodel_Step" id="{{{C_Step_Landscape}}}" />
+<frameinstance modelid="Framemodel_Step" id="{{{C_Step_Start}}}" />
+<frameinstance modelid="Framemodel_Step" id="{{{C_Step_Track}}}" />
+<frameinstance modelid="Framemodel_Step" id="{{{C_Step_Finish}}}" />
+<frameinstance modelid="Framemodel_Step" id="{{{C_Step_Deco}}}" />
+<frameinstance modelid="Framemodel_Step" id="{{{C_Step_Validation}}}" />
+<frameinstance modelid="Framemodel_Step" id="{{{C_Step_Save}}}" />
+""";
+	} else {
+		Steps = """
+<frameinstance modelid="Framemodel_Step" id="{{{C_Step_Start}}}" />
+<frameinstance modelid="Framemodel_Step" id="{{{C_Step_Track}}}" />
+<frameinstance modelid="Framemodel_Step" id="{{{C_Step_Finish}}}" />
+<frameinstance modelid="Framemodel_Step" id="{{{C_Step_Validation}}}" />
+<frameinstance modelid="Framemodel_Step" id="{{{C_Step_Save}}}" />
+""";
+	}
+	
+	declare Pointer = "file://Media/Images/TMConsole/MapEditor/Menu/editor-progression-arrow.dds";
+	declare Circle = "file://Media/Images/TMConsole/MapEditor/Menu/disc.dds";
+	
+	return """
+<manialink version="3" name="MapEditor:Progression">
+<stylesheet>
+	{{{Styles::Get()}}}
+</stylesheet>
+<framemodel id="Framemodel_Step">
+	<label z-index="2" halign="center" valign="bottom" textcolor="{{{ColorIncomplete}}}" class="turbo2-text-progress-step" id="Label_Step" />
+	<quad pos="0 -4" z-index="0" size="30 {{{LinkSize}}}" halign="right" valign="center" bgcolor="{{{ColorIncomplete}}}" id="Quad_Link" />
+	<quad pos="0 -4" z-index="1" size="{{{StepSize}}} {{{StepSize}}}" halign="center" valign="center" colorize="{{{ColorIncomplete}}}" image="{{{Circle}}}" id="Quad_Step" />
+	<quad pos="0 -4" z-index="2" size="{{{InnerStepSize}}} {{{InnerStepSize}}}" halign="center" valign="center" colorize="{{{ColorBg}}}" image="{{{Circle}}}" />
+</framemodel>
+<frame z-index="11" id="Frame_Global">
+	<frame pos="0 {{{HiddenPos}}}" hidden="1" id="Frame_Progression">
+		<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<-BackgroundSizeX*0.5, 0., 0.>, Styles::CircleSize_Bottom()))}}}>
+			{{{Styles::BuildBackground(<0., 0., 0.>, <BackgroundSizeX, BackgroundSizeY>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop())}}}
+			{{{Styles::BuildQuad(<0., 0., 1.>, <BackgroundSizeX, BackgroundSizeY>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), ["bgcolor" => ColorBg])}}}
+			{{{Styles::BuildLabel(<0., 0., 2.>, <BackgroundSizeX, DescriptionSizeY>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), ["autonewline" => "1", "maxline" => "3", "textcolor" => ColorComplete, "class" => "turbo2-text-progress-description", "id" => "Label_Description"])}}}
+		</frame>
+		<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<-TimelineSizeX*0.5, -DescriptionSizeY-0.25, 1.>, Styles::CircleSize_Bottom()))}}}>
+			<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<0., -1., 1.>, Styles::CircleSize_Bottom()))}}} id="Frame_Steps">
+				{{{Steps}}}
+			</frame>
+			<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<TimelineSizeX, -1., 0.>, Styles::CircleSize_Bottom()))}}} id="Frame_Play">
+				<label z-index="1" halign="center" valign="bottom" textcolor="{{{ColorIncomplete}}}" text="{{{
+					//L16N [MapEditor] Play on the track
+					_("Play")
+				}}}" class="turbo2-text-progress-step" id="Label_Step" />
+				<quad pos="0 -4" z-index="0" size="30 {{{LinkSize}}}" halign="right" valign="center" bgcolor="{{{ColorIncomplete}}}" id="Quad_Link" />
+				<quad pos="2 -4" z-index="0" size="{{{StepSize}}} {{{StepSize}}}" halign="center" valign="center" colorize="{{{ColorIncomplete}}}" image="{{{Pointer}}}" id="Quad_Step" />
+			</frame>
+		</frame>
+	</frame>
+</frame>
+<script><!--
+#Include "TextLib" as TL
+{{{Manialink::DefaultIncludes()}}}
+
+#Const C_StepsNames {{{dump(C_StepsNames)}}}
+#Const C_StepsDetails {{{dump(C_StepsDetails)}}}
+
+{{{Manialink::Animations(["EaseOutQuad"])}}}
+
+Void SetStep(Integer _Step) {
+	declare Label_Description <=> (Page.GetFirstChild("Label_Description") as CMlLabel);
+	declare Frame_Steps <=> (Page.GetFirstChild("Frame_Steps") as CMlFrame);
+	declare Frame_Play <=> (Page.GetFirstChild("Frame_Play") as CMlFrame);
+	
+	foreach (Key => Control in Frame_Steps.Controls) {
+		declare Frame_Step <=> (Control as CMlFrame);
+		declare Quad_Step <=> (Frame_Step.GetFirstChild("Quad_Step") as CMlQuad);
+		declare Quad_Link <=> (Frame_Step.GetFirstChild("Quad_Link") as CMlQuad);
+		declare Label_Step <=> (Frame_Step.GetFirstChild("Label_Step") as CMlLabel);
+		
+		declare Step = TL::ToInteger(Frame_Step.ControlId);
+		if (Step < _Step) {
+			Quad_Step.Colorize = {{{VecColorComplete}}};
+			Quad_Link.BgColor = {{{VecColorComplete}}};
+			Label_Step.TextColor = {{{VecColorComplete}}};
+		} else {
+			Quad_Step.Colorize = {{{VecColorIncomplete}}};
+			Quad_Link.BgColor = {{{VecColorIncomplete}}};
+			Label_Step.TextColor = {{{VecColorIncomplete}}};
+		}
+	}
+		
+	if (C_StepsDetails.existskey(_Step)) {
+		Label_Description.Value = C_StepsDetails[_Step];
+	} else {
+		Label_Description.Value = "";
+	}
+	
+	declare Quad_FinalStep <=> (Frame_Play.GetFirstChild("Quad_Step") as CMlQuad);
+	declare Quad_FinalLink <=> (Frame_Play.GetFirstChild("Quad_Link") as CMlQuad);
+	declare Label_FinalStep <=> (Frame_Play.GetFirstChild("Label_Step") as CMlLabel);
+	if (_Step < {{{C_Step_Complete}}}) {
+		Quad_FinalStep.Colorize = {{{VecColorIncomplete}}};
+		Quad_FinalLink.BgColor = {{{VecColorIncomplete}}};
+		Label_FinalStep.TextColor = {{{VecColorIncomplete}}};
+	} else {
+		Quad_FinalStep.Colorize = {{{VecColorComplete}}};
+		Quad_FinalLink.BgColor = {{{VecColorComplete}}};
+		Label_FinalStep.TextColor = {{{VecColorComplete}}};
+	}
+}
+
+Void SetVisibility(Boolean _Visible) {
+	if (_Visible) {
+		declare L_Position for Page = <0., 0.>;
+		LibManialink_Anim("<frame pos=\""^L_Position.X^" "^L_Position.Y^"\" hidden=\"0\" id=\"Frame_Progression\" />", 250, "EaseOutQuad");
+	} else {
+		declare L_Position for Page = <0., 0.>;
+		LibManialink_Anim("<frame pos=\""^L_Position.X^" {{{HiddenPos}}}\" hidden=\"1\" id=\"Frame_Progression\" />", 250, "EaseOutQuad");
+	}
+}
+
+main() {
+	declare Frame_Steps <=> (Page.GetFirstChild("Frame_Steps") as CMlFrame);
+	declare LinkSize = {{{Styles::GetSize2(<TimelineSizeX, 0.>, Styles::CircleSize_Bottom()).X}}} / Frame_Steps.Controls.count;
+	foreach (Key => Control in Frame_Steps.Controls) {
+		declare Frame_Step <=> (Control as CMlFrame);
+		declare Quad_Link <=> (Frame_Step.GetFirstChild("Quad_Link") as CMlQuad);
+		declare Label_Step <=> (Frame_Step.GetFirstChild("Label_Step") as CMlLabel);
+		Frame_Step.ZIndex = Key*-1.;
+		Frame_Step.RelativePosition_V3.X = Key * LinkSize;
+		Quad_Link.Size.X = LinkSize;
+		if (Label_Step != Null) {
+			Label_Step.Value = C_StepsNames[TL::ToInteger(Frame_Step.ControlId)];
+			Label_Step.Size.X = LinkSize - 2.;
+		}
+		if (Key == 0) Quad_Link.Visible = False;
+	}
+	declare Frame_Play <=> (Page.GetFirstChild("Frame_Play") as CMlFrame);
+	declare Quad_Link <=> (Frame_Play.GetFirstChild("Quad_Link") as CMlQuad);
+	Quad_Link.Size.X = LinkSize;
+	
+	declare L_Step for Page = -1;
+	declare L_Visibility for Page = False;
+	declare L_Position for Page = <0., 0.>;
+	
+	declare PrevStep = -1;
+	declare PrevVisibility = False;
+	declare PrevPosition = <0., 0.>;
+	
+	while (True) {
+		yield;
+		
+		LibManialink_AnimLoop();
+		
+		if (PrevStep != L_Step) {
+			PrevStep = L_Step;
+			SetStep(L_Step);
+		}
+		
+		if (PrevVisibility != L_Visibility || PrevPosition != L_Position) {
+			PrevVisibility = L_Visibility;
+			PrevPosition = L_Position;
+			SetVisibility(L_Visibility);
+		}
+	}
+}
+--></script>
+</manialink>
+""";
+}
+
+// ---------------------------------- //
+// Public
+// ---------------------------------- //
+// ---------------------------------- //
+/** Return the version number of the script
+ *
+ *	@return							The version number of the script
+ */
+Text GetScriptVersion() {
+	return Version;
+}
+
+// ---------------------------------- //
+/** Return the name of the script
+ *
+ *	@return							The name of the script
+ */
+Text GetScriptName() {
+	return ScriptName;
+}
+
+// ---------------------------------- //
+/// Get the steps constants
+Integer Step_Landscape() { return C_Step_Landscape; }
+Integer Step_Start() { return C_Step_Start; }
+Integer Step_Track() { return C_Step_Track; }
+Integer Step_Finish() { return C_Step_Finish; }
+Integer Step_Deco() { return C_Step_Deco; }
+Integer Step_Validation() { return C_Step_Validation; }
+Integer Step_Save() { return C_Step_Save; }
+Integer Step_Complete() { return C_Step_Complete; }
+
+// ---------------------------------- //
+/** Select the current step
+ *
+ *	@param	_Step					The step to select
+ */
+Void SetStep(Integer _Step) {
+	declare Page <=> Layers::Get("Progression").LocalPage;
+	declare L_Step for Page = -1;
+	L_Step = _Step;
+}
+
+// ---------------------------------- //
+/** Set the position of the UI
+ *
+ *	@param	_Position				The position
+ */
+Void SetPosition(Vec2 _Position) {
+	declare Page <=> Layers::Get("Progression").LocalPage;
+	declare L_Position for Page = <0., 0.>;
+	L_Position = _Position;
+}
+
+// ---------------------------------- //
+/** Check if the simple menu is visible
+ *
+ *	@return						True if the simple menu is visible, False otherwise
+ */
+Boolean IsVisible() {
+	declare Page <=> Layers::GetPage("Progression");
+	declare L_Visibility for Page = False;
+	return L_Visibility;
+}
+
+// ---------------------------------- //
+/** Set the progession visibility
+ *
+ *	@param	_Visible				Show the progression if True
+ */
+Void SetVisibility(Boolean _Visible) {
+	declare Page <=> Layers::Get("Progression").LocalPage;
+	declare L_Visibility for Page = False;
+	L_Visibility = _Visible;
+}
+
+// ---------------------------------- //
+/// Show the progression
+Void Show() {
+	SetVisibility(True);
+}
+
+// ---------------------------------- //
+/// Hide the progression
+Void Hide() {
+	SetVisibility(False);
+}
+
+// ---------------------------------- //
+/// Unload the library
+Void Unload() {
+	Layers::Destroy("Progression");
+	//Layers::Unload();
+}
+
+// ---------------------------------- //
+/** Load the library
+ *
+ *	@param	_Advanced				Use the advanced timeline
+ */
+Void Load(Boolean _Advanced) {
+	Unload();
+	
+	//Layers::Load();
+	declare LayerProgression <=> Layers::Create("Progression");
+	LayerProgression.ManialinkPage = Private_GetProgressionML(_Advanced);
+	
+	declare Page <=> LayerProgression.LocalPage;
+	declare L_Visibility for Page = False;
+	declare L_Step for Page = -1;
+	declare L_Position for Page = <0., 0.>;
+	L_Visibility = False;
+	L_Step = -1;
+	L_Position = <0., -90.> + Styles::GetSize2(<0., 10.>, Styles::CircleSize_Bottom());
+}

@@ -1,0 +1,2180 @@
+/** 
+ * Macroblock selection UI
+ */
+
+#Const Version		"2016-03-16"
+#Const ScriptName	"MacroblockSelection.Script.txt"
+
+#Include "TextLib" as TL
+#Include "Libs/Openplanet/Buttons.Script.txt" as Buttons
+#Include "Libs/Openplanet/MLEffects.Script.txt" as MLE
+#Include "Libs/Openplanet/Manialink3.Script.txt" as Manialink
+#Include "Libs/Openplanet/TMConsole/Volumes.Script.txt" as Volumes
+#Include "Libs/Openplanet/TMConsole/MapEditor/Utils.Script.txt" as Utils
+#Include "Libs/Openplanet/TMConsole/MapEditor/Layers.Script.txt" as Layers
+#Include "Libs/Openplanet/TMConsole/MapEditor/Macroblock.Script.txt" as Macroblock
+#Include "Libs/Openplanet/TMConsole/MapEditor/ThemePack.Script.txt" as ThemePack
+#Include "Libs/Openplanet/TMConsole/MapEditor/Sound.Script.txt" as Sound
+#Include "Libs/Openplanet/TMConsole/MapEditor/UI/Colors.Script.txt" as Colors
+#Include "Libs/Openplanet/TMConsole/MapEditor/UI/Stylesheet.Script.txt" as Styles
+
+// ---------------------------------- //
+// Constants
+// ---------------------------------- //
+#Const C_ImagesFolder "file://Media/Images/TMConsole/MapEditor/"	///< Path to the images
+#Const C_SoundsPath "file://Media/Sounds/TMConsole/MapEditor/"		///< Path to the sounds
+#Const C_SimpleMacroblocksNb	12									///< Number of macroblocks to display in the simple UI
+#Const C_SimpleFamiliesNb		8									///< Number of families to display in the simple UI
+#Const C_ExpertMacroblocksNb	8									///< Number of macroblocks to display in the expert UI
+#Const C_SticksActivation		0.8									///< Threshold before stick activation
+/// Modes
+#Const C_Mode_Track			0	///< Track mode
+#Const C_Mode_Terrain		1	///< Terrain mode
+#Const C_Mode_Decoration	2	///< Decoration mode
+/// Editor levels
+#Const C_Editor_Beginner	0
+#Const C_Editor_Advanced	1
+#Const C_Editor_Expert		2
+/// Events
+#Const C_Event_MacroblockHover	"LibMacroblockSelection_MacroblockHover"
+#Const C_Event_MacroblockClick	"LibMacroblockSelection_MacroblockClick"
+#Const C_Event_MacroblockNext	"LibMacroblockSelection_MacroblockNext"
+#Const C_Event_MacroblockPrev	"LibMacroblockSelection_MacroblockPrev"
+#Const C_Event_FamilyClick		"LibMacroblockSelection_FamilyClick"
+#Const C_Event_FamilyNext		"LibMacroblockSelection_FamilyNext"
+#Const C_Event_FamilyPrev		"LibMacroblockSelection_FamilyPrev"
+
+// ---------------------------------- //
+// Globales
+// ---------------------------------- //
+declare Ident[][Text] G_FamiliesMacroblocks; ///< List of macroblocks ids and families
+declare Integer[][Text] G_FamiliesPlacements; ///< List of placements and families
+declare Boolean[][Text] G_FamiliesAvailabilities; ///< List of availabilities and families
+declare Ident[] G_Macroblocks;		///<List of macroblocks
+declare Integer[] G_Placements;		///< List of placements
+declare Boolean[] G_Availabilities;	///< List of availability
+declare Text[] G_Families;			///< List of families
+declare Integer G_MacroblockUpdate;	///< Last macroblock update time
+declare Integer G_FamilyUpdate;		///< Last family update time
+declare Ident[Text] G_Macroblock;	///< Selected macroblock
+declare Integer[Text] G_Placement;	///< Selected placement
+declare Text G_Family;				///< Selected family
+declare Integer[Text] G_MacroblocksStart; ///< Macroblocks range starting value
+declare Boolean G_UseRosace;		///< Using the rosaces to select a macroblock
+
+// ---------------------------------- //
+// Functions
+// ---------------------------------- //
+// ---------------------------------- //
+// Private
+// ---------------------------------- //
+// ---------------------------------- //
+/** Get the macroblock selection manialink
+ *
+ *	@return							The manialink
+ */
+Text Private_GetMacroblockSelectionML() {
+	declare Macroblocks = "";
+	declare MacroblocksSizeX = Styles::GetHeaderSize2();
+	declare MacroblockSizeX = MacroblocksSizeX / C_SimpleMacroblocksNb;
+	declare MacroblockSizeY = 4.;
+	for (I, 0, C_SimpleMacroblocksNb+1) {
+		declare PosX = (I - 1) * Styles::GetSize2(<MacroblockSizeX, 0.>, Styles::CircleSize_Bottom()).X;
+		Macroblocks ^= """<frameinstance pos="{{{PosX}}} 0" modelid="Framemodel_Macroblock" />""";
+	}
+	
+	declare Families = "";
+	declare FamiliesSizeX = Styles::GetHeaderSize2();
+	declare FamilySizeX = FamiliesSizeX / C_SimpleFamiliesNb;
+	for (I, 0, C_SimpleFamiliesNb-1) {
+		declare PosX = I * Styles::GetSize2(<FamilySizeX, 0.>, Styles::CircleSize_Bottom()).X;
+		Families ^= """<frameinstance pos="{{{PosX}}} 0" modelid="Framemodel_Family" class="{{{MLE::ML_Class()}}}" {{{MLE::Data_Group()}}}="F{{{I}}}" />""";
+	}
+	
+	declare ButtonSize = 2.;
+	declare FullHeaderSizeX = Styles::GetHeaderSize2() + (2 * ButtonSize);
+	
+	declare PrevMacroblock = Buttons::Editor_PrevMacroblock();
+	declare NextMacroblock = Buttons::Editor_NextMacroblock();
+	declare PrevFamily = Buttons::Editor_PrevFamily();
+	declare NextFamily = Buttons::Editor_NextFamily();
+	declare Lock = C_ImagesFolder^"Menu/trial-lock.dds";
+	
+	return """
+<manialink version="3" name="MapEditor:Macroblock-selection">
+<stylesheet>
+	{{{Styles::Get()}}}
+</stylesheet>
+<framemodel id="Framemodel_Macroblock">
+	{{{Styles::BuildQuad(<0., 0., 0.>, <MacroblockSizeX, MacroblockSizeY>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), ["bgcolor" => Colors::GetColorML(Colors::Color_Black()), "scriptevents" => "1", "id" => "Quad_Select"])}}}
+	{{{Styles::BuildQuad(<MacroblockSizeX*0.5, -MacroblockSizeY*0.5, 1.>, <MacroblockSizeX-0.5, MacroblockSizeY-0.5>, Styles::CircleSize_Bottom(), Styles::Align_CenterCenter(), ["id" => "Quad_Macroblock"])}}}
+	{{{Styles::BuildQuad(<0., -MacroblockSizeY, 2.>, <MacroblockSizeX, MacroblockSizeY>, Styles::CircleSize_Bottom(), Styles::Align_LeftBottom(), ["class" => "turbo2-background-text", "id" => "Quad_LegendBackground"])}}}
+	{{{Styles::BuildLabel(<MacroblockSizeX, -MacroblockSizeY, 3.>, <MacroblockSizeX, MacroblockSizeY>, Styles::CircleSize_Bottom(), Styles::Align_RightBottom(), ["class" => "turbo2-text-legend", "id" => "Label_Macroblock"])}}}
+	<frame z-index="3" id="Frame_NotAvailable">
+		{{{Styles::BuildQuad(<0., 0., 0.>, <MacroblockSizeX, MacroblockSizeY>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), ["class" => "turbo2-macroblock-disabled"])}}}
+	</frame>
+	<frame z-index="4" id="Frame_Trial">
+		{{{Styles::BuildQuad(<0., 0., 0.>, <MacroblockSizeX, MacroblockSizeY>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), ["class" => "turbo2-macroblock-disabled"])}}}
+		{{{Styles::BuildQuad(<0., 0., 1.>, <MacroblockSizeX, MacroblockSizeY>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), ["image" => Lock, "colorize" => Colors::GetColorML(Colors::Color_LightGrey())])}}}
+	</frame>
+</framemodel>
+<framemodel id="Framemodel_Family">
+	{{{Styles::BuildLine(<0., 0., 0.>, <FamilySizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), Colors::Color_White(), False, False, ["scriptevents" => "1", MLE::Data_Triggers() => "T1", "class" => MLE::ML_Class(), "id" => "Quad_Family"])}}}
+	{{{Styles::BuildLabel(<FamilySizeX*0.5, -0.45, 2.>, <FamilySizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_CenterCenter2(), [MLE::Data_Effects() => """T1:{{{MLE::Effect_LabelHover()}}}""", "class" => """turbo2-text-category {{{MLE::ML_Class()}}}""", "id" => "Label_Family"])}}}
+</framemodel>
+<frame z-index="0" id="Frame_Global">
+	{{{Styles::BuildLabel(<0., 100., 0.>, <MacroblockSizeX, MacroblockSizeY>, Styles::CircleSize_Bottom(), Styles::Align_RightBottom(), ["class" => "turbo2-text-legend", "id" => "Label_LinesNumber"])}}}
+	<frame pos="0 -90" z-index="0" hidden="1" id="Frame_FamilySelection">
+		<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<-FullHeaderSizeX*0.5, 0., 0.>, Styles::CircleSize_Bottom()))}}}>
+			{{{Styles::BuildBackground(<0., 0., 0.>, <FullHeaderSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop())}}}
+			<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<ButtonSize, 0., 1.>, Styles::CircleSize_Bottom()))}}} id="Frame_Families">
+				{{{Families}}}
+			</frame>
+			<frame z-index="2">
+				{{{Styles::BuildQuad(<0., 0., 0.>, <ButtonSize, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), ["bgcolor" => Colors::GetColorML(Colors::Color_Black())])}}}
+				{{{Styles::BuildButton(PrevFamily, <ButtonSize*0.5, -0.5, 1.>, <ButtonSize-0.4, (ButtonSize*0.6)-0.4>, Styles::CircleSize_Bottom(), Styles::Align_CenterCenter(), ["scriptevents" => "1", "id" => "Button_PrevFamily"])}}}
+			</frame>
+			<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<ButtonSize+MacroblocksSizeX, 0., 3.>, Styles::CircleSize_Bottom()))}}}>
+				{{{Styles::BuildQuad(<0., 0., 0.>, <ButtonSize, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), ["bgcolor" => Colors::GetColorML(Colors::Color_Black())])}}}
+				{{{Styles::BuildButton(NextFamily, <ButtonSize*0.5, -0.5, 1.>, <ButtonSize-0.4, (ButtonSize*0.6)-0.4>, Styles::CircleSize_Bottom(), Styles::Align_CenterCenter(), ["scriptevents" => "1", "id" => "Button_NextFamily"])}}}
+			</frame>
+		</frame>
+	</frame>
+	<frame pos="0 -90" z-index="1" hidden="1" id="Frame_MacroblockSelection">
+		<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<-FullHeaderSizeX*0.5, 0., 0.>, Styles::CircleSize_Bottom()))}}}>
+			{{{Styles::BuildBackground(<0., 0., 0.>, <FullHeaderSizeX, MacroblockSizeY>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop())}}}
+			<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<ButtonSize, 0., 1.>, Styles::CircleSize_Bottom()))}}} {{{Styles::BuildSize2(Styles::GetSize2(<MacroblocksSizeX, MacroblockSizeY>, Styles::CircleSize_Bottom()))}}}>
+				<frame z-index="0" id="Frame_Macroblocks">
+					{{{Macroblocks}}}
+				</frame>
+			</frame>
+			<frame z-index="3">
+				{{{Styles::BuildQuad(<0., 0., 0.>, <ButtonSize, MacroblockSizeY>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), ["bgcolor" => Colors::GetColorML(Colors::Color_Black())])}}}
+				{{{Styles::BuildButton(PrevMacroblock, <ButtonSize*0.5, -MacroblockSizeY*0.5, 1.>, <ButtonSize-0.5, ButtonSize-0.5>, Styles::CircleSize_Bottom(), Styles::Align_CenterCenter(), ["scriptevents" => "1", "id" => "Button_PrevMacroblock"])}}}
+			</frame>
+			<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<ButtonSize+MacroblocksSizeX, 0., 4.>, Styles::CircleSize_Bottom()))}}}>
+				{{{Styles::BuildQuad(<0., 0., 0.>, <ButtonSize, MacroblockSizeY>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), ["bgcolor" => Colors::GetColorML(Colors::Color_Black())])}}}
+				{{{Styles::BuildButton(NextMacroblock, <ButtonSize*0.5, -MacroblockSizeY*0.5, 1.>, <ButtonSize-0.5, ButtonSize-0.5>, Styles::CircleSize_Bottom(), Styles::Align_CenterCenter(), ["scriptevents" => "1", "id" => "Button_NextMacroblock"])}}}
+			</frame>
+			<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<ButtonSize, 0., 5.>, Styles::CircleSize_Bottom()))}}}>
+				<frame z-index="2" id="Frame_Selector">
+					{{{Styles::BuildQuad(<MacroblockSizeX*0.5, -MacroblockSizeY*0.51, 1.>, <MacroblockSizeX+2.1, MacroblockSizeY+1.5>, Styles::CircleSize_Bottom(), Styles::Align_CenterCenter(), ["class" => "turbo2-selector"])}}}
+				</frame>
+			</frame>
+		</frame>
+	</frame>
+</frame>
+<script><!--
+#Include "TextLib" as TL
+#Include "MathLib" as ML
+{{{Manialink::DefaultIncludes()}}}
+{{{MLE::ML_Includes()}}}
+
+#Const C_ClickTick	100
+#Const C_InitTick	500
+
+declare Real G_MacroblocksPosY;
+declare Real G_FamiliesPosY;
+declare Integer[Text] G_LinesNumber;
+
+{{{Manialink::Animations(["EaseOutQuad"])}}}
+{{{Buttons::ML_Functions()}}}
+{{{MLE::ML_Functions()}}}
+
+Integer GetLinesNumber(Text _Value) {
+	if (G_LinesNumber.existskey(_Value)) return G_LinesNumber[_Value];
+	
+	declare Label_LinesNumber <=> (Page.GetFirstChild("Label_LinesNumber") as CMlLabel);
+	declare TranslatedValueSplit = TL::Split("|", TL::GetTranslatedText(_Value));
+	declare ValueWithoutLegend = TranslatedValueSplit[TranslatedValueSplit.count-1];
+	Label_LinesNumber.Value = ValueWithoutLegend;
+	G_LinesNumber[_Value] = Label_LinesNumber.ValueLineCount;
+	
+	return Label_LinesNumber.ValueLineCount;
+}
+
+Void SetVisibility(Boolean _Visible, Boolean _VisibleFamily) {
+	if (_Visible) {
+		LibManialink_Anim("<frame pos=\"0 "^G_MacroblocksPosY^"\" hidden=\"0\" id=\"Frame_MacroblockSelection\" />", 250, "EaseOutQuad");
+		if (_VisibleFamily) {
+			LibManialink_Anim("<frame pos=\"0 "^G_FamiliesPosY^"\" hidden=\"0\" id=\"Frame_FamilySelection\" />", 250, "EaseOutQuad");
+		} else {
+			LibManialink_Anim({{{Manialink::Inject("""<frame pos="0 -90" hidden="1" id="Frame_FamilySelection" />""")}}}, 250, "EaseOutQuad");
+		}
+	} else {
+		LibManialink_Anim({{{Manialink::Inject("""<frame pos="0 -90" hidden="1" id="Frame_MacroblockSelection" />""")}}}, 250, "EaseOutQuad");
+		LibManialink_Anim({{{Manialink::Inject("""<frame pos="0 -90" hidden="1" id="Frame_FamilySelection" />""")}}}, 250, "EaseOutQuad");
+	}
+}
+
+Void SetEditor(Integer _Editor) {
+	if (_Editor == {{{C_Editor_Beginner}}}) {
+		G_MacroblocksPosY = {{{Styles::Margin_Bottom()}}} + {{{Styles::GetSize2(<0., 4.>, Styles::CircleSize_Bottom()).Y}}};
+		G_FamiliesPosY = -90.;
+	} else if (_Editor == {{{C_Editor_Advanced}}}) {
+		G_MacroblocksPosY = {{{Styles::Margin_Bottom()}}} + {{{Styles::GetSize2(<0., 4.>, Styles::CircleSize_Bottom()).Y}}};
+		G_FamiliesPosY = {{{Styles::Margin_Bottom()}}} + {{{Styles::GetSize2(<0., 5.>, Styles::CircleSize_Bottom()).Y}}};
+	} else {
+		G_MacroblocksPosY = -90.;
+		G_FamiliesPosY = -90.;
+	}
+	
+	declare L_Visibility for Page = False;
+	declare L_VisibilityFamily for Page = False;
+	SetVisibility(L_Visibility, L_VisibilityFamily);
+}
+
+Void SelectFamily(Text _Family) {
+	declare L_Families for Page = Boolean[Text];
+	declare Frame_Families <=> (Page.GetFirstChild("Frame_Families") as CMlFrame);
+	declare Side = 0;
+	foreach (Key => Control in Frame_Families.Controls) {
+		declare Frame_Family <=> (Control as CMlFrame);
+		declare Quad_Family <=> (Frame_Family.GetFirstChild("Quad_Family") as CMlQuad);
+		declare FamilyName for Frame_Family = "";
+		declare FamilySelected for Frame_Family = False;
+		
+		if (Side == 0 && FamilySelected) {
+			Side = 1;
+		} else if (Side == 0 && FamilyName == _Family) {
+			Side = -1;
+		}
+		
+		if (FamilyName == _Family) {
+			FamilySelected = True;
+			declare Color for Quad_Family = -1;
+			if (Color != 0) {
+				LibManialink_Anim(
+					Quad_Family, {{{Manialink::Inject("""<quad bgcolor="{{{Colors::GetColorML(Colors::Color_White())}}}" />""")}}}, 250, "EaseOutQuad"
+				);
+				Color = 0;
+			}
+		} else {
+			FamilySelected = False;
+			declare Color for Quad_Family = -1;
+			if (Color != 1) {
+				LibManialink_Anim(
+					Quad_Family, {{{Manialink::Inject("""<quad bgcolor="{{{Colors::GetColorML(Colors::Color_Grey())}}}" />""")}}}, 250, "EaseOutQuad"
+				);
+				Color = 1;
+			}
+		}
+	}
+}
+
+Void SetFamilies(Boolean[Text] _Families) {
+	declare Families = Text[];
+	declare HasMacroblocks = Boolean[];
+	foreach (Family => HasOne in _Families) {
+		Families.add(Family);
+		HasMacroblocks.add(HasOne);
+	}
+	
+	declare Frame_Families <=> (Page.GetFirstChild("Frame_Families") as CMlFrame);
+	foreach (Key => Control in Frame_Families.Controls) {
+		declare Frame_Family <=> (Control as CMlFrame);
+		
+		if (Families.existskey(Key)) {
+			declare Family = Families[Key];
+			declare Control_Family <=> (Frame_Family.GetFirstChild("Quad_Family"));
+			declare Quad_Family <=> (Control_Family as CMlQuad);
+			declare SelectFamily for Quad_Family = "";
+			SelectFamily = Family;
+			
+			declare Label_Family <=> (Frame_Family.GetFirstChild("Label_Family") as CMlLabel);
+			Label_Family.Value = Family;
+			Frame_Family.Visible = True;
+			
+			LibMLEffects_EnableTriggers(Control_Family, HasMacroblocks[Key]);
+			
+			if (HasMacroblocks[Key]) Label_Family.Opacity = 1.;
+			else Label_Family.Opacity = 0.5;
+			
+			declare FamilyName for Frame_Family = "";
+			FamilyName = Family;
+		} else {
+			Frame_Family.Visible = False;
+			
+			declare FamilyName for Frame_Family = "";
+			FamilyName = "";
+		}
+	}
+	
+	declare L_Family for Page = "";
+	SelectFamily(L_Family);
+}
+
+Void SetMacroblocks(
+	Ident[] _MacroblocksIds,
+	Integer[] _MacroblocksKeys,
+	Boolean[] _MacroblocksAvailabilities,
+	Boolean[] _MacroblocksTrial,
+	Integer _Shift,
+	Integer _Selected,
+	Text[Ident] _MacroblocksNames,
+	Boolean _VisibilityName,
+	Integer[] _MacroblocksSelectKeys
+) {
+	declare Frame_Macroblocks <=> (Page.GetFirstChild("Frame_Macroblocks") as CMlFrame);
+	
+	foreach (Key => Control in Frame_Macroblocks.Controls) {
+		declare Frame_Macroblock <=> (Control as CMlFrame);
+		
+		if (_MacroblocksIds.existskey(Key)) {
+			declare MacroblockModelId = _MacroblocksIds[Key];
+			declare MacroblockKey = _MacroblocksKeys[Key];
+			declare CMacroblockModel MacroblockModel;
+			if (Editor.MacroblockModels.existskey(MacroblockModelId)) {
+				MacroblockModel <=> Editor.MacroblockModels[MacroblockModelId];
+			}
+			if (MacroblockModel != Null) {
+				declare Quad_Select <=> (Frame_Macroblock.GetFirstChild("Quad_Select") as CMlQuad);
+				declare Quad_Macroblock <=> (Frame_Macroblock.GetFirstChild("Quad_Macroblock") as CMlQuad);
+				declare Quad_LegendBackground <=> (Frame_Macroblock.GetFirstChild("Quad_LegendBackground") as CMlQuad);
+				declare Label_Macroblock <=> (Frame_Macroblock.GetFirstChild("Label_Macroblock") as CMlLabel);
+				declare Frame_NotAvailable <=> (Frame_Macroblock.GetFirstChild("Frame_NotAvailable") as CMlFrame);
+				declare Frame_Trial <=> (Frame_Macroblock.GetFirstChild("Frame_Trial") as CMlFrame);
+				
+				declare MacroblockAvailable for Quad_Select = False;
+				declare MacroblockSelectKey for Quad_Select = -1;
+				MacroblockSelectKey = _MacroblocksSelectKeys[Key];
+				MacroblockAvailable = False;
+				
+				if (_MacroblocksNames.existskey(MacroblockModelId)) {
+					Label_Macroblock.Value = _MacroblocksNames[MacroblockModelId];
+					Label_Macroblock.Visible = True;
+				} else if (_VisibilityName) {
+					Label_Macroblock.Value = "#"^TL::FormatInteger(MacroblockKey+1, 2);
+					Label_Macroblock.Visible = True;
+				} else {
+					Label_Macroblock.Value = "";
+					Label_Macroblock.Visible = False;
+				}
+				Quad_Macroblock.Image = MacroblockModel.Icon;
+				Frame_Macroblock.Visible = True;
+				
+				if (!_MacroblocksAvailabilities[Key]) {
+					MacroblockAvailable = False;
+					Frame_Trial.Visible = False;
+					Frame_NotAvailable.Visible = True;
+					Label_Macroblock.Value = "{{{
+						//L16N [MapEditor] The block that the player is trying to place is blocked by an element of the terrain (cliff, hill, river, ...)
+						_("Blocked by the terrain")
+					}}}";
+					Label_Macroblock.Visible = True;
+					Quad_LegendBackground.Visible = False;
+				} else if (!_MacroblocksTrial[Key]) {
+					MacroblockAvailable = False;
+					Frame_Trial.Visible = True;
+					Frame_NotAvailable.Visible = False;
+					Label_Macroblock.Value = "{{{
+						//L16N [MapEditor] The block is not available in the trial version
+						_("Locked in trial version")
+					}}}";
+					Label_Macroblock.Visible = True;
+					Quad_LegendBackground.Visible = False;
+				} else {
+					MacroblockAvailable = True;
+					Frame_Trial.Visible = False;
+					Frame_NotAvailable.Visible = False;
+					
+					if (Label_Macroblock.Value != "") {
+						declare LinesNb = GetLinesNumber(Label_Macroblock.Value);
+						if (LinesNb > 1) {
+							Quad_LegendBackground.Size.Y = (LinesNb * 3.3) + 1.;
+							Quad_LegendBackground.Visible = True;
+						} else {
+							Quad_LegendBackground.Visible = False;
+						}
+					} else {
+						Quad_LegendBackground.Visible = False;
+					}
+				}
+				
+				if (_MacroblocksAvailabilities[Key]) {
+					Frame_NotAvailable.Visible = False;
+				} else {
+					Frame_NotAvailable.Visible = True;
+					Label_Macroblock.Value = "{{{
+						//L16N [MapEditor] The block that the player is trying to place is blocked by an element of the terrain (cliff, hill, river, ...)
+						_("Blocked by the terrain")
+					}}}";
+					Label_Macroblock.Visible = True;
+				}
+			} else {
+				Frame_Macroblock.Visible = False;
+			}
+		} else {
+			Frame_Macroblock.Visible = False;
+		}
+	}
+	
+	declare Frame_MacroblockSelection <=> (Page.GetFirstChild("Frame_MacroblockSelection") as CMlFrame);
+	declare Frame_Selector <=> (Frame_MacroblockSelection.GetFirstChild("Frame_Selector") as CMlFrame);
+	if (_Selected >= 0) {
+		declare CursorPosX = _Selected * {{{Styles::GetSize2(<MacroblockSizeX, 0.>, Styles::CircleSize_Bottom()).X}}};
+		Frame_Selector.Visible = True;
+		LibManialink_Anim(Frame_Selector, "<quad pos=\""^CursorPosX^" 0\" />", 250, "EaseOutQuad");
+	} else {
+		Frame_Selector.Visible = False;
+	}
+	
+	if (_Shift < 0) {
+		Frame_Macroblocks.RelativePosition_V3.X = {{{-Styles::GetSize2(<MacroblockSizeX, 0.>, Styles::CircleSize_Bottom()).X}}};
+		LibManialink_Anim({{{Manialink::Inject("""<frame pos="0 0" id="Frame_Macroblocks" />""")}}}, 250, "EaseOutQuad");
+	} else if (_Shift > 0) {
+		Frame_Macroblocks.RelativePosition_V3.X = {{{Styles::GetSize2(<MacroblockSizeX, 0.>, Styles::CircleSize_Bottom()).X}}};
+		LibManialink_Anim({{{Manialink::Inject("""<frame pos="0 0" id="Frame_Macroblocks" />""")}}}, 250, "EaseOutQuad");
+	}
+}
+
+main() {
+	declare L_Visibility for Page = False;
+	declare L_VisibilityName for Page = False;
+	declare L_VisibilityFamily for Page = False;
+	declare L_FamiliesUpdate for Page = -1;
+	declare L_Families for Page = Boolean[Text];
+	declare L_Family for Page = "";
+	declare L_MacroblocksUpdate for Page = -1;
+	declare L_Macroblocks for Page = Ident[];
+	declare L_MacroblocksKeys for Page = Integer[];
+	declare L_MacroblocksAvailabilities for Page = Boolean[];
+	declare L_MacroblocksTrial for Page = Boolean[];
+	declare L_MacroblocksShift for Page = 0;
+	declare L_MacroblocksSelected for Page = -1;
+	declare L_MacroblocksNames for Page = Text[Ident];
+	declare L_MacroblocksSelectKeys for Page = Integer[];
+	declare L_Editor for Page = {{{C_Editor_Beginner}}};
+	
+	declare ClickFamily = 0;
+	declare ClickMacroblock = 0;
+	declare NextClickUpdate = -1;
+	
+	declare PrevVisibility = False;
+	declare PrevVisibilityName = False;
+	declare PrevVisibilityFamily = False;
+	declare PrevFamiliesUpdate = -1;
+	declare PrevFamily = "";
+	declare PrevMacroblocksUpdate = -1;
+	declare PrevEditor = -1;
+	
+	SetEditor(L_Editor);
+	LibButtons_Init();
+  LibMLEffects_Init();
+	
+	while (True) {
+		yield;
+		
+		LibManialink_AnimLoop();
+		LibButtons_Loop();
+    LibMLEffects_Loop();
+		
+		if (PrevVisibility != L_Visibility || PrevVisibilityFamily != L_VisibilityFamily) {
+			PrevVisibility = L_Visibility;
+			PrevVisibilityFamily = L_VisibilityFamily;
+			SetVisibility(L_Visibility, L_VisibilityFamily);
+		}
+		
+		if (PrevEditor != L_Editor) {
+			PrevEditor = L_Editor;
+			SetEditor(L_Editor);
+		}
+		
+		if (PrevVisibilityName != L_VisibilityName) {
+			PrevVisibilityName = L_VisibilityName;
+			SetMacroblocks(L_Macroblocks, L_MacroblocksKeys, L_MacroblocksAvailabilities, L_MacroblocksTrial, L_MacroblocksShift, L_MacroblocksSelected, L_MacroblocksNames, L_VisibilityName, L_MacroblocksSelectKeys);
+		}
+		
+		if (PrevFamiliesUpdate != L_FamiliesUpdate) {
+			PrevFamiliesUpdate = L_FamiliesUpdate;
+			SetFamilies(L_Families);
+		}
+		
+		if (PrevFamily != L_Family) {
+			PrevFamily = L_Family;
+			SelectFamily(L_Family);
+		}
+		
+		if (PrevMacroblocksUpdate != L_MacroblocksUpdate) {
+			PrevMacroblocksUpdate = L_MacroblocksUpdate;
+			SetMacroblocks(L_Macroblocks, L_MacroblocksKeys, L_MacroblocksAvailabilities, L_MacroblocksTrial, L_MacroblocksShift, L_MacroblocksSelected, L_MacroblocksNames, L_VisibilityName, L_MacroblocksSelectKeys);
+		}
+		
+		if (ClickFamily != 0 || ClickMacroblock != 0) {
+			if (!MouseLeftButton) {
+				ClickFamily = 0;
+				ClickMacroblock = 0;
+				NextClickUpdate = -1;
+			}
+			
+			if (NextClickUpdate > 0 && Now >= NextClickUpdate) {
+				if (ClickFamily > 0) {
+					SendCustomEvent("{{{C_Event_FamilyNext}}}", Text[]);
+					NextClickUpdate = Now + C_ClickTick;
+				} else if (ClickFamily < 0) {
+					SendCustomEvent("{{{C_Event_FamilyPrev}}}", Text[]);
+					NextClickUpdate = Now + C_ClickTick;
+				}
+				
+				if (ClickMacroblock > 0) {
+					SendCustomEvent("{{{C_Event_MacroblockNext}}}", Text[]);
+					NextClickUpdate = Now + C_ClickTick;
+				} else if (ClickMacroblock < 0) {
+					SendCustomEvent("{{{C_Event_MacroblockPrev}}}", Text[]);
+					NextClickUpdate = Now + C_ClickTick;
+				}
+			}
+		}
+		
+		foreach (Event in PendingEvents) {
+			if (Event.Type == CMlEvent::Type::MouseOver) {
+				if (Event.Control != Null && Event.ControlId == "Quad_Select") {
+					declare MacroblockAvailable for Event.Control = False;
+					if (MacroblockAvailable) {
+						declare MacroblockSelectKey for Event.Control = -1;
+						SendCustomEvent("{{{C_Event_MacroblockHover}}}", [TL::ToText(MacroblockSelectKey)]);
+					}
+				}
+			} else if (Event.Type == CMlEvent::Type::MouseClick) {
+				if (Event.Control != Null && Event.ControlId == "Quad_Select") {
+					declare MacroblockAvailable for Event.Control = False;
+					if (MacroblockAvailable) {
+						declare MacroblockSelectKey for Event.Control = -1;
+						SendCustomEvent("{{{C_Event_MacroblockClick}}}", [TL::ToText(MacroblockSelectKey)]);
+					}
+				} else if (Event.Control != Null && Event.ControlId == "Quad_Family") {
+					declare SelectFamily for Event.Control = "";
+					SendCustomEvent("{{{C_Event_FamilyClick}}}", [SelectFamily]);
+				} else if (Event.ControlId == "Button_PrevFamily") {
+					SendCustomEvent("{{{C_Event_FamilyPrev}}}", Text[]);
+					ClickFamily = -1;
+					NextClickUpdate = Now + C_InitTick;
+				} else if (Event.ControlId == "Button_NextFamily") {
+					SendCustomEvent("{{{C_Event_FamilyNext}}}", Text[]);
+					ClickFamily = 1;
+					NextClickUpdate = Now + C_InitTick;
+				} else if (Event.ControlId == "Button_PrevMacroblock") {
+					SendCustomEvent("{{{C_Event_MacroblockPrev}}}", Text[]);
+					NextClickUpdate = Now + C_InitTick;
+					ClickMacroblock = -1;
+				} else if (Event.ControlId == "Button_NextMacroblock") {
+					SendCustomEvent("{{{C_Event_MacroblockNext}}}", Text[]);
+					NextClickUpdate = Now + C_InitTick;
+					ClickMacroblock = 1;
+				}
+			}
+		}
+	}
+}
+--></script>
+</manialink>	
+""";
+}
+
+// ---------------------------------- //
+/** Get the rosace manialink
+ *
+ *	@return						The manialink
+ */
+Text Private_GetRosaceML() {
+	declare Rosace = "";
+	declare RosaceSize = <110., 110.>;
+	declare ItemsNb = C_ExpertMacroblocksNb;
+	declare ItemSize = <RosaceSize.X / 2., RosaceSize.Y / 2.>;
+	declare ItemAngle = 360. / ItemsNb;
+	declare IconSize = 20.;
+	declare LabelSize = 28.;
+	
+	for (I, 0, ItemsNb-1) {
+		declare Rot = I * ItemAngle;
+		Rosace ^= """
+<frame rot="{{{Rot}}}">
+	<quad z-index="0" size="{{{ItemSize.X}}} {{{ItemSize.Y}}}" halign="center" valign="bottom" opacity="0.3" colorize="000" image="{{{C_ImagesFolder}}}Menu/rosace-slice.dds" id="Quad_Background" />
+	<quad pos="0 {{{ItemSize.Y-IconSize+2.}}}" z-index="1" size="{{{IconSize}}} {{{IconSize}}}" rot="{{{-Rot}}}" class="center" id="Quad_Icon" />
+	<label pos="0 {{{ItemSize.Y-17.}}}" z-index="2" size="{{{LabelSize}}} 10" rot="{{{-Rot}}}" halign="center" valign="center2" class="turbo2-text-rosace" id="Label_Name" />
+</frame>
+""";
+	}
+	
+	declare NextFamilyPage = Buttons::Editor_RosaceNextFamily();
+	declare PrevFamilyPage = Buttons::Editor_RosacePrevFamily();
+	declare NextMacroblockPage = Buttons::Editor_RosaceNextMacroblock();
+	declare PrevMacroblockPage = Buttons::Editor_RosacePrevMacroblock();
+	declare LeftStick = Buttons::Editor_RosaceLeft();
+	declare RightStick = Buttons::Editor_RosaceRight();
+	
+	return """
+<manialink version="3" name="MapEditor:Rosace">
+<stylesheet>
+	{{{Styles::Get()}}}
+	<style class="center" halign="center" valign="center" />
+</stylesheet>
+<framemodel id="Framemodel_Rosace">
+	<quad z-index="0" size="{{{RosaceSize.X}}} {{{RosaceSize.Y}}}" halign="center" valign="center" image="{{{C_ImagesFolder}}}Menu/rosace-full.dds" colorize="{{{Colors::GetColorML(Colors::Color_White())}}}" />
+	<quad z-index="1" size="{{{RosaceSize.X}}} {{{RosaceSize.Y}}}" halign="center" valign="center" id="Quad_Background" />
+	<frame z-index="2" id="Frame_Items">
+		{{{Rosace}}}
+	</frame>
+	<quad z-index="3" size="{{{RosaceSize.X+1.}}} {{{RosaceSize.Y+1.}}}" halign="center" valign="center" image="{{{C_ImagesFolder}}}Menu/rosace-cache.dds" colorize="000" />
+	{{{Buttons::ML_Button("", ["z-index" => "4", "size" => """{{{RosaceSize.X*0.11}}} {{{RosaceSize.Y*0.11}}}""", "id" => "Quad_Stick"])}}}
+	<frame pos="0 {{{-RosaceSize.Y*0.5-2.}}}" z-index="5" hidden="1" id="Frame_Pager">
+		<label pos="0 0" z-index="3" size="{{{RosaceSize.X}}} 22" halign="center" class="turbo2-text-pager" id="Label_Page" />
+		{{{Buttons::ML_Button("", ["pos" => "-0.5 -7", "z-index" => "1", "size" => "6 6", "halign" => "right", "valign" => "top", "id" => "Quad_ButtonPrev"])}}}
+		{{{Buttons::ML_Button("", ["pos" => "0.5 -7", "z-index" => "1", "size" => "6 6", "halign" => "left", "valign" => "top", "id" => "Quad_ButtonNext"])}}}
+	</frame>
+	<frame z-index="6" id="Frame_Wheel">
+		<quad size="{{{RosaceSize.X*0.11}}} {{{RosaceSize.Y*0.11}}}" halign="center" valign="center" image="{{{Buttons::GetMouseWheelImage()}}}" />
+	</frame>
+	<quad z-index="7" size="{{{RosaceSize.X}}} {{{RosaceSize.Y}}}" class="center" scriptevents="1" id="Quad_Rosace" /><!--scriptevents="1"--> 
+</framemodel>
+<frame id="Frame_Global">
+	<frame pos="0 6" scale="0" hidden="1" id="Frame_Rosaces">
+		<frameinstance pos="-92 0" modelid="Framemodel_Rosace" id="Frame_RosaceLeft" />
+		<frameinstance pos="92 0" modelid="Framemodel_Rosace" id="Frame_RosaceRight" />
+	</frame>
+</frame>
+<script><!--
+#Include "TextLib" as TL
+#Include "MathLib" as ML
+{{{Manialink::DefaultIncludes()}}}
+
+#Const C_StickLeft	0
+#Const C_StickRight	1
+
+declare CMlFrame Frame_PagerLeft;
+declare CMlFrame Frame_PagerRight;
+declare CMlFrame Frame_WheelLeft;
+declare CMlFrame Frame_WheelRight;
+declare CMlFrame[] Frames_RosaceLeftItem;
+declare CMlFrame[] Frames_RosaceRightItem;
+
+declare Text[] G_Families;
+declare Text G_Family;
+declare Ident[] G_Macroblocks;
+declare Ident G_Macroblock;
+declare Integer[] G_Placements;
+declare Integer G_Placement;
+declare Boolean[] G_Availabilities;
+declare Boolean G_Availability;
+declare Integer G_SelectionLeft;
+declare Integer G_SelectionRight;
+declare Boolean G_ForceSelection;
+declare Integer G_PageLeft;
+declare Integer[Text] G_PageRight;
+declare CAudioSource G_SoundClick;
+declare CAudioSource G_SoundRosaceScale;
+
+{{{Manialink::Animations(["EaseOutQuad"])}}}
+{{{Buttons::ML_Functions()}}}
+
+Void UpdateFamilies() {
+	declare PageMax = (G_Families.count - 1) / {{{ItemsNb}}};
+	if (G_PageLeft > PageMax) G_PageLeft = PageMax;
+	else if (G_PageLeft < 0) G_PageLeft = 0;
+	declare StartIndex = G_PageLeft * {{{ItemsNb}}};
+	
+	// Do not update visual if not visible
+	declare L_RosaceVisible for Page = False;
+	if (!L_RosaceVisible) return;
+	
+	declare L_RosaceAvailabilities for Page = Boolean[][Text];
+	declare L_RosaceMode for Page = -1;
+	
+	foreach (Key => Frame_Item in Frames_RosaceLeftItem) {
+		declare Quad_Background <=> (Frame_Item.GetFirstChild("Quad_Background") as CMlQuad);
+		declare Quad_Icon <=> (Frame_Item.GetFirstChild("Quad_Icon") as CMlQuad);
+		declare Label_Name <=> (Frame_Item.GetFirstChild("Label_Name") as CMlLabel);
+		
+		declare FamilyKey = StartIndex + Key;
+		if (G_Families.existskey(FamilyKey)) {
+			declare Family = G_Families[FamilyKey];
+			
+			Quad_Background.Colorize = <0., 0., 0.>;
+			if (Key == G_SelectionLeft) Quad_Background.Opacity = 0.;
+			else Quad_Background.Opacity = 0.3;
+			
+			/*if (L_RosaceMode == {{{C_Mode_Track}}}) {
+				Quad_Icon.ImageUrl = "{{{C_ImagesFolder}}}Family/"^Family^".dds";
+				Quad_Icon.Opacity = 1.;
+				Quad_Icon.Visible = True;
+				Label_Name.Visible = False;
+			} else {*/
+				Label_Name.Opacity = 1.;
+				Label_Name.Value = Family;
+				Label_Name.Visible = True;
+				Quad_Icon.Visible = False;
+			//}
+			
+			if (L_RosaceAvailabilities.existskey(Family)) {
+				if (L_RosaceAvailabilities[Family].count <= 0) {
+					Label_Name.TextColor = {{{Colors::GetColor(Colors::Color_LightGrey())}}};
+				} else {
+					Label_Name.TextColor = {{{Colors::GetColor(Colors::Color_White())}}};
+				}
+			}
+		} else {
+			Quad_Icon.ImageUrl = "";
+			Quad_Background.Opacity = 0.3;
+			Label_Name.Value = "";
+		}
+	}
+}
+
+Void UpdateMacroblocks() {
+	declare PageMax = (G_Macroblocks.count - 1) / {{{ItemsNb}}};
+	if (G_PageRight[G_Family] > PageMax) G_PageRight[G_Family] = PageMax;
+	else if (G_PageRight[G_Family] < 0) G_PageRight[G_Family] = 0;
+	declare StartIndex = G_PageRight[G_Family] * {{{ItemsNb}}};
+	
+	// Do not update visual if not visible
+	declare L_RosaceVisible for Page = False;
+	if (!L_RosaceVisible) return;
+	
+	declare L_RosaceMode for Page = -1;
+	
+	foreach (Key => Frame_Item in Frames_RosaceRightItem) {
+		declare Quad_Icon <=> (Frame_Item.GetFirstChild("Quad_Icon") as CMlQuad);
+		declare Quad_Background <=> (Frame_Item.GetFirstChild("Quad_Background") as CMlQuad);
+		
+		declare MacroblockKey = StartIndex + Key;
+		if (G_Macroblocks.existskey(MacroblockKey)) {
+			declare MacroblockModelId = G_Macroblocks[MacroblockKey];
+			//declare Available = G_Availabilities[MacroblockKey];
+			declare CMacroblockModel MacroblockModel;
+			if (Editor.MacroblockModels.existskey(MacroblockModelId)) {
+				MacroblockModel <=> Editor.MacroblockModels[MacroblockModelId];
+			}
+			
+			if (MacroblockModel != Null) {
+				Quad_Icon.Image = MacroblockModel.Icon;
+				//if (Available || L_RosaceMode == {{{C_Mode_Terrain}}}) {
+					Quad_Background.Colorize = <0., 0., 0.>;
+					if (Key == G_SelectionRight) Quad_Background.Opacity = 0.75;
+					else Quad_Background.Opacity = 0.85;
+				/*} else {
+					Quad_Background.Colorize = <0.5, 0.1, 0.1>;
+					if (Key == G_SelectionRight) Quad_Background.Opacity = 0.75;
+					else Quad_Background.Opacity = 0.85;
+				}*/
+			} else {
+				Quad_Icon.Image = Null;
+				Quad_Background.Opacity = 0.85;
+				Quad_Background.Colorize = <0., 0., 0.>;
+			}
+		} else {
+			Quad_Icon.Image = Null;
+			Quad_Background.Opacity = 0.85;
+			Quad_Background.Colorize = <0., 0., 0.>;
+		}
+	}
+	
+	if (PageMax > 0) {
+		declare Label_Page <=> (Frame_PagerRight.GetFirstChild("Label_Page") as CMlLabel);
+		Label_Page.Value = (G_PageRight[G_Family] + 1)^"/"^(PageMax + 1);
+		Frame_PagerRight.Visible = True;
+	} else {
+		Frame_PagerRight.Visible = False;
+	}
+}
+
+Void Select(Integer _Side, Integer _Item, Boolean _PlaySound) {
+	declare Item = _Item;
+	declare FamilyKey = _Item;
+	declare MacroblockKey = _Item;
+	if (_Side == C_StickLeft) {
+		FamilyKey = (G_PageLeft * {{{ItemsNb}}}) + Item;
+		if (!G_Families.existskey(FamilyKey)) {
+			declare Max = (G_Families.count % {{{ItemsNb}}}) - 1;
+			if (Max > {{{ItemsNb-1}}}) Max = {{{ItemsNb-1}}};
+			if ({{{ItemsNb-1}}} - Item < Item - Max) Item = 0;
+			else Item = Max;
+			FamilyKey = (G_PageLeft * {{{ItemsNb}}}) + Item;
+		} else {
+			declare L_RosaceMacroblocks for Page = Ident[][Text];
+			declare Family = G_Families[FamilyKey];
+			if (L_RosaceMacroblocks.existskey(Family) && L_RosaceMacroblocks[Family].count <= 0) {
+				declare PrevFamily = "";
+				declare PrevFamilyKey = -1;
+				declare SelectedFamilyKey = -1;
+				declare NextFamily = "";
+				declare NextFamilyKey = -1;
+				declare Count = 0;
+				
+				Item = -1;
+				FamilyKey = -1;
+				
+				foreach (RosaceFamily => RosaceMacroblocks in L_RosaceMacroblocks) {
+					if (RosaceFamily == Family) {
+						SelectedFamilyKey = Count;
+						Count += 1;
+					} else if (RosaceMacroblocks.count > 0) {
+						if (SelectedFamilyKey < 0) {
+							PrevFamily = RosaceFamily;
+							PrevFamilyKey = Count;
+						} else if (NextFamilyKey < 0) {
+							NextFamily = RosaceFamily;
+							NextFamilyKey = Count;
+							break;
+						}
+						Count += 1;
+					} else {
+						Count += 1;
+					}
+				}
+				
+				if (PrevFamilyKey >= 0 && NextFamilyKey >= 0) {
+					if (SelectedFamilyKey - PrevFamilyKey >= NextFamilyKey - SelectedFamilyKey) {
+						if (G_Families.keyof(NextFamily) >= 0) FamilyKey = G_Families.keyof(NextFamily);
+					} else {
+						if (G_Families.keyof(PrevFamily) >= 0) FamilyKey = G_Families.keyof(PrevFamily);
+					}
+				} else if (PrevFamilyKey >= 0) {
+					if (G_Families.keyof(PrevFamily) >= 0) FamilyKey = G_Families.keyof(PrevFamily);
+				} else if (NextFamilyKey >= 0) {
+					if (G_Families.keyof(NextFamily) >= 0) FamilyKey = G_Families.keyof(NextFamily);
+				}
+				Item = FamilyKey;
+			}
+		}
+	} else if (_Side == C_StickRight) {
+		MacroblockKey = (G_PageRight[G_Family] * {{{ItemsNb}}}) + Item;
+		if (!G_Macroblocks.existskey(MacroblockKey)) {
+			declare Max = (G_Macroblocks.count % {{{ItemsNb}}}) - 1;
+			if (Max > {{{ItemsNb-1}}}) Max = {{{ItemsNb-1}}};
+			if ({{{ItemsNb-1}}} - Item < Item - Max) Item = 0;
+			else Item = Max;
+			MacroblockKey = (G_PageRight[G_Family] * {{{ItemsNb}}}) + Item;
+		}
+	}
+	
+	if (!G_ForceSelection) {
+		if (
+			(_Side == C_StickLeft && G_SelectionLeft == Item) ||
+			(_Side == C_StickRight && G_SelectionRight == Item)
+		) {
+			return;
+		}
+	}
+	
+	if (_PlaySound) {
+		G_SoundClick.Stop();
+		G_SoundClick.Play();
+	}
+	
+	G_ForceSelection = False;
+	
+	declare CMlFrame Frame_NewItem;
+	declare CMlFrame Frame_OldItem;
+	
+	if (_Side == C_StickLeft) {
+		if (Frames_RosaceLeftItem.existskey(G_SelectionLeft)) Frame_OldItem <=> Frames_RosaceLeftItem[G_SelectionLeft];
+		if (Frames_RosaceLeftItem.existskey(Item)) Frame_NewItem <=> Frames_RosaceLeftItem[Item];
+		G_SelectionLeft = Item;
+		
+		declare L_RosaceMacroblocks for Page = Ident[][Text];
+		declare L_RosacePlacements for Page = Integer[][Text];
+		declare L_RosaceAvailabilities for Page = Boolean[][Text];
+		declare L_RosaceFamilyUpdate for Page = -1;
+		declare L_RosaceFamily for Page = "";
+		
+		G_Macroblocks.clear();
+		G_Placements.clear();
+		G_Availabilities.clear();
+		G_Macroblock = NullId;
+		G_Placement = -1;
+		G_Availability = False;
+		
+		if (G_Families.existskey(FamilyKey)) {
+			G_Family = G_Families[FamilyKey];
+			if (L_RosaceMacroblocks.existskey(G_Family)) {
+				G_Macroblocks = L_RosaceMacroblocks[G_Family];
+				G_Placements = L_RosacePlacements[G_Family];
+				G_Availabilities = L_RosaceAvailabilities[G_Family];
+			}
+			
+			G_ForceSelection = True;
+			Select(C_StickRight, G_SelectionRight, _PlaySound);
+			
+			L_RosaceFamily = G_Family;
+			L_RosaceFamilyUpdate = Now;
+		}
+		
+		UpdateFamilies();
+		UpdateMacroblocks();
+	} else if (_Side == C_StickRight) {
+		if (Frames_RosaceRightItem.existskey(G_SelectionRight)) Frame_OldItem <=> Frames_RosaceRightItem[G_SelectionRight];
+		if (Frames_RosaceRightItem.existskey(Item)) Frame_NewItem <=> Frames_RosaceRightItem[Item];
+		G_SelectionRight = Item;
+		
+		declare L_RosaceMacroblockUpdate for Page = -1;
+		declare L_RosaceMacroblock for Page = NullId;
+		declare L_RosacePlacement for Page = -1;
+		
+		if (G_Macroblocks.existskey(MacroblockKey)) {
+			G_Macroblock = G_Macroblocks[MacroblockKey];
+			G_Placement = G_Placements[MacroblockKey];
+			G_Availability = G_Availabilities[MacroblockKey];
+		} else if (G_Macroblocks.count > 0) {
+			G_Macroblock = G_Macroblocks[0];
+			G_Placement = G_Placements[0];
+			G_Availability = G_Availabilities[0];
+		} else {
+			G_Macroblock = NullId;
+			G_Placement = -1;
+			G_Availability = False;
+		}
+		
+		L_RosaceMacroblock = G_Macroblock;
+		L_RosacePlacement = G_Placement;
+		L_RosaceMacroblockUpdate = Now;
+		
+		UpdateMacroblocks();
+	}
+	
+	/*if (Frame_OldItem != Null) {
+		LibManialink_AnimStop(Frame_OldItem);
+		LibManialink_Anim(Frame_OldItem, {{{Manialink::Inject("""<frame scale="1." />""")}}}, 250, "EaseOutQuad");
+	}
+	
+	if (Frame_NewItem != Null) {
+		LibManialink_AnimStop(Frame_NewItem);
+		LibManialink_Anim(Frame_NewItem, {{{Manialink::Inject("""<frame scale="1.1" />""")}}}, 250, "EaseOutQuad");
+	}*/
+}
+
+Void NextPage(Integer _Side) {
+	/*if (_Side == C_StickLeft) {
+		G_PageLeft += 1;
+		declare PageMax = (G_Families.count - 1) / {{{ItemsNb}}};
+		if (G_PageLeft > PageMax || G_PageLeft < 0) G_PageLeft = 0;
+		G_ForceSelection = True;
+		Select(C_StickLeft, G_SelectionLeft, True);
+		UpdateFamilies();
+	} else*/ if (_Side == C_StickRight) {
+		G_PageRight[G_Family] += 1;
+		declare PageMax = (G_Macroblocks.count - 1) / {{{ItemsNb}}};
+		if (G_PageRight[G_Family] > PageMax || G_PageRight[G_Family] < 0) G_PageRight[G_Family] = 0;
+		G_ForceSelection = True;
+		Select(C_StickRight, G_SelectionRight, True);
+		UpdateMacroblocks();
+	}
+}
+
+Void PrevPage(Integer _Side) {
+	/*if (_Side == C_StickLeft) {
+		G_PageLeft -= 1;
+		declare PageMax = (G_Families.count - 1) / {{{ItemsNb}}};
+		if (G_PageLeft > PageMax || G_PageLeft < 0) G_PageLeft = PageMax;
+		G_ForceSelection = True;
+		Select(C_StickLeft, G_SelectionLeft, True);
+		UpdateFamilies();
+	} else*/ if (_Side == C_StickRight) {
+		G_PageRight[G_Family] -= 1;
+		declare PageMax = (G_Macroblocks.count - 1) / {{{ItemsNb}}};
+		if (G_PageRight[G_Family] > PageMax || G_PageRight[G_Family] < 0) G_PageRight[G_Family] = PageMax;
+		G_ForceSelection = True;
+		Select(C_StickRight, G_SelectionRight, True);
+		UpdateMacroblocks();
+	}
+}
+
+Void SelectAngle(Integer _Side, Real _Angle, Boolean _PlaySound) {
+	declare Selection = ML::FloorInteger((ML::NearestInteger(180 + _Angle + {{{ItemAngle/2.}}}) % 360) / {{{ItemAngle}}});
+	Select(_Side, Selection, _PlaySound);
+}
+
+Void MoveSelector(Integer _Stick, Vec2 _Position) {
+	declare Angle = ML::OrientedAngle(<0., 0., -1.>, <_Position.X, 0., _Position.Y>) * (180. / ML::PI());
+	SelectAngle(_Stick, Angle, True);
+}
+
+Void SetContent(Ident[][Text] _Macroblocks, Integer[][Text] _Placements, Boolean[][Text] _Availabilities) {
+	G_Families.clear();
+	G_Macroblocks.clear();
+	G_Placements.clear();
+	G_Availabilities.clear();
+	
+	if (G_Family != "" && !_Macroblocks.existskey(G_Family)) {
+		G_Family = "";
+	}
+	
+	foreach (Family => AvailableMacroblocks in _Macroblocks) {
+		if (G_Family == "") G_Family = Family;
+		if (!G_PageRight.existskey(Family)) G_PageRight[Family] = 0;
+		
+		if (Family == G_Family) {
+			G_Macroblocks = AvailableMacroblocks;
+			G_Placements = _Placements[Family];
+			G_Availabilities = _Availabilities[Family];
+		}
+		
+		G_Families.add(Family);
+	}
+	
+	if (G_Macroblocks.existskey(G_SelectionRight)) {
+		G_Macroblock = G_Macroblocks[G_SelectionRight];
+		G_Placement = G_Placements[G_SelectionRight];
+		G_Availability = G_Availabilities[G_SelectionRight];
+	} else if (G_Macroblocks.count > 0) {
+		G_Macroblock = G_Macroblocks[0];
+		G_Placement = G_Placements[0];
+		G_Availability = G_Availabilities[0];
+	} else {
+		G_Macroblock = NullId;
+		G_Placement = -1;
+		G_Availability = False;
+	}
+	
+	UpdateFamilies();
+	
+	G_ForceSelection = True;
+	Select(C_StickLeft, G_Families.keyof(G_Family), False);
+	Select(C_StickRight, G_Macroblocks.keyof(G_Macroblock), False);
+}
+
+Void SetMode(Integer _Mode) {
+	declare Frame_Rosaces <=> (Page.GetFirstChild("Frame_Rosaces") as CMlFrame);
+	declare Frame_RosaceLeft <=> (Frame_Rosaces.GetFirstChild("Frame_RosaceLeft") as CMlFrame);
+	
+	if (_Mode == {{{C_Mode_Track}}}) {
+		Frame_PagerLeft.Visible = True;
+	} else {
+		Frame_PagerLeft.Visible = False;
+	}
+	
+	UpdateFamilies();
+	UpdateMacroblocks();
+}
+
+Void ForceSelection(Integer _Family, Integer _Macroblock) {
+	declare LeftAngle = (_Family % {{{ItemsNb}}}) * {{{ItemAngle}}} - 180.;
+	G_PageLeft = _Family / {{{ItemsNb}}};
+	G_ForceSelection = True;
+	SelectAngle(C_StickLeft, LeftAngle, False);
+	UpdateFamilies();
+	
+	declare RightAngle = (_Macroblock % {{{ItemsNb}}}) * {{{ItemAngle}}} - 180.;
+	G_PageRight[G_Family] = _Macroblock / {{{ItemsNb}}};
+	G_ForceSelection = True;
+	SelectAngle(C_StickRight, RightAngle, False);
+	UpdateMacroblocks();
+}
+
+Void SetStyle(Text _Name, Integer _PageCurrent, Integer _PageMax) {
+	declare Label_Page <=> (Frame_PagerLeft.GetFirstChild("Label_Page") as CMlLabel);
+	Label_Page.Value = TL::Compose("%1 %2", _("")^_Name, _PageCurrent^"/"^_PageMax);
+	
+	/*
+	declare Frame_PageList <=> (Frame_PagerLeft.GetFirstChild("Frame_PageList") as CMlFrame);
+	if (_PageMax > 1) {
+		declare SizeX = (_PageMax * {{{2.}}}) + ((_PageMax - 1) * {{{2.}}});
+		Frame_PageList.RelativePosition_V3.X = SizeX * -0.5;
+		foreach (Key => Control in Frame_PageList.Controls) {
+			declare Quad_Page <=> (Control as CMlQuad);
+			
+			if (Key < _PageMax) {
+				if (Key+1 == _PageCurrent) Quad_Page.Colorize = {{{Colors::GetColor(Colors::Color_White())}}};
+				else Quad_Page.Colorize = {{{Colors::GetColor(Colors::Color_Grey())}}};
+				Quad_Page.Visible = True;
+			} else {
+				Quad_Page.Visible = False;
+			}
+		}
+		Frame_PageList.Visible = True;
+	} else {
+		Frame_PageList.Visible = False;
+	}
+	*/
+	
+	declare Frame_Rosaces <=> (Page.GetFirstChild("Frame_Rosaces") as CMlFrame);
+	declare Frame_RosaceLeft <=> (Frame_Rosaces.GetFirstChild("Frame_RosaceLeft") as CMlFrame);
+	declare Quad_Background <=> (Frame_RosaceLeft.GetFirstChild("Quad_Background") as CMlQuad);
+	declare NameSplit = TL::Split("|", _Name);
+	declare Name = NameSplit[NameSplit.count-1];
+	// Custom background -> Quad_Background.ImageUrl = "{{{C_ImagesFolder}}}Menu/rosace-bg-"^TL::ToLowerCase(Editor.Map.CollectionName)^"-"^TL::ToLowerCase(TL::ReplaceChars(Name, " ", ""))^".dds";
+	Quad_Background.ImageUrl = "{{{C_ImagesFolder}}}Menu/rosace-bg.dds";
+}
+
+main() {
+	LibButtons_Init();
+	
+	declare Frame_Rosaces <=> (Page.GetFirstChild("Frame_Rosaces") as CMlFrame);
+	declare Frame_RosaceLeft <=> (Frame_Rosaces.GetFirstChild("Frame_RosaceLeft") as CMlFrame);
+	declare Frame_RosaceRight <=> (Frame_Rosaces.GetFirstChild("Frame_RosaceRight") as CMlFrame);
+	declare Quad_RosaceLeft <=> (Frame_RosaceLeft.GetFirstChild("Quad_Rosace") as CMlQuad);
+	declare Quad_RosaceRight <=> (Frame_RosaceRight.GetFirstChild("Quad_Rosace") as CMlQuad);
+	declare Quad_ButtonLeftNext <=> (Frame_RosaceLeft.GetFirstChild("Quad_ButtonNext") as CMlFrame);
+	declare Quad_ButtonLeftPrev <=> (Frame_RosaceLeft.GetFirstChild("Quad_ButtonPrev") as CMlFrame);
+	declare Quad_ButtonRightNext <=> (Frame_RosaceRight.GetFirstChild("Quad_ButtonNext") as CMlFrame);
+	declare Quad_ButtonRightPrev <=> (Frame_RosaceRight.GetFirstChild("Quad_ButtonPrev") as CMlFrame);
+	Frame_PagerLeft <=> (Frame_RosaceLeft.GetFirstChild("Frame_Pager") as CMlFrame);
+	Frame_PagerRight <=> (Frame_RosaceRight.GetFirstChild("Frame_Pager") as CMlFrame);
+	Frame_WheelLeft <=> (Frame_RosaceLeft.GetFirstChild("Frame_Wheel") as CMlFrame);
+	Frame_WheelRight <=> (Frame_RosaceRight.GetFirstChild("Frame_Wheel") as CMlFrame);
+	
+	Quad_RosaceLeft.Visible = False;
+	Quad_RosaceRight.Visible = False;
+	
+	LibButtons_SetAction(Quad_ButtonLeftNext, "{{{NextFamilyPage}}}");
+	LibButtons_SetAction(Quad_ButtonLeftPrev, "{{{PrevFamilyPage}}}");
+	LibButtons_SetAction(Quad_ButtonRightNext, "{{{NextMacroblockPage}}}");
+	LibButtons_SetAction(Quad_ButtonRightPrev, "{{{PrevMacroblockPage}}}");
+	
+	for (I, 0, 1) {
+		declare CMlFrame Frame_Rosace;
+		if (I == C_StickLeft) Frame_Rosace <=> Frame_RosaceLeft;
+		else Frame_Rosace <=> Frame_RosaceRight;
+		
+		declare Frame_Items <=> (Frame_Rosace.GetFirstChild("Frame_Items") as CMlFrame);
+		foreach (Control in Frame_Items.Controls) {
+			if (I == C_StickLeft) Frames_RosaceLeftItem.add((Control as CMlFrame));
+			else Frames_RosaceRightItem.add((Control as CMlFrame));
+		}
+		
+		declare Quad_Stick <=> (Frame_Rosace.GetFirstChild("Quad_Stick") as CMlFrame);
+		if (I == 0) LibButtons_SetAction(Quad_Stick, "{{{LeftStick}}}");
+		else LibButtons_SetAction(Quad_Stick, "{{{RightStick}}}");
+	}
+	
+	G_Families.clear();
+	G_Family = "";
+	G_Macroblocks.clear();
+	G_Macroblock = NullId;
+	G_Placements.clear();
+	G_Availabilities.clear();
+	G_Placement = -1;
+	G_Availability = False;
+	G_ForceSelection = True;
+	G_PageLeft = 0;
+	G_PageRight[""] = 0;
+	G_SelectionLeft = -1;
+	G_SelectionRight = -1;
+	
+	G_SoundClick = Audio.CreateSound(
+		"{{{C_SoundsPath}}}SFX_UI_ClicRosace.wav",
+		{{{Volumes::GetVolumedB("EditorBlockSelection")}}},
+		False,
+		False,
+		False
+	);
+	G_SoundClick.PanRadiusLfe = {{{Volumes::GetPanRadiusLfe("MenuUISpreadLarge")}}};
+	G_SoundRosaceScale = Audio.CreateSound(
+		"{{{C_SoundsPath}}}SFX_UI_Pop-Up_InterfaceSmall.wav",
+		{{{Volumes::GetVolumedB("EditorBlockHelp")}}},
+		False,
+		False,
+		False
+	);
+	G_SoundRosaceScale.PanRadiusLfe = {{{Volumes::GetPanRadiusLfe("MenuUISpreadLarge")}}};
+		
+	SelectAngle(C_StickLeft, 0., False);
+	SelectAngle(C_StickRight, 0., False);
+	
+	declare L_Visibility for Page = False;
+	declare L_RosaceContentUpdate for Page = -1;
+	declare L_RosaceMacroblocks for Page = Ident[][Text];
+	declare L_RosacePlacements for Page = Integer[][Text];
+	declare L_RosaceAvailabilities for Page = Boolean[][Text];
+	declare L_RosaceVisible for Page = False;
+	declare L_RosaceMode for Page = -1;
+	declare L_ForceUpdate for Page = -1;
+	declare L_ForceFamily for Page = -1;
+	declare L_ForceMacroblock for Page = -1;
+	declare L_StyleUpdate for Page = -1;
+	declare L_StyleName for Page = "";
+	declare L_StylePageCurrent for Page = 0;
+	declare L_StylePageMax for Page = 0;
+	declare L_ForceClose for Page = -1;
+	L_RosaceVisible = False;
+	
+	declare UIMacroblockSelection_RosaceVisible for This = False;
+	
+	declare RosaceLeftActive = False;
+	declare RosaceRightActive = False;
+	declare ActiveClic = False;
+	declare RosaceLeftLock = False;
+	declare RosaceCanClick = -1;
+	
+	declare PrevRosaceContentUpdate = -1;
+	declare PrevForceUpdate = -1;
+	declare PrevRosaceMode = -1;
+	declare PrevStyleUpdate = -1;
+	declare PrevMouseRightButton = MouseRightButton;
+	declare PrevForceClose = -1;
+	
+	while (True) {
+		yield;
+		
+		LibManialink_AnimLoop();
+		LibButtons_Loop();
+		
+		if (PrevRosaceContentUpdate != L_RosaceContentUpdate) {
+			PrevRosaceContentUpdate = L_RosaceContentUpdate;
+			SetContent(L_RosaceMacroblocks, L_RosacePlacements, L_RosaceAvailabilities);
+		}
+		
+		if (PrevRosaceMode != L_RosaceMode) {
+			PrevRosaceMode = L_RosaceMode;
+			SetMode(L_RosaceMode);
+		}
+		
+		if (PrevStyleUpdate != L_StyleUpdate) {
+			PrevStyleUpdate = L_StyleUpdate;
+			SetStyle(L_StyleName, L_StylePageCurrent, L_StylePageMax);
+		}
+		
+		if (PrevMouseRightButton != MouseRightButton) {
+			if (L_Visibility && PrevMouseRightButton) {
+				if (!L_RosaceVisible) ActiveClic = True;
+				else ActiveClic = False;
+			}
+			PrevMouseRightButton = MouseRightButton;
+		}
+		
+		if (!L_Visibility && ActiveClic) ActiveClic = False;
+		
+		declare DistanceLeft = ML::Distance(<MouseX, MouseY, 0.>, <Quad_RosaceLeft.AbsolutePosition_V3.X, Quad_RosaceLeft.AbsolutePosition_V3.Y, 0.>);
+		declare DistanceRight = ML::Distance(<MouseX, MouseY, 0.>, <Quad_RosaceRight.AbsolutePosition_V3.X, Quad_RosaceRight.AbsolutePosition_V3.Y, 0.>);
+		
+		foreach (Event in PendingEvents) {
+			if (Event.Type == CMlEvent::Type::MouseOver) {
+				if (Event.Control.Id == Quad_RosaceLeft.Id) {
+					RosaceLeftActive = True;
+					RosaceRightActive = False;
+				} else if (Event.Control.Id == Quad_RosaceRight.Id) {
+					RosaceLeftActive = False;
+					RosaceRightActive = True;
+				}
+			} else if (Event.Type == CMlEvent::Type::MouseOut) {
+				if (Event.Control.Id == Quad_RosaceLeft.Id) {
+					RosaceLeftActive = False;
+				} else if (Event.Control.Id == Quad_RosaceRight.Id) {
+					RosaceRightActive = False;
+				}
+			} else if (Event.Type == CMlEvent::Type::MouseClick) {
+				if (Event.Control.Id == Quad_RosaceLeft.Id) {
+					if (DistanceLeft <= Quad_RosaceLeft.Size.X * 0.5) {
+						if (!RosaceLeftLock) {
+							RosaceLeftLock = True;
+						} else {
+							declare Position = <MouseX - Quad_RosaceLeft.AbsolutePosition_V3.X, 0., MouseY - Quad_RosaceLeft.AbsolutePosition_V3.Y>;
+							declare Angle = ML::OrientedAngle(<0., 0., -1.>, Position) * (180. / ML::PI());
+							declare Selection = ML::FloorInteger((ML::NearestInteger(180 + Angle + {{{ItemAngle/2.}}}) % 360) / {{{ItemAngle}}});
+							if (G_SelectionLeft == Selection) {
+								RosaceLeftLock = False;
+							} else {
+								if (RosaceLeftActive && L_RosaceVisible && ActiveClic) {
+									MoveSelector(C_StickLeft, <MouseX - Quad_RosaceLeft.AbsolutePosition_V3.X, MouseY - Quad_RosaceLeft.AbsolutePosition_V3.Y>);
+								}
+							}
+						}
+					}
+				} else if (Event.Control.Id == Quad_RosaceRight.Id) {
+					if (DistanceRight <= Quad_RosaceRight.Size.X * 0.5) {
+						ActiveClic = False;
+						SendCustomEvent("{{{C_Event_MacroblockClick}}}", ["-1"]);
+					}
+				}
+			}
+		}
+		
+		declare WheelLeftVisible = LibButtons_IsKeyboard() && RosaceLeftActive && DistanceLeft <= Quad_RosaceLeft.Size.X * 0.5 && Frame_PagerLeft.Visible;
+		declare WheelRightVisible = LibButtons_IsKeyboard() && RosaceRightActive && DistanceRight <= Quad_RosaceRight.Size.X * 0.5 && Frame_PagerRight.Visible;
+		if (Frame_WheelLeft.Visible != WheelLeftVisible) Frame_WheelLeft.Visible = WheelLeftVisible;
+		if (Frame_WheelRight.Visible != WheelRightVisible) Frame_WheelRight.Visible = WheelRightVisible;
+		
+		declare ActiveRight = False;
+		declare ActiveLeft = False;
+		if (L_Visibility) {
+			if (RosaceLeftActive && !RosaceLeftLock) {
+				if (L_RosaceVisible && ActiveClic && DistanceLeft <= Quad_RosaceLeft.Size.X * 0.5) {
+					MoveSelector(C_StickLeft, <MouseX - Quad_RosaceLeft.AbsolutePosition_V3.X, MouseY - Quad_RosaceLeft.AbsolutePosition_V3.Y>);
+				}
+				//ActiveLeft = True;
+			}
+			
+			if (RosaceRightActive) {
+				if (L_RosaceVisible && ActiveClic && DistanceRight <= Quad_RosaceRight.Size.X * 0.5) {
+					MoveSelector(C_StickRight, <MouseX - Quad_RosaceRight.AbsolutePosition_V3.X, MouseY - Quad_RosaceRight.AbsolutePosition_V3.Y>);
+				}
+				//ActiveRight = True;
+			}
+			
+			if (Editor != Null && Editor.UserMgr != Null && Editor.UserMgr.MainUserPad != Null && Editor.UserMgr.MainUserPad.Type != CInputPad::EPadType::Keyboard) {
+				if (ML::Sqrt((Editor.UserMgr.MainUserPad.LeftStickX * Editor.UserMgr.MainUserPad.LeftStickX) + (Editor.UserMgr.MainUserPad.LeftStickY * Editor.UserMgr.MainUserPad.LeftStickY)) > {{{C_SticksActivation}}}) {
+					if (L_RosaceVisible) {
+						MoveSelector(C_StickLeft, <Editor.UserMgr.MainUserPad.LeftStickX, -Editor.UserMgr.MainUserPad.LeftStickY>);
+						ActiveClic = False;
+					}
+					ActiveLeft = True;
+				}
+				
+				if (ML::Sqrt((Editor.UserMgr.MainUserPad.RightStickX * Editor.UserMgr.MainUserPad.RightStickX) + (Editor.UserMgr.MainUserPad.RightStickY * Editor.UserMgr.MainUserPad.RightStickY)) > {{{C_SticksActivation}}}) {
+					if (L_RosaceVisible) {
+						MoveSelector(C_StickRight, <Editor.UserMgr.MainUserPad.RightStickX, -Editor.UserMgr.MainUserPad.RightStickY>);
+						ActiveClic = False;
+					}
+					ActiveRight = True;
+				}
+			} else {
+				foreach (Pad in Input.Pads) {
+					if (Pad.Type == CInputPad::EPadType::Keyboard) continue;
+					
+					if (ML::Sqrt((Pad.LeftStickX * Pad.LeftStickX) + (Pad.LeftStickY * Pad.LeftStickY)) > {{{C_SticksActivation}}}) {
+						if (L_RosaceVisible) {
+							MoveSelector(C_StickLeft, <Pad.LeftStickX, -Pad.LeftStickY>);
+							ActiveClic = False;
+						}
+						ActiveLeft = True;
+					}
+					
+					if (ML::Sqrt((Pad.RightStickX * Pad.RightStickX) + (Pad.RightStickY * Pad.RightStickY)) > {{{C_SticksActivation}}}) {
+						if (L_RosaceVisible) {
+							MoveSelector(C_StickRight, <Pad.RightStickX, -Pad.RightStickY>);
+							ActiveClic = False;
+						}
+						ActiveRight = True;
+					}
+				}
+			}
+		}
+		
+		if (L_RosaceVisible) {
+			foreach (Event in Editor.PendingEvents) {
+				if (Event.Type == CEditorPluginEvent::Type::EditorInput) {
+					if (Event.IsFromMouse) {
+						if (RosaceRightActive && DistanceRight <= Quad_RosaceRight.Size.X * 0.5) {
+							switch (Event.Input) {
+								case CEditorPluginEvent::EInput::CursorRaise: PrevPage(C_StickRight);
+								case CEditorPluginEvent::EInput::CursorLower: NextPage(C_StickRight);
+							}
+						} else if (RosaceLeftActive && DistanceLeft <= Quad_RosaceLeft.Size.X * 0.5) {
+							switch (Event.Input) {
+								case CEditorPluginEvent::EInput::CursorRaise: SendCustomEvent("{{{C_Event_FamilyPrev}}}", Text[]);
+								case CEditorPluginEvent::EInput::CursorLower: SendCustomEvent("{{{C_Event_FamilyNext}}}", Text[]);
+							}
+						}
+					} else {
+						switch (Event.Input) {
+							case CEditorPluginEvent::EInput::CursorRaise: NextPage(C_StickRight);
+							case CEditorPluginEvent::EInput::CursorLower: PrevPage(C_StickRight);
+						}
+					}
+					
+					if (Event.Input == CEditorPluginEvent::EInput::Menu) {
+						ActiveClic = False;
+					}
+				}
+			}
+		}
+		
+		if (PrevForceClose != L_ForceClose) {
+			PrevForceClose = L_ForceClose;
+			ActiveLeft = False;
+			ActiveRight = False;
+			ActiveClic = False;
+		}
+		
+		if (!L_RosaceVisible && (ActiveLeft || ActiveClic)) {
+			G_SoundRosaceScale.Stop();
+			G_SoundRosaceScale.Play();
+			LibManialink_AnimStop(Frame_Rosaces);
+			LibManialink_Anim(Frame_Rosaces, {{{Manialink::Inject("""<frame scale="1." hidden="0" />""")}}}, 250, "EaseOutQuad");
+			RosaceCanClick = Now + 250;
+			L_RosaceVisible = True;
+		} else if (L_RosaceVisible && !ActiveLeft && !ActiveRight && !ActiveClic) {
+			LibManialink_AnimStop(Frame_Rosaces);
+			LibManialink_Anim(Frame_Rosaces, {{{Manialink::Inject("""<frame scale="0." hidden="1" />""")}}}, 250, "EaseOutQuad");
+			Quad_RosaceLeft.Visible = False;
+			Quad_RosaceRight.Visible = False;
+			L_RosaceVisible = False;
+			RosaceLeftActive = False;
+			RosaceRightActive = False;
+			RosaceLeftLock = False;
+		}
+		
+		if (RosaceCanClick > 0 && Now >= RosaceCanClick) {
+			RosaceCanClick = -1;
+			Quad_RosaceLeft.Visible = True;
+			Quad_RosaceRight.Visible = True;
+		}
+		
+		if (PrevForceUpdate != L_ForceUpdate) {
+			PrevForceUpdate = L_ForceUpdate;
+			ForceSelection(L_ForceFamily, L_ForceMacroblock);
+		}
+		
+		if (UIMacroblockSelection_RosaceVisible != L_RosaceVisible) {
+			UIMacroblockSelection_RosaceVisible = L_RosaceVisible;
+			
+			if (L_RosaceVisible) {
+				UpdateFamilies();
+				UpdateMacroblocks();
+			}
+		}
+	}
+	
+	Audio.DestroySound(G_SoundClick);
+	Audio.DestroySound(G_SoundRosaceScale);
+}
+--></script>
+</manialink>	
+""";
+}
+
+// ---------------------------------- //
+/** Get the key of the macroblock with the given model id and placement
+ *
+ *	@return							The key if found, -1 otherwise
+ */
+Integer Private_GetMacroblockKey(Ident _MacroblockModelId, Integer _MacroblockPlacement) {
+	foreach (MacroblockKey => MacroblockModelId in G_Macroblocks) {
+		if (
+			MacroblockModelId == _MacroblockModelId &&
+			G_Placements.existskey(MacroblockKey) &&
+			G_Placements[MacroblockKey] == _MacroblockPlacement
+		) return MacroblockKey;
+	}
+	
+	return -1;
+}
+
+// ---------------------------------- //
+/** Select a macroblock
+ *
+ *	@param	_MacroblockKey			The key of the macroblock to select
+ *	@param	_PlaySound			¨	Play a sound
+ */
+Void Private_SelectMacroblock(Integer _MacroblockKey, Boolean _PlaySound) {
+	declare Page <=> Layers::GetPage("MacroblockSelection");
+	declare L_MacroblocksUpdate for Page = -1;
+	declare L_Macroblocks for Page = Ident[];
+	declare L_MacroblocksKeys for Page = Integer[];
+	declare L_MacroblocksAvailabilities for Page = Boolean[];
+	declare L_MacroblocksShift for Page = 0;
+	declare L_MacroblocksSelected for Page = -1;
+	declare L_MacroblocksNames for Page = Text[Ident];
+	declare L_MacroblocksTrial for Page = Boolean[];
+	declare L_MacroblocksSelectKeys for Page = Integer[];
+	L_Macroblocks.clear();
+	L_MacroblocksKeys.clear();
+	L_MacroblocksAvailabilities.clear();
+	L_MacroblocksShift = 0;
+	L_MacroblocksSelected = 0;
+	L_MacroblocksNames.clear();
+	L_MacroblocksTrial.clear();
+	L_MacroblocksSelectKeys.clear();
+	
+	declare MacroblockKey = _MacroblockKey;
+	if (!G_Macroblocks.existskey(MacroblockKey)) {
+		if (G_Macroblocks.count > 0) MacroblockKey = 0;
+		else MacroblockKey = -1;
+	}
+	
+	if (!G_MacroblocksStart.existskey(G_Family)) G_MacroblocksStart[G_Family] = 0;
+	
+	if (MacroblockKey > G_MacroblocksStart[G_Family] + C_SimpleMacroblocksNb - 1) {
+		G_MacroblocksStart[G_Family] = MacroblockKey - C_SimpleMacroblocksNb + 1;
+		L_MacroblocksShift = 1;
+	} else if (MacroblockKey < G_MacroblocksStart[G_Family]) {
+		G_MacroblocksStart[G_Family] = MacroblockKey;
+		L_MacroblocksShift = -1;
+	}
+	
+	if (G_MacroblocksStart[G_Family] < 0) G_MacroblocksStart[G_Family] = 0;
+	
+	L_MacroblocksSelected = MacroblockKey - G_MacroblocksStart[G_Family];
+	
+	declare Min = G_MacroblocksStart[G_Family] - 1;
+	declare Max = G_MacroblocksStart[G_Family] + C_SimpleMacroblocksNb;
+	for (I, Min, Max) {
+		if (G_Macroblocks.existskey(I)) {
+			declare MacroblockModelId = G_Macroblocks[I];
+			declare MacroblockModel <=> MacroblockModels[MacroblockModelId];
+			declare Name = ThemePack::GetName(MacroblockModel);
+			if (Name != "") L_MacroblocksNames[MacroblockModelId] = Name;
+			L_Macroblocks.add(MacroblockModelId);
+			L_MacroblocksAvailabilities.add(G_Availabilities[I]);
+			L_MacroblocksKeys.add(ThemePack::GetOrder(MacroblockModel));
+			L_MacroblocksTrial.add(!Utils::IsTrialVersion() || ThemePack::AvailableInTrial(MacroblockModel));
+			L_MacroblocksSelectKeys.add(I);
+		} else {
+			L_Macroblocks.add(NullId);
+			L_MacroblocksAvailabilities.add(False);
+			L_MacroblocksKeys.add(0);
+			//L_MacroblocksKeys.add(I+1);
+			L_MacroblocksTrial.add(True);
+			L_MacroblocksSelectKeys.add(I);
+		}
+	}
+	
+	if (G_Macroblocks.existskey(MacroblockKey)) G_Macroblock[G_Family] = G_Macroblocks[MacroblockKey];
+	else G_Macroblock[G_Family] = NullId;
+	if (G_Placements.existskey(MacroblockKey)) G_Placement[G_Family] = G_Placements[MacroblockKey];
+	else G_Placement[G_Family] = -1;
+	
+	G_MacroblockUpdate = Now;
+	L_MacroblocksUpdate = Now;
+	
+	if (_PlaySound) Sound::Play("EditorSimpleSelectMacroblock");
+}
+
+// ---------------------------------- //
+/// Overload Private_SelectMacroblock()
+Void Private_SelectMacroblock(Integer _MacroblockKey) {
+	Private_SelectMacroblock(_MacroblockKey, False);
+}
+
+// ---------------------------------- //
+/** Select a family and a macroblock in the rosace
+ *
+ *	@param	_Family					The family to select
+ *	@param	_MacroblockKey			The key of the macroblock to select
+ */
+Void Private_SelectRosace(Integer _Family, Integer _MacroblockKey) {
+	declare Page <=> Layers::GetPage("MacroblockSelection");
+	declare L_ForceUpdate for Page = -1;
+	declare L_ForceFamily for Page = -1;
+	declare L_ForceMacroblock for Page = -1;
+	L_ForceFamily = _Family;
+	L_ForceMacroblock = _MacroblockKey;
+	L_ForceUpdate = Now;
+}
+
+// ---------------------------------- //
+// Public
+// ---------------------------------- //
+// ---------------------------------- //
+/** Return the version number of the script
+ *
+ *	@return							The version number of the script
+ */
+Text GetScriptVersion() {
+	return Version;
+}
+
+// ---------------------------------- //
+/** Return the name of the script
+ *
+ *	@return							The name of the script
+ */
+Text GetScriptName() {
+	return ScriptName;
+}
+
+// ---------------------------------- //
+/// Get the events constants
+Text Event_MacroblockHover() { return C_Event_MacroblockHover; }
+Text Event_MacroblockClick() { return C_Event_MacroblockClick; }
+Text Event_MacroblockNext() { return C_Event_MacroblockNext; }
+Text Event_MacroblockPrev() { return C_Event_MacroblockPrev; }
+Text Event_FamilyClick() { return C_Event_FamilyClick; }
+Text Event_FamilyNext() { return C_Event_FamilyNext; }
+Text Event_FamilyPrev() { return C_Event_FamilyPrev; }
+
+// ---------------------------------- //
+/** Get the macroblock last update time
+ *
+ *	@return							The macroblock update time
+ */
+Integer GetMacroblockUpdate() {
+	if (G_UseRosace) {
+		declare Page <=> Layers::GetPage("MacroblockSelection");
+		declare L_RosaceMacroblockUpdate for Page = -1;
+		return L_RosaceMacroblockUpdate;
+	}
+	
+	return G_MacroblockUpdate;
+}
+
+// ---------------------------------- //
+/** Get the currently selected macroblock id
+ *
+ *	@return							The selected macroblock id
+ */
+Ident GetMacroblockId() {
+	if (G_UseRosace) {
+		declare Page <=> Layers::GetPage("MacroblockSelection");
+		declare L_RosaceMacroblock for Page = NullId;
+		return L_RosaceMacroblock;
+	}
+	
+	if (G_Macroblock.existskey(G_Family)) return G_Macroblock[G_Family];
+	return NullId;
+}
+
+// ---------------------------------- //
+/** Get the currently selected macroblock
+ *
+ *	@return							The selected macroblock
+ */
+CMacroblockModel GetMacroblock() {
+	declare Ident MacroblockModelId;
+	
+	if (G_UseRosace) {
+		declare Page <=> Layers::GetPage("MacroblockSelection");
+		declare L_RosaceMacroblock for Page = NullId;
+		MacroblockModelId = L_RosaceMacroblock;
+	} else {
+		MacroblockModelId = GetMacroblockId();
+	}
+	
+	if (MacroblockModelId != NullId && MacroblockModels.existskey(MacroblockModelId)) return MacroblockModels[MacroblockModelId];
+	return Null;
+}
+
+// ---------------------------------- //
+/** Get the currently selected macroblock placement
+ *
+ *	@return							The selected macroblock placement
+ */
+Integer GetMacroblockPlacement() {
+	if (G_UseRosace) {
+		declare Page <=> Layers::GetPage("MacroblockSelection");
+		declare L_RosacePlacement for Page = -1;
+		return L_RosacePlacement;
+	}
+	
+	if (G_Placement.existskey(G_Family)) return G_Placement[G_Family];
+	return -1;
+}
+
+// ---------------------------------- //
+/// Select the next macroblock
+Void NextMacroblock() {
+	declare Key = Private_GetMacroblockKey(GetMacroblockId(), GetMacroblockPlacement());
+	if (Key >= 0) {
+		for (I, 1, G_Macroblocks.count) {
+			declare ShiftKey = (I + Key) % G_Macroblocks.count;
+			if (!G_Availabilities[ShiftKey]) continue;
+			Private_SelectMacroblock(ShiftKey);
+			break;
+		}
+	} else {
+		Private_SelectMacroblock(-1);
+	}
+	Sound::Play("EditorSimpleSelectMacroblock");
+}
+
+// ---------------------------------- //
+/// Select the previous macroblock
+Void PrevMacroblock() {
+	declare Key = Private_GetMacroblockKey(GetMacroblockId(), GetMacroblockPlacement());
+	if (Key >= 0) {
+		for (I, 1, G_Macroblocks.count) {
+			declare ShiftKey = (-I + Key + G_Macroblocks.count) % G_Macroblocks.count;
+			if (!G_Availabilities[ShiftKey]) continue;
+			Private_SelectMacroblock(ShiftKey);
+			break;
+		}
+	} else {
+		Private_SelectMacroblock(-1);
+	}
+	Sound::Play("EditorSimpleSelectMacroblock");
+}
+
+// ---------------------------------- //
+/** Select a family
+ *
+ *	@param	_Family					The id of the family to select
+ *	@param	_MacroblockKey			The key of the macroblock to select
+ */
+Void Private_SelectFamily(Text _Family, Integer _MacroblockKey) {
+	G_Family = _Family;
+	if (!G_Families.exists(G_Family) || !G_FamiliesAvailabilities[G_Family].exists(True)) {
+		G_Family = "";
+		foreach (Family in G_Families) {
+			if (G_FamiliesAvailabilities[Family].exists(True)) {
+				G_Family = Family;
+				break;
+			}
+		}
+	}
+	
+	declare Page <=> Layers::GetPage("MacroblockSelection");
+	declare L_Family for Page = "";
+	L_Family = G_Family;
+	G_FamilyUpdate = Now;
+	
+	G_Macroblocks.clear();
+	G_Placements.clear();
+	G_Availabilities.clear();
+	if (G_FamiliesMacroblocks.existskey(G_Family)) {
+		G_Macroblocks = G_FamiliesMacroblocks[G_Family];
+	}
+	if (G_FamiliesPlacements.existskey(G_Family)) {
+		G_Placements = G_FamiliesPlacements[G_Family];
+	}
+	if (G_FamiliesAvailabilities.existskey(G_Family)) {
+		G_Availabilities = G_FamiliesAvailabilities[G_Family];
+	}
+	
+	if (_MacroblockKey < 0) {
+		Private_SelectMacroblock(Private_GetMacroblockKey(GetMacroblockId(), GetMacroblockPlacement()));
+	} else {
+		Private_SelectMacroblock(_MacroblockKey);
+	}
+}
+
+// ---------------------------------- //
+/// Overload Private_SelectFamily()
+Void Private_SelectFamily(Text _Family) {
+	Private_SelectFamily(_Family, -1);
+}
+
+// ---------------------------------- //
+/** Select a family from oustide the lib
+ *
+ *	@param	_Family					The family to select
+ *	@param	_PlaySound				Play a sound
+ */
+Void SelectFamily(Text _Family, Boolean _PlaySound) {
+	if (!G_Families.exists(_Family) || !G_FamiliesAvailabilities[_Family].exists(True)) return;
+	if (_PlaySound) Sound::Play("EditorSimpleSelectFamily");
+	Private_SelectFamily(_Family, -1);
+}
+
+// ---------------------------------- //
+/** Get the family last update time
+ *
+ *	@return							The family update time
+ */
+Integer GetFamilyUpdate() {
+	if (G_UseRosace) {
+		declare Page <=> Layers::GetPage("MacroblockSelection");
+		declare L_RosaceFamilyUpdate for Page = -1;
+		return L_RosaceFamilyUpdate;
+	}
+	
+	return G_FamilyUpdate;
+}
+
+// ---------------------------------- //
+/** Get the currently selected family
+ *
+ *	@return							The selected family
+ */
+Text GetFamily() {
+	if (G_UseRosace) {
+		declare Page <=> Layers::GetPage("MacroblockSelection");
+		declare L_RosaceFamily for Page = "";
+		return L_RosaceFamily;
+	}
+	
+	return G_Family;
+}
+
+// ---------------------------------- //
+/// Select the next family
+Void NextFamily() {
+	declare Key = G_Families.keyof(G_Family);
+	if (Key >= 0) {
+		for (I, 1, G_Families.count) {
+			declare ShiftKey = (I + Key) % G_Families.count;
+			declare NextFamily = G_Families[ShiftKey];
+			if (G_FamiliesAvailabilities.existskey(NextFamily)) {
+				if (G_FamiliesAvailabilities[NextFamily].exists(True)) {
+					Private_SelectFamily(NextFamily);
+					break;
+				}
+			}
+		}
+	} else {
+		Private_SelectFamily("");
+	}
+	Sound::Play("EditorSimpleSelectFamily");
+}
+
+// ---------------------------------- //
+/// Select the previous family
+Void PrevFamily() {
+	declare Key = G_Families.keyof(G_Family);
+	if (Key >= 0) {
+		for (I, 1, G_Families.count) {
+			declare ShiftKey = (-I + Key + G_Families.count) % G_Families.count;
+			declare PrevFamily = G_Families[ShiftKey];
+			if (G_FamiliesAvailabilities.existskey(PrevFamily)) {
+				if (G_FamiliesAvailabilities[PrevFamily].exists(True)) {
+					Private_SelectFamily(PrevFamily);
+					break;
+				}
+			}
+		}
+	} else {
+		Private_SelectFamily("");
+	}
+	Sound::Play("EditorSimpleSelectFamily");
+}
+
+// ---------------------------------- //
+/** Get all available macroblocks ids
+ *
+ *	@return							All macroblocks ids
+ */
+Ident[] GetAllMacroblocksIds() {
+	declare Ident[] AllMacroblockModelsIds;
+	
+	foreach (Family => MacroblocksIds in G_FamiliesMacroblocks) {
+		foreach (Key => MacroblockId in MacroblocksIds) {
+			if (G_FamiliesAvailabilities[Family][Key]) AllMacroblockModelsIds.add(MacroblockId);
+		}
+	}
+	
+	return AllMacroblockModelsIds;
+}
+
+// ---------------------------------- //
+/** Find and select a macroblock in the currently available ones
+ *
+ *	@param	_MacroblockModelId		The id of the macroblock model to select
+ *	@param	_MacroblockPlacement	The placement to select
+ */
+Void FindMacroblock(Ident _MacroblockModelId, Integer _MacroblockPlacement) {
+	if (_MacroblockModelId == NullId) return;
+	
+	declare FamilyKey = -1;
+	declare Found = False;
+	foreach (Family => MacroblocksIds in G_FamiliesMacroblocks) {
+		FamilyKey += 1;
+		if (!MacroblocksIds.exists(_MacroblockModelId)) continue;
+		foreach (MacroblockKey => MacroblockId in MacroblocksIds) {
+			if (MacroblockId != _MacroblockModelId) continue;
+		
+			if (
+				G_UseRosace || (
+					G_FamiliesPlacements.existskey(Family) &&
+					G_FamiliesPlacements[Family].existskey(MacroblockKey) &&
+					G_FamiliesPlacements[Family][MacroblockKey] == _MacroblockPlacement
+				)
+			) {
+				if (G_UseRosace) {
+					Private_SelectRosace(FamilyKey, MacroblockKey);
+				} else {
+					Private_SelectFamily(Family, MacroblockKey);
+				}
+				Found = True;
+			}
+			
+			if (Found) break;
+		}
+		
+		if (Found) break;
+	}
+}
+
+// ---------------------------------- //
+/** Check if a macroblock is available
+ *
+ *	@param	_MacroblockModelId		The id of the macroblock model to search
+ */
+Boolean IsAvailable(Ident _MacroblockModelId) {
+	declare Found = False;
+	foreach (Family => MacroblocksIds in G_FamiliesMacroblocks) {
+		declare MacroblockKey = MacroblocksIds.keyof(_MacroblockModelId);
+		if (MacroblockKey >= 0) {
+			if (!G_FamiliesAvailabilities.existskey(Family)) continue;
+			if (!G_FamiliesAvailabilities[Family].existskey(MacroblockKey)) continue;
+			if (!G_FamiliesAvailabilities[Family][MacroblockKey]) continue;
+			
+			Found = True;
+			break;
+		}
+	}
+	
+	return Found;
+}
+
+// ---------------------------------- //
+/** Find and select a macroblock in the currently available ones
+ *
+ *	@param	_MacroblockModelId		The id of the macroblock model to select
+ */
+Void FindMacroblock(Ident _MacroblockModelId) {
+	if (!G_UseRosace && GetMacroblockId() == _MacroblockModelId) return;
+	
+	declare FamilyKey = 0;
+	foreach (Family => MacroblocksIds in G_FamiliesMacroblocks) {
+		declare MacroblockKey = MacroblocksIds.keyof(_MacroblockModelId);
+		if (MacroblockKey >= 0) {
+			if (G_UseRosace) {
+				Private_SelectRosace(FamilyKey, MacroblockKey);
+			} else {
+				Private_SelectFamily(Family, MacroblockKey);
+			}
+			break;
+		}
+		FamilyKey += 1;
+	}
+}
+
+// ---------------------------------- //
+/** Set the families and macroblocks to display
+ *
+ *	@param	_FamiliesAndMacroblocks	The families names and macroblocks ids
+ *	@param	_FamiliesAndPlacements	The families names and placements of macroblocks
+ *	@param	_FamiliesAndAvailabilities	The families names and availabilities of macroblocks
+ */
+Void SetFamiliesAndMacroblocks(
+	Ident[][Text] _FamiliesAndMacroblocks, 
+	Integer[][Text] _FamiliesAndPlacements, 
+	Boolean[][Text] _FamiliesAndAvailabilities
+) {
+	declare Page <=> Layers::GetPage("MacroblockSelection");
+	declare L_FamiliesUpdate for Page = -1;
+	declare L_Families for Page = Boolean[Text];
+	declare L_RosaceContentUpdate for Page = -1;
+	declare L_RosaceMacroblocks for Page = Ident[][Text];
+	declare L_RosacePlacements for Page = Integer[][Text];
+	declare L_RosaceAvailabilities for Page = Boolean[][Text];
+	
+	G_FamiliesMacroblocks = _FamiliesAndMacroblocks;
+	G_FamiliesPlacements = _FamiliesAndPlacements;
+	G_FamiliesAvailabilities = _FamiliesAndAvailabilities;
+	G_Families.clear();
+	L_Families.clear();
+	
+	foreach (Family => MacroblocksIds in _FamiliesAndMacroblocks) {
+		G_Families.add(Family);
+		L_Families[Family] = _FamiliesAndAvailabilities[Family].exists(True);
+	}
+	
+	L_FamiliesUpdate = Now;
+	
+	L_RosaceMacroblocks = _FamiliesAndMacroblocks;
+	L_RosacePlacements = _FamiliesAndPlacements;
+	L_RosaceAvailabilities = _FamiliesAndAvailabilities;
+	L_RosaceContentUpdate = Now;
+	
+	if (G_UseRosace) {
+		FindMacroblock(GetMacroblockId());
+	} else {
+		Private_SelectFamily(G_Family);
+	}
+}
+
+// ---------------------------------- //
+/// Get the mode constants
+Integer Mode_Track() { return C_Mode_Track; }
+Integer Mode_Terrain() { return C_Mode_Terrain; }
+Integer Mode_Decoration() { return C_Mode_Decoration; }
+
+// ---------------------------------- //
+/** Set the rosaces mode
+ *
+ *	@param	_Mode					The mode to use
+ */
+Void SetMode(Integer _Mode) {
+	declare Page <=> Layers::GetPage("MacroblockSelection");
+	declare L_RosaceMode for Page = -1;
+	L_RosaceMode = _Mode;
+}
+
+// ---------------------------------- //
+/** Display or not the macroblocks' names under their icon
+ *
+ *	@param	_Visible				True to display
+ */
+Void DisplayNames(Boolean _Visible) {
+	declare Page <=> Layers::GetPage("MacroblockSelection");
+	declare L_VisibilityName for Page = False;
+	L_VisibilityName = _Visible;
+}
+
+// ---------------------------------- //
+/// Get editor levels
+Integer Editor_Beginner() { return C_Editor_Beginner; }
+Integer Editor_Advanced() { return C_Editor_Advanced; }
+Integer Editor_Expert() { return C_Editor_Expert; }
+
+// ---------------------------------- //
+/** Set the editor level
+ *
+ *	@param	_Editor					The editor (beginner, normal, expert)
+ */
+Void SetEditor(Integer _Editor) {
+	declare Page <=> Layers::GetPage("MacroblockSelection");
+	declare L_Editor for Page = C_Editor_Beginner;
+	L_Editor = _Editor;
+}
+
+// ---------------------------------- //
+/** Set the style information for the rosace
+ *
+ *	@param	_Name					The style name
+ *	@param	_PageCurrent			The current style page
+ *	@param	_PageMax				The maximum style page
+ */
+Void SetStyle(Text _Name, Integer _PageCurrent, Integer _PageMax) {
+	declare Page <=> Layers::GetPage("MacroblockSelection");
+	declare L_StyleUpdate for Page = -1;
+	declare L_StyleName for Page = "";
+	declare L_StylePageCurrent for Page = 0;
+	declare L_StylePageMax for Page = 0;
+	L_StyleName = _Name;
+	L_StylePageCurrent = _PageCurrent;
+	L_StylePageMax = _PageMax;
+	L_StyleUpdate = Now;
+}
+
+// ---------------------------------- //
+/** Set the macroblock selection visibility
+ *
+ *	@param	_Visible				Show the macroblock selection if True
+ */
+Void SetVisibility(Boolean _Visible) {
+	declare Page <=> Layers::GetPage("MacroblockSelection");
+	declare L_Visibility for Page = False;
+	L_Visibility = _Visible;
+}
+
+// ---------------------------------- //
+/// Show the macroblock selection
+Void Show() {
+	SetVisibility(True);
+}
+
+// ---------------------------------- //
+/// Hide the macroblock selection
+Void Hide() {
+	SetVisibility(False);
+}
+
+// ---------------------------------- //
+/** Set the family selection panel visibility
+ *
+ *	@param	_Visible				Show the family panel  if True
+ */
+Void SetFamilyVisibility(Boolean _Visible) {
+	declare Page <=> Layers::GetPage("MacroblockSelection");
+	declare L_VisibilityFamily for Page = False;
+	L_VisibilityFamily = _Visible;
+}
+
+// ---------------------------------- //
+/** Check if the player is selecting a macroblock in advanced mode
+ *
+ *	@return							True if the player is selecting a macroblock, False otherwise
+ */	
+Boolean IsSelecting() {
+	if (!G_UseRosace) return False;
+	
+	declare Page <=> Layers::GetPage("MacroblockSelection");
+	declare L_RosaceVisible for Page = False;
+	return L_RosaceVisible;
+}
+
+// ---------------------------------- //
+/// Close the rosaces
+Void CloseRosaces() {
+	if (!G_UseRosace) return;
+	
+	declare Page <=> Layers::GetPage("MacroblockSelection");
+	declare L_ForceClose for Page = -1;
+	L_ForceClose = Now;
+}
+		
+// ---------------------------------- //
+/// Unload the library
+Void Unload() {
+	Layers::Destroy("MacroblockSelection");
+	//Layers::Unload();
+}
+
+// ---------------------------------- //
+/** Load the library
+ *
+ *	@param	_SimpleEditor			Simple editor mode or not
+ */
+Void Load(Boolean _SimpleEditor) {
+	Unload();
+	
+	//Layers::Load();
+	Buttons::Load();
+	declare LayerMacroblockSelection <=> Layers::Create("MacroblockSelection");
+	if (_SimpleEditor) LayerMacroblockSelection.ManialinkPage = Private_GetMacroblockSelectionML();
+	else LayerMacroblockSelection.ManialinkPage = Private_GetRosaceML();
+	Buttons::Unload();
+	
+	G_FamiliesMacroblocks.clear();
+	G_FamiliesPlacements.clear();
+	G_FamiliesAvailabilities.clear();
+	G_Macroblocks.clear();
+	G_Placements.clear();
+	G_Availabilities.clear();
+	G_Families.clear();
+	G_MacroblockUpdate = -1;
+	G_Macroblock.clear();
+	G_Placement.clear();
+	G_FamilyUpdate = -1;
+	G_Family = "";
+	G_MacroblocksStart.clear();
+	G_UseRosace = !_SimpleEditor;
+	
+	declare Page <=> LayerMacroblockSelection.LocalPage;
+	declare L_FamiliesUpdate for Page = -1;
+	declare L_Families for Page = Boolean[Text];
+	declare L_Family for Page = "";
+	declare L_MacroblocksUpdate for Page = -1;
+	declare L_Macroblocks for Page = Ident[];
+	declare L_MacroblocksKeys for Page = Integer[];
+	declare L_MacroblocksAvailabilities for Page = Boolean[];
+	declare L_MacroblocksShift for Page = 0;
+	declare L_MacroblocksSelected for Page = -1;
+	declare L_MacroblocksNames for Page = Text[Ident];
+	declare L_MacroblocksSelectKeys for Page = Integer[];
+	declare L_Visibility for Page = False;
+	declare L_VisibilityName for Page = False;
+	declare L_RosaceVisible for Page = False;
+	declare L_RosaceContentUpdate for Page = -1;
+	declare L_RosaceMacroblocks for Page = Ident[][Text];
+	declare L_RosacePlacements for Page = Integer[][Text];
+	declare L_RosaceAvailabilities for Page = Boolean[][Text];
+	declare L_RosaceFamily for Page = "";
+	declare L_RosaceFamilyUpdate for Page = -1;
+	declare L_RosacePlacement for Page = -1;
+	declare L_RosaceMacroblock for Page = NullId;
+	declare L_RosaceMacroblockUpdate for Page = -1;
+	declare L_RosaceMode for Page = -1;
+	declare L_ForceFamily for Page = -1;
+	declare L_ForceMacroblock for Page = -1;
+	declare L_ForceUpdate for Page = -1;
+	declare L_Editor for Page = C_Editor_Beginner;
+	declare L_StyleUpdate for Page = -1;
+	declare L_StyleName for Page = "";
+	declare L_StylePageCurrent for Page = 0;
+	declare L_StylePageMax for Page = 0;
+	declare L_ForceClose for Page = -1;
+	L_FamiliesUpdate = -1;
+	L_Families.clear();
+	L_Family = "";
+	L_MacroblocksUpdate = -1;
+	L_Macroblocks.clear();
+	L_MacroblocksKeys.clear();
+	L_MacroblocksAvailabilities.clear();
+	L_MacroblocksShift = 0;
+	L_MacroblocksSelected = -1;
+	L_MacroblocksNames.clear();
+	L_MacroblocksSelectKeys.clear();
+	L_Visibility = False;
+	L_VisibilityName = False;
+	L_RosaceVisible = False;
+	L_RosaceContentUpdate = -1;
+	L_RosaceMacroblocks.clear();
+	L_RosacePlacements.clear();
+	L_RosaceAvailabilities.clear();
+	L_RosaceFamily = "";
+	L_RosaceFamilyUpdate = -1;
+	L_RosacePlacement = -1;
+	L_RosaceMacroblock = NullId;
+	L_RosaceMacroblockUpdate = -1;
+	L_RosaceMode = -1;
+	L_ForceFamily = -1;
+	L_ForceMacroblock = -1;
+	L_ForceUpdate = -1;
+	L_Editor = C_Editor_Beginner;
+	L_StyleUpdate = -1;
+	L_StyleName = "";
+	L_StylePageCurrent = 0;
+	L_StylePageMax = 0;
+	L_ForceClose = -1;
+}

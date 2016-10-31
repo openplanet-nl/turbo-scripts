@@ -1,0 +1,1258 @@
+/** 
+ * Terrain library
+ */
+
+#Const Version		"2016-01-20"
+#Const ScriptName	"Terrain.Script.txt"
+
+#Include "TextLib" as TL
+#Include "MathLib" as ML
+#Include "Libs/Openplanet/TMConsole/MapEditor/Random.Script.txt" as Random
+#Include "Libs/Openplanet/TMConsole/MapEditor/Utils.Script.txt" as Utils
+#Include "Libs/Openplanet/TMConsole/MapEditor/Macroblock.Script.txt" as Macroblock
+
+// ---------------------------------- //
+// Constants
+// ---------------------------------- //
+#Const C_Type		"Perlin"
+#Const C_Frequency	0.4
+#Const C_Octaves	10.
+#Const C_Layer		0
+#Const C_OnlyOneLevelOfWater	True	///< Allow only one level of water
+#Const C_Generator_Perlin	0
+#Const C_Generator_Radial	1
+
+/// Beginner terrains
+#Const C_Landscapes_Beginner [
+	"Canyon" => ["4"],
+	"Valley" => ["1"],
+	"Stadium" => ["1"],
+	"Lagoon" => ["1"]
+]
+/// Default expert landscape
+#Const C_Landscapes_Expert [
+	"Lagoon" => "5"
+]
+/// Random terrains
+#Const C_Landscapes_Random [
+	"Canyon" => ["1", "2", "3", "4"],
+	"Valley" => ["1", "2", "3", "4"],
+	"Stadium" => ["1", "2", "3", "4"],
+	"Lagoon" => ["1", "2", "3", "4"]
+]
+/// Terrains
+#Const C_MultiPartsTerrains [
+	"Canyon" => [
+		"1" => [
+			"Ground" => [
+				CEditorPlugin::CardinalDirections::North => <1, 15, 0>,
+				CEditorPlugin::CardinalDirections::East => <0, 15, 1>,
+				CEditorPlugin::CardinalDirections::South => <0, 15, 0>,
+				CEditorPlugin::CardinalDirections::West => <0, 15, 0>
+			]
+		],
+		"2" => [
+			"Ground" => [
+				CEditorPlugin::CardinalDirections::North => <0, 14, 0>,
+				CEditorPlugin::CardinalDirections::East => <0, 14, 0>,
+				CEditorPlugin::CardinalDirections::South => <0, 14, 0>,
+				CEditorPlugin::CardinalDirections::West => <0, 14, 0>
+			]
+		],
+		"3" => [
+			"Ground" => [
+				CEditorPlugin::CardinalDirections::North => <0, 15, 0>,
+				CEditorPlugin::CardinalDirections::East => <0, 15, 0>,
+				CEditorPlugin::CardinalDirections::South => <0, 15, 0>,
+				CEditorPlugin::CardinalDirections::West => <0, 15, 0>
+			]
+		],
+		"4" => [
+			"Ground" => [
+				CEditorPlugin::CardinalDirections::North => <0, 14, 1>,
+				CEditorPlugin::CardinalDirections::East => <0, 14, 0>,
+				CEditorPlugin::CardinalDirections::South => <0, 14, 0>,
+				CEditorPlugin::CardinalDirections::West => <1, 14, 0>
+			]
+		],
+		"5" => [
+			"Ground" => [
+				CEditorPlugin::CardinalDirections::North => <16, 17, 14>,
+				CEditorPlugin::CardinalDirections::East => <17, 17, 16>,
+				CEditorPlugin::CardinalDirections::South => <15, 17, 17>,
+				CEditorPlugin::CardinalDirections::West => <14, 17, 15>
+			]
+		]
+	],
+	"Valley" => [
+		"1" => [
+			"01" => [
+				CEditorPlugin::CardinalDirections::North => <4, 13, 4>,
+				CEditorPlugin::CardinalDirections::East => <24, 13, 4>,
+				CEditorPlugin::CardinalDirections::South => <24, 13, 24>,
+				CEditorPlugin::CardinalDirections::West => <4, 13, 24>
+			],
+			"02" => [
+				CEditorPlugin::CardinalDirections::North => <24, 13, 2>,
+				CEditorPlugin::CardinalDirections::East => <23, 13, 24>,
+				CEditorPlugin::CardinalDirections::South => <2, 13, 23>,
+				CEditorPlugin::CardinalDirections::West => <2, 13, 2>
+			],
+			"03" => [
+				CEditorPlugin::CardinalDirections::North => <24, 5, 24>,
+				CEditorPlugin::CardinalDirections::East => <2, 5, 24>,
+				CEditorPlugin::CardinalDirections::South => <2, 5, 2>,
+				CEditorPlugin::CardinalDirections::West => <24, 5, 2>
+			],
+			"04" => [
+				CEditorPlugin::CardinalDirections::North => <4, 5, 24>,
+				CEditorPlugin::CardinalDirections::East => <5, 5, 4>,
+				CEditorPlugin::CardinalDirections::South => <24, 5, 5>,
+				CEditorPlugin::CardinalDirections::West => <24, 5, 24>
+			]
+		],
+		"2" => [
+			"Ground" => [
+				CEditorPlugin::CardinalDirections::North => <0, 4, 3>,
+				CEditorPlugin::CardinalDirections::East => <0, 4, 0>,
+				CEditorPlugin::CardinalDirections::South => <0, 4, 0>,
+				CEditorPlugin::CardinalDirections::West => <3, 4, 0>
+			]
+		],
+		"3" => [
+			"Ground" => [
+				CEditorPlugin::CardinalDirections::North => <4, 4, 8>,
+				CEditorPlugin::CardinalDirections::East => <8, 4, 4>,
+				CEditorPlugin::CardinalDirections::South => <4, 4, 8>,
+				CEditorPlugin::CardinalDirections::West => <8, 4, 4>
+			]
+		],
+		"4" => [
+			"Ground" => [
+				CEditorPlugin::CardinalDirections::North => <1, 5, 2>,
+				CEditorPlugin::CardinalDirections::East => <1, 5, 1>,
+				CEditorPlugin::CardinalDirections::South => <0, 5, 1>,
+				CEditorPlugin::CardinalDirections::West => <2, 5, 0>
+			]
+		],
+		"5" => [
+			"Ground" => [
+				CEditorPlugin::CardinalDirections::North => <23, 7, 23>,
+				CEditorPlugin::CardinalDirections::East => <24, 7, 23>,
+				CEditorPlugin::CardinalDirections::South => <23, 7, 24>,
+				CEditorPlugin::CardinalDirections::West => <23, 7, 23>
+			]
+		]
+	],
+	"Stadium" => [
+		"1" => [
+			"Ground" => [
+				CEditorPlugin::CardinalDirections::North => <1, 9, 1>,
+				CEditorPlugin::CardinalDirections::East => <1, 9, 1>,
+				CEditorPlugin::CardinalDirections::South => <1, 9, 1>,
+				CEditorPlugin::CardinalDirections::West => <1, 9, 1>
+			]
+		],
+		"2" => [
+			"Ground" => [
+				CEditorPlugin::CardinalDirections::North => <3, 9, 3>,
+				CEditorPlugin::CardinalDirections::East => <3, 9, 3>,
+				CEditorPlugin::CardinalDirections::South => <3, 9, 3>,
+				CEditorPlugin::CardinalDirections::West => <3, 9, 3>
+			]
+		],
+		"3" => [
+			"Ground" => [
+				CEditorPlugin::CardinalDirections::North => <5, 13, 5>,
+				CEditorPlugin::CardinalDirections::East => <4, 13, 5>,
+				CEditorPlugin::CardinalDirections::South => <4, 13, 4>,
+				CEditorPlugin::CardinalDirections::West => <5, 13, 4>
+			]
+		],
+		"4" => [
+			"Ground" => [
+				CEditorPlugin::CardinalDirections::North => <0, 8, 0>,
+				CEditorPlugin::CardinalDirections::East => <0, 8, 0>,
+				CEditorPlugin::CardinalDirections::South => <0, 8, 0>,
+				CEditorPlugin::CardinalDirections::West => <0, 8, 0>
+			]
+		],
+		"5" => [
+			"Ground" => [
+				CEditorPlugin::CardinalDirections::North => <15, 9, 23>,
+				CEditorPlugin::CardinalDirections::East => <8, 9, 15>,
+				CEditorPlugin::CardinalDirections::South => <15, 9, 8>,
+				CEditorPlugin::CardinalDirections::West => <23, 9, 15>
+			]
+		]
+	],
+	"Lagoon" => [
+		"1" => [
+			"Ground" => [
+				CEditorPlugin::CardinalDirections::North => <5, 5, 1>,
+				CEditorPlugin::CardinalDirections::East => <4, 5, 5>,
+				CEditorPlugin::CardinalDirections::South => <3, 5, 4>,
+				CEditorPlugin::CardinalDirections::West => <1, 5, 3>
+			]
+		],
+		"2" => [
+			"01" => [
+				CEditorPlugin::CardinalDirections::North => <3, 6, 8>,
+				CEditorPlugin::CardinalDirections::East => <24, 6, 3>,
+				CEditorPlugin::CardinalDirections::South => <27, 6, 24>,
+				CEditorPlugin::CardinalDirections::West => <8, 6, 27>
+			],
+			"02" => [
+				CEditorPlugin::CardinalDirections::North => <24, 5, 0>,
+				CEditorPlugin::CardinalDirections::East => <24, 5, 24>,
+				CEditorPlugin::CardinalDirections::South => <7, 5, 24>,
+				CEditorPlugin::CardinalDirections::West => <0, 5, 7>
+			],
+			"03" => [
+				CEditorPlugin::CardinalDirections::North => <26, 18, 24>,
+				CEditorPlugin::CardinalDirections::East => <6, 18, 26>,
+				CEditorPlugin::CardinalDirections::South => <7, 18, 6>,
+				CEditorPlugin::CardinalDirections::West => <24, 18, 7>
+			],
+			"04" => [
+				CEditorPlugin::CardinalDirections::North => <11, 18, 24>,
+				CEditorPlugin::CardinalDirections::East => <13, 18, 11>,
+				CEditorPlugin::CardinalDirections::South => <25, 18, 13>,
+				CEditorPlugin::CardinalDirections::West => <24, 18, 25>
+			]
+		],
+		"3" => [
+			"01" => [
+				CEditorPlugin::CardinalDirections::North => <9, 5, 4>,
+				CEditorPlugin::CardinalDirections::East => <24, 5, 9>,
+				CEditorPlugin::CardinalDirections::South => <22, 5, 24>,
+				CEditorPlugin::CardinalDirections::West => <4, 5, 22>
+			],
+			"02" => [
+				CEditorPlugin::CardinalDirections::North => <24, 5, 3>,
+				CEditorPlugin::CardinalDirections::East => <24, 5, 24>,
+				CEditorPlugin::CardinalDirections::South => <10, 5, 24>,
+				CEditorPlugin::CardinalDirections::West => <3, 5, 10>
+			],
+			"03" => [
+				CEditorPlugin::CardinalDirections::North => <22, 5, 24>,
+				CEditorPlugin::CardinalDirections::East => <8, 5, 22>,
+				CEditorPlugin::CardinalDirections::South => <9, 5, 8>,
+				CEditorPlugin::CardinalDirections::West => <24, 5, 9>
+			],
+			"04" => [
+				CEditorPlugin::CardinalDirections::North => <10, 5, 24>,
+				CEditorPlugin::CardinalDirections::East => <4, 5, 10>,
+				CEditorPlugin::CardinalDirections::South => <24, 5, 4>,
+				CEditorPlugin::CardinalDirections::West => <24, 5, 24>
+			]
+		],
+		"4" => [
+			"01" => [
+				CEditorPlugin::CardinalDirections::North => <5, 30, 7>,
+				CEditorPlugin::CardinalDirections::East => <20, 30, 5>,
+				CEditorPlugin::CardinalDirections::South => <22, 30, 20>,
+				CEditorPlugin::CardinalDirections::West => <7, 30, 22>
+			],
+			"02" => [
+				CEditorPlugin::CardinalDirections::North => <26, 24, 11>,
+				CEditorPlugin::CardinalDirections::East => <26, 24, 26>,
+				CEditorPlugin::CardinalDirections::South => <10, 24, 26>,
+				CEditorPlugin::CardinalDirections::West => <11, 24, 10>
+			],
+			"03" => [
+				CEditorPlugin::CardinalDirections::North => <31, 24, 34>,
+				CEditorPlugin::CardinalDirections::East => <9, 24, 31>,
+				CEditorPlugin::CardinalDirections::South => <14, 24, 9>,
+				CEditorPlugin::CardinalDirections::West => <34, 24, 14>
+			],
+			"04" => [
+				CEditorPlugin::CardinalDirections::North => <0, 5, 24>,
+				CEditorPlugin::CardinalDirections::East => <23, 5, 0>,
+				CEditorPlugin::CardinalDirections::South => <47, 5, 23>,
+				CEditorPlugin::CardinalDirections::West => <24, 5, 47>
+			]
+		],
+		"5" => [
+			"Ground" => [
+				CEditorPlugin::CardinalDirections::North => <23, 6, 21>,
+				CEditorPlugin::CardinalDirections::East => <26, 6, 23>,
+				CEditorPlugin::CardinalDirections::South => <23, 6, 26>,
+				CEditorPlugin::CardinalDirections::West => <21, 6, 23>
+			]
+		]
+	]
+]
+
+#Const C_Landscapes_Spawns [
+	"Canyon" => [
+		"1" => [
+			CEditorPlugin::CardinalDirections::North => <17, 23, 23>,
+			CEditorPlugin::CardinalDirections::East => <8, 23, 17>,
+			CEditorPlugin::CardinalDirections::South => <14, 23, 8>,
+			CEditorPlugin::CardinalDirections::West => <23, 23, 14>
+		],
+		"2" => [
+			CEditorPlugin::CardinalDirections::North => <11, 15, 15>,
+			CEditorPlugin::CardinalDirections::East => <15, 15, 11>,
+			CEditorPlugin::CardinalDirections::South => <20, 15, 15>,
+			CEditorPlugin::CardinalDirections::West => <15, 15, 20>
+		],
+		"3" => [
+			CEditorPlugin::CardinalDirections::North => <23, 15, 21>,
+			CEditorPlugin::CardinalDirections::East => <10, 25, 23>,
+			CEditorPlugin::CardinalDirections::South => <8, 15, 10>,
+			CEditorPlugin::CardinalDirections::West => <21, 15, 8>
+		],
+		"4" => [
+			CEditorPlugin::CardinalDirections::North => <12, 17, 13>,
+			CEditorPlugin::CardinalDirections::East => <18, 17, 12>,
+			CEditorPlugin::CardinalDirections::South => <19, 17, 18>,
+			CEditorPlugin::CardinalDirections::West => <13, 17, 19>
+		],
+		"5" => [
+			CEditorPlugin::CardinalDirections::North => <14, 17, 16>,
+			CEditorPlugin::CardinalDirections::East => <15, 17, 14>,
+			CEditorPlugin::CardinalDirections::South => <17, 17, 15>,
+			CEditorPlugin::CardinalDirections::West => <16, 17, 17>
+		]
+	],
+	"Valley" => [
+		"1" => [
+			CEditorPlugin::CardinalDirections::North => <33, 13, 33>,
+			CEditorPlugin::CardinalDirections::East => <14, 13, 33>,
+			CEditorPlugin::CardinalDirections::South => <14, 13, 14>,
+			CEditorPlugin::CardinalDirections::West => <33, 13, 14>
+		],
+		"2" => [
+			CEditorPlugin::CardinalDirections::North => <27, 5, 30>,
+			CEditorPlugin::CardinalDirections::East => <17, 5, 27>,
+			CEditorPlugin::CardinalDirections::South => <20, 5, 17>,
+			CEditorPlugin::CardinalDirections::West => <30, 5, 20>
+		],
+		"3" => [
+			CEditorPlugin::CardinalDirections::North => <19, 5, 32>,
+			CEditorPlugin::CardinalDirections::East => <15, 5, 19>,
+			CEditorPlugin::CardinalDirections::South => <25, 5, 15>,
+			CEditorPlugin::CardinalDirections::West => <32, 5, 25>
+		],
+		"4" => [
+			CEditorPlugin::CardinalDirections::North => <32, 11, 31>,
+			CEditorPlugin::CardinalDirections::East => <16, 11, 32>,
+			CEditorPlugin::CardinalDirections::South => <15, 11, 16>,
+			CEditorPlugin::CardinalDirections::West => <31, 11, 15>
+		],
+		"5" => [
+			CEditorPlugin::CardinalDirections::North => <21, 7, 25>,
+			CEditorPlugin::CardinalDirections::East => <22, 7, 21>,
+			CEditorPlugin::CardinalDirections::South => <26, 7, 22>,
+			CEditorPlugin::CardinalDirections::West => <25, 7, 26>
+		]
+	],
+	"Stadium" => [
+		"1" => [
+			CEditorPlugin::CardinalDirections::North => <7, 9, 15>,
+			CEditorPlugin::CardinalDirections::East => <16, 9, 7>,
+			CEditorPlugin::CardinalDirections::South => <24, 9, 16>,
+			CEditorPlugin::CardinalDirections::West => <15, 9, 24>
+		],
+		"2" => [
+			CEditorPlugin::CardinalDirections::North => <15, 9, 15>,
+			CEditorPlugin::CardinalDirections::East => <15, 9, 15>,
+			CEditorPlugin::CardinalDirections::South => <15, 9, 15>,
+			CEditorPlugin::CardinalDirections::West => <15, 9, 15>
+		],
+		"3" => [
+			CEditorPlugin::CardinalDirections::North => <11, 11, 21>,
+			CEditorPlugin::CardinalDirections::East => <10, 11, 11>,
+			CEditorPlugin::CardinalDirections::South => <20, 11, 10>,
+			CEditorPlugin::CardinalDirections::West => <21, 11, 20>
+		],
+		"4" => [
+			CEditorPlugin::CardinalDirections::North => <15, 9, 15>,
+			CEditorPlugin::CardinalDirections::East => <15, 9, 15>,
+			CEditorPlugin::CardinalDirections::South => <15, 9, 15>,
+			CEditorPlugin::CardinalDirections::West => <15, 9, 15>
+		],
+		"5" => [
+			CEditorPlugin::CardinalDirections::North => <15, 9, 15>,
+			CEditorPlugin::CardinalDirections::East => <15, 9, 15>,
+			CEditorPlugin::CardinalDirections::South => <15, 9, 15>,
+			CEditorPlugin::CardinalDirections::West => <15, 9, 15>
+		]
+	],
+	"Lagoon" => [
+		"1" => [
+			CEditorPlugin::CardinalDirections::North => <27, 6, 21>,
+			CEditorPlugin::CardinalDirections::East => <26, 6, 27>,
+			CEditorPlugin::CardinalDirections::South => <20, 6, 26>,
+			CEditorPlugin::CardinalDirections::West => <21, 6, 20>
+		],
+		"2" => [
+			CEditorPlugin::CardinalDirections::North => <20, 18, 19>,
+			CEditorPlugin::CardinalDirections::East => <28, 18, 20>,
+			CEditorPlugin::CardinalDirections::South => <27, 18, 28>,
+			CEditorPlugin::CardinalDirections::West => <19, 18, 27>
+		],
+		"3" => [
+			CEditorPlugin::CardinalDirections::North => <17, 6, 27>,
+			CEditorPlugin::CardinalDirections::East => <20, 6, 17>,
+			CEditorPlugin::CardinalDirections::South => <30, 6, 20>,
+			CEditorPlugin::CardinalDirections::West => <27, 6, 30>
+		],
+		"4" => [
+			CEditorPlugin::CardinalDirections::North => <25, 24, 23>,
+			CEditorPlugin::CardinalDirections::East => <24, 24, 25>,
+			CEditorPlugin::CardinalDirections::South => <22, 24, 24>,
+			CEditorPlugin::CardinalDirections::West => <23, 24, 22>
+		],
+		"5" => [
+			CEditorPlugin::CardinalDirections::North => <23, 6, 23>,
+			CEditorPlugin::CardinalDirections::East => <23, 6, 23>,
+			CEditorPlugin::CardinalDirections::South => <23, 6, 23>,
+			CEditorPlugin::CardinalDirections::West => <23, 6, 23>
+		]
+	]
+]
+
+#Const C_Landscapes_Camera [
+	"Canyon" => [
+		"1" => [
+			"pos" => <6.4275, 459.27, 313.09>,
+			"rot" => <56.273, 26.148, 0.>
+		],
+		"2" => [
+			"pos" => <125.27, 262.87, 1911.2>,
+			"rot" => <-222.34, 17.544, 0.>
+		],
+		"3" => [
+			"pos" => <1972.7, 396.32, 1814.2>,
+			"rot" => <-129.8, 23.626, 0.>
+		],
+		"4" => [
+			"pos" => <573.21, 295.22, 2101.4>,
+			"rot" => <-206.42, 21.548, 0.>
+		],
+		"5" => [
+			"pos" => <2008., 248.92, 1834.5>,
+			"rot" => <229.81, 17.631, 0.>
+		]
+	],
+	"Valley" => [
+		"1" => [
+			"pos" => <1389.8, 311.58, 1425.8>,
+			"rot" => <-139.79, 27.948, 0.>
+		],
+		"2" => [
+			"pos" => <-48.329, 122.37, 211.12>,
+			"rot" => <-306.48, 21.866, 0.>
+		],
+		"3" => [
+			"pos" => <1272.7, 156.48, 1303.5>,
+			"rot" => <212.1, 20.289, 0.>
+		],
+		"4" => [
+			"pos" => <1337.2, 253.1, 341.28>,
+			"rot" => <-62.128, 26.016, 0.>
+		],
+		"5" => [
+			"pos" => <113.15, 222.87, 1585.6>,
+			"rot" => <-218.44, 16.424, 0.>
+		]
+	],
+	"Stadium" => [
+		"1" => [
+			"pos" => <-163.67, 114.71, 914.6>,
+			"rot" => <120.39, 12.644, 0.>
+		],
+		"2" => [
+			"pos" => <-128.93, 172.68, 198.17>,
+			"rot" => <62.208, 19.853, 0.>
+		],
+		"3" => [
+			"pos" => <1160.6, 242.59, 200.06>,
+			"rot" => <-70.764, 26.161, 0.>
+		],
+		"4" => [
+			"pos" => <948.31, 166.49, 1022.8>,
+			"rot" => <-141.12, 20.529, 0.>
+		],
+		"5" => [
+			"pos" => <-229.52, 215.32, 91.717>,
+			"rot" => <64.647, 17.749, 0.>
+		]
+	],
+	"Lagoon" => [
+		"1" => [
+			"pos" => <1488., 176.79, 1297.>,
+			"rot" => <-125.63, 23.61, 0.>
+		],
+		"2" => [
+			"pos" => <191.37, 349.94, 83.401>,
+			"rot" => <46.506, 25.863, 0.>
+		],
+		"3" => [
+			"pos" => <623.99, 138.23, 56.098>,
+			"rot" => <11.14, 25.412, 0.>
+		],
+		"4" => [
+			"pos" => <1398.8, 428.25, 1278.5>,
+			"rot" => <-128.17, 28.341, 0.>
+		],
+		"5" => [
+			"pos" => <1548.1, 224.94, 1181.4>,
+			"rot" => <-120.78, 20.77, 0.>
+		]
+	]
+]
+
+// ---------------------------------- //
+// Globales
+// ---------------------------------- //
+declare Real[Integer][Integer] G_PerlinNoise;
+declare CBlockModel[Text] G_TerrainBlocks;
+declare Integer[CBlockModel] G_WaterBlocks; ///< Blocks containing water
+declare CMacroblockModel[Text][Text] G_Terrains; ///< Terrains in the collection
+declare CBlockModel[] G_UndergroundTerrainBlocks; ///< Terrains that are under ground level
+
+// ---------------------------------- //
+// Functions
+// ---------------------------------- //
+// ---------------------------------- // 
+// Private
+// ---------------------------------- //
+// ---------------------------------- //
+/** Get map width
+ *
+ *	@return		The map width
+ */
+Integer Private_GetWidth() {
+	return Map.Size.X - 1;
+}
+
+// ---------------------------------- //
+/** Get map width
+ *
+ *	@return		The map width
+ */
+Integer Private_GetHeight() {
+	return Map.Size.Z - 1;
+}
+
+// ---------------------------------- //
+/** Returns the average value of the four neighbours of a point from the noise array
+ *
+ *	@param	_X		X coordinate of the point
+ *	@param	_Y		Y coordinate of the point
+ */
+Real Private_SmoothNoise(Real _X, Real _Y) {
+	declare Width = Private_GetWidth();
+	declare Height = Private_GetHeight();
+	
+	declare FloorX = ML::FloorInteger(_X);
+	declare FloorY = ML::FloorInteger(_Y);
+	
+	declare FractX = _X - FloorX;
+	declare FractY = _Y - FloorY;
+	
+	declare X1 = (FloorX + Width) % Width;
+	declare Y1 = (FloorY + Height) % Height;
+	
+	declare X2 = (X1 + Width - 1) % Width;
+	declare Y2 = (Y1 + Height - 1) % Height;
+	
+	// Bilinear interpolation
+	declare Value = 0.;
+	Value += FractX			* FractY		* G_PerlinNoise[X1][Y1];
+	Value += FractX			* (1 - FractY)	* G_PerlinNoise[X1][Y2];
+	Value += (1 - FractX)	* FractY		* G_PerlinNoise[X2][Y1];
+	Value += (1 - FractX)	* (1 - FractY)	* G_PerlinNoise[X2][Y2];
+	
+	return Value;
+}
+
+// ---------------------------------- //
+/** Add turbulence around a point from the noise array
+ *
+ *	@param	_X		X coordinate of the point
+ *	@param	_Y		Y coordinate of the point
+ *	@param	_Size	Initial zoom factor
+ */
+Real Private_Turbulence(Real _X, Real _Y, Real _Size) {
+	declare Value = 0.;
+	declare Size = _Size;
+	
+	while (Size >= 1.) {
+		Value += Private_SmoothNoise(_X / Size, _Y / Size) * Size;
+		Size /= 2.;
+	}
+	
+	return 128. * Value / _Size;	//< Normalized between 0 and 255
+}
+
+// ---------------------------------- //
+/// Display a map of the generated noise
+Void Private_DebugNoise() {
+	declare LibTerrain_Type for This = C_Generator_Perlin;
+	declare LibTerrain_Frequency for This = C_Frequency;
+	declare LibTerrain_Octaves for This = C_Octaves;
+	declare LibTerrain_MaxRadius for This = 1.;
+	
+	declare LayerDebugNoise <=> UILayerCreate();
+	declare MaxSide = ML::Max(Private_GetWidth(), Private_GetHeight());
+	declare DebugSize = 100.;
+	declare SquareSize = DebugSize / MaxSide;
+	declare ML = """<frame posn="0 0">""";
+	foreach (X => Ys in G_PerlinNoise) {
+		foreach (Y => Height in Ys) {
+			declare PosX = X * SquareSize;
+			declare PosY = Y * SquareSize;
+			declare SmoothHeight = 0.;
+			if (LibTerrain_Type == C_Generator_Radial) {
+				SmoothHeight = Private_Turbulence(X * LibTerrain_Frequency, Y * LibTerrain_Frequency, LibTerrain_Octaves) / 255.;
+				declare CenteredX = X - (Private_GetWidth() * 0.5);
+				declare CenteredY = Y - (Private_GetHeight() * 0.5);
+				declare Radius = ML::Sqrt((CenteredX * CenteredX) + (CenteredY * CenteredY));
+				declare Gradient = Radius / LibTerrain_MaxRadius;
+				SmoothHeight *= Gradient;
+			} else {
+				SmoothHeight = Private_Turbulence(X * LibTerrain_Frequency, Y * LibTerrain_Frequency, LibTerrain_Octaves) / 255.;
+			}
+			declare Color = TL::ColorToText(<SmoothHeight, SmoothHeight, SmoothHeight>);
+			ML ^= """<quad posn="{{{PosX}}} {{{PosY}}}" sizen="{{{SquareSize}}} {{{SquareSize}}}" bgcolor="{{{Color}}}" />""";
+		}
+	}
+	ML ^= "</frame>";
+	LayerDebugNoise.ManialinkPage = ML;
+	sleep(1500);
+	UILayerDestroy(LayerDebugNoise);
+}
+
+// ---------------------------------- //
+/// Generate perlin noise
+Void Private_GenerateNoise() {
+	declare Width = Private_GetWidth();
+	declare Height = Private_GetHeight();
+	G_PerlinNoise.clear();
+	for (X, 0, Width) {
+		G_PerlinNoise[X] = Real[Integer];
+		for (Y, 0, Height) {
+			G_PerlinNoise[X][Y] = Random::Rand(0., 1., X*Y*1.);
+		}
+	}
+	
+	//Private_DebugNoise();
+}
+
+// ---------------------------------- //
+/** Get the terrain block model to use for the given height
+ *
+ *	@param	_Height					The height
+ *
+ *	@return							The terrain block model to use
+ */
+CBlockModel Private_GetTerrainForInterval(Real _Height) {
+	declare LibTerrain_Intervals for This = Text[Real];
+	
+	declare SelectedTerrainBlockId = "";
+	foreach (Height => TerrainBlockId in LibTerrain_Intervals) {
+		if (Height > _Height) {
+			SelectedTerrainBlockId = TerrainBlockId;
+			break;
+		}
+	}
+	
+	if (SelectedTerrainBlockId == "" || !G_TerrainBlocks.existskey(SelectedTerrainBlockId)) return Null;
+	
+	return G_TerrainBlocks[SelectedTerrainBlockId];
+}
+
+// ---------------------------------- //
+ /** Filter terrains according to specific constraints
+ *
+ *	@param	_Terrain				The terrain to filter
+ *	@param	_Coord					The coordinates of the block
+ *
+ *	@return							The filterred terrain
+ */
+CBlockModel Private_FilterTerrain(CBlockModel _Terrain, Int3 _Coord) {
+	declare Terrain = _Terrain;
+	
+	if (C_OnlyOneLevelOfWater && G_WaterBlocks.existskey(_Terrain)) {
+		declare LibTerrain_Filter_WaterLevel for This = -1;
+		declare CBlockModel LibTerrain_Filter_WaterBlock for This;
+		
+		declare GroundHeight = GetGroundHeight(_Coord.X, _Coord.Z);
+		
+		// First water block, save properties
+		if (LibTerrain_Filter_WaterLevel < 0) {
+			LibTerrain_Filter_WaterLevel = GroundHeight;
+			LibTerrain_Filter_WaterBlock = _Terrain;
+		}
+		// Replace water block that don't use the same model as the previous one
+		else if (_Terrain != LibTerrain_Filter_WaterBlock) {
+			Terrain = LibTerrain_Filter_WaterBlock;
+		}
+		
+		// Cancel water blocks that can't be placed at the same height than the previous ones
+		if (GroundHeight != LibTerrain_Filter_WaterLevel && GroundHeight - G_WaterBlocks[Terrain] != LibTerrain_Filter_WaterLevel) {
+			Terrain = Null;
+		}
+	}
+	
+	return Terrain;
+}
+
+// ---------------------------------- //
+// Public
+// ---------------------------------- //
+// ---------------------------------- //
+/** Return the version number of the script
+ *
+ *	@return		The version number of the script
+ */
+Text GetScriptVersion() {
+	return Version;
+}
+
+// ---------------------------------- //
+/** Return the name of the script
+ *
+ *	@return		The name of the script
+ */
+Text GetScriptName() {
+	return ScriptName;
+}
+
+// ---------------------------------- //
+/** Start and initialize the random generation
+ *
+ *	@param	_Type					The type of generator to use (Radial, Noise, ...)
+ *	@param	_Frequency				The frequency for the noise generator
+ *	@param	_Octaves				The octaves for the noise generator
+ *	@param	_Intervals				The type of terrain to use for each interval
+ *	@param	_Layer					The number of the layer
+ */
+Void Random_Start(Text _Type, Real _Frequency, Real _Octaves, Text[Real] _Intervals, Integer _Layer) {
+	declare LibTerrain_Type for This = C_Generator_Perlin;
+	declare LibTerrain_Frequency for This = C_Frequency;
+	declare LibTerrain_Octaves for This = C_Octaves;
+	declare LibTerrain_Intervals for This = Text[Real];
+	declare LibTerrain_Layer for This = C_Layer;
+	declare LibTerrain_Finished for This = True;
+	declare LibTerrain_X for This = 0;
+	declare LibTerrain_Y for This = 0;
+	declare LibTerrain_Filter_WaterLevel for This = -1;
+	declare CBlockModel LibTerrain_Filter_WaterBlock for This;
+	declare LibTerrain_MaxRadius for This = 1.;
+	LibTerrain_Frequency = _Frequency;
+	LibTerrain_Intervals = _Intervals;
+	LibTerrain_Octaves = _Octaves;
+	LibTerrain_Layer = _Layer;
+	LibTerrain_Finished = False;
+	LibTerrain_X = 0;
+	LibTerrain_Y = 0;
+	LibTerrain_Filter_WaterLevel = -1;
+	LibTerrain_Filter_WaterBlock = Null;
+	
+	if (_Type == "Radial") LibTerrain_Type = C_Generator_Radial;
+	else LibTerrain_Type = C_Generator_Perlin;
+	
+	declare MaxSide = ML::Max(Private_GetWidth(), Private_GetHeight());
+	LibTerrain_MaxRadius = ML::Sqrt(2. * MaxSide * MaxSide);
+	
+	// Generate noise
+	Private_GenerateNoise();
+}
+
+// ---------------------------------- //
+/// Overload with default intervals values
+Void Random_Start(Real _Frequency, Real _Octaves, Integer _Layer) {
+	Random_Start(C_Type, _Frequency, _Octaves, Text[Real], _Layer);
+}
+
+// ---------------------------------- //
+/// Overload with default frequency, octaves and intervals values
+Void Random_Start() {
+	Random_Start(C_Frequency, C_Octaves, C_Layer);
+}
+
+// ---------------------------------- //
+/** Check if the random generation is finished
+ *
+ *	@return		True if it's finished, False otherwise
+ */
+Boolean Random_Finished() {
+	declare LibTerrain_Finished for This = True;
+	return LibTerrain_Finished;
+}
+
+// ---------------------------------- //
+/** Advance the random generation algorithm from one step
+ *
+ *	@return		The algorithm progression between 0. and 1.
+ */
+Real Random_Loop() {
+	declare LibTerrain_Type for This = C_Generator_Perlin;
+	declare LibTerrain_Frequency for This = C_Frequency;
+	declare LibTerrain_Octaves for This = C_Octaves;
+	declare LibTerrain_Intervals for This = Text[Real];
+	declare LibTerrain_Layer for This = C_Layer;
+	declare LibTerrain_Finished for This = True;
+	declare LibTerrain_X for This = 0;
+	declare LibTerrain_Y for This = 0;
+	declare LibTerrain_MaxRadius for This = 1.;
+	
+	// If the algorithm is already complete, stop function
+	if (LibTerrain_Finished) return 1.;
+	
+	// Find Z value
+	
+	declare Z = 0.;
+	if (LibTerrain_Type == C_Generator_Radial) {
+		Z = Private_Turbulence(LibTerrain_X * LibTerrain_Frequency, LibTerrain_Y * LibTerrain_Frequency, LibTerrain_Octaves);
+		declare CenteredX = LibTerrain_X - (Private_GetWidth() * 0.5);
+		declare CenteredY = LibTerrain_Y - (Private_GetHeight() * 0.5);
+		declare Radius = ML::Sqrt((CenteredX * CenteredX) + (CenteredY * CenteredY));
+		declare Gradient = Radius / LibTerrain_MaxRadius;
+		Z *= Gradient;
+	} else {
+		Z = Private_Turbulence(LibTerrain_X * LibTerrain_Frequency, LibTerrain_Y * LibTerrain_Frequency, LibTerrain_Octaves);
+	}
+	
+	// Build terrain
+	declare RandX = Random::Rand(0, 3);
+	declare RandY = Random::Rand(0, 3);
+	declare EndX = -2;
+	declare EndY = -2;
+	if (RandX > 0) EndX = 2;
+	if (RandY > 0) EndY = 2;
+	
+	declare StartCoord = <LibTerrain_X, 0, LibTerrain_Y>;
+	declare EndCoord = <LibTerrain_X+EndX, 0, LibTerrain_Y+EndY>;
+	
+	declare GroundHeight = GetGroundHeight(LibTerrain_X, LibTerrain_Y);
+	declare RemoveHeight = GroundHeight - CollectionGroundY;
+	if (RemoveHeight < 0) RemoveHeight = 0;
+	declare HeightToRemove = ((RemoveHeight / 35.) * 255.) * 0.25;
+	Z -= HeightToRemove;
+	
+	// Default intervals
+	if (LibTerrain_Intervals.count <= 0) {
+		switch (Map.CollectionName) {
+			case "Canyon": {
+				// WaterCliff12
+				if (Z < 62.) {
+					declare Placed = PlaceTerrainBlocks(Private_FilterTerrain(G_TerrainBlocks["WaterCliff12"], StartCoord), StartCoord, EndCoord);
+				} 
+				// Flat
+				else if (Z < 105.) {
+				
+				}
+				// WaterHill
+				else if (Z < 110.) {
+					declare Placed = PlaceTerrainBlocks(Private_FilterTerrain(G_TerrainBlocks["WaterHill"], StartCoord), StartCoord, EndCoord);
+				}
+				// DirtCliff12
+				else if (Z < 120.) {
+					declare Placed = PlaceTerrainBlocks(Private_FilterTerrain(G_TerrainBlocks["DirtCliff12"], StartCoord), StartCoord, EndCoord);
+				}
+				// Flat
+				else if (Z < 150.) {
+				
+				}
+				// DirtHill2
+				else if (Z < 152.) {
+					declare Placed = PlaceTerrainBlocks(Private_FilterTerrain(G_TerrainBlocks["DirtHill2"], StartCoord), StartCoord, EndCoord);
+				}
+				// Flat
+				else if (Z < 180.) {
+					
+				} 
+				// DirtCliff8
+				else {
+					declare Placed = PlaceTerrainBlocks(Private_FilterTerrain(G_TerrainBlocks["DirtCliff8"], StartCoord), StartCoord, EndCoord);
+				}
+			}
+			case "Valley": {
+				// LakeShore
+				if (Z < 80.) {
+					declare Placed = PlaceTerrainBlocks(Private_FilterTerrain(G_TerrainBlocks["LakeShore"], StartCoord), StartCoord, EndCoord);
+				}
+				// Flat
+				else if (Z < 90.) {
+					
+				} 
+				// GrassToField
+				else if (Z < 92.) {
+					declare Placed = PlaceTerrainBlocks(Private_FilterTerrain(G_TerrainBlocks["GrassToField"], StartCoord), StartCoord, EndCoord);
+				}
+				// Flat
+				else if (Z < 116.) {
+					
+				}
+				// GrassToForest
+				else if (Z < 120.) {
+					declare Placed = PlaceTerrainBlocks(Private_FilterTerrain(G_TerrainBlocks["GrassToForest"], StartCoord), StartCoord, EndCoord);
+				}
+				// Flat
+				else if (Z < 138.) {
+					
+				}
+				// GrassCliff2
+				else if (Z < 140.) {
+					declare Placed = PlaceTerrainBlocks(Private_FilterTerrain(G_TerrainBlocks["GrassCliff2"], StartCoord), StartCoord, EndCoord);
+				}
+				// Flat
+				else if (Z < 151.) {
+					
+				}
+				// GrassHill1
+				else if (Z < 151.5) {
+					declare Placed = PlaceTerrainBlocks(Private_FilterTerrain(G_TerrainBlocks["GrassHill1"], StartCoord), StartCoord, EndCoord);
+				}
+				// Flat
+				else if (Z < 160.) {
+					
+				} 
+				// GrassCliff8
+				else {
+					declare Placed = PlaceTerrainBlocks(Private_FilterTerrain(G_TerrainBlocks["GrassCliff8"], StartCoord), StartCoord, EndCoord);
+				}
+			}
+			case "Stadium": {
+				// StadiumPool2
+				if (Z < 60.) {
+					declare Placed = PlaceTerrainBlocks(Private_FilterTerrain(G_TerrainBlocks["StadiumPool2"], StartCoord), StartCoord, EndCoord);
+				}
+				// Flat
+				else if (Z < 90.) {
+					
+				} 
+				// StadiumDirtBorder
+				else if (Z < 100.) {
+					declare Placed = PlaceTerrainBlocks(Private_FilterTerrain(G_TerrainBlocks["StadiumDirtBorder"], StartCoord), StartCoord, EndCoord);
+				}
+				// Flat
+				else if (Z < 160.) {
+					
+				}
+				// StadiumDirtHill
+				else {
+					declare Placed = PlaceTerrainBlocks(Private_FilterTerrain(G_TerrainBlocks["StadiumDirtHill"], StartCoord), StartCoord, EndCoord);
+				}
+			}
+			case "Lagoon": {
+				if (LibTerrain_Layer == 2) {
+					// Sea
+					if (Z < 110.) {
+						
+					} 
+					// Beach
+					else if (Z < 125.) {
+						declare Placed = PlaceTerrainBlocks(Private_FilterTerrain(G_TerrainBlocks["Beach"], StartCoord), StartCoord, EndCoord);
+					}
+					// LandHill
+					/*else if (Z < 120.) {
+						declare Placed = PlaceTerrainBlocks(Private_FilterTerrain(G_TerrainBlocks["LandHill"], StartCoord), StartCoord, EndCoord);
+					}*/
+					// Nothing
+					else if (Z < 130.) {
+						
+					}
+					// LandHill6
+					else if (Z < 132.) {
+						declare Placed = PlaceTerrainBlocks(Private_FilterTerrain(G_TerrainBlocks["LandHill6"], StartCoord), StartCoord, EndCoord);
+					}
+					// Nothing
+					else if (Z < 190.) {
+						
+					} 
+					// SeaCliff13
+					else {
+						declare Placed = PlaceTerrainBlocks(Private_FilterTerrain(G_TerrainBlocks["SeaCliff13"], StartCoord), StartCoord, EndCoord);
+					}
+				} else if (LibTerrain_Layer == 1) {
+					// Sea
+					if (Z < 80.) {
+						
+					} 
+					// Beach
+					else {
+						declare Placed = PlaceTerrainBlocks(Private_FilterTerrain(G_TerrainBlocks["Beach"], StartCoord), StartCoord, EndCoord);
+					}
+				} else {
+					// Nothing
+					if (Z < 118.) {
+						
+					}
+					// LandHill
+					else if (Z < 120.) {
+						declare Placed = PlaceTerrainBlocks(Private_FilterTerrain(G_TerrainBlocks["LandHill"], StartCoord), StartCoord, EndCoord);
+					}
+					// Nothing
+					else if (Z < 130.) {
+						
+					}
+					// LandHill6
+					else if (Z < 132.) {
+						declare Placed = PlaceTerrainBlocks(Private_FilterTerrain(G_TerrainBlocks["LandHill6"], StartCoord), StartCoord, EndCoord);
+					}
+					// Nothing
+					else if (Z < 170.) {
+						
+					} 
+					// SeaCliff13
+					else {
+						declare Placed = PlaceTerrainBlocks(Private_FilterTerrain(G_TerrainBlocks["SeaCliff13"], StartCoord), StartCoord, EndCoord);
+					}
+				}
+			}
+		}
+	}
+	// Custom intervals
+	else {
+		declare TerrainBlock = Private_FilterTerrain(Private_GetTerrainForInterval(Z), StartCoord);
+		if (TerrainBlock != Null) {
+			declare Placed = PlaceTerrainBlocks(TerrainBlock, StartCoord, EndCoord);
+		}
+	}
+	
+	
+	// Calculate progress
+	declare Width = Private_GetWidth();
+	declare Height = Private_GetHeight();
+	declare Progress = 0.;
+	declare Step = (LibTerrain_X * Width) + LibTerrain_Y;
+	declare Max = (Height+1) * (Width+1);
+	if (Max != 0) Progress = Step / ML::ToReal(Max);
+	
+	// Next step
+	LibTerrain_Y += 1;
+	if (LibTerrain_Y > Height) {
+		LibTerrain_Y = 0;
+		LibTerrain_X += 1;
+	}
+	if (LibTerrain_X > Width) {
+		LibTerrain_Finished = True;
+	}
+	
+	return Progress;
+}
+
+// ---------------------------------- //
+/// End the random generation
+Void Random_End() {
+	
+}
+
+// ---------------------------------- //
+/** Get the terrains macroblocks and their names
+ *
+ *	@param	_Beginner				Select only the beginner terrains
+ *
+ *	@return							The terrains macroblocks and their names
+ */
+CMacroblockModel[Text] GetTerrains(Boolean _Beginner, Boolean _Random) {
+	declare CMacroblockModel[Text] Terrains;
+	
+	if (!C_MultiPartsTerrains.existskey(Map.CollectionName)) return Terrains;
+	if (_Beginner && !C_Landscapes_Beginner.existskey(Map.CollectionName)) return Terrains;
+	if (_Random && !C_Landscapes_Random.existskey(Map.CollectionName)) return Terrains;
+	
+	declare CollectionTerrain = C_MultiPartsTerrains[Map.CollectionName];
+	foreach (TerrainName => TerrainParts in CollectionTerrain) {
+		if (_Beginner && !C_Landscapes_Beginner[Map.CollectionName].exists(TerrainName)) continue;
+		if (_Random && !C_Landscapes_Random[Map.CollectionName].exists(TerrainName)) continue;
+		
+		foreach (TerrainPart => TerrainDirs in TerrainParts) {
+			Terrains[TerrainName] = G_Terrains[TerrainName][TerrainPart];
+			break;
+		}
+	}
+	
+	return Terrains;
+}
+
+
+// ---------------------------------- //
+/** Get the direction available for a terrain
+ *
+ *	@param	_Name					The name of the terrain
+ *
+ *	@return							The directions
+ */
+CEditorPlugin::CardinalDirections[] GetTerrainDirs(Text _Name) {
+	declare CEditorPlugin::CardinalDirections[] Dirs;
+	
+	if (!C_MultiPartsTerrains.existskey(Map.CollectionName)) return Dirs;
+	if (!C_MultiPartsTerrains[Map.CollectionName].existskey(_Name)) return Dirs;
+	declare TerrainParts = C_MultiPartsTerrains[Map.CollectionName][_Name];
+	foreach (TerrainPart => TerrainDirs in TerrainParts) {
+		foreach (TerrainDir => TerrainCoord in TerrainDirs) {
+			Dirs.add(TerrainDir);
+		}
+		break;
+	}
+	
+	return Dirs;
+}
+
+// ---------------------------------- //
+/** Get the number of parts contained in a multiparts terrain
+ *
+ *	@param	_Name					The name of the terrain
+ *
+ *	@return							The number of parts in the terrain
+ */
+Integer GetPartsCount(Text _Name) {
+	if (!C_MultiPartsTerrains.existskey(Map.CollectionName)) return 0;
+	if (!C_MultiPartsTerrains[Map.CollectionName].existskey(_Name)) return 0;
+	
+	return C_MultiPartsTerrains[Map.CollectionName][_Name].count;
+}
+
+// ---------------------------------- //
+/** Place a terrain part
+ *
+ *	@param	_Name					The name of the terrain
+ *	@param	_Part					The part number
+ *	@param	_Dir					The part direction
+ *
+ *	@return							True if the part was placed, False otherwise
+ */
+Boolean PlacePart(Text _Name, Integer _Part, CEditorPlugin::CardinalDirections _Dir) {
+	if (!C_MultiPartsTerrains.existskey(Map.CollectionName)) return False;
+	if (!C_MultiPartsTerrains[Map.CollectionName].existskey(_Name)) return False;
+	
+	declare PartsCoords = C_MultiPartsTerrains[Map.CollectionName][_Name];
+	if (PartsCoords.count <= 0) return False;
+	
+	declare PartCount = 0;
+	foreach (PartName => PartCoords in PartsCoords) {
+		if (PartCount == _Part) {
+			if (PartCoords.existskey(_Dir)) {
+				if (G_Terrains.existskey(_Name) && G_Terrains[_Name].existskey(PartName)) {
+					return PlaceMacroblock(G_Terrains[_Name][PartName], PartCoords[_Dir], _Dir);
+				} else {
+					return False;
+				}
+			} else {
+				return False;
+			}
+		}
+		PartCount += 1;
+	}
+	
+	return False;
+}
+
+// ---------------------------------- //
+/** Get the coordinates of a spawn on a prefab terrain
+ *
+ *	@param	_Name					The name of the terrain
+ *	@param	_Dir					The direction of the terrain
+ *
+ *	@return							The spawn coordinates
+ */
+Int3 GetTerrainSpawn(Text _Name, CEditorPlugin::CardinalDirections _Dir) {
+	if (!C_Landscapes_Spawns.existskey(Map.CollectionName)) return Utils::NullCoord();
+	if (!C_Landscapes_Spawns[Map.CollectionName].existskey(_Name)) return Utils::NullCoord();
+	if (!C_Landscapes_Spawns[Map.CollectionName][_Name].existskey(_Dir)) return Utils::NullCoord();
+	
+	return C_Landscapes_Spawns[Map.CollectionName][_Name][_Dir];
+}
+
+// ---------------------------------- //
+/** Get the camera used for the terrain screenshot
+ *
+ *	@param	_Name					The name of the terrain
+ *
+ *	@return							The camera properties
+ */
+Vec3[Text] GetTerrainCamera(Text _Name) {
+	declare Empty = ["pos" => Vec3, "rot" => Vec3];
+	if (!C_Landscapes_Camera.existskey(Map.CollectionName)) return Empty;
+	if (!C_Landscapes_Camera[Map.CollectionName].existskey(_Name)) return Empty;
+	
+	return C_Landscapes_Camera[Map.CollectionName][_Name];
+}
+
+// ---------------------------------- //
+/** Check if a terrain block model is under ground level
+ *
+ *	@param	_Terrain				The terrain to check
+ *
+ *	@return							True if the terrain is under ground level, False otherwise
+ */
+Boolean IsUndergroundTerrain(CBlockModel _Terrain) {
+	return G_UndergroundTerrainBlocks.exists(_Terrain);
+}
+
+// ---------------------------------- //
+/// Unload the library
+Void Unload() {
+	G_PerlinNoise.clear();
+	G_TerrainBlocks.clear();
+	G_UndergroundTerrainBlocks.clear();
+}
+
+// ---------------------------------- //
+/// Load the library
+Void Load() {
+	Unload();
+	
+	// Get terrain block
+	switch (Map.CollectionName) {
+		case "Canyon": {
+			G_TerrainBlocks["WaterCliff12"] = GetTerrainBlockModelFromName("WaterCliff12");
+			G_TerrainBlocks["WaterHill"] = GetTerrainBlockModelFromName("WaterHill");
+			G_TerrainBlocks["DirtHill2"] = GetTerrainBlockModelFromName("DirtHill2");
+			G_TerrainBlocks["DirtCliff8"] = GetTerrainBlockModelFromName("DirtCliff8");
+			G_TerrainBlocks["DirtCliff12"] = GetTerrainBlockModelFromName("DirtCliff12");
+			
+			G_WaterBlocks[G_TerrainBlocks["WaterCliff12"]] = -13;
+			G_WaterBlocks[G_TerrainBlocks["WaterHill"]] = -1;
+		}
+		case "Valley": {
+			G_TerrainBlocks["LakeShore"] = GetTerrainBlockModelFromName("LakeShore");
+			G_TerrainBlocks["GrassToField"] = GetTerrainBlockModelFromName("GrassToField");
+			G_TerrainBlocks["GrassToForest"] = GetTerrainBlockModelFromName("GrassToForest");
+			G_TerrainBlocks["GrassHill1"] = GetTerrainBlockModelFromName("GrassHill1");
+			G_TerrainBlocks["GrassCliff2"] = GetTerrainBlockModelFromName("GrassCliff2");
+			G_TerrainBlocks["GrassCliff8"] = GetTerrainBlockModelFromName("GrassCliff8");
+			
+			G_WaterBlocks[G_TerrainBlocks["LakeShore"]] = -1;
+		}
+		case "Stadium": {
+			G_TerrainBlocks["StadiumDirtBorder"] = GetTerrainBlockModelFromName("StadiumDirtBorder");
+			G_TerrainBlocks["StadiumDirtHill"] = GetTerrainBlockModelFromName("StadiumDirtHill");
+			G_TerrainBlocks["StadiumPool2"] = GetTerrainBlockModelFromName("StadiumPool2");
+			
+			G_WaterBlocks[G_TerrainBlocks["StadiumPool2"]] = -1;
+		}
+		case "Lagoon": {
+			G_TerrainBlocks["Beach"] = GetTerrainBlockModelFromName("Beach");
+			G_TerrainBlocks["LandHill"] = GetTerrainBlockModelFromName("LandHill");
+			G_TerrainBlocks["LandHill6"] = GetTerrainBlockModelFromName("LandHill6");
+			G_TerrainBlocks["Sea"] = GetTerrainBlockModelFromName("Sea");
+			G_TerrainBlocks["SeaCliff13"] = GetTerrainBlockModelFromName("SeaCliff13");
+			
+			G_WaterBlocks[G_TerrainBlocks["Sea"]] = 0;
+			G_UndergroundTerrainBlocks.add(G_TerrainBlocks["Sea"]);
+		}
+	}
+	
+	// Find terrains macroblocks
+	foreach (Key => MacroblockModel in MacroblockModels) {
+		if (Key % 100 == 0) yield;
+		
+		if (Macroblock::GetFamily(MacroblockModel) != "Terrain") continue;
+		if (Macroblock::GetType(MacroblockModel) != "Terrains") continue;
+		declare MacroblockName = Macroblock::GetName(MacroblockModel);
+		declare MacroblockId = TL::Split("\\", ""^MacroblockModel.Id);
+		declare MacroblockVariant = TL::Split(".", MacroblockId[MacroblockId.count-1]);
+		if (!G_Terrains.existskey(MacroblockName)) G_Terrains[MacroblockName] = CMacroblockModel[Text];
+		G_Terrains[MacroblockName][MacroblockVariant[0]] = MacroblockModel;
+	}
+}

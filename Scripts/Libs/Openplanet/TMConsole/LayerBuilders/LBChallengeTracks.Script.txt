@@ -1,0 +1,1150 @@
+
+#Include "Libs/Openplanet/Manialink2.Script.txt"					as Manialink
+#Include "Libs/Openplanet/UIPadButtons.Script.txt"				as LibUIButtons
+#Include "Libs/Openplanet/TMConsole/Selector.Script.txt"			as Selector
+#Include "Libs/Openplanet/TMConsole/Colors.Script.txt"		    as Colors
+#Include "Libs/Openplanet/TMConsole/PanelParameter.Script.txt"	as PanelParameter
+#Include "Libs/Openplanet/TMConsole/FontManager.Script.txt"		as Font
+#Include "Libs/Openplanet/TMConsole/MenuColor.Script.txt"		as MenuColor
+#Include "Libs/Openplanet/TMConsole/Menu/LibLoading.Script.txt"	as Loading
+
+#Const C_ImgBase	  		 "file://Media/Manialinks/Nadeo/TMConsole/Images/"
+#Const C_ImgBase2	  		 "file://Media/Images/TMConsole/Ingame/"
+#Const C_VideoBase			 "file://Media/Manialinks/Nadeo/TMConsole/Video/"
+
+#Const C_NbDifficulty 		 5
+#Const C_NbEnviro     		 4
+#Const C_SizePanelX          4.8
+#Const C_SizePanelY          4.
+
+Text Build(Text _ShowAnim, Text _HideAnim) {
+
+	declare Text IMGMedalNoMedal        = C_ImgBase2^"medal-empty.dds";
+	declare Text IMGMedalBronze         = C_ImgBase2^"medal-bronze.dds";
+	declare Text IMGMedalSilver         = C_ImgBase2^"medal-silver.dds";
+	declare Text IMGMedalGold           = C_ImgBase2^"medal-gold.dds";
+	declare Text IMGMedalTrackmaster    = C_ImgBase2^"medal-author.dds";
+	
+	
+	declare Text IMGEnvValley           = C_VideoBase ^ "BrowseTracks_Enviro/tmce_billboard_video_track_select_valley.webm";
+	
+	declare Text IMGLocked              = C_ImgBase^"locked-2x2.dds";
+	declare Text IMGGrille              = C_ImgBase^"Grille_BrowseTracks.dds";
+	
+	declare Integer Count_InstancesX    = 5;
+	declare Integer Count_InstancesY    = 2;
+	declare Real 	MarginY_Button      = 0.4;
+	declare Real 	MarginX_Button      = 0.45;
+	
+	
+	declare Real	SizeX_Screen        = PanelParameter::GetSizePanelX();
+	declare Real	SizeY_Screen        = PanelParameter::GetOneScreenSizeY();
+	
+	declare Real	SizeX_Total         = PanelParameter::GetSizePanelX();
+	declare Real	SizeY_Total         = PanelParameter::GetOneScreenSizeY() * 4;
+	
+
+	
+	declare Real	SizeXQuad           = (SizeX_Total - Count_InstancesX*MarginX_Button) / Count_InstancesX;
+	declare Real	SizeYQuad           = (SizeY_Total - Count_InstancesY*MarginY_Button) / Count_InstancesY;
+	declare Real	PosnXLabel          = 6.;
+	declare Real	PosnYLabel          = -5.0;
+	declare Real	PosXFirstQuad       = - SizeX_Total / 2.;
+	declare Real	PosYFirstQuad       = 26.0;
+	declare Integer NumberOfQuadCreateX = Count_InstancesX;
+	declare Integer NumberOfQuadCreateY = Count_InstancesY;
+	
+	declare Integer Platform   			= LibUIButtons::GetPlatform();
+	declare Text 	IMGCancel_PC  	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"), CManiaAppEvent::EMenuNavAction::Cancel);
+	declare Text 	IMGCancel_PS4  	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::Cancel);
+	declare Text 	IMGCancel_XB1  	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::Cancel);
+	
+	declare Text 	IMGSelect_PC  	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"), CManiaAppEvent::EMenuNavAction::Select);
+	declare Text 	IMGSelect_PS4  	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::Select);
+	declare Text 	IMGSelect_XB1  	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::Select);
+	
+	declare Text 	IMGAction1_PC  	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"), CManiaAppEvent::EMenuNavAction::Action1);
+	declare Text 	IMGAction1_PS4  = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::Action1);
+	declare Text 	IMGAction1_XB1  = LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::Action1);
+	
+	Loading::Init(<SizeX_Total, SizeY_Screen*6.>, <0., 2.25>, 400, _("Downloading Tracks. Please wait."));
+	
+	declare Text MLText = """
+	
+	<framemodel id="Frame_Button">
+		<quad 	halign="left" 	valign="top" sizen="{{{SizeXQuad+0.5}}} {{{SizeYQuad+0.5}}}"	bgcolor="fff"  	image="{{{IMGLocked}}}" 			posn="-0.5 -0.3 6" 					id="Quad_Locked" hidden="1"/>
+		
+		<quad 	halign="left" 	valign="top" sizen="{{{SizeXQuad}}} {{{SizeYQuad}}}" 			bgcolor="fff"																			id="Quad_Thumbnail"/>
+		<quad 	halign="left" 	valign="top" sizen="{{{SizeXQuad}}} 11" 						bgcolor="000"  										posn="0 0 2"/>
+		<quad 	halign="center" valign="center" sizen="11.0 11.0" 								bgcolor="0009" 	image="{{{IMGMedalNoMedal}}}"		posn="{{{SizeXQuad-7.5}}} -5.5 5"  	id="Quad_Medal"/>
+		<label 	halign="right" 	valign="center2" sizen="11.0 11.0" text="{{{_("Next")}}}" textprefix="$t" textfont="{{{Font::GetFontName("Main")}}}"	posn="{{{SizeXQuad-2}}}   -5.5 5"  	id="Label_Next"/>			
+		
+		<frame id="Frame_Result" posn="{{{SizeXQuad * 0.5}}} -5 0.5">
+			<quad 	halign="center"   valign="top" 		sizen="{{{SizeXQuad}}} {{{(SizeYQuad - 11.) / 6.}}}"				bgcolor="000"  		opacity="0.6"							posn="0 0"/>
+			<label	halign="center"   valign="center2"  textfont="{{{Font::GetFontName("Main")}}}" 	posn="0 {{{- (SizeYQuad - 11.) / 12.}}} 1" 	sizen="{{{SizeXQuad * 0.75}}}" 	textsize="2" id="Label_Result" text=""/>
+		</frame>
+		<frame id="Frame_Buddies_Result">
+	""";
+	for (I, 0, 5)
+	{
+		MLText ^= """
+			<frame id="Frame_Buddies_Result{{{I}}}" posn="0 -5 0.5">
+				<quad 	halign="left"     valign="top" 		sizen="{{{SizeXQuad}}} {{{(SizeYQuad - 11.) / 6.}}}"				bgcolor="000"  		opacity="0.6"							posn="0 0"/>
+				<label	halign="left"  	  valign="center2"  textfont="{{{Font::GetFontName("Main")}}}" 	posn="2 {{{- (SizeYQuad - 11.) / 12.}}} 1" 							sizen="{{{SizeXQuad * 0.15}}}" 	textsize="2" id="Label_Rank" />
+				<label	halign="left"     valign="center2"  textfont="{{{Font::GetFontName("Main")}}}" 	posn="{{{SizeXQuad * 0.2}}}  {{{- (SizeYQuad - 11.) / 12.}}} 1" 	sizen="{{{SizeXQuad * 0.38}}}" 	textsize="2" id="Label_Name" />
+				<label	halign="left"     valign="center2"  textfont="{{{Font::GetFontName("Main")}}}" 	posn="{{{SizeXQuad * 0.6}}}  {{{- (SizeYQuad - 11.) / 12.}}} 1" 	sizen="{{{SizeXQuad * 0.38}}}" 	textsize="2" id="Label_Time" />
+			</frame>
+		""";
+	}
+	
+	MLText ^= """
+		</frame>
+		<label halign="right" 	valign="center"  textfont="{{{Font::GetFontName("Main")}}}" 		posn="{{{PosnXLabel}}} {{{PosnYLabel+1.5}}} 4" text="#" textsize="6" sizen="5."/>
+		<label 	halign="left" 	valign="center"  textfont="{{{Font::GetFontName("NumberBig")}}}" 	posn="{{{PosnXLabel}}} {{{PosnYLabel}}} 4" 			sizen="{{{SizeXQuad * 0.5}}}"	textsize="7" id="Label_TrackName"/>
+	</framemodel>
+	
+	<framemodel id="Frame_GlobalRank">
+		<quad 	halign="left"   valign="center" 		sizen="{{{SizeXQuad * 1.5}}} 7"				bgcolor="000"  		opacity="0.6"							posn="-2 0"/>
+		<label 					sizen="5 5" 	halign="left" valign="center2" textfont="{{{Font::GetFontName("Main")}}}" id="Label_Rank" 	textsize="3"  	textcolor="{{{Colors::GetColor("White")}}}"/>
+		<label posn="6 0 0"		sizen="25 5" 	halign="left" valign="center2" textfont="{{{Font::GetFontName("Main")}}}" id="Label_Name" 	textsize="3"  	textcolor="{{{Colors::GetColor("White")}}}"/>
+		<label posn="32 0 0"	sizen="10 5" 	halign="left" valign="center2" textfont="{{{Font::GetFontName("Main")}}}" id="Label_Score" 	textsize="3" textcolor="{{{Colors::GetColor("White")}}}"/>
+		<label posn="43 0 0"	sizen="25 5"	halign="left" valign="center2" textfont="{{{Font::GetFontName("Main")}}}" id="Label_Time" 	textsize="3"  textcolor="{{{Colors::GetColor("White")}}}"/>
+	</framemodel>
+		
+	{{{Loading::InjectInManialink()}}}
+	
+	<frame id="Frame_Main" posn="0 0 2" >
+		
+		<quad posn="0 {{{PosYFirstQuad}}} 3" sizen="{{{SizeX_Screen-0.3}}} {{{SizeY_Screen*2. - 1.}}}" id="Quad_BgBanner" halign="center" valign="bottom" />
+
+		<frame id="Frame_Board">
+			<frame id="Frame_Header">
+				<label textemboss="0" posn="-115 55 4"  halign="left" valign="bottom" textfont="{{{Font::GetFontName("Main")}}}" id="Label_Title" textsize="11" textprefix="$t" text="" textcolor="{{{Colors::GetColor("White")}}}"/>
+				<label textemboss="0" posn="-115 54 4"  halign="left" valign="top" textfont="{{{Font::GetFontName("Main")}}}" 	 id="Label_Subtitle" textsize="8" textprefix="$t" text="" textcolor="{{{Colors::GetColor("White")}}}"/>
+				
+				<frame id="Frame_ButtonCancel" posn="105 33 5" hidden="0">
+					<quad halign="right"  valign="center" sizen="50 8" opacity="0." scriptevents="1" posn="0 0 6" id="MouseInput_InputInfo_Cancel" />
+	""";
+		for (I, 0, 2) {
+			declare Text Image;
+			switch (I) {
+				case LibUIButtons::GetPlatform("PC") 	: Image = IMGCancel_PC;
+				case LibUIButtons::GetPlatform("PS4") 	: Image = IMGCancel_PS4;
+				case LibUIButtons::GetPlatform("XB1") 	: Image = IMGCancel_XB1;
+			}
+			MLText ^= """<quad id="QuadInputIcon_Cancel_{{{I}}}" halign="center" valign="bottom" keepratio="Fit" sizen="8 8" image="{{{Image}}}" posn="0 -4.5 6" """;
+			if (I != Platform)
+				MLText ^= """ hidden="1" """;
+			MLText ^= "/>";
+		}			
+	MLText ^= """
+					<label halign="right" valign="center" style="TextButtonNav" posn="-5 0 6" id="Label_Cancel" textsize="4" text="{{{_("|16 chars max|BACK")}}}" textcolor="fff"/>
+				</frame>
+				<frame id="Frame_ButtonSelect" posn="105 40 5" hidden="0">
+					<quad halign="right"  valign="center" sizen="50 8" opacity="0." scriptevents="1" posn="0 0 6" id="MouseInput_InputInfo_Select" />
+	""";
+		for (I, 0, 2) {
+			declare Text Image;
+			switch (I) {
+				case LibUIButtons::GetPlatform("PC") 	: Image = IMGSelect_PC;
+				case LibUIButtons::GetPlatform("PS4") 	: Image = IMGSelect_PS4;
+				case LibUIButtons::GetPlatform("XB1") 	: Image = IMGSelect_XB1;
+			}
+			MLText ^= """<quad id="QuadInputIcon_Select_{{{I}}}" halign="center" valign="bottom" keepratio="Fit" sizen="8 8" image="{{{Image}}}" posn="0 -4.5 6" """;
+			if (I != Platform)
+				MLText ^= """ hidden="1" """;
+			MLText ^= "/>";
+		}			
+	MLText ^= """
+					<label halign="right" valign="center" style="TextButtonNav" posn="-5 0 6" id="Label_Select" textsize="4" textcolor="fff"/>
+				</frame>
+				<frame id="Frame_ButtonAction1" posn="105 47" hidden="0">
+					<quad halign="right"  valign="center" sizen="50 8" opacity="0." scriptevents="1" posn="0 0 6" id="MouseInput_InputInfo_Action1" />
+	""";
+		for (I, 0, 2) {
+			declare Text Image;
+			switch (I) {
+				case LibUIButtons::GetPlatform("PC") 	: Image = IMGAction1_PC;
+				case LibUIButtons::GetPlatform("PS4") 	: Image = IMGAction1_PS4;
+				case LibUIButtons::GetPlatform("XB1") 	: Image = IMGAction1_XB1;
+			}
+			MLText ^= """<quad id="QuadInputIcon_Action1_{{{I}}}" halign="center" valign="bottom" keepratio="Fit" sizen="8 8" image="{{{Image}}}" posn="0 -4.5 6" """;
+			if (I != Platform)
+				MLText ^= """ hidden="1" """;
+			MLText ^= "/>";
+		}			
+	MLText ^= """
+					<label halign="right" valign="center" style="TextButtonNav" posn="-5 0 6" id="Label_Action1" textsize="4" textcolor="fff"/>
+				</frame>
+				
+				<frame id="Frame_Buddies_GlobalRanks" hidden="1">
+		""";
+	for (I, 0, 1)
+	{
+		for (J, 0, 4)
+		{
+			MLText ^= """<frameinstance modelid="Frame_GlobalRank" id="Frame_GlobalRank_{{{I*5+J}}}" posn="{{{-SizeXQuad / 2 + SizeXQuad * 1.5 * I}}} {{{60 - J * 7}}} 10" /> """;
+		}
+	}	
+		MLText ^= """
+				</frame>
+			</frame>
+			
+			<frame id="Frame_LabelLoading" posn="0 0 40" hidden="1">
+				<label id="Label_Loading" halign="center" valign="center" text="Loading" textsize="10."/>
+				<quad halign="center" valign="center" bgcolor="000" sizen="{{{SizeX_Screen}}} {{{SizeY_Screen*6.}}}" />
+			</frame>
+				
+			<frame id="Frame_Tracks">
+				<quad id="quad_grille" posn="{{{-SizeX_Screen/2.-0.5}}} {{{SizeY_Screen*6./2.+3.}}} 20" halign="left" valign="top" bgcolor="fff"	sizen="{{{SizeX_Screen+1.4}}} {{{SizeY_Screen*6.+0.5}}}" image="{{{IMGGrille}}}"/>
+				{{{Selector::InsertFrameworkInManialink(1, SizeXQuad, SizeYQuad, PosXFirstQuad, PosYFirstQuad, MarginX_Button, MarginY_Button)}}}
+		""";
+	
+	for(I,0,NumberOfQuadCreateY-1)
+	{
+		declare Real IndexY = I*1.;
+		declare Real PosnY = PosYFirstQuad - IndexY*SizeYQuad - IndexY*MarginY_Button*1. - MarginY_Button/2.;
+		for(J,0,NumberOfQuadCreateX-1)
+		{
+			declare Real IndexJ = J*1.;
+			declare Real PosnX = PosXFirstQuad + IndexJ*SizeXQuad + IndexJ*MarginX_Button*1. + MarginX_Button/2.;
+			MLText^="""
+				<frameinstance modelid="Frame_Button" posn="{{{PosnX}}} {{{PosnY}}} 5." id="Frame_Instance{{{I}}}{{{J}}}" />
+				<quad halign="left" valign="top" sizen="{{{SizeXQuad+0.5}}} {{{SizeYQuad+0.5}}}" opacity="0." scriptevents="1" posn="{{{PosnX-0.5}}} {{{PosnY-0.3}}} 10.75"	id="MouseInput_Track_{{{I}}}:{{{J}}}" />
+			""";
+		}
+	}
+	
+	MLText^="""
+			</frame>
+		</frame>
+	</frame>
+	
+	<script><!--
+		#Include "MathLib" as ML
+		#Include "TextLib" as TL
+
+		#Const DebugName  "L_ChallengeTracks"
+		
+		#Const C_TimeTransitionPage2  {{{PanelParameter::GetTimeTransitionPage2()}}}
+	
+		#Const C_MenuMode_UNKNOWN		-1
+		#Const C_MenuMode_TRAIN			0
+		#Const C_MenuMode_VALIDATION	1
+		#Const C_MenuMode_RACE			2
+		#Const C_MenuMode_RACEFOR		3
+		//#Const C_MenuMode_BUDDIES		4
+	
+		{{{Manialink::GetIncludes()}}}
+		{{{Manialink::Load()}}}
+	
+		declare Integer G_IndexFocusX;
+		declare Integer G_IndexFocusY;
+		
+		declare Boolean G_MustExit;
+		declare Boolean G_WasIngame;
+		declare Text	G_RequestStartRaceBody;
+		declare Boolean	G_HasARace;
+		declare Boolean	G_IsPublished;
+		declare Integer G_MenuMode;
+		declare Integer	G_LockInput;
+		declare Boolean G_MustRetrieveTracksRecords;
+	
+		{{{Loading::InjectInGlobals()}}}
+		{{{Loading::InjectInFunctions()}}}
+	
+		Text TimeToText(Integer _Time)
+		{
+			declare Text Time;
+		
+			declare Integer Minutes = _Time / 60000;
+			declare Integer Seconds = (_Time - Minutes * 60000) / 1000;
+			declare Integer Ms = _Time - Minutes * 60000 - Seconds * 1000;
+			Time = Minutes^":";
+			if (Seconds < 10)
+				Time ^= "0";
+			Time ^= Seconds^".";
+			if (Ms < 10)
+				Time ^= "00";
+			else if (Ms < 100)
+				Time ^= "0";
+			Time ^= Ms;
+			
+			return Time;
+		}
+	
+		Void InitTrackCardFromTime(Integer _TrackIndex, Integer _Time, Boolean _IsRaceOrElseTrain)
+		{
+			declare Text[Text][] ChallengeTracks for Page;
+			
+			declare Integer BronzeTime; 	
+			declare Integer SilverTime; 	
+			declare Integer GoldTime; 	
+			declare Integer AuthorTime; 	
+			
+			if (ChallengeTracks[_TrackIndex].existskey("author_challenge_time"))
+			{
+				AuthorTime 	= TL::ToInteger(ChallengeTracks[_TrackIndex]["author_challenge_time"]);
+				GoldTime 	= TL::ToInteger(ChallengeTracks[_TrackIndex]["gold_challenge_time"]);
+				SilverTime 	= TL::ToInteger(ChallengeTracks[_TrackIndex]["silver_challenge_time"]);
+				BronzeTime 	= TL::ToInteger(ChallengeTracks[_TrackIndex]["bronze_challenge_time"]);
+			} else {
+				AuthorTime = TL::ToInteger(ChallengeTracks[_TrackIndex]["author_medal_time"]);
+				GoldTime = TL::ToInteger(ChallengeTracks[_TrackIndex]["gold_medal_time"]);
+				SilverTime = TL::ToInteger(ChallengeTracks[_TrackIndex]["silver_medal_time"]);
+				BronzeTime = TL::ToInteger(ChallengeTracks[_TrackIndex]["bronze_medal_time"]);
+			}
+			
+			declare CMlFrame TrackFrame <=> (Page.GetFirstChild("Frame_Instance"^(_TrackIndex/5)^(_TrackIndex - (_TrackIndex/5) * 5)) as CMlFrame);
+			
+			declare CMlFrame Frame_Buddies_Result <=> (TrackFrame.GetFirstChild("Frame_Buddies_Result") as CMlFrame);
+			Frame_Buddies_Result.Hide();
+			declare CMlLabel Label_Next <=> (TrackFrame.GetFirstChild("Label_Next") as CMlLabel);
+			Label_Next.Hide();
+			declare CMlFrame Frame_Result <=> (TrackFrame.GetFirstChild("Frame_Result") as CMlFrame);
+			Frame_Result.Show();
+			
+			declare CMlQuad	QuadMedal <=> (TrackFrame.GetFirstChild("Quad_Medal") as CMlQuad);
+			QuadMedal.Show();
+			declare CMlLabel Label_Result <=> (TrackFrame.GetFirstChild("Label_Result") as CMlLabel);
+			
+			if (_Time <= 0)
+			{
+				QuadMedal.ImageUrl = "{{{IMGMedalNoMedal}}}";
+			} else if (_Time <= AuthorTime) {
+				QuadMedal.ImageUrl = "{{{IMGMedalTrackmaster}}}";
+			} else if (_Time <= GoldTime) {
+				QuadMedal.ImageUrl = "{{{IMGMedalGold}}}";
+			} else if (_Time <= SilverTime) {
+				QuadMedal.ImageUrl = "{{{IMGMedalSilver}}}";
+			} else if (_Time <= BronzeTime) {
+				QuadMedal.ImageUrl = "{{{IMGMedalBronze}}}";
+			} else {
+				QuadMedal.ImageUrl = "{{{IMGMedalNoMedal}}}";
+			}
+			
+			if (_Time <= 0)
+			{
+				if (_IsRaceOrElseTrain)
+				{
+					//L16N Displayed on a track that has not been finished yet
+					Label_Result.Value = TL::GetTranslatedText(_("Not finished"));
+				} else {
+					//L16N Displayed on a track that has not been trained yet
+					Label_Result.Value = TL::GetTranslatedText(_("Not trained"));
+				}
+			} else {
+				Label_Result.Value = TimeToText(_Time);
+			}
+		}
+	
+		Void RetrieveTracksRecords()
+		{
+			declare Text[Text] Challenge for Page;
+		
+			G_MustRetrieveTracksRecords = False;
+			wait(DataMgr.Ready);
+			declare Text[Text][] ChallengeTracks for Page;
+			for (I, 0, ChallengeTracks.count - 1)
+			{
+				DataMgr.RetrieveRecordsNoMedals(ChallengeTracks[I]["uid"], DataMgr.MenuUserId);
+				wait(DataMgr.Ready);
+				declare Integer BestRecordIndex = -1;
+				for (J, 0, DataMgr.Records.count - 1)
+				{
+					log(DataMgr.Records[J].GhostName);
+					if (BestRecordIndex == -1 || DataMgr.Records[J].Time < DataMgr.Records[BestRecordIndex].Time)
+					{
+						declare Text[] SplitGhostName = TL::Split("_", DataMgr.Records[J].GhostName);
+						if (SplitGhostName.count != 3 || TL::ToInteger(SplitGhostName[1]) != TL::ToInteger(Challenge["id"]))
+							continue;
+						BestRecordIndex = J;
+					}
+				}
+				declare Integer BestTime;
+				if (BestRecordIndex != -1)
+				{
+					BestTime  = DataMgr.Records[BestRecordIndex].Time;
+				} else {
+					BestTime  = -1;
+				}
+				InitTrackCardFromTime(I, BestTime, False);
+			}
+			
+			declare CMlFrame Frame_Buddies_GlobalRanks <=> (Page.GetFirstChild("Frame_Buddies_GlobalRanks") as CMlFrame);
+			Frame_Buddies_GlobalRanks.Hide();
+		}
+	
+		Void UpdateSelection()
+		{
+			declare CMlFrame Frame_Selector	<=> (Page.GetFirstChild("Frame_Selector")	as CMlFrame);
+			declare CMlFrame SelectedTrackFrame <=> (Page.GetFirstChild("Frame_Instance"^G_IndexFocusY^G_IndexFocusX) as CMlFrame);
+			Frame_Selector.RelativePosition.X = SelectedTrackFrame.RelativePosition.X;
+			Frame_Selector.RelativePosition.Y = SelectedTrackFrame.RelativePosition.Y;
+		
+			declare Text[Text][] ChallengeTracks for Page;
+			
+			declare SelectedTrackIndex = G_IndexFocusY * {{{Count_InstancesX}}} + G_IndexFocusX;
+			
+			for (I, 0, ChallengeTracks.count - 1)
+			{
+				declare CMlFrame TrackFrame <=> (Page.GetFirstChild("Frame_Instance"^(I/5)^(I - (I/5) * 5)) as CMlFrame);
+				
+				declare CMlFrame Frame_Result <=> (TrackFrame.GetFirstChild("Frame_Result") as CMlFrame);
+				if (I != SelectedTrackIndex)
+				{
+					if (Frame_Result.RelativePosition.Y != -5.)
+					{
+						declare Vec3 NewFramePos  = <Frame_Result.RelativePosition.X, -5., Frame_Result.RelativePosition.Z>;
+						LibManialink_SetTargetPosition(Frame_Result, NewFramePos);
+						LibManialink_PresetAnim(Frame_Result, 250, "EaseOutQuint");
+					}
+				} else {
+					declare Vec3 NewFramePos  = <Frame_Result.RelativePosition.X, -11., Frame_Result.RelativePosition.Z>;
+					LibManialink_SetTargetPosition(Frame_Result, NewFramePos);
+					LibManialink_PresetAnim(Frame_Result, 250, "EaseOutQuint");
+				}
+			}
+		}
+		
+		{{{LibUIButtons::Inject_SetInputInfoTextSelected()}}}
+		
+		Void ToggleInputInfo(Text _Input, Boolean _IsHovered) {
+			declare CMlFrame FrameInput <=> (Page.GetFirstChild("Frame_Button"^_Input) as CMlFrame);
+			declare CMlLabel LabelInputInfo <=> (FrameInput.GetFirstChild("Label_"^_Input) as CMlLabel);
+			SetInputInfoTextSelected(LabelInputInfo, _IsHovered);
+		}
+		
+		Void ResetInputInfos() {
+			ToggleInputInfo("Select", False);
+			ToggleInputInfo("Cancel", False);
+			ToggleInputInfo("Action1", False);
+		}
+
+		Void UpdateDisplayFromResult()
+		{
+			declare Text[Text][] ChallengeTracks for Page;
+			
+			for (J, 0, {{{Count_InstancesY - 1}}})
+			{
+				for (I, 0,  {{{Count_InstancesX - 1}}})
+				{
+					declare CMlFrame FrameTrack <=> (Page.GetFirstChild("Frame_Instance"^J^I) as CMlFrame);
+					declare CMlQuad MouseInput_Track <=> (Page.GetFirstChild("MouseInput_Track_"^J^":"^I) as CMlQuad);
+					declare CMlQuad QuadLock <=> (FrameTrack.GetFirstChild("Quad_Locked") as CMlQuad);
+					
+					if (J * {{{Count_InstancesX}}} + I >= ChallengeTracks.count)
+					{
+						QuadLock.Show();
+						MouseInput_Track.Hide();
+					} else {
+						if (G_MenuMode == C_MenuMode_TRAIN)
+							MouseInput_Track.Show();
+						else
+							MouseInput_Track.Hide();
+						QuadLock.Hide();
+						declare CMlQuad QuadThumbnail <=> (FrameTrack.GetFirstChild("Quad_Thumbnail") as CMlQuad);
+						declare CMlLabel Label_TrackName <=> (FrameTrack.GetFirstChild("Label_TrackName") as CMlLabel);
+						//Label_TrackName.Value = ChallengeTracks[J * {{{Count_InstancesX}}} + I]["name"];
+						Label_TrackName.Value = TL::ToText(J * {{{Count_InstancesX}}} + I + 1);
+						QuadThumbnail.ImageUrl = ChallengeTracks[J * {{{Count_InstancesX}}} + I]["thumbnail_url"];
+					}
+				}
+			}
+		}
+		
+		Void UpdateDisplayForRaceMode()
+		{
+			declare Text[Text]		Challenge for Page;
+			declare Text[Text][]	ChallengeTracks for Page;
+			
+			if (Challenge.existskey("currentrace_id") && TL::ToInteger(Challenge["currentrace_id"]) != -1)
+			{	//afficher les médailles et la prochaine track
+				declare Integer NextTrackIndex = TL::ToInteger(Challenge["currentrace_next_map_index"]);
+				
+				for (I, 0, ChallengeTracks.count-1)
+				{
+					if (I != NextTrackIndex)
+						InitTrackCardFromTime(I, TL::ToInteger(ChallengeTracks[I]["current_race_time"]), True);
+					else {
+						declare CMlFrame TrackFrame <=> (Page.GetFirstChild("Frame_Instance"^(I/5)^(I - (I/5) * 5)) as CMlFrame);
+						declare CMlFrame Frame_Buddies_Result <=> (TrackFrame.GetFirstChild("Frame_Buddies_Result") as CMlFrame);
+						Frame_Buddies_Result.Hide();
+						declare CMlFrame Frame_Result <=> (TrackFrame.GetFirstChild("Frame_Result") as CMlFrame);
+						Frame_Result.Hide();
+						declare CMlLabel Label_Next <=> (TrackFrame.GetFirstChild("Label_Next") as CMlLabel);
+						Label_Next.Show();
+						declare CMlQuad	QuadMedal <=> (TrackFrame.GetFirstChild("Quad_Medal") as CMlQuad);
+						QuadMedal.Show();
+						QuadMedal.ImageUrl = "{{{IMGMedalNoMedal}}}";
+					}
+				}	
+			} else {
+				declare CMlFrame TrackFrame <=> (Page.GetFirstChild("Frame_Instance00") as CMlFrame);
+				declare CMlFrame Frame_Buddies_Result <=> (TrackFrame.GetFirstChild("Frame_Buddies_Result") as CMlFrame);
+				Frame_Buddies_Result.Hide();
+				declare CMlFrame Frame_Result <=> (TrackFrame.GetFirstChild("Frame_Result") as CMlFrame);
+				Frame_Result.Hide();
+				declare CMlLabel Label_Next <=> (TrackFrame.GetFirstChild("Label_Next") as CMlLabel);
+				Label_Next.Show();
+				declare CMlQuad	QuadMedal <=> (TrackFrame.GetFirstChild("Quad_Medal") as CMlQuad);
+				QuadMedal.Show();
+				QuadMedal.ImageUrl = "{{{IMGMedalNoMedal}}}";
+				
+				for (I, 1, ChallengeTracks.count-1)
+					InitTrackCardFromTime(I, -1, True);
+			}
+		}
+		
+		Void OnTrainTrack()
+		{
+			declare Text[Text]		Challenge for Page;
+			declare Text[Text][] 	ChallengeTracks for Page;
+			declare Text[Text] TrainedTrack = ChallengeTracks[G_IndexFocusY * {{{Count_InstancesX}}} + G_IndexFocusX];
+			
+			declare Boolean IsStunts = Challenge.existskey("stunts") && Challenge["stunts"] == "true";
+			
+			G_WasIngame = True;
+			if (G_IsPublished)
+			{
+				SendCustomEvent("LaunchTrain", [TrainedTrack["file_url"], TrainedTrack["author_challenge_time"], TrainedTrack["gold_challenge_time"], TrainedTrack["silver_challenge_time"], TrainedTrack["bronze_challenge_time"], TrainedTrack["environment"], TL::ToText(True)^":"^TL::ToText(IsStunts), TL::ToText(G_IndexFocusY * {{{Count_InstancesX}}} + G_IndexFocusX)]);
+			} else {
+				SendCustomEvent("LaunchTrain", [TrainedTrack["file_url"], TrainedTrack["author_medal_time"], TrainedTrack["gold_medal_time"], TrainedTrack["silver_medal_time"], TrainedTrack["bronze_medal_time"], TrainedTrack["environment"], TL::ToText(False)^":"^TL::ToText(IsStunts), TL::ToText(G_IndexFocusY * {{{Count_InstancesX}}} + G_IndexFocusX)]);
+			}
+			Loading_SetText(_("Downloading Tracks. Please wait."));
+			Loading_SetIsLoading(True);
+		}
+		
+		Void LaunchRace(Integer _TryId, Integer _MapIndex)
+		{
+			declare Text[Text] Challenge for Page;
+			
+			declare Text[Text][] ChallengeTracks for Page;
+			declare Text MapPath;
+			declare Text AuthorTime;
+			declare Text GoldTime;
+			declare Text SilverTime;
+			declare Text BronzeTime;
+			MapPath = ChallengeTracks[_MapIndex]["file_url"];
+			if (G_MenuMode == C_MenuMode_VALIDATION)
+			{
+				AuthorTime 	= ChallengeTracks[_MapIndex]["author_medal_time"];
+				GoldTime	= ChallengeTracks[_MapIndex]["gold_medal_time"];
+				SilverTime	= ChallengeTracks[_MapIndex]["silver_medal_time"];
+				BronzeTime	= ChallengeTracks[_MapIndex]["bronze_medal_time"];
+			} else {
+				AuthorTime	= ChallengeTracks[_MapIndex]["author_challenge_time"];
+				GoldTime 	= ChallengeTracks[_MapIndex]["gold_challenge_time"];
+				SilverTime 	= ChallengeTracks[_MapIndex]["silver_challenge_time"];
+				BronzeTime 	= ChallengeTracks[_MapIndex]["bronze_challenge_time"];
+			}
+			
+			declare Integer BronzeMedals 	= 0;
+			declare Integer SilverMedals 	= 0;
+			declare Integer GoldMedals		= 0;
+			declare Integer AuthorMedals	= 0;
+			
+			for (I, 0, _MapIndex-1)
+			{
+				declare Integer Time = TL::ToInteger(ChallengeTracks[I]["current_race_time"]);
+				declare Integer TrackAuthorTime;
+				declare Integer TrackGoldTime;
+				declare Integer TrackSilverTime;
+				declare Integer TrackBronzeTime;
+				if (G_MenuMode == C_MenuMode_VALIDATION)
+				{
+					TrackAuthorTime = TL::ToInteger(ChallengeTracks[I]["author_medal_time"]);
+					TrackGoldTime 	= TL::ToInteger(ChallengeTracks[I]["gold_medal_time"]);
+					TrackSilverTime = TL::ToInteger(ChallengeTracks[I]["silver_medal_time"]);
+					TrackBronzeTime = TL::ToInteger(ChallengeTracks[I]["bronze_medal_time"]);
+				} else {
+					TrackAuthorTime = TL::ToInteger(ChallengeTracks[I]["author_challenge_time"]);
+					TrackGoldTime 	= TL::ToInteger(ChallengeTracks[I]["gold_challenge_time"]);
+					TrackSilverTime = TL::ToInteger(ChallengeTracks[I]["silver_challenge_time"]);
+					TrackBronzeTime = TL::ToInteger(ChallengeTracks[I]["bronze_challenge_time"]);
+				}
+				if (Time <= 0)
+					continue;
+				if (Time <= TrackAuthorTime)
+					AuthorMedals += 1;
+				else if (Time <= TrackGoldTime)
+					GoldMedals += 1;
+				else if (Time <= TrackSilverTime)
+					SilverMedals += 1;
+				else if (Time <= TrackBronzeTime)
+					BronzeMedals += 1;
+			}
+			declare Text GhostsUrls;
+			declare Text[Text][][Text]		Ghosts for Page;
+			if (G_MenuMode == C_MenuMode_RACEFOR && Ghosts.existskey(ChallengeTracks[_MapIndex]["id"]))
+			{
+				for (I, 0, Ghosts[ChallengeTracks[_MapIndex]["id"]].count - 1)
+					GhostsUrls ^= Ghosts[ChallengeTracks[_MapIndex]["id"]][I]["displayname"]^";"^Ghosts[ChallengeTracks[_MapIndex]["id"]][I]["url"]^";";
+			}		
+					
+			declare Boolean IsStunts = Challenge.existskey("stunts") && Challenge["stunts"] == "true";
+					
+			G_WasIngame = True;
+			SendCustomEvent("PlayRace",  [	MapPath, 
+											AuthorTime, GoldTime, SilverTime, BronzeTime, 
+											Challenge["id"], TL::ToText(_TryId), 
+											TL::ToText(G_IsPublished)^":"^TL::ToText(IsStunts), TL::ToText(_MapIndex == ChallengeTracks.count-1),
+											TL::ToText(AuthorMedals), TL::ToText(GoldMedals), TL::ToText(SilverMedals), TL::ToText(BronzeMedals),
+											TL::ToText(_MapIndex),
+											GhostsUrls]);
+			Loading_SetText(_("Downloading Tracks. Please wait."));
+			Loading_SetIsLoading(True);
+		}
+		
+		Void OnStartRace()
+		{
+			declare Text[Text] Challenge for Page;
+			if (G_MenuMode == C_MenuMode_RACE || G_MenuMode == C_MenuMode_VALIDATION)
+				SendCustomEvent("RequestStartRace", [Challenge["id"], G_RequestStartRaceBody]);
+			else if (G_MenuMode == C_MenuMode_RACEFOR)
+				SendCustomEvent("RequestStartRaceFor", [Challenge["id"], G_RequestStartRaceBody]);
+		}
+		
+		Void OnRace()
+		{
+			declare Text[Text] Challenge for Page;
+			declare Text[Text][] ChallengeTracks for Page;
+			if (G_HasARace)
+			{
+				declare Integer FirstMapIndex = TL::ToInteger(Challenge["currentrace_next_map_index"]);
+				LaunchRace(TL::ToInteger(Challenge["currentrace_id"]), FirstMapIndex);
+			} else {
+				G_RequestStartRaceBody = "";
+				if (ChallengeTracks.count > 1)
+				{
+					SendCustomEvent("PopUpRaceAskYesNo", [_("Start Race ?"),
+					//L16N This word will be the %1 in "You won't be able to train this championship before %1 is finished. Do you want to proceed ?"
+					_("the race")]);
+				} else {
+					OnStartRace();
+				}
+			}
+		}
+		
+		Void OnGiveUpRace()
+		{
+			declare Text[Text] Challenge for Page;
+			if (G_MenuMode == C_MenuMode_RACEFOR)
+				G_MustExit = True;
+			SendCustomEvent("RequestGiveUpRace", [Challenge["currentrace_id"]]);
+		}
+		
+		Void OnValidation()
+		{
+			declare Text[Text] Challenge for Page;
+			declare Text[Text][] ChallengeTracks for Page;
+			if (G_HasARace)
+			{
+				declare Integer FirstMapIndex = TL::ToInteger(Challenge["currentrace_next_map_index"]);
+				LaunchRace(TL::ToInteger(Challenge["currentrace_id"]), FirstMapIndex);
+			} else {
+				if (ChallengeTracks.count > 1)
+				{
+					SendCustomEvent("PopUpRaceAskYesNo", [_("Start Validation?"), 
+					//L16N This word will be the %1 in "You won't be able to train this championship before %1 is finished. Do you want to proceed ?"
+					_("the validation")]);
+				} else {
+					OnStartRace();
+				}
+			}
+		}
+		
+		Void OnChangePage()
+		{
+		//	declare CMlLabel Label_Date <=> (Page.GetFirstChild("Label_Date") as CMlLabel);
+		//	LibManialink_SetTargetScale(Label_Date, 1.2);
+		//	LibManialink_PresetAnim(Label_Date, 125, "EaseOutQuint");
+		//	LibManialink_SetTargetScale(Label_Date, 1.);
+		//	LibManialink_PresetAnimChain(Label_Date, 75, "EaseOutQuint");	
+		}
+		
+		Void InitDisplay()
+		{
+			for (I, 0, {{{Count_InstancesX - 1}}})
+			{
+				for (J, 0, {{{Count_InstancesY - 1}}})
+				{
+					declare CMlFrame FrameTrack <=> (Page.GetFirstChild("Frame_Instance"^J^I) as CMlFrame);
+					declare CMlFrame Frame_Result <=> (FrameTrack.GetFirstChild("Frame_Result") as CMlFrame);
+					Frame_Result.RelativePosition.Y = -5.;
+					declare CMlQuad Quad_Locked <=> (FrameTrack.GetFirstChild("Quad_Locked") as CMlQuad);
+					Quad_Locked.Show();
+					declare CMlQuad Quad_Medal <=> (FrameTrack.GetFirstChild("Quad_Medal") as CMlQuad);
+					Quad_Medal.ImageUrl = "{{{IMGMedalNoMedal}}}";
+					declare CMlLabel Label_Next <=> (FrameTrack.GetFirstChild("Label_Next") as CMlLabel);
+					Label_Next.Hide();
+				}
+			}
+			G_IndexFocusX = 0;
+			G_IndexFocusY = 0;
+			declare CMlFrame Frame_Selector	<=> (Page.GetFirstChild("Frame_Selector")	as CMlFrame);
+			//declare CMlFrame SelectedTrackFrame <=> (Page.GetFirstChild("Frame_Instance"^G_IndexFocusY^G_IndexFocusX) as CMlFrame);
+			//Frame_Selector.RelativePosition.X = SelectedTrackFrame.RelativePosition.X;
+			//Frame_Selector.RelativePosition.Y = SelectedTrackFrame.RelativePosition.Y;
+			Frame_Selector.Hide();
+			
+			declare CMlFrame Frame_ButtonSelect <=> (Page.GetFirstChild("Frame_ButtonSelect") as CMlFrame);
+			Frame_ButtonSelect.Hide();
+			declare CMlFrame Frame_ButtonAction1 <=> (Page.GetFirstChild("Frame_ButtonAction1") as CMlFrame);
+			Frame_ButtonAction1.Hide();
+		}
+		
+		Void OnDataReceived()
+		{
+			declare Text[Text] Challenge for Page;
+		
+			UpdateDisplayFromResult();
+			
+			declare CMlLabel Label_Subtitle <=> (Page.GetFirstChild("Label_Subtitle") as CMlLabel);
+			declare CMlFrame Frame_ButtonSelect <=> (Page.GetFirstChild("Frame_ButtonSelect") as CMlFrame);
+			declare CMlFrame Frame_ButtonAction1 <=> (Page.GetFirstChild("Frame_ButtonAction1") as CMlFrame);
+			declare CMlLabel Label_Select <=> (Frame_ButtonSelect.GetFirstChild("Label_Select") as CMlLabel);
+			declare CMlLabel Label_Action1 <=> (Frame_ButtonAction1.GetFirstChild("Label_Action1") as CMlLabel);
+			declare CMlFrame Frame_Selector	<=> (Page.GetFirstChild("Frame_Selector")	as CMlFrame);
+			
+			G_HasARace 	= Challenge.existskey("currentrace_id") && Challenge["currentrace_id"] != "";
+			G_IsPublished = Challenge.existskey("status") && Challenge["status"] == "3";
+			declare Boolean IsPublishable 	= Challenge.existskey("status") && Challenge["status"] == "2";
+			switch (G_MenuMode)
+			{
+				case C_MenuMode_TRAIN :
+				{
+					G_MustRetrieveTracksRecords = True;
+					//L16N Title of the "train championship" window
+					Label_Subtitle.Value = "";
+					Label_Select.Value = _("Train");
+					Frame_ButtonSelect.Show();
+					Frame_ButtonAction1.Hide();
+					Frame_Selector.Show();
+					//+label name
+					UpdateSelection();
+				}
+				case C_MenuMode_VALIDATION :
+				{
+					Label_Subtitle.Value = "";
+					//L16N Title of the "validate championship" window
+					
+					if (G_HasARace)
+					{
+						//L16N Displayed on a button
+						Label_Select.Value = _("Continue Validation");
+						Frame_ButtonAction1.Show();
+						//L16N Displayed on a button
+						Label_Action1.Value = _("Give Up Validation");
+					} else {
+						Frame_ButtonAction1.Hide();
+						if (IsPublishable)
+						{
+							//L16N Displayed on a button
+							Label_Select.Value = _("Improve Validation");
+						} else {
+							//L16N Displayed on a button
+							Label_Select.Value = _("Start Validation");
+						}
+					}
+					Frame_Selector.Hide();
+					Frame_ButtonSelect.Show();
+					UpdateDisplayForRaceMode();
+				}
+				case C_MenuMode_RACE :
+				{
+					Label_Subtitle.Value = "";
+					//L16N Title of the "race championship" window
+					
+					if (G_HasARace)
+					{	
+						//L16N Displayed on a button
+						Label_Select.Value = _("Continue Race");
+						Frame_ButtonAction1.Show();
+						//L16N Displayed on a button
+						Label_Action1.Value = _("Give Up Race");
+					} else {
+						Frame_ButtonAction1.Hide();
+						//L16N Displayed on a button
+						Label_Select.Value = _("Start Race");
+					}
+					Frame_Selector.Hide();
+					Frame_ButtonSelect.Show();
+					UpdateDisplayForRaceMode();
+				}
+				case C_MenuMode_RACEFOR :
+				{
+					Label_Subtitle.Value = "";
+					//L16N Title of the "race championship" window
+					
+					if (G_HasARace)
+					{	
+						//L16N Displayed on a button
+						Label_Select.Value = _("Resume Race");
+						Frame_ButtonAction1.Show();
+						//L16N Displayed on a button
+						Label_Action1.Value = _("Give Up Race");
+					} else {
+						Frame_ButtonAction1.Hide();
+						//L16N Displayed on a button
+						Label_Select.Value = _("Start Race");
+					}
+					Frame_Selector.Hide();
+					Frame_ButtonSelect.Show();
+					UpdateDisplayForRaceMode();
+				}
+			}
+		}
+		
+		Void UpdateHelpersForPlatform(Integer _Platform) {
+			declare Text[] AdditionnalInputIds = ["QuadInputIcon_Select_", "QuadInputIcon_Cancel_", "QuadInputIcon_Action1_"];
+	
+			declare CMlQuad  QuadInputIcon;
+			for (I, 0, 2) {
+				for (J, 0, AdditionnalInputIds.count-1) {
+					QuadInputIcon <=> (Page.GetFirstChild(AdditionnalInputIds[J]^I) as CMlQuad);
+					if (I == _Platform)
+						QuadInputIcon.Show();
+					else
+						QuadInputIcon.Hide();
+				}
+			}
+		}
+		
+		main() {
+			G_MustRetrieveTracksRecords = False;
+			G_MustExit = False;
+			G_WasIngame = False;
+			G_MenuMode = C_MenuMode_UNKNOWN;
+			
+			{{{Loading::InjectInInit()}}}
+			
+			declare Integer ActiveButtonPlatform = {{{Platform}}};
+			
+			declare Text[Text]			Challenge		for Page;
+			declare Text[Text][] 		ChallengeTracks for Page;
+			//declare Text[Text][][] 	ChallengeTries 	for Page;
+		
+			declare CMlQuad  Quad_Selector <=> (Page.GetFirstChild("Quad_Selector") as CMlQuad);
+			Quad_Selector.Colorize = {{{MenuColor::GetMenuColor(2)}}};
+			declare CVideo BgBanner = Video.CreateVideo("{{{IMGEnvValley}}}", True, True);
+			declare CMlQuad Quad_BgBanner <=> (Page.GetFirstChild("Quad_BgBanner") as CMlQuad);
+			Quad_BgBanner.Image = BgBanner.Image;
+			
+			while(True) {
+				yield;
+				
+				if(! PageIsVisible) continue;
+				LibManialink_AnimLoop();
+				
+				{{{Selector::InsertInLoop()}}}
+				{{{Loading::InjectInLoop()}}}
+				
+				if (G_MustRetrieveTracksRecords)
+					RetrieveTracksRecords();
+				
+				if (Input.PendingEvents.count != 0) {
+					declare Integer LastInputPlatform;
+					switch (Input.PendingEvents[Input.PendingEvents.count-1].Pad.Type) {
+						case CInputPad::EPadType::Keyboard 		: LastInputPlatform = {{{LibUIButtons::GetPlatform("PC")}}};
+						case CInputPad::EPadType::PlayStation 	: LastInputPlatform = {{{LibUIButtons::GetPlatform("PS4")}}};
+						case CInputPad::EPadType::XBox 			: LastInputPlatform = {{{LibUIButtons::GetPlatform("XB1")}}};
+						default 								: LastInputPlatform = {{{LibUIButtons::GetPlatform("PC")}}};
+					}
+					if (LastInputPlatform != ActiveButtonPlatform)
+						SendCustomEvent("SetActiveButtonPlaform", ["ChallengeTracks", TL::ToText(LastInputPlatform)]);
+				}
+				
+				foreach(Event in PendingEvents)
+				{
+					switch(Event.Type) {
+						case CMlEvent::Type::MouseClick: {
+							if (ActiveButtonPlatform !=  {{{LibUIButtons::GetPlatform("PC")}}})
+								SendCustomEvent("SetActiveButtonPlaform", ["ChallengeTracks", TL::ToText({{{LibUIButtons::GetPlatform("PC")}}})]);
+							declare Text[] InputId = TL::Split("_", Event.ControlId);
+							if (InputId.count < 2 || InputId[0] != "MouseInput")
+								continue;
+							switch (InputId[1]) {
+								case "Track" : {
+									if (Loading_GetIsLoading())
+										continue;
+									declare Text[] TrackInfo = TL::Split(":", InputId[2]);
+									G_IndexFocusY = TL::ToInteger(TrackInfo[0]);
+									G_IndexFocusX = TL::ToInteger(TrackInfo[1]);
+									UpdateSelection();
+									OnTrainTrack();
+								}
+								case "InputInfo": {
+									switch (InputId[2]) {
+										case "Select" : {
+											if (Loading_GetIsLoading())
+												continue;
+											switch (G_MenuMode)
+											{
+												case C_MenuMode_TRAIN 		: OnTrainTrack();
+												case C_MenuMode_VALIDATION 	: OnValidation();
+												case C_MenuMode_RACE 		: OnRace();
+												case C_MenuMode_RACEFOR		: OnRace();
+											}
+										}
+										case "Cancel" : {
+											SendCustomEvent("GotoPrevious", [""]);
+											G_WasIngame = False; 
+										}
+										case "AppMenu" : {
+											SendCustomEvent("GotoPrevious", [""]);
+											G_WasIngame = False; 
+										}
+										case "Action1" : {
+											if (Loading_GetIsLoading())
+												continue;
+											switch (G_MenuMode)
+											{
+												case C_MenuMode_RACE :
+												{
+													if (G_HasARace)
+														OnGiveUpRace();
+												}
+												case C_MenuMode_VALIDATION :
+												{
+													if (G_HasARace)
+														OnGiveUpRace();
+												}
+												case C_MenuMode_RACEFOR :
+												{
+													if (G_HasARace)
+														OnGiveUpRace();
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+						case CMlEvent::Type::MouseOver: {
+							if (Loading_GetIsLoading())
+								continue;
+							declare Text[] InputId = TL::Split("_", Event.ControlId);
+							if (InputId.count < 2 || InputId[0] != "MouseInput")
+								continue;
+							switch (InputId[1]) {
+								case "Track" : {
+									declare Text[] TrackInfo = TL::Split(":", InputId[2]);
+									G_IndexFocusY = TL::ToInteger(TrackInfo[0]);
+									G_IndexFocusX = TL::ToInteger(TrackInfo[1]);
+									UpdateSelection();
+								}
+								case "InputInfo" : ToggleInputInfo(InputId[2], True);
+							}
+						}
+						case CMlEvent::Type::MouseOut: {
+							declare Text[] InputId = TL::Split("_", Event.ControlId);
+							if (InputId.count < 2 || InputId[0] != "MouseInput")
+								continue;
+							switch (InputId[1]) {
+								case "InputInfo" : ToggleInputInfo(InputId[2], False);
+							}
+						}
+						case CMlEvent::Type::PluginCustomEvent: {
+							switch(Event.PluginCustomEventType) {
+								case "Show" : {
+									ResetInputInfos();
+									if (!G_WasIngame)
+									{
+										InitDisplay();
+										{{{_ShowAnim}}}
+									}
+									G_MustExit = False;
+									BgBanner.Play();
+									EnableMenuNavigation(True,False,Null,2);
+									SendCustomEvent("GetActiveButtonPlatform", ["ChallengeTracks"]);
+									Loading_SetIsLoading(False);
+								}
+								case "SetActiveButtonPlatform" : {
+									ActiveButtonPlatform = TL::ToInteger(Event.CustomEventData[0]);
+									UpdateHelpersForPlatform(ActiveButtonPlatform);
+								}
+								case "Hide" : {
+									{{{_HideAnim}}}
+									BgBanner.Stop();
+									EnableMenuNavigation(True,False,Null,0);
+									SendCustomEvent("DetachPage", ["ChallengeTracks", "Board"]);
+								}
+								case "OnExitTrain" : {
+									ResetInputInfos();
+									G_MustRetrieveTracksRecords = True;
+									UpdateSelection();
+									G_WasIngame = False;
+								}
+								case "OnExitRace" : {
+									ResetInputInfos();
+									SendCustomEvent("ChallengeTracks_RequestInstalledChallenge", Text[]);
+									Loading_SetIsLoading(True);
+									Loading_SetText(_("Loading Challenge. Please wait."));
+								}
+								case "SetMenuMode" :
+								{
+									G_MenuMode = TL::ToInteger(Event.CustomEventData[0]);
+									declare CMlLabel Label_Title 	<=> (Page.GetFirstChild("Label_Title") as CMlLabel);
+									switch(G_MenuMode)
+									{
+										case C_MenuMode_TRAIN 		: Label_Title.Value = _("Train Mode");
+										case C_MenuMode_VALIDATION 	: Label_Title.Value = _("Validation Mode");
+										case C_MenuMode_RACE		: Label_Title.Value = _("Race Mode");
+										case C_MenuMode_RACEFOR		: Label_Title.Value = _("Race Mode");
+									}
+									SendCustomEvent("ChallengeTracks_RequestInstalledChallenge", Text[]);
+									Loading_SetIsLoading(True);
+									Loading_SetText(_("Loading Challenge. Please wait."));
+								}
+								case "Request_GetInstalledChallenge_Success" : {
+									Loading_SetIsLoading(False);
+									if (Challenge.existskey("currentrace_id") && TL::ToInteger(Challenge["currentrace_id"]) != -1)
+									{
+										declare Integer NextTrackIndex = TL::ToInteger(Challenge["currentrace_next_map_index"]);
+										if (NextTrackIndex >= ChallengeTracks.count && G_WasIngame)
+										{
+											OnGiveUpRace();
+											G_MustExit = True;
+										} else
+											OnDataReceived();
+									} else {
+										if (G_WasIngame && !Challenge.existskey("currentrace_id"))
+											SendCustomEvent("GotoPrevious", [""]);
+										else
+											OnDataReceived();
+									}
+									G_WasIngame = False;
+								}
+								case "Request_GetInstalledChallenge_Failure" : {
+									Loading_SetIsLoading(False);
+									SendCustomEvent("GotoPrevious", [""]);
+								}
+								case "Request_FinishRace_Success" : {
+									if (G_MustExit)
+									{
+										SendCustomEvent("GotoPrevious", [""]);
+										G_MustExit = False;
+									} else {
+										SendCustomEvent("ChallengeTracks_RequestInstalledChallenge", Text[]);
+										Loading_SetIsLoading(True);
+										Loading_SetText(_("Loading Challenge. Please wait."));
+									}
+								}
+								case "Request_StartRace_Success" : {
+									declare Integer NewRaceTryId for Page;
+									LaunchRace(NewRaceTryId, 0);
+								}
+								case "LaunchRace" : {
+									if (Event.CustomEventData[0] == "True")
+										OnStartRace();
+								}
+								case "Quit" : {
+									SendCustomEvent("GotoPrevious", [""]);
+									G_WasIngame = False; 
+								}
+							}
+						}
+						case CMlEvent::Type::MenuNavigation: {
+							if (G_LockInput + 50 > Now)
+								continue;
+							G_LockInput = Now;
+							switch(Event.MenuNavAction) {			
+								case CMlEvent::EMenuNavAction::Up : {
+									if (Loading_GetIsLoading())
+										continue;
+									if (G_MenuMode == C_MenuMode_RACE || G_MenuMode == C_MenuMode_VALIDATION || G_MenuMode == C_MenuMode_RACEFOR)
+										continue;
+									if (G_IndexFocusY > 0)
+									{
+										G_IndexFocusY -= 1;
+										UpdateSelection();
+									}
+								}
+								case CMlEvent::EMenuNavAction::Down : {
+									if (Loading_GetIsLoading())
+										continue;
+									if (G_MenuMode == C_MenuMode_RACE || G_MenuMode == C_MenuMode_VALIDATION || G_MenuMode == C_MenuMode_RACEFOR)
+										continue;
+									if (ChallengeTracks.count > 5 && G_IndexFocusY < 1)
+									{
+										G_IndexFocusY += 1;
+										G_IndexFocusX = ML::Min(G_IndexFocusX, ChallengeTracks.count - 6);
+										UpdateSelection();
+									}
+								}
+								case CMlEvent::EMenuNavAction::Left : {
+									if (Loading_GetIsLoading())
+										continue;
+									if (G_MenuMode == C_MenuMode_RACE || G_MenuMode == C_MenuMode_VALIDATION || G_MenuMode == C_MenuMode_RACEFOR)
+										continue;
+									if (G_IndexFocusX > 0)
+									{
+										G_IndexFocusX -= 1;
+										UpdateSelection();
+									}
+								}
+								case CMlEvent::EMenuNavAction::Right : {
+									if (Loading_GetIsLoading())
+										continue;
+									if (G_MenuMode == C_MenuMode_RACE || G_MenuMode == C_MenuMode_VALIDATION || G_MenuMode == C_MenuMode_RACEFOR)
+										continue;
+									if (G_IndexFocusX < ML::Min(4, ChallengeTracks.count - 5*G_IndexFocusY - 1))
+									{
+										G_IndexFocusX += 1;
+										UpdateSelection();
+									}
+								}
+								case CMlEvent::EMenuNavAction::Select : {
+									if (Loading_GetIsLoading())
+										continue;
+									switch (G_MenuMode)
+									{
+										case C_MenuMode_TRAIN 		: OnTrainTrack();
+										case C_MenuMode_VALIDATION 	: OnValidation();
+										case C_MenuMode_RACE 		: OnRace();
+										case C_MenuMode_RACEFOR		: OnRace();
+									}
+								}
+								case CMlEvent::EMenuNavAction::Action1 : {
+									if (Loading_GetIsLoading())
+										continue;
+									
+									switch (G_MenuMode)
+									{
+										case C_MenuMode_RACE :
+										{
+											if (G_HasARace)
+												OnGiveUpRace();
+										}
+										case C_MenuMode_VALIDATION :
+										{
+											if (G_HasARace)
+												OnGiveUpRace();
+										}
+										case C_MenuMode_RACEFOR :
+										{
+											if (G_HasARace)
+												OnGiveUpRace();
+										}
+									}
+								}
+								case CMlEvent::EMenuNavAction::Cancel : {
+									SendCustomEvent("GotoPrevious", [""]);
+									G_WasIngame = False; 
+								}
+								case CMlEvent::EMenuNavAction::AppMenu : {
+									SendCustomEvent("GotoPrevious", [""]);
+									G_WasIngame = False; 
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	--></script>
+	""";
+	
+	return MLText;
+}

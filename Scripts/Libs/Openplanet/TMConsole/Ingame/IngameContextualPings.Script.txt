@@ -1,0 +1,114 @@
+/*
+ *	TM library
+ */
+
+#Const Version		"2015-03-02"
+#Const ScriptName	"IngameContextualPings.Script.txt"
+
+#Include "TextLib" as TL
+// #Include "Libs/Openplanet/TMConsole/Ingame/Game_Online.Script.txt" as Game
+
+// ---------------------------------- //
+// Constant
+// ---------------------------------- //
+#Const C_ContextualPing_OnPlayerAdded 	0	///< Time before respawn (3,2,1,Go!)
+#Const C_ContextualPing_OnPlayerRemoved 1	///< Time before respawn (3,2,1,Go!)
+#Const C_ContextualPing_GameStart 		2	///< Time before respawn (3,2,1,Go!)
+#Const C_ContextualPing_GameEnd			3
+
+#Const C_TIMERBEFOREPING				500
+
+declare Integer G_TimerBeforePing;
+
+Text GetEventText(Integer _IndexEvent, Text _DisplayPlayerName) {
+	if(_IndexEvent == C_ContextualPing_OnPlayerAdded) {
+		//L16N A player has just joined the room and other players are notified
+		return TL::Compose(_("%1 HAS JOINED THE ROOM"), _DisplayPlayerName);
+	} else if(_IndexEvent == C_ContextualPing_OnPlayerRemoved) {
+		//L16N A player is about to leave the room and other players are notified
+		return  TL::Compose(_("%1 IS ABOUT TO LEAVE THE ROOM"), _DisplayPlayerName);
+	} else if(_IndexEvent == C_ContextualPing_GameStart) {
+		//L16N The game online is about to start
+		return _("THE MATCH IS NOW OPEN. HAVE FUN!");
+	} else if(_IndexEvent == C_ContextualPing_GameEnd) {
+		//L16N The game online is about to end
+		return _("THE MATCH IS ABOUT TO END");
+	}
+	return "[IN GAME CONTEXTUAL PING] ERROR: Unknown event";
+}
+
+Text GetEventPing(Integer _IndexEvent) {
+	if(_IndexEvent == C_ContextualPing_OnPlayerAdded) {
+		return _("HELLO!");
+	} else if(_IndexEvent == C_ContextualPing_OnPlayerRemoved) {
+		return _("GOODBYE!");
+	} else if(_IndexEvent == C_ContextualPing_GameStart) {
+		return _("GOOD LUCK, HAVE FUN!");
+	} else if(_IndexEvent == C_ContextualPing_GameEnd) {
+		return _("GG ALL!");
+	}
+	return "[IN GAME CONTEXTUAL PING] ERROR: Unknown ping";
+}
+
+Void ReInitPlayersPing() {
+	declare netwrite Text[] Net_PlayersPing 	for Teams[0];
+	Net_PlayersPing.clear();
+	G_TimerBeforePing = Now + C_TIMERBEFOREPING;
+}
+
+Void SendOnPlayerAdded(Text _DisplayName) {
+	declare netwrite Text	Net_EventToPing	for Teams[0];
+	declare netwrite Text	Net_PingContent	for Teams[0];
+	declare Text UpperCaseDisplayName = TL::ToUpperCase(_DisplayName);
+	
+	Net_EventToPing = GetEventText(C_ContextualPing_OnPlayerAdded, UpperCaseDisplayName);
+	Net_PingContent = GetEventPing(C_ContextualPing_OnPlayerAdded);
+	ReInitPlayersPing();
+}
+
+Void SendOnPlayerRemoved(Text _DisplayName) {
+	declare netwrite Text	Net_EventToPing	for Teams[0];
+	declare netwrite Text	Net_PingContent	for Teams[0];
+	declare Text UpperCaseDisplayName = TL::ToUpperCase(_DisplayName);
+	Net_EventToPing = GetEventText(C_ContextualPing_OnPlayerRemoved, UpperCaseDisplayName);
+	Net_PingContent = GetEventPing(C_ContextualPing_OnPlayerRemoved);
+	ReInitPlayersPing();
+}
+
+Void SendGameAboutToEnd() {
+	declare netwrite Text	Net_EventToPing	for Teams[0];
+	declare netwrite Text	Net_PingContent	for Teams[0];
+	Net_EventToPing = GetEventText(C_ContextualPing_GameEnd, "");
+	Net_PingContent = GetEventPing(C_ContextualPing_GameEnd);
+	ReInitPlayersPing();
+}
+
+Void SendGameJustStart() {
+	declare netwrite Text	Net_EventToPing	for Teams[0];
+	declare netwrite Text	Net_PingContent	for Teams[0];
+	Net_EventToPing = GetEventText(C_ContextualPing_GameStart, "");
+	Net_PingContent = GetEventPing(C_ContextualPing_GameStart);
+	ReInitPlayersPing();
+}
+
+Void StartOnPlayerAdded() {
+	
+}
+
+Void Loop() {
+	if(Now > G_TimerBeforePing) {
+		foreach(Player in Players) {
+			declare UI <=> UIManager.GetUI(Player);
+			declare netwrite Text[] Net_PlayersPing 	for Teams[0];
+			declare netread Boolean	Net_HasPlayerPing				for UI;
+			declare netread Integer Net_PlayerWantsToQuitUpdate 	for UI;
+			declare			Integer Pre_PlayerWantsToQuitUpdate		for UI;
+			if(Net_HasPlayerPing) {
+				declare Text UpperCaseName = TL::ToUpperCase(Player.User.Name);
+				if(!Net_PlayersPing.exists(UpperCaseName)) {
+					Net_PlayersPing.add(UpperCaseName);
+				}
+			}
+		}
+	}
+}

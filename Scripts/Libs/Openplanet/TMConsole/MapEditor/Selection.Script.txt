@@ -1,0 +1,259 @@
+/** 
+ * Selection library
+ */
+
+#Const Version		"2015-06-23"
+#Const ScriptName	"Selection.Script.txt"
+
+#Include "MathLib" as ML
+#Include "Libs/Openplanet/TMConsole/MapEditor/UI/MouseControl.Script.txt" as UI_MouseControl
+
+// ---------------------------------- //
+// Constants
+// ---------------------------------- //
+
+// ---------------------------------- //
+// Globales
+// ---------------------------------- //
+declare Boolean G_LibSelection_Selecting;
+declare Int3 G_LibSelection_StartCoord;
+declare Int3 G_LibSelection_EndCoord;
+
+// ---------------------------------- //
+// Functions
+// ---------------------------------- //
+// ---------------------------------- // 
+// Private
+// ---------------------------------- //
+Void Private_Draw() {
+	declare Int3 Max;
+	declare Int3 Min;
+	
+	Max = <
+		ML::Max(G_LibSelection_StartCoord.X, G_LibSelection_EndCoord.X), 
+		ML::Max(G_LibSelection_StartCoord.Y, G_LibSelection_EndCoord.Y), 
+		ML::Max(G_LibSelection_StartCoord.Z, G_LibSelection_EndCoord.Z)
+	>;
+	
+	Min = <
+		ML::Min(G_LibSelection_StartCoord.X, G_LibSelection_EndCoord.X), 
+		ML::Min(G_LibSelection_StartCoord.Y, G_LibSelection_EndCoord.Y), 
+		ML::Min(G_LibSelection_StartCoord.Z, G_LibSelection_EndCoord.Z)
+	>;
+	
+	// Add relief to the selection
+	for (X, Min.X, Max.X) {
+		for (Z, Min.Z, Max.Z) {
+			declare Height = GetGroundHeight(X, Z);
+			if (Height < Min.Y) Min.Y = Height;
+			else if (Height > Max.Y) Max.Y = Height;
+		}
+	}
+	
+	CustomSelectionCoords.clear();
+	for (X, Min.X, Max.X) {
+		for (Y, Min.Y, Max.Y) {
+			for (Z, Min.Z, Max.Z) {
+				CustomSelectionCoords.add(<X, Y, Z>);
+			}
+		}
+	}
+}
+
+// ---------------------------------- //
+// Public
+// ---------------------------------- //
+// ---------------------------------- //
+/** Return the version number of the script
+ *
+ *	@return					The version number of the script
+ */
+Text GetScriptVersion() {
+	return Version;
+}
+
+// ---------------------------------- //
+/** Return the name of the script
+ *
+ *	@return				The name of the script
+ */
+Text GetScriptName() {
+	return ScriptName;
+}
+
+// ---------------------------------- //
+/// Unload the library
+Void Unload() {
+	
+}
+
+// ---------------------------------- //
+/// Load the library
+Void Load() {
+	Unload();
+}
+
+// ---------------------------------- //
+/** Check if a selection is currently being created
+ *
+ *	@return					True if it's the case, False otherwise
+ */
+Boolean IsSelecting() {
+	return G_LibSelection_Selecting;
+}
+
+// ---------------------------------- //
+/** Check if the input is moving the selection
+ *
+ *	@param	_Input			The input to check
+ *
+ *	@return					True if it's the case, False otherwise
+ */
+Boolean IsMoveInput(CEditorPluginEvent::EInput _Input) {
+	if (
+		_Input == CEditorPluginEvent::EInput::IconUp ||
+		_Input == CEditorPluginEvent::EInput::IconRight ||
+		_Input == CEditorPluginEvent::EInput::IconDown ||
+		_Input == CEditorPluginEvent::EInput::IconLeft ||
+		_Input == CEditorPluginEvent::EInput::CursorRaise ||
+		_Input == CEditorPluginEvent::EInput::CursorLower ||
+		_Input == CEditorPluginEvent::EInput::CursorUp ||
+		_Input == CEditorPluginEvent::EInput::CursorRight ||
+		_Input == CEditorPluginEvent::EInput::CursorDown ||
+		_Input == CEditorPluginEvent::EInput::CursorLeft
+	) {
+		return True;
+	}
+	
+	return False;
+}
+
+// ---------------------------------- //
+/** Check if the event is moving the selection
+ *
+ *	@param	_Event			The event to check
+ *
+ *	@return					True if it's the case, False otherwise
+ */
+Boolean IsMoveEvent(Text _Event) {
+	if (
+		_Event == UI_MouseControl::Event_SelectionUpdate()
+	) {
+		return True;
+	}
+	
+	return False;
+}
+
+// ---------------------------------- //
+/** Start a new selection
+ *
+ *	@param	_Coord			The selection starting point
+ */
+Void Start(Int3 _Coord) {
+	CustomSelectionCoords.clear();
+	G_LibSelection_Selecting = True;
+	G_LibSelection_StartCoord = _Coord;
+	G_LibSelection_EndCoord = _Coord;
+	Private_Draw();
+}
+
+// ---------------------------------- //
+/** Update an ongoing selection
+ *
+ *	@param	_Coord			The temporary selection ending point
+ */
+Void Update(Int3 _Coord) {
+	if (!IsSelecting()) return;
+	
+	G_LibSelection_EndCoord = _Coord;
+	Private_Draw();
+}
+
+// ---------------------------------- //
+/** Stop an ongoing selection
+ *
+ *	@param	_Coord			The selection ending point
+ */
+Void Stop(Int3 _Coord) {
+	if (!IsSelecting()) return;
+	
+	G_LibSelection_Selecting = False;
+	G_LibSelection_EndCoord = _Coord;
+	Private_Draw();
+}
+
+// ---------------------------------- //
+/** Create a selection
+ *
+ *	@param	_StartCoord		The selection starting point
+ *	@param	_EndCoord		The selection ending point
+ */
+Void Create(Int3 _StartCoord, Int3 _StopCoord) {
+	G_LibSelection_StartCoord = _StartCoord;
+	G_LibSelection_EndCoord = _StopCoord;
+	Private_Draw();
+}
+
+// ---------------------------------- //
+/// Destroy a selection
+Void Destroy() {
+	CustomSelectionCoords.clear();
+}
+
+// ---------------------------------- //
+/// Show the selection
+Void Show() {
+	ShowCustomSelection();
+}
+
+// ---------------------------------- //
+/// Hide the selection
+Void Hide() {
+	HideCustomSelection();
+}
+
+// ---------------------------------- //
+/** Get the starting and end point of the latest selection if any
+ *
+ *	@return					An array with the starting point and ending point of the selection
+ */	
+Int3[] Get() {
+	return [G_LibSelection_StartCoord, G_LibSelection_EndCoord];
+}
+
+// ---------------------------------- //
+/** Get the starting point of the latest selection if any
+ *
+ *	@return					The starting point
+ */
+Int3 GetStart() {
+	return G_LibSelection_StartCoord;
+}
+
+// ---------------------------------- //
+/** Get the ending point of the latest selection if any
+ *
+ *	@return					The ending point
+ */
+Int3 GetEnd() {
+	return G_LibSelection_EndCoord;
+}
+
+// ---------------------------------- //
+/** Set the color of the selection overlay
+ *
+ *	@param	_Color			The color of the selection
+ */
+Void SetColor(Vec3 _Color) {
+	CustomSelectionRGB = _Color;
+}
+
+// ---------------------------------- //
+/** Get the color of the selection overlay
+ *
+ *	@return					The color of the selection
+ */
+Vec3 GetColor() {
+	return CustomSelectionRGB;
+}

@@ -1,0 +1,77 @@
+#Include "Libs/Openplanet/TMConsole/Logger.Script.txt" 	as Logger
+
+declare CTmMode	G_Mode;
+declare Integer G_EventsRaceTime;
+declare Integer G_NbRespawns;
+declare Boolean G_RaceFinished;
+
+Void Load(CTmMode _Mode) {
+	G_Mode 				<=> _Mode;
+	G_EventsRaceTime	= 0;
+	G_NbRespawns		= 0;
+	G_RaceFinished		= True;
+}
+
+Integer GetRaceTime() {
+	return Now - G_EventsRaceTime;
+}
+
+Void SendCustomEvent(Text _EventName, Text[] _Params) {	
+	declare CManiaplanetPluginInterface PluginInterface = G_Mode.GetPluginInterface("TrackingPlugin");
+	if(PluginInterface == Null) {
+		Logger::Warn("TrackingPlugin not found. The event was "^_EventName^" with params "^_Params);
+		return;
+	}
+	PluginInterface.CustomEvent(_EventName, _Params);
+}
+
+Void PlayStartRace() {
+	if(G_RaceFinished) {
+		SendCustomEvent("Tracking_PlayStartRace", [""]);
+		G_EventsRaceTime 	= Now;
+		G_NbRespawns 		= 0;
+		G_RaceFinished		= False;
+	}	
+}
+
+Void PlayStopRestart() {
+	// SendCustomEvent("Tracking_PlayStopRestart", [""^GetRaceTime()]);
+	G_NbRespawns += 1;
+}
+
+Void PlayStopFinished() {
+	// SendCustomEvent("Tracking_PlayStopFinished", [""^GetRaceTime()]);
+	SendCustomEvent("Tracking_PlayStopFinished", [""^G_NbRespawns]);
+	G_RaceFinished = True;
+}
+
+Void PlayerRespawn() {
+	// SendCustomEvent("Tracking_PlayerRespawn", [""^GetRaceTime()]);
+	G_NbRespawns += 1;
+}
+
+// 0 = author, 1 = gold, 2 = silver, 3 = bronze
+Void MedalUnlock(Integer _Medal) {
+	SendCustomEvent("Tracking_MedalUnlock", [""^_Medal]);
+}
+
+Void StartMode(Text _ModeName) {
+	SendCustomEvent("Tracking_StartMode", [_ModeName]);
+}
+
+Void StopMode() {
+	SendCustomEvent("Tracking_StopMode", [""]);
+}
+
+Void StartMap(Text _MapName, Text _CollectionName) {
+	SendCustomEvent("Tracking_StartMap", [_MapName, _CollectionName]);
+}
+
+Void StopMap() {
+	SendCustomEvent("Tracking_StopMap", [""]);
+}
+
+Void StartCampaign(Integer _PlayedMapCount, Integer _BronzeMedalCount, Integer _SilverMedalCount, Integer _GoldMedalCount, Integer _AuthorMedalCount, Integer _MaxDifficultyLevel ) {
+	SendCustomEvent("Tracking_StartCampaign", [""^_PlayedMapCount,""^_BronzeMedalCount,""^_SilverMedalCount,""^_GoldMedalCount,""^_AuthorMedalCount,""^_MaxDifficultyLevel]);
+}
+

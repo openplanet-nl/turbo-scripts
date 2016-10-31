@@ -1,0 +1,1127 @@
+/** 
+ *	In-Game UI library
+ */
+ 
+
+#Include "TextLib" as TL
+
+#Include "Libs/Openplanet/TMConsole/HSVColors.Script.txt" 						as Hue
+#Include "Libs/Openplanet/TMConsole/FontManager.Script.txt" 						as Font
+#Include "Libs/Openplanet/UIPadButtons.Script.txt"								as UIButtons
+#Include "Libs/Openplanet/TMConsole/Volumes.Script.txt" 							as Volumes
+#Include "Libs/Openplanet/TMConsole/Ingame/UI/UIBindingPadButtons.Script.txt" 	as UIBindingPadButtons
+
+#Const Version		"2016-01-30"
+#Const ScriptName	"UI_CheatCode.Script.txt"
+
+#Const IMGPATH								"file://Media/Images/TMConsole/Ingame/"
+#Const IMGPATH_CHEATS						"file://Media/Images/TMConsole/Ingame/"
+
+//////////////////////////////////////////
+// IMAGES
+
+
+#Const IMG_CHEAT_TURBO_GAUGE				"turbo-gauge.png"		//"slot-medium-bg-color.dds"
+#Const IMG_CHEAT_PERFECT					"perfect.png"
+#Const IMG_CHEAT_MASTER						"master.png"
+#Const IMG_CHEAT_EPIC						"epic.png"
+
+#Const IMG_KEEP_BUTTON_PRESSED_GAUGE		"speed-gauge1.dds"
+
+//////////////////////////////////////////
+// SOUNDS
+	
+
+#Const vT 	""" valign="top" """
+#Const vB 	""" valign="bottom" """
+#Const vC 	""" valign="center" """
+#Const hC 	""" halign="center" """
+#Const hR 	""" halign="right" """
+
+//////////////////////////////////////////
+// CHEAT SETTINGS
+// Cheat mode "Bonus"
+#Const C_FRAME_CHEAT_BONUS_OFFSET_X			32.
+#Const C_FRAME_CHEAT_BONUS_OFFSET_Y			58.
+#Const C_CHEAT_BONUS_BUTTON_SIZE_X			15.
+#Const C_CHEAT_BONUS_BUTTON_SIZE_Y			15.
+#Const C_CHEAT_BONUS_SIZE_X					40.
+#Const C_CHEAT_BONUS_SIZE_Y					40.
+#Const C_CHEAT_EVENT_WARNING_SIGN_SIZE_X	30.
+#Const C_CHEAT_EVENT_WARNING_SIGN_SIZE_Y	30.
+#Const C_CHEAT_EVENT_WARNING_TIME_SIZE_X	40.
+#Const C_CHEAT_EVENT_WARNING_TIME_SIZE_Y	10.
+#Const C_CHEAT_EVENT_WARNING_TIME_OFFSET_Y	1.
+#Const C_CHEAT_EVENT_WARNING_TIME_MAX		5000	// cf. aussi Hack_CheatEventWarningTimeMax dans UI.Script.txt
+#Const C_CHEAT_EVENT_WARNING_SIZE_X			25.
+#Const C_CHEAT_EVENT_WARNING_SIZE_Y			25.
+#Const C_CHEAT_EVENT_SIZE_X					50.
+#Const C_CHEAT_EVENT_SIZE_Y					50.
+
+#Const E_CHEAT_BONUS_BOOST			0
+#Const E_CHEAT_BONUS_JUMP			1
+#Const E_CHEAT_BONUS_GROW			2
+#Const E_CHEAT_BONUS_SHRINK			3
+#Const E_CHEAT_BONUS_DROP			4
+#Const E_CHEAT_BONUS_SHOOT			5
+#Const E_CHEAT_BONUS_BOOST_GOLDEN	6
+#Const E_CHEAT_BONUS_JUMP_GOLDEN	7
+#Const E_CHEAT_BONUS_GROW_GOLDEN	8
+#Const E_CHEAT_BONUS_SHRINK_GOLDEN	9
+#Const E_CHEAT_BONUS_DROP_GOLDEN	10
+#Const E_CHEAT_BONUS_SHOOT_GOLDEN	11
+#Const E_CHEAT_BONUS_COUNT			12
+
+#Const E_CHEAT_EVENT_EARTHQUAKE					0
+#Const E_CHEAT_EVENT_REVERSED_GRAVITY			1
+#Const E_CHEAT_EVENT_ENGINE_OFF					2
+#Const E_CHEAT_EVENT_LOCKED_DIRECTIONS			3
+#Const E_CHEAT_EVENT_EARTHQUAKE_GOLDEN			4
+#Const E_CHEAT_EVENT_REVERSED_GRAVITY_GOLDEN	5
+#Const E_CHEAT_EVENT_ENGINE_OFF_GOLDEN			6
+#Const E_CHEAT_EVENT_LOCKED_DIRECTIONS_GOLDEN	7
+#Const E_CHEAT_EVENT_COUNT						8
+
+
+// Cheat mode "Stunt"
+#Const C_FRAME_CHEAT_STUNT_OFFSET_Y			20.
+#Const C_CHEAT_TURBO_GAUGE_SIZE_X			30.
+#Const C_CHEAT_TURBO_GAUGE_SIZE_Y			3.
+#Const C_CHEAT_TURBO_GAUGE_MARGIN_X			0.5
+#Const C_CHEAT_TURBO_GAUGE_MARGIN_Y			0.5
+#Const C_CHEAT_STUNT_TURBO_BUTTON_SIZE_X	5.
+#Const C_CHEAT_STUNT_TURBO_BUTTON_SIZE_Y	5.
+#Const C_CHEAT_STUNT_TURBO_MAX				5000
+#Const C_CHEAT_STUNT_NAME_DISPLAY_DURATION	3000
+#Const C_CHEAT_STUNT_PERFECT_SIZE_X			40.
+#Const C_CHEAT_STUNT_PERFECT_SIZE_Y			20.
+// Cheat mode "Button smash"
+#Const C_FRAME_CHEAT_BUTTON_SMASH_OFFSET_Y	15.
+#Const C_CHEAT_HELP_BUTTONS_SIZE			15.
+#Const C_CHEAT_HELP_BUTTONS_GAUGE_SIZE		22.5
+#Const C_CHEAT_SMASHED_BUTTON_ANIM_PERIOD	200
+#Const C_CHEAT_KEEP_BUTTON_PRESSED_MAX_TIME	1000
+
+
+
+//////////////////////////////////////////
+// GENERAL SETTINGS
+
+#Const C_TEXT_DEFAUTSIZE 					5
+
+// HERE TO SET THE UI MARGINS FOR THE "90%"
+// 1. = 10% Vertically & 10% Horizontally (16/9)
+#Const C_MARGINS_GLOBALRATIO				1.
+
+
+#Const C_WHITE_OPACITY						0.85
+#Const C_SPEED_ANIM_BLINKSPEED				0.0125
+#Const C_SPEED_SLOWANIM_BLINKSPEED			0.0185
+#Const C_TURBO_ANIM_BLINKSPEED				0.100
+#Const C_PERFECT_LANDING_ANIM_BLINKSPEED	0.040
+#Const C_COMBO_ALMOST_FINISHED_BLINKSPEED	0.040
+#Const C_COMBO_ALMOST_FINISHED_DURATION		1000
+#Const C_CHEAT_EVENT_BLINKSPEED				0.010
+#Const C_CHEAT_EVENT_BLINKSPEED_MAX			0.020
+#Const C_CHEAT_EVENT_BLINKSPEED_MAX_DURATION 2000
+
+#Const C_COMMENTARIES_MAXCOUNT_CP_YES 		23
+#Const C_COMMENTARIES_MAXCOUNT_CP_NO 		38
+#Const C_COMMENTARIES_MAXCOUNT_ENDRACE_YES 	18
+#Const C_COMMENTARIES_MAXCOUNT_ENDRACE_NO 	37
+#Const C_COMMENTARIES_MAXCOUNT_CARHIT 		16
+
+#Const C_COMMENTARIES_CARHIT_MIN_INTERVAL	2000
+#Const C_COMMENTARIES_TOPLAY_EACH_XX_CP_MIN	2
+#Const C_COMMENTARIES_TOPLAY_EACH_XX_CP_MAX 4
+#Const C_COMMENTARIES_DELAY					400
+
+#Const TMC_MEDAL_AUTHOR						0
+#Const TMC_MEDAL_GOLD						1
+#Const TMC_MEDAL_SILVER						2
+#Const TMC_MEDAL_BRONZE						3
+#Const TMC_MEDAL_PLAYER						4
+#Const TMC_MEDAL_NONE						5
+#Const TMC_MEDAL_ANOTHERPLAYER				6
+
+#Const C_SPEED_SIZEGAUGE					30.
+#Const C_SPEED_SIZEGAUGE_RATIO				1.75
+// #Const C_CAMPAIGNAUTHOR						"$s$fffNANDO "
+#Const C_LAYERNAME_UICHEATCODE				"UICheatCode"
+	
+declare Text 	G_FontTitle;
+declare Text 	G_FontMain;
+declare Text 	G_FontMainSmall;
+declare Text 	G_FontChrono;
+declare Text 	G_FontNumberBig;
+
+// ---------------------------------- //
+/** Create the Race manialink
+ *
+ *	@return	The manialink Text
+ */
+Text Private_GetCheatCodeML(Real _Scale, Real _PosXRatio, Real _SpecialScale) {
+	//Get button code
+	declare TurboStuntButton			= UIBindingPadButtons::GetTurboKeyCode();
+	declare UseBonusButton				= UIBindingPadButtons::GetUseBonusButton();
+	declare StuntJumpButton				= UIBindingPadButtons::GetJumpButton();
+	declare StuntPrepareJumpButton		= UIBindingPadButtons::GetChargeJumpButton();
+	declare SmashButton					= UIBindingPadButtons::GetAccelerateButton();
+	
+	declare RespawnButton				= UIBindingPadButtons::GetRespawnKeyCode();
+	declare RestartButton				= UIBindingPadButtons::GetRestartKeyCode();
+	
+	declare PitchPlusButton				= UIBindingPadButtons::GetPitchPlusButton();
+	declare PitchMinusButton			= UIBindingPadButtons::GetPitchMinusButton();
+	declare YawPlusButton				= UIBindingPadButtons::GetYawPlusButton();
+	declare YawMinusButton				= UIBindingPadButtons::GetYawMinusButton();
+	
+	declare RollPlusButton				= UIBindingPadButtons::GetRollPlusButton();
+	declare RollMinusButton				= UIBindingPadButtons::GetRollMinusButton();
+	
+	declare ImageTurboButton			= UIButtons::GetImage(CManiaAppEvent::EMenuNavAction::PageDown);
+	declare ImageBonusButton			= UIButtons::GetImage(CManiaAppEvent::EMenuNavAction::PageDown);
+	declare ImageButtonSmash			= UIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Action1);
+	declare ImageButtonPrepareJump		= UIButtons::GetImage(CEditorPluginEvent::EInput::CameraDown);
+	declare ImageButtonJump				= UIButtons::GetImage(CEditorPluginEvent::EInput::CameraUp);
+	declare ImageButtonLeftStick		= UIButtons::GetImage("LeftStick");
+	declare ImageButtonRightStick		= UIButtons::GetImage("RightStick");
+	declare ImageButtonRespawn			= UIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Action2);
+	declare ImageButtonRestart			= UIButtons::GetIngameRestartImage();
+	
+	G_FontTitle 				= Font::GetFontName("Title");
+	G_FontMain 					= Font::GetFontName("Main");
+	G_FontMainSmall 			= Font::GetFontName("MainSmall");
+	G_FontChrono 				= Font::GetFontName("Chrono");
+	G_FontNumberBig				= Font::GetFontName("NumberBig");
+	declare MarginGaugeRatio 			= 0.5 * C_MARGINS_GLOBALRATIO;
+	declare CheatBonusButtonStyle		= """ posn="{{{-C_CHEAT_BONUS_SIZE_X/2.}}} {{{-C_CHEAT_BONUS_SIZE_Y/2.}}} 1." sizen="{{{C_CHEAT_BONUS_BUTTON_SIZE_X}}} {{{C_CHEAT_BONUS_BUTTON_SIZE_Y}}}" {{{hC^vC}}} hidden="1" """;
+	declare CheatBonusStyle				= """ posn="0. 0. 0." sizen="{{{C_CHEAT_BONUS_SIZE_X}}} {{{C_CHEAT_BONUS_SIZE_Y}}}" {{{hC}}} {{{vT}}} keepratio="Fit" hidden="1" """;
+	declare CheatEventWarningTimeStyle	= """ posn="0. {{{C_CHEAT_EVENT_WARNING_TIME_OFFSET_Y}}} 0." sizen="{{{C_CHEAT_EVENT_WARNING_TIME_SIZE_X}}} {{{C_CHEAT_EVENT_WARNING_TIME_SIZE_Y}}}" {{{hC}}} {{{vB}}} """;
+	declare CheatEventWarningStyle		= """ posn="0. 0. 0." sizen="{{{C_CHEAT_EVENT_WARNING_SIZE_X}}} {{{C_CHEAT_EVENT_WARNING_SIZE_Y}}}" {{{hC}}} {{{vC}}} keepratio="Fit" hidden="1" """;
+	declare CheatEventStyle				= """ posn="0. 0. 0." sizen="{{{C_CHEAT_EVENT_SIZE_X}}} {{{C_CHEAT_EVENT_SIZE_Y}}}" {{{hC}}} {{{vC}}} keepratio="Fit" hidden="1" """;
+	declare QuadStyleKeepButtonPressedGauge = """ posn="0. 0. 1."	sizen="{{{C_CHEAT_HELP_BUTTONS_GAUGE_SIZE/2.}}} {{{C_CHEAT_HELP_BUTTONS_GAUGE_SIZE}}}" {{{hR^vC}}}	image="{{{IMGPATH^IMG_KEEP_BUTTON_PRESSED_GAUGE}}}" """;
+	// log("CONSTRUCT UI CHEAT");
+	declare PosXGauge					=  ( 160 * _PosXRatio - C_SPEED_SIZEGAUGE * 0.5 * C_SPEED_SIZEGAUGE_RATIO - 9 * MarginGaugeRatio);
+	declare PosYGauge					= -( 90	 - C_SPEED_SIZEGAUGE * 0.5 * C_SPEED_SIZEGAUGE_RATIO - 9  * MarginGaugeRatio);
+	
+	declare CheatEventWarning_CenterPosY	= 56.6982;			// = LapsToGoCenterY in UI.Script.txt							// FIXME : factoriser avec UI.Script.txt
+	
+	// hacks pour le Stunt 2 joueurs SplitScreen
+	declare HackFrameCheatStuntAdditionalOffsetY = 0.;
+	declare HackFrameCheatBonusAdditionalOffsetX = 0.;
+	declare HackFrameCheatBonusAdditionalOffsetY = 0.;
+	if(_SpecialScale < 1.)
+	{
+		HackFrameCheatStuntAdditionalOffsetY = 4.;
+		HackFrameCheatBonusAdditionalOffsetX = 2.;
+		HackFrameCheatBonusAdditionalOffsetY = -12.;
+	}
+	declare ActualCheatTurboGaugeSizeX = C_CHEAT_TURBO_GAUGE_SIZE_X * _SpecialScale;
+	
+	// images mode bonus
+	declare Text[Integer] CheatBonusImages =	[	E_CHEAT_BONUS_BOOST			=>	"bonus-boost.png",
+													E_CHEAT_BONUS_JUMP			=>	"bonus-jump.png",
+													E_CHEAT_BONUS_GROW			=>	"bonus-grow.png",
+													E_CHEAT_BONUS_SHRINK		=>	"bonus-shrink.png",
+													E_CHEAT_BONUS_DROP			=>	"bonus-drop.png",
+													E_CHEAT_BONUS_SHOOT			=>	"bonus-shoot.png",
+													E_CHEAT_BONUS_BOOST_GOLDEN	=>	"bonus-boost-golden.png",
+													E_CHEAT_BONUS_JUMP_GOLDEN	=>	"bonus-jump-golden.png",
+													E_CHEAT_BONUS_GROW_GOLDEN	=>	"bonus-grow-golden.png",
+													E_CHEAT_BONUS_SHRINK_GOLDEN	=>	"bonus-shrink-golden.png",
+													E_CHEAT_BONUS_DROP_GOLDEN	=>	"bonus-drop-golden.png",
+													E_CHEAT_BONUS_SHOOT_GOLDEN	=>	"bonus-shoot-golden.png"	];	// count must be E_CHEAT_BONUS_COUNT
+													
+	declare Text[Integer] CheatEventImages =	[	E_CHEAT_EVENT_EARTHQUAKE				=>	"event-earthquake.png",
+													E_CHEAT_EVENT_REVERSED_GRAVITY			=>	"event-reversed-gravity.png",
+													E_CHEAT_EVENT_ENGINE_OFF				=>	"event-engine-off.png",
+													E_CHEAT_EVENT_LOCKED_DIRECTIONS			=>	"event-locked-directions.png",
+													E_CHEAT_EVENT_EARTHQUAKE_GOLDEN			=>	"event-earthquake-golden.png",
+													E_CHEAT_EVENT_REVERSED_GRAVITY_GOLDEN	=>	"event-reversed-gravity-golden.png",
+													E_CHEAT_EVENT_ENGINE_OFF_GOLDEN			=>	"event-engine-off-golden.png",
+													E_CHEAT_EVENT_LOCKED_DIRECTIONS_GOLDEN	=>	"event-locked-directions-golden.png"	];	// count must be E_CHEAT_EVENT_COUNT
+	declare Text MLText = """
+<manialink name="UI_CheatCode">		
+		<framemodel id="Frame_KeepButtonPressed">
+			<quad 	id="Quad_ButtonToKeepPressed"	posn="0. 0. 2."	sizen="{{{C_CHEAT_HELP_BUTTONS_SIZE}}} {{{C_CHEAT_HELP_BUTTONS_SIZE}}}"	{{{hC^vC}}}	image="{{{UIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Select)}}}" />
+			<frame clip="True" clipsizen="{{{C_CHEAT_HELP_BUTTONS_GAUGE_SIZE/2.}}} {{{C_CHEAT_HELP_BUTTONS_GAUGE_SIZE}}}" clipposn="{{{-C_CHEAT_HELP_BUTTONS_GAUGE_SIZE/4.}}} 0.">
+				<quad id="Quad_KeepButtonPressedLeftGauge"	{{{QuadStyleKeepButtonPressedGauge}}} rot="0." />
+			</frame>
+			<frame clip="True" clipsizen="{{{C_CHEAT_HELP_BUTTONS_GAUGE_SIZE/2.}}} {{{C_CHEAT_HELP_BUTTONS_GAUGE_SIZE}}}" clipposn="{{{C_CHEAT_HELP_BUTTONS_GAUGE_SIZE/4.}}} 0.">
+				<quad id="Quad_KeepButtonPressedRightGauge"	{{{QuadStyleKeepButtonPressedGauge}}} rot="180." />
+			</frame>
+		</framemodel>
+		
+		<frame id="Frame_Hud" scale="{{{_Scale}}}" hidden="0">	
+			<frame id="Frame_CheatBonus" scale="{{{_SpecialScale}}}" posn="{{{160 * _PosXRatio - C_FRAME_CHEAT_BONUS_OFFSET_X + HackFrameCheatBonusAdditionalOffsetX}}} {{{90 - C_FRAME_CHEAT_BONUS_OFFSET_Y + HackFrameCheatBonusAdditionalOffsetY}}} 0." >
+				<quad 	id="Quad_UseBonusButton"	{{{CheatBonusButtonStyle}}}	image="{{{ImageBonusButton}}}" />
+				{{{UIBindingPadButtons::InjectInManialink(C_LAYERNAME_UICHEATCODE, UseBonusButton,	<-C_CHEAT_BONUS_SIZE_X/2., -C_CHEAT_BONUS_SIZE_Y/2., 1.>, 1.0)}}}
+				""";
+				
+
+	for(I, 0, E_CHEAT_BONUS_COUNT - 1)
+	{
+		MLText ^= """
+				<quad 	id="Quad_Bonus{{{I}}}"	{{{CheatBonusStyle}}}	image="{{{IMGPATH_CHEATS^CheatBonusImages[I]}}}" />""";
+	}
+	MLText ^= """
+				<label	id="Label_BonusCountPrefix"	posn="{{{C_CHEAT_BONUS_SIZE_X/2.-5.}}} {{{-C_CHEAT_BONUS_SIZE_Y+1.}}}" {{{hR^vC}}}	textfont="{{{G_FontMain}}}"			textsize="10"	text="x"	hidden="1" />
+				<label	id="Label_BonusCount" 		posn="{{{C_CHEAT_BONUS_SIZE_X/2.-5.}}} {{{-C_CHEAT_BONUS_SIZE_Y+1.}}}" {{{vC}}}		textfont="{{{G_FontNumberBig}}}"	textsize="10"	text="0"	hidden="1" />
+			</frame>
+		
+			<frame id="Frame_CheatEventWarning" scale="{{{_SpecialScale}}}" posn="0. {{{CheatEventWarning_CenterPosY}}} 0." >""";
+	for(I, 0, E_CHEAT_EVENT_COUNT - 1)
+	{
+		MLText ^= """
+				<quad 	id="Quad_CheatEventWarning{{{I}}}"	{{{CheatEventWarningStyle}}}	image="{{{IMGPATH_CHEATS^CheatEventImages[I]}}}" />""";
+	}
+	MLText ^= """
+			</frame>
+		
+			<frame id="Frame_CheatEvent" scale="{{{_SpecialScale}}}" posn="0. {{{CheatEventWarning_CenterPosY}}} 0." >""";
+	for(I, 0, E_CHEAT_EVENT_COUNT - 1)
+	{
+		MLText ^= """
+				<quad 	id="Quad_CheatEvent{{{I}}}"			{{{CheatEventStyle}}}			image="{{{IMGPATH_CHEATS^CheatEventImages[I]}}}" />""";
+	}
+			
+	MLText ^= """
+			</frame>
+		
+			<frame id="Frame_CheatStunt" posn="0. {{{90. - C_FRAME_CHEAT_STUNT_OFFSET_Y - HackFrameCheatStuntAdditionalOffsetY}}} 15."	hidden="1" >
+				<frame id="Frame_CheatStuntCombo" posn="40. -44.">
+					<label	id="Label_Combo" 		posn="12. 0."		textsize="4"	textfont="{{{G_FontMain}}}"			{{{hR^vB}}}	text="{{{_("|Will be followed by a counter that increases while you perform several stunts in a row|Combo")}}}" textcolor="fff"	textprefix="$t" />
+					<label	id="Label_ComboCount" 	posn="13. 0."		textsize="10"	textfont="{{{G_FontNumberBig}}}"	{{{vB}}}	text="0"	 textcolor="fff" />
+				</frame>
+				<frame id="Frame_CheatStuntScore" posn="0. -18.">
+					<label	id="Label_StuntName" 		posn="0.	-6.5"	textsize="15"	textfont="{{{G_FontMain}}}" 		{{{hC^vC}}}	text="[StuntName]" textcolor="ff0" />
+					<label	id="Label_StuntAngle" 		posn="0.	-19.5"	textsize="9"	textfont="{{{G_FontNumberBig}}}"	{{{hC^vC}}}	text="0" textcolor="ff0" />
+					<label	id="Label_StuntPoints" 		posn="1.	-41."	textsize="11"	textfont="{{{G_FontNumberBig}}}"	{{{hC^vC}}}	text="+0" hidden="1" />
+				</frame>
+				<frame id="Frame_CheatStuntPerfect" posn="0. -18.">
+					<quad 	id="Quad_PerfectLanding"	posn="0. 	2. 		2."	sizen="{{{C_CHEAT_STUNT_PERFECT_SIZE_X}}} {{{C_CHEAT_STUNT_PERFECT_SIZE_Y}}}"	{{{hC^vC}}}	image="{{{IMGPATH_CHEATS^IMG_CHEAT_PERFECT}}}"	hidden="1" colorize="fff" />
+					<quad 	id="Quad_MasterLanding"		posn="0. 	2. 		3."	sizen="{{{C_CHEAT_STUNT_PERFECT_SIZE_X}}} {{{C_CHEAT_STUNT_PERFECT_SIZE_Y}}}"	{{{hC^vC}}}	image="{{{IMGPATH_CHEATS^IMG_CHEAT_MASTER}}}"	hidden="1" colorize="fff" />
+					<quad 	id="Quad_EpicLanding"		posn="0. 	2. 		4."	sizen="{{{C_CHEAT_STUNT_PERFECT_SIZE_X}}} {{{C_CHEAT_STUNT_PERFECT_SIZE_Y}}}"	{{{hC^vC}}}	image="{{{IMGPATH_CHEATS^IMG_CHEAT_EPIC}}}"		hidden="1" colorize="fff" />
+					<frame	id="Frame_LandingChargeClip"	posn="{{{-C_CHEAT_STUNT_PERFECT_SIZE_X / 2.}}} -10."	clip="True" clipposn="{{{C_CHEAT_STUNT_PERFECT_SIZE_X / 2.}}} 0." clipsizen="{{{C_CHEAT_STUNT_PERFECT_SIZE_X - 2.*C_CHEAT_TURBO_GAUGE_MARGIN_X}}} {{{C_CHEAT_STUNT_PERFECT_SIZE_Y - 2.*C_CHEAT_TURBO_GAUGE_MARGIN_Y}}}" >
+						<quad	id="Quad_LandingCharge"		posn="{{{-C_CHEAT_STUNT_PERFECT_SIZE_X}}} 0. 1."	sizen="{{{C_CHEAT_STUNT_PERFECT_SIZE_X}}} {{{C_CHEAT_TURBO_GAUGE_SIZE_Y}}}"	{{{vC}}}	image="{{{IMGPATH_CHEATS^IMG_CHEAT_TURBO_GAUGE}}}"	colorize="fff"	opacity="0.25" />
+					</frame>
+				</frame>
+			</frame>
+			<frame id="Frame_CheatStuntHelpers" posn="0. -30. 15."	hidden="1" >
+				<frame id="Frame_ButtonForAirControl" posn="0. 0." hidden="1">
+					<quad 	id="Quad_ButtonForAirControl1"	posn="-20. 0."	sizen="{{{C_CHEAT_HELP_BUTTONS_SIZE}}} {{{C_CHEAT_HELP_BUTTONS_SIZE}}}"	{{{hC^vT}}}	image="{{{ImageButtonLeftStick}}}" />
+					<quad 	id="Quad_ButtonForAirControl2"	posn="20. 0."	sizen="{{{C_CHEAT_HELP_BUTTONS_SIZE}}} {{{C_CHEAT_HELP_BUTTONS_SIZE}}}"	{{{hC^vT}}}	image="{{{ImageButtonRightStick}}}" />
+					
+					{{{UIBindingPadButtons::InjectInManialink(C_LAYERNAME_UICHEATCODE, YawPlusButton,		<-50., 0., 1.0>, 1.0)}}}
+					{{{UIBindingPadButtons::InjectInManialink(C_LAYERNAME_UICHEATCODE, YawMinusButton, 		<-20., 0., 1.0>, 1.0)}}}
+					
+					{{{UIBindingPadButtons::InjectInManialink(C_LAYERNAME_UICHEATCODE, PitchPlusButton, 	<35., 10., 0.5>, 1.0)}}}
+					{{{UIBindingPadButtons::InjectInManialink(C_LAYERNAME_UICHEATCODE, PitchMinusButton, 	<35., -10., 0.5>, 1.0)}}}
+					
+					{{{UIBindingPadButtons::InjectInManialink(C_LAYERNAME_UICHEATCODE, RollMinusButton, 	<50., 0., 0.>, 1.0)}}}
+					{{{UIBindingPadButtons::InjectInManialink(C_LAYERNAME_UICHEATCODE, RollPlusButton, 		<20., 0., 0.>, 1.0)}}}
+					
+				</frame>
+				<frame id="Frame_ButtonForPrepareJump" posn="0. 0." hidden="1">
+					<quad 	id="Quad_ButtonForPrepareJump"	posn="0. 0."	sizen="{{{C_CHEAT_HELP_BUTTONS_SIZE}}} {{{C_CHEAT_HELP_BUTTONS_SIZE}}}"	{{{hC^vT}}}	image="{{{ImageButtonPrepareJump}}}" />
+					{{{UIBindingPadButtons::InjectInManialink(C_LAYERNAME_UICHEATCODE, StuntPrepareJumpButton, <0., -C_CHEAT_HELP_BUTTONS_SIZE/2, 0.>, 1.0)}}}
+				</frame>
+				<frame id="Frame_ButtonForJump" posn="0. 0." hidden="1">
+					<quad 	id="Quad_ButtonForJump"	posn="0. 0."	sizen="{{{C_CHEAT_HELP_BUTTONS_SIZE}}} {{{C_CHEAT_HELP_BUTTONS_SIZE}}}"	{{{hC^vT}}}	image="{{{ImageButtonJump}}}" />
+					{{{UIBindingPadButtons::InjectInManialink(C_LAYERNAME_UICHEATCODE, StuntJumpButton, <0., -C_CHEAT_HELP_BUTTONS_SIZE/2, 0.>, 1.0)}}}
+				</frame>
+			</frame>
+			<frame id="Frame_CheatButtonSmash" posn="0. {{{90 - C_FRAME_CHEAT_BUTTON_SMASH_OFFSET_Y}}} 0."	hidden="1" >
+				<frame id="Frame_ButtonToSmash" posn="0. 0." hidden="1">
+					<quad 	id="Quad_ButtonToSmash"	posn="0. 0."	sizen="{{{C_CHEAT_HELP_BUTTONS_SIZE}}} {{{C_CHEAT_HELP_BUTTONS_SIZE}}}"	{{{hC^vC}}}	image="{{{ImageButtonSmash}}}" />
+					{{{UIBindingPadButtons::InjectInManialink(C_LAYERNAME_UICHEATCODE, SmashButton, <0., 0., 0.>, 1.5)}}}
+				</frame>
+				
+				<frameinstance id="Frame_KeepPressedToRespawn"	posn="0. 0." modelid="Frame_KeepButtonPressed" hidden="1"/>
+				<frameinstance id="Frame_KeepPressedToGiveUp"	posn="0. 0." modelid="Frame_KeepButtonPressed" hidden="1"/>
+				
+				{{{UIBindingPadButtons::InjectInManialink(C_LAYERNAME_UICHEATCODE, RespawnButton, <0., 0., 0.>, 0.4)}}}
+				{{{UIBindingPadButtons::InjectInManialink(C_LAYERNAME_UICHEATCODE, RestartButton, <0., 0., 0.>, 0.4)}}}
+			</frame>
+			
+			<frame id="Frame_Speed" posn="{{{PosXGauge}}} {{{PosYGauge}}}" scale="{{{C_SPEED_SIZEGAUGE_RATIO}}}" hidden="0">
+				<frame id="Frame_CheatTurboGauge" posn="{{{C_SPEED_SIZEGAUGE/2. - ActualCheatTurboGaugeSizeX}}} {{{C_SPEED_SIZEGAUGE/2.}}}" hidden="1">
+					<quad 	id="Quad_CheatStuntTurboButton"	posn="-1. 0."	sizen="{{{C_CHEAT_STUNT_TURBO_BUTTON_SIZE_X}}} {{{C_CHEAT_STUNT_TURBO_BUTTON_SIZE_Y}}}"	{{{hR^vC}}}	image="{{{ImageTurboButton}}}" />
+					{{{UIBindingPadButtons::InjectInManialink(C_LAYERNAME_UICHEATCODE, TurboStuntButton, <-C_CHEAT_STUNT_TURBO_BUTTON_SIZE_X/2-4.0, 0., 0.>, 0.6)}}}
+					
+					<frame	id="Frame_CheatTurboGaugeClip"	clip="True" clipposn="{{{ActualCheatTurboGaugeSizeX / 2.}}} 0." clipsizen="{{{ActualCheatTurboGaugeSizeX - 2.*C_CHEAT_TURBO_GAUGE_MARGIN_X}}} {{{C_CHEAT_TURBO_GAUGE_SIZE_Y - 2.*C_CHEAT_TURBO_GAUGE_MARGIN_Y}}}" >
+						<quad	id="Quad_CheatTurboGauge1"	posn="{{{-ActualCheatTurboGaugeSizeX}}} 0. 1."	sizen="{{{ActualCheatTurboGaugeSizeX}}} {{{C_CHEAT_TURBO_GAUGE_SIZE_Y}}}"	{{{vC}}}	image="{{{IMGPATH_CHEATS^IMG_CHEAT_TURBO_GAUGE}}}" />
+						<quad	id="Quad_CheatTurboGauge2"	posn="{{{-ActualCheatTurboGaugeSizeX}}} 0. 2."	sizen="{{{ActualCheatTurboGaugeSizeX}}} {{{C_CHEAT_TURBO_GAUGE_SIZE_Y}}}"	{{{vC}}}	image="{{{IMGPATH_CHEATS^IMG_CHEAT_TURBO_GAUGE}}}" />
+					</frame>
+				</frame>
+			</frame>
+		</frame>
+		<script><!--
+
+		#Include "TextLib" as TL
+		#Include "MathLib" as ML
+		
+		#Const E_CHEAT_BONUS_BOOST			{{{E_CHEAT_BONUS_BOOST}}}
+		#Const E_CHEAT_BONUS_JUMP			{{{E_CHEAT_BONUS_JUMP}}}
+		#Const E_CHEAT_BONUS_GROW			{{{E_CHEAT_BONUS_GROW}}}
+		#Const E_CHEAT_BONUS_SHRINK			{{{E_CHEAT_BONUS_SHRINK}}}
+		#Const E_CHEAT_BONUS_DROP			{{{E_CHEAT_BONUS_DROP}}}
+		#Const E_CHEAT_BONUS_SHOOT			{{{E_CHEAT_BONUS_SHOOT}}}
+		#Const E_CHEAT_BONUS_BOOST_GOLDEN	{{{E_CHEAT_BONUS_BOOST_GOLDEN}}}
+		#Const E_CHEAT_BONUS_JUMP_GOLDEN	{{{E_CHEAT_BONUS_JUMP_GOLDEN}}}
+		#Const E_CHEAT_BONUS_GROW_GOLDEN	{{{E_CHEAT_BONUS_GROW_GOLDEN}}}
+		#Const E_CHEAT_BONUS_SHRINK_GOLDEN	{{{E_CHEAT_BONUS_SHRINK_GOLDEN}}}
+		#Const E_CHEAT_BONUS_DROP_GOLDEN	{{{E_CHEAT_BONUS_DROP_GOLDEN}}}
+		#Const E_CHEAT_BONUS_SHOOT_GOLDEN	{{{E_CHEAT_BONUS_SHOOT_GOLDEN}}}
+		#Const E_CHEAT_BONUS_COUNT			{{{E_CHEAT_BONUS_COUNT}}}
+
+		#Const E_CHEAT_EVENT_EARTHQUAKE					{{{E_CHEAT_EVENT_EARTHQUAKE}}}
+		#Const E_CHEAT_EVENT_REVERSED_GRAVITY			{{{E_CHEAT_EVENT_REVERSED_GRAVITY}}}
+		#Const E_CHEAT_EVENT_ENGINE_OFF					{{{E_CHEAT_EVENT_ENGINE_OFF}}}
+		#Const E_CHEAT_EVENT_LOCKED_DIRECTIONS			{{{E_CHEAT_EVENT_LOCKED_DIRECTIONS}}}
+		#Const E_CHEAT_EVENT_EARTHQUAKE_GOLDEN			{{{E_CHEAT_EVENT_EARTHQUAKE_GOLDEN}}}
+		#Const E_CHEAT_EVENT_REVERSED_GRAVITY_GOLDEN	{{{E_CHEAT_EVENT_REVERSED_GRAVITY_GOLDEN}}}
+		#Const E_CHEAT_EVENT_ENGINE_OFF_GOLDEN			{{{E_CHEAT_EVENT_ENGINE_OFF_GOLDEN}}}
+		#Const E_CHEAT_EVENT_LOCKED_DIRECTIONS_GOLDEN	{{{E_CHEAT_EVENT_LOCKED_DIRECTIONS_GOLDEN}}}
+		#Const E_CHEAT_EVENT_COUNT						{{{E_CHEAT_EVENT_COUNT}}}
+		
+		#Const SOUNDPATH							"file://Media/Sounds/TMConsole/"
+		//#Const SOUND_EPIC_STUNT					"checkpoint-crowd-yes.ogg"	// pour les EPIC en Stunt
+		#Const SOUND_EVENT_WARNING					"state-freewheel.ogg"		// pour les avertissements d'events en Bonus
+		
+		#Const C_CHEAT_STUNT_PROGRESSIVE_TURBO_SPEED	0.01		// 1. => remplit intégralement la jauge en 1 frame
+		#Const C_CHEAT_STUNT_TURBO_GAUGES_OPACITY_1		0.3
+		#Const C_CHEAT_STUNT_TURBO_GAUGES_OPACITY_2		0.7
+		#Const C_CHEAT_STUNT_TURBO_GAUGES_BLINK_SPEED	0.02
+		#Const C_Device_Keyboard 						0
+		#Const C_Device_Pad 							1
+		{{{UIBindingPadButtons::InjectInGlobals()}}}
+		{{{Hue::MLHSVColors()}}}
+		{{{UIButtons::GetMLFunctionPcButtons()}}}
+		{{{UIBindingPadButtons::InjectInFunctions()}}}
+		
+		Text GetTimeToText(Integer _Time)
+		{
+			declare TimeText = TL::TimeToText(_Time, True);
+			if(_Time < 600000) TimeText = "0"^TimeText;
+
+			return TimeText;
+		}
+		
+		Text GetStuntName(CTmMlPlayer::ESceneVehiclePhyStuntFigure _StuntEnum)
+		{
+			// HACK en attendant switch case (avec gestion des traductions ?!)
+			declare CommonPrefix = "::ESceneVehiclePhyStuntFigure::";
+			declare CommonPrefixLength = TL::Length(CommonPrefix);
+			declare StuntEnumToText = "" ^ _StuntEnum;
+			declare StuntEnumToTextLength = TL::Length(StuntEnumToText);
+			declare StuntName = TL::SubText(StuntEnumToText, CommonPrefixLength, StuntEnumToTextLength - CommonPrefixLength);
+			return TL::ToUpperCase(StuntName);
+		}
+		
+		Void UpdateKeepButtonPressedGauge(CMlQuad _LeftGauge, CMlQuad _RightGauge, Integer _TimeTillButtonWorks)
+		{
+			assert(_TimeTillButtonWorks >= 0);
+			
+			// calcul du taux de remplissage à représenter (Gauge01, entre 0 et 1)
+			assert(_TimeTillButtonWorks >= 0);
+			declare Integer MaxTime = {{{C_CHEAT_KEEP_BUTTON_PRESSED_MAX_TIME}}};
+			declare Gauge01 = ML::ToReal(MaxTime - _TimeTillButtonWorks) / MaxTime;
+			declare MinGauge01 = 0.1;
+			if(Gauge01 < MinGauge01)
+				Gauge01 = MinGauge01;
+				
+			// détermination de la couleur
+			declare Real GaugeHue;
+			if(Gauge01 <= 0.25)
+				GaugeHue = 0.;
+			else if(Gauge01 <= 0.5)
+				GaugeHue = 0.05;
+			else if(Gauge01 <= 0.75)
+				GaugeHue = 0.1;
+			else
+				GaugeHue = 0.15;
+			declare Vec3 GaugeColor = ToRGB(<GaugeHue, 1., 1.>);
+			
+			// affichage
+			declare Gauge360 = 360. * Gauge01;
+			if(Gauge360 > 0.)
+			{
+				_RightGauge.Visible = True;
+				_RightGauge.RelativeRotation = ML::Clamp(Gauge360, 0., 180.);
+				_RightGauge.Colorize = GaugeColor;
+			}
+			else
+				_RightGauge.Visible = False;
+			if(Gauge360 > 180.)
+			{
+				_LeftGauge.Visible = True;
+				_LeftGauge.RelativeRotation = ML::Clamp(Gauge360, 180., 360.);
+				_LeftGauge.Colorize = GaugeColor;
+			}
+			else
+				_LeftGauge.Visible = False;
+				
+		}
+		
+		Integer Private_UpdateCheatEventQuadsVisibility(CMlQuad[] _Quads, CTmMlPlayer _Player)
+		{
+			declare Integer CheatEventIndex = -1;
+			switch(_Player.BonusModeEventType)
+			{
+				case CTmMlPlayer::ETmBonusModeEventType::Bumps :
+				{
+					if(_Player.BonusModeEventIsGold)
+						CheatEventIndex = E_CHEAT_EVENT_EARTHQUAKE_GOLDEN;
+					else
+						CheatEventIndex = E_CHEAT_EVENT_EARTHQUAKE;
+				}
+				case CTmMlPlayer::ETmBonusModeEventType::LowGravity :
+				{
+					if(_Player.BonusModeEventIsGold)
+						CheatEventIndex = E_CHEAT_EVENT_REVERSED_GRAVITY_GOLDEN;
+					else
+						CheatEventIndex = E_CHEAT_EVENT_REVERSED_GRAVITY;
+				}
+				case CTmMlPlayer::ETmBonusModeEventType::FreeWheeling :
+				{
+					if(_Player.BonusModeEventIsGold)
+						CheatEventIndex = E_CHEAT_EVENT_ENGINE_OFF_GOLDEN;
+					else
+						CheatEventIndex = E_CHEAT_EVENT_ENGINE_OFF;
+				}
+				case CTmMlPlayer::ETmBonusModeEventType::LockedDirections :
+				{
+					if(_Player.BonusModeEventIsGold)
+						CheatEventIndex = E_CHEAT_EVENT_LOCKED_DIRECTIONS_GOLDEN;
+					else
+						CheatEventIndex = E_CHEAT_EVENT_LOCKED_DIRECTIONS;
+				}
+			}
+			for(I, 0, E_CHEAT_EVENT_COUNT - 1)
+			{
+				if(I == CheatEventIndex)
+					_Quads[I].Visible = True;
+				else
+					_Quads[I].Visible = False;
+			}
+			return CheatEventIndex;
+		}
+		
+		Void SwitchDeviceButton(Text _ButtonCode, CMlQuad _Quad) {
+			//CB. Pour savoir si le joueur est au clavier ou à la souris
+			declare netwrite Integer Net_LibLastDeviceUsed_LastDeviceUsed for UI;
+			//DEPRECATED: On affiche toujours le binding du pad
+			
+			if(_ButtonCode == "{{{YawPlusButton}}}" || _ButtonCode == "{{{YawMinusButton}}}" || _ButtonCode == "{{{RollPlusButton}}}" || _ButtonCode == "{{{RollMinusButton}}}" || _ButtonCode == "{{{PitchPlusButton}}}" || _ButtonCode == "{{{PitchMinusButton}}}" || _ButtonCode == "{{{StuntJumpButton}}}" || _ButtonCode == "{{{StuntPrepareJumpButton}}}") {
+				if(Net_LibLastDeviceUsed_LastDeviceUsed == C_Device_Keyboard) {
+					SetBindableKeysVisible(_ButtonCode, True);
+					_Quad.Visible = False;
+				} else if(Net_LibLastDeviceUsed_LastDeviceUsed == C_Device_Pad){
+					SetBindableKeysVisible(_ButtonCode, False);
+					_Quad.Visible = True;
+				}
+			} else {			
+				SetBindableKeysVisible(_ButtonCode, True);
+				_Quad.Visible = False;
+			}
+		}
+		
+		{{{Volumes::GetPlayVoiceSoundML()}}}
+		
+		main() 
+		{
+			{{{UIBindingPadButtons::InjectInInit(C_LAYERNAME_UICHEATCODE)}}}
+			declare Frame_Hud <=> (Page.GetFirstChild("Frame_Hud") as CMlFrame);
+
+			declare Frame_CheatBonus 				<=> (Page				.GetFirstChild("Frame_CheatBonus") 			as CMlFrame);
+			declare Quad_UseBonusButton				<=> (Frame_CheatBonus	.GetFirstChild("Quad_UseBonusButton") 		as CMlQuad);
+			declare Label_BonusCount				<=> (Frame_CheatBonus	.GetFirstChild("Label_BonusCount") 			as CMlLabel);
+			declare Label_BonusCountPrefix			<=> (Frame_CheatBonus	.GetFirstChild("Label_BonusCountPrefix") 	as CMlLabel);
+			declare CMlQuad[] Quads_Bonus;
+			for(I, 0, E_CHEAT_BONUS_COUNT - 1)
+				Quads_Bonus	.add( (Frame_CheatBonus	.GetFirstChild("Quad_Bonus" ^ I)	as CMlQuad)	);
+			
+			declare Frame_Speed 					<=> (Page				.GetFirstChild("Frame_Speed") 				as CMlFrame);
+			
+			declare Frame_CheatEventWarning			<=> (Page				.GetFirstChild("Frame_CheatEventWarning")	as CMlFrame);
+			declare Frame_CheatEvent				<=> (Page				.GetFirstChild("Frame_CheatEvent")			as CMlFrame);
+			declare CMlQuad[] Quads_CheatEventWarning;
+			declare CMlQuad[] Quads_CheatEvent;
+			for(I, 0, E_CHEAT_EVENT_COUNT - 1)
+			{
+				Quads_CheatEventWarning	.add( (Frame_CheatEventWarning	.GetFirstChild("Quad_CheatEventWarning" ^ I)	as CMlQuad)	);
+				Quads_CheatEvent		.add( (Frame_CheatEvent			.GetFirstChild("Quad_CheatEvent" ^ I)			as CMlQuad)	);
+			}
+			
+			declare Frame_CheatStunt			<=> (Page						.GetFirstChild("Frame_CheatStunt")					as CMlFrame);
+			declare Frame_CheatStuntCombo		<=> (Frame_CheatStunt			.GetFirstChild("Frame_CheatStuntCombo")				as CMlFrame);
+			declare Label_Combo					<=> (Frame_CheatStuntCombo		.GetFirstChild("Label_Combo")						as CMlLabel);
+			declare Label_ComboCount			<=> (Frame_CheatStuntCombo		.GetFirstChild("Label_ComboCount")					as CMlLabel);
+			declare Frame_CheatTurboGauge		<=> (Frame_Speed				.GetFirstChild("Frame_CheatTurboGauge")				as CMlFrame);
+			declare Quad_CheatStuntTurboButton	<=> (Frame_CheatTurboGauge		.GetFirstChild("Quad_CheatStuntTurboButton")		as CMlQuad);
+			declare Quad_CheatTurboGauge1		<=> (Frame_CheatTurboGauge		.GetFirstChild("Quad_CheatTurboGauge1")				as CMlQuad);
+			declare Quad_CheatTurboGauge2		<=> (Frame_CheatTurboGauge		.GetFirstChild("Quad_CheatTurboGauge2")				as CMlQuad);
+			
+			declare Frame_CheatStuntScore		<=> (Frame_CheatStunt			.GetFirstChild("Frame_CheatStuntScore")				as CMlFrame);
+			declare Label_StuntName				<=> (Frame_CheatStuntScore		.GetFirstChild("Label_StuntName")					as CMlLabel);
+			declare Label_StuntAngle			<=> (Frame_CheatStuntScore		.GetFirstChild("Label_StuntAngle")					as CMlLabel);
+			declare Label_StuntPoints			<=> (Frame_CheatStuntScore		.GetFirstChild("Label_StuntPoints")					as CMlLabel);
+			
+			declare Frame_CheatStuntHelpers		<=> (Page						.GetFirstChild("Frame_CheatStuntHelpers")			as CMlFrame);
+			declare Frame_ButtonForAirControl	<=> (Frame_CheatStuntHelpers	.GetFirstChild("Frame_ButtonForAirControl")			as CMlFrame);
+			declare Frame_ButtonForPrepareJump	<=> (Frame_CheatStuntHelpers	.GetFirstChild("Frame_ButtonForPrepareJump")		as CMlFrame);
+			declare Frame_ButtonForJump			<=> (Frame_CheatStuntHelpers	.GetFirstChild("Frame_ButtonForJump")				as CMlFrame);
+			
+			declare Quad_ButtonForJump			<=> (Frame_ButtonForJump			.GetFirstChild("Quad_ButtonForJump")				as CMlQuad);
+			declare Quad_ButtonForPrepareJump	<=> (Frame_ButtonForPrepareJump		.GetFirstChild("Quad_ButtonForPrepareJump")			as CMlQuad);
+			
+			declare Quad_ButtonForAirControl1	<=> (Frame_ButtonForAirControl		.GetFirstChild("Quad_ButtonForAirControl1")			as CMlQuad);
+			declare Quad_ButtonForAirControl2	<=> (Frame_ButtonForAirControl		.GetFirstChild("Quad_ButtonForAirControl2")			as CMlQuad);
+			
+			declare Frame_CheatStuntPerfect		<=> (Page						.GetFirstChild("Frame_CheatStuntPerfect")			as CMlFrame);
+			declare Quad_PerfectLanding			<=> (Frame_CheatStuntPerfect	.GetFirstChild("Quad_PerfectLanding")				as CMlQuad);
+			declare Quad_MasterLanding			<=> (Frame_CheatStuntPerfect	.GetFirstChild("Quad_MasterLanding")				as CMlQuad);
+			declare Quad_EpicLanding			<=> (Frame_CheatStuntPerfect	.GetFirstChild("Quad_EpicLanding")					as CMlQuad);
+			declare Quads_SuperLanding = [Quad_PerfectLanding, Quad_MasterLanding, Quad_EpicLanding];
+			declare Quad_LandingCharge			<=> (Frame_CheatStuntPerfect	.GetFirstChild("Quad_LandingCharge")				as CMlQuad);
+			
+			declare Frame_CheatButtonSmash		<=> (Page						.GetFirstChild("Frame_CheatButtonSmash")			as CMlFrame);
+			declare Frame_ButtonToSmash			<=> (Frame_CheatButtonSmash		.GetFirstChild("Frame_ButtonToSmash")				as CMlFrame);
+			
+			declare Quad_ButtonToSmash			<=> (Frame_ButtonToSmash		.GetFirstChild("Quad_ButtonToSmash")				as CMlQuad);
+			
+			declare Frame_KeepPressedToRespawn			<=> (Frame_CheatButtonSmash		.GetFirstChild("Frame_KeepPressedToRespawn")		as CMlFrame);
+			declare Quad_KeepPressedToRespawnButton		<=> (Frame_KeepPressedToRespawn	.GetFirstChild("Quad_ButtonToKeepPressed")			as CMlQuad);
+			// declare Quad_KeepPressedToRespawnButton		<=> (Frame_KeepPressedToRespawn	.GetFirstChild("Quad_ButtonToKeepPressed")			as CMlQuad);
+			declare Quad_KeepPressedToRespawnLeftGauge	<=> (Frame_KeepPressedToRespawn	.GetFirstChild("Quad_KeepButtonPressedLeftGauge")	as CMlQuad);
+			declare Quad_KeepPressedToRespawnRightGauge	<=> (Frame_KeepPressedToRespawn	.GetFirstChild("Quad_KeepButtonPressedRightGauge")	as CMlQuad);
+			declare Frame_KeepPressedToGiveUp			<=> (Frame_CheatButtonSmash		.GetFirstChild("Frame_KeepPressedToGiveUp")			as CMlFrame);
+			declare Quad_KeepPressedToGiveUpButton		<=> (Frame_KeepPressedToGiveUp	.GetFirstChild("Quad_ButtonToKeepPressed")			as CMlQuad);
+			
+			declare Quad_KeepPressedToGiveUpLeftGauge	<=> (Frame_KeepPressedToGiveUp	.GetFirstChild("Quad_KeepButtonPressedLeftGauge")	as CMlQuad);
+			declare Quad_KeepPressedToGiveUpRightGauge	<=> (Frame_KeepPressedToGiveUp	.GetFirstChild("Quad_KeepButtonPressedRightGauge")	as CMlQuad);
+			
+			declare netwrite Boolean 		Net_IsPauseMenuEnabled 			for UI;
+			declare netwrite Boolean 		Net_IsScoreTableVisible 		for UI;
+			declare netwrite Boolean		Net_IsFavoriteManagerShown		for UI;
+			declare netwrite Boolean 		Net_IsPadMissingMenuEnable 		for UI;
+			
+			declare Boolean NoAnotherMenuDisplayed = True;
+			
+			//Label_Combo			.Blend = CMlLabel::EBlendMode::Add;
+			//Label_ComboCount		.Blend = CMlLabel::EBlendMode::Add;
+			Quad_CheatTurboGauge1	.Blend = CMlQuad ::EBlendMode::Add;
+			Quad_CheatTurboGauge2	.Blend = CMlQuad ::EBlendMode::Add;
+			foreach(Quad in Quads_SuperLanding)
+				Quad				.Blend = CMlQuad ::EBlendMode::Add;
+			Quad_LandingCharge		.Blend = CMlQuad ::EBlendMode::Add;
+			
+			Quad_KeepPressedToRespawnLeftGauge	.Blend = CMlQuad ::EBlendMode::Add;
+			Quad_KeepPressedToRespawnRightGauge	.Blend = CMlQuad ::EBlendMode::Add;
+			Quad_KeepPressedToGiveUpLeftGauge	.Blend = CMlQuad ::EBlendMode::Add;
+			Quad_KeepPressedToGiveUpRightGauge	.Blend = CMlQuad ::EBlendMode::Add;
+			
+			Label_StuntName						.Blend = CMlLabel::EBlendMode::Add;
+			Label_StuntAngle					.Blend = CMlLabel::EBlendMode::Add;
+			
+			Quad_KeepPressedToRespawnButton		.ImageUrl = "{{{ImageButtonRespawn}}}";
+			Quad_KeepPressedToGiveUpButton		.ImageUrl = "{{{ImageButtonRestart}}}";
+			
+			Frame_Speed.Visible 	= True;
+			
+			// Preload des sons
+			//declare CAudioSource SoundEpicStunt	= Audio.CreateSound(SOUNDPATH ^ SOUND_EPIC_STUNT, 		{{{Volumes::GetVolumedB("CrowdYes")}}},	False, False, False);
+			declare CAudioSource SoundEventWarning	= Audio.CreateSound(SOUNDPATH ^ SOUND_EVENT_WARNING,	{{{Volumes::GetVolumedB("GasEmpty")}}},	False, True, False);
+			
+			declare ProgressiveTurbo01 = 0.;	// entre 0 et 1, permet de faire évoluerla barre de turbo de façon progressive quand on gagne une grosse quantité d'un coup
+			declare PrevUISequence = CUIConfig::EUISequence::None;
+
+			while(True)  
+			{
+				yield;
+				{{{UIBindingPadButtons::InjectInLoop()}}}
+				
+				
+				if (UI.UISequence != PrevUISequence) {
+					PrevUISequence = UI.UISequence;
+
+					if (UI.UISequence == CUIConfig::EUISequence::Podium) {
+						Frame_Hud.Visible = False;
+					} else {
+						Frame_Hud.Visible = True;
+					}
+				}
+				
+				if(!PageIsVisible || GUIPlayer == Null) continue;
+
+				/////////////////////////////////
+				// CHEAT ICONS VISIBILITY
+				
+				// On affiche les cheat UI uniquement s'il n'y a pas d'autres fenêtres par dessus. Scores table ne marche qu'en online mais du coup toujours à False en local
+				if(!Net_IsPauseMenuEnabled && !Net_IsScoreTableVisible && !Net_IsFavoriteManagerShown && !Net_IsPadMissingMenuEnable) {
+					Frame_Hud.Visible = True;
+				} else {
+					Frame_Hud.Visible = False;
+				}
+				
+				// CURRENT CHEAT BONUS
+				// on n'affiche qu'un seul bonus à la fois, certains en priorité par rapport aux autres
+				// (le mélange de bonus est très rare pas besoin de faire plus compliqué que cela)
+				declare Quad_UseBonusButton_MustBeVisible		= False;
+				declare Label_BonusCount_MustBeVisible			= False;
+				declare Label_BonusCountPrefix_MustBeVisible	= False;
+				declare CheatBonusIndex = -1;
+				if(GUIPlayer.BonusModeIsTurbo)
+				{
+					Quad_UseBonusButton_MustBeVisible = True;
+					if(GUIPlayer.BonusModeIsGold)
+						CheatBonusIndex = E_CHEAT_BONUS_BOOST_GOLDEN;
+					else
+						CheatBonusIndex = E_CHEAT_BONUS_BOOST;
+					if(GUIPlayer.BonusModeTurboStock > 1)
+					{
+						Label_BonusCount		.Value = "" ^ GUIPlayer.BonusModeTurboStock;
+						Label_BonusCount_MustBeVisible = True;
+						Label_BonusCountPrefix_MustBeVisible = True;
+					}
+				}
+				else if(GUIPlayer.BonusModeIsJump)
+				{
+					Quad_UseBonusButton_MustBeVisible = True;
+					if(GUIPlayer.BonusModeIsGold)
+						CheatBonusIndex = E_CHEAT_BONUS_JUMP_GOLDEN;
+					else
+						CheatBonusIndex = E_CHEAT_BONUS_JUMP;
+					if(!GUIPlayer.BonusIsPossible)
+					{
+						Quads_Bonus[E_CHEAT_BONUS_JUMP]	.Blend = CMlQuad ::EBlendMode::Add;
+						Quads_Bonus[E_CHEAT_BONUS_JUMP]	.Opacity = 0.8;
+					}
+					else
+					{
+						Quads_Bonus[E_CHEAT_BONUS_JUMP]	.Blend = CMlQuad ::EBlendMode::Default;
+						Quads_Bonus[E_CHEAT_BONUS_JUMP]	.Opacity = 1.;
+					}
+					if(GUIPlayer.BonusModeJumpStock > 1)
+					{
+						Label_BonusCount		.Value = "" ^ GUIPlayer.BonusModeJumpStock;
+						Label_BonusCount_MustBeVisible = True;
+						Label_BonusCountPrefix_MustBeVisible = True;
+					}
+				}
+				else if(GUIPlayer.BonusModeIsBigCar)
+				{
+					if(GUIPlayer.BonusModeIsGold)
+						CheatBonusIndex = E_CHEAT_BONUS_GROW_GOLDEN;
+					else
+						CheatBonusIndex = E_CHEAT_BONUS_GROW;
+				}
+				else if(GUIPlayer.BonusModeIsMiniCar)
+				{
+					if(GUIPlayer.BonusModeIsGold)
+						CheatBonusIndex = E_CHEAT_BONUS_SHRINK_GOLDEN;
+					else
+						CheatBonusIndex = E_CHEAT_BONUS_SHRINK;
+				}
+				else if(GUIPlayer.BonusModeIsEmptyCars)
+				{
+					Quad_UseBonusButton_MustBeVisible = True;
+					if(GUIPlayer.BonusModeIsGold)
+						CheatBonusIndex = E_CHEAT_BONUS_DROP_GOLDEN;
+					else
+						CheatBonusIndex = E_CHEAT_BONUS_DROP;
+					if(GUIPlayer.BonusModeEmptyCarsStock > 1)
+					{
+						Label_BonusCount		.Value = "" ^ GUIPlayer.BonusModeEmptyCarsStock;
+						Label_BonusCount_MustBeVisible = True;
+						Label_BonusCountPrefix_MustBeVisible = True;
+					}
+				}
+				else if(GUIPlayer.BonusModeIsSpeedyCars)
+				{
+					Quad_UseBonusButton_MustBeVisible = True;
+					if(GUIPlayer.BonusModeIsGold)
+						CheatBonusIndex = E_CHEAT_BONUS_SHOOT_GOLDEN;
+					else
+						CheatBonusIndex = E_CHEAT_BONUS_SHOOT;
+					if(GUIPlayer.BonusModeEmptyCarsStock > 1)
+					{
+						Label_BonusCount		.Value = "" ^ GUIPlayer.BonusModeEmptyCarsStock;
+						Label_BonusCount_MustBeVisible = True;
+						Label_BonusCountPrefix_MustBeVisible = True;
+					}
+				}
+				
+				// Quad_UseBonusButton.Visible = True;
+				
+				if(Quad_UseBonusButton_MustBeVisible) {
+					// log("HERE USE BONUS VISIBLE");
+					Quad_UseBonusButton.ImageUrl = GetImageForButton("{{{ImageBonusButton}}}");
+					SwitchDeviceButton("{{{UseBonusButton}}}", Quad_UseBonusButton);
+				} else {
+					// log("HERE USE BONUS NOT VISIBLE");
+					SetBindableKeysVisible("{{{UseBonusButton}}}", False);
+					Quad_UseBonusButton.Visible = False;
+				}
+				
+				Label_BonusCount		.Visible = Label_BonusCount_MustBeVisible;
+				Label_BonusCountPrefix	.Visible = Label_BonusCountPrefix_MustBeVisible;
+				for(I, 0, E_CHEAT_BONUS_COUNT - 1)
+				{
+					if(I == CheatBonusIndex)
+						Quads_Bonus[I].Visible = True;
+					else
+						Quads_Bonus[I].Visible = False;
+				}
+				
+				// CHEAT EVENT WARNING
+				if(GUIPlayer.BonusModeEventType == CTmMlPlayer::ETmBonusModeEventType::None || GUIPlayer.BonusModeTimeTillEvent == 0 || GUIPlayer.BonusModeTimeTillEvent > {{{C_CHEAT_EVENT_WARNING_TIME_MAX}}})
+				{
+					if(SoundEventWarning.IsPlaying)
+						SoundEventWarning.Stop();
+					Frame_CheatEventWarning	.Visible = False;
+				}
+				else
+				{
+					// Rem : En SplitScreen Duel, SplitScreenNum vaut 1 ou 2, et en SplitScreen Rounds, il vaut 1, 2, 3 ou 4. Dans les autres modes, (écran unique) il vaut 0
+					// -> on évite de jouer 4 fois le son des events en même temps
+					if(SplitScreenNum == 1 && !SoundEventWarning.IsPlaying)
+						SoundEventWarning.Play();
+					Frame_CheatEventWarning	.Visible = True;
+					declare CheatEventIndex = Private_UpdateCheatEventQuadsVisibility(Quads_CheatEventWarning, GUIPlayer);
+					// grossissement du warning et décalage du temps restant
+					if(CheatEventIndex >= 0)
+					{
+						declare Quad_CheatEventWarning = Quads_CheatEventWarning[CheatEventIndex];
+						declare Real SizeFactor = 2. - (ML::ToReal(GUIPlayer.BonusModeTimeTillEvent) / {{{C_CHEAT_EVENT_WARNING_TIME_MAX}}}.);	// SizeFactor varie de 1 à 2
+						declare Vec2 NewSize;
+						NewSize.X = {{{C_CHEAT_EVENT_WARNING_SIZE_X}}} * SizeFactor;
+						NewSize.Y = {{{C_CHEAT_EVENT_WARNING_SIZE_Y}}} * SizeFactor;
+						Quad_CheatEventWarning.Size = NewSize;
+						declare Real BlinkSpeed;
+						if(GUIPlayer.BonusModeTimeTillEvent < {{{C_CHEAT_EVENT_BLINKSPEED_MAX_DURATION}}})
+							BlinkSpeed = {{{C_CHEAT_EVENT_BLINKSPEED_MAX}}};
+						else
+							BlinkSpeed = {{{C_CHEAT_EVENT_BLINKSPEED}}};
+						Quad_CheatEventWarning.Opacity = 0.5 + 0.5 * ML::Sin(Now * BlinkSpeed);	// on clignote de plus en plus vite
+					}
+				}
+				
+				// CHEAT EVENT
+				if(GUIPlayer.BonusModeEventType == CTmMlPlayer::ETmBonusModeEventType::None || GUIPlayer.BonusModeTimeTillEvent > 0 || GUIPlayer.BonusModeTimeTillEndEvent == 0 )
+				{
+					Frame_CheatEvent	.Visible = False;
+				}
+				else
+				{
+					Frame_CheatEvent	.Visible = True;
+					Private_UpdateCheatEventQuadsVisibility(Quads_CheatEvent, GUIPlayer);
+				}
+				
+				// CHEAT STUNT
+				if(GUIPlayer.EnableStuntMode)
+				{
+					Frame_CheatStunt.Visible 		= True;
+					Frame_CheatStuntHelpers.Visible = True;
+					Frame_CheatTurboGauge.Visible 	= True;
+					// log("here visible");
+					if(GUIPlayer.StuntCombo > 1)
+					{
+						Frame_CheatStuntCombo.Visible = True;
+						Label_ComboCount.Value = "" ^ GUIPlayer.StuntCombo;
+						declare NewOpacity = 1.;
+						if(GUIPlayer.TimeLeftForStuntCombo < {{{C_COMBO_ALMOST_FINISHED_DURATION}}})
+						{
+							declare BlinkSpeed = {{{C_COMBO_ALMOST_FINISHED_BLINKSPEED}}};
+							NewOpacity =  0.5 + ML::Sin(Now*BlinkSpeed);
+						}
+						Label_Combo			.Opacity = NewOpacity;
+						Label_ComboCount	.Opacity = NewOpacity;
+					}
+					else
+						Frame_CheatStuntCombo.Visible = False;
+						
+					declare Real TurboMax = ML::ToReal(GUIPlayer.StuntTurboGaugeMax);	// conversion en réel en vue de la division ci-apres
+					declare Real Turbo01 = ML::Clamp(GUIPlayer.StuntTurboGauge / TurboMax, 0., 1.);	// 0 = jauge vide; 1 = jauge pleine
+					
+					if(ProgressiveTurbo01 < Turbo01)
+						ProgressiveTurbo01 += C_CHEAT_STUNT_PROGRESSIVE_TURBO_SPEED;
+					if(ProgressiveTurbo01 > Turbo01)
+						ProgressiveTurbo01 = Turbo01;
+						
+					declare Boolean ButtonVisible = (Turbo01 > 0.);
+
+					if(ButtonVisible) {
+						Quad_CheatStuntTurboButton.Visible = True;
+						SwitchDeviceButton("{{{TurboStuntButton}}}", Quad_CheatStuntTurboButton);
+						Quad_CheatStuntTurboButton.ImageUrl = GetImageForButton("{{{ImageTurboButton}}}");
+					} else {
+						SetBindableKeysVisible("{{{TurboStuntButton}}}", False);
+						Quad_CheatStuntTurboButton.Visible = False;
+					}
+					
+					Quad_CheatTurboGauge1	.RelativePosition.X = {{{ActualCheatTurboGaugeSizeX}}} * (Turbo01 - 1.);
+					Quad_CheatTurboGauge2	.RelativePosition.X = {{{ActualCheatTurboGaugeSizeX}}} * (ProgressiveTurbo01 - 1.);
+					
+					declare Real TurboHue;
+					if		(Turbo01 < 0.125)	{ TurboHue = 0.00; 	}
+					else if	(Turbo01 < 0.250)	{ TurboHue = 0.05;	}
+					else if	(Turbo01 < 0.375)	{ TurboHue = 0.1;	}
+					else if	(Turbo01 < 0.500)	{ TurboHue = 0.15;	}
+					else if	(Turbo01 < 0.625)	{ TurboHue = 0.3;	}
+					else if	(Turbo01 < 0.750)	{ TurboHue = 0.4;	}
+					else if	(Turbo01 < 0.825)	{ TurboHue = 0.5;	}
+					else if	(Turbo01 < 1.000)	{ TurboHue = 0.6;	}
+					else						{ TurboHue = 0.7;	}
+					Quad_CheatTurboGauge1	.Colorize = ToRGB(<TurboHue, 1., 1.>);
+					Quad_CheatTurboGauge2	.Colorize = ToRGB(<TurboHue, 1., 1.>);
+					
+					declare Real TurboGaugeOpacity1 = C_CHEAT_STUNT_TURBO_GAUGES_OPACITY_1;
+					declare Real TurboGaugeOpacity2 = C_CHEAT_STUNT_TURBO_GAUGES_OPACITY_2;
+					declare Real TurboButtonOpacity = 1.;
+					if(Turbo01 >= 1.)
+					{
+						declare Real OpacityFactor = (0.65 + 0.35 * ML::Sin(Now * C_CHEAT_STUNT_TURBO_GAUGES_BLINK_SPEED));
+						TurboGaugeOpacity1 *= OpacityFactor;
+						TurboGaugeOpacity2 *= OpacityFactor;
+						TurboButtonOpacity *= OpacityFactor;
+					}
+					Quad_CheatTurboGauge1		.Opacity = TurboGaugeOpacity1;
+					Quad_CheatTurboGauge2		.Opacity = TurboGaugeOpacity2;
+					Quad_CheatStuntTurboButton	.Opacity = TurboGaugeOpacity2;
+					
+					//if(GUIPlayer.StuntLastTime <= GUIPlayer.CurRace.Time && GUIPlayer.CurRace.Time <= GUIPlayer.StuntLastTime + {{{C_CHEAT_STUNT_NAME_DISPLAY_DURATION}}})
+					if(GUIPlayer.TimeElapsedSinceLastStunt < {{{C_CHEAT_STUNT_NAME_DISPLAY_DURATION}}} && GUIPlayer.TimeElapsedSinceLastStunt != 0)	// TimeElapsedSinceLastStunt == 0 quand aucun stunt
+					{
+						// 1) Frame_CheatStuntScore :
+						Frame_CheatStuntScore.Visible = True;
+						Label_StuntName.Value = GetStuntName(GUIPlayer.StuntLast);
+						Label_StuntAngle.Value = "" ^ GUIPlayer.StuntAngle;
+						declare Real StuntHue;
+						if		(GUIPlayer.StuntAngle <= 180)	{ StuntHue = 0.00; 	}
+						else if	(GUIPlayer.StuntAngle <= 360)	{ StuntHue = 0.05;	}
+						else if	(GUIPlayer.StuntAngle <= 540)	{ StuntHue = 0.1;	}
+						else if	(GUIPlayer.StuntAngle <= 720)	{ StuntHue = 0.15;	}
+						else if	(GUIPlayer.StuntAngle <= 900)	{ StuntHue = 0.3;	}
+						else if	(GUIPlayer.StuntAngle <= 1080)	{ StuntHue = 0.4;	}
+						else if	(GUIPlayer.StuntAngle <= 1260)	{ StuntHue = 0.5;	}
+						else if	(GUIPlayer.StuntAngle <= 1440)	{ StuntHue = 0.6;	}
+						else									{ StuntHue = 0.7;	}
+						declare StuntColor = ToRGB(<StuntHue, 1., 1.>);
+						Label_StuntName		.TextColor = StuntColor;
+						Label_StuntAngle	.TextColor = StuntColor;
+						Label_StuntPoints.Value = "+" ^ GUIPlayer.StuntPoints;
+						
+						// 2) Frame_CheatStuntPerfect :
+						declare SuperLandingType = -1;
+						if(GUIPlayer.StuntEpicLanding)
+						{
+							//if(!SoundEpicStunt.IsPlaying)
+							//	PlayVoiceSound(SoundEpicStunt);
+							SuperLandingType = 2;
+						}
+						else if(GUIPlayer.StuntMasterLanding)
+							SuperLandingType = 1;
+						else if(GUIPlayer.StuntPerfectLanding)
+							SuperLandingType = 0;
+						foreach(I => Quad in Quads_SuperLanding)
+						{
+							Quad.Visible = (SuperLandingType == I);
+							if(Quad.Visible)
+								Quad.Opacity = {{{C_WHITE_OPACITY}}} * (0.5 + 0.5 * ML::Sin(Now * {{{C_PERFECT_LANDING_ANIM_BLINKSPEED}}}));
+						}
+						Quad_LandingCharge.Visible = False;
+					}
+					else
+					{
+						// 1) Frame_CheatStuntScore :
+						Frame_CheatStuntScore.Visible = False;
+						
+						// 2) Frame_CheatStuntPerfect :
+						Frame_CheatStuntPerfect.Visible = True;
+						declare Integer SuperLandingType = -1;
+						if(GUIPlayer.StuntEpicCharge >= 1.)
+							SuperLandingType = 2;
+						else if(GUIPlayer.StuntMasterCharge >= 1.)
+							SuperLandingType = 1;
+						else if(GUIPlayer.StuntMasterCharge > 0.3)
+							SuperLandingType = -1;		// finalement on ne met pas le perfect
+						foreach(I => Quad in Quads_SuperLanding)
+						{
+							Quad.Visible = (SuperLandingType == I);
+							if(Quad.Visible)
+							{
+								if(SuperLandingType == 2)
+									Quad.Opacity = {{{C_WHITE_OPACITY}}} * 0.3 * (0.5 + 0.5 * ML::Sin(Now * {{{C_PERFECT_LANDING_ANIM_BLINKSPEED}}}));
+								else
+									Quad.Opacity = {{{C_WHITE_OPACITY}}} * 0.3;
+							}
+						}
+						if(SuperLandingType == 1)
+						{
+							declare LandingCharge01 = GUIPlayer.StuntEpicCharge;
+							Quad_LandingCharge.RelativePosition.X = {{{C_CHEAT_STUNT_PERFECT_SIZE_X}}} * (LandingCharge01 - 1.);
+							Quad_LandingCharge.Visible = True;
+							// TODO : Colorize gauge
+						}
+						else
+							Quad_LandingCharge.Visible = False;
+					}
+
+					// boutons d'aide
+					if(!Frame_CheatStuntCombo.Visible && !Frame_CheatStuntScore.Visible)
+					{
+						if(GUIPlayer.StuntStickNeedHelp) {
+							Frame_ButtonForAirControl.Visible = True;
+						
+							SwitchDeviceButton("{{{YawPlusButton}}}", Quad_ButtonForAirControl1);
+							SwitchDeviceButton("{{{YawMinusButton}}}", Quad_ButtonForAirControl1);
+							
+							SwitchDeviceButton("{{{RollPlusButton}}}", Quad_ButtonForAirControl2);
+							SwitchDeviceButton("{{{RollMinusButton}}}", Quad_ButtonForAirControl2);
+							SwitchDeviceButton("{{{PitchPlusButton}}}", Quad_ButtonForAirControl2);
+							SwitchDeviceButton("{{{PitchMinusButton}}}", Quad_ButtonForAirControl2);
+						
+							Quad_ButtonForAirControl1.ImageUrl = GetImageForButton("{{{ImageButtonLeftStick}}}");
+							Quad_ButtonForAirControl2.ImageUrl = GetImageForButton("{{{ImageButtonRightStick}}}");
+						} else {
+							Frame_ButtonForAirControl.Visible = False;
+						}
+
+						if(GUIPlayer.StuntJumpNeedHelp && !Frame_ButtonForAirControl.Visible)
+						{
+							if(GUIPlayer.StuntJumpCharge < 1.)
+							{
+								Frame_ButtonForPrepareJump	.Visible = True;
+								Frame_ButtonForJump			.Visible = False;
+							}
+							else
+							{
+								Frame_ButtonForPrepareJump	.Visible = False;
+								Frame_ButtonForJump			.Visible = True;
+							}
+						}
+						else
+						{
+							Frame_ButtonForPrepareJump	.Visible = False;
+							Frame_ButtonForJump			.Visible = False;
+						}
+					}
+					else
+					{
+						Frame_ButtonForAirControl.Visible = False;
+						Frame_ButtonForJump.Visible = False;
+					}
+					
+					SwitchDeviceButton("{{{StuntJumpButton}}}", Quad_ButtonForJump);
+					SwitchDeviceButton("{{{StuntPrepareJumpButton}}}", Quad_ButtonForPrepareJump);
+					Quad_ButtonForJump.ImageUrl 		= GetImageForButton("{{{ImageButtonJump}}}");
+					Quad_ButtonForPrepareJump.ImageUrl 	= GetImageForButton("{{{ImageButtonPrepareJump}}}");
+					
+				}
+				else
+				{
+					Frame_CheatStunt.Visible = False;
+					Frame_CheatStuntHelpers.Visible = False;
+				}
+				
+				// CHEAT BUTTON SMASH
+				if(GUIPlayer.ButtonSmashFrenzy)
+				{
+					Frame_CheatButtonSmash			.Visible = True;
+					Frame_KeepPressedToGiveUp		.Visible = False;
+					SetBindableKeysVisible("{{{RestartButton}}}", False);
+					Frame_KeepPressedToRespawn		.Visible = False;
+					SetBindableKeysVisible("{{{RespawnButton}}}", False);
+					Frame_ButtonToSmash				.Visible = False;
+					
+					if(GUIPlayer.TimeTillSmashGiveUp > 0)
+					{
+						Frame_KeepPressedToGiveUp	.Visible = True;
+						UpdateKeepButtonPressedGauge(Quad_KeepPressedToGiveUpLeftGauge, Quad_KeepPressedToGiveUpRightGauge, GUIPlayer.TimeTillSmashGiveUp);
+						SwitchDeviceButton("{{{RestartButton}}}", Quad_KeepPressedToGiveUpButton);
+						Quad_KeepPressedToGiveUpButton.ImageUrl = GetImageForButton("{{{ImageButtonRestart}}}");
+					}
+					else if(GUIPlayer.TimeTillSmashRespawn > 0)
+					{
+						Frame_KeepPressedToRespawn	.Visible = True;
+						UpdateKeepButtonPressedGauge(Quad_KeepPressedToRespawnLeftGauge, Quad_KeepPressedToRespawnRightGauge, GUIPlayer.TimeTillSmashRespawn);
+						SwitchDeviceButton("{{{RespawnButton}}}", Quad_KeepPressedToRespawnButton);
+						Quad_KeepPressedToRespawnButton.ImageUrl = GetImageForButton("{{{ImageButtonRespawn}}}");
+					}
+					else if(GUIPlayer.SmashNeedHelp)
+					{
+						Frame_ButtonToSmash			.Visible = True;
+						SwitchDeviceButton("{{{SmashButton}}}", Quad_ButtonToSmash);
+						Quad_ButtonToSmash.ImageUrl = GetImageForButton("{{{ImageButtonSmash}}}");
+						
+						declare Integer AnimPeriod = {{{C_CHEAT_SMASHED_BUTTON_ANIM_PERIOD}}};
+						if(Now % AnimPeriod <= AnimPeriod / 2)
+							Frame_ButtonToSmash.RelativePosition.Y = 1.;
+						else
+							Frame_ButtonToSmash.RelativePosition.Y = 0.;
+					}
+				}
+				
+				//HACK START CB : montrer les images
+				/*
+				Quad_CheatTurboGauge1	.RelativePosition.X = 1.0;
+				Quad_CheatTurboGauge2	.RelativePosition.X = 1.0;
+				Quad_CheatStuntTurboButton.Visible = True;
+				SwitchDeviceButton("{{{TurboStuntButton}}}", Quad_CheatStuntTurboButton);
+				Quad_CheatStuntTurboButton.ImageUrl = GetImageForButton("{{{ImageTurboButton}}}");
+				
+				Frame_ButtonForAirControl.Visible = True;
+					
+				// SwitchDeviceButton("{{{YawPlusButton}}}", Quad_ButtonForAirControl1);
+				// SwitchDeviceButton("{{{YawMinusButton}}}", Quad_ButtonForAirControl1);
+						
+				// SwitchDeviceButton("{{{RollPlusButton}}}", Quad_ButtonForAirControl2);
+				// SwitchDeviceButton("{{{RollMinusButton}}}", Quad_ButtonForAirControl2);
+				// SwitchDeviceButton("{{{PitchPlusButton}}}", Quad_ButtonForAirControl2);
+				// SwitchDeviceButton("{{{PitchMinusButton}}}", Quad_ButtonForAirControl2);
+				
+				Quad_ButtonForAirControl1.ImageUrl = GetImageForButton("{{{ImageButtonLeftStick}}}");
+				Quad_ButtonForAirControl2.ImageUrl = GetImageForButton("{{{ImageButtonRightStick}}}");
+
+				Frame_ButtonForAirControl.Visible = True;
+						
+				SwitchDeviceButton("{{{YawPlusButton}}}", Quad_ButtonForAirControl1);
+				SwitchDeviceButton("{{{YawMinusButton}}}", Quad_ButtonForAirControl1);
+							
+				SwitchDeviceButton("{{{RollPlusButton}}}", Quad_ButtonForAirControl2);
+				SwitchDeviceButton("{{{RollMinusButton}}}", Quad_ButtonForAirControl2);
+				SwitchDeviceButton("{{{PitchPlusButton}}}", Quad_ButtonForAirControl2);
+				SwitchDeviceButton("{{{PitchMinusButton}}}", Quad_ButtonForAirControl2);
+				Frame_KeepPressedToGiveUp	.Visible = True;
+				UpdateKeepButtonPressedGauge(Quad_KeepPressedToGiveUpLeftGauge, Quad_KeepPressedToGiveUpRightGauge, GUIPlayer.TimeTillSmashGiveUp);
+				SwitchDeviceButton("{{{RestartButton}}}", Quad_KeepPressedToGiveUpButton);
+				
+				Frame_KeepPressedToRespawn	.Visible = True;
+				UpdateKeepButtonPressedGauge(Quad_KeepPressedToRespawnLeftGauge, Quad_KeepPressedToRespawnRightGauge, GUIPlayer.TimeTillSmashRespawn);
+				SwitchDeviceButton("{{{RespawnButton}}}", Quad_KeepPressedToRespawnButton);
+				Quad_KeepPressedToRespawnButton.ImageUrl = GetImageForButton("{{{ImageButtonRespawn}}}");
+				*/
+				
+				/*
+				Frame_KeepPressedToGiveUp	.Visible = True;
+				UpdateKeepButtonPressedGauge(Quad_KeepPressedToGiveUpLeftGauge, Quad_KeepPressedToGiveUpRightGauge, GUIPlayer.TimeTillSmashGiveUp);
+				SwitchDeviceButton("{{{RestartButton}}}", Quad_KeepPressedToGiveUpButton);
+				Quad_KeepPressedToGiveUpButton.ImageUrl = GetImageForButton("{{{ImageButtonRestart}}}");
+				
+				Quad_CheatStuntTurboButton.ImageUrl = GetImageForButton("{{{ImageTurboButton}}}");
+				Quad_CheatStuntTurboButton.Visible = True;
+				
+				Frame_ButtonToSmash			.Visible = True;
+				SwitchDeviceButton("{{{SmashButton}}}", Quad_ButtonToSmash);
+				Quad_ButtonToSmash.ImageUrl = GetImageForButton("{{{ImageButtonSmash}}}");
+				*/
+			}
+		}
+		
+--></script>
+</manialink>""";
+	return MLText;
+}

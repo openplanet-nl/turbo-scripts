@@ -1,0 +1,891 @@
+#Include "Libs/Openplanet/TMConsole/MenuColor.Script.txt"					as MenuColor
+#Include "Libs/Openplanet/TMConsole/FontManager.Script.txt"					as Font
+#Include "Libs/Openplanet/UIPadButtons.Script.txt"							as LibUIButtons
+#Include "Libs/Openplanet/TMConsole/Menu/2DSelectArray.Script.txt"			as SelectArray2D
+#Include "Libs/Openplanet/SystemText.Script.txt"								as SystemText
+#Include "Libs/Openplanet/TMConsole/Colors.Script.txt"						as Colors
+#Include "Libs/Openplanet/TMConsole/LibAudio.Script.txt"						as LibAudio
+#Include "Libs/Openplanet/TMConsole/Volumes.Script.txt"						as Volumes
+
+#Include "TextLib" as TextLib
+
+#Const Count_InstancesY				11
+
+#Const C_ImgBase 	"file://Media/Manialinks/Nadeo/TMConsole/Images/"
+#Const C_ImgBase2	"file://Media/Images/TMConsole/Ingame/"
+#Const C_ImgBaseFlags	"file://Media/Manialinks/Nadeo/TMConsole/Images/Helmets/Drapeaux/NewFlag/"
+
+
+Text InjectInManialink() {
+	//IMAGES
+	declare Text 	IMGSlotSmallBg           = C_ImgBase2^"slot-medium-bg.dds";
+	declare Text 	IMGSlotSmallFg           = C_ImgBase2^"slot-medium-fg.dds";
+	declare Text 	IMGSlotMediumBg          = C_ImgBase2^"slot-medium-bg.dds";
+	declare Text 	IMGSlotMediumFg          = C_ImgBase^"slot-medium-fg2.dds";
+	declare Text 	IMGSlotBigBg             = C_ImgBase^"slot-big-bg2.dds";
+	declare Text 	IMGSlotBigFg             = C_ImgBase^"slot-big-fg2.dds";
+	declare Text 	IMGMenuBg                = C_ImgBase2^"menu-bg-1.dds";
+	
+	declare Integer Platform   		= LibUIButtons::GetPlatform();
+	declare Text 	IMGSelect_PC      	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"), CManiaAppEvent::EMenuNavAction::Select);
+	declare Text 	IMGSelect_PS4      	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::Select);
+	declare Text 	IMGSelect_XB1      	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::Select);
+	
+	declare Text 	IMGCancel_PC      	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"), CManiaAppEvent::EMenuNavAction::Cancel);
+	declare Text 	IMGCancel_PS4      	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::Cancel);
+	declare Text 	IMGCancel_XB1      	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::Cancel);
+	
+	declare Text 	IMGAction2_PC      	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"), CManiaAppEvent::EMenuNavAction::Action2);
+	declare Text 	IMGAction2_PS4      	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::Action2);
+	declare Text 	IMGAction2_XB1      	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::Action2);
+	
+	declare Text 	IMGLStickPress_PC      	= "file://Media/Manialinks/Common/PadButtons/PC/F5.dds";
+	declare Text 	IMGLStickPress_PS4      = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), "RandomModel");
+	declare Text 	IMGLStickPress_XB1      = LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), "RandomModel");
+	
+	declare Text 	IMGArrow				= C_ImgBase^"Arrow.tga";
+	
+	declare Text 	TitleColor    = TextLib::ColorToText(MenuColor::GetMenuColor(2));
+	
+	//SIZES
+	declare Real	Browser_SizeTotalX          = 259.0;
+	declare Real	Browser_SizeY               = 8.27;
+	declare Real	Browser_Separator           = Browser_SizeY * 0.095;
+	declare Real	Browser_SizeYElement        = Browser_SizeY - Browser_Separator;	
+
+	declare Real	Browser_SizeXCircle 		= Browser_SizeTotalX / 36.;
+	declare Real	Browser_SizeXInputSmall		= Browser_SizeXCircle * 5;
+	declare Real	Browser_SizeXInput			= Browser_SizeXCircle * 7;
+	
+	//POSITIONS
+	declare Real	Browser_PosY                = 60.;
+	
+	declare Real	PositionFirstQuadX       	= 0.;
+	declare Real	PositionFirstQuadY       	= 36.3;
+	
+	declare Real    LabelPosX_Base			 	= - Browser_SizeTotalX / 2.;
+	declare Real	LabelPosX_Flag			 	= LabelPosX_Base + Browser_SizeTotalX * 0.19;
+	declare Real	LabelPosX_Name			 	= LabelPosX_Base + Browser_SizeTotalX * 0.21;
+	declare Real	LabelPosX_Challenger	 	= LabelPosX_Base + Browser_SizeTotalX * 0.02;
+	declare Real	LabelPosX_Stunts	 		= LabelPosX_Base + Browser_SizeTotalX * 0.515;
+	declare Real	LabelPosX_Environment	 	= LabelPosX_Base + Browser_SizeTotalX * 0.61;
+	declare Real	LabelPosX_Tries			 	= LabelPosX_Base + Browser_SizeTotalX * 0.86;
+	declare Real	LabelPosX_End			 	= LabelPosX_Base + Browser_SizeTotalX * 0.75;
+	declare Real	LabelPosX_Rank				= LabelPosX_Base + Browser_SizeTotalX * 0.95;
+
+	SelectArray2D::Init(Browser_SizeTotalX, Browser_SizeYElement, 1, Count_InstancesY);
+	SelectArray2D::SetPosFirstQuad(PositionFirstQuadX, PositionFirstQuadY);
+	SelectArray2D::SetQuadMarge(0., Browser_Separator);
+	SelectArray2D::SetSelectorColor(MenuColor::GetMenuColor(2));
+	
+	SelectArray2D::AddQuad		("Flag", 		<LabelPosX_Flag, 0.>,		<7., 7.>);
+	SelectArray2D::AddLabel		("Name",		<LabelPosX_Name, 0.>, 		75, 	Font::GetFontName("Main"), "fff", "left", "center", """textprefix="$t" """);
+	SelectArray2D::AddQuad		("Stunts", 		<LabelPosX_Stunts, 0.>,		<7., 7.>);
+	SelectArray2D::AddQuad		("Environment_Stadium", 	<LabelPosX_Environment+12., 0.>,	<7., 7.>);
+	SelectArray2D::AddQuad		("Environment_Lagoon", 		<LabelPosX_Environment+4., 0.>,		<7., 7.>);
+	SelectArray2D::AddQuad		("Environment_Canyon", 		<LabelPosX_Environment-12., 0.>,	<7., 7.>);
+	SelectArray2D::AddQuad		("Environment_Valley", 		<LabelPosX_Environment-4., 0.>,		<7., 7.>);
+	SelectArray2D::AddLabel		("Challenger",	<LabelPosX_Challenger, 0.>, 35, 	Font::GetFontName("Main"), "fff", "left", "center", """textprefix="$t" """);
+	SelectArray2D::AddLabel		("Rank",		<LabelPosX_Rank, 0.>, 		20, 	Font::GetFontName("Main"), "fff", "left", "center", """textprefix="$t" """);
+	SelectArray2D::AddLabel		("Time",		<LabelPosX_End, 0.>, 		20, 	Font::GetFontName("Main"), "fff", "center", "center", """textprefix="$t" """);
+	SelectArray2D::AddLabel		("Tries",		<LabelPosX_Tries, 0.>, 		20, 	Font::GetFontName("Main"), "fff", "center", "center", """textprefix="$t" """);
+	SelectArray2D::AddLabel		("Info",  		<0., 0.>, 	200, Font::GetFontName("Main"), "", "center", "center"); //Label que l'on set lorsque tous les autres sont vides (erreur chargement, empty room slot, etc...)
+	
+	declare MLText = """
+		<framemodel id="Frame_SubMenu">	
+			<quad halign="center" valign="center" sizen="{{{Browser_SizeTotalX}}} {{{Browser_SizeYElement}}}" 	image="{{{IMGSlotMediumBg}}}" 	posn="0 0 2" />
+			<quad halign="center" valign="center" sizen="{{{Browser_SizeTotalX}}} {{{Browser_SizeYElement}}}" 	image="{{{IMGSlotMediumFg}}}" 	posn="0 0 4" />
+			<quad halign="center" valign="center" sizen="{{{Browser_SizeTotalX}}} {{{Browser_SizeY}}}" 			image="{{{IMGMenuBg}}}"		 	posn="0 0 1" />
+		</framemodel>
+		
+		{{{SelectArray2D::InjectInFrameModel()}}}
+	""";
+	
+	////////////////
+	//FRAME TITLE
+	////////////////
+	MLText ^= """
+		<frame id="Frame_Title" posn="0 1.0 0">
+			<quad 	halign="center" valign="bottom" sizen="{{{Browser_SizeTotalX}}} {{{Browser_SizeY*2.}}}" image="{{{IMGSlotBigFg}}}" posn="0 {{{Browser_PosY-2.8}}} 7" />
+			<quad  	halign="center" valign="bottom" sizen="{{{Browser_SizeTotalX}}} {{{Browser_SizeY*2.}}}" image="{{{IMGSlotBigBg}}}" posn="0 {{{Browser_PosY-2.8}}} 5" />
+			<label 	halign="left" valign="center" textprefix="$t" textfont="{{{Font::GetFontName("Main")}}}" posn="{{{-(Browser_SizeTotalX-2)/2.}}}  {{{Browser_PosY + Browser_SizeY - 1.}}} 6" textcolor="{{{TitleColor}}}" textsize="13." text="{{{_("Buddies Challenges Browser")}}}" sizen="{{{Browser_SizeTotalX-2.}}}" />
+		</frame>
+	""";
+	
+	////////////////
+	//INPUT
+	////////////////
+	MLText ^= """<frame id="Frame_InputInfos" posn="0 {{{-9*Browser_SizeY}}} 7">""";
+	//SELECT
+	MLText ^= """<frame id="Browser_InputInfo_Select" posn="{{{Browser_SizeTotalX/2.}}}" >
+		<quad 	halign="right" valign="bottom" posn="0 0 6" 	sizen="{{{Browser_SizeXInputSmall}}} {{{Browser_SizeY}}}" image="{{{IMGSlotSmallBg}}}"   />
+		<quad 	halign="right" valign="bottom" posn="0 0 8" 	sizen="{{{Browser_SizeXInputSmall}}} {{{Browser_SizeY}}}" image="{{{IMGSlotSmallFg}}}"   />
+		<quad 	halign="right" valign="bottom" posn="0 0 9" 	sizen="{{{Browser_SizeXInputSmall}}} {{{Browser_SizeY}}}" opacity="0." scriptevents="1" id="MouseInput_BrowserInputInfo_Select"  />
+	""";
+		for (I, 0, 2) {
+			declare Text Image;
+			switch (I) {
+				case LibUIButtons::GetPlatform("PC") 	: Image = IMGSelect_PC;
+				case LibUIButtons::GetPlatform("PS4") 	: Image = IMGSelect_PS4;
+				case LibUIButtons::GetPlatform("XB1") 	: Image = IMGSelect_XB1;
+			}
+		
+			MLText ^= """<quad 	halign="center" valign="center" posn="{{{-Browser_SizeXCircle*0.5}}} {{{Browser_SizeY*0.5}}} 7" 	sizen="{{{Browser_SizeXCircle*0.8}}} {{{Browser_SizeXCircle*0.8}}} 6" image="{{{Image}}}" id="Browser_InputInfo_Select_{{{I}}}" """;
+			if (I != Platform)
+				MLText ^= """ hidden="1" """;
+			MLText ^= "/>";
+		}
+	MLText ^= """
+		<label 	halign="right" valign="center2" posn="{{{-Browser_SizeXCircle-2.}}} {{{Browser_SizeY*0.5}}} 7" sizen="{{{Browser_SizeXInputSmall - Browser_SizeXCircle - 4. }}}" 	id="Label_Name" textcolor="ddd"  textsize="4." textfont="{{{Font::GetFontName("Main")}}}" textprefix="$t" />
+	</frame>""";
+	
+	//CANCEL
+	MLText ^= """<frame id="Browser_InputInfo_Cancel" posn="{{{Browser_SizeTotalX/2. - Browser_SizeXInputSmall - Browser_SizeXCircle}}}" >
+		<quad 	halign="right" valign="bottom" posn="0 0 6" 	sizen="{{{Browser_SizeXInputSmall}}} {{{Browser_SizeY}}}" image="{{{IMGSlotSmallBg}}}"   />
+		<quad 	halign="right" valign="bottom" posn="0 0 8" 	sizen="{{{Browser_SizeXInputSmall}}} {{{Browser_SizeY}}}" image="{{{IMGSlotSmallFg}}}"   />
+		<quad 	halign="right" valign="bottom" posn="0 0 9" 	sizen="{{{Browser_SizeXInputSmall}}} {{{Browser_SizeY}}}" opacity="0." scriptevents="1" id="MouseInput_BrowserInputInfo_Cancel"  />
+	""";
+		for (I, 0, 2) {
+			declare Text Image;
+			switch (I) {
+				case LibUIButtons::GetPlatform("PC") 	: Image = IMGCancel_PC;
+				case LibUIButtons::GetPlatform("PS4") 	: Image = IMGCancel_PS4;
+				case LibUIButtons::GetPlatform("XB1") 	: Image = IMGCancel_XB1;
+			}
+		
+			MLText ^= """<quad 	halign="center" valign="center" posn="{{{-Browser_SizeXCircle*0.5}}} {{{Browser_SizeY*0.5}}} 7" 	sizen="{{{Browser_SizeXCircle*0.8}}} {{{Browser_SizeXCircle*0.8}}} 6" image="{{{Image}}}" id="Browser_InputInfo_Cancel_{{{I}}}" """;
+			if (I != Platform)
+				MLText ^= """ hidden="1" """;
+			MLText ^= "/>";
+		}
+	MLText ^= """
+		<label 	halign="right" valign="center2" posn="{{{-Browser_SizeXCircle-2.}}} {{{Browser_SizeY*0.5}}} 7" sizen="{{{Browser_SizeXInputSmall - Browser_SizeXCircle - 4. }}}" 	id="Label_Name" textcolor="ddd"  textsize="4." textfont="{{{Font::GetFontName("Main")}}}" textprefix="$t"/>
+	</frame>""";
+	
+	//ACTION2
+	MLText ^= """<frame id="Browser_InputInfo_Action2" posn="{{{Browser_SizeTotalX/2. - 2*Browser_SizeXInputSmall - Browser_SizeXInput - 3*Browser_SizeXCircle}}}" >
+		<quad 	halign="right" valign="bottom" posn="0 0 6" 	sizen="{{{Browser_SizeXInputSmall}}} {{{Browser_SizeY}}}" image="{{{IMGSlotSmallBg}}}"   />
+		<quad 	halign="right" valign="bottom" posn="0 0 8" 	sizen="{{{Browser_SizeXInputSmall}}} {{{Browser_SizeY}}}" image="{{{IMGSlotSmallFg}}}"   />
+		<quad 	halign="right" valign="bottom" posn="0 0 9" 	sizen="{{{Browser_SizeXInputSmall}}} {{{Browser_SizeY}}}" opacity="0." scriptevents="1" id="MouseInput_BrowserInputInfo_Action2"  />
+	""";
+		for (I, 0, 2) {
+			declare Text Image;
+			switch (I) {
+				case LibUIButtons::GetPlatform("PC") 	: Image = IMGAction2_PC;
+				case LibUIButtons::GetPlatform("PS4") 	: Image = IMGAction2_PS4;
+				case LibUIButtons::GetPlatform("XB1") 	: Image = IMGAction2_XB1;
+			}
+		
+			MLText ^= """<quad 	halign="center" valign="center" posn="{{{-Browser_SizeXCircle*0.5}}} {{{Browser_SizeY*0.5}}} 7" 	sizen="{{{Browser_SizeXCircle*0.8}}} {{{Browser_SizeXCircle*0.8}}} 6" image="{{{Image}}}" id="Browser_InputInfo_Action2_{{{I}}}" """;
+			if (I != Platform)
+				MLText ^= """ hidden="1" """;
+			MLText ^= "/>";
+		}
+	MLText ^= """
+		<label 	halign="right" valign="center2" posn="{{{-Browser_SizeXCircle-2.}}} {{{Browser_SizeY*0.5}}} 7" sizen="{{{Browser_SizeXInputSmall - Browser_SizeXCircle - 4. }}}" 	id="Label_Name" textcolor="ddd"  textsize="4." textfont="{{{Font::GetFontName("Main")}}}" textprefix="$t"/>
+	</frame>""";
+
+	//LSTICK
+	MLText ^= """<frame id="Browser_InputInfo_LStickPress" posn="{{{Browser_SizeTotalX/2. - 2*Browser_SizeXInputSmall - 2*Browser_SizeXInput - 5*Browser_SizeXCircle}}}" >
+		<quad 	halign="right" valign="bottom" posn="0 0 6" 	sizen="{{{Browser_SizeXInput}}} {{{Browser_SizeY}}}" image="{{{IMGSlotSmallBg}}}"   />
+		<quad 	halign="right" valign="bottom" posn="0 0 8" 	sizen="{{{Browser_SizeXInput}}} {{{Browser_SizeY}}}" image="{{{IMGSlotSmallFg}}}"   />
+		<quad 	halign="right" valign="bottom" posn="0 0 9" 	sizen="{{{Browser_SizeXInput+Browser_SizeXCircle}}} {{{Browser_SizeY}}}" opacity="0." scriptevents="1" id="MouseInput_BrowserInputInfo_LStickPress"  />
+	""";
+		for (I, 0, 2) {
+			declare Text Image;
+			switch (I) {
+				case LibUIButtons::GetPlatform("PC") 	: Image = IMGLStickPress_PC;
+				case LibUIButtons::GetPlatform("PS4") 	: Image = IMGLStickPress_PS4;
+				case LibUIButtons::GetPlatform("XB1") 	: Image = IMGLStickPress_XB1;
+			}
+		
+			MLText ^= """<quad 	halign="center" valign="center" posn="{{{-Browser_SizeXCircle*0.5}}} {{{Browser_SizeY*0.5}}} 7" 	sizen="{{{Browser_SizeXCircle*0.8}}} {{{Browser_SizeXCircle*0.8}}} 6" image="{{{Image}}}" id="Browser_InputInfo_LStickPress_{{{I}}}" """;
+			if (I != Platform)
+				MLText ^= """ hidden="1" """;
+			MLText ^= "/>";
+		}
+	MLText ^= """
+		<label 	halign="right" valign="center2" posn="{{{-Browser_SizeXCircle-2.}}} {{{Browser_SizeY*0.5}}} 7" sizen="{{{Browser_SizeXInput - Browser_SizeXCircle - 4. }}}" 	id="Label_Name" textcolor="ddd"  textsize="4." textfont="{{{Font::GetFontName("Main")}}}" textprefix="$t"/>
+	</frame>""";
+	
+	MLText ^= "</frame>";
+	
+	////////////////
+	//SERVERLIST
+	////////////////
+	//<label id="Label_Echelon"  		textprefix="$t" halign="center"  valign="center2" bgcolor="fff" text="{{{_("Level")}}}"   					posn="{{{LabelPosX_Echelon}}} 0 0" 		sizen="30"  textfont="{{{Font::GetFontName("Main")}}}"/>
+	MLText ^= """
+		<frame id="Frame_ChampionshipsList" posn="0 -8.27">
+			<frame id="Frame_Legends" posn="{{{PositionFirstQuadX}}} {{{PositionFirstQuadY + Browser_SizeY}}} 7" hidden="1">			
+				<label id="Label_Name"  		textprefix="$t" halign="left"    valign="center2" bgcolor="fff" text="{{{_("Challenge Name")}}}"    		posn="{{{LabelPosX_Name}}} 0 0" 		sizen="100" textfont="{{{Font::GetFontName("Main")}}}"/>
+				<label id="Label_Environment"  	textprefix="$t" halign="center"  valign="center2" bgcolor="fff" text="{{{_("Environments")}}}"  			posn="{{{LabelPosX_Environment}}} 0 0" 	sizen="40"  textfont="{{{Font::GetFontName("Main")}}}"/>
+				<label id="Label_Author"		textprefix="$t" halign="left"  	 valign="center2" bgcolor="fff" text="{{{_("Challenger")}}}"				posn="{{{LabelPosX_Challenger}}} 0 0" 	sizen="35"  textfont="{{{Font::GetFontName("Main")}}}"/>
+				<label id="Label_Rank"  		textprefix="$t" halign="center"  valign="center2" bgcolor="fff" text="{{{_("Rank")}}}"						posn="{{{LabelPosX_Rank}}} 0 0" 		sizen="20" textfont="{{{Font::GetFontName("Main")}}}" />
+				<label id="Label_Time" 			textprefix="$t" halign="center"  valign="center2" bgcolor="fff" text="{{{_("End Date")}}}"					posn="{{{LabelPosX_End}}} 0 0" 			sizen="30" textfont="{{{Font::GetFontName("Main")}}}" />
+				<label id="Label_Tries" 		textprefix="$t" halign="center"  valign="center2" bgcolor="fff" text="{{{_("Races Left")}}}"				posn="{{{LabelPosX_Tries}}} 0 0" 		sizen="30" textfont="{{{Font::GetFontName("Main")}}}" />
+			</frame>
+			<quad id="MouseInput_NextPage" 	halign="center" valign="center" keepratio="Fit" 			sizen="12.0 12.0" image="{{{IMGArrow}}}" posn="{{{Browser_SizeTotalX * 0.5 + 15.}}} 0. 11" 		colorize="{{{TextLib::ColorToText(Colors::GetColor("White"))}}}" hidden="1" scriptevents="1" />
+			<quad id="MouseInput_PrevPage" 	halign="center" valign="center" keepratio="Fit" rot="180" 	sizen="12.0 12.0" image="{{{IMGArrow}}}" posn="{{{- Browser_SizeTotalX * 0.5 - 15.}}} 0. 11"  	colorize="{{{TextLib::ColorToText(Colors::GetColor("White"))}}}" hidden="1" scriptevents="1" />
+	""";
+	
+	for(K, 0, Count_InstancesY)
+	{
+		declare Real FramePosnX = PositionFirstQuadX;
+		declare Real FramePosnY = PositionFirstQuadY + 0.2 - (K-1) * Browser_SizeY; //on fait une ligne au dessus pour les légendes
+
+		MLText^="""
+			<frameinstance modelid="Frame_SubMenu" 		posn="{{{FramePosnX}}} {{{FramePosnY}}} 4." id="Frame_InstanceSubMenu{{{K-1}}}" hidden="0"/>
+				""";
+		if (K >= 1) {
+			MLText^= """<quad halign="center" valign="center" sizen="{{{Browser_SizeTotalX}}} {{{Browser_SizeYElement}}}" posn="{{{FramePosnX}}} {{{FramePosnY}}} 8" opacity="0." scriptevents="1" hidden="1" id="MouseInput_BrowserLine_{{{K-1}}}" />""";
+		}
+	}
+	
+	MLText ^= """
+			{{{SelectArray2D::InjectInManialink()}}}	
+		</frame>
+	""";
+	
+	return MLText;
+}
+
+Text InjectInGlobals() {
+	declare Globals = """
+		declare Integer						G_IndexFocusX;
+		declare Integer						G_IndexFocusY;
+		declare Boolean						G_NextPageOnRequestCompletion;
+		declare Integer		 				G_NextRequestNextPageTime;
+		declare Boolean 					G_RequestError;		
+		declare Integer 					G_CurrentSelectedChallengeIndex;
+		declare Integer						G_Prev_PageIndex;
+		declare Integer						G_LastRefreshTime;
+		
+		{{{SelectArray2D::InjectInGlobalDeclaration()}}}
+	""";
+	
+	return Globals;
+}
+
+Text InjectInInit() {
+	declare Init = """		
+		G_RequestError = False;
+		G_NextPageOnRequestCompletion = False;
+		G_NextRequestNextPageTime = Now;
+		G_CurrentSelectedChallengeIndex = 0;
+		
+		{{{SelectArray2D::InjectInInit()}}}
+		
+		G_Prev_PageIndex = G_PageIndex;
+		
+		InitInputsInfo();
+	""";
+		
+	return Init;
+}
+
+Text InjectInFunctions() {
+	declare Text	IMGEnvironment_Canyon      	= "file://Media/Manialinks/Nadeo/TMConsole/Images/Online/BrowseServers/logos_enviro/canyon_s.tga";
+	declare Text	IMGEnvironment_Stadium     	= "file://Media/Manialinks/Nadeo/TMConsole/Images/Online/BrowseServers/logos_enviro/stadium_s.tga";
+	declare Text	IMGEnvironment_Lagoon      	= "file://Media/Manialinks/Nadeo/TMConsole/Images/Online/BrowseServers/logos_enviro/lagoon_s.tga";
+	declare Text	IMGEnvironment_Valley      	= "file://Media/Manialinks/Nadeo/TMConsole/Images/Online/BrowseServers/logos_enviro/valley_s.tga";
+	declare Text	IMGStunts					= "file://Media/Manialinks/Nadeo/TMConsole/Images/Online/BrowseServers/Challenge_Stunts.png";
+	
+	declare Real	Browser_SizeTotalX          = 259.0;
+	
+	declare Functions = """
+		{{{SelectArray2D::InjectInFunction()}}}
+		
+		Text TimeToText(Integer _Time, Boolean _Approx)
+		{
+			if (_Time <= 0)
+			{
+				//L16N Displayed in the "Duration" column of the challenge browser
+				return _("|feminine|Unknown");
+			}
+				
+			declare Text Time;
+			declare Integer Minutes = _Time / 60000;
+			declare Integer Seconds = (_Time - Minutes * 60000) / 1000;
+			declare Integer Milliseconds = _Time - Minutes * 60000 - Seconds * 1000;
+			
+			if (_Approx)
+			{
+				Time = "~";
+				if (Minutes != 0)	
+				{
+					//L16N Displayed in the "Duration" column of the chmapionship browser
+					Time ^= Minutes^TL::GetTranslatedText(_("|minutes|mn"));
+				} else {
+					//L16N Displayed in the "Duration" column of the chmapionship browser
+					Time ^= Seconds^TL::GetTranslatedText(_("|seconds|s"));
+				}
+			} else {
+				Time = Minutes^":";
+				if (Seconds < 10)
+					Time ^= "0";
+				Time ^= Seconds^".";
+				if (Milliseconds < 10)
+					Time ^= "00";
+				else if (Milliseconds < 100)
+					Time ^= "0";
+				Time ^= Milliseconds;
+			}
+			return Time;
+		}
+		
+		//////////////////
+		// INPUT INFO
+		//////////////////
+		Void InitInputsInfo() {
+			declare CMlLabel Label_InputName;
+			declare CMlQuad  Quad_InputIcon;
+		
+			//SELECT
+			declare CMlFrame FrameInputSelect <=> (Page.GetFirstChild("Browser_InputInfo_Select") as CMlFrame);
+			Label_InputName <=> (FrameInputSelect.GetFirstChild("Label_Name") as CMlLabel);
+			//L16N Displayed next to a button icon to explain what it does
+			Label_InputName.Value = _("|16 chars max|SELECT");
+			//CANCEL
+			declare CMlFrame FrameInputCancel <=> (Page.GetFirstChild("Browser_InputInfo_Cancel") as CMlFrame);
+			Label_InputName <=> (FrameInputCancel.GetFirstChild("Label_Name") as CMlLabel);
+			//L16N Displayed next to a button icon to explain what it does
+			Label_InputName.Value = _("|16 chars max|BACK");
+			//ACTION2
+			declare CMlFrame FrameInputAction2 <=> (Page.GetFirstChild("Browser_InputInfo_Action2") as CMlFrame);
+			Label_InputName <=> (FrameInputAction2.GetFirstChild("Label_Name") as CMlLabel);
+			Label_InputName.Value = "{{{SystemText::GetShowProfileTextForInputCard()}}}";
+			//LSTICK
+			declare CMlFrame FrameInputLStick <=> (Page.GetFirstChild("Browser_InputInfo_LStickPress") as CMlFrame);
+			Label_InputName <=> (FrameInputLStick.GetFirstChild("Label_Name") as CMlLabel);
+			//L16N Displayed next to a button icon to explain what it does
+			Label_InputName.Value = _("|16 chars max|REFRESH");
+		}
+		
+		Void UpdateInputsInfo() {
+			declare Text[Text][] RequestedChallenges for Page;
+			
+			//SELECT = INSTALL (ALL) / SELECT (OTHERS)
+			declare CMlFrame FrameInputSelect <=> (Page.GetFirstChild("Browser_InputInfo_Select") as CMlFrame);
+			declare CMlFrame FrameInputAction2 <=> (Page.GetFirstChild("Browser_InputInfo_Action2") as CMlFrame);
+			if (!G_RequestError && RequestedChallenges.count != 0)
+			{
+				FrameInputSelect.Show();
+				if (RequestedChallenges[G_CurrentSelectedChallengeIndex]["buddies_challenge_author"] == LocalUser.Login)
+					FrameInputAction2.Hide();
+				else
+					FrameInputAction2.Show();
+			} else {
+				FrameInputSelect.Hide();
+				FrameInputAction2.Hide();
+			}
+		}
+		
+		//////////////////
+		// ARRAY 2D
+		//////////////////
+		Void UpdateChallengeFocus()
+		{   //replace le sélecteur dans la range des servers affichés si besoin est
+			declare Text[Text][] RequestedChallenges for Page;	
+			if (RequestedChallenges.count != 0)
+			{
+				SetNearestIndex(RequestedChallenges.count);		
+			} else {
+				SetNearestIndex(1);			
+			}
+			G_CurrentSelectedChallengeIndex = G_PageIndex * {{{Count_InstancesY}}} + G_IndexSelectY;
+		}
+		
+		Void UpdateChallengeFocusAndInfo()
+		{
+			declare Text[Text][] RequestedChallenges for Page;
+			declare CMlQuad  Quad_Selector <=> (Page.GetFirstChild("Quad_Selector") as CMlQuad);
+			declare CMlFrame Frame_Legends <=> (Page.GetFirstChild("Frame_Legends") as CMlFrame);
+			if (RequestedChallenges.count == 0)
+			{
+				ActivateLine(0, True);
+				if(G_RequestError)
+				{
+					//L16N Displayed in the championships browser
+					SetColumnTextData("Info", 0, 	_("The connection to the Trackmania Servers has been lost. Online features will become available once the connection has been re-established."));
+				} else {
+					//L16N Displayed in the buddies championships browser, %1 is the translation of "wordlwide challenges"
+					SetColumnTextData("Info", 0, 	TL::Compose(TL::GetTranslatedText(_("No buddies challenge yet. You can challenge your buddies via the %1 menu !")), TL::GetTranslatedText(_("Worldwide Challenges"))));
+				}
+				Quad_Selector.Hide();				
+				Frame_Legends.Hide();
+			} else {
+				Frame_Legends.Show();
+				Quad_Selector.Show();
+			}
+			UpdateChallengeFocus();
+		}
+		
+		Vec3 GetEnvironmentColorize(Text _Environments, Text _Environment)
+		{
+			if (TL::Find(_Environment, _Environments, True, False))
+			{
+				return <1., 1., 0.>;
+			} else {
+				return <.5, .5, .5>;
+			}
+			return <1., 1., 1.>;
+		}
+		
+		Void UpdateArrows()
+		{
+			declare CMlQuad  	MouseInput_PrevPage  <=> (Page.GetFirstChild("MouseInput_PrevPage") as CMlQuad);
+			declare CMlQuad  	MouseInput_NextPage <=> (Page.GetFirstChild("MouseInput_NextPage") as CMlQuad);
+			declare Text[Text][] RequestedChallenges for Page;
+			if (G_PageIndex > 0)
+				MouseInput_PrevPage.Show();
+			else
+				MouseInput_PrevPage.Hide();
+			
+			if ((G_PageIndex+1)*{{{Count_InstancesY}}} < RequestedChallenges.count)
+				MouseInput_NextPage.Show();
+			else
+				MouseInput_NextPage.Hide();
+		}
+	
+		Void Update2DArray(Boolean _UpdateInfoMessage) {
+			declare Text[Text][] RequestedChallenges for Page;
+			
+			declare Integer NbChallenges = RequestedChallenges.count;
+			declare Text[Text] FocusedChallenge;
+			
+			declare Integer StartIndexPosition 	=  {{{Count_InstancesY}}}*(G_PageIndex);
+						
+			for(I, 0, {{{Count_InstancesY - 1}}}) {
+				declare Integer ChallengeIndex = StartIndexPosition + I;
+				
+				declare Text Quad_Flag;
+				declare Text Quad_Stunts;
+				declare Text Label_Name;
+					declare Text Author;
+					declare Text Style;
+					declare Text Duration;
+				declare Boolean AreEnvVisible;
+				declare Vec3 Colorize_Stadium;
+				declare Vec3 Colorize_Lagoon;
+				declare Vec3 Colorize_Canyon;
+				declare Vec3 Colorize_Valley;
+				declare Text Label_Info;
+				declare Text Label_Challenger;
+				declare Text Label_Time;
+				declare Text Label_Rank;
+				declare Text Label_Tries;
+				declare Vec3 TextColor_Tries;
+
+				declare CMlQuad MouseInput_BrowserLine = (Page.GetFirstChild("MouseInput_BrowserLine_"^I) as CMlQuad);
+				
+				if(ChallengeIndex < NbChallenges)
+				{
+					FocusedChallenge = RequestedChallenges[ChallengeIndex];
+					MouseInput_BrowserLine.Show();
+					ActivateLine(I, True);
+						
+					//INFO
+					Label_Info = "";
+					
+					//FLAG
+					if (FocusedChallenge.existskey("country") && FocusedChallenge["country"] != "")
+						Quad_Flag = "{{{C_ImgBaseFlags}}}"^GetCountryFlag(FocusedChallenge["country"]);
+					
+					//CHALLENGER
+					if (FocusedChallenge.existskey("buddies_challenge_displayname"))
+						Label_Challenger = FocusedChallenge["buddies_challenge_displayname"];
+					
+					//NAME
+					if (FocusedChallenge.existskey("displayname"))
+						Author = FocusedChallenge["displayname"]; //hostName
+					else
+						Author = "";
+					
+					//DURATION
+					if (FocusedChallenge.existskey("duration"))
+					{
+						declare Integer DurationId = TL::ToInteger(FocusedChallenge["duration"]);
+						if (DurationId != 0)
+							Duration = " - "^TL::GetTranslatedText(G_ChallengesDurations[DurationId]);
+					}	
+					
+					//STYLE
+					if (FocusedChallenge.existskey("style"))
+					{
+						Style = " - "^TL::GetTranslatedText(FocusedChallenge["style"]);
+					}
+					
+					Label_Name = TL::Compose("%1%2%3", Author, Duration, Style);
+					
+					//REMAINING TIME
+					if (FocusedChallenge.existskey("buddies_challenge_end_date") && FocusedChallenge["buddies_challenge_end_date"] != "")
+					{
+						declare Text[] SplitDate = TL::Split("T", FocusedChallenge["buddies_challenge_end_date"]);
+						SplitDate = TL::Split("-", SplitDate[0]);
+						Label_Time = TL::Compose(_("|date, day/month|%1/%2"), SplitDate[2], SplitDate[1]);
+					} else {
+						Label_Time = _("None");
+					}
+					
+					//RANK
+					if (FocusedChallenge.existskey("buddies_challenge_position"))
+					{
+						if (FocusedChallenge["buddies_challenge_position"] == "")
+							Label_Rank = "-";
+						else
+							Label_Rank = FocusedChallenge["buddies_challenge_position"];
+					}
+					
+					//TRIES LEFT
+					if (FocusedChallenge.existskey("buddies_challenge_tries_left") && FocusedChallenge.existskey("buddies_challenge_max_tries"))
+					{
+						declare Integer Tries_Left = TL::ToInteger(FocusedChallenge["buddies_challenge_tries_left"]);
+						if (Tries_Left == 0)
+							TextColor_Tries = <1., 0., 0.>;
+						else
+							TextColor_Tries = <1., 1., 1.>;
+						if (Tries_Left != -1)
+						{
+							
+							Label_Tries = FocusedChallenge["buddies_challenge_tries_left"]^"/"^FocusedChallenge["buddies_challenge_max_tries"];
+						} else {
+							Label_Tries = "∞";
+						}
+					}
+					
+					//STUNTS
+					if (FocusedChallenge.existskey("stunts") && FocusedChallenge["stunts"] == "true")
+						Quad_Stunts = "{{{IMGStunts}}}";
+						
+					//ENVIRONMENTS
+					AreEnvVisible = True;
+					declare Text Environments = FocusedChallenge["environments"];
+					Colorize_Stadium	= GetEnvironmentColorize(Environments, "Stadium");
+					Colorize_Lagoon		= GetEnvironmentColorize(Environments, "Lagoon");
+					Colorize_Canyon		= GetEnvironmentColorize(Environments, "Canyon");
+					Colorize_Valley		= GetEnvironmentColorize(Environments, "Valley");
+				} else {
+					AreEnvVisible = False;
+					MouseInput_BrowserLine.Hide();
+					ActivateLine(I, False);
+				}
+				
+				if (AreEnvVisible)
+				{
+					SetColumnImageData	("Environment_Stadium", I, 	"{{{IMGEnvironment_Stadium}}}", Colorize_Stadium);
+					SetColumnImageData	("Environment_Lagoon", I, 	"{{{IMGEnvironment_Lagoon}}}", 	Colorize_Lagoon);
+					SetColumnImageData	("Environment_Canyon", I, 	"{{{IMGEnvironment_Canyon}}}", 	Colorize_Canyon);
+					SetColumnImageData	("Environment_Valley", I, 	"{{{IMGEnvironment_Valley}}}", 	Colorize_Valley);
+				} else {
+					SetColumnImageData	("Environment_Stadium", I, 	"");
+					SetColumnImageData	("Environment_Lagoon", I, 	"");
+					SetColumnImageData	("Environment_Canyon", I, 	"");
+					SetColumnImageData	("Environment_Valley", I, 	"");
+				}
+				
+				SetColumnImageData("Flag", 		I, 	Quad_Flag);
+				SetColumnTextData("Name",		I,	Label_Name);
+				SetColumnTextData("Challenger", I,	Label_Challenger);
+				SetColumnImageData("Stunts", 	I, 	Quad_Stunts);
+				
+				if (FocusedChallenge.existskey("buddies_challenge_is_expired") && FocusedChallenge["buddies_challenge_is_expired"] == "true")
+				{
+					SetColumnTextData("Time",		I,	Label_Time, <1., 0., 0.>);
+				} else {
+					SetColumnTextData("Time",		I,	Label_Time, <1., 1., 1.>);
+				}
+				SetColumnTextData("Rank",		I,	Label_Rank);
+				SetColumnTextData("Tries",		I,	Label_Tries, TextColor_Tries);
+				SetColumnTextData("Info",		I,	Label_Info);
+			}
+			
+			if (_UpdateInfoMessage)
+				UpdateChallengeFocusAndInfo();
+			UpdateArrows();
+		}
+	
+		//////////////////
+		// REQUESTS
+		//////////////////	
+		Void SendRequestChallenges()
+		{ 
+			//L16N Displayed while the browser is loading
+			Loading_SetText(_("Retrieving information. Please wait."));
+			Loading_SetIsLoading(True);
+			G_NextPageOnRequestCompletion = False;
+			SendCustomEvent("BuddiesChallengesBrowsed", Text[]);
+			SendCustomEvent("RequestBuddiesChallenges", [TL::ToText(G_PageIndex*{{{Count_InstancesY}}}), TL::ToText({{{3*Count_InstancesY}}})]);
+		}
+
+		Void SendRequestNextPage() 
+		{
+			//L16N Displayed while the browser is loading
+			Loading_SetText(_("Retrieving information. Please wait."));
+			Loading_SetIsLoading(True);
+			G_NextRequestNextPageTime = Now + 2000;
+			G_NextPageOnRequestCompletion = True;
+			SendCustomEvent("BuddiesChallengesBrowsed", Text[]);
+			SendCustomEvent("RequestBuddiesChallenges", [TL::ToText(G_PageIndex*{{{Count_InstancesY}}}), TL::ToText({{{3*Count_InstancesY}}})]);
+		}
+		
+		Void Browser_Show() {
+			G_NextPageOnRequestCompletion = False;
+			G_NextRequestNextPageTime = Now;
+			
+			ToggleInputInfo("Browser", "Action2", False);
+			ToggleInputInfo("Browser", "Select", False);
+			ToggleInputInfo("Browser", "Cancel", False);
+			ToggleInputInfo("Browser", "LStickPress", False);
+			
+			SendRequestChallenges();
+		}
+		
+		Void Browser_UpdateHelpersForPlatform(Integer _Platform) {
+			declare Text[] AdditionnalInputIds = ["Browser_InputInfo_Select_", "Browser_InputInfo_Cancel_", "Browser_InputInfo_Action2_", "Browser_InputInfo_LStickPress_"];
+	
+			declare CMlQuad  QuadInputIcon;
+			for (I, 0, 2) {
+				for (J, 0, AdditionnalInputIds.count-1) {
+					QuadInputIcon <=> (Page.GetFirstChild(AdditionnalInputIds[J]^I) as CMlQuad);
+					if (I == _Platform)
+						QuadInputIcon.Show();
+					else
+						QuadInputIcon.Hide();
+				}
+			}
+		}
+	""";
+	
+	return Functions;
+}
+
+Text InjectBeforeLoop() {
+	declare BeforeLoop = """
+		declare CMlQuad  	Quad_Selector <=> (Page.GetFirstChild("Quad_Selector") as CMlQuad);
+		declare CMlQuad  	MouseInput_PrevPage  <=> (Page.GetFirstChild("MouseInput_PrevPage") as CMlQuad);
+		declare CMlQuad  	MouseInput_NextPage <=> (Page.GetFirstChild("MouseInput_NextPage") as CMlQuad);
+		
+		declare Integer     Update2DArray    for Page;
+		declare Integer     Prev_Update2DArray;
+		
+		Prev_Update2DArray = Update2DArray; //force refresh à l'ouverture pour test
+		G_IndexFocusX = GetIndexFocusX();
+		G_IndexFocusY = GetIndexFocusY();
+		
+		declare Integer Selection;	
+		G_Prev_PageIndex = G_PageIndex;
+	""";
+	
+	return BeforeLoop;
+}
+
+Text InjectInLoop() {
+	declare Browser_SizeTotalX = 259.;
+	declare ArrowPos = Browser_SizeTotalX * 0.5 + 10.;
+	
+	declare Loop = """
+		G_CurrentSelectedChallengeIndex = G_PageIndex * {{{Count_InstancesY}}} + G_IndexFocusY;
+		
+		//Blink du quad de sélection
+		declare Real ButtonSelectedSinVar  = ML::Sin(Now * 0.01) * 0.5 + 0.5;
+		Quad_Selector.Opacity = ButtonSelectedSinVar;
+		MouseInput_PrevPage.RelativePosition.X  = 	{{{-ArrowPos}}} + ButtonSelectedSinVar;
+		MouseInput_NextPage.RelativePosition.X =  	{{{ArrowPos}}} - ButtonSelectedSinVar;
+		
+		if(G_Prev_PageIndex != G_PageIndex)
+		{
+			G_Prev_PageIndex = G_PageIndex;
+			if (G_PageIndex >= G_PageMax - 2)
+				SendRequestChallenges(); //ne pas faire de requête pour rien
+		}
+		
+		if(Prev_Update2DArray != Update2DArray)
+		{
+			Prev_Update2DArray = Update2DArray;
+			Update2DArray(True);
+		}
+
+		declare IndexFocusY = GetIndexFocusY();
+		if(G_IndexFocusY != IndexFocusY)
+		{
+			G_IndexFocusY = IndexFocusY;
+			UpdateChallengeFocus();
+			G_CurrentSelectedChallengeIndex = G_PageIndex * {{{Count_InstancesY}}} + G_IndexFocusY;
+			UpdateInputsInfo();
+		}
+		
+		Selection = GetSelection();
+		if(Selection >= 0 && RequestedChallenges.count != 0)
+			ChallengeBrowserStatus_Switch(C_STATUS_CHALLENGEOPTIONS);
+
+		declare IndexFocusX = GetIndexFocusX();
+		if(G_IndexFocusX != IndexFocusX)
+		{
+			G_IndexFocusX = IndexFocusX;
+			UpdateChallengeFocus();
+		}
+		
+		foreach (Event in Input.PendingEvents)
+		{
+			if (Event.Type == CInputEvent::EType::PadButtonPress && Event.Button == CInputEvent::EButton::LeftStick && G_ChallengeBrowserStatus == C_STATUS_BROWSER && G_LastRefreshTime + 5000 <= Now)
+			{
+				G_LastRefreshTime = Now;
+				SendRequestChallenges();
+			}
+		}	
+	""";
+	
+	return Loop;
+}
+
+Text InjectInKeyPress() {
+	declare Text KeyPress = """
+		if (Event.KeyName == "F5" && G_LastRefreshTime + 5000 <= Now) {
+			if (ActiveButtonPlatform !=  {{{LibUIButtons::GetPlatform("PC")}}})
+				SendCustomEvent("SetActiveButtonPlaform", ["BuddiesChallengeBrowser", TL::ToText({{{LibUIButtons::GetPlatform("PC")}}})]);
+			G_LastRefreshTime = Now;
+			SendRequestChallenges();
+		}
+	""";
+	
+	return KeyPress;
+}
+
+Text InjectInMouseClick() {
+	declare Text 	SoundPageForward 		 = LibAudio::GetSound("PageForward");
+	declare Text 	SoundMove                = LibAudio::GetSoundMove();
+	
+	declare MouseClick = """	
+		declare Text[] InputId = TL::Split("_", Event.ControlId);
+		if (InputId.count < 2 || InputId[0] != "MouseInput")
+			continue;
+		switch (InputId[1]) {
+			case "PrevPage" : {
+				if (Loading_GetIsLoading())
+					continue;
+				if(G_PageIndex > 0) {
+					Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+					declare Integer Update2DArray    for Page;
+					G_PageIndex -= 1;
+					Update2DArray = Now;
+				}
+			}
+			case "NextPage" : {
+				if (Loading_GetIsLoading())
+					continue;
+				if(G_PageIndex < G_PageMax - 1)
+				{
+					Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+					declare Integer Update2DArray    for Page;
+					G_PageIndex += 1;
+					Update2DArray = Now;
+				}
+			}
+			case "BrowserLine" : {
+				if (Loading_GetIsLoading())
+					continue;
+				declare Integer NewIndex = TL::ToInteger(InputId[2]);
+				if(!G_IsActivate.existskey(NewIndex)) return;
+				if(NewIndex >= 0 && NewIndex <= {{{Count_InstancesY - 1}}} && G_IsActivate[NewIndex])
+				{
+					G_IndexSelectY = NewIndex;
+					UpdateSelection();
+				}
+				Audio.PlaySoundEvent("{{{SoundPageForward}}}", {{{Volumes::GetVolumedB("MenuPageForward")}}});
+				G_Selection = G_IndexSelectY;
+			}
+			case "BrowserInputInfo" : {
+				switch (InputId[2]) {
+					case "Select": {
+						if (Loading_GetIsLoading())
+							continue;
+						Audio.PlaySoundEvent("{{{SoundPageForward}}}", {{{Volumes::GetVolumedB("MenuPageForward")}}});
+						G_Selection = G_IndexSelectY;
+					}
+					case "Cancel": Quit();
+					case "AppMenu": Quit();
+					case "Action2": {
+						if (RequestedChallenges.count != 0 && RequestedChallenges[G_CurrentSelectedChallengeIndex]["buddies_challenge_author"] != LocalUser.Login && !Loading_GetIsLoading())
+							SendCustomEvent("ShowProfile", [RequestedChallenges[G_CurrentSelectedChallengeIndex]["buddies_challenge_author"]]);
+					}
+					case "LStickPress": {
+						if (G_LastRefreshTime + 5000 <= Now) {
+							G_LastRefreshTime = Now;
+							SendRequestChallenges(); 
+						}
+					}
+				}
+			}
+		}
+	""";
+	
+	return MouseClick;
+}
+
+Text InjectInMouseOver() {
+	declare Text 	SoundPageForward 		 = LibAudio::GetSound("PageForward");
+	declare Text 	SoundMove                = LibAudio::GetSoundMove();
+	
+	declare MouseOver = """
+		if (Loading_GetIsLoading())
+			continue;
+		declare Text[] InputId = TL::Split("_", Event.ControlId);
+		if (InputId.count < 2 || InputId[0] != "MouseInput")
+			continue;
+		switch (InputId[1]) {
+			case "BrowserLine" : {
+				declare Integer NewIndex = TL::ToInteger(InputId[2]);
+				if(!G_IsActivate.existskey(NewIndex)) return;
+				if(NewIndex >= 0 && NewIndex <= {{{Count_InstancesY - 1}}} && G_IsActivate[NewIndex])
+				{
+					Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+					G_IndexSelectY = NewIndex;
+					UpdateSelection();
+				}
+			}
+			case "BrowserInputInfo" : ToggleInputInfo("Browser", InputId[2], True);
+		}
+	""";
+	
+	return MouseOver;
+}
+
+Text InjectInMouseOut() {
+	declare MouseOut = """
+		declare Text[] InputId = TL::Split("_", Event.ControlId);
+		if (InputId.count < 2 || InputId[0] != "MouseInput")
+			continue;
+		switch (InputId[1]) {
+			case "BrowserInputInfo" : ToggleInputInfo("Browser", InputId[2], False);
+		}
+	""";
+	
+	return MouseOut;
+}
+
+Text InjectInMenuNavigation() {
+	declare MenuNav = """
+		switch(Event.MenuNavAction) {
+			case CMlEvent::EMenuNavAction::Cancel : {
+				Quit();
+			}
+			case CMlEvent::EMenuNavAction::AppMenu : {
+				Quit();
+			}
+			case CMlEvent::EMenuNavAction::Action2 : {
+				//Y
+				if (RequestedChallenges.count != 0 && RequestedChallenges[G_CurrentSelectedChallengeIndex]["buddies_challenge_author"] != LocalUser.Login && !Loading_GetIsLoading())
+					SendCustomEvent("ShowProfile", [RequestedChallenges[G_CurrentSelectedChallengeIndex]["buddies_challenge_author"]]);
+			}
+			case CMlEvent::EMenuNavAction::Right : {
+				if(Now >= G_NextRequestNextPageTime && G_PageIndex >= G_PageMax - 1 && RequestedChallenges.count != 0 && (RequestedChallenges.count % {{{Count_InstancesY}}}) == 0 && !Loading_GetIsLoading())
+					SendRequestNextPage();
+			}
+		}
+		if (Loading_GetIsLoading())
+			continue;
+		{{{SelectArray2D::InjectInMenuNavigation()}}}
+	""";
+	
+	return MenuNav;
+}

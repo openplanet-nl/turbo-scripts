@@ -1,0 +1,320 @@
+
+// file://Media/Manialinks/Nadeo/TMConsole/MainMenuArnaud.Script.txt
+#Include "Libs/Openplanet/Manialink2.Script.txt"					as Manialink
+#Include "Libs/Openplanet/TMConsole/BuilderHelper.Script.txt"	as BuilderHelper
+#Include "Libs/Openplanet/UIPadButtons.Script.txt"				as LibUIButtons
+#Include "Libs/Openplanet/TMConsole/PanelParameter.Script.txt"	as PanelParameter
+#Include "Libs/Openplanet/TMConsole/Menu/ModeName.Script.txt"	as ModeName
+#Include "Libs/Openplanet/TMConsole/LibAudio.Script.txt"			as LibAudio
+#Include "Libs/Openplanet/TMConsole/Volumes.Script.txt"			as Volumes
+
+#Const C_ImgBase	"file://Media/Manialinks/Nadeo/TMConsole/Images/"
+#Const C_SizePanelX   6.
+#Const C_SizePanelY   5.
+
+
+Text Build(Text _ShowAnim, Text _HideAnim) {
+	declare Text 	IMGBoardFull         = C_ImgBase^"board-full.png";
+	declare Text 	ControlsPs4Main      = C_ImgBase^"controls-ps4-main.png";
+	declare Text 	IMGSelectorOff       = C_ImgBase^"popup-selector4-off.png";
+	
+	declare Text 	IMGSelect            = LibUIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Select);
+	declare Text 	IMGCancel            = LibUIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Cancel);
+	declare Text 	SoundSelect          = LibAudio::GetSoundSelect();
+	declare Text 	SoundMove            = LibAudio::GetSoundMove();
+	declare Text 	SoundBack            = LibAudio::GetSoundBack();
+	
+	declare Text 	IMGIcon              = "file://Media/_ERR_.dds";	//C_ImgBase^"board-3x3-selected.png";
+	declare Text 	IMGBoard             = C_ImgBase^"board-3x3-2.png";
+	declare Text 	IMGPopupBg           = C_ImgBase^"popup-bg.png";
+	
+	declare Text 	IMGHighlight         = C_ImgBase^"board-tile-selected.png";
+	
+	declare Integer Count_InstancesY     = 1;
+	declare Integer Count_InstancesX     = 2;
+	//declare Real	SizeX_Total          = Count_InstancesX*88.5; //88.5
+	//declare Real	SizeY_Total          = Count_InstancesY*49.9*3.; //49.9*3
+	declare Real	SizeX_Total          = PanelParameter::GetSizePanelX(C_SizePanelX);
+	declare Real	SizeY_Total          = PanelParameter::GetSizePanelY(C_SizePanelY);
+	declare Real	MarginY_Button       = 0.0;
+	declare Real	MarginX_Button       = 0.20;
+	declare Real	SizeXQuad            = (SizeX_Total - Count_InstancesX*MarginX_Button) / Count_InstancesX;
+	declare Real	SizeYQuad            = (SizeY_Total - Count_InstancesY*MarginY_Button) / Count_InstancesY;
+	declare Real	PosnXLabel           = -SizeXQuad;
+	declare Real	PosnYLabel           = 0.;
+	//declare Real	PosXFirstQuad        = -114.5; //49.9*3
+	//declare Real	PosYFirstQuad        = 70.0;
+	declare Real	PosXFirstQuad        = PanelParameter::GetPosPanelX(C_SizePanelX);
+	declare Real	PosYFirstQuad        = PanelParameter::GetPosPanelY(C_SizePanelY);
+	
+
+	declare Text MLText = """
+	
+	<framemodel id="Frame_Button">
+		<label halign="center" valign="center" style="TextButtonNav" posn="{{{PosnXLabel}}} {{{PosnYLabel}}} 1"
+		 id="Label_Name" textsize="6." textcolor="000" sizen="{{{SizeXQuad-15}}}"/>
+
+		<quad halign="center" valign="center" sizen="{{{SizeXQuad}}} {{{SizeYQuad}}}" posn="{{{-SizeXQuad}}} {{{0}}}"
+		 id="Quad_Icon" opacity="0." image="{{{IMGIcon}}}" scale="1.0"/>
+
+		<quad halign="center" valign="center" sizen="{{{SizeXQuad+0.5}}} {{{SizeYQuad}}}" bgcolor="000" id="Quad_Bg" image="{{{IMGSelectorOff}}}" opacity="0."/>
+	</framemodel>
+	
+	<frame id="Frame_All">
+
+		<quad id="Background" halign="center" valign="bottom" keepratio="Fit"
+		sizen="320 180" image="{{{ControlsPs4Main}}}" posn="0 -90 10" opacity="1."
+		/>
+		<quad id="Button_Select" halign="center" valign="bottom" keepratio="Fit"
+		sizen="8.0 8.0" image="{{{IMGSelect}}}" posn="151.4 -88.1 11" opacity="1."
+		/>
+		<quad id="Button_Select" halign="center" valign="bottom" keepratio="Fit"
+		sizen="8.0 8.0" image="{{{IMGCancel}}}" posn="-131.7 -88.1 11" opacity="1."
+		/>
+		
+		<quad id="Background" halign="center" valign="center" opacity="0."
+		sizen="320 180" image="{{{IMGPopupBg}}}" posn="0 0 1"
+		/>
+
+		<quad id="TEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEST" 
+		halign="center" valign="center" sizen="{{{SizeX_Total}}} {{{SizeY_Total}}}" bgcolor="fff" hidden="0"
+		 opacity="0.0" posn="{{{PosXFirstQuad}}} {{{PosYFirstQuad}}} 25"/>
+
+
+		<frame id="Frame_Content" posn="0.0 0 1" scale="1.0">
+
+			<quad id="BoardFul" halign="center" valign="center" keepratio="Fit" hidden="1"
+			sizen="320 180"  image="{{{IMGBoardFull}}}" opacity="1." posn="0.3 -4.8 2" scale="1.166"
+			/>
+			
+			<quad id="BackgroundContent" halign="center" valign="center" opacity="1."
+			sizen="{{{SizeX_Total}}} {{{SizeY_Total}}}" image="{{{IMGBoard}}}" posn="{{{PosXFirstQuad}}} {{{PosYFirstQuad}}} 4"
+			/>
+	
+	""";
+	for(I,0,Count_InstancesY-1)
+	{
+		declare Real IndexY = I*1.;
+		declare Real PosnY = PosYFirstQuad - IndexY*SizeYQuad - IndexY*MarginY_Button*1. - MarginY_Button/2.;
+		for(J,0,Count_InstancesX-1)
+		{
+			declare Real IndexJ = J*1.;
+			//declare Real PosnX = PosXFirstQuad + IndexJ*SizeXQuad + IndexJ*MarginX_Button*1. + MarginX_Button/2. + SizeXQuad/2 - SizeXQuad*(Count_InstancesX-1);
+			declare Real PosnX = PosXFirstQuad+ IndexJ*SizeXQuad + IndexJ*MarginX_Button*1. + (3-Count_InstancesX)*SizeXQuad/2.;
+			MLText^="""
+				<frameinstance modelid="Frame_Button" posn="{{{PosnX}}} {{{PosnY}}} 5." id="Frame_Instance{{{I}}}{{{J}}}" />
+			""";
+		}
+	}
+	
+	MLText^="""
+		</frame>
+	</frame>
+
+	<script><!--
+		#Const DebugName  "L_Wip_RoundSplit"
+		
+		{{{Manialink::GetIncludes()}}}
+		
+		{{{Manialink::Load()}}}
+		{{{BuilderHelper::MLCommonFunctions()}}}
+		{{{ModeName::MLModeName()}}}
+		declare Text[Integer][Integer] G_IndexGameSelect;
+		
+
+		Void SetHeaderInfo()
+		{
+			declare Vec3 HeaderInfo_LabelTitleColor for This;
+			declare Text HeaderInfo_LabelTitle for This;
+			declare Vec3 NextColorHeaderInfo for This;
+			HeaderInfo_LabelTitle = "Campaign";
+			HeaderInfo_LabelTitleColor = <1.0, 0.9, 0.0>;
+			NextColorHeaderInfo =  <0.1, 0.1, 0.1>;
+			SendCustomEvent("UpdateHeaderTitle", [""]);
+		}
+
+		Text SelectGame(Integer _IndexSelectX, Integer _IndexSelectY)
+		{
+			declare Text GameSelect 			for This;
+			declare Text ModeMulti  			for This;
+			declare Integer DifficultySelect	for This;
+			declare Text NextPage;
+			declare Text ButtonChoose = G_IndexGameSelect[_IndexSelectY][_IndexSelectX];
+			 
+			ModeMulti = ButtonChoose;
+			NextPage = "Difficulty";
+			
+			return NextPage;
+		}
+
+		Void UpdateQuads(Integer _SelectorPositionX, Integer _SelectorPositionY, Integer _PreviousQuadX, Integer _PreviousQuadY)
+		{
+			declare CMlFrame Frames_Instance1     <=> (Page.GetFirstChild("Frame_Instance"^_SelectorPositionY^""^_SelectorPositionX) as CMlFrame);
+			declare CMlFrame Frames_Instance2     <=> (Page.GetFirstChild("Frame_Instance"^_PreviousQuadY^""^_PreviousQuadX) as CMlFrame);
+			declare CMlQuad  Quad_Icon1           <=> (Frames_Instance1.GetFirstChild("Quad_Icon") as CMlQuad);
+			declare CMlQuad  Quad_Icon2           <=> (Frames_Instance2.GetFirstChild("Quad_Icon") as CMlQuad);
+			
+
+
+			LibManialink_SetTargetOpacity(Quad_Icon1, 1.);
+			LibManialink_PresetAnim(Quad_Icon1, 250, "EaseLinear");
+			if(_SelectorPositionX != _PreviousQuadX || _SelectorPositionY != _PreviousQuadY)
+			{
+				LibManialink_SetTargetOpacity(Quad_Icon2, 0.);
+				LibManialink_PresetAnim(Quad_Icon2, 250, "EaseLinear");
+			}
+		}
+
+		main() {
+			{{{BuilderHelper::MLEnableMenuNavigationInputs()}}}
+
+			declare CMlFrame[][Integer]	Frames_Instance;
+			declare CMlLabel[][Integer]	Labels_Name;
+			declare CMlLabel[][Integer]	Labels_Tuto;
+			declare CMlQuad[][Integer]	Quad_Icon;
+			declare Integer 			IndexSelectY = 0;
+			declare Integer 			IndexSelectX = 0;
+			declare Integer 			IndexMaxY = {{{Count_InstancesY}}};
+			declare Integer 			IndexMaxX = {{{Count_InstancesX}}};
+			
+			declare Text[Integer][Integer] TextButton;
+			declare Text[Integer][Integer] IndexButton;
+			declare Text[Integer][Integer] QuadImageUrl;
+			declare Text[Integer][Integer] QuadImageTutoUrl;
+			declare Text[Integer][Integer] TextTuto;
+			for(I, 0, {{{Count_InstancesY-1}}})
+			{
+				TextButton[I]        =  Text[Integer];
+				QuadImageUrl[I]      =  Text[Integer];
+				QuadImageTutoUrl[I]  =  Text[Integer];
+				IndexButton[I]       =  Text[Integer];
+				TextTuto[I]          =  Text[Integer];
+				G_IndexGameSelect[I] = Text[Integer];
+			}
+			TextButton[0][0]        = "Two Screens";
+			TextButton[0][1]        = "Four Screens";
+			G_IndexGameSelect[0][0] = "DualSplitscreen";
+			G_IndexGameSelect[0][1] = "FourSplitscreen";
+			
+			//QuadImageUrl[0][0]      = "{{{IMGHighlight}}}";
+			//QuadImageUrl[0][1]      = "{{{IMGHighlight}}}";
+			//QuadImageUrl[0][2]      = "{{{IMGHighlight}}}";
+			//QuadImageUrl[0][3]      = "{{{IMGHighlight}}}";
+			//QuadImageUrl[0][4]      = "{{{IMGHighlight}}}";
+			//QuadImageUrl[0][5]      = "{{{IMGHighlight}}}";
+			//QuadImageUrl[0][6]      = "{{{IMGHighlight}}}";
+
+			for(I, 0, {{{Count_InstancesY-1}}})
+			{
+				Frames_Instance[I]	= CMlFrame[];
+				Labels_Name[I]		= CMlLabel[];
+				Labels_Tuto[I]		= CMlLabel[];
+				Quad_Icon[I]		= CMlQuad[];
+				for(J,0,{{{Count_InstancesX-1}}})
+				{
+					Frames_Instance[I]	.add( (Page.MainFrame.GetFirstChild("Frame_Instance"^I^""^J)	as CMlFrame) );
+					Labels_Name[I]		.add( (Frames_Instance[I][J].GetFirstChild("Label_Name") 		as CMlLabel) );
+					Quad_Icon[I]		.add( (Frames_Instance[I][J].GetFirstChild("Quad_Icon") 		as CMlQuad)  );
+					
+					Labels_Name[I][J].Value = TextButton[I][J];
+					//Labels_Tuto[I][J].Hide();
+					
+					//Quad_Icon[I][J].ChangeImageUrl(QuadImageUrl[I][J]);
+				}
+			}
+			Quad_Icon[IndexSelectY][IndexSelectX].Opacity = 1.;
+			//Labels_Tuto[IndexSelectY][IndexSelectX].Show();
+
+			
+			
+
+			//InitPage
+			
+			while(True) {
+				yield;
+				if(! PageIsVisible) continue;
+				LibManialink_AnimLoop();
+
+				foreach(Event in PendingEvents) {
+					
+					switch(Event.Type) {
+
+						case CMlEvent::Type::MenuNavigation: {
+							switch(Event.MenuNavAction) {
+								case CMlEvent::EMenuNavAction::Up : {
+									if(IndexSelectY > 0)
+									{
+										IndexSelectY -= 1;
+										Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+										UpdateQuads(IndexSelectX, IndexSelectY, IndexSelectX, IndexSelectY + 1);
+									}
+								}
+								case CMlEvent::EMenuNavAction::Down : {
+									if(IndexSelectY < IndexMaxY-1)
+									{
+										IndexSelectY += 1;
+										Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+										UpdateQuads(IndexSelectX, IndexSelectY, IndexSelectX, IndexSelectY -1);
+									}
+								}
+								case CMlEvent::EMenuNavAction::Left : {
+									if(IndexSelectX > 0)
+									{
+										IndexSelectX -= 1;
+										Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+										UpdateQuads(IndexSelectX, IndexSelectY, IndexSelectX+1, IndexSelectY);
+									}
+								}
+								case CMlEvent::EMenuNavAction::Right : {
+									if(IndexSelectX < IndexMaxX-1)
+									{
+										IndexSelectX += 1;
+										Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+										UpdateQuads(IndexSelectX, IndexSelectY, IndexSelectX-1, IndexSelectY);
+									}
+								}
+								case CMlEvent::EMenuNavAction::Select : {
+									declare Text MainMenuChoose = SelectGame(IndexSelectX, IndexSelectY);
+									if(MainMenuChoose != "")
+									{
+										Audio.PlaySoundEvent("{{{SoundSelect}}}", {{{Volumes::GetVolumedB("MenuValidate")}}});
+										SendCustomEvent("GotoPage", [MainMenuChoose]);
+									}
+								}
+								case CMlEvent::EMenuNavAction::Cancel : {
+									Audio.PlaySoundEvent("{{{SoundBack}}}", {{{Volumes::GetVolumedB("MenuPageBack")}}});
+									SendCustomEvent("GotoPrevious", [""]);
+								}
+								case CMlEvent::EMenuNavAction::AppMenu : {
+									Audio.PlaySoundEvent("{{{SoundBack}}}", {{{Volumes::GetVolumedB("MenuPageBack")}}});
+									SendCustomEvent("GotoPrevious", [""]);
+								}
+							}
+						}
+
+
+						case CMlEvent::Type::PluginCustomEvent: {
+							
+							switch(Event.PluginCustomEventType) {
+								case "Show" : {
+									UpdateQuads(IndexSelectX, IndexSelectY, IndexSelectX, IndexSelectY);
+									{{{_ShowAnim}}}
+									SetHeaderInfo();
+									EnableMenuNavigation(True,False,Null,1);
+								}
+								
+								case "Hide" : {
+									{{{_HideAnim}}}
+									SendCustomEvent("DetachPage", ["WorkInProgress_RoundSplitMulti"]);
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	--></script>
+	""";
+	
+	return MLText;
+}

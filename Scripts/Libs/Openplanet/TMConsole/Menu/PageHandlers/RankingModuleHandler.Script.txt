@@ -1,0 +1,218 @@
+#Include "TextLib"			as TextLib
+#Include "Libs/Openplanet/TMConsole/Logger.Script.txt"										as Logger
+#Include "Libs/Openplanet/TMConsole/Menu/MenuLayers.Script.txt"								as Layers
+#Include "Libs/Openplanet/TMConsole/Menu/Controller/Solo_CampaignController.Script.txt"		as CampaignController
+#Include "Libs/Openplanet/TMConsole/Menu/Controller/OnlineController.Script.txt"				as OnlineController
+
+
+#Const GLOBALRANKING_WORLDR		0
+#Const GLOBALRANKING_WORLDP		1
+#Const GLOBALRANKING_COUNTRYR	2
+#Const GLOBALRANKING_COUNTRYP	3
+#Const GLOBALRANKING_ZONE2R		4
+#Const GLOBALRANKING_ZONE2P		5
+#Const GLOBALRANKING_ZONE3R		6
+#Const GLOBALRANKING_ZONE3P		7
+
+declare Integer			G_UpdateRankingTimer;
+declare Integer[]		G_GlobalRankingGet;
+declare Integer 		G_PreMyPeriod;
+
+Void WarnNotEnoughParams(CMlAppEvent _Event) {
+	Logger::Warn("[Menucontroller] event "^_Event.CustomEventType^": not enough params ["^_Event.CustomEventData^"]");
+}
+
+
+Void UpdateWorldRanking(Integer _Ranking) {
+	declare CUILayer GlobalRankingLayer = Layers::Get("RankingModule");
+	declare Integer WorldRanking for GlobalRankingLayer.LocalPage;
+	WorldRanking = _Ranking;
+}
+
+Void UpdateWorldPlayersCount(Integer _Count) {
+	declare CUILayer GlobalRankingLayer = Layers::Get("RankingModule");
+	declare Integer WorldPlayersCount for GlobalRankingLayer.LocalPage;
+	WorldPlayersCount = _Count;
+}
+
+Void UpdateCountryRanking(Integer _Ranking) {
+	declare CUILayer GlobalRankingLayer = Layers::Get("RankingModule");
+	declare Integer CountryRanking for GlobalRankingLayer.LocalPage;
+	CountryRanking = _Ranking;
+}
+
+Void UpdateCountryPlayersCount(Integer _Count) {
+	declare CUILayer GlobalRankingLayer = Layers::Get("RankingModule");
+	declare Integer CountryPlayersCount for GlobalRankingLayer.LocalPage;
+	CountryPlayersCount = _Count;
+}
+
+Void UpdateZone2Ranking(Integer _Ranking) {
+	declare CUILayer GlobalRankingLayer = Layers::Get("RankingModule");
+	declare Integer Zone2Ranking for GlobalRankingLayer.LocalPage;
+	Zone2Ranking = _Ranking;
+}
+
+Void UpdateZone2PlayersCount(Integer _Count) {
+	declare CUILayer GlobalRankingLayer = Layers::Get("RankingModule");
+	declare Integer Zone2PlayersCount for GlobalRankingLayer.LocalPage;
+	Zone2PlayersCount = _Count;
+}
+
+Void UpdateZone3Ranking(Integer _Ranking) {
+	declare CUILayer GlobalRankingLayer = Layers::Get("RankingModule");
+	declare Integer Zone3Ranking for GlobalRankingLayer.LocalPage;
+	Zone3Ranking = _Ranking;
+}
+
+Void UpdateZone3PlayersCount(Integer _Count) {
+	declare CUILayer GlobalRankingLayer = Layers::Get("RankingModule");
+	declare Integer Zone3PlayersCount for GlobalRankingLayer.LocalPage;
+	Zone3PlayersCount = _Count;
+}
+
+
+Void SendPlayerMedals(Integer _NbMedals) {
+	declare CUILayer GlobalRankingLayer = Layers::Get("RankingModule");
+	declare Integer NbTotalMedals for GlobalRankingLayer.LocalPage;
+	NbTotalMedals = _NbMedals;
+}
+
+Void Load() {
+}
+
+Void SentRankingInfos() {
+	G_UpdateRankingTimer = 400;
+	G_GlobalRankingGet.clear();
+	declare Integer NbMedals = CampaignController::GetPlayerMedals();
+	SendPlayerMedals(NbMedals);
+}
+
+Void SendInfoMedals()
+{
+	declare Integer NbMedals = CampaignController::GetPlayerMedals();
+	SendPlayerMedals(NbMedals);
+}
+
+Void Loop() {
+	foreach(Event in PendingEvents) {
+		if(Event.Type != CMlAppEvent::EType::LayerCustomEvent) continue;
+		switch(Event.CustomEventType) {
+			case "SendRankingInfos": {
+				SentRankingInfos();
+			}
+			case "GetEchelon": {
+				declare Text LayerName = Event.CustomEventData[0];
+				OnlineController::SendEchelon(LayerName);
+			}
+		}
+	}
+	
+	declare Boolean LibRankingModule_IsConnectedMasterServer for LocalUser;
+	if(ManiaPlanet.MasterServer_MainMSUser.ConnectionStatus == CMasterServerUser::EMasterServerConnectionStatus::Connected) {
+		LibRankingModule_IsConnectedMasterServer = True;
+	} else {
+		LibRankingModule_IsConnectedMasterServer = False;
+	}
+	
+	if(G_UpdateRankingTimer > 0) {
+		declare Text[] PlayerZones = TextLib::Split("|", LocalUser.ZonePath);
+		
+		// HACK EG : avant d'avoir quelque chose de mieux.
+		if(PlayerZones.count <= 1) return;
+		
+		declare Integer WorldRanking        = 0;
+		declare Integer WorldPlayersCount   = 0;
+		declare Integer CountryRanking      = 0;
+		declare Integer CountryPlayersCount = 0;
+		declare Integer Zone2Ranking        = 0;
+		declare Integer Zone2PlayersCount   = 0;
+		declare Integer Zone3Ranking        = 0;
+		declare Integer Zone3PlayersCount   = 0;
+
+		if(ManiaPlanet.MasterServer_MainMSUser == Null) return;
+
+		if(PlayerZones.count > 0 && !G_GlobalRankingGet.exists(GLOBALRANKING_WORLDR)) {
+			WorldRanking 			= ScoreMgr.GlobalLeaderBoard_GetPlayerRanking(ManiaPlanet.MasterServer_MainMSUser.Id, PlayerZones[0]);
+		}
+		if(PlayerZones.count > 0 && !G_GlobalRankingGet.exists(GLOBALRANKING_WORLDP)) {
+			WorldPlayersCount 		= ScoreMgr.GlobalLeaderBoard_GetPlayerCount(PlayerZones[0]);
+			//log("1_WorldPlayersCount: " ^ WorldPlayersCount^" | Exist: "^ G_GlobalRankingGet.exists(GLOBALRANKING_WORLDP));
+		}
+		
+		if(PlayerZones.count > 1 && !G_GlobalRankingGet.exists(GLOBALRANKING_COUNTRYR)) {
+			CountryRanking 			= ScoreMgr.GlobalLeaderBoard_GetPlayerRanking(ManiaPlanet.MasterServer_MainMSUser.Id, PlayerZones[0]^"|"^PlayerZones[1]);
+			//log("CountryRanking["^PlayerZones[0]^"|"^PlayerZones[1]^"]: " ^ CountryRanking);
+		}
+		if(PlayerZones.count > 1 && !G_GlobalRankingGet.exists(GLOBALRANKING_COUNTRYP)) {
+			CountryPlayersCount 	= ScoreMgr.GlobalLeaderBoard_GetPlayerCount(PlayerZones[0]^"|"^PlayerZones[1]);
+		}
+
+		if(PlayerZones.count > 2 && !G_GlobalRankingGet.exists(GLOBALRANKING_ZONE2R)) {
+			Zone2Ranking 		    = ScoreMgr.GlobalLeaderBoard_GetPlayerRanking(ManiaPlanet.MasterServer_MainMSUser.Id, PlayerZones[0]^"|"^PlayerZones[1]^"|"^PlayerZones[2]);
+		}
+		if(PlayerZones.count > 2 && !G_GlobalRankingGet.exists(GLOBALRANKING_ZONE2P)) {
+			Zone2PlayersCount 	    = ScoreMgr.GlobalLeaderBoard_GetPlayerCount(PlayerZones[0]^"|"^PlayerZones[1]^"|"^PlayerZones[2]);
+		}
+
+		if(PlayerZones.count > 3 && !G_GlobalRankingGet.exists(GLOBALRANKING_ZONE3R)) {
+			Zone3Ranking 		    = ScoreMgr.GlobalLeaderBoard_GetPlayerRanking(ManiaPlanet.MasterServer_MainMSUser.Id, PlayerZones[0]^"|"^PlayerZones[1]^"|"^PlayerZones[2]^"|"^PlayerZones[3]);
+		}
+		if(PlayerZones.count > 3 && !G_GlobalRankingGet.exists(GLOBALRANKING_ZONE3P)) {
+			Zone3PlayersCount 	    = ScoreMgr.GlobalLeaderBoard_GetPlayerCount(PlayerZones[0]^"|"^PlayerZones[1]^"|"^PlayerZones[2]^"|"^PlayerZones[3]);
+		}
+
+		if(WorldRanking > 0 && !G_GlobalRankingGet.exists(GLOBALRANKING_WORLDR)) {
+			//log("_WorldRanking: " ^ WorldRanking);
+			G_GlobalRankingGet.add(GLOBALRANKING_WORLDR);
+			UpdateWorldRanking(WorldRanking);
+		}
+		
+		if(WorldPlayersCount > 0 && !G_GlobalRankingGet.exists(GLOBALRANKING_WORLDP)) {
+			//log("2_WorldPlayersCount: " ^ WorldPlayersCount);
+			G_GlobalRankingGet.add(GLOBALRANKING_WORLDP);
+			UpdateWorldPlayersCount(WorldPlayersCount);
+		}
+		
+		if(CountryRanking > 0 && !G_GlobalRankingGet.exists(GLOBALRANKING_COUNTRYR)) {
+			G_GlobalRankingGet.add(GLOBALRANKING_COUNTRYR);
+			UpdateCountryRanking(CountryRanking);
+		}
+		
+		if(CountryPlayersCount > 0 && !G_GlobalRankingGet.exists(GLOBALRANKING_COUNTRYP)) {
+			G_GlobalRankingGet.add(GLOBALRANKING_COUNTRYP);
+			UpdateCountryPlayersCount(CountryPlayersCount);
+		}
+		
+		if(Zone2Ranking > 0 && !G_GlobalRankingGet.exists(GLOBALRANKING_ZONE2R)) {
+			G_GlobalRankingGet.add(GLOBALRANKING_ZONE2R);
+			UpdateZone2Ranking(Zone2Ranking);
+		}
+		
+		if(Zone2PlayersCount > 0 && !G_GlobalRankingGet.exists(GLOBALRANKING_ZONE2P)) {
+			G_GlobalRankingGet.add(GLOBALRANKING_ZONE2P);
+			UpdateZone2PlayersCount(Zone2PlayersCount);
+		}
+		
+		if(Zone3Ranking > 0 && !G_GlobalRankingGet.exists(GLOBALRANKING_ZONE3R)) {
+			G_GlobalRankingGet.add(GLOBALRANKING_ZONE3R);
+			UpdateZone3Ranking(Zone3Ranking);
+		}
+		
+		if(Zone3PlayersCount > 0 && !G_GlobalRankingGet.exists(GLOBALRANKING_ZONE3P)) {
+			G_GlobalRankingGet.add(GLOBALRANKING_ZONE3P);
+			UpdateZone3PlayersCount(Zone3PlayersCount);
+		}
+		
+		if(G_GlobalRankingGet.count == 8) {
+			//log("End");
+			G_UpdateRankingTimer = 0;
+		}
+		
+		G_PreMyPeriod = Now;
+		if(ManiaPlanet.MasterServer_MainMSUser.ConnectionStatus == CMasterServerUser::EMasterServerConnectionStatus::Connected) {
+			//G_UpdateRankingTimer -= Period;
+		}
+		G_UpdateRankingTimer -= 1;
+	}
+}

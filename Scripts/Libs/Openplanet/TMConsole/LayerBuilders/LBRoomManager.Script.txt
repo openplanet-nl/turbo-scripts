@@ -1,0 +1,2604 @@
+
+#Include "Libs/Openplanet/Manialink2.Script.txt"								as Manialink
+#Include "Libs/Openplanet/TMConsole/Menu/LibLoading.Script.txt"				as Loading
+#Include "Libs/Openplanet/TMConsole/FontManager.Script.txt"					as Font
+#Include "Libs/Openplanet/TMConsole/Colors.Script.txt"		   				as Colors
+#Include "Libs/Openplanet/UIPadButtons.Script.txt"							as LibUIButtons
+#Include "Libs/Openplanet/TMConsole/Live/LiveHelpers.Script.txt"				as LiveHelpers
+#Include "Libs/Openplanet/TMConsole/Menu/LibOnlineGameplay.Script.txt"		as Gameplay
+#Include "Libs/Openplanet/TMConsole/Selector.Script.txt"						as Selector
+#Include "Libs/Openplanet/TMConsole/MenuColor.Script.txt"					as MenuColor
+#Include "Libs/Openplanet/TMConsole/Colors.Script.txt"						as Colors
+#Include "TextLib" 														as TextLib
+#Include "Libs/Openplanet/TMConsole/LibAudio.Script.txt"						as LibAudio
+#Include "Libs/Openplanet/TMConsole/Volumes.Script.txt"						as Volumes
+
+#Include "Libs/Openplanet/TMConsole/Menu/LibInputInfos.Script.txt"			as InputInfos
+
+#Const C_ImgBase 	"file://Media/Manialinks/Nadeo/TMConsole/Images/"
+#Const C_ImgBase2	"file://Media/Images/TMConsole/Ingame/"
+
+#Const C_ImgBaseDev "file://Media/Images/"
+
+#Const C_BrowseSlot_SlotNb			10
+#Const C_BrowseSlot_Landmark		2
+
+#Const LabelSizen					90
+
+Text Build(Text _ShowAnim, Text _HideAnim) {
+
+	//IMAGES
+	declare Text 	IMGSlotSmallBg           = C_ImgBase2^"slot-medium-bg.dds";
+	declare Text 	IMGSlotSmallFg           = C_ImgBase2^"slot-medium-fg.dds";
+	declare Text 	IMGSlotMediumBg          = C_ImgBase2^"slot-medium-bg.dds";
+	declare Text 	IMGSlotMediumFg          = C_ImgBase^"slot-medium-fg2.dds";
+	declare Text 	IMGSlotBigBg             = C_ImgBase^"slot-big-bg2.dds";
+	declare Text 	IMGSlotBigFg             = C_ImgBase^"slot-big-fg2.dds";
+	declare Text 	IMGMenuBg                = C_ImgBase2^"menu-bg-1.dds";
+	declare Text	IMGBoardEmpty            = C_ImgBase^"board_Empty.tga";
+	
+	declare Integer Platform   = LibUIButtons::GetPlatform();
+	declare Text 	IMGSelect_PC  	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"), CManiaAppEvent::EMenuNavAction::Select);
+	declare Text 	IMGSelect_PS4  	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::Select);
+	declare Text 	IMGSelect_XB1  	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::Select);
+	
+	declare Text 	IMGCancel_PC  	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"), CManiaAppEvent::EMenuNavAction::Cancel);
+	declare Text 	IMGCancel_PS4  	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::Cancel);
+	declare Text 	IMGCancel_XB1  	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::Cancel);
+	
+	declare Text 	IMGAppMenu_PC	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"), CManiaAppEvent::EMenuNavAction::AppMenu);
+	declare Text 	IMGAppMenu_PS4	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::AppMenu);
+	declare Text 	IMGAppMenu_XB1	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::AppMenu);
+	
+	declare Text 	SoundMove                   = LibAudio::GetSoundMove();
+	declare Text 	SoundClicInterfaceLeftRight = LibAudio::GetSound("ClicInterfaceLeftRight");
+	declare Text 	SoundPageForward 		    = LibAudio::GetSound("PageForward");
+	declare Text 	SoundBack                   = LibAudio::GetSound("PageBack");
+	declare Text 	SoundBlocCategory 		    = LibAudio::GetSound("BlocCategory");
+	
+	declare Text 	IMGPopupArrow               = C_ImgBase^"Online/RoomSettings/fleche.tga";
+	declare Text	IMGEmptyTracklist           = C_ImgBaseDev^"EmptyTracklist.png";
+	
+	declare Text    TitleColor                  = TextLib::ColorToText(MenuColor::GetMenuColor(0));
+	
+	//SIZES
+	//declare Real	SM_SizeTotalX            = 200.0;
+	declare Real	SM_SizeTotalX            = 259.0;
+	declare Real	SM_SizeTotalY            = 150.;
+	declare Real	SM_SizeY                 = 8.27;
+	declare Real	SM_Separator             = SM_SizeY * 0.095;
+	declare Real	SM_SizeYElement          = SM_SizeY - SM_Separator;
+	
+	declare Real	SM_Password_PosY		= 0.;
+	declare Real	SM_Password_SizeX		= 110.;
+	
+	//POSITIONS
+	declare Real	SM_PosY                  = 60.;
+	declare Real	SM_PosYElementAlignTop   = 53.;
+	declare Real	PositionFirstQuadX       = 0.;
+	declare Real	PositionFirstQuadY       = 36.3;
+	
+	//SETTINGS & TRACKLIST ARRAY VALUES
+	declare Real	SettingNamePosX			 = - SM_SizeTotalX / 4.; //+ 5.; //left haligned
+	declare Real	SettingValuePosX		 =   SM_SizeTotalX / 4.; //centered
+	
+	declare Integer	SelectArray_SettingsCount 	= 6;
+	declare Real	SelectArray_TrackListArrowWidth = 4.;
+	declare Integer SelectArray_TrackListDisplayedCount = 8;
+	declare Real	SelectArray_TrackWidth		= (SM_SizeTotalX - 2*SelectArray_TrackListArrowWidth) / SelectArray_TrackListDisplayedCount;
+	//declare Real	SelectArray_TrackHeight		= SM_SizeY * 4.;
+	declare Real	SelectArray_TrackHeight		= SelectArray_TrackWidth;
+	
+	Loading::Init(<SM_SizeTotalX, SM_SizeY * 15.>, <0., PositionFirstQuadY + 4. - SM_SizeY * 6.5>, 200, _("Please wait."));
+	
+	InputInfos::Init("Main", SM_SizeTotalX / 36., SM_SizeY, 1.);
+	InputInfos::AddInput(8., "Select");
+	InputInfos::AddInput(8., "Cancel");
+	InputInfos::AddInput(8., "Action1");
+	InputInfos::AddInput(8., "Action2");
+	
+	InputInfos::SetConstantInput("Cancel"		, _("|16 chars max|BACK"));
+	InputInfos::SetConstantInput("Action2"		, _("|16 chars max|DELETE ROOM"));
+	InputInfos::SetStates(["Setting", "Tracklist", "Track", "SaveAndQuit", "Password_Private", "Password_Public", "Laps", "Points", "Time"]);
+	InputInfos::SetVariableInput("Setting"			, "Select"	, False);
+	InputInfos::SetVariableInput("Setting"			, "Action1"	, False);
+	InputInfos::SetVariableInput("Password_Private"	, "Select"	, True, _("|16 chars max|MAKE PUBLIC"));
+	InputInfos::SetVariableInput("Password_Private"	, "Action1"	, True, _("|16 chars max|CHANGE PASSWORD"));
+	InputInfos::SetVariableInput("Password_Public"	, "Select"	, True, _("|16 chars max|MAKE PRIVATE"));
+	InputInfos::SetVariableInput("Password_Public"	, "Action1"	, False);
+	InputInfos::SetVariableInput("Tracklist"		, "Select"	, True, _("|16 chars max|EDIT TRACKLIST"));
+	InputInfos::SetVariableInput("Tracklist"		, "Action1"	, False);
+	InputInfos::SetVariableInput("Track"			, "Select"	, True, _("|16 chars max|EDIT TRACKLIST"));
+	InputInfos::SetVariableInput("Track"			, "Action1"	, True,	_("|16 chars max|REMOVE TRACK"));
+	InputInfos::SetVariableInput("SaveAndQuit"		, "Select"	, True, _("|16 chars max|SAVE & QUIT"));
+	InputInfos::SetVariableInput("SaveAndQuit"		, "Action1"	, False);
+	InputInfos::SetVariableInput("Laps"				, "Select"	, True, _("|16 chars max|LAPS"));
+	InputInfos::SetVariableInput("Laps"				, "Action1"	, False);
+	InputInfos::SetVariableInput("Points"			, "Select"	, True, _("|16 chars max|POINTS"));
+	InputInfos::SetVariableInput("Points"			, "Action1"	, False);
+	InputInfos::SetVariableInput("Time"				, "Select"	, True, _("|16 chars max|TIME"));
+	InputInfos::SetVariableInput("Time"				, "Action1"	, False);
+	
+	/////////////////////////
+	// FRAMEMODELS
+	/////////////////////////
+	declare MLText = """
+	
+	<framemodel id="Frame_SubMenu">
+		<quad halign="center" valign="center" 	sizen="{{{SM_SizeTotalX}}} {{{SM_SizeYElement}}}" 	image="{{{IMGSlotMediumBg}}}" 	opacity="1.0" 	posn="0 0 2" />
+		<quad halign="center" valign="center" 	sizen="{{{SM_SizeTotalX}}} {{{SM_SizeYElement}}}" 	image="{{{IMGSlotMediumFg}}}" 	opacity="1.0" 	posn="0 0 4" />
+		<quad halign="center" valign="center" 	sizen="{{{SM_SizeTotalX}}} {{{SM_SizeY}}}" 			image="{{{IMGMenuBg}}}" 		opacity="1." 	posn="0 0 1" />
+	</framemodel>
+
+	<framemodel id="Frame_Setting">
+		<quad halign="center" valign="center" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeY}}}" bgcolor="333" id="Quad_Bg" scriptevents="1" opacity="0.3" />
+		
+		<quad halign="center" valign="center" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeYElement * 0.95}}}" image="{{{IMGSlotMediumBg}}}" 	opacity="1.0" posn="0 0 2" />
+		<quad halign="center" valign="center" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeYElement * 0.96}}}" image="{{{IMGSlotMediumFg}}}" 	opacity="1.0" posn="0 0 4" />
+		<quad halign="center" valign="center" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeYElement * 0.96}}}"	image="{{{IMGMenuBg}}}" 		opacity="1.0" posn="0 0 1" />
+		
+		<label halign="center" 	valign="center"  sizen="60"  posn="{{{SettingNamePosX}}}  0.8 3" textsize="4."	textcolor="fff" id="Setting_Name"  textprefix="$t" scale="1.2" textfont="{{{Font::GetFontName("Main")}}}"/>
+		<label halign="center" 	valign="center"  sizen="70"  posn="{{{SettingValuePosX}}} 0.8 3" textsize="3."	textcolor="fff" id="Setting_Value" textprefix="$t" textfont="{{{Font::GetFontName("Main")}}}"/>
+		<quad  halign="center"  valign="center"  sizen="6 6" posn="{{{SettingValuePosX - 5.}}} 0.2 3" bgcolor="090" id="Setting_Quad_1" hidden="1"/>
+		<quad  halign="center"  valign="center"  sizen="6 6" posn="{{{SettingValuePosX + 5.}}} 0.2 3" bgcolor="090" id="Setting_Quad_2" hidden="1"/>
+	</framemodel>
+	
+	<framemodel id="Frame_Track">
+		<quad halign="center" valign="center" sizen="{{{SelectArray_TrackWidth}}} {{{SelectArray_TrackHeight}}}" image="{{{IMGSlotMediumBg}}}" opacity="1.0" posn="0 0 2" hidden="1"/>
+		<quad halign="center" valign="center" sizen="{{{SelectArray_TrackWidth}}} {{{SelectArray_TrackHeight}}}" image="{{{IMGSlotMediumFg}}}" opacity="1.0" posn="0 0 4" hidden="1" />
+		
+		<quad id="Track_Thumbnail" 	halign="center" valign="center" sizen="{{{SelectArray_TrackWidth*0.98}}} {{{SelectArray_TrackHeight}}}" posn="0 0 3" />
+		<quad id="Quad_Color"		halign="center" valign="center" sizen="{{{SelectArray_TrackWidth*0.98}}} {{{SelectArray_TrackHeight * 0.2}}}" bgcolor="00E2FF" posn="0 {{{-SelectArray_TrackHeight * 0.4}}} 3.1" />
+		<label id="Track_Name" 		halign="center" valign="center2" sizen="{{{SelectArray_TrackWidth * 0.8}}}" text="Test Map Name" style="BgMainMenuTitleHeader" textsize="2" posn="0 {{{- SelectArray_TrackHeight * 0.4}}} 3.2" />
+	</framemodel>
+	
+	/////////////////////////
+	// MANIALINK
+	/////////////////////////
+	<frame id="Frame_General">
+		<frame id="Frame_Board_Settings">
+			<quad 	
+				id="Quad_Board"
+				posn="0 0 0"
+				halign="center"
+				valign="center"
+				sizen="{{{259.5}}} {{{SM_SizeTotalY}}}"
+				opacity="1.0"
+				image="{{{IMGBoardEmpty}}}"
+			/>
+		</frame>
+		<frame id="Frame_Board_Infos" hidden="1">
+			<quad 	
+				id="Quad_Board"
+				posn="0 0 -2"
+				halign="center"
+				valign="center"
+				sizen="{{{259.5}}} {{{SM_SizeTotalY}}}"
+				opacity="1.0"
+				image="{{{IMGBoardEmpty}}}"
+			/>
+		</frame>
+
+	""";
+			
+	/////////////////////////
+	// TITLE
+	/////////////////////////
+	MLText^="""
+	<frame id="Frame_Title" posn="0 1.0 0">
+		<quad halign="center" valign="bottom" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeY*2.}}}"
+		 image="{{{IMGSlotBigFg}}}"                  posn="0 {{{SM_PosY-2.8}}} 7" opacity="1."/>
+		<quad  halign="center" valign="bottom" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeY*2.}}}"
+		 image="{{{IMGSlotBigBg}}}"                  posn="0 {{{SM_PosY-2.8}}} 5" opacity="1."/>
+		<label halign="left" valign="center" textprefix="$t" textfont="{{{Font::GetFontName("Main")}}}" posn="{{{-(SM_SizeTotalX-2)/2.+1.}}}  {{{SM_PosY + SM_SizeY - 1.}}} 6" textcolor="{{{TitleColor}}}"
+		 id="Label_Title" textsize="13." text="{{{_("Room settings")}}}" sizen="{{{SM_SizeTotalX-2.}}}"  opacity="1.0"/>
+	</frame>
+		
+	/////////////////////////
+	// ROOM TITLE
+	/////////////////////////		
+	<frame id="Frame_RoomTitle" posn="0 {{{SM_PosYElementAlignTop + 0.3}}} 3">
+		<quad halign="center" valign="center" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeYElement*0.96}}}" image="{{{IMGSlotMediumFg}}}"  
+		 posn="0 -0.1 5" opacity="1.0"/>
+
+		<quad halign="center" valign="center" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeYElement*0.95}}}" image="{{{IMGSlotMediumBg}}}"
+		 posn="0 0 2" opacity="1.0" />
+
+		<label 
+			id="Label_RoomName"
+			posn="{{{-SM_SizeTotalX/2.+2.}}} 0.6 4"
+			halign="left" 
+			valign="center" 
+			sizen="150 7"
+			textcolor="000"
+			textprefix="$t"
+			text="INSERT ROOM NAME HERE"
+			textsize="4."
+			textfont="{{{Font::GetFontName("Main")}}}"
+		/>
+		<quad halign="center" valign="center"
+		sizen="{{{SM_SizeTotalX}}} {{{SM_SizeYElement*0.96}}}"
+		posn="0. -0.1 3" bgcolor="fff" opacity="0.95"/>
+		
+		<quad 	halign="center" valign="center" posn="{{{SM_SizeTotalX/2.-27.}}} 0.2 4" sizen="40 {{{SM_SizeYElement * 0.85}}}" bgcolor="F00F" id="Quad_Status_Bg"/>
+		<label  halign="center" valign="center" posn="{{{SM_SizeTotalX/2.-27.}}} 0.6 5" sizen="30" textsize="3." textcolor="fff" id="Label_Status" textfont="{{{Font::GetFontName("Main")}}}" textprefix="$t" />
+	</frame>	
+	""";
+	
+	MLText ^= """<frame id="Frame_InputInfos" posn="{{{SM_SizeTotalX * 0.5}}} {{{-SM_SizeY * 9.}}} 7">
+		{{{InputInfos::InjectInManialink()}}}
+	</frame>""";
+	
+	//- (SelectArray_SettingsCount+1.) * SM_SizeY + 62.5
+	
+	/////////////////////////
+	// LOADING
+	/////////////////////////
+	MLText ^= """
+	{{{Loading::InjectInManialink()}}}
+	""";
+	
+	/////////////////////////
+	// SETTINGS & TRACKLIST
+	/////////////////////////
+	MLText ^= """
+		<frame id="Frame_TrackListLoading" posn="0 {{{PositionFirstQuadY - SM_SizeY + 4.}}} 10" >
+			<label halign="center" valign="center2" textprefix="$t" textfont="{{{Font::GetFontName("Main")}}}" posn="0 {{{-SelectArray_TrackHeight*0.5}}} 1" id="Label_LoadingTracks" textsize="13." text="{{{_("Loading")}}}"  opacity="1.0"/>
+			<quad halign="center"   valign="top"																		  sizen="{{{SM_SizeTotalX}}} {{{SelectArray_TrackHeight}}}" bgcolor="000F" />
+		</frame>
+		<frame id="Frame_TrackList" posn="0 {{{PositionFirstQuadY - SM_SizeY + 4.}}} 10" >
+			<quad halign="center"   valign="top"																		  sizen="{{{SM_SizeTotalX}}} {{{SelectArray_TrackHeight}}}" bgcolor="000F" />
+			<quad halign="left" 	valign="center" posn="{{{- SM_SizeTotalX/2.}}} {{{ - SelectArray_TrackHeight/2.}}} 2" sizen="{{{SelectArray_TrackListArrowWidth}}} {{{SelectArray_TrackHeight}}}" image="{{{IMGSlotMediumBg}}}" opacity="1.0" hidden="1"/>
+			<quad halign="left" 	valign="center" posn="{{{- SM_SizeTotalX/2.}}} {{{ - SelectArray_TrackHeight/2.}}} 4" sizen="{{{SelectArray_TrackListArrowWidth}}} {{{SelectArray_TrackHeight}}}" image="{{{IMGSlotMediumFg}}}" opacity="1.0" hidden="1"/>
+			<quad halign="center"   valign="center" sizen="{{{SelectArray_TrackListArrowWidth/1.35}}} {{{SelectArray_TrackListArrowWidth/1.35}}}" posn="{{{- SM_SizeTotalX/2. + SelectArray_TrackListArrowWidth / 2.0}}} {{{- SelectArray_TrackHeight/2.}}} 3" image="{{{IMGPopupArrow}}}" rot="180"  scriptevents="1" id="MouseInput_TrackPrev" keepratio="Fit" />
+			<frame posn="0 0 5">
+				{{{Selector::InsertFrameworkInManialink(12, SelectArray_TrackWidth, SelectArray_TrackHeight*0.98, -SelectArray_TrackWidth/2., SelectArray_TrackHeight/2., 0., 0.)}}}
+			</frame>
+			<frame id="Frame_Tracks" clip="1" clipsizen="{{{SelectArray_TrackWidth * SelectArray_TrackListDisplayedCount}}} {{{SelectArray_TrackHeight}}}" clipposn="0 {{{-SelectArray_TrackHeight/2.}}}" >
+		""";
+	for (I, 0, SelectArray_TrackListDisplayedCount+1)
+	{
+		MLText ^= """
+			<frame id="Frame_Track{{{I}}}" posn="{{{- SM_SizeTotalX / 2. + SelectArray_TrackListArrowWidth + ((I - 0.5) * SelectArray_TrackWidth)}}} {{{ - SelectArray_TrackHeight / 2.}}}" hidden="1" >
+				<frameinstance  modelid="Frame_Track" />
+				<quad halign="center" valign="center" sizen="{{{SelectArray_TrackWidth}}} {{{SelectArray_TrackHeight}}}" posn="0 0 5" opacity="0." scriptevents="1" id="MouseInput_Track_{{{I}}}" />
+			</frame>
+		""";
+	}
+		
+	MLText ^= """	
+			</frame>
+			<quad halign="right" 	valign="center" posn="{{{ SM_SizeTotalX/2.}}} {{{ - SelectArray_TrackHeight/2.}}} 2" sizen="{{{SelectArray_TrackListArrowWidth}}} {{{SelectArray_TrackHeight}}}" image="{{{IMGSlotMediumBg}}}" opacity="1.0" hidden="1"/>
+			<quad halign="right" 	valign="center" posn="{{{ SM_SizeTotalX/2.}}} {{{ - SelectArray_TrackHeight/2.}}} 4" sizen="{{{SelectArray_TrackListArrowWidth}}} {{{SelectArray_TrackHeight}}}" image="{{{IMGSlotMediumFg}}}" opacity="1.0" hidden="1"/>
+			<quad  halign="center"   valign="center" sizen="{{{SelectArray_TrackListArrowWidth/1.35}}} {{{SelectArray_TrackListArrowWidth/1.35}}}" posn="{{{ SM_SizeTotalX/2. - SelectArray_TrackListArrowWidth / 2.0}}} {{{- SelectArray_TrackHeight/2.}}} 3" image="{{{IMGPopupArrow}}}" rot="0"  scriptevents="1" id="MouseInput_TrackNext" keepratio="Fit" />
+		</frame>
+		
+		<frame id="Frame_Settings" posn="0 {{{-SM_SizeY*5.}}}">
+			<frame id="Frame_SettingsSelector" posn="0 {{{PositionFirstQuadY + 0.2}}} 6.5">
+				<frame id="Frame_Settings_Buttons" posn="{{{SettingValuePosX}}}">			
+					<quad  	halign="center" valign="center"  sizen="{{{SelectArray_TrackListArrowWidth/1.35}}} {{{SelectArray_TrackListArrowWidth/1.35}}}" posn="{{{-LabelSizen / 2. - 1}}} 0 2." image="{{{IMGPopupArrow}}}" rot="180" scriptevents="1" id="MouseInput_SettingPrev" keepratio="Fit" />
+					<quad  	halign="center" valign="center"  sizen="{{{SelectArray_TrackListArrowWidth/1.35}}} {{{SelectArray_TrackListArrowWidth/1.35}}}" posn="{{{LabelSizen / 2. + 1}}}  0 2." image="{{{IMGPopupArrow}}}" rot="0"   scriptevents="1" id="MouseInput_SettingNext" keepratio="Fit" />
+				</frame>
+				<quad 	halign="center" valign="center" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeYElement * 0.9}}}" bgcolor="{{{Colors::GetColorHexa("Red")}}}" id="Quad_SettingsSelector"   opacity="1.0" />
+			</frame>
+
+			<frame id="Frame_EditTracklist" posn="{{{PositionFirstQuadX}}} {{{PositionFirstQuadY + 0.2 + 5 * SM_SizeY}}} 4.">
+				<quad halign="center" valign="center" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeY}}}" bgcolor="333" id="Quad_Bg" scriptevents="1" opacity="0.3" />
+		
+				<quad halign="center" valign="center" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeYElement * 0.95}}}" image="{{{IMGSlotMediumBg}}}" 	posn="0 0 1" />
+				<quad halign="center" valign="center" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeYElement * 0.96}}}" image="{{{IMGSlotMediumFg}}}" 	posn="0 0 4" scriptevents="1" id="MouseInput_EditTracklist" />
+				<quad halign="center" valign="center" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeYElement * 0.96}}}"	 	bgcolor="fff"				opacity="0.95" 	posn="0 0 2" />
+				
+				<label halign="center" 	valign="center"  sizen="60"  posn="0 0.8 3" textsize="4."	textcolor="000" text="{{{_("EDIT TRACKLIST")}}}" textprefix="$t" scale="1.2" textfont="{{{Font::GetFontName("Main")}}}"/>
+			</frame>
+			
+			<frame id="Frame_SaveAndQuit" posn="{{{PositionFirstQuadX}}} {{{PositionFirstQuadY + 0.2 - 7 * SM_SizeY}}} 4.">
+				<quad halign="center" valign="center" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeY}}}" bgcolor="333" id="Quad_Bg" scriptevents="1" opacity="0.3" />
+		
+				<quad halign="center" valign="center" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeYElement * 0.95}}}" image="{{{IMGSlotMediumBg}}}" 	posn="0 0 2" />
+				<quad halign="center" valign="center" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeYElement * 0.96}}}" image="{{{IMGSlotMediumFg}}}" 	posn="0 0 4" scriptevents="1" id="MouseInput_SaveAndQuit" />
+				<quad halign="center" valign="center" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeYElement * 0.96}}}"	 	bgcolor="000"				posn="0 0 1" />
+				<label halign="center" 	valign="center"  sizen="60"  posn="0 0.8 3" textsize="4."	textcolor="fff" text="{{{_("SAVE AND QUIT")}}}" textprefix="$t" scale="1.2" textfont="{{{Font::GetFontName("Main")}}}"/>
+			</frame>
+		""";
+	//<entry 	halign="center"	valign="center" posn="{{{SettingValuePosX}}} {{{PositionFirstQuadY + 0.2 - 5 * SM_SizeY}}} 7" 		sizen="{{{LabelSizen}}} {{{SM_SizeYElement}}}"  	textformat="Password" scriptevents="1" id="entry_password" />
+	for(K, 0, SelectArray_SettingsCount-1)
+	{
+		declare Real FramePosnX = PositionFirstQuadX;
+		declare Real FramePosnY = PositionFirstQuadY + 0.2 - K * SM_SizeY;
+
+		MLText^="""
+			<frame posn="{{{FramePosnX}}} {{{FramePosnY}}} 4." id="Frame_Setting{{{K}}}">
+				<frameinstance modelid="Frame_Setting" />
+				<quad halign="center" valign="center" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeYElement * 0.96}}}" posn="0 0 4" scriptevents="1" id="MouseInput_Setting_{{{K}}}" />
+			</frame>
+		""";
+	}
+	
+	MLText^="""
+		</frame>
+	</frame>
+	""";
+	
+	//////////////////////////////
+	// FRAME SERVER PASSWORD
+	//////////////////////////////
+	
+	MLText ^= """
+	<frame id="Frame_ServerPassword" posn="0 {{{SM_Password_PosY}}} 35" hidden="1">
+		<frame id="Frame_Title" posn="0 0 0">
+			<quad halign="center" valign="bottom" sizen="{{{SM_Password_SizeX}}} {{{SM_SizeY*2.}}}" image="{{{IMGSlotBigFg}}}" posn="0 0 7" />
+			<quad halign="center" valign="bottom" sizen="{{{SM_Password_SizeX}}} {{{SM_SizeY*2.}}}" image="{{{IMGSlotBigBg}}}" posn="0 0 5" />
+			<label halign="left" valign="center" textprefix="$t" textfont="{{{Font::GetFontName("Main")}}}" posn="{{{-(SM_Password_SizeX-2)/2.}}}  {{{SM_SizeY + 1.8}}} 6" textcolor="{{{TitleColor}}}" id="Label_Title" textsize="13." text="{{{_("|15 Chars Max - Window Title|Password")}}}" sizen="{{{SM_Password_SizeX-2.}}}"  opacity="1.0"/>
+		</frame>
+		
+		<frame posn="{{{-SM_Password_SizeX / 2.}}} 0">
+			<quad sizen="{{{SM_Password_SizeX}}} {{{SM_SizeY}}}" image="{{{IMGSlotMediumBg}}}"  posn="0 0 2" />
+			<quad sizen="{{{SM_Password_SizeX}}} {{{SM_SizeY}}}" image="{{{IMGSlotMediumFg}}}"  posn="0 0 4" />
+			<quad sizen="{{{SM_Password_SizeX}}} {{{SM_SizeY}}}" 		image="{{{IMGMenuBg}}}" posn="0 0 1" />
+			<label posn="5. {{{-SM_SizeY /2.}}} 3" sizen="{{{SM_Password_SizeX * 0.6 - 5.}}}" text="{{{_("Password (4-16 chars) :")}}}" style="TextValueSmallSm" halign="left" valign="center2" textsize="3."/>
+			<entry posn="{{{SM_Password_SizeX * 0.6 + 4.}}} {{{-SM_SizeY / 2.}}} 3" sizen="{{{SM_Password_SizeX * 0.4 - 5.}}}" id="entry_password" textformat="Password" style="TextValueSmallSm" valign="center2" textsize="3." scriptevents="1" />
+		</frame>
+		
+		<quad image="{{{IMGMenuBg}}}" halign="left" sizen="{{{SM_Password_SizeX}}} {{{SM_SizeY}}}"/>
+		<quad posn="0 {{{-SM_Password_PosY}}} -1" sizen="320 180" bgcolor="000" halign="center" opacity="0.5" valign="center" />
+
+		<frame id="FrameInputSelect" posn="{{{SM_Password_SizeX / 2. - 7 * SM_SizeTotalX / 36.}}} {{{-2*SM_SizeY}}}" hidden="1">
+			<quad halign="right" valign="bottom" sizen="{{{6 * SM_SizeTotalX / 36.}}} {{{SM_SizeY}}}" image="{{{IMGSlotSmallBg}}}"   posn="0 0 6" />
+			<label halign="right" valign="center" posn="{{{- SM_SizeTotalX / 36. - 2.}}} 4.5 7" textcolor="ddd" text="{{{_("|16 chars max, select a folder|SELECT")}}}" id="Label_Name" sizen="{{{5 * SM_SizeTotalX / 36. - 4.}}}" textsize="4." textfont="{{{Font::GetFontName("Main")}}}" textprefix="$t"/>
+			<quad halign="right" valign="bottom" sizen="{{{6 * SM_SizeTotalX / 36.}}} {{{SM_SizeY}}}" image="{{{IMGSlotSmallFg}}}"  posn="0 0 8" scriptevents="1" id="MouseInput_ValidatePassword"/>
+	""";
+	
+		for (I, 0, 2) {
+			declare Text Image;
+			switch (I) {
+				case LibUIButtons::GetPlatform("PC") 	: Image = IMGSelect_PC;
+				case LibUIButtons::GetPlatform("PS4") 	: Image = IMGSelect_PS4;
+				case LibUIButtons::GetPlatform("XB1") 	: Image = IMGSelect_XB1;
+			}
+		
+			MLText ^= """<quad halign="center" valign="center" sizen="{{{SM_SizeTotalX / 36. * 0.8}}} {{{SM_SizeTotalX / 36. * 0.8}}}" id="QuadInputIcon_PasswordSelect_{{{I}}}" image="{{{Image}}}"  posn="{{{-SM_SizeTotalX / 36.*0.5}}} 4 7" """;
+			if (I != Platform)
+				MLText ^= """ hidden="1" """;
+			MLText ^= "/>";
+		}
+	
+	MLText ^= """
+		</frame>
+		<frame id="FrameInputCancel" posn="{{{SM_Password_SizeX / 2.}}} {{{-2*SM_SizeY}}}">
+			<quad halign="right" valign="bottom" sizen="{{{6 * SM_SizeTotalX / 36.}}} {{{SM_SizeY}}}" image="{{{IMGSlotSmallBg}}}"   posn="0 0 6" />
+			<label halign="right" valign="center" posn="{{{- SM_SizeTotalX / 36. - 2.}}} 4.5 7" textcolor="ddd" text="{{{_("BACK")}}}" id="Label_Name" sizen="{{{5 * SM_SizeTotalX / 36. - 4.}}}" textsize="4." textfont="{{{Font::GetFontName("Main")}}}" textprefix="$t"/>
+			<quad halign="right" valign="bottom" sizen="{{{6 * SM_SizeTotalX / 36.}}} {{{SM_SizeY}}}" image="{{{IMGSlotSmallFg}}}" posn="0 0 8" opacity="1.0"/>
+	""";
+		for (I, 0, 2) {
+			declare Text Image;
+			switch (I) {
+				case LibUIButtons::GetPlatform("PC") 	: Image = IMGAppMenu_PC;
+				case LibUIButtons::GetPlatform("PS4") 	: Image = IMGAppMenu_PS4;
+				case LibUIButtons::GetPlatform("XB1") 	: Image = IMGAppMenu_XB1;
+			}
+		
+			MLText ^= """<quad halign="center" valign="center" sizen="{{{SM_SizeTotalX / 36. * 0.8}}} {{{SM_SizeTotalX / 36. * 0.8}}}" id="QuadInputIcon_PasswordCancel_{{{I}}}" image="{{{Image}}}"  posn="{{{-SM_SizeTotalX / 36.*0.5}}} 4 7" """;
+			if (I != Platform)
+				MLText ^= """ hidden="1" """;
+			MLText ^= "/>";
+		}
+	
+	MLText ^= """
+		</frame>
+	</frame>
+	""";
+	
+	//////////////////////////////
+	// FRAME LAPS
+	//////////////////////////////
+	MLText ^= """
+	<frame id="Frame_ModeSetting" posn="0 {{{SM_Password_PosY}}} 35" hidden="1">
+		<frame id="Frame_Title" posn="0 0 0">
+			<quad halign="center" valign="bottom" sizen="{{{SM_Password_SizeX}}} {{{SM_SizeY*2.}}}" image="{{{IMGSlotBigFg}}}" posn="0 0 7" />
+			<quad halign="center" valign="bottom" sizen="{{{SM_Password_SizeX}}} {{{SM_SizeY*2.}}}" image="{{{IMGSlotBigBg}}}" posn="0 0 5" />
+			<label halign="left" valign="center" textprefix="$t" textfont="{{{Font::GetFontName("Main")}}}" posn="{{{-(SM_Password_SizeX-2)/2.}}}  {{{SM_SizeY + 1.8}}} 6" textcolor="{{{TitleColor}}}" id="Label_ModeSettingTitle" textsize="13." sizen="{{{SM_Password_SizeX-2.}}}"  opacity="1.0"/>
+		</frame>
+		
+		<frame>
+			<quad halign="center" sizen="{{{SM_Password_SizeX}}} {{{SM_SizeY}}}" image="{{{IMGSlotMediumBg}}}"  posn="0 0 2" />
+			<quad halign="center" sizen="{{{SM_Password_SizeX}}} {{{SM_SizeY}}}" image="{{{IMGSlotMediumFg}}}"  posn="0 0 4" />
+			<quad halign="center" sizen="{{{SM_Password_SizeX}}} {{{SM_SizeY}}}" 		image="{{{IMGMenuBg}}}" posn="0 0 1" />
+			
+			<quad  	halign="center" valign="center"  sizen="{{{SelectArray_TrackListArrowWidth/1.35}}} {{{SelectArray_TrackListArrowWidth/1.35}}}" posn="{{{-SM_Password_SizeX * 0.4}}} {{{- SM_SizeY / 2.}}} 2.25" image="{{{IMGPopupArrow}}}" rot="180" scriptevents="1" id="MouseInput_ModeSettingPrev" keepratio="Fit" />
+			<quad  	halign="center" valign="center"  sizen="{{{SelectArray_TrackListArrowWidth/1.35}}} {{{SelectArray_TrackListArrowWidth/1.35}}}" posn="{{{SM_Password_SizeX * 0.4}}}  {{{- SM_SizeY / 2.}}} 2.25" image="{{{IMGPopupArrow}}}" rot="0"   scriptevents="1" id="MouseInput_ModeSettingNext" keepratio="Fit" />
+			<label 	halign="center" valign="center2"  posn="0. {{{-SM_SizeY /2.}}} 3" sizen="{{{SM_Password_SizeX * 0.7 - 5.}}}" text="2" style="TextValueSmallSm" textsize="3." id="Label_ModeSettingValue"/>
+		</frame>
+		
+		<quad image="{{{IMGMenuBg}}}" halign="left" sizen="{{{SM_Password_SizeX}}} {{{SM_SizeY}}}"/>
+		<quad posn="0 {{{-SM_Password_PosY}}} -1" sizen="320 180" bgcolor="000" halign="center" opacity="0.5" valign="center" />
+
+		<frame id="FrameInputSelect" posn="{{{SM_Password_SizeX / 2. - 7 * SM_SizeTotalX / 36.}}} {{{-2*SM_SizeY}}}">
+			<quad halign="right" valign="bottom" sizen="{{{6 * SM_SizeTotalX / 36.}}} {{{SM_SizeY}}}" image="{{{IMGSlotSmallBg}}}"   posn="0 0 6" />
+			<label halign="right" valign="center" posn="{{{- SM_SizeTotalX / 36. - 2.}}} 4.5 7" textcolor="ddd" text="{{{_("|16 chars max, select a folder|SELECT")}}}" id="Label_Name" sizen="{{{5 * SM_SizeTotalX / 36. - 4.}}}" textsize="4." textfont="{{{Font::GetFontName("Main")}}}" textprefix="$t"/>
+			<quad halign="right" valign="bottom" sizen="{{{6 * SM_SizeTotalX / 36.}}} {{{SM_SizeY}}}" image="{{{IMGSlotSmallFg}}}"  posn="0 0 8" scriptevents="1" id="MouseInput_ModeSettingInputInfo_Select" />
+		""";
+			
+		for (I, 0, 2) {
+			declare Text Image;
+			switch (I) {
+				case LibUIButtons::GetPlatform("PC") 	: Image = IMGSelect_PC;
+				case LibUIButtons::GetPlatform("PS4") 	: Image = IMGSelect_PS4;
+				case LibUIButtons::GetPlatform("XB1") 	: Image = IMGSelect_XB1;
+			}
+		
+			MLText ^= """<quad halign="center" valign="center" sizen="{{{SM_SizeTotalX / 36. * 0.8}}} {{{SM_SizeTotalX / 36. * 0.8}}}" id="QuadInputIcon_ModeSelect_{{{I}}}" image="{{{Image}}}"  posn="{{{-SM_SizeTotalX / 36.*0.5}}} 4 7" """;
+			if (I != Platform)
+				MLText ^= """ hidden="1" """;
+			MLText ^= "/>";
+		}
+		
+	MLText ^= """
+		</frame>
+		<frame id="FrameInputCancel" posn="{{{SM_Password_SizeX / 2.}}} {{{-2*SM_SizeY}}}">
+			<quad halign="right" valign="bottom" sizen="{{{6 * SM_SizeTotalX / 36.}}} {{{SM_SizeY}}}" image="{{{IMGSlotSmallBg}}}"   posn="0 0 6" />
+			<label halign="right" valign="center" posn="{{{- SM_SizeTotalX / 36. - 2.}}} 4.5 7" textcolor="ddd" text="{{{_("BACK")}}}" id="Label_Name" sizen="{{{5 * SM_SizeTotalX / 36. - 4.}}}" textsize="4." textfont="{{{Font::GetFontName("Main")}}}" textprefix="$t"/>
+			<quad halign="right" valign="bottom" sizen="{{{6 * SM_SizeTotalX / 36.}}} {{{SM_SizeY}}}" image="{{{IMGSlotSmallFg}}}"  posn="0 0 8" scriptevents="1" id="MouseInput_ModeSettingInputInfo_Cancel" />
+	""";
+		for (I, 0, 2) {
+			declare Text Image;
+			switch (I) {
+				case LibUIButtons::GetPlatform("PC") 	: Image = IMGCancel_PC;
+				case LibUIButtons::GetPlatform("PS4") 	: Image = IMGCancel_PS4;
+				case LibUIButtons::GetPlatform("XB1") 	: Image = IMGCancel_XB1;
+			}
+		
+			MLText ^= """<quad halign="center" valign="center" sizen="{{{SM_SizeTotalX / 36. * 0.8}}} {{{SM_SizeTotalX / 36. * 0.8}}}" id="QuadInputIcon_ModeCancel_{{{I}}}" image="{{{Image}}}"  posn="{{{-SM_SizeTotalX / 36.*0.5}}} 4 7" """;
+			if (I != Platform)
+				MLText ^= """ hidden="1" """;
+			MLText ^= "/>";
+		}
+	MLText ^= """
+		</frame>
+	</frame>
+		
+	<script><!--
+		#Const DebugName  "L_RoomManager"
+		
+		#Const C_TrackFramesCount {{{SelectArray_TrackListDisplayedCount+2}}}
+		#Const C_DisplayedTrackFramesCount {{{SelectArray_TrackListDisplayedCount}}}
+		#Const C_LeftTrackFramePosX {{{- SM_SizeTotalX / 2. + SelectArray_TrackListArrowWidth - 0.5 * SelectArray_TrackWidth}}}
+		#Const C_TrackFrameWidth {{{SelectArray_TrackWidth}}}
+		
+		#Const C_IsServerOnlineRequestDelay		0 //on attend 0s entre chaque requete
+		#Const C_TimeBeforeCheckingServerStatus	10000
+		
+		#Include "TextLib" as TL
+		#Include "MathLib" as ML
+		
+		{{{Manialink::GetIncludes()}}}
+		{{{Manialink::Load()}}}
+		
+		declare Integer						G_LockInput;
+
+		declare Text						G_MenuUserDisplayName;
+		
+		declare Boolean 					G_IsWaitingForDeletion;
+		
+		declare Boolean						G_EchelonMessageAlreadyDisplayed;
+		declare Boolean						G_EchelonMessageHighLevelAlreadyDisplayed;
+		
+		//Pages & Tabs
+		declare Integer						G_IndexFocusX;
+		declare Integer						G_IndexFocusY;
+		
+		//Settings Values
+		declare Text[][]					G_Settings;
+		declare Text[]						G_DefaultSettings;
+		declare Text[]						G_SettingsFieldNames;
+		
+		//Tracklist State
+		declare Integer			 G_FirstDisplayedTrackIndex;		//en gros le nombre de tracks cachées à gauche
+		declare Integer			 G_FirstDisplayedTrackFrameIndex;	//pour savoir où en sont les frameinstances dans leur défilement
+		
+		//Laps
+		declare Boolean			G_SettingModeSetting;
+		declare Text[]			G_LapsCounts;
+		declare Text[]			G_TimeAttackTimes;
+		declare Text[]			G_RoundPoints;
+		
+		//Password
+		declare Boolean			G_IsAskingPassword;
+		
+		//Server isOnline request
+		declare Integer 		 G_IsServerOnlineRequestLastTime;
+		
+		{{{InputInfos::InjectInGlobals()}}}
+		{{{Loading::InjectInGlobals()}}}
+		
+		{{{InputInfos::InjectInFunctions()}}}
+		{{{Loading::InjectInFunctions()}}}
+		
+		/////////////////
+		// JSON
+		/////////////////
+		{{{LiveHelpers::InjectConverters()}}}
+		{{{LiveHelpers::InjectCountryToCodeConverter()}}}
+		{{{LiveHelpers::InjectJson()}}}
+		
+		Text TracksIdsToJson(Integer[] _TracksIds)
+		{
+			//ou Text[]_TracksIds, auquel cas on peut se passer du TL::ToText
+			declare Text Json;
+			Json = "{ \"maps\": [";
+			for (I, 0, _TracksIds.count-1)
+			{
+				if (I > 0)
+					Json ^= ",";
+				Json ^= TL::ToText(_TracksIds[I]);
+			}
+			Json = "] }";
+			return Json;
+		}
+		
+		Text RoomDataToJson ()
+		{   //pas fermé pour pouvoir rajouter le token de création de room éventuel (cf handler)
+			declare Text[Text] 		RequestedRoomData for Page;
+			declare Text[Text][]	RequestedRoomMaps for Page;
+			declare Text[Text] 		LastSavedRoomData for Page;
+			declare Text[Text][]	LastSavedRoomMaps for Page;
+		
+			declare Boolean IsNewRoom for Page;
+			
+			declare Text Json;
+			
+			Json = "{";
+			
+			declare Boolean HaveMapsChanged = (LastSavedRoomMaps.count != RequestedRoomMaps.count);
+			declare Boolean NeedComma = False;
+			
+			if (!HaveMapsChanged)
+			{
+				for (I, 0, LastSavedRoomMaps.count - 1)
+				{
+					if (LastSavedRoomMaps[I]["uid"] != RequestedRoomMaps[I]["uid"])
+					{
+						HaveMapsChanged = True;
+						break;
+					}
+				}
+			}
+			if (HaveMapsChanged)
+			{
+				NeedComma = True;
+				Json ^= "\"maps\": [";
+				if (RequestedRoomMaps.count != 0)
+				{
+					for (I, 0, RequestedRoomMaps.count - 1)
+					{
+						if (I > 0)
+							Json ^= ",";
+						Json ^= "\""^RequestedRoomMaps[I]["uid"]^"\"";
+						//Json^=Json_DoElem("id", 			RequestedRoomMaps[I]["uid"]);
+					}
+				}
+				Json ^= "]";
+			}
+			
+			for (I, 0, G_Settings.count-1)
+			{
+				if (RequestedRoomData.existskey(G_SettingsFieldNames[I]) && TL::Length(RequestedRoomData[G_SettingsFieldNames[I]]) != 0 && (!LastSavedRoomData.existskey(G_SettingsFieldNames[I]) || LastSavedRoomData[G_SettingsFieldNames[I]] != RequestedRoomData[G_SettingsFieldNames[I]]))
+				{
+					if (!NeedComma)
+						NeedComma = True;
+					else
+						Json ^= ",";
+					switch (G_SettingsFieldNames[I])
+					{
+						case "player_max" 		: Json^=Json_DoElem("playerMax", 					RequestedRoomData[G_SettingsFieldNames[I]]); //on reçoit player_max, mais on envoie playerMax
+						case "mode" 			: Json^=Json_DoElemText(G_SettingsFieldNames[I], 	RequestedRoomData[G_SettingsFieldNames[I]]);
+						case "ladder_limit_min" : Json^=Json_DoElem("ladderLimitMin", 				RequestedRoomData[G_SettingsFieldNames[I]]); //idem
+						case "style"	  		: Json^=Json_DoElemText(G_SettingsFieldNames[I],	RequestedRoomData[G_SettingsFieldNames[I]]);
+						case "duration"	  		: Json^=Json_DoElem(G_SettingsFieldNames[I],		RequestedRoomData[G_SettingsFieldNames[I]]);
+					}						
+				}
+			}
+			
+			if (IsNewRoom)
+			{
+				if (RequestedRoomData.existskey("setting_laps") && RequestedRoomData["setting_laps"] != "" && RequestedRoomData.existskey("mode") && (RequestedRoomData["mode"] == "2" || RequestedRoomData["mode"] == "5"))
+				{
+					if (!NeedComma)
+						NeedComma = True;
+					else
+						Json ^= ",";
+					Json^=Json_DoElem("setting_laps", RequestedRoomData["setting_laps"]);
+				}
+				
+				if (RequestedRoomData.existskey("setting_points") && RequestedRoomData["setting_points"] != "" && RequestedRoomData.existskey("mode") && (RequestedRoomData["mode"] == "1" || RequestedRoomData["mode"] == "4"))
+				{
+					if (!NeedComma)
+						NeedComma = True;
+					else
+						Json ^= ",";
+					Json^=Json_DoElem("setting_points", RequestedRoomData["setting_points"]);
+				}
+				
+				if (RequestedRoomData.existskey("setting_time") && RequestedRoomData["setting_time"] != "" && RequestedRoomData.existskey("mode") && (RequestedRoomData["mode"] == "0" || RequestedRoomData["mode"] == "3"))
+				{
+					if (!NeedComma)
+						NeedComma = True;
+					else
+						Json ^= ",";
+					Json^=Json_DoElem("setting_time", RequestedRoomData["setting_time"]);
+				}
+				
+				if (!NeedComma)
+					NeedComma = True;
+				else
+					Json ^= ",";
+				declare Text[] SplitPath = TL::Split("|", LocalUser.ZonePath);
+				if (SplitPath.count >= 2)
+					Json ^= Json_DoElem("country", "\""^GetCountryCodeFromName(SplitPath[1])^"\"");
+				else
+					Json ^= Json_DoElem("country", "\"WOR\"");
+			}
+			
+			if (RequestedRoomData.existskey("is_private"))
+			{
+				if (RequestedRoomData["is_private"] == "true")
+				{
+					if (RequestedRoomData.existskey("password") && RequestedRoomData["password"] != "")
+					{
+						if (!NeedComma)
+							NeedComma = True;
+						else
+							Json ^= ",";
+						Json^=Json_DoElemText("password", RequestedRoomData["password"]);
+					}
+				} else {
+					if (LastSavedRoomData.existskey("is_private") && LastSavedRoomData["is_private"] == "true")
+					{
+						if (!NeedComma)
+							NeedComma = True;
+						else
+							Json ^= ",";
+						Json^=Json_DoElemText("password", RequestedRoomData["password"]);
+					}
+				}
+			}
+			return Json;
+		}
+				
+		/////////////////
+		// SELECTION
+		/////////////////
+		Void ResetTracksColors() {
+			declare CMlFrame Frame_Tracks <=> (Page.GetFirstChild("Frame_Tracks") as CMlFrame);
+			for (I, 0, C_DisplayedTrackFramesCount-1)
+			{
+				declare FrameIndex = (I + G_FirstDisplayedTrackFrameIndex) % C_TrackFramesCount;
+				declare CMlFrame 	Frame_Track <=> (Frame_Tracks.GetFirstChild("Frame_Track"^FrameIndex) as CMlFrame);
+				declare CMlQuad		Quad_Color	<=> (Frame_Track.GetFirstChild("Quad_Color") as CMlQuad);
+				Quad_Color.BgColor = <0.,226./255., 1.>;
+			}
+		}
+		
+		Void SetTracksColorForStyleOrDuration(Boolean _StyleOrElseDuration, Text _ValueToMatch) {
+			declare Text[Text][] RequestedRoomMaps for Page;
+			declare CMlFrame Frame_Tracks <=> (Page.GetFirstChild("Frame_Tracks") as CMlFrame);
+			
+			declare Boolean IsVarious;
+			if (_StyleOrElseDuration)
+				IsVarious = (_ValueToMatch == "Various");
+			else
+				IsVarious = (_ValueToMatch == "0");
+			
+			if (IsVarious)
+			{
+				for (I, 0, C_DisplayedTrackFramesCount-1)
+				{
+					if (I+G_FirstDisplayedTrackIndex >= RequestedRoomMaps.count)
+						break;
+					declare FrameIndex = (I + G_FirstDisplayedTrackFrameIndex) % C_TrackFramesCount;
+					declare CMlFrame 	Frame_Track <=> (Frame_Tracks.GetFirstChild("Frame_Track"^FrameIndex) as CMlFrame);
+					declare CMlQuad		Quad_Color	<=> (Frame_Track.GetFirstChild("Quad_Color") as CMlQuad);
+					Quad_Color.BgColor = <0., 9./15., 0.>;	
+				}
+			} else {
+			
+				declare Text FieldName;
+				if (_StyleOrElseDuration)
+					FieldName = "style";
+				else
+					FieldName = "duration";
+				
+				for (I, 0, C_DisplayedTrackFramesCount-1)
+				{
+					if (I+G_FirstDisplayedTrackIndex  >= RequestedRoomMaps.count)
+						break;
+					declare FrameIndex = (I + G_FirstDisplayedTrackFrameIndex) % C_TrackFramesCount;
+					declare CMlFrame 	Frame_Track <=> (Frame_Tracks.GetFirstChild("Frame_Track"^FrameIndex) as CMlFrame);
+					declare CMlQuad		Quad_Color	<=> (Frame_Track.GetFirstChild("Quad_Color") as CMlQuad);
+					
+					if (RequestedRoomMaps[I+G_FirstDisplayedTrackIndex][FieldName] == _ValueToMatch)
+						Quad_Color.BgColor = <0., 9./15., 0.>;	
+					else
+						Quad_Color.BgColor = <9./15., 0., 0.>;
+				}
+			}
+		}
+		
+		Void UpdateSelection()
+		{
+			declare CMlFrame Frame_SelectorTrack <=> (Page.GetFirstChild("Frame_Selector")          as CMlFrame);
+			if (G_IndexFocusY < {{{SelectArray_SettingsCount}}}) //on est sur un setting
+			{
+				declare CMlFrame NewFrame_Instance <=> (Page.GetFirstChild("Frame_Setting"^G_IndexFocusY) as CMlFrame);
+				declare CMlFrame  Frame_Selector    <=> (Page.GetFirstChild("Frame_SettingsSelector")     as CMlFrame);
+				declare CMlQuad Quad_SettingsSelector <=> (Page.GetFirstChild("Quad_SettingsSelector") as CMlQuad);
+				Quad_SettingsSelector.BgColor = {{{MenuColor::GetMenuColor(0)}}};
+			
+				Frame_Selector.Show();
+				Frame_Selector.RelativePosition.X      = 0.;
+				Frame_Selector.RelativePosition.Y      = NewFrame_Instance.RelativePosition.Y + 0.2;
+				Frame_SelectorTrack.Hide();
+				
+				declare Text[Text] RequestedRoomData for Page;
+				
+				declare CMlFrame Frame_Settings_Buttons <=> (Frame_Selector.GetFirstChild("Frame_Settings_Buttons") as CMlFrame);
+				declare Boolean IsNewRoom for Page;
+				if (G_IndexFocusY >= G_SettingsFieldNames.count || (G_IndexFocusY == G_SettingsFieldNames.keyof("mode") || G_IndexFocusY == G_SettingsFieldNames.keyof("ladder_limit_min") || G_IndexFocusY == G_SettingsFieldNames.keyof("player_max")) && !IsNewRoom)
+				{
+					Frame_Settings_Buttons.Hide();
+				} else {
+					Frame_Settings_Buttons.Show();
+				}
+				
+				if (G_IndexFocusY == G_SettingsFieldNames.keyof("style"))
+					SetTracksColorForStyleOrDuration(True, RequestedRoomData["style"]);
+				else if (G_IndexFocusY == G_SettingsFieldNames.keyof("duration"))
+					SetTracksColorForStyleOrDuration(False, RequestedRoomData["duration"]);
+				else
+					ResetTracksColors();
+			} else if (G_IndexFocusY == {{{SelectArray_SettingsCount}}}) { //SAVE AND QUIT
+				declare CMlFrame NewFrame_Instance <=> (Page.GetFirstChild("Frame_SaveAndQuit") as CMlFrame);
+				declare CMlFrame Frame_Selector    <=> (Page.GetFirstChild("Frame_SettingsSelector")     as CMlFrame);
+				declare CMlQuad Quad_SettingsSelector <=> (Page.GetFirstChild("Quad_SettingsSelector") as CMlQuad);
+				Quad_SettingsSelector.BgColor = {{{Colors::GetColor("Green")}}};
+			
+				Frame_Selector.Show();
+				Frame_Selector.RelativePosition.X      = 0.;
+				Frame_Selector.RelativePosition.Y      = NewFrame_Instance.RelativePosition.Y + 0.2;
+				Frame_SelectorTrack.Hide();
+				
+				declare CMlFrame Frame_Settings_Buttons <=> (Frame_Selector.GetFirstChild("Frame_Settings_Buttons") as CMlFrame);
+				Frame_Settings_Buttons.Hide();
+				ResetTracksColors();
+			} else if (G_IndexFocusY == {{{SelectArray_SettingsCount+1}}}) { //on est sur le bouton EDIT TRACKLIST
+				declare CMlFrame NewFrame_Instance <=> (Page.GetFirstChild("Frame_EditTracklist") as CMlFrame);
+				declare CMlFrame Frame_Selector    <=> (Page.GetFirstChild("Frame_SettingsSelector")     as CMlFrame);
+				declare CMlQuad Quad_SettingsSelector <=> (Page.GetFirstChild("Quad_SettingsSelector") as CMlQuad);
+				Quad_SettingsSelector.BgColor = {{{MenuColor::GetMenuColor(0)}}};
+			
+				Frame_Selector.Show();
+				Frame_Selector.RelativePosition.X      = 0.;
+				Frame_Selector.RelativePosition.Y      = NewFrame_Instance.RelativePosition.Y + 0.2;
+				Frame_SelectorTrack.Hide();
+				
+				declare CMlFrame Frame_Settings_Buttons <=> (Frame_Selector.GetFirstChild("Frame_Settings_Buttons") as CMlFrame);
+				Frame_Settings_Buttons.Hide();
+				ResetTracksColors();
+			} else if (G_IndexFocusY == {{{SelectArray_SettingsCount + 2}}}) {//on est sur la tracklist
+				declare CMlQuad  Frame_Selector      <=> (Page.GetFirstChild("Frame_SettingsSelector")  as CMlQuad);
+				Frame_Selector.Hide();
+				
+				Frame_SelectorTrack.RelativePosition.X = C_LeftTrackFramePosX + (G_IndexFocusX+0.5)*C_TrackFrameWidth;
+				Frame_SelectorTrack.RelativePosition.Y = 0.;
+				Frame_SelectorTrack.Show();
+				ResetTracksColors();
+			}
+		}
+		
+		/////////////////
+		// TRACKLIST
+		/////////////////
+		Void TrackList_SetFromResult()
+		{
+			declare CMlFrame Frame_TrackListLoading <=> (Page.GetFirstChild("Frame_TrackListLoading") as CMlFrame);
+			declare CMlFrame Frame_TrackList		<=> (Page.GetFirstChild("Frame_TrackList") as CMlFrame);
+			Frame_TrackListLoading.Hide();
+			Frame_TrackList.Show();
+		
+			declare Text[Text][] RequestedRoomMaps for Page;
+			declare CMlFrame Frame_Tracks <=> (Page.GetFirstChild("Frame_Tracks") as CMlFrame);
+			
+			if (RequestedRoomMaps.count != 0)
+				{
+				if (G_FirstDisplayedTrackIndex + C_DisplayedTrackFramesCount >= RequestedRoomMaps.count)
+				{
+					if (RequestedRoomMaps.count < C_DisplayedTrackFramesCount)
+					{
+						G_FirstDisplayedTrackIndex = 0;
+						G_IndexFocusX = ML::Min(G_IndexFocusX, RequestedRoomMaps.count-1);
+						UpdateSelection();
+					} else {
+						G_FirstDisplayedTrackIndex = RequestedRoomMaps.count  - C_DisplayedTrackFramesCount;
+					}
+				}
+			} else {
+				//on affiche une frame ("empty tracklist") et on cache les autres
+				G_IndexFocusX = 0;
+				declare CMlFrame Frame_EmptyTrackList <=> (Frame_Tracks.GetFirstChild("Frame_Track"^G_FirstDisplayedTrackFrameIndex) as CMlFrame);
+				
+				// HACK EG : non, ça sert à rien ;)
+				// Frame_EmptyTrackList.Show();
+				Frame_EmptyTrackList.Hide();
+				
+				
+				declare CMlQuad Quad_Thumbnail <=> (Frame_EmptyTrackList.GetFirstChild("Track_Thumbnail") as CMlQuad);
+				Quad_Thumbnail.ImageUrl = "{{{IMGEmptyTracklist}}}"; //set image new track ?
+				declare CMlLabel Label_TrackName <=> (Frame_EmptyTrackList.GetFirstChild("Track_Name") as CMlLabel);
+				Label_TrackName.Value = _("Add a new track");
+				
+				for (I, 1, C_DisplayedTrackFramesCount)
+				{
+					declare FrameIndex = (I + G_FirstDisplayedTrackFrameIndex) % C_TrackFramesCount;
+					declare CMlFrame Frame_Track <=> (Frame_Tracks.GetFirstChild("Frame_Track"^FrameIndex) as CMlFrame);
+					Frame_Track.Hide();
+				}
+				return;
+			}
+				
+			// -> On remplit les N frames visibles
+			for (I, 0, C_DisplayedTrackFramesCount - 1)
+			{
+				declare FrameIndex = (I + G_FirstDisplayedTrackFrameIndex) % C_TrackFramesCount;
+				declare CMlFrame Frame_Track <=> (Frame_Tracks.GetFirstChild("Frame_Track"^FrameIndex) as CMlFrame);
+				if (I+G_FirstDisplayedTrackIndex >= RequestedRoomMaps.count)
+				{					
+					Frame_Track.Hide();
+				} else {
+					declare CMlQuad Quad_Thumbnail <=> (Frame_Track.GetFirstChild("Track_Thumbnail") as CMlQuad);
+					if (RequestedRoomMaps[I+G_FirstDisplayedTrackIndex].existskey("thumbnail_url"))
+					{
+						Quad_Thumbnail.ImageUrl = RequestedRoomMaps[I+G_FirstDisplayedTrackIndex]["thumbnail_url"];
+						Quad_Thumbnail.Image = Null;
+					} else if (RequestedRoomMaps[I+G_FirstDisplayedTrackIndex].existskey("mapinfo")) {
+						declare MapInfoIndex = TL::ToInteger(RequestedRoomMaps[I+G_FirstDisplayedTrackIndex]["mapinfo"]);
+						if (MapInfoIndex < DataMgr.Maps.count && DataMgr.Maps[MapInfoIndex].MapUid == RequestedRoomMaps[I+G_FirstDisplayedTrackIndex]["uid"])
+						{
+							wait(DataMgr.Ready);
+							DataMgr.LoadMapThumbnail(MapInfoIndex);
+							wait(DataMgr.Ready);
+							Quad_Thumbnail.Image = DataMgr.MapThumbnail;
+							Quad_Thumbnail.ImageUrl = "";
+						}	
+					}
+					declare CMlLabel Label_TrackName <=> (Frame_Track.GetFirstChild("Track_Name") as CMlLabel);
+					Label_TrackName.Value = RequestedRoomMaps[I+G_FirstDisplayedTrackIndex]["name"];
+					Frame_Track.Show();
+				}
+			}
+		}
+		
+		Void TrackList_OnRight()
+		{
+			declare Text[Text][] RequestedRoomMaps for Page;	
+			declare CMlFrame Frame_Tracks <=> (Page.GetFirstChild("Frame_Tracks") as CMlFrame);
+		
+			// -> Check si il faut scroll
+			if (RequestedRoomMaps.count == 0)
+				return;
+			
+			if (G_FirstDisplayedTrackIndex + G_IndexFocusX == RequestedRoomMaps.count - 1)
+				return; //la dernière map de la tracklist est sélectionnée, on ne peut pas aller plus loin
+			if (G_IndexFocusX < C_DisplayedTrackFramesCount - 2) //lastindex - 1
+			{
+				G_IndexFocusX += 1;
+				UpdateSelection();
+			} else {
+				//si on peut, il faut scroll
+				if(G_FirstDisplayedTrackIndex + C_DisplayedTrackFramesCount - 1 < RequestedRoomMaps.count - 1)
+				{
+					//remplir la frameinstance cachée à droite
+					declare CMlFrame Frame_TrackRight <=> (Frame_Tracks.GetFirstChild("Frame_Track"^((G_FirstDisplayedTrackFrameIndex+C_DisplayedTrackFramesCount) % C_TrackFramesCount)) as CMlFrame);
+					declare CMlQuad Quad_Thumbnail <=> (Frame_TrackRight.GetFirstChild("Track_Thumbnail") as CMlQuad);
+					if (RequestedRoomMaps[C_DisplayedTrackFramesCount+G_FirstDisplayedTrackIndex].existskey("thumbnail_url"))
+					{
+						Quad_Thumbnail.ImageUrl = RequestedRoomMaps[G_FirstDisplayedTrackIndex + C_DisplayedTrackFramesCount]["thumbnail_url"];
+						Quad_Thumbnail.Image = Null;
+					} else if (RequestedRoomMaps[G_FirstDisplayedTrackIndex + C_DisplayedTrackFramesCount].existskey("mapinfo")) {
+						declare MapInfoIndex = TL::ToInteger(RequestedRoomMaps[G_FirstDisplayedTrackIndex + C_DisplayedTrackFramesCount]["mapinfo"]);
+						if (MapInfoIndex < DataMgr.Maps.count && DataMgr.Maps[MapInfoIndex].MapUid == RequestedRoomMaps[C_DisplayedTrackFramesCount+G_FirstDisplayedTrackIndex]["uid"])
+						{
+							wait(DataMgr.Ready);
+							DataMgr.LoadMapThumbnail(MapInfoIndex);
+							wait(DataMgr.Ready);
+							Quad_Thumbnail.Image = DataMgr.MapThumbnail;
+							Quad_Thumbnail.ImageUrl = "";
+						}	
+					}
+					declare CMlLabel Label_TrackName <=> (Frame_TrackRight.GetFirstChild("Track_Name") as CMlLabel);
+					Label_TrackName.Value = RequestedRoomMaps[G_FirstDisplayedTrackIndex + C_DisplayedTrackFramesCount]["name"];
+					Frame_TrackRight.Show();
+					//bouger la frameinstance cachée à gauche à droite
+					declare CMlFrame Frame_TrackLeft <=> (Frame_Tracks.GetFirstChild("Frame_Track"^((G_FirstDisplayedTrackFrameIndex+C_TrackFramesCount-1) % C_TrackFramesCount)) as CMlFrame);
+					Frame_TrackLeft.RelativePosition.X = C_LeftTrackFramePosX + C_TrackFramesCount * C_TrackFrameWidth;
+					//scroll le tout
+					G_FirstDisplayedTrackIndex += 1;
+					G_FirstDisplayedTrackFrameIndex = (G_FirstDisplayedTrackFrameIndex+1) % C_TrackFramesCount;
+					
+					for (I, 0, C_TrackFramesCount - 1)
+					{
+						declare CMlFrame Frame_Track <=> (Frame_Tracks.GetFirstChild("Frame_Track"^((G_FirstDisplayedTrackFrameIndex+C_TrackFramesCount-1+I) % C_TrackFramesCount)) as CMlFrame);
+						declare Real NewFramePosX = C_LeftTrackFramePosX + I*C_TrackFrameWidth;
+						declare Vec3 NewFramePos = <NewFramePosX, Frame_Track.RelativePosition.Y, Frame_Track.RelativePosition.Z>;
+						LibManialink_SetTargetPosition(Frame_Track, NewFramePos);
+						LibManialink_PresetAnim(Frame_Track, 200, "EaseOutQuint"); //EaseOutQuint
+					}
+					UpdateSelection();
+				} else {
+					G_IndexFocusX = G_IndexFocusX + 1;
+					UpdateSelection();
+				}
+			}
+		}
+		
+		Void TrackList_OnLeft()
+		{
+			declare Text[Text][] RequestedRoomMaps for Page;	
+		
+			declare CMlFrame Frame_Tracks <=> (Page.GetFirstChild("Frame_Tracks") as CMlFrame);
+		
+			if (RequestedRoomMaps.count == 0)
+				return;
+		
+			// -> Check si il faut scroll
+			if (G_FirstDisplayedTrackIndex + G_IndexFocusX == 0)
+				return; //la première map de la tracklist est sélectionnée, on ne peut pas aller plus loin
+			if (G_IndexFocusX > 1)
+			{
+				G_IndexFocusX -= 1;
+				UpdateSelection();
+			} else {
+				//si on peut, il faut scroll
+				if(G_FirstDisplayedTrackIndex > 0)
+				{
+					//remplir la frameinstance cachée à gauche
+					declare CMlFrame Frame_TrackLeft <=> (Frame_Tracks.GetFirstChild("Frame_Track"^((G_FirstDisplayedTrackFrameIndex+C_TrackFramesCount-1) % C_TrackFramesCount)) as CMlFrame);		
+					declare CMlQuad Quad_Thumbnail <=> (Frame_TrackLeft.GetFirstChild("Track_Thumbnail") as CMlQuad);
+					if (RequestedRoomMaps[G_FirstDisplayedTrackIndex-1].existskey("thumbnail_url"))
+					{
+						Quad_Thumbnail.ImageUrl = RequestedRoomMaps[G_FirstDisplayedTrackIndex-1]["thumbnail_url"];
+						Quad_Thumbnail.Image = Null;
+					} else if (RequestedRoomMaps[G_FirstDisplayedTrackIndex-1].existskey("mapinfo")) {
+						declare MapInfoIndex = TL::ToInteger(RequestedRoomMaps[G_FirstDisplayedTrackIndex-1]["mapinfo"]);
+						if (MapInfoIndex < DataMgr.Maps.count && DataMgr.Maps[MapInfoIndex].MapUid == RequestedRoomMaps[G_FirstDisplayedTrackIndex-1]["uid"])
+						{
+							wait(DataMgr.Ready);
+							DataMgr.LoadMapThumbnail(MapInfoIndex);
+							wait(DataMgr.Ready);
+							Quad_Thumbnail.Image = DataMgr.MapThumbnail;
+							Quad_Thumbnail.ImageUrl = "";
+						}	
+					}
+					declare CMlLabel Label_TrackName <=> (Frame_TrackLeft.GetFirstChild("Track_Name") as CMlLabel);
+					Label_TrackName.Value = RequestedRoomMaps[G_FirstDisplayedTrackIndex - 1]["name"];
+					Frame_TrackLeft.Show();
+					//bouger la frameinstance cachée à droite à gauche
+					declare CMlFrame Frame_TrackRight <=> (Frame_Tracks.GetFirstChild("Frame_Track"^((G_FirstDisplayedTrackFrameIndex+C_DisplayedTrackFramesCount) % C_TrackFramesCount)) as CMlFrame);
+					Frame_TrackRight.RelativePosition.X = C_LeftTrackFramePosX - C_TrackFrameWidth;
+					//scroll le tout
+					G_FirstDisplayedTrackIndex -= 1;
+					G_FirstDisplayedTrackFrameIndex = (G_FirstDisplayedTrackFrameIndex + C_TrackFramesCount - 1) % C_TrackFramesCount;
+					
+					for (I, 0, C_TrackFramesCount - 1)
+					{
+						declare CMlFrame Frame_Track <=> (Frame_Tracks.GetFirstChild("Frame_Track"^((G_FirstDisplayedTrackFrameIndex+C_TrackFramesCount-1+I) % C_TrackFramesCount)) as CMlFrame);
+						declare Real NewFramePosX = C_LeftTrackFramePosX + I*C_TrackFrameWidth;
+						declare Vec3 NewFramePos = <NewFramePosX, Frame_Track.RelativePosition.Y, Frame_Track.RelativePosition.Z>;
+						LibManialink_SetTargetPosition(Frame_Track, NewFramePos);
+						LibManialink_PresetAnim(Frame_Track, 200, "EaseOutQuint"); //EaseOutQuint
+					}
+					UpdateSelection();
+				} else {
+					G_IndexFocusX = G_IndexFocusX - 1;
+					UpdateSelection();
+				}
+			}
+		}
+		
+		//////////////////////
+		// ISONLINE HANDLING
+		//////////////////////
+		Boolean IsServerInATransitionalState()
+		{
+			declare Text[Text] 		RequestedRoomData for Page;
+			if (RequestedRoomData.count == 0 || !RequestedRoomData.existskey("is_online") || !RequestedRoomData.existskey("required_state") || !RequestedRoomData.existskey("status"))
+				return False;
+				
+			return (	RequestedRoomData["required_state"] == GetRequiredState(True) && (RequestedRoomData["status"] == GetStatus("Stop") || RequestedRoomData["status"] == ""))
+				|| RequestedRoomData["required_state"] == GetRequiredState(False) && RequestedRoomData["status"] == GetStatus("Running");
+		}
+		
+		Void UpdateServerOnlineStatus()
+		{
+			declare Text[Text] 		RequestedRoomData for Page;
+			
+			declare CMlQuad  Quad_Status_Bg <=> (Page.GetFirstChild("Quad_Status_Bg") as CMlQuad);
+			declare CMlLabel Label_Status	<=> (Page.GetFirstChild("Label_Status") as CMlLabel);
+			
+			if (!RequestedRoomData.existskey("status")) {	
+				Quad_Status_Bg.BgColor = <1., 0., 0.>;
+				Label_Status.Value = _("OFFLINE");
+			} else if (RequestedRoomData["status"] == "" || RequestedRoomData["status"] == "5") {
+				if (RequestedRoomData.existskey("required_state") && RequestedRoomData["required_state"] == GetRequiredState(True))
+				{
+					Quad_Status_Bg.BgColor = <0.67, 0.67, 0.>;
+					Label_Status.Value = _("STARTING");
+				} else {
+					Quad_Status_Bg.BgColor = <1., 0., 0.>;
+					Label_Status.Value = _("OFFLINE");
+				}
+			} else if (RequestedRoomData["status"] == GetStatus("Running")) {
+				if(RequestedRoomData["required_state"] == GetRequiredState(False)) {
+					Quad_Status_Bg.BgColor = <0.67, 0.67, 0.>;
+					Label_Status.Value = _("STOPPING");
+				} else {
+					Quad_Status_Bg.BgColor = <0., 1., 0.>;
+					Label_Status.Value = _("ONLINE");
+				}
+			} else if (RequestedRoomData["status"] == GetStatus("Error")) {
+				Quad_Status_Bg.BgColor = <1., 0., 0.>;
+				Label_Status.Value = _("ERROR");
+			} else if (RequestedRoomData["status"] == GetStatus("Stop")) {
+				Quad_Status_Bg.BgColor = <1., 0., 0.>;
+				Label_Status.Value = _("OFFLINE");
+			}
+		}
+		
+		/////////////////
+		// ROOM NAME
+		/////////////////
+		Void UpdateLabelRoomName()
+		{	
+			declare Text[Text] RequestedRoomData for Page;
+			
+			declare Text Author = G_MenuUserDisplayName;
+			declare Text Style;
+			declare Text Duration;
+			
+			if (RequestedRoomData.existskey("duration"))
+			{
+				declare Integer DurationId = TL::ToInteger(RequestedRoomData["duration"]);
+				if (DurationId != 0)
+					Duration = " - "^TL::GetTranslatedText(G_Settings[3][DurationId]);
+			}
+			if (RequestedRoomData.existskey("style"))
+			{
+				Style = " - "^TL::GetTranslatedText(RequestedRoomData["style"]);
+			}
+			declare CMlLabel LabelRoomName <=> (Page.GetFirstChild("Label_RoomName") as CMlLabel);
+			
+			LabelRoomName.Value = TL::Compose("%1%2%3", Author, Duration, Style);
+		}
+		
+		/////////////////
+		// SETTINGS
+		/////////////////
+		Void Settings_SetFromResult()
+		{
+			declare Text[Text] RequestedRoomData for Page;
+			
+			declare CMlFrame Frame_Setting;
+			declare CMlLabel Label_Value;
+			declare CMlQuad  Quad_Setting_1;
+			declare CMlQuad  Quad_Setting_2;
+			
+			UpdateLabelRoomName();
+			
+			for (I, 0, G_Settings.count-1)
+			{
+				Frame_Setting <=> (Page.GetFirstChild("Frame_Setting"^I) as CMlFrame);
+				Label_Value   <=> (Frame_Setting.GetFirstChild("Setting_Value") as CMlLabel);
+				Quad_Setting_1  <=> (Frame_Setting.GetFirstChild("Setting_Quad_1") as CMlQuad);
+				Quad_Setting_2  <=> (Frame_Setting.GetFirstChild("Setting_Quad_2") as CMlQuad);
+
+				if(I == 4)
+				{
+					//Quad_Setting.ChangeImageUrl(G_DefaultSettings[I]);
+					Quad_Setting_1.Show();
+					Quad_Setting_2.Show();
+					Label_Value.Hide();
+				}
+				else
+				{
+					Quad_Setting_1.Hide();
+					Quad_Setting_2.Hide();
+					Label_Value.Value = G_DefaultSettings[I];
+					Label_Value.Show();
+				}
+
+				if (RequestedRoomData.existskey(G_SettingsFieldNames[I]) && TL::Length(RequestedRoomData[G_SettingsFieldNames[I]]) != 0)
+				{
+					switch (G_SettingsFieldNames[I])
+					{
+						case "mode" 		: { 
+							declare Index = TL::ToInteger(RequestedRoomData[G_SettingsFieldNames[I]]); 
+							if (Index == -1) 
+								Label_Value.Value = ""; 
+							else {
+								Label_Value.Value = G_Settings[I][Index];
+								switch(Index % 3)
+								{
+									case 0 : Label_Value.Value ^= " ("^TL::ToInteger(RequestedRoomData["setting_time"]) / 60^" "^TL::GetTranslatedText(_("|minutes|mn"))^")";
+									case 1 : Label_Value.Value ^= " ("^RequestedRoomData["setting_points"]^")";
+									case 2 : Label_Value.Value ^= " ("^RequestedRoomData["setting_laps"]^")";
+								}
+							}
+						}						
+						case "ladder_limit_min" 	: {	
+															Quad_Setting_1.ChangeImageUrl("{{{C_ImgBase}}}Echelons/RNKG_0"^TL::ToInteger(RequestedRoomData[G_SettingsFieldNames[I]]) / 10000^"b.png"); 
+															Quad_Setting_2.ChangeImageUrl("{{{C_ImgBase}}}Echelons/Icones/RNKG_0"^TL::ToInteger(RequestedRoomData[G_SettingsFieldNames[I]]) / 10000^"a.png"); 
+													}
+						case "player_max"			: Label_Value.Value = RequestedRoomData[G_SettingsFieldNames[I]];
+						case "style"	  	        : Label_Value.Value = TL::GetTranslatedText(RequestedRoomData[G_SettingsFieldNames[I]]);
+						case "duration"	  	        : Label_Value.Value = G_Settings[I][TL::ToInteger(RequestedRoomData[G_SettingsFieldNames[I]])];
+					}						
+				}
+			}
+			
+			//PASSWORD
+			Frame_Setting <=> (Page.GetFirstChild("Frame_Setting"^G_Settings.count) as CMlFrame);
+			
+			declare CMlLabel Label_Name    <=> (Frame_Setting.GetFirstChild("Setting_Name")  as CMlLabel);
+			Label_Value   <=> (Frame_Setting.GetFirstChild("Setting_Value") as CMlLabel);
+			Quad_Setting_1  <=> (Frame_Setting.GetFirstChild("Setting_Quad_1") as CMlQuad);
+			Quad_Setting_2  <=> (Frame_Setting.GetFirstChild("Setting_Quad_1") as CMlQuad);
+			Label_Value.Show();
+			
+			declare Boolean IsNewRoom for Page;
+			if (IsNewRoom) {
+				Label_Name.Opacity = 1.;
+				Label_Value.Opacity = 1.;
+			} else {
+				Label_Name.Opacity = 0.4;
+				Label_Value.Opacity = 0.4;
+			}
+			
+			Quad_Setting_1.Hide();
+			Quad_Setting_2.Hide();
+			if (RequestedRoomData.existskey("is_private") && RequestedRoomData["is_private"] == "true")
+				Label_Value.Value = _("Yes");
+			else
+				Label_Value.Value = _("No");
+			declare CMlEntry entry_password <=> (Page.GetFirstChild("entry_password") as CMlEntry);
+			entry_password.Value = "";
+			
+			UpdateServerOnlineStatus();
+		}
+		
+		Void Settings_SetDefaultValues()
+		{
+			declare Text[Text] RequestedRoomData for Page;
+			declare CMlFrame Frame_Setting;
+			declare CMlLabel Label_Value;
+			declare CMlQuad  Quad_Setting_1;
+			declare CMlQuad  Quad_Setting_2;
+
+			UpdateLabelRoomName();
+			
+			RequestedRoomData["setting_laps"] = "3";
+			RequestedRoomData["setting_time"] = "300";
+			RequestedRoomData["setting_points"] = "50";
+			
+			for (I, 0, G_Settings.count-1)
+			{
+				Frame_Setting <=> (Page.GetFirstChild("Frame_Setting"^I) as CMlFrame); //player_max
+				Label_Value   <=> (Frame_Setting.GetFirstChild("Setting_Value") as CMlLabel);
+				Quad_Setting_1  <=> (Frame_Setting.GetFirstChild("Setting_Quad_1") as CMlQuad);
+				Quad_Setting_2  <=> (Frame_Setting.GetFirstChild("Setting_Quad_2") as CMlQuad);
+				
+				RequestedRoomData[G_SettingsFieldNames[I]] = G_DefaultSettings[I];
+				switch (G_SettingsFieldNames[I])
+				{
+					case "player_max" 	        : Label_Value.Value = RequestedRoomData[G_SettingsFieldNames[I]];
+					case "mode" 		        : {
+						declare Integer ModeIndex = TL::ToInteger(RequestedRoomData[G_SettingsFieldNames[I]]);
+						Label_Value.Value = G_Settings[I][ModeIndex];
+						switch (ModeIndex % 3) 
+						{	
+							case 0 : Label_Value.Value ^= " ("^TL::ToInteger(RequestedRoomData["setting_time"]) / 60^" "^TL::GetTranslatedText(_("|minutes|mn"))^")";
+							case 1 : Label_Value.Value ^= " ("^RequestedRoomData["setting_points"]^")";
+							case 2 : Label_Value.Value ^= " ("^RequestedRoomData["setting_laps"]^")";
+						}	
+					}
+					case "ladder_limit_min" 	: 
+					{
+						Quad_Setting_1.ChangeImageUrl("{{{C_ImgBase}}}Echelons/RNKG_0"^TL::ToInteger(RequestedRoomData[G_SettingsFieldNames[I]]) / 10000^"b.png"); 
+						Quad_Setting_2.ChangeImageUrl("{{{C_ImgBase}}}Echelons/Icones/RNKG_0"^TL::ToInteger(RequestedRoomData[G_SettingsFieldNames[I]]) / 10000^"a.png");
+						Quad_Setting_1.Show();
+						Quad_Setting_2.Show();
+					}
+					case "style"	  	        : Label_Value.Value = TL::GetTranslatedText(RequestedRoomData[G_SettingsFieldNames[I]]);
+					case "duration"	  	        : Label_Value.Value = G_Settings[I][TL::ToInteger(RequestedRoomData[G_SettingsFieldNames[I]])];
+				}
+			}
+			
+			
+			
+			declare CMlEntry entry_password <=> (Page.GetFirstChild("entry_password") as CMlEntry);
+			entry_password.Value = "";
+			Frame_Setting <=> (Page.GetFirstChild("Frame_Setting"^G_Settings.count) as CMlFrame);
+			declare CMlLabel Label_Name    <=> (Frame_Setting.GetFirstChild("Setting_Name")  as CMlLabel);
+			Label_Value   <=> (Frame_Setting.GetFirstChild("Setting_Value") as CMlLabel);
+			Quad_Setting_1  <=> (Frame_Setting.GetFirstChild("Setting_Quad_1") as CMlQuad);
+			Quad_Setting_2  <=> (Frame_Setting.GetFirstChild("Setting_Quad_2") as CMlQuad);
+			declare Boolean IsNewRoom for Page;
+			if (IsNewRoom) {
+				Label_Name.Opacity = 1.;
+				Label_Value.Opacity = 1.;
+			} else {
+				Label_Name.Opacity = 0.4;
+				Label_Value.Opacity = 0.4;
+			}
+			Label_Value.Show();
+			Label_Value.Value = _("No");
+			
+			UpdateServerOnlineStatus();
+		}
+		
+		{{{LibUIButtons::Inject_SetInputInfoTextSelected()}}}
+		
+		Void ResetInputInfo(Text _Input) {
+			declare CMlFrame FrameInput <=> (Page.GetFirstChild("Frame_InputInfo_Main_"^_Input) as CMlFrame);
+			declare CMlLabel LabelInputInfo <=> (FrameInput.GetFirstChild("Label_Name") as CMlLabel);
+			SetInputInfoTextSelected(LabelInputInfo, False);
+		}
+		
+		Void ResetInputInfo() {
+			ResetInputInfo("Select");
+			ResetInputInfo("Cancel");
+			ResetInputInfo("Action1");
+			ResetInputInfo("Action2");
+		}
+		
+		Void UpdateInputsInfo() {	
+			declare Text[Text] RequestedRoomData for Page;
+			declare Boolean IsNewRoom for Page;
+			declare Text State;
+			if (G_IndexFocusY == {{{SelectArray_SettingsCount}}})
+				State = "SaveAndQuit";
+			else if (G_IndexFocusY == {{{SelectArray_SettingsCount+1}}})
+				State = "Tracklist";
+			else if (G_IndexFocusY == {{{SelectArray_SettingsCount+2}}})
+				State = "Track";
+			else if (G_IndexFocusY == G_Settings.count) {
+				if (IsNewRoom)
+				{
+					if (RequestedRoomData.existskey("is_private") && RequestedRoomData["is_private"] == "true")
+						State = "Password_Private";
+					else
+						State = "Password_Public";
+				} else {
+					State = "Setting";
+				}
+			} else if (G_IndexFocusY == 1) {
+
+				if (IsNewRoom)
+				{
+					switch (RequestedRoomData["mode"])
+					{
+						case "0" : State = "Time";
+						case "3" : State = "Time";
+						case "1" : State = "Points";
+						case "4" : State = "Points";
+						case "2" : State = "Laps";
+						case "5" : State = "Laps";
+					}
+				} else
+					State = "Setting";
+			} else {
+				State = "Setting";
+			}
+			
+			Main_UpdateInputInfos(State);
+			
+			declare CMlFrame FrameInputAction2 <=> (Page.GetFirstChild("Frame_InputInfo_Main_Action2") as CMlFrame);
+			if (IsNewRoom)
+				FrameInputAction2.Hide();
+			else
+				FrameInputAction2.Show();
+		}
+		
+		Void Settings_SetPrevValue()
+		{
+			declare Text[Text] RequestedRoomData for Page;
+			if (G_IndexFocusY >= G_SettingsFieldNames.count)
+				return;
+		
+			declare Boolean IsNewRoom for Page;
+			if ((G_IndexFocusY == G_SettingsFieldNames.keyof("mode") || G_IndexFocusY == G_SettingsFieldNames.keyof("ladder_limit_min") || G_IndexFocusY == G_SettingsFieldNames.keyof("player_max")) && !IsNewRoom)
+			{
+				declare Text Name;
+				if (G_IndexFocusY == G_SettingsFieldNames.keyof("mode"))
+					Name = _("|in you can't modify %1 :|the mode");
+				else if (G_IndexFocusY == G_SettingsFieldNames.keyof("ladder_limit_min"))
+					Name = _("|in you can't modify %1 :|the ladder minimum limit");
+				else if (G_IndexFocusY == G_SettingsFieldNames.keyof("player_max"))
+					Name = _("|in you can't modify %1 :|the player limit");
+				SendCustomEvent("PopUpCantModifyLive", [Name]);
+				return; //on ne peut pas modifier ladder_limit_min, mode & player_max en live
+			}
+			
+			declare CMlFrame Frame_Setting <=> (Page.GetFirstChild("Frame_Setting"^G_IndexFocusY) as CMlFrame);
+			declare CMlLabel Label_Value   <=> (Frame_Setting.GetFirstChild("Setting_Value") as CMlLabel);
+			declare CMlQuad  Quad_Setting_1  <=> (Frame_Setting.GetFirstChild("Setting_Quad_1") as CMlQuad);
+			declare CMlQuad  Quad_Setting_2  <=> (Frame_Setting.GetFirstChild("Setting_Quad_2") as CMlQuad);
+		
+			declare Text Value;
+			switch (G_SettingsFieldNames[G_IndexFocusY])
+			{
+				case "player_max" 		: Value = RequestedRoomData[G_SettingsFieldNames[G_IndexFocusY]];
+				case "mode" 			: Value = RequestedRoomData[G_SettingsFieldNames[G_IndexFocusY]];
+				case "ladder_limit_min" : Value = TL::ToText(TL::ToInteger(RequestedRoomData["ladder_limit_min"]) / 10000);
+				case "style"	  		: Value = RequestedRoomData[G_SettingsFieldNames[G_IndexFocusY]];
+				case "duration"	  		: Value = G_Settings[G_IndexFocusY][TL::ToInteger(RequestedRoomData[G_SettingsFieldNames[G_IndexFocusY]])];
+			}
+		
+			declare Integer Index;
+			if(G_SettingsFieldNames[G_IndexFocusY] == "ladder_limit_min" || G_SettingsFieldNames[G_IndexFocusY] == "mode")
+			{
+				Index = TL::ToInteger(Value);
+			}
+			else
+			{
+				Index = G_Settings[G_IndexFocusY].keyof(Value);
+			}
+			if (Index == 0)
+			{
+				Index = G_Settings[G_IndexFocusY].count-1;
+			} else if (Index == -1) {
+				Index = 0;
+			} else {
+				Index = Index-1;
+			}
+
+			if(G_SettingsFieldNames[G_IndexFocusY] == "ladder_limit_min")
+			{
+				Quad_Setting_1.ChangeImageUrl("{{{C_ImgBase}}}Echelons/RNKG_0"^Index^"b.png"); 
+				Quad_Setting_2.ChangeImageUrl("{{{C_ImgBase}}}Echelons/Icones/RNKG_0"^Index^"a.png");
+				Quad_Setting_1.Show();
+				Quad_Setting_2.Show();
+				Label_Value.Hide();
+			}
+			else
+			{
+				Quad_Setting_1.Hide();
+				Quad_Setting_2.Hide();
+				Label_Value.Show();
+				if(G_SettingsFieldNames[G_IndexFocusY] == "style")
+					Label_Value.Value = TL::GetTranslatedText(G_Settings[G_IndexFocusY][Index]);
+				else
+					Label_Value.Value = G_Settings[G_IndexFocusY][Index];
+				
+				if (G_SettingsFieldNames[G_IndexFocusY] == "mode")
+				{
+					switch (Index % 3)
+					{
+						case 0 : {
+							RequestedRoomData["setting_time"] = "300";
+							Label_Value.Value ^= " ("^TL::ToInteger(RequestedRoomData["setting_time"]) / 60^" "^TL::GetTranslatedText(_("|minutes|mn"))^")";
+						}
+						case 1 : {
+							RequestedRoomData["setting_points"] = "50";
+							Label_Value.Value ^= " ("^RequestedRoomData["setting_points"]^")";
+						}
+						case 2 : {
+							RequestedRoomData["setting_laps"] = "3";
+							Label_Value.Value ^= " ("^RequestedRoomData["setting_laps"]^")";
+						}
+					}
+				}
+			}
+
+			if (G_SettingsFieldNames[G_IndexFocusY] == "mode" || G_SettingsFieldNames[G_IndexFocusY] == "duration")
+			{
+				RequestedRoomData[G_SettingsFieldNames[G_IndexFocusY]] = TL::ToText(Index);
+				UpdateInputsInfo();
+			} else if (G_SettingsFieldNames[G_IndexFocusY] == "ladder_limit_min") {
+				RequestedRoomData["ladder_limit_min"] = TL::ToText(Index * 10000);
+				if (Index != 0)
+				{
+					if (!G_EchelonMessageAlreadyDisplayed)
+					{
+						if (Index >= 6 && !G_EchelonMessageHighLevelAlreadyDisplayed)
+						{
+							SendCustomEvent("PopUpEchelonRestrictionHighLevel", Text[]);
+							G_EchelonMessageHighLevelAlreadyDisplayed = True;
+						} else {
+							SendCustomEvent("PopUpEchelonRestriction", Text[]);
+						}
+						G_EchelonMessageAlreadyDisplayed = True;
+					} else if (Index >= 6 && !G_EchelonMessageHighLevelAlreadyDisplayed) {
+						SendCustomEvent("PopUpEchelonHighLevel", Text[]);
+						G_EchelonMessageHighLevelAlreadyDisplayed = True;
+					}
+				}
+			} else {
+				RequestedRoomData[G_SettingsFieldNames[G_IndexFocusY]] = G_Settings[G_IndexFocusY][Index];
+			}
+			
+			if (G_SettingsFieldNames[G_IndexFocusY] == "style")
+				SetTracksColorForStyleOrDuration(True, RequestedRoomData["style"]);
+			else if (G_SettingsFieldNames[G_IndexFocusY] == "duration")
+				SetTracksColorForStyleOrDuration(False, RequestedRoomData["duration"]);
+				
+			UpdateLabelRoomName();
+		}
+		
+		Void Settings_SetNextValue()
+		{
+			declare Text[Text] RequestedRoomData for Page;
+			if (G_IndexFocusY >= G_SettingsFieldNames.count)
+				return;
+		
+			declare Boolean IsNewRoom for Page;
+			if ((G_IndexFocusY == G_SettingsFieldNames.keyof("mode") || G_IndexFocusY == G_SettingsFieldNames.keyof("ladder_limit_min") || G_IndexFocusY == G_SettingsFieldNames.keyof("player_max")) && !IsNewRoom)
+			{
+				declare Text Name;
+				if (G_IndexFocusY == G_SettingsFieldNames.keyof("mode"))
+					Name = _("|in you can't modify %1 :|the mode");
+				else if (G_IndexFocusY == G_SettingsFieldNames.keyof("ladder_limit_min"))
+					Name = _("|in you can't modify %1 :|the ladder minimum limit");
+				else if (G_IndexFocusY == G_SettingsFieldNames.keyof("player_max"))
+					Name = _("|in you can't modify %1 :|the player limit");
+				SendCustomEvent("PopUpCantModifyLive", [Name]);
+				return; //on ne peut pas modifier ladder_limit_min, mode & player_max en live
+			}
+		
+			declare CMlFrame Frame_Setting <=> (Page.GetFirstChild("Frame_Setting"^G_IndexFocusY) as CMlFrame);
+			declare CMlLabel Label_Value   <=> (Frame_Setting.GetFirstChild("Setting_Value") as CMlLabel);
+			declare CMlQuad  Quad_Setting_1  <=> (Frame_Setting.GetFirstChild("Setting_Quad_1") as CMlQuad);
+			declare CMlQuad  Quad_Setting_2  <=> (Frame_Setting.GetFirstChild("Setting_Quad_2") as CMlQuad);
+		
+			declare Text Value;
+			switch (G_SettingsFieldNames[G_IndexFocusY])
+			{
+				case "player_max" 		: Value = RequestedRoomData[G_SettingsFieldNames[G_IndexFocusY]];
+				case "mode" 			: Value = RequestedRoomData[G_SettingsFieldNames[G_IndexFocusY]];
+				case "ladder_limit_min" : Value = TL::ToText(TL::ToInteger(RequestedRoomData["ladder_limit_min"]) / 10000);
+				case "style"	  		: Value = RequestedRoomData[G_SettingsFieldNames[G_IndexFocusY]];
+				case "duration"	  		: Value = G_Settings[G_IndexFocusY][TL::ToInteger(RequestedRoomData[G_SettingsFieldNames[G_IndexFocusY]])];
+			}
+
+			declare Integer Index;
+			log(G_Settings);
+			if(G_SettingsFieldNames[G_IndexFocusY] == "ladder_limit_min" || G_SettingsFieldNames[G_IndexFocusY] == "mode")
+			{
+				Index = TL::ToInteger(Value);
+			}
+			else
+			{
+				Index = G_Settings[G_IndexFocusY].keyof(Value);
+			}
+			
+			if(Index == G_Settings[G_IndexFocusY].count-1)
+			{
+				Index = 0;
+			} else {
+				Index = Index+1;
+			}
+			
+			if(G_SettingsFieldNames[G_IndexFocusY] == "ladder_limit_min")
+			{
+				Quad_Setting_1.ChangeImageUrl("{{{C_ImgBase}}}Echelons/RNKG_0"^Index^"b.png"); 
+				Quad_Setting_2.ChangeImageUrl("{{{C_ImgBase}}}Echelons/Icones/RNKG_0"^Index^"a.png");
+				Quad_Setting_1.Show();
+				Quad_Setting_2.Show();
+				Label_Value.Hide();
+				
+			}
+			else
+			{
+				Quad_Setting_1.Hide();
+				Quad_Setting_2.Hide();
+				Label_Value.Show();
+				if(G_SettingsFieldNames[G_IndexFocusY] == "style")
+					Label_Value.Value = TL::GetTranslatedText(G_Settings[G_IndexFocusY][Index]);
+				else
+					Label_Value.Value = G_Settings[G_IndexFocusY][Index];
+				
+				if (G_SettingsFieldNames[G_IndexFocusY] == "mode")
+				{
+					switch (Index % 3)
+					{
+						case 0 : {
+							RequestedRoomData["setting_time"] = "300";
+							Label_Value.Value ^= " ("^TL::ToInteger(RequestedRoomData["setting_time"]) / 60^" "^TL::GetTranslatedText(_("|minutes|mn"))^")";
+						}
+						case 1 : {
+							RequestedRoomData["setting_points"] = "50";
+							Label_Value.Value ^= " ("^RequestedRoomData["setting_points"]^")";
+						}
+						case 2 : {
+							RequestedRoomData["setting_laps"] = "3";
+							Label_Value.Value ^= " ("^RequestedRoomData["setting_laps"]^")";
+						}
+					}
+				}
+			}
+
+			if (G_SettingsFieldNames[G_IndexFocusY] == "mode" || G_SettingsFieldNames[G_IndexFocusY] == "duration")
+			{
+				RequestedRoomData[G_SettingsFieldNames[G_IndexFocusY]] = TL::ToText(Index);
+				UpdateInputsInfo();
+			} else if (G_SettingsFieldNames[G_IndexFocusY] == "ladder_limit_min") {
+				RequestedRoomData["ladder_limit_min"] = TL::ToText(Index * 10000);
+				if (Index != 0)
+				{
+					if (!G_EchelonMessageAlreadyDisplayed)
+					{
+						if (Index >= 6 && !G_EchelonMessageHighLevelAlreadyDisplayed)
+						{
+							SendCustomEvent("PopUpEchelonRestrictionHighLevel", Text[]);
+							G_EchelonMessageHighLevelAlreadyDisplayed = True;
+						} else {
+							SendCustomEvent("PopUpEchelonRestriction", Text[]);
+						}
+						G_EchelonMessageAlreadyDisplayed = True;
+					} else if (Index >= 6 && !G_EchelonMessageHighLevelAlreadyDisplayed) {
+						SendCustomEvent("PopUpEchelonHighLevel", Text[]);
+						G_EchelonMessageHighLevelAlreadyDisplayed = True;
+					}
+				}
+			} else {
+				RequestedRoomData[G_SettingsFieldNames[G_IndexFocusY]] = G_Settings[G_IndexFocusY][Index];
+			}
+			
+			if (G_SettingsFieldNames[G_IndexFocusY] == "style")
+				SetTracksColorForStyleOrDuration(True, RequestedRoomData["style"]);
+			else if (G_SettingsFieldNames[G_IndexFocusY] == "duration")
+				SetTracksColorForStyleOrDuration(False, RequestedRoomData["duration"]);
+			
+			UpdateLabelRoomName();
+		}
+		
+		/////////////////
+		// MODE SETTINGS
+		/////////////////
+		Void ModeSettings_Show() {
+			declare Text[Text] RequestedRoomData for Page;
+			declare CMlFrame Frame_ModeSetting 	<=> (Page.GetFirstChild("Frame_ModeSetting") as CMlFrame);
+			declare CMlLabel Label_Value   	<=> (Frame_ModeSetting.GetFirstChild("Label_ModeSettingValue") as CMlLabel);
+			declare CMlLabel Label_ModeSettingTitle <=> (Frame_ModeSetting.GetFirstChild("Label_ModeSettingTitle") as CMlLabel);
+			
+			switch (RequestedRoomData["mode"])
+			{
+				case "0": {
+					Label_ModeSettingTitle.Value = _("|15 Chars Max - Window Title|Time Limit (mn)");
+					Label_Value.Value = TL::ToText(TL::ToInteger(RequestedRoomData["setting_time"]) / 60);
+				}
+				case "1": {
+					Label_ModeSettingTitle.Value = _("|15 Chars Max - Window Title|Points Limit");
+					Label_Value.Value = RequestedRoomData["setting_points"];
+				}
+				case "2": {
+					Label_ModeSettingTitle.Value = _("|15 Chars Max - Window Title|Laps");
+					Label_Value.Value = RequestedRoomData["setting_laps"];
+				}
+				case "3": {
+					Label_ModeSettingTitle.Value = _("|15 Chars Max - Window Title|Time Limit (mn)");
+					Label_Value.Value = TL::ToText(TL::ToInteger(RequestedRoomData["setting_time"]) / 60);
+				}	
+				case "4": {
+					Label_ModeSettingTitle.Value = _("|15 Chars Max - Window Title|Points Limit");
+					Label_Value.Value = RequestedRoomData["setting_points"];
+				}
+				case "5": {
+					Label_ModeSettingTitle.Value = _("|15 Chars Max - Window Title|Laps");
+					Label_Value.Value = RequestedRoomData["setting_laps"];
+				}
+			}
+			Frame_ModeSetting.Show();
+			G_SettingModeSetting = True; 
+		}
+		
+		Void ModeSettings_ResetInputInfo(Text _Input) {
+			//on remet les boutons comme il faut car ils n'envoient pas forcément de mouseout !
+			declare CMlFrame FrameModeSettings <=> (Page.GetFirstChild("Frame_ModeSetting") as CMlFrame);
+			declare CMlFrame FrameInput <=> (FrameModeSettings.GetFirstChild("FrameInput"^_Input) as CMlFrame);
+			declare CMlLabel LabelInputInfo <=> (FrameInput.GetFirstChild("Label_Name") as CMlLabel);
+			SetInputInfoTextSelected(LabelInputInfo, False);
+		}
+		
+		Void ModeSettings_Hide() {
+			declare CMlFrame Frame_ModeSetting <=> (Page.GetFirstChild("Frame_ModeSetting") as CMlFrame);
+			Frame_ModeSetting.Hide();
+			ModeSettings_ResetInputInfo("Select");
+			ModeSettings_ResetInputInfo("Cancel");
+			G_SettingModeSetting = False;
+		}
+		
+		Void ModeSettings_Validate() {
+			declare CMlFrame Frame_ModeSetting 	<=> (Page.GetFirstChild("Frame_ModeSetting") as CMlFrame);
+			declare CMlLabel Label_Value   	<=> (Frame_ModeSetting.GetFirstChild("Label_ModeSettingValue") as CMlLabel);
+			
+			declare CMlFrame Frame_Setting <=> (Page.GetFirstChild("Frame_Setting1") as CMlFrame);
+			declare LabelSettingValue   <=> (Frame_Setting.GetFirstChild("Setting_Value") as CMlLabel);
+			
+			declare Text[Text] RequestedRoomData for Page;
+			switch (RequestedRoomData["mode"]) {
+				case "0" : {
+					RequestedRoomData["setting_time"] 	= TL::ToText(TL::ToInteger(Label_Value.Value) * 60);
+					LabelSettingValue.Value = G_Settings[1][0]^" ("^Label_Value.Value^" "^TL::GetTranslatedText(_("|minutes|mn"))^")";
+				}
+				case "1" : {
+					RequestedRoomData["setting_points"] 	= Label_Value.Value;
+					LabelSettingValue.Value = G_Settings[1][1]^" ("^Label_Value.Value^")";
+				}
+				case "2" : {
+					RequestedRoomData["setting_laps"] 	= Label_Value.Value;
+					LabelSettingValue.Value = G_Settings[1][2]^" ("^Label_Value.Value^")";
+				}
+				case "3" : {
+					RequestedRoomData["setting_time"] 	= TL::ToText(TL::ToInteger(Label_Value.Value) * 60);
+					LabelSettingValue.Value = G_Settings[1][3]^" ("^Label_Value.Value^" "^TL::GetTranslatedText(_("|minutes|mn"))^")";
+				}
+				case "4" : {
+					RequestedRoomData["setting_points"] 	= Label_Value.Value;
+					LabelSettingValue.Value = G_Settings[1][4]^" ("^Label_Value.Value^")";
+				}
+				case "5" : {
+					RequestedRoomData["setting_laps"] 	= Label_Value.Value;
+					LabelSettingValue.Value = G_Settings[1][5]^" ("^Label_Value.Value^")";
+				}
+			}
+			ModeSettings_Hide();
+		}
+		
+		Void ModeSettings_OnNext() {
+			declare Text[Text] RequestedRoomData for Page;
+		
+			declare CMlFrame Frame_ModeSetting 	<=> (Page.GetFirstChild("Frame_ModeSetting") as CMlFrame);
+			declare CMlLabel Label_Value   	<=> (Frame_ModeSetting.GetFirstChild("Label_ModeSettingValue") as CMlLabel);
+		
+			switch (RequestedRoomData["mode"])
+			{
+				case "0" : {
+					declare Integer Index = G_TimeAttackTimes.keyof(TL::ToText(TL::ToInteger(Label_Value.Value) * 60));
+					if(Index == G_TimeAttackTimes.count-1)
+						Index = 0;
+					else
+						Index = Index+1;
+					Label_Value.Value = TL::ToText(TL::ToInteger(G_TimeAttackTimes[Index]) / 60);
+				}
+				case "1" : {
+					declare Integer Index = G_RoundPoints.keyof(Label_Value.Value);
+					if(Index == G_RoundPoints.count-1)
+						Index = 0;
+					else
+						Index = Index+1;
+					Label_Value.Value = G_RoundPoints[Index];
+				}
+				case "2" : {
+					declare Integer Index = G_LapsCounts.keyof(Label_Value.Value);
+					if(Index == G_LapsCounts.count-1)
+						Index = 0;
+					else
+						Index = Index+1;
+					Label_Value.Value = G_LapsCounts[Index];
+				}
+				case "3" : {
+					declare Integer Index = G_TimeAttackTimes.keyof(TL::ToText(TL::ToInteger(Label_Value.Value) * 60));
+					if(Index == G_TimeAttackTimes.count-1)
+						Index = 0;
+					else
+						Index = Index+1;
+					Label_Value.Value = TL::ToText(TL::ToInteger(G_TimeAttackTimes[Index]) / 60);
+				}
+				case "4" : {
+					declare Integer Index = G_RoundPoints.keyof(Label_Value.Value);
+					if(Index == G_RoundPoints.count-1)
+						Index = 0;
+					else
+						Index = Index+1;
+					Label_Value.Value = G_RoundPoints[Index];
+				}
+				case "5" : {
+					declare Integer Index = G_LapsCounts.keyof(Label_Value.Value);
+					if(Index == G_LapsCounts.count-1)
+						Index = 0;
+					else
+						Index = Index+1;
+					Label_Value.Value = G_LapsCounts[Index];
+				}
+			}
+		}
+		
+		Void ModeSettings_OnPrev() {
+			declare Text[Text] RequestedRoomData for Page;
+		
+			declare CMlFrame Frame_ModeSetting 	<=> (Page.GetFirstChild("Frame_ModeSetting") as CMlFrame);
+			declare CMlLabel Label_Value   	<=> (Frame_ModeSetting.GetFirstChild("Label_ModeSettingValue") as CMlLabel);
+		
+			switch (RequestedRoomData["mode"])
+			{
+				case "0" : {
+					declare Integer Index = G_TimeAttackTimes.keyof(TL::ToText(TL::ToInteger(Label_Value.Value) * 60));
+					if(Index == 0)
+						Index = G_TimeAttackTimes.count-1;
+					else
+						Index = Index-1;
+					Label_Value.Value = TL::ToText(TL::ToInteger(G_TimeAttackTimes[Index]) / 60);
+				}
+				case "1" : {
+					declare Integer Index = G_RoundPoints.keyof(Label_Value.Value);
+					if(Index == 0)
+						Index = G_RoundPoints.count-1;
+					else
+						Index = Index-1;
+					Label_Value.Value = G_RoundPoints[Index];
+				}
+				case "2" : {
+					declare Integer Index = G_LapsCounts.keyof(Label_Value.Value);
+					if(Index == 0)
+						Index = G_LapsCounts.count-1;
+					else
+						Index = Index-1;
+					Label_Value.Value = G_LapsCounts[Index];
+				}
+				case "3" : {
+					declare Integer Index = G_TimeAttackTimes.keyof(TL::ToText(TL::ToInteger(Label_Value.Value) * 60));
+					if(Index == 0)
+						Index = G_TimeAttackTimes.count-1;
+					else
+						Index = Index-1;
+					Label_Value.Value = TL::ToText(TL::ToInteger(G_TimeAttackTimes[Index]) / 60);
+				}
+				case "4" : {
+					declare Integer Index = G_RoundPoints.keyof(Label_Value.Value);
+					if(Index == 0)
+						Index = G_RoundPoints.count-1;
+					else
+						Index = Index-1;
+					Label_Value.Value = G_RoundPoints[Index];
+				}
+				case "5" : {
+					declare Integer Index = G_LapsCounts.keyof(Label_Value.Value);
+					if(Index == 0)
+						Index = G_LapsCounts.count-1;
+					else
+						Index = Index-1;
+					Label_Value.Value = G_LapsCounts[Index];
+				}
+			}
+		}
+		
+		/////////////////
+		// PASSWORD
+		/////////////////
+		
+		Void Password_OnValidate()
+		{
+			SendCustomEvent("SetLiveStreamingEnabled", ["True"]);
+			declare CMlFrame Frame_ServerPassword <=> (Page.GetFirstChild("Frame_ServerPassword") as CMlFrame);
+			declare CMlEntry EntryPassword <=> (Frame_ServerPassword.GetFirstChild("entry_password") as CMlEntry);
+			declare CMlFrame Frame_Setting;
+			declare CMlLabel Label_Value;
+			
+			declare Text[Text] RequestedRoomData for Page;
+			declare Integer Length = TL::Length(EntryPassword.Value);
+			if (Length >= 4 && Length <= 16)
+			{
+				RequestedRoomData["password"] = EntryPassword.Value;
+				if (!RequestedRoomData.existskey("is_private") || RequestedRoomData["is_private"] == "false")
+				{	
+					RequestedRoomData["is_private"] = "true";
+					Frame_Setting <=> (Page.GetFirstChild("Frame_Setting"^G_Settings.count) as CMlFrame);
+					Label_Value   <=> (Frame_Setting.GetFirstChild("Setting_Value") as CMlLabel);
+					Label_Value.Value = _("Yes");
+				}
+			} else {
+				RequestedRoomData["password"] = "";
+				if (RequestedRoomData.existskey("is_private") && RequestedRoomData["is_private"] == "true")
+				{
+					RequestedRoomData["is_private"] = "false";
+					Frame_Setting <=> (Page.GetFirstChild("Frame_Setting"^G_Settings.count) as CMlFrame);
+					Label_Value   <=> (Frame_Setting.GetFirstChild("Setting_Value") as CMlLabel);
+					Label_Value.Value = _("No");
+				}
+				SendCustomEvent("PopUpPasswordLengthInvalid", Text[]);
+			}
+			Frame_ServerPassword.Hide();
+			G_IsAskingPassword = False;
+			UpdateInputsInfo();
+		}
+		
+		Void Password_OnBack()
+		{
+			SendCustomEvent("SetLiveStreamingEnabled", ["True"]);
+			G_IsAskingPassword = False;
+			declare CMlFrame Frame_ServerPassword <=> (Page.GetFirstChild("Frame_ServerPassword") as CMlFrame);
+			Frame_ServerPassword.Hide();
+			UpdateInputsInfo();
+		}
+		
+		Void SetPassword() {
+			SendCustomEvent("SetLiveStreamingEnabled", ["False"]);
+			declare CMlFrame Frame_ServerPassword <=> (Page.GetFirstChild("Frame_ServerPassword") as CMlFrame);
+			declare CMlEntry EntryPassword <=> (Frame_ServerPassword.GetFirstChild("entry_password") as CMlEntry);
+			Frame_ServerPassword.Show();
+			EntryPassword.Value = "";
+			EntryPassword.Focus();
+			G_IsAskingPassword = True;
+		}
+		
+		Void TogglePrivacy() {
+			declare Text[Text] RequestedRoomData for Page;
+			
+			if (RequestedRoomData.existskey("is_private") && RequestedRoomData["is_private"] == "true")
+			{
+				RequestedRoomData["is_private"] = "false";
+				RequestedRoomData["password"]	= "";
+				declare CMlFrame Frame_Setting <=> (Page.GetFirstChild("Frame_Setting"^G_Settings.count) as CMlFrame);
+				declare CMlLabel Label_Value   <=> (Frame_Setting.GetFirstChild("Setting_Value") as CMlLabel);
+				Label_Value.Value = _("No");
+				UpdateInputsInfo();
+			} else {
+				SetPassword();
+			}
+		}
+		
+		/////////////////
+		// INIT & SAVE
+		/////////////////
+		Void Init()
+		{
+			{{{InputInfos::InjectInInit()}}}
+			{{{Loading::InjectInInit()}}}
+			Main_InitInputInfos("Tracklist");
+			
+			G_Settings.add({{{dump(Gameplay::GetMaxPlayers())}}});
+			G_Settings.add({{{dump(Gameplay::GetGameModesDisplayNames())}}});
+			G_Settings.add({{{dump(Gameplay::GetRoomStyles())}}});
+			//G_Settings.add({{{dump(Gameplay::GetRoomEnvironments())}}});
+			G_Settings.add({{{dump(Gameplay::GetDurations())}}});
+			G_Settings.add({{{dump(Gameplay::GetEchelons())}}});
+			
+			G_DefaultSettings = [G_Settings[0][5], "0", "Various", "0", "0"];
+			G_SettingsFieldNames = ["player_max", "mode", "style", "duration", "ladder_limit_min"]; //, "environment"
+			
+			declare Text[] SettingsName;
+			SettingsName.add(_("Max players"));
+			SettingsName.add(_("Game mode"));
+			SettingsName.add(_("Tracks style"));
+			SettingsName.add(_("Duration"));
+			SettingsName.add(_("Minimum echelon"));
+			SettingsName.add(_("|Name of the \"is room private\" setting|Private"));
+			
+			for(I, 0, SettingsName.count - 1)
+			{
+				declare CMlFrame  FrameInstance_Settings <=> (Page.GetFirstChild("Frame_Setting"^I) as CMlFrame);
+				declare CMlLabel  Setting_Name <=> (FrameInstance_Settings.GetFirstChild("Setting_Name") as CMlLabel);
+				Setting_Name.Value = SettingsName[I];
+			}
+			
+			G_FirstDisplayedTrackIndex 	= 0; 
+			G_FirstDisplayedTrackFrameIndex = 1; 
+			
+			G_LapsCounts = {{{dump(Gameplay::GetLapsCounts())}}};
+			G_TimeAttackTimes = {{{dump(Gameplay::GetTimeAttackDurations())}}};
+			G_RoundPoints = {{{dump(Gameplay::GetRoundPoints())}}};
+			G_SettingModeSetting = False;
+			
+			G_IsWaitingForDeletion = False;
+			G_MenuUserDisplayName = "";
+			G_IsServerOnlineRequestLastTime = Now;
+		}   
+		
+		Boolean HasRoomBeenModified ()
+		{
+			declare Text[Text] 		RequestedRoomData for Page;
+			declare Text[Text][]	RequestedRoomMaps for Page;
+			declare Text[Text] 		LastSavedRoomData for Page;
+			declare Text[Text][]	LastSavedRoomMaps for Page;
+			
+			foreach (Field => Value in RequestedRoomData)
+			{
+				if (Field == "is_online" || Field == "required_state" || Field == "dedicated_login" || Field == "status")
+					continue;
+				if (!LastSavedRoomData.existskey(Field) || LastSavedRoomData[Field] != Value)
+					return True;
+			}
+			
+			if (RequestedRoomMaps.count != LastSavedRoomMaps.count)
+				return True;
+			
+			for (I, 0, RequestedRoomMaps.count - 1)
+			{
+				if (RequestedRoomMaps[I]["uid"] != LastSavedRoomMaps[I]["uid"])
+					return True;
+			}
+			return False;
+		}
+		
+		Void Quit(Boolean _Saved)
+		{
+			declare Boolean IsNewRoom for Page;
+			Audio.PlaySoundEvent("{{{SoundBack}}}", {{{Volumes::GetVolumedB("MenuPageBack")}}});
+			SendCustomEvent("GotoPrevious", [""]);
+			if (IsNewRoom && _Saved)
+				SendCustomEvent("SetMenuContext", ["ServerBrowser", "SetOngletFocusNewRoom"]);
+			{{{_HideAnim}}}
+			Loading_SetIsLoading(False);
+			SendCustomEvent("DetachPage", ["RoomManager"]);	
+		}
+		
+		Void Save ()
+		{
+			declare Boolean IsNewRoom for Page;
+			if(!HasRoomBeenModified() && !IsNewRoom)
+			{
+				Quit(True);
+			} else {
+				declare Text[Text][]	RequestedRoomMaps for Page;
+				if (RequestedRoomMaps.count == 0)
+				{
+					SendCustomEvent("PopUp_EmptyTracklist", Text[]);
+				} else {
+					Loading_SetIsLoading(True);
+					SendCustomEvent("SendRoomData", [RoomDataToJson()]);
+				}
+			}
+		}		
+		
+		/////////////////
+		// UPDATE DISPLAY
+		/////////////////
+		Void UpdateDisplay()
+		{
+			declare Boolean IsNewRoom for Page;
+			declare Text[Text] RequestedRoomData for Page;
+		
+			declare CMlFrame Frame_Settings       <=> (Page.GetFirstChild("Frame_Settings")       as CMlFrame);
+			declare CMlFrame Frame_Tracklist      <=> (Page.GetFirstChild("Frame_TrackList")      as CMlFrame);
+			
+			declare CMlFrame Frame_Board_Settings <=> (Page.GetFirstChild("Frame_Board_Settings") as CMlFrame);
+			declare CMlFrame Frame_Board_Infos    <=> (Page.GetFirstChild("Frame_Board_Infos")    as CMlFrame);
+			
+			Frame_Settings.Show();
+			Frame_Tracklist.Show();
+			UpdateSelection();
+			UpdateServerOnlineStatus();
+			if (!IsNewRoom)
+				SendCustomEvent("RequestServerOnlineStatus", Text[]);
+			Frame_Board_Settings.Show();
+			Frame_Board_Infos.Hide();
+		}
+		
+		/////////////////
+		// INPUTS
+		/////////////////
+		
+		Boolean Input_Select() {
+			declare Text[Text] RequestedRoomData for Page;
+			declare Boolean IsNewRoom for Page;
+			if(G_IsWaitingForDeletion || RequestedRoomData.count == 0 || Loading_GetIsLoading())
+				return False;
+			
+			if ( G_IndexFocusY == {{{SelectArray_SettingsCount}}}) {
+				declare Text[Text][] RequestedRoomMaps for Page;
+				if (RequestedRoomMaps.count == 0)
+				{
+					SendCustomEvent("PopUp_EmptyTracklist", Text[]);
+					G_IndexFocusY = {{{SelectArray_SettingsCount+1}}};
+					UpdateInputsInfo();
+					UpdateSelection();
+				} else {
+					Audio.PlaySoundEvent("{{{SoundBlocCategory}}}", {{{Volumes::GetVolumedB("MenuBlocCategory")}}});
+					Save();
+				}
+			} else if (G_IndexFocusY > {{{SelectArray_SettingsCount}}}) {
+				Audio.PlaySoundEvent("{{{SoundPageForward}}}", {{{Volumes::GetVolumedB("MenuPageForward")}}});
+				declare CMlLabel Label_RoomName <=> (Page.GetFirstChild("Label_RoomName") as CMlLabel);
+				SendCustomEvent("SetMenuContext", ["RoomPlaylist", "RoomManager", Label_RoomName.Value, _("Room Tracklist"), "<1.000, 0.195, 0.109>", "50"]);
+				SendCustomEvent("GotoPage", ["RoomPlaylist"]);
+				{{{_HideAnim}}}
+				SendCustomEvent("DetachPage", ["RoomManager"]);
+				return True;
+			} else if (G_IndexFocusY == G_Settings.count) { //mdp
+				if (IsNewRoom) {
+					TogglePrivacy();
+					ResetInputInfo();
+				}
+			} else if (G_IndexFocusY == 1) { //mode settings
+				if (IsNewRoom) {
+					ModeSettings_Show();
+					ResetInputInfo();
+				}
+			}
+			return False;
+		}
+		
+		Void Input_Cancel() {
+			if (Loading_GetIsLoading())
+				return;
+			if (HasRoomBeenModified())
+				SendCustomEvent("RequestBack", [""]);
+			else {
+				Quit(False);
+			}
+		}
+		
+		Void Input_Action1() {
+			declare Text[Text] RequestedRoomData for Page;
+			declare Boolean IsNewRoom for Page;
+			if(G_IsWaitingForDeletion || RequestedRoomData.count == 0 || Loading_GetIsLoading())
+				return;
+			if(G_IndexFocusY == {{{SelectArray_SettingsCount+2}}})
+			{
+				declare Text[Text][] RequestedRoomMaps for Page;
+				if (RequestedRoomMaps.count != 0)
+				{
+					RequestedRoomMaps.removekey(G_FirstDisplayedTrackIndex + G_IndexFocusX);
+					if (RequestedRoomMaps.count == 0)
+					{
+						G_IndexFocusY = {{{SelectArray_SettingsCount+1}}};
+						UpdateSelection();
+					}
+					TrackList_SetFromResult();
+					UpdateInputsInfo();
+				}
+			} else if (G_IndexFocusY == G_Settings.count && RequestedRoomData.existskey("is_private") && RequestedRoomData["is_private"] == "true") { //mdp
+				if (IsNewRoom)
+					SetPassword();
+			}
+		}
+		
+		Void Input_Action2() {
+			declare Text[Text] RequestedRoomData for Page;
+			declare Boolean IsNewRoom for Page;
+			if(G_IsWaitingForDeletion || RequestedRoomData.count == 0 || Loading_GetIsLoading())
+				return;
+			if (!IsNewRoom)
+			{
+				Loading_SetIsLoading(True);
+				SendCustomEvent("RequestDeleteRoom", Text[]);
+				G_IsWaitingForDeletion = True;
+			}
+		}
+		
+		Void UpdateHelpersForPlatform(Integer _Platform) {
+			declare Text[] InputIds = ["Select", "Cancel", "Action1", "Action2"];
+			declare Text[] AdditionnalInputIds = ["QuadInputIcon_PasswordSelect_", "QuadInputIcon_PasswordCancel_", "QuadInputIcon_ModeSelect_", "QuadInputIcon_ModeCancel_"];
+	
+			declare CMlQuad  QuadInputIcon;
+			for (I, 0, 2) {
+				for (J, 0, InputIds.count - 1) {
+					declare CMlFrame FrameInput <=> (Page.GetFirstChild("Frame_InputInfo_Main_"^InputIds[J]) as CMlFrame);
+					QuadInputIcon <=> (FrameInput.GetFirstChild("Quad_InputIcon_"^I) as CMlQuad);
+					if (I == _Platform)
+						QuadInputIcon.Show();
+					else
+						QuadInputIcon.Hide();
+				}
+				for (J, 0, AdditionnalInputIds.count-1) {
+					QuadInputIcon <=> (Page.GetFirstChild(AdditionnalInputIds[J]^I) as CMlQuad);
+					if (I == _Platform)
+						QuadInputIcon.Show();
+					else
+						QuadInputIcon.Hide();
+				}
+			}
+		}
+		
+		/////////////////
+		// MAIN
+		/////////////////
+		main() {
+			Init();
+
+			declare CMlFrame Frame_Settings <=> (Page.GetFirstChild("Frame_Settings") as CMlFrame);
+			declare CMlQuad  Quad_SettingsSelector <=> (Frame_Settings.GetFirstChild("Quad_SettingsSelector") as CMlQuad);
+			declare CMlEntry Entry_ServerPassword <=> (Page.GetFirstChild("entry_password") as CMlEntry);
+			
+			declare Boolean		 IsEditingTrackList = False;
+			
+			G_IndexFocusX = 0; declare Prev_IndexFocusX = G_IndexFocusX;
+			G_IndexFocusY = 0; declare Prev_IndexFocusY = G_IndexFocusY;
+			
+			//Requested Data
+			declare Text[Text] 		RequestedServer for Page;
+			declare Boolean 		IsNewRoom for Page;
+			declare Text[Text] 		RequestedRoomData for Page;
+			declare Text[Text][] 	RequestedRoomMaps for Page;
+			declare Text[Text]		LastSavedRoomData for Page;
+			declare Text[Text][]	LastSavedRoomMaps for Page;
+						
+			declare Integer ActiveButtonPlatform = {{{Platform}}};
+						
+			declare RequestLogger = False;			
+			
+			
+			while(True) {
+				yield;
+				if(! PageIsVisible) continue;
+				LibManialink_AnimLoop();
+				
+				{{{Loading::InjectInLoop()}}}
+				{{{Selector::InsertInLoop()}}}
+				
+				///////////////////////////////////
+				//Blink de Quad_SettingsSelector (les lignes)
+				///////////////////////////////////
+				if (G_IndexFocusY <= {{{SelectArray_SettingsCount+1}}}) //on est sur un setting
+				{
+					declare Real QuadSelectedSinVar  = ML::Sin(Now * 0.01) * 0.5 + 0.5;
+					declare Real QuadSelectedOpacity = 0.0 + QuadSelectedSinVar * 1.;
+					Quad_SettingsSelector.Opacity    = QuadSelectedOpacity;
+				}
+				
+				if (G_IsAskingPassword && !Entry_ServerPassword.IsFocused)
+				{
+					declare CMlQuad Quad_MouseInputSelect <=> (Page.GetFirstChild("MouseInput_ValidatePassword") as CMlQuad);
+					if (Quad_MouseInputSelect.IsFocused)
+						Password_OnValidate();
+					else
+						Password_OnBack();
+				}
+				
+				if (Input.PendingEvents.count != 0) {
+					declare Integer LastInputPlatform;
+					switch (Input.PendingEvents[Input.PendingEvents.count-1].Pad.Type) {
+						case CInputPad::EPadType::Keyboard 		: LastInputPlatform = {{{LibUIButtons::GetPlatform("PC")}}};
+						case CInputPad::EPadType::PlayStation 	: LastInputPlatform = {{{LibUIButtons::GetPlatform("PS4")}}};
+						case CInputPad::EPadType::XBox 			: LastInputPlatform = {{{LibUIButtons::GetPlatform("XB1")}}};
+						default 								: LastInputPlatform = {{{LibUIButtons::GetPlatform("PC")}}};
+					}
+					if (LastInputPlatform != ActiveButtonPlatform)
+						SendCustomEvent("SetActiveButtonPlaform", ["RoomManager", TL::ToText(LastInputPlatform)]);
+				}
+				
+				foreach(Event in PendingEvents) {
+					switch(Event.Type) {
+						case CMlEvent::Type::EntrySubmit : {
+							if (Event.ControlId != "entry_password")
+								continue;
+							Password_OnValidate();
+						}
+						case CMlEvent::Type::PluginCustomEvent: {
+							switch(Event.PluginCustomEventType) {
+								case "Show" : {
+									{{{_ShowAnim}}}
+									EnableMenuNavigation(True,False,Null,2);
+									UpdateDisplay();
+									Loading_SetIsLoading(False);
+									ResetInputInfo();
+									G_IsWaitingForDeletion = False;
+									if (IsEditingTrackList)
+									{
+										if (RequestedRoomMaps.count != 0)
+										{
+											G_IndexFocusY = {{{SelectArray_SettingsCount}}};
+											
+											declare Text[] MapsUids;
+											for (I, 0, RequestedRoomMaps.count-1)
+												if (!RequestedRoomMaps[I].existskey("thumbnail_url"))
+													MapsUids.add(RequestedRoomMaps[I]["uid"]);
+											if (MapsUids.count != 0)
+												SendCustomEvent("RequestMapsThumbnails", [TL::Join(";", MapsUids)]);
+										}
+										IsEditingTrackList = False;
+									} else {
+										G_EchelonMessageHighLevelAlreadyDisplayed = False;
+										G_EchelonMessageAlreadyDisplayed = False;
+										G_IndexFocusY = {{{SelectArray_SettingsCount+1}}};
+										RequestedRoomData.clear();
+										RequestedRoomMaps.clear();
+										LastSavedRoomData.clear();
+										LastSavedRoomMaps.clear();
+										if (IsNewRoom)
+										{	
+											Settings_SetDefaultValues();
+											TrackList_SetFromResult();
+										} else {
+											declare CMlFrame Frame_TrackListLoading <=> (Page.GetFirstChild("Frame_TrackListLoading") as CMlFrame);
+											declare CMlFrame Frame_TrackList		<=> (Page.GetFirstChild("Frame_TrackList") as CMlFrame);
+											Frame_TrackListLoading.Show();
+											Frame_TrackList.Hide();
+											SendCustomEvent("RequestRoomData", Text[]);
+										}
+									}
+									G_MenuUserDisplayName = "";
+									SendCustomEvent("RequestMenuUserDisplayName", Text[]);
+									SendCustomEvent("GetActiveButtonPlatform", ["RoomManager"]);
+									UpdateInputsInfo();
+									UpdateSelection();
+									RequestLogger = False;
+								}
+								case "SetActiveButtonPlatform" : {
+									ActiveButtonPlatform = TL::ToInteger(Event.CustomEventData[0]);
+									UpdateHelpersForPlatform(ActiveButtonPlatform);
+								}
+								case "Hide" : {
+									{{{_HideAnim}}}
+									EnableMenuNavigation(True,False,Null,0);
+									SendCustomEvent("DetachPage", ["RoomManager"]);
+								}
+								case "Request_GetRoom_Success" : {
+									declare Text[Text] RequestedRoomData for Page;
+									if (RequestedRoomData.count == 0)
+									{
+										Settings_SetDefaultValues();
+									} else {
+										Settings_SetFromResult();
+									}
+									TrackList_SetFromResult();
+								}
+								case "Request_GetRoom_Failure" : {
+									Settings_SetDefaultValues();
+									TrackList_SetFromResult();
+								}
+								case "TrackListSent" : { //from the tracklist manager
+									TrackList_SetFromResult();
+									declare Text Style = Event.CustomEventData[0];
+									declare Text Duration = Event.CustomEventData[1];
+									if (Style != "")
+										RequestedRoomData["style"] = Style;
+									if (Duration != "" && TL::ToInteger(Duration) != -1)
+										RequestedRoomData["duration"] = Duration;
+									Settings_SetFromResult();
+								}
+								case "Quit" : {
+									if (Event.CustomEventData.count < 1)
+										continue;
+									if (Event.CustomEventData[0] == "True")
+									{
+										Save();
+									} else {
+										Quit(False);
+									}
+								}
+								case "Request_DeleteRoom_Success" : {
+									Loading_SetIsLoading(False);
+									G_IsWaitingForDeletion = False;
+									Quit(False);
+								}
+								case "Request_DeleteRoom_Failure" 	: {
+									Loading_SetIsLoading(False);
+									G_IsWaitingForDeletion = False;
+								}
+								case "DeletionAborted" 				: {
+									Loading_SetIsLoading(False);
+									G_IsWaitingForDeletion = False;
+								}
+								
+								case "Request_CreateRoom_Success" : {
+									Loading_SetIsLoading(False);
+									Quit(True); //a priori maintenant on ne sauve qu'avant un quit
+								}
+								case "Request_CreateRoom_Failure" : {
+									Loading_SetIsLoading(False);
+								}
+								case "Request_UpdateRoom_Success" : {
+									Loading_SetIsLoading(False);
+									Quit(True);
+								}
+								case "Request_UpdateRoom_Failure" : {
+									Loading_SetIsLoading(False);
+								}
+								case "Request_ServerStatus_Result" : {
+									G_IsServerOnlineRequestLastTime = Now;
+									if (Event.CustomEventData.count < 4 || !RequestedRoomData.existskey("id") || Event.CustomEventData[0] != RequestedRoomData["id"])
+										continue;
+										
+									RequestedRoomData["required_state"] = Event.CustomEventData[1];
+									RequestedRoomData["status"]			= Event.CustomEventData[2];
+									RequestedRoomData["is_online"]		= Event.CustomEventData[3];
+									UpdateServerOnlineStatus();
+								}
+								case "MenuUserDisplayName" : {
+									G_MenuUserDisplayName = Event.CustomEventData[0];
+									UpdateLabelRoomName();
+								}
+								case "Request_GetMapsThumbnails_Success" : TrackList_SetFromResult();
+							}
+						}
+						
+						//INPUTS
+						case CMlEvent::Type::MouseClick: {
+							if (ActiveButtonPlatform !=  {{{LibUIButtons::GetPlatform("PC")}}})
+								SendCustomEvent("SetActiveButtonPlaform", ["RoomManager", TL::ToText({{{LibUIButtons::GetPlatform("PC")}}})]);
+							declare Text[] InputId = TL::Split("_", Event.ControlId);
+							if (InputId.count < 2 || InputId[0] != "MouseInput")
+								continue;
+							if (G_SettingModeSetting)
+							{
+								switch (InputId[1]) {
+									case "ModeSettingNext" : ModeSettings_OnNext();
+									case "ModeSettingPrev" : ModeSettings_OnPrev();
+									case "ModeSettingInputInfo" : {
+										if (InputId[2] == "Select")
+											ModeSettings_Validate();
+										else if (InputId[2] == "Cancel")
+											ModeSettings_Hide();
+									}
+								}
+							} else if (G_IsAskingPassword)
+								continue;
+							else {
+								if (InputId[1] != "MainInputInfo_Cancel" && (G_IsWaitingForDeletion || RequestedRoomData.count == 0 || Loading_GetIsLoading()))
+									continue;
+							
+								switch (InputId[1]) {
+									case "Setting" : {
+										G_IndexFocusY = TL::ToInteger(InputId[2]);
+										UpdateInputsInfo();
+										UpdateSelection();
+										if (G_IndexFocusY == 1 || G_IndexFocusY == 5) //MODE && PWD
+											IsEditingTrackList = Input_Select();
+									}
+									case "SaveAndQuit" : {
+										G_IndexFocusY = {{{SelectArray_SettingsCount}}};
+										UpdateInputsInfo();
+										UpdateSelection();
+										IsEditingTrackList = Input_Select();
+									}
+									case "EditTracklist" : {
+										G_IndexFocusY = {{{SelectArray_SettingsCount+1}}};
+										UpdateInputsInfo();
+										UpdateSelection();
+										IsEditingTrackList = Input_Select();
+									}
+									case "Track" : {
+										declare Integer TrackFrameIndex = TL::ToInteger(InputId[2]);
+										G_IndexFocusY = {{{SelectArray_SettingsCount+2}}};
+										G_IndexFocusX = (TrackFrameIndex + C_TrackFramesCount - G_FirstDisplayedTrackFrameIndex) % C_TrackFramesCount;
+										UpdateInputsInfo();
+										UpdateSelection();
+										IsEditingTrackList = Input_Select();
+									}
+									case "TrackPrev" : {
+										TrackList_OnLeft();
+									}
+									case "TrackNext" : {
+										TrackList_OnRight();
+									}
+									case "SettingPrev" : Settings_SetPrevValue();
+									case "SettingNext" : Settings_SetNextValue();
+									case "MainInputInfo" : {
+										switch (InputId[2]) {
+											case "Select" : IsEditingTrackList = Input_Select();
+											case "Cancel" : SendCustomEvent("RequestBack", [""]);
+											case "AppMenu" : SendCustomEvent("RequestBack", [""]);
+											case "Action1" : Input_Action1();
+											case "Action2" : Input_Action2();
+										}
+									}
+								}
+							}
+						}
+						case CMlEvent::Type::MouseOver: {
+							declare Text[] InputId = TL::Split("_", Event.ControlId);
+							if (InputId.count < 2 || InputId[0] != "MouseInput")
+								continue;
+								
+							if (G_SettingModeSetting) {
+								if (InputId[1] == "ModeSettingInputInfo") {
+									declare CMlFrame FrameModeSettings <=> (Page.GetFirstChild("Frame_ModeSetting") as CMlFrame);
+									declare CMlFrame FrameInput <=> (FrameModeSettings.GetFirstChild("FrameInput"^InputId[2]) as CMlFrame);
+									declare CMlLabel LabelInputInfo <=> (FrameInput.GetFirstChild("Label_Name") as CMlLabel);
+									SetInputInfoTextSelected(LabelInputInfo, True);
+								}
+							} else if (G_IsAskingPassword) {
+								continue;
+							} else {
+								if (G_IsWaitingForDeletion || RequestedRoomData.count == 0 || Loading_GetIsLoading())
+									continue;
+								switch (InputId[1]) {
+									case "Setting" : {
+										G_IndexFocusY = TL::ToInteger(InputId[2]);
+										UpdateInputsInfo();
+										UpdateSelection();
+									}
+									case "SaveAndQuit" : {
+										G_IndexFocusY = {{{SelectArray_SettingsCount}}};
+										UpdateInputsInfo();
+										UpdateSelection();
+									}
+									case "EditTracklist" : {
+										G_IndexFocusY = {{{SelectArray_SettingsCount+1}}};
+										UpdateInputsInfo();
+										UpdateSelection();
+									}
+									case "Track" : {
+										declare Integer TrackFrameIndex = TL::ToInteger(InputId[2]);
+										G_IndexFocusY = {{{SelectArray_SettingsCount+2}}};
+										G_IndexFocusX = (TrackFrameIndex + C_TrackFramesCount - G_FirstDisplayedTrackFrameIndex) % C_TrackFramesCount;
+										UpdateInputsInfo();
+										UpdateSelection();
+									}
+									case "MainInputInfo" : {
+										declare CMlFrame FrameInput <=> (Page.GetFirstChild("Frame_InputInfo_Main_"^InputId[2]) as CMlFrame);
+										declare CMlLabel LabelInputInfo <=> (FrameInput.GetFirstChild("Label_Name") as CMlLabel);
+										SetInputInfoTextSelected(LabelInputInfo, True);
+									}	
+								}
+							}
+						}
+						case CMlEvent::Type::MouseOut: {
+							declare Text[] InputId = TL::Split("_", Event.ControlId);
+							if (InputId.count < 2 || InputId[0] != "MouseInput")
+								continue;
+							switch (InputId[1]) {
+								case "MainInputInfo" : ResetInputInfo(InputId[2]);
+								case "ModeSettingInputInfo" : {
+									declare CMlFrame FrameModeSettings <=> (Page.GetFirstChild("Frame_ModeSetting") as CMlFrame);
+									declare CMlFrame FrameInput <=> (FrameModeSettings.GetFirstChild("FrameInput"^InputId[2]) as CMlFrame);
+									declare CMlLabel LabelInputInfo <=> (FrameInput.GetFirstChild("Label_Name") as CMlLabel);
+									SetInputInfoTextSelected(LabelInputInfo, False);
+								}
+							}
+						}
+						case CMlEvent::Type::MenuNavigation: {
+							if(G_LockInput + 50 > Now) continue;
+							G_LockInput = Now; // sécurité pour éviter le double input
+							if (G_SettingModeSetting)
+							{
+								switch(Event.MenuNavAction)
+								{
+									case CMlEvent::EMenuNavAction::Cancel : ModeSettings_Hide();
+									case CMlEvent::EMenuNavAction::AppMenu : ModeSettings_Hide();
+									case CMlEvent::EMenuNavAction::Select : ModeSettings_Validate();
+									case CMlEvent::EMenuNavAction::Left	  : ModeSettings_OnPrev();
+									case CMlEvent::EMenuNavAction::Right  : ModeSettings_OnNext();
+								}
+							} else if (G_IsAskingPassword) {
+								if (Event.MenuNavAction == CMlEvent::EMenuNavAction::AppMenu)
+									Password_OnBack();
+							} else {
+								switch(Event.MenuNavAction) {
+									case CMlEvent::EMenuNavAction::Up : {
+										if(G_IsWaitingForDeletion || RequestedRoomData.count == 0 || Loading_GetIsLoading())
+											continue;
+										Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+										if (G_IndexFocusY > 0)
+										{
+											G_IndexFocusY = G_IndexFocusY - 1;
+										} else if (RequestedRoomMaps.count != 0) {
+											G_IndexFocusY = {{{SelectArray_SettingsCount + 2}}};
+										} else {
+											G_IndexFocusY = {{{SelectArray_SettingsCount + 1}}};
+										}
+										UpdateInputsInfo();
+										UpdateSelection();
+									}
+									case CMlEvent::EMenuNavAction::Down : {
+										if(G_IsWaitingForDeletion || RequestedRoomData.count == 0 || Loading_GetIsLoading())
+											continue;
+										Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+										if (G_IndexFocusY < {{{SelectArray_SettingsCount+1}}})
+										{
+											G_IndexFocusY = G_IndexFocusY + 1;
+										} else if (G_IndexFocusY == {{{SelectArray_SettingsCount+1}}} && RequestedRoomMaps.count != 0) {
+											G_IndexFocusY = G_IndexFocusY + 1;
+										} else {
+											G_IndexFocusY = 0;
+										}
+										UpdateInputsInfo();
+										UpdateSelection();
+									}
+									case CMlEvent::EMenuNavAction::Left : {
+										if(G_IsWaitingForDeletion || RequestedRoomData.count == 0 || Loading_GetIsLoading())
+											continue;
+										if (G_IndexFocusY == {{{SelectArray_SettingsCount+2}}})
+										{
+											Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+											TrackList_OnLeft(); //le défilement est géré là dedans
+										} else if (G_IndexFocusY < {{{SelectArray_SettingsCount}}}) {
+											Audio.PlaySoundEvent("{{{SoundClicInterfaceLeftRight}}}", {{{Volumes::GetVolumedB("MenuClicInterfaceLeftRight")}}});
+											Settings_SetPrevValue();
+										}
+									}
+									case CMlEvent::EMenuNavAction::Right : {
+										if(G_IsWaitingForDeletion || RequestedRoomData.count == 0 || Loading_GetIsLoading())
+											continue;
+										if (G_IndexFocusY == {{{SelectArray_SettingsCount+2}}})
+										{
+											Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+											TrackList_OnRight(); //le défilement est géré là dedans
+										} else if (G_IndexFocusY < {{{SelectArray_SettingsCount}}}) {
+											Audio.PlaySoundEvent("{{{SoundClicInterfaceLeftRight}}}", {{{Volumes::GetVolumedB("MenuClicInterfaceLeftRight")}}});
+											Settings_SetNextValue();
+										}
+									}
+									case CMlEvent::EMenuNavAction::Select : {
+										if(G_IsWaitingForDeletion || RequestedRoomData.count == 0 || Loading_GetIsLoading())
+											continue;
+										if ( G_IndexFocusY == {{{SelectArray_SettingsCount}}}) {
+											//Audio.PlaySoundEvent("{{{SoundPageForward}}}", {{{Volumes::GetVolumedB("MenuPageForward")}}});
+											if (RequestedRoomMaps.count == 0)
+											{
+												SendCustomEvent("PopUp_EmptyTracklist", Text[]);
+												G_IndexFocusY = {{{SelectArray_SettingsCount+1}}};
+												UpdateInputsInfo();
+												UpdateSelection();
+											} else {
+												Audio.PlaySoundEvent("{{{SoundBlocCategory}}}", {{{Volumes::GetVolumedB("MenuBlocCategory")}}});
+												Save();
+											}
+										} else if (G_IndexFocusY > {{{SelectArray_SettingsCount}}}) {
+											Audio.PlaySoundEvent("{{{SoundPageForward}}}", {{{Volumes::GetVolumedB("MenuPageForward")}}});
+											declare CMlLabel Label_RoomName <=> (Page.GetFirstChild("Label_RoomName") as CMlLabel);
+											IsEditingTrackList = True;
+											SendCustomEvent("SetMenuContext", ["RoomPlaylist", "RoomManager", Label_RoomName.Value, _("Room Tracklist"), "<1.000, 0.195, 0.109>", "50"]);
+											SendCustomEvent("GotoPage", ["RoomPlaylist"]);
+											{{{_HideAnim}}}
+											SendCustomEvent("DetachPage", ["RoomManager"]);
+										} else if (G_IndexFocusY == G_Settings.count) { //mdp
+											if (IsNewRoom)
+												TogglePrivacy();
+										} else if (G_IndexFocusY == 1) { //mode settings
+											if (IsNewRoom)
+												ModeSettings_Show();
+										}
+									}
+									case CMlEvent::EMenuNavAction::Cancel : {
+										if (Loading_GetIsLoading())
+											continue;
+										if (HasRoomBeenModified())
+											SendCustomEvent("RequestBack", [""]);
+										else {
+											Quit(False);
+										}
+									}
+									case CMlEvent::EMenuNavAction::AppMenu : {
+										if (Loading_GetIsLoading())
+											continue;
+										if (HasRoomBeenModified())
+											SendCustomEvent("RequestBack", [""]);
+										else {
+											Quit(False);
+										}
+									}
+									case CMlEvent::EMenuNavAction::Action1 : { //X
+										if(G_IsWaitingForDeletion || RequestedRoomData.count == 0 || Loading_GetIsLoading())
+											continue;
+										if(G_IndexFocusY == {{{SelectArray_SettingsCount+2}}})
+										{
+											declare Text[Text][] RequestedRoomMaps for Page;
+											if (RequestedRoomMaps.count != 0)
+											{
+												RequestedRoomMaps.removekey(G_FirstDisplayedTrackIndex + G_IndexFocusX);
+												if (RequestedRoomMaps.count == 0)
+												{
+													G_IndexFocusY = {{{SelectArray_SettingsCount+1}}};
+													UpdateSelection();
+												}
+												TrackList_SetFromResult();
+												UpdateInputsInfo();
+											}
+										} else if (G_IndexFocusY == G_Settings.count && RequestedRoomData.existskey("is_private") && RequestedRoomData["is_private"] == "true") { //mdp
+											if (IsNewRoom)
+												SetPassword();
+										}
+									}
+									case CMlEvent::EMenuNavAction::Action2 : {
+										if(G_IsWaitingForDeletion || RequestedRoomData.count == 0 || Loading_GetIsLoading())
+											continue;
+										if (!IsNewRoom)
+										{
+											Loading_SetIsLoading(True);
+											SendCustomEvent("RequestDeleteRoom", Text[]);
+											G_IsWaitingForDeletion = True;
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	--></script>
+	""";
+	
+	return MLText;
+}

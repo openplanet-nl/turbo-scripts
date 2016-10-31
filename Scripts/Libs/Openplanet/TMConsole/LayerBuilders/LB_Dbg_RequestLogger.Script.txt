@@ -1,0 +1,424 @@
+#Include "Libs/Openplanet/Manialink2.Script.txt"								as Manialink
+#Include "Libs/Openplanet/TMConsole/FontManager.Script.txt"					as Font
+#Include "Libs/Openplanet/UIPadButtons.Script.txt"							as LibUIButtons
+#Include "Libs/Openplanet/TMConsole/Menu/LibOnlineGameplay.Script.txt"		as GamePlay
+#Include "Libs/Openplanet/TMConsole/Menu/2DSelectArray.Script.txt"			as SelectArray2D
+
+#Const C_ImgBase 	"file://Media/Manialinks/Nadeo/TMConsole/Images/"
+#Const C_ImgBase2	"file://Media/Images/TMConsole/Ingame/"
+
+
+#Const C_Count_RequestList 14
+
+Text Build(Text _ShowAnim, Text _HideAnim) {
+	
+	declare Text[][] AllFilters;
+	
+	AllFilters.add(GamePlay::GetMaxPlayers());
+	AllFilters.add(GamePlay::GetGameModesDisplayNames());
+	AllFilters.add(GamePlay::GetRoomEnvironments());
+	AllFilters.add(GamePlay::GetRoomStyles());
+	AllFilters.add(GamePlay::GetDurations());
+	
+	//IMAGES
+	declare Text 	IMGSlotSmallBg           = C_ImgBase2^"slot-medium-bg.dds";
+	declare Text 	IMGSlotSmallFg           = C_ImgBase2^"slot-medium-fg.dds";
+	
+	declare Text 	IMGBackground            = "file://Media/_ERR_.dds";	//C_ImgBase^"PlaceHolder/small-lago1.jpg";
+
+	declare Integer Platform   = LibUIButtons::GetPlatform();
+	declare Text 	IMGCancel  = LibUIButtons::GetImage(Platform, CManiaAppEvent::EMenuNavAction::Cancel);
+	declare Text 	IMGAction1 = LibUIButtons::GetImage(Platform, CManiaAppEvent::EMenuNavAction::Action1);
+	declare Text 	IMGAction2 = LibUIButtons::GetImage(Platform, CManiaAppEvent::EMenuNavAction::Action2);
+	
+	//SIZES
+	declare Real	SM_SizeY                 = 8.27;
+	declare Real	SM_Separator             = SM_SizeY * 0.095;
+	declare Real	SM_SizeYElement          = SM_SizeY - SM_Separator;
+	declare Real	SM_SizeXList			 = 105.;
+	declare Real 	SM_SizeYListElem		 = 10.;
+
+	//POSITIONS
+	
+	declare Real	PosFirstListElemX		 = 0.;
+	declare Real	PosFirstListElemY		 = -15.;
+	
+	declare Real	LabelPosX_Id	 	 	 = 2 - SM_SizeXList/2.;
+	declare Real	LabelPosX_Result 	 	 = 13 - SM_SizeXList/2.;
+	declare Real	LabelPosX_Url 		 	 = 33 - SM_SizeXList/2.;
+	
+	SelectArray2D::Init(SM_SizeXList, SM_SizeYListElem, 1, C_Count_RequestList);
+	SelectArray2D::SetPosFirstQuad(PosFirstListElemX, PosFirstListElemY);
+	SelectArray2D::SetQuadMarge(0., 0.);
+
+	SelectArray2D::AddLabel		("Id", 		<LabelPosX_Id, 0.>, 	13, Font::GetFontName("Main"), "", "left", "center");
+	SelectArray2D::AddLabel		("Result", 	<LabelPosX_Result, 0.>, 13, Font::GetFontName("Main"), "", "left", "center");
+	SelectArray2D::AddLabel		("Url", 	<LabelPosX_Url, 0.>, 	67, Font::GetFontName("Main"), "", "left", "center");
+	
+	/////////////////////////
+	// FRAMEMODELS
+	/////////////////////////
+	declare MLText = """
+	<framemodel id="FrameModel_Landmark">
+		<label 
+			id="Label_LandmarkName"
+			posn="0 0 1"
+			halign="center" 
+			valign="center" 
+			sizen="30 7"
+			textcolor="fff"
+			text=""
+		/>
+	</framemodel>
+	
+	<framemodel id="FrameModel_InputInfo">
+		<quad halign="center" valign="bottom" sizen="50 {{{SM_SizeYElement}}}"
+		 image="{{{IMGSlotSmallBg}}}"   posn="0 0 6" opacity="1."/>
+		<label halign="right" valign="center" posn="12 4.5 7" textcolor="ddd" text="BACK"
+		 id="Label_Name" textsize="3."  sizen="34"  opacity="1.0"/>
+		<quad halign="center" valign="bottom" sizen="50 {{{SM_SizeYElement}}}"
+		 image="{{{IMGSlotSmallFg}}}"  posn="0 0 8" opacity="1.0"/>
+		<quad halign="center" valign="center" sizen="6 6"
+		 id="Quad_Icon" image=""  posn="18.5 4 7" opacity="1.0"/>
+	</framemodel>
+	
+	{{{SelectArray2D::InjectInFrameModel()}}}
+	""";
+
+	/////////////////////////
+	// MANIALINK
+	/////////////////////////
+	MLText ^= """
+	<frame id="frame_requestslist" posn="{{{-150 + SM_SizeXList/2.}}} 75 0">
+		<frame id="frame_header">
+			<label id="Label_Id" textprefix="$t" halign="left" valign="center2" bgcolor="fff" text="#" posn="{{{LabelPosX_Id}}} -5 0" opacity="1.0" sizen="17" textfont="{{{Font::GetFontName("Main")}}}"/>
+			<label id="Label_Result" textprefix="$t" halign="left" valign="center2" bgcolor="fff" text="Result" posn="{{{LabelPosX_Result}}} -5 0" opacity="1.0" sizen="17" textfont="{{{Font::GetFontName("Main")}}}"/>
+			<label id="Label_Url" textprefix="$t" halign="left" valign="center2" bgcolor="fff" text="Url" posn="{{{LabelPosX_Url}}} -5 0" opacity="1.0" sizen="17" textfont="{{{Font::GetFontName("Main")}}}"/>
+		</frame>
+		<frame id="frame list">
+			{{{SelectArray2D::InjectInManialink()}}}
+		</frame>
+		<quad posn="0 0 -1" halign="center" sizen="{{{SM_SizeXList}}} 150" bgcolor="0004" />
+	</frame>
+	
+	<frame id="frame_requestinfo" posn="-40 0">
+		<quad posn="0 75 -1" sizen="195 150" bgcolor="0004" />
+		
+		<entry textfont="{{{Font::GetFontName("Main")}}}" posn="15 72.5 0" sizen="170 5" id="entry_url"/>
+		<label textfont="{{{Font::GetFontName("Main")}}}" posn="15 67.5 0" sizen="30 5" id="label_type"/>
+		<label textfont="{{{Font::GetFontName("Main")}}}" posn="28 67.5 0" sizen="120 5" id="label_route"/>
+		
+		<label textfont="{{{Font::GetFontName("Main")}}}" posn="15 52.5 0" sizen="20 5" text="auth :"/>
+		<entry textfont="{{{Font::GetFontName("Main")}}}" posn="35 52.5 0" sizen="120 5" id="entry_auth"/>
+		
+		<label textfont="{{{Font::GetFontName("Main")}}}" posn="15 60 0" sizen="30 5" text="executed at"/>
+		<label textfont="{{{Font::GetFontName("Main")}}}" posn="41 60 0" sizen="45 5" id="label_date"/>
+		<label textfont="{{{Font::GetFontName("Main")}}}" posn="87 60 0" sizen="15 5" text="in"/>
+		<label textfont="{{{Font::GetFontName("Main")}}}" posn="92 60 0" sizen="15 5" id="label_time"/>
+		
+		<frame id="frame_post">
+			<label textfont="{{{Font::GetFontName("Main")}}}" posn="15 45 0" sizen="30 5" text="Request body" halign="center2"/>
+			<textedit posn="15 40 1" sizen="175 25" id="request_body" showlinenumbers="1" autonewline="1"/>
+			<label textfont="{{{Font::GetFontName("Main")}}}" posn="15 10 0" sizen="30 5" text="Response body" halign="center2"/>
+			<textedit posn="15 5 1" sizen="175 75" id="result_body" showlinenumbers="1" autonewline="1"/>
+		</frame>
+		<frame id="frame_get">
+			<label textfont="{{{Font::GetFontName("Main")}}}" posn="15 45 0" sizen="30 5" text="Response body"/>
+			<textedit posn="15 40 1" sizen="175 110" id="result_body" showlinenumbers="1" autonewline="1"/>
+		</frame>
+	</frame>
+""";
+	/////////////////////////
+	// INPUT INFOS
+	/////////////////////////
+	MLText ^= """<frame id="Frame_InputInfos" posn="0 -85 7">
+	""";
+	for(I, 0, 3) {
+		declare Real PosnX = 104. - I*57.4;
+		MLText ^= """
+		<frameinstance 
+			modelid="FrameModel_InputInfo" 
+			posn="{{{PosnX}}} 0 0"
+			halign="center" 
+			valign="center" 
+			id="FrameInstance_InputInfo{{{I}}}" 
+		/>
+		""";
+	}
+	MLText ^= """
+	</frame>
+	
+	<script><!--
+		#Const DebugName  "L_Dbg_RequestLogger"
+			
+		#Include "TextLib" as TL
+		#Include "MathLib" as ML
+		
+		{{{Manialink::GetIncludes()}}}
+		{{{Manialink::Load()}}}
+		
+		//Pages & tabs
+		declare Integer		G_IndexFocusY;
+		
+		{{{SelectArray2D::InjectInGlobalDeclaration()}}}
+		{{{SelectArray2D::InjectInFunction()}}}
+		
+		Void Init()
+		{
+			G_IndexFocusY = -1;
+			
+			{{{SelectArray2D::InjectInInit()}}}
+		}
+		
+		//////////////////
+		// INPUT INFO
+		//////////////////
+		Void InitInputsInfo() {
+			declare CMlLabel Label_InputName;
+			declare CMlQuad  Quad_InputIcon;
+		
+			//SELECT
+			declare CMlFrame FrameInputSelect <=> (Page.GetFirstChild("FrameInstance_InputInfo0") as CMlFrame);
+			FrameInputSelect.Hide();
+			//CANCEL
+			declare CMlFrame FrameInputCancel <=> (Page.GetFirstChild("FrameInstance_InputInfo1") as CMlFrame);
+			Label_InputName <=> (FrameInputCancel.GetFirstChild("Label_Name") as CMlLabel);
+			Label_InputName.Value = _("BACK");
+			Quad_InputIcon <=> (FrameInputCancel.GetFirstChild("Quad_Icon") as CMlQuad);
+			Quad_InputIcon.ImageUrl = "{{{IMGCancel}}}";
+			//ACTION1
+			declare CMlFrame FrameInputAction1 <=> (Page.GetFirstChild("FrameInstance_InputInfo2") as CMlFrame);
+			Label_InputName <=> (FrameInputAction1.GetFirstChild("Label_Name") as CMlLabel);
+			Label_InputName.Value = "FLUSH REQUESTS";
+			Quad_InputIcon <=> (FrameInputAction1.GetFirstChild("Quad_Icon") as CMlQuad);
+			Quad_InputIcon.ImageUrl = "{{{IMGAction1}}}";
+			//ACTION2
+			declare CMlFrame FrameInputAction2 <=> (Page.GetFirstChild("FrameInstance_InputInfo3") as CMlFrame);
+			Label_InputName <=> (FrameInputAction2.GetFirstChild("Label_Name") as CMlLabel);
+			Label_InputName.Value = "REFRESH";
+			Quad_InputIcon <=> (FrameInputAction2.GetFirstChild("Quad_Icon") as CMlQuad);
+			Quad_InputIcon.ImageUrl = "{{{IMGAction2}}}";
+		}
+		
+		////////////////////////
+		// UPDATE REQUEST INFO
+		////////////////////////
+		Void UpdateRequestInfo() {
+			declare Text[Text][] Requests for Page;
+		
+			declare CMlFrame FrameInfo <=> (Page.GetFirstChild("frame_requestinfo") as CMlFrame);
+			
+			if (Requests.count == 0 || G_IndexFocusY < 0)
+			{
+				FrameInfo.Hide();
+				return;
+			}
+			FrameInfo.Show();
+			log(Requests.count^","^{{{C_Count_RequestList}}}*(G_PageIndex)^","^G_IndexFocusY);
+			
+			declare Integer RequestIndex = Requests.count - 1 - {{{C_Count_RequestList}}}*(G_PageIndex) - G_IndexFocusY;
+			declare Text[Text] Request = Requests[RequestIndex];
+			
+			declare CMlEntry entry_url <=> (FrameInfo.GetFirstChild("entry_url") as CMlEntry);
+			entry_url.Value = Request["host"]^Request["url"];
+			declare CMlLabel Label_Mode <=> (FrameInfo.GetFirstChild("label_type") as CMlLabel);
+			Label_Mode.Value = Request["mode"];
+			declare CMlLabel Label_Route <=> (FrameInfo.GetFirstChild("label_route") as CMlLabel);
+			Label_Route.Value = Request["url"];
+			declare CMlEntry entry_auth <=> (FrameInfo.GetFirstChild("entry_auth") as CMlEntry);
+			entry_auth.Value = Request["auth"];
+			declare CMlLabel Label_Date <=> (FrameInfo.GetFirstChild("label_date") as CMlLabel);
+			Label_Date.Value = Request["sendtime"];
+			declare CMlLabel Label_Time <=> (FrameInfo.GetFirstChild("label_time") as CMlLabel);
+			if (Request.existskey("requesttime"))
+				Label_Time.Value = Request["requesttime"];
+			else
+				Label_Time.Value = "--- ms";
+			
+			declare CMlFrame Frame_Get <=> (FrameInfo.GetFirstChild("frame_get") as CMlFrame);
+			declare CMlFrame Frame_Post <=> (FrameInfo.GetFirstChild("frame_post") as CMlFrame);
+			
+			if (Request["mode"] == "GET")
+			{
+				Frame_Get.Show();
+				Frame_Post.Hide();
+				
+				declare CMlTextEdit Body <=> (Frame_Get.GetFirstChild("result_body") as CMlTextEdit);
+				if (Request.existskey("answerbody"))
+					Body.Value = Request["answerbody"];
+				else
+					Body.Value = "";
+			} else if (Request["mode"] == "POST") {
+				Frame_Get.Hide();
+				Frame_Post.Show();
+				
+				declare CMlTextEdit Body <=> (Frame_Post.GetFirstChild("result_body") as CMlTextEdit);
+				if (Request.existskey("answerbody"))
+					Body.Value = Request["answerbody"];
+				else
+					Body.Value = "";
+				
+				Body <=> (Frame_Post.GetFirstChild("request_body") as CMlTextEdit);
+				if (Request.existskey("requestbody"))
+					Body.Value = Request["requestbody"];
+				else
+					Body.Value = "";
+			}
+		}
+		
+		//////////////////
+		// REQUESTS LIST
+		//////////////////
+		Void UpdateRequestsList() {
+			declare Text[Text][] Requests for Page;
+			
+			declare Integer NbRequests = Requests.count;
+			
+			declare Integer StartIndexPosition 	=  NbRequests - 1 - {{{C_Count_RequestList}}}*(G_PageIndex); //on commence par la fin
+			
+			for(I, 0, {{{C_Count_RequestList - 1}}}) {
+				declare Integer RequestIndex = StartIndexPosition - I;
+				
+				declare Text Label_Id;
+				declare Text Label_Url;
+				declare Text Label_Result;
+			
+				if(RequestIndex >= 0)
+				{
+					ActivateLine(I, True);
+					Label_Id = TL::ToText(RequestIndex);
+					Label_Url = Requests[RequestIndex]["url"];
+					if (Requests[RequestIndex].existskey("httpcode"))
+						Label_Result = Requests[RequestIndex]["httpcode"];
+					else
+						Label_Result = "---";
+				
+				} else {
+					ActivateLine(I, False);
+					Label_Id     = "";
+					Label_Url    = "";
+					Label_Result = "";
+				}
+		
+				SetColumnTextData   ("Id",		I,	Label_Id);
+				SetColumnTextData   ("Url",		I,	Label_Url);
+				SetColumnTextData   ("Result",	I,	Label_Result);
+			}
+			
+			declare CMlQuad  Quad_Selector <=> (Page.GetFirstChild("Quad_Selector") as CMlQuad);
+			
+			if (NbRequests == 0) {	
+				G_IndexSelectY = 0;
+				Quad_Selector.Hide();
+			} else {
+				log(G_IndexSelectY);
+				SetNearestIndex(NbRequests-1);		
+				log(G_IndexSelectY);
+				Quad_Selector.Show();
+			}
+		}
+		
+		//////////////////
+		// MAIN
+		//////////////////
+		main() {
+			Init();
+			InitInputsInfo();
+			
+			EnableMenuNavigation(True,False,Null,5);
+		
+			declare Text[Text][] Requests for Page;
+	
+			declare Integer Prev_PageIndex = G_PageIndex;
+		
+			while(True) {
+				yield;
+				
+				if(! PageIsVisible) continue;
+				LibManialink_AnimLoop();
+	
+				if(Prev_PageIndex != G_PageIndex)
+				{
+					Prev_PageIndex = G_PageIndex;
+					UpdateRequestsList();
+					G_IndexFocusY = G_IndexSelectY;
+					UpdateRequestInfo();
+				}
+				
+				if (G_IndexFocusY != G_IndexSelectY)
+				{
+					G_IndexFocusY = G_IndexSelectY;
+					UpdateRequestInfo();
+				}
+				
+				foreach(Event in PendingEvents) {
+					switch(Event.Type) {
+
+						case CMlEvent::Type::PluginCustomEvent: {
+							switch(Event.PluginCustomEventType) {
+								case "Show" : {
+									{{{_ShowAnim}}}
+									SendCustomEvent("RequestLogger_Refresh", Text[]);
+									G_IndexSelectY = 0;
+								}
+								case "Hide" : {
+									{{{_HideAnim}}}
+									
+								}
+								case "RequestsReceived" : {
+									declare Real NbPages = (Requests.count*1.0 - 1)/({{{C_Count_RequestList}}}*1.0);
+									SetPageMax(ML::Max(0, ML::CeilingInteger(NbPages)));
+									UpdateRequestsList();
+									G_IndexFocusY = G_IndexSelectY;
+									UpdateRequestInfo();
+								}
+							}
+						}
+					
+						case CMlEvent::Type::MenuNavigation: {					
+							switch(Event.MenuNavAction) {
+								case CMlEvent::EMenuNavAction::PageUp : {
+									//prevpage (newer requests)
+									
+								}
+								case CMlEvent::EMenuNavAction::PageDown : {
+									//nextpage (older requests)
+								}
+								case CMlEvent::EMenuNavAction::Select : {
+								}
+								case CMlEvent::EMenuNavAction::Cancel : {
+									SendCustomEvent("GotoPrevious", [""]);
+									{{{_HideAnim}}}
+									SendCustomEvent("DetachPage", ["Dbg_RequestLogger"]);
+								}
+								case CMlEvent::EMenuNavAction::AppMenu : {
+									SendCustomEvent("GotoPrevious", [""]);
+									{{{_HideAnim}}}
+									SendCustomEvent("DetachPage", ["Dbg_RequestLogger"]);
+								}
+								case CMlEvent::EMenuNavAction::Up : {
+									//up
+								}
+								case CMlEvent::EMenuNavAction::Down : {
+									//down
+								}
+								case CMlEvent::EMenuNavAction::Action1 : {
+									//X : flush
+									SendCustomEvent("RequestLogger_FlushRequests", Text[]);
+								}
+								case CMlEvent::EMenuNavAction::Action2 : {
+									//Y : refresh
+									SendCustomEvent("RequestLogger_Refresh", Text[]);
+								}
+							}
+							{{{SelectArray2D::InjectInMenuNavigation()}}}
+						}
+					}
+				}
+			}
+		}
+	--></script>
+	""";
+	
+	return MLText;
+}

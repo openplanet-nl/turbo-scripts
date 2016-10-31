@@ -1,0 +1,1786 @@
+
+#Include "Libs/Openplanet/Manialink2.Script.txt"						as Manialink
+#Include "Libs/Openplanet/TMConsole/BuilderHelper.Script.txt"		as BuilderHelper
+#Include "Libs/Openplanet/UIPadButtons.Script.txt"					as LibUIButtons
+#Include "Libs/Openplanet/TMConsole/PanelParameter.Script.txt"		as PanelParameter
+#Include "Libs/Openplanet/TMConsole/Menu/ClipTransitions.Script.txt"	as ClipTransitions
+#Include "Libs/Openplanet/TMConsole/LibAudio.Script.txt"				as LibAudio
+#Include "Libs/Openplanet/TMConsole/FontManager.Script.txt"			as Font
+#Include "Libs/Openplanet/TMConsole/ParallaxMenu.Script.txt"			as ParallaxMenu
+#Include "Libs/Openplanet/TMConsole/Menu/SceneryManager.Script.txt"	as SceneryManager
+#Include "Libs/Openplanet/TMConsole/Colors.Script.txt"				as Colors
+#Include "Libs/Openplanet/TMConsole/Volumes.Script.txt"				as Volumes
+#Include "Libs/Openplanet/TMConsole/MenuColor.Script.txt"			as MenuColor
+#Include "Libs/Openplanet/TMConsole/Menu/MenuText.Script.txt"		as MenuText
+#Include "Libs/Openplanet/TMConsole/Prompter2.Script.txt"			as Prompter2
+#Include "Libs/Openplanet/TMConsole/Menu/MenuVersion.Script.txt"		as MenuVersion
+#Include "TextLib"												as TextLib
+#Include "Libs/Openplanet/TMConsole/Menu/LibLoading.Script.txt"		as Loading
+
+#Const C_ImgBase	"file://Media/Manialinks/Nadeo/TMConsole/Images/"
+#Const C_ImgBase2	"file://Media/Images/TMConsole/Ingame/"
+#Const C_ImgBaseSM	"MainMenu/StartMain/"
+#Const C_SizePanelX          6.
+#Const C_SizePanelY          5.
+#Const C_RATIO               12.962
+
+
+#Const		C_GameNameBrowseRooms			"BrowseRooms"
+#Const		C_GameNameJoinAFriend			"JoinAFriend"
+#Const		C_GameNameHotSeat				"HotSeat"
+#Const		C_GameNameArcade				"Arcade"
+#Const		C_GameNameSplitScreen			"Rounds"
+#Const		C_GameNameSoloCampaign			"Solo"
+#Const		C_GameNameDDCampaign			"Duo"
+#Const		C_GameNameChampionships			"Challenges"
+#Const		C_GameNameBuddiesChampionships	"BuddiesChallenges"
+#Const		C_GameNameSuperSolo				"SuperSolo"
+#Const		C_GameNameNewTrack				"NewTrack"
+#Const		C_GameNameMyTracks				"MyTracks"
+#Const		C_GameNameGarage				"Garage"
+#Const		C_GameNameMusicMix				"MusicMix"
+#Const 		C_GameNameUnlockCheats			"UnlockCheats"
+
+Text Build(Text _ShowAnim, Text _HideAnim, Integer _Scenery) {
+	
+	declare Text 	SoundMove                = LibAudio::GetSoundMove();
+	declare Text 	SoundBack                = LibAudio::GetSound("PageBack");
+	declare Text 	SoundWIP                 = LibAudio::GetSoundWIP();
+	declare Text 	SoundTransitionMain2Bill = LibAudio::GetSound("TransitionMain2Bill");
+	declare Text 	SoundPageForward         = LibAudio::GetSound("PageForward");
+	declare Text 	SoundWelcome             = LibAudio::GetSound("Welcome");
+	declare Text 	SoundToLeft              = LibAudio::GetSound("ToLeft");
+	declare Text 	SoundToRight             = LibAudio::GetSound("ToRight");
+	
+	//declare Text 	IMGInputSelect           = LibUIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Select);
+	//declare Text 	IMGInputCancel           = LibUIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Cancel);
+	//declare Text 	IMGInputAction1          = LibUIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Action1);	
+	//declare Text 	IMGInputAction2          = LibUIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Action2);	
+	declare Text 	IMG_PC_Action2           = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"), CManiaAppEvent::EMenuNavAction::Action2);
+	declare Text 	IMG_PC_Action1           = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"), CManiaAppEvent::EMenuNavAction::Action1);
+	declare Text 	IMG_PC_Select            = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"), CManiaAppEvent::EMenuNavAction::Select);
+	declare Text 	IMG_PC_Cancel            = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"), CManiaAppEvent::EMenuNavAction::Cancel);
+	declare Text 	IMG_PC_PageUp            = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"), CManiaAppEvent::EMenuNavAction::PageUp);
+	declare Text 	IMG_PC_PageDown          = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"), CManiaAppEvent::EMenuNavAction::PageDown);
+	
+	declare Text 	IMG_PS_Action2           = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::Action2);
+	declare Text 	IMG_PS_Action1           = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::Action1);
+	declare Text 	IMG_PS_Select            = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::Select);
+	declare Text 	IMG_PS_Cancel            = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::Cancel);
+	declare Text 	IMG_PS_PageUp            = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::PageUp);
+	declare Text 	IMG_PS_PageDown          = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::PageDown);
+	
+	declare Text 	IMG_XB_Action2           = LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::Action2);
+	declare Text 	IMG_XB_Action1           = LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::Action1);
+	declare Text 	IMG_XB_Select            = LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::Select);
+	declare Text 	IMG_XB_Cancel            = LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::Cancel);
+	declare Text 	IMG_XB_PageUp            = LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::PageUp);
+	declare Text 	IMG_XB_PageDown          = LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::PageDown);
+
+	declare Text 	IMGArrow                 = C_ImgBase^"Arrow.tga";
+	declare Text    IMGArrowR                =  C_ImgBase ^ C_ImgBaseSM ^ "RightArrow.dds";
+	declare Text    IMGArrowL                =  C_ImgBase ^ C_ImgBaseSM ^ "LeftArrow.dds";
+	
+	declare Text 	IMGBarreTram             = C_ImgBase2^"menu-bg-2.dds";
+	declare Text 	IMGMenuBg                = C_ImgBase2^"menu-bg-1.dds";
+	declare Text 	IMGSlotMediumBg          = C_ImgBase2^"slot-medium-bg.dds";
+	declare Text 	IMGSlotMediumFg          = C_ImgBase2^"slot-medium-fg.dds";
+	declare Text 	IMGSlotBigBg             = C_ImgBase2^"slot-big-bg.dds";
+	declare Text 	IMGSlotBigFg             = C_ImgBase2^"slot-big-fg.dds";
+	declare Text 	SubMainMenuBase          = C_ImgBase^"MainMenu/SubMain/Sub_MainMenu_Category_reduced.dds";
+	//declare Text 	SubMainMenuTest2         = C_ImgBase^"MainMenu/SubMain/sample_menu-09.png";
+	declare Text 	SubMainMenuTurbo         = C_ImgBase^"MainMenu/SubMain/Sub_MainMenu_Content.dds";
+	declare Text 	SubMainMenuCampaign      = C_ImgBase^"MainMenu/SubMain/Sub_MainMenu_Campaign.dds";
+	declare Text 	SubMainMenuGarage        = C_ImgBase^"MainMenu/SubMain/Sub_MainMenu_Garage.dds";
+	declare Text 	SubMainMenuMultiLocal    = C_ImgBase^"MainMenu/SubMain/Sub_MainMenu_Multilocal.jpg";
+	declare Text 	SubMainMenuOnline        = C_ImgBase^"MainMenu/SubMain/Sub_MainMenu_Online.dds";
+	declare Text 	SubMainMenuTrackBuilder  = C_ImgBase^"MainMenu/SubMain/Sub_MainMenu_Trackbuilder.dds";
+	declare Text 	SubMainMenuFocus         = C_ImgBase^"MainMenu/SubMain/Sub_MainMenu_Focus.dds";
+	declare Text 	SubMainMenuTrame         = C_ImgBase^"MainMenu/SubMain/Trame_reduced.dds";
+	
+	declare Integer Count_InstancesY         = 1;
+	declare Integer Count_InstancesX         = 5;
+	
+	declare Integer NumberOfSubMenu          = 5;
+	declare Real	SM_SizeX                 = 100.;
+	declare Real	SM_SizeY                 = SM_SizeX / C_RATIO;
+	declare Real	Hack_ReglageX            = 5.0;
+	declare Real	Hack_ReglageY            = 10.;
+	declare Real	SM_PosX                  = 80. + Hack_ReglageX;
+	declare Real	SM_PosY                  = 50. + Hack_ReglageY;
+	declare Real	SM_Separator             = SM_SizeY * 0.095;
+	declare Real	SM_PosYElementAlignTop   = SM_PosY - SM_Separator;
+	declare Real	SM_SizeYElement          = SM_SizeY - SM_Separator;
+	declare Integer	SM_NumberOfLegend        = 1;
+	
+	declare Real	SizeX_Total              = 600.*Count_InstancesX*1.;
+	declare Real	SizeY_Total              = 180.;
+	declare Real	MarginY_Button           = 0.0;
+	declare Real	MarginX_Button           = 57.70;
+	declare Real	SizeXQuad                = (SizeX_Total - MarginX_Button) / Count_InstancesX + (MarginX_Button/Count_InstancesX)+200.;
+	declare Real	SizeYQuad                = (SizeY_Total - MarginY_Button) / Count_InstancesY;
+	declare Real	PosnXLabel               = 33.0;
+	declare Real	PosnYLabel               = 48.5;
+	declare Real	PosXFirstQuad            = PanelParameter::GetPosPanelX(C_SizePanelX);
+	declare Real	PosYFirstQuad            = PanelParameter::GetPosPanelY(C_SizePanelY)+8.;
+	declare Real	ClipSizeX                =  SizeX_Total*1.5;
+	declare Real	ClipSizeY                =  180.;
+	declare Real	TestIndexX               =  3.;
+	declare Real 	NewFramePosX             = (TestIndexX -1)* (MarginX_Button + SizeXQuad);
+	
+	declare Real	ClipPosX                 =  320.;
+	declare Real	ClipPosY                 =  0.;
+	declare Integer Scenery                  = SceneryManager::GetScenery();
+	
+	declare Text[]    Prompt_Id         = ["Prompt_Env_0", "Prompt_Env_1", "Prompt_Env_2", "Prompt_Env_3", "Prompt_Env_4"];
+	//declare Vec3[]    Prompt_Position = [<0., -17.0, 4.>, <0., -17.0, 0.>, <0., -17.0, 4.>, <0., -17.0, 4.>];
+	declare Integer   Prompt_TextSize   =  4;
+	declare Integer   Prompt_TextSize2  =  7;
+	declare Text      Prompt_TextFont   =  Font::GetFontName("MainSmall2");
+	declare Text      Prompt_TextFont2   =  Font::GetFontName("Main");
+	declare Vec2      Prompt_ClipSizen = <95.5, 92.>;
+	declare Vec2      Prompt_ClipSizen2 = <95.5, 98.>;
+	declare Integer   ActualVersion     = MenuVersion::GetVersion();
+
+	//SIZES
+	//declare Real	SM_SizeY                = 8.27;
+	
+	//POSITIONS
+	
+	Loading::Init(<320., 390.>, <0., 0.>, 0, _("Retrieving information. Please wait."));
+	
+	declare Text MLText = """
+	
+	<framemodel id="Frame_Button">
+		<label halign="left" valign="center"  textfont="{{{Font::GetFontName("Title")}}}" posn="{{{SM_PosX - SizeXQuad - SM_SizeX/2. + 3.2}}}  {{{SM_PosY + SM_SizeY + 0.5}}} 6" textcolor="fff" id="Label_Title" textsize="12." text="" sizen="{{{SM_SizeX-2.}}}"  opacity="0."/>
+		<quad halign="center" valign="bottom" sizen="{{{SM_SizeX}}} {{{SM_SizeY*2.}}}"  image="{{{IMGSlotBigFg}}}"                  posn="{{{SM_PosX - SizeXQuad}}} {{{SM_PosY}}} 8" opacity="0."/>
+		<quad  halign="center" valign="bottom" sizen="{{{SM_SizeX}}} {{{SM_SizeY*2.}}}" image="{{{IMGSlotBigBg}}}"                  posn="{{{SM_PosX - SizeXQuad}}} {{{SM_PosY}}} 5" opacity="0."/>
+		<quad id="Quad_Selector" halign="center" valign="center" sizen="106 150" posn="{{{SM_PosX - SizeXQuad}}} {{{SM_PosY}}} 0" image="{{{SubMainMenuFocus}}}" keepratio="Fit" />
+		<quad halign="center" valign="top" sizen="{{{SM_SizeX}}} {{{SM_SizeY}}}" image="{{{IMGMenuBg}}}" opacity="0." posn="{{{SM_PosX - SizeXQuad}}} {{{SM_PosY}}} 1" />
+	</framemodel>
+
+	/* -SubMenu-
+		Le SubMenu est fait en 3 parties
+		Frame_SubMenu       - Les boutons de sélection
+		Frame_SubMenuLegend - Les 3 lignes de legendes
+		Frame_SubMenuEnd    - Les 2 dernières lignes du menu
+	*/
+	<framemodel id="Frame_SubMenu">
+		<quad halign="center" valign="top" sizen="{{{SM_SizeX}}} {{{SM_SizeYElement}}}" image="{{{IMGSlotMediumFg}}}" opacity="0.0" posn="{{{SM_PosX}}} {{{SM_PosYElementAlignTop}}} 4" />
+
+		<label halign="left" valign="top" style="TextButtonNav" posn="{{{PosnXLabel+Hack_ReglageX}}} {{{PosnYLabel+Hack_ReglageY}}} 3" opacity="1.0" id="Label_SubMenu" textsize="4." sizen="{{{SM_SizeX-2}}}" text="" textcolor="fff" textfont="{{{Font::GetFontName("Main")}}}"
+		 />
+		<quad halign="center" valign="top" sizen="{{{SM_SizeX}}} {{{SM_SizeYElement}}}" image="{{{IMGSlotMediumBg}}}" opacity="0.0" posn="{{{SM_PosX}}} {{{SM_PosYElementAlignTop}}} 2" />
+
+		<quad halign="center" valign="top" sizen="{{{SM_SizeX}}} {{{SM_SizeY}}}" image="{{{IMGMenuBg}}}" opacity="0." posn="{{{SM_PosX}}} {{{SM_PosY}}} 1" />
+	</framemodel>
+	
+	<framemodel id="Frame_SubMenuLegend">
+		<quad halign="center" valign="top" sizen="{{{SM_SizeX}}} {{{SM_SizeYElement}}}"  bgcolor="{{{Colors::GetColorHexa("Black")}}}" opacity="0." posn="{{{SM_PosX}}} {{{SM_PosYElementAlignTop}}} 2" />
+		<quad halign="center" valign="top" sizen="{{{SM_SizeX}}} {{{SM_SizeY}}}" image="{{{IMGMenuBg}}}" opacity="0." posn="{{{SM_PosX}}} {{{SM_PosY}}} 1" />
+		<quad halign="center" valign="top" sizen="{{{SM_SizeX}}} {{{SM_SizeY+0.4}}}" bgcolor="f00" opacity="1." image="{{{IMGBarreTram}}}" posn="{{{SM_PosX}}} {{{SM_PosY}}} 1" />
+		<quad halign="center" valign="top" sizen="{{{SM_SizeX}}} {{{SM_SizeY+0.4}}}" bgcolor="f00" opacity="1." image="{{{IMGBarreTram}}}" posn="{{{SM_PosX}}} {{{SM_PosY-SM_SizeY}}} 2" />
+		<quad halign="center" valign="top" sizen="{{{SM_SizeX}}} {{{SM_SizeY+0.4}}}" bgcolor="f00" opacity="1." image="{{{IMGBarreTram}}}" posn="{{{SM_PosX}}} {{{SM_PosY-SM_SizeY*2.}}} 3" />
+	</framemodel>
+	
+	<framemodel id="Frame_CheatInput">
+	""";
+		for (I, 0, 2) {
+				//Quad_InputIcon.Size = <{{{SM_SizeY*0.6}}}, {{{SM_SizeY*0.6}}}>;
+			declare Vec2 QuadSize;
+			if(I <= 1)
+			{
+				QuadSize = <SM_SizeY*0.7, SM_SizeY*0.7>;
+			}
+			else
+			{
+				QuadSize = <SM_SizeY*0.5, SM_SizeY*0.5>;
+			}
+			MLText ^= """ <quad	halign="center" valign="center" posn="0 0 3"	sizen="{{{QuadSize.X}}} {{{QuadSize.Y}}} 6" 	image="{{{IMG_PC_Select}}}" id="Quad_InputIcon{{{I}}}" />""";
+		}
+	MLText ^= """
+		<label 	halign="center" valign="center" posn="0 0 2" 	sizen="{{{SM_SizeY*0.8}}} {{{SM_SizeY*0.8}}} 6" 	textsize="4." text="-" textfont="{{{Font::GetFontName("Main")}}}"/>
+	</framemodel>
+	
+	<framemodel id="Frame_SubMenuEnd">
+		<quad halign="center" valign="top" sizen="{{{SM_SizeX}}} {{{SM_SizeYElement}}}"  bgcolor="000" opacity="0."	 	posn="{{{SM_PosX}}} {{{SM_PosYElementAlignTop}}} 2" />
+		<quad halign="center" valign="top" sizen="{{{SM_SizeX}}} {{{SM_SizeY}}}" image="{{{IMGMenuBg}}}" opacity="1." 	posn="{{{SM_PosX}}} {{{SM_PosY}}} 1" />
+		<quad halign="center" valign="top" sizen="{{{SM_SizeX}}} {{{SM_SizeY}}}" image="{{{IMGMenuBg}}}" opacity="0."	posn="{{{SM_PosX}}} {{{SM_PosY - SM_SizeY}}} 1" />
+	</framemodel>
+	""";
+	
+	//////////////////////////////
+	// FRAME MAIN MENU
+	//////////////////////////////
+	MLText ^= """
+	<frame id="Frame_All">
+		{{{Loading::InjectInManialink()}}}
+		<quad id="ClipTest" halign="center" valign="center" opacity="0.0" sizen="320 180" bgcolor="900" posn="0 0 2" />
+		<frame id="Frame_Backgrounds" posn="0.0 0 1" scale="1.0" clip="False" clipsizen="320 180" clipposn="0 0">
+			{{{ParallaxMenu::BuildParallaxFrames(Scenery)}}}
+		</frame>
+		<quad id="MouseInput_NextMenu" scriptevents="1" halign="center" valign="center" keepratio="Fit" sizen="12.0 12.0" image="{{{IMGArrowR}}}" posn="146. 0. 11" opacity="1." colorize="{{{TextLib::ColorToText(Colors::GetColor("White"))}}}"/>
+		<quad id="MouseInput_PrevMenu" scriptevents="1" halign="center" valign="center" keepratio="Fit" sizen="12.0 12.0" image="{{{IMGArrowL}}}" posn="-146. 0. 11" opacity="1." colorize="{{{TextLib::ColorToText(Colors::GetColor("White"))}}}"/>
+		<frame id="Frame_Content" posn="0.0 0 1" scale="1.0" clip="False" clipsizen="{{{ClipSizeX}}} {{{ClipSizeY}}}" clipposn="{{{ClipPosX}}} {{{ClipPosY}}}">
+			<quad id="QuadTest" halign="center" valign="center" opacity="0.0" sizen="{{{SizeX_Total+1000}}} {{{SizeY_Total}}}" bgcolor="900" posn="320 0 2"	/>
+	""";
+
+	for(I,0,Count_InstancesY-1)
+	{
+		declare Real IndexY = I*1.;
+		declare Real PosnY = PosYFirstQuad - IndexY*SizeYQuad - IndexY*MarginY_Button*1. - MarginY_Button/2.;
+		for(J,0,Count_InstancesX-1)
+		{
+			declare Real IndexX = J*1.;
+			declare Real PosnX = PosXFirstQuad + IndexX*SizeXQuad + IndexX*MarginX_Button*1. - MarginX_Button;
+			
+			//HACK -- Les deux Quad Arrow sont des PlaceHolder
+
+
+			MLText^="""
+			<frame id="Frame_Menu{{{I}}}{{{J}}}">
+				<frameinstance modelid="Frame_Button" posn="{{{PosnX-10.7}}} {{{PosnY-66.7}}} 5." id="Frame_Instance{{{I}}}{{{J}}}" hidden="0" />
+			""";
+			
+			declare Vec3 PromptPos = <PosnX/2.- SizeXQuad/2.+50.5-2.1*J, 77.9, 4.>;
+			declare Vec3 PromptPos2 = <PosnX/2.- SizeXQuad/2.+50.5-2.1*J, 77.9, 4.>;
+			declare Vec2 CachePos = <PosnX- SizeXQuad - MarginX_Button+158.6, PosnY+70.5>;
+			if(Prompt_Id.existskey(J))
+			{
+				MLText^="""
+				<frame hidden="0" posn="-70. -104.">
+					<frame id="PrompterTitle" posn="0. 40.5 -3">
+						{{{Prompter2::InjectInManialink2(Prompt_Id[J], PromptPos, Prompt_ClipSizen, Prompt_TextSize2, Prompt_TextFont2,"""textprefix="$t" """)}}}
+					</frame>
+					<frame id="PrompterTitle" posn="0. -18.6">
+						{{{Prompter2::InjectInManialink2(Prompt_Id[J]^"2", PromptPos2, Prompt_ClipSizen2, Prompt_TextSize, Prompt_TextFont,"")}}}
+					</frame>
+					<quad id="Quad_CachePromptL" halign="center" valign="center" keepratio="Fit" bgcolor="{{{Colors::GetColorHexa("Black")}}}" sizen="3.0 5.0" posn="{{{CachePos.X}}} {{{CachePos.Y}}} 12" opacity="0.0" rot="15"/>
+					<quad id="Quad_CachePromptR" halign="center" valign="center" keepratio="Fit" bgcolor="{{{Colors::GetColorHexa("Black")}}}" sizen="3.0 5.0" posn="{{{CachePos.X+Prompt_ClipSizen2.X+0.5}}} {{{CachePos.Y}}} 12" opacity="0.0" rot="15"/>
+				</frame>
+				""";
+			}
+
+			for(K, 0, NumberOfSubMenu-1)
+			{
+				declare Real FramePosnX = PosnX - SizeXQuad-12.5;
+				declare Real FramePosnY = PosnY - SM_SizeY + (K * - 5.9) -61.7;
+
+				MLText^="""
+				<frame posn="{{{FramePosnX}}} {{{FramePosnY}}} 5." id="Frame_InstanceSubMenu{{{J}}}{{{K}}}" hidden="1">
+				
+					<frameinstance modelid="Frame_SubMenu" />
+					<quad halign="center" valign="top" sizen="{{{SM_SizeX}}} {{{SM_SizeYElement}}}" image="{{{IMGSlotMediumFg}}}" opacity="0.0" posn="{{{SM_PosX}}} {{{SM_PosYElementAlignTop}}} 5" scriptevents="1" id="MouseInput_MenuSelection_{{{J}}}:{{{K}}}" />
+				</frame>
+				""";
+			
+				if (J == 1 && K == 3)
+				{	//Difficile de s'y retrouver dans toutes ces indirections de positions. Je règle à l'arrache.
+					MLText ^= """<frame id="Frame_CheatInputs" posn="{{{FramePosnX + SM_PosX * 1.5 + 2.}}} {{{FramePosnY + SM_PosYElementAlignTop - SM_SizeY * 0.4}}} 6." hidden="1">""";
+					for (L, 0, 2)
+						MLText ^=  """<frameinstance id="Frame_CheatInput{{{2-L}}}" modelid="Frame_CheatInput" posn="{{{- SM_SizeY * (L-1) * 0.6}}} 0 0" />""";
+					MLText ^= """</frame>""";
+				}
+			}
+
+			declare Real LabelLegendPosnX = PosnX + PosnXLabel - SizeXQuad + 5.;
+			declare Real LabelLegendPosnY = PosnY + PosnYLabel + 0.8;
+			MLText^="""
+				
+
+				//Frame_SubMenuEnd - Contient le label des 3 lignes de legend + 1 ligne de ronds + 1 ligne d'info sur les inputs dispos
+				<frame id="Frame_SubMenuEnd{{{J}}}">
+					<label halign="left" valign="top" textprefix="$t" id="Label_SubMenuLegend{{{J}}}" posn="{{{LabelLegendPosnX}}} {{{LabelLegendPosnY}}} 10" opacity="0.0" textcolor="000" textsize="4." sizen="{{{SM_SizeX-8}}}" textfont="{{{Font::GetFontName("MainSmall2")}}}" linespacing="1.00" autonewline="1" maxline="3"/>
+					""";
+			
+			for(K, 0, SM_NumberOfLegend - 1)
+			{
+				declare Real FramePosnX = PosnX - SizeXQuad;
+				declare Real FramePosnY = PosnY - SM_SizeY + K * - SM_SizeY;
+
+				MLText^="""
+					<frameinstance modelid="Frame_SubMenuLegend" posn="{{{FramePosnX}}} {{{FramePosnY}}} 6." id="Frame_SubMenuLegend{{{J}}}" hidden="1" />
+				""";
+			}
+
+			declare Real FramePosnX = PosnX - SizeXQuad;
+			declare Real FramePosnY = PosnY - SM_SizeY + SM_NumberOfLegend *3 * - SM_SizeY;
+			MLText^="""
+					<frameinstance modelid="Frame_SubMenuEnd" posn="{{{FramePosnX}}} {{{FramePosnY}}} 4." id="Frame_SubMenuEnd{{{J}}}" hidden="1" />
+				</frame>
+				<frame id="Frame_SubMain{{{J}}}" posn="-3 10. 0">
+					<quad halign="center" valign="center" sizen="121.33 149.33"    posn="{{{FramePosnX+ SM_PosX-3.}}} {{{-29}}} 0."   image="{{{SubMainMenuBase}}}"     keepratio="Fit" />
+					<quad halign="center" valign="center" sizen="106 53"    posn="{{{FramePosnX+ SM_PosX-7}}} {{{16.6}}} 1."  image="{{{SubMainMenuCampaign}}}" keepratio="Fit" id="Quad_SubMenuScreen{{{J}}}"/>
+					<quad halign="center" valign="center" sizen="106.666 53.333" posn="{{{FramePosnX+ SM_PosX-7.45}}} {{{16.6}}} 2." image="{{{SubMainMenuTrame}}}"    keepratio="Fit" opacity="1.0"/>
+					<quad halign="center" valign="center" sizen="106 53"   posn="{{{FramePosnX+ SM_PosX-7}}} {{{-42.5}}} 1." image="{{{SubMainMenuTurbo}}}"    keepratio="Fit" opacity="1.0" id="SubMainMenuTurbo{{{J}}}" />
+					<quad halign="center" valign="center" sizen="106 53" posn="{{{FramePosnX+ SM_PosX-7.1}}} {{{-42.5}}} 9." image="{{{SubMainMenuTrame}}}"    keepratio="Fit" opacity="1.0"/>
+				</frame>
+			</frame>
+			""";
+		}
+	}
+
+	MLText^="""
+
+		</frame>
+	</frame>
+
+	<script><!--
+		
+		#Const DebugName  "L_MainSelector"
+
+		#Const C_TimeStartClip        {{{PanelParameter::GetTimeStartClip()}}}
+		#Const C_TimeAnimClip         {{{PanelParameter::GetTimeAnimClip()}}}
+		#Const C_TimeStartClip2       {{{PanelParameter::GetTimeStartClip2()}}}
+		#Const C_TimeAnimClip2        {{{PanelParameter::GetTimeAnimClip2()}}}
+		#Const C_TimeTransitionPage2  {{{PanelParameter::GetTimeTransitionPage2()}}}
+	
+		{{{Manialink::GetIncludes()}}}
+		
+		{{{Manialink::Load()}}}
+		{{{BuilderHelper::MLCommonFunctions()}}}
+		{{{ClipTransitions::Functions(["Frame_Content","Frame_Backgrounds"])}}}
+		declare Text[Integer][Integer]		        G_TextSubMenu;
+		declare Text[Integer][Integer]		        G_TextSubMenuLegend;
+		declare Integer 					        G_HideTime;
+		declare Integer 					        G_ShowTime;
+		declare Integer 					        G_LockInput;
+		declare Integer 					        G_IndexSelectX;
+		declare Integer 					        G_IndexSelectY;
+		declare Integer 					        G_IndexLabelSelectY;
+		declare CAudioSource						G_AudioSource;
+		declare Vec3[Integer]						G_MenuColor;
+		declare Text[Integer]						G_SubMenuScreen;
+		declare Real           						G_PositionBaseQuadGarage2;
+		declare Real           						G_PositionBaseQuadGarage3;
+		declare Boolean        						G_IsSuperSoloSet;
+		declare Boolean        						G_SuperSoloAcces;
+		declare Integer								G_ActiveButtonPlatform;
+		
+		declare Boolean								G_UnlockCheats_Active;
+		declare Text[]								G_UnlockCheats_Inputs;
+		declare Text								G_UnlockCheats_UnlockedCheat;
+		
+		declare Boolean								G_MustAnimBuddiesChallenge;
+		declare Text[]	 							G_CheatCode;
+		
+		
+		{{{Prompter2::InjectInGlobals()}}}
+		{{{ParallaxMenu::InjectInGlobalDeclaration()}}}
+		{{{Loading::InjectInGlobals()}}}
+		{{{Prompter2::InjectInFunctions()}}}
+		{{{ParallaxMenu::InjectInFunctions(Scenery)}}}
+		{{{Loading::InjectInFunctions()}}}
+		
+		Void Preload()
+		{
+			{{{ParallaxMenu::Preload(Scenery)}}}
+
+			PreloadImage("{{{IMGArrow}}}");
+			PreloadImage("{{{IMGSlotMediumBg}}}");
+			PreloadImage("{{{IMGSlotMediumFg}}}");
+			PreloadImage("{{{IMGSlotBigBg}}}");
+			PreloadImage("{{{IMGSlotBigFg}}}");
+			PreloadImage("{{{IMGMenuBg}}}");
+		}
+
+
+		Void SetHeaderInfo()
+		{
+			declare Vec3 HeaderInfo_LabelTitleColor for This;
+			declare Text HeaderInfo_LabelTitle for This;
+			declare Vec3 NextColorHeaderInfo for This;
+			HeaderInfo_LabelTitle = "Trackmania";
+			HeaderInfo_LabelTitleColor = <1.0, 0.9, 0.0>;
+			NextColorHeaderInfo =  <0.1, 0.1, 0.1>;
+			SendCustomEvent("UpdateHeaderTitle", [""]);
+		}
+
+		Boolean IsGoodCheatCode(Text _KeyName)
+		{
+			declare UnlockCheatCode = ["Action1","Action2","Action2","Down","Action1"];
+			//declare UnlockCheatCode = ["A","A","Z"];
+			G_CheatCode.add(_KeyName);
+			declare Integer count = 0;
+			foreach(CheatCode in G_CheatCode)
+			{
+
+				if(!UnlockCheatCode.existskey(count))
+				{
+					G_CheatCode.clear();
+					return False;
+				}
+				if(CheatCode != UnlockCheatCode[count])
+				{
+					G_CheatCode.clear();
+					return False;
+				}
+				count += 1;
+			}
+
+			if(G_CheatCode.count < UnlockCheatCode.count) return False;
+			
+			G_CheatCode.clear();
+			return True;
+		}
+
+		Text SelectButton(Integer _IndexSelectX, Integer _IndexSelectY, Integer _IndexLabelSelectY)
+		{
+			declare Text    GameSelect 			for This;
+			declare Text    MenuSelect 			for This;
+			declare Text    SplitScreenNumber	for This;
+			declare Integer DifficultySelect	for This;
+			declare Boolean IsRecordCenter for This;
+			declare Text NextPage;
+			declare Text LabelChoose  = G_TextSubMenu[_IndexSelectX][_IndexLabelSelectY];
+			IsRecordCenter = False;
+			
+			
+			declare Vec3 HeaderInfo_LabelTitleColor for This;
+			declare Text HeaderInfo_LabelTitle for This;
+			declare Vec3 NextColorHeaderInfo for This;
+			HeaderInfo_LabelTitle = LabelChoose;
+			HeaderInfo_LabelTitleColor = <1.0, 0.9, 0.0>;
+			NextColorHeaderInfo =  <0.1, 0.1, 0.1>;
+			SendCustomEvent("UpdateHeaderTitle", [""]);
+			GameSelect = LabelChoose;
+			
+			SplitScreenNumber = "OneScreen";
+
+			switch(_IndexSelectX) {
+				case 0: //Online
+				{
+					//Audio.PlaySoundEvent("{{{SoundWIP}}}", {{{Volumes::GetVolumedB("MenuWIP")}}});
+					SendCustomEvent("SetMenu", ["Online"]);
+
+					switch(_IndexLabelSelectY) {
+						case 0: 
+						{
+							//Loading_SetIsLoading(True);
+							SendCustomEvent("SetOngletFocus", ["0"]);
+							NextPage = "ServerBrowser";
+							GameSelect = "{{{C_GameNameBrowseRooms}}}";
+							SendCustomEvent("LibCheats_SetCheatActive", ["False"]);
+
+						}
+						case 1: 
+						{
+							//Loading_SetIsLoading(True);
+							NextPage = "JoinAFriend";
+							GameSelect = "{{{C_GameNameJoinAFriend}}}";
+							SendCustomEvent("LibCheats_SetCheatActive", ["False"]);
+						}
+					}
+				}
+				case 1: //Local Multiplayer
+				{
+					switch(_IndexLabelSelectY) {
+						case 0: {
+							GameSelect = "{{{C_GameNameHotSeat}}}";
+							SendCustomEvent("LibCheats_SetCheatActive", ["False"]);
+						}
+						case 1: {
+							GameSelect = "{{{C_GameNameArcade}}}";
+							SendCustomEvent("LibCheats_SetCheatActive", ["False"]);
+						}
+						case 2: {
+							GameSelect = "{{{C_GameNameSplitScreen}}}";
+							SplitScreenNumber = "DualSplitScreen";
+							SendCustomEvent("LibCheats_SetCheatActive", ["False"]);
+						}
+						case 3: {
+							if  (G_UnlockCheats_UnlockedCheat == "")
+							{
+								GameSelect = "{{{C_GameNameUnlockCheats}}}";
+								return "UnlockCheats";
+							} else {
+								if (G_UnlockCheats_UnlockedCheat == "MonoScreen" || G_UnlockCheats_UnlockedCheat == "SplitScreen")
+									GameSelect = "{{{C_GameNameSplitScreen}}}";
+								else
+									GameSelect = G_UnlockCheats_UnlockedCheat;
+								SendCustomEvent("LibCheats_SetCheatActive", ["True"]);
+							}
+						}
+					}
+					//NextPage = "MapsOverview";
+					declare Text KindOfTracksMenuSelect for This;
+					KindOfTracksMenuSelect = "ArcadeMode";
+					NextPage = "KindOfTracks";
+					SendCustomEvent("SetMenu", ["Local"]);
+				}
+				case 2: //Campaign
+				{
+					//NextPage = "MapFamily";
+					SendCustomEvent("SetMenu", ["Campaign"]);
+
+					switch(_IndexLabelSelectY) {
+						case 0:
+						{
+							SendCustomEvent("Goto_RecordOrSolo", ["MapsOverview"]);
+							//NextPage = "MapsOverview";
+							NextPage = "";
+							GameSelect = "{{{C_GameNameSoloCampaign}}}";
+							SendCustomEvent("LibCheats_SetCheatActive", ["False"]);
+						}
+						case 1:
+						{
+							NextPage = "MapsOverview";
+							GameSelect = "{{{C_GameNameDDCampaign}}}";
+							SendCustomEvent("LibCheats_SetCheatActive", ["False"]);
+						}
+						case 2:
+						{
+							NextPage = "ChallengeBrowser";
+							//Loading_SetIsLoading(True);
+							GameSelect = "{{{C_GameNameChampionships}}}";
+						}
+						case 3:
+						{
+							NextPage = "BuddiesChallengeBrowser";
+							//Loading_SetIsLoading(True);
+							GameSelect = "{{{C_GameNameBuddiesChampionships}}}";
+							SendCustomEvent("LibCheats_SetCheatActive", ["False"]);
+						}
+						case 4: //Super Solo
+						{
+							if(!G_SuperSoloAcces)
+							{
+								SendCustomEvent("SuperSoloAccesDenied", [""]);
+								return "";
+							}
+
+							NextPage = "MapsOverview";
+							//Loading_SetIsLoading(True);
+							GameSelect = "{{{C_GameNameSuperSolo}}}";
+							SendCustomEvent("LibCheats_SetCheatActive", ["False"]);
+						}
+					}
+
+
+				}
+				case 3: //Editors
+				{
+					SendCustomEvent("SetMenu", ["TrackBuilder"]);
+					switch(_IndexLabelSelectY){
+						case 0: //Workshop
+						{
+							declare Text KindOfTracksMenuSelect for This;
+							KindOfTracksMenuSelect = "NewTrack";
+							NextPage = "KindOfTracks";
+							SendCustomEvent("LibCheats_SetCheatActive", ["False"]);
+							GameSelect = "{{{C_GameNameNewTrack}}}";
+						}
+						case 1: //My Tracks
+						{
+							/*
+							GameSelect = "Edit Map";
+							DifficultySelect = 0;
+							//HACK
+							NextPage = "";
+							SendCustomEvent("EditNewTrack", ["Canyon", "Day", "", "CanyonCar", "", "PartyEditor2.Script.txt"]);
+							//HACKEND
+							*/
+							//NextPage = "Workshop";
+							SendCustomEvent("LibCheats_SetCheatActive", ["False"]);
+							NextPage = "MyTracks";
+							GameSelect = "{{{C_GameNameMyTracks}}}";
+						}
+					}
+				}
+				case 4: //Garage and Mix
+				{
+					SendCustomEvent("SetMenu", ["Garage"]);
+					switch(_IndexLabelSelectY){
+						case 0: //Tracks
+						{
+							SendCustomEvent("StartHelmet", [""]);
+							GameSelect = "{{{C_GameNameGarage}}}";
+						}
+						case 1: 	
+						{
+							NextPage = "Musics";
+							GameSelect = "{{{C_GameNameMusicMix}}}";
+						}
+					}
+				}
+			}
+			SendCustomEvent("SetMode", [GameSelect]);
+			return NextPage;
+		}
+
+		Boolean IsTitleReachable(Integer _X, Integer _Y)
+		{
+			declare Boolean[Integer][Integer] TitleReachable for Page;
+			
+			if (_X == 1 && _Y == 3) { //Cas particulier des cheats, accessibles en fonction du cheat débloqué
+				switch (G_UnlockCheats_UnlockedCheat) {
+					case "HotSeat" 		: return IsTitleReachable(1, 0);
+					case "Arcade"  		: return IsTitleReachable(1, 1);
+					case "MonoScreen" 	: return IsTitleReachable(1, 2);
+					case "SplitScreen"  : return IsTitleReachable(1, 2);
+					default 	   		: return True;
+				}
+			}
+			
+			if(!TitleReachable.existskey(_X))     return False;
+			if(!TitleReachable[_X].existskey(_Y)) return False;
+			return TitleReachable[_X][_Y];
+		}
+
+
+		Void UpdateTitleLight()
+		{
+			//declare Boolean[Integer][Integer] TitleReachable for Page;
+			
+			for(J, 0, {{{Count_InstancesX-1}}})
+			{
+				//if(!TitleReachable.existskey(J)) continue;
+				for(K,0,{{{NumberOfSubMenu-1}}})
+				{
+					//if(!TitleReachable[J].existskey(K)) continue;
+					declare Boolean IsTitleReachable = IsTitleReachable(J, K);
+					
+					declare CMlFrame Frames_Instance <=> (Page.MainFrame.GetFirstChild("Frame_InstanceSubMenu"^J^""^K)	as CMlFrame);
+					declare CMlLabel Label_SubMenu     <=> (Frames_Instance.GetFirstChild("Label_SubMenu")          as CMlLabel);
+					if(!IsTitleReachable) Label_SubMenu.TextColor = <0.3, 0.3, 0.3>;
+				}
+			}
+		}
+
+		Void UnlightSubMenuSelection(Integer _PrevIndexSelectX, Integer _PrevIndexLabelSelectY)
+		{
+			declare CMlFrame Frames_InstancePrev <=> (Page.GetFirstChild("Frame_InstanceSubMenu"^_PrevIndexSelectX^""^_PrevIndexLabelSelectY) as CMlFrame);
+			if(Frames_InstancePrev == Null) return;
+			//Label_Prev.TextColor = <1., 1., 1.>;
+		}
+
+		Void UpdateSubMenuSelection(Integer _NexIndexLabelSelectY, Integer _PrevIndexLabelSelectY)
+		{
+			declare CMlFrame Frames_InstanceNext <=> (Page.GetFirstChild("Frame_InstanceSubMenu"^G_IndexSelectX^""^_NexIndexLabelSelectY) as CMlFrame);
+			declare CMlLabel Label_Next          <=> (Frames_InstanceNext.GetFirstChild("Label_SubMenu") as CMlLabel);
+			
+			UnlightSubMenuSelection(G_IndexSelectX, _PrevIndexLabelSelectY);
+
+			
+			declare CMlFrame Frame_Instance <=> (Page.GetFirstChild("Frame_Instance"^G_IndexSelectY^""^G_IndexSelectX) as CMlFrame);
+			declare CMlQuad  Quad_Selector <=> (Frame_Instance.GetFirstChild("Quad_Selector") as CMlQuad);
+			Quad_Selector.RelativePosition.Y = {{{SM_PosYElementAlignTop}}} - {{{5.9}}}*(_NexIndexLabelSelectY+1);
+
+			if(!G_TextSubMenuLegend.existskey(G_IndexSelectX)) return;
+			if(!G_TextSubMenuLegend[G_IndexSelectX].existskey(_NexIndexLabelSelectY)) return;
+			
+			declare Text TextSubMenuLegend = G_TextSubMenuLegend[G_IndexSelectX][_NexIndexLabelSelectY];
+			Prompter_SetBanner("Prompt_Env_"^G_IndexSelectX^"2", TextSubMenuLegend, 4000, 20);
+			Prompter_SetBannerIsActive("Prompt_Env_"^G_IndexSelectX^"2", True, False);
+		}
+
+
+		Void UpdateQuads(Integer _SelectorPositionX, Integer _SelectorPositionY, Integer _PreviousQuadX, Integer _PreviousQuadY)
+		{
+			declare CMlFrame Frame_Content <=> (Page.GetFirstChild("Frame_Content") as CMlFrame);
+			declare Real NewFramePosX = -(_SelectorPositionX -1)* ({{{MarginX_Button + SizeXQuad}}});
+			declare Vec3 NewFramePos  = <NewFramePosX, Frame_Content.RelativePosition.Y, Frame_Content.RelativePosition.Z>;
+			LibManialink_SetTargetPosition(Frame_Content, NewFramePos);
+			LibManialink_PresetAnim(Frame_Content, 1450, "EaseOutQuint");
+			
+			{{{ParallaxMenu::BuildParallaxMainScript()}}}
+			UpdateSubMenuSelection(G_IndexLabelSelectY, G_IndexLabelSelectY);
+		}
+
+		Void SetQuadsPosition(Integer _SelectorPositionX, Integer _SelectorPositionY, Integer _PreviousQuadX, Integer _PreviousQuadY)
+		{
+			declare CMlFrame Frame_Content <=> (Page.GetFirstChild("Frame_Content") as CMlFrame);
+			declare Real NewFramePosX = -(_SelectorPositionX -1)* ({{{MarginX_Button + SizeXQuad}}});
+			declare Vec3 NewFramePos  = <NewFramePosX, Frame_Content.RelativePosition.Y, Frame_Content.RelativePosition.Z>;
+			Frame_Content.RelativePosition = NewFramePos;
+			//LibManialink_SetTargetPosition(Frame_Content, NewFramePos);
+			//LibManialink_PresetAnim(Frame_Content, 1450, "EaseOutQuint");
+			
+			UpdateSubMenuSelection(G_IndexLabelSelectY, G_IndexLabelSelectY);
+		}
+
+		Void HidePage()
+		{
+			declare CMlFrame  Frame_Content <=> (Page.GetFirstChild("Frame_Content") as CMlFrame);
+			declare CMlFrame  Frame_Backgrounds <=> (Page.GetFirstChild("Frame_Backgrounds") as CMlFrame);
+
+			//Frame_Content.ClipWindowActive                 = True;
+
+			G_HideTime  = Now + C_TimeStartClip + C_TimeAnimClip;
+			G_LockInput = Now + C_TimeStartClip + C_TimeAnimClip;
+			G_ShowTime  = -1;
+			
+			//Clips Out
+			declare CMlQuad  ClipTest <=> (Page.GetFirstChild("ClipTest") as CMlQuad);
+			LibManialink_SetTargetPosition(ClipTest, <-320., 0., 0.>);
+			LibManialink_PresetAnimInsert(ClipTest, C_TimeStartClip, C_TimeAnimClip, "EaseLinear");
+
+			declare Real ClipWindowRelativeOldPosition  = (G_IndexSelectX -1)* ({{{MarginX_Button + SizeXQuad}}}) + (G_IndexSelectX-1)*6.5;
+			
+			Frame_Content.ClipWindowRelativePosition = <ClipWindowRelativeOldPosition, 0.>;
+			Frame_Content.ClipWindowSize             = <320., 180.>;
+			Frame_Backgrounds.ClipWindowRelativePosition = <0., 0.>;
+			Frame_Backgrounds.ClipWindowSize             = <320., 180.>;
+
+			//StartSetClipPosition_Frame_Content(<ClipWindowRelativeNewPosition, 0.>, <ClipWindowRelativeOldPosition, 0.>, C_TimeStartClip, C_TimeAnimClip);
+			//StartSetClipPosition_Frame_Backgrounds(<-320., 0.>, <0., 0.>, C_TimeStartClip, C_TimeAnimClip);
+
+		}
+
+		Void SetFramePosition(Integer _MenuSelect, Real _PositionY)
+		{
+			declare CMlFrame Frame_All <=> (Page.GetFirstChild("Frame_All") as CMlFrame);
+			declare Boolean	Net_IsSmartStart   for Page;
+			declare Integer	Net_PathSubMenu   for Page;
+
+			UnlightSubMenuSelection(G_IndexSelectX, G_IndexLabelSelectY);
+			G_IndexSelectX      = _MenuSelect;
+			if(Net_IsSmartStart)
+			{
+				G_IndexLabelSelectY = Net_PathSubMenu;
+			}
+			else
+			{
+				G_IndexLabelSelectY = 0;
+			}
+
+			SetQuadsPosition(G_IndexSelectX, G_IndexSelectY, G_IndexSelectX+1, G_IndexSelectY);
+
+			Frame_All.RelativePosition.Y = _PositionY;
+			{{{ParallaxMenu::BuildParallaxSetPosition()}}}
+		}
+
+		Void ShowPage(Text _PreviousPage)
+		{
+			declare CMlFrame  Frame_Content <=> (Page.GetFirstChild("Frame_Content") as CMlFrame);
+			declare CMlFrame Frame_All <=> (Page.GetFirstChild("Frame_All") as CMlFrame);
+			
+			LibManialink_AnimStop(Frame_All);
+			
+			if(_PreviousPage == "Intro" || _PreviousPage == "StartDemo" || _PreviousPage == "Location" || _PreviousPage == "Main")
+			{
+				G_IndexLabelSelectY                = 0;
+				G_IndexSelectX                     = 2;
+
+				G_ShowTime  = Now;
+				{{{ParallaxMenu::BuildParallaxShowPage()}}}
+				declare Integer Page_MainSelectorPosition for Page;
+				Page_MainSelectorPosition = -1;
+				
+				//SetFramePosition(1, -200.);
+				SetFramePosition(G_IndexSelectX, -200.);
+			}
+			else
+			{
+				SendCustomEvent("LaunchTransition", ["BigBillBoardTransition"]);
+				G_LockInput = Now + C_TimeTransitionPage2;
+				G_ShowTime  = Now + C_TimeTransitionPage2;
+				Frame_All.Hide();
+			}
+
+			{{{ParallaxMenu::InjectInShowPage()}}}
+			G_HideTime  = -1;
+
+		}
+
+		Void SendFocusToLeaderBoard(Real _InitFramePosX, Text _Direction)
+		{
+			SendCustomEvent("FocusToLeaderBoard", [""^_InitFramePosX, _Direction]);
+		}
+
+		Text GetBannerContent(Integer _Index)
+		{
+			switch(_Index)
+			{	
+				case 0: return _("Challenge the world's players & create your own tournaments!");
+				case 1: return _("Time for a Trackmania party! Challenge your friends to see who's best");
+				case 2: return _("official campaign & challenges");
+				case 3: return _("Trackbuilder: Create your own track and share-it online");
+				case 4: return _("Paintworks & music mix");
+			}
+			return "";
+		}
+
+
+		Void UpdateArrows()
+		{
+			declare CMlQuad  MouseInput_PrevMenu  <=> (Page.GetFirstChild("MouseInput_PrevMenu") as CMlQuad);
+			declare CMlQuad  MouseInput_NextMenu <=> (Page.GetFirstChild("MouseInput_NextMenu") as CMlQuad);
+			if(G_IndexSelectX == {{{Count_InstancesX-1}}}) {
+				LibManialink_SetTargetOpacity(MouseInput_NextMenu, 0.);
+				LibManialink_PresetAnim(MouseInput_NextMenu, 300, "EaseOutQuint");
+				//MouseInput_NextMenu.Hide();
+			}
+			else
+			{
+				if(MouseInput_NextMenu.Opacity != 1.)
+				{
+					LibManialink_SetTargetOpacity(MouseInput_NextMenu, 1.);
+					LibManialink_PresetAnim(MouseInput_NextMenu, 300, "EaseOutQuint");
+				}
+				//MouseInput_NextMenu.Show();
+			}
+
+
+			if(G_IndexSelectX == 0){
+
+				LibManialink_SetTargetOpacity(MouseInput_PrevMenu, 0.);
+				LibManialink_PresetAnim(MouseInput_PrevMenu, 300, "EaseOutQuint");
+				//MouseInput_PrevMenu.Hide();
+			}
+			else{
+				if(MouseInput_PrevMenu.Opacity != 1.)
+				{
+					LibManialink_SetTargetOpacity(MouseInput_PrevMenu, 1.);
+					LibManialink_PresetAnim(MouseInput_PrevMenu, 300, "EaseOutQuint");
+				}
+				//MouseInput_PrevMenu.Show();
+			}
+		}
+
+		Void MoveToRight()
+		{
+			declare CMlQuad  MouseInput_NextMenu <=> (Page.GetFirstChild("MouseInput_NextMenu") as CMlQuad);
+			LibManialink_SetTargetScale(MouseInput_NextMenu, 1.1);
+			LibManialink_PresetAnim(MouseInput_NextMenu, 100, "EaseOutSine");
+			LibManialink_SetTargetScale(MouseInput_NextMenu, 1.);
+			LibManialink_PresetAnimChain(MouseInput_NextMenu, 100, "EaseInSine");
+			
+			UnlightSubMenuSelection(G_IndexSelectX, G_IndexLabelSelectY);
+			G_IndexSelectX      += 1;
+			G_IndexLabelSelectY = 0;
+			SendCustomEvent("SetupMainMenuFilter", [G_IndexSelectX^""]);
+			// Sounds
+			{
+				declare Sound = Audio.CreateSound("{{{SoundToRight}}}");
+				Sound.PanRadiusLfe 	= {{{Volumes::GetPanRadiusLfe("MenuUISpreadLarge")}}};
+				Audio.PlaySoundEvent(Sound, {{{Volumes::GetVolumedB("MenuToRight")}}}, 0);			
+			}
+			UpdateQuads(G_IndexSelectX, G_IndexSelectY, G_IndexSelectX-1, G_IndexSelectY);
+			if(G_IndexSelectX == 4)
+			{
+				declare Real InitFramePosX = ({{{MarginX_Button + SizeXQuad}}});
+				//SendFocusToLeaderBoard(InitFramePosX, "Right");
+			}
+			UpdateArrows();
+		}
+
+		Void MoveToLeft()
+		{
+			declare CMlQuad  MouseInput_PrevMenu <=> (Page.GetFirstChild("MouseInput_PrevMenu") as CMlQuad);
+			LibManialink_SetTargetScale(MouseInput_PrevMenu, 1.1);
+			LibManialink_PresetAnim(MouseInput_PrevMenu, 100, "EaseOutSine");
+			LibManialink_SetTargetScale(MouseInput_PrevMenu, 1.);
+			LibManialink_PresetAnimChain(MouseInput_PrevMenu, 100, "EaseInSine");
+			
+			UnlightSubMenuSelection(G_IndexSelectX, G_IndexLabelSelectY);
+			G_IndexSelectX      -= 1;
+			G_IndexLabelSelectY = 0;
+			SendCustomEvent("SetupMainMenuFilter", [G_IndexSelectX^""]);
+			// Sounds
+			{
+				declare Sound = Audio.CreateSound("{{{SoundToLeft}}}");
+				Sound.PanRadiusLfe 	= {{{Volumes::GetPanRadiusLfe("MenuUISpreadLarge")}}};
+				Audio.PlaySoundEvent(Sound, {{{Volumes::GetVolumedB("MenuToLeft")}}}, 0);			
+			}
+			UpdateQuads(G_IndexSelectX, G_IndexSelectY, G_IndexSelectX+1, G_IndexSelectY);
+			if(G_IndexSelectX == 4)
+			{
+				declare Real InitFramePosX = ({{{MarginX_Button + SizeXQuad}}});
+				SendFocusToLeaderBoard(InitFramePosX, "Left");
+			}
+			UpdateArrows();
+
+		}
+
+		Void MoveToStartMain(Real _PositionY)
+		{
+			UnlightSubMenuSelection(G_IndexSelectX, G_IndexLabelSelectY);
+		
+			UpdateQuads(G_IndexSelectX, G_IndexSelectY, G_IndexSelectX+1, G_IndexSelectY);
+			{{{ParallaxMenu::BuildParallaxMoveToStartMain()}}}
+			declare CMlFrame Frame_All <=> (Page.GetFirstChild("Frame_All") as CMlFrame);
+			
+			declare Real Frame_AllPosY = _PositionY;
+			declare Vec3 Frame_AllPos  = <Frame_All.RelativePosition.X, Frame_AllPosY, Frame_All.RelativePosition.Z>;
+			LibManialink_SetTargetPosition(Frame_All, Frame_AllPos);
+			LibManialink_PresetAnim(Frame_All, 1450, "EaseOutQuint");
+		}
+
+		Void OnChallengesCountsReceived(Integer _ChallengesCount, Integer _BuddiesChallengesCount, Text _HasNewBuddiesChallenges)
+		{
+			if (_ChallengesCount != -1)
+			{
+				declare CMlFrame Frame_Challenges <=> (Page.GetFirstChild("Frame_InstanceSubMenu22") as CMlFrame);
+				declare CMlLabel Label_Challenges <=> (Frame_Challenges.GetFirstChild("Label_SubMenu") as CMlLabel);
+				//L16N Name of the "challenges" submenu, displayed in the SoloCampaign menu.
+				Label_Challenges.Value = TL::GetTranslatedText(_("Worldwide Challenges"))^" ("^_ChallengesCount^")";
+			}
+			
+			if (_BuddiesChallengesCount != -1)
+			{
+				declare CMlFrame Frame_BuddiesChallenges <=> (Page.GetFirstChild("Frame_InstanceSubMenu23") as CMlFrame);
+				declare CMlLabel Label_BuddiesChallenges <=> (Frame_BuddiesChallenges.GetFirstChild("Label_SubMenu") as CMlLabel);
+				//L16N Name of the "challenges" submenu, displayed in the SoloCampaign menu.
+				declare Text BuddiesChallenges = TL::GetTranslatedText(_("Buddies Challenges"));
+				G_MustAnimBuddiesChallenge = (_HasNewBuddiesChallenges == "True");
+				if (G_MustAnimBuddiesChallenge)
+					BuddiesChallenges ^= "$FE0";
+				BuddiesChallenges ^= " ("^_BuddiesChallengesCount^")";
+				Label_BuddiesChallenges.Value = BuddiesChallenges;
+			}
+		}
+		
+		Void Init()
+		{
+			declare CMlFrame[][Integer]	Frames_Instance;
+			declare CMlLabel[][Integer]	Labels_Tuto;
+
+			declare Text[Integer] MenuTitle;
+			MenuTitle[0]             = _("Online");
+			MenuTitle[1]             = _("Multiplayer");
+			MenuTitle[2]             = _("Campaign");
+			MenuTitle[3]             = _("Editors");
+			MenuTitle[4]             = _("Global Leaderboard");
+
+			G_UnlockCheats_Active =  False;
+			G_UnlockCheats_UnlockedCheat = "";
+			
+			{{{Loading::InjectInInit()}}}
+
+			for(I, 0, {{{Count_InstancesY-1}}})
+			{
+				Frames_Instance[I]	= CMlFrame[];
+				Labels_Tuto[I]		= CMlLabel[];
+				for(J,0,{{{Count_InstancesX-1}}})
+				{
+					Frames_Instance[I]	.add( (Page.MainFrame.GetFirstChild("Frame_Instance"^I^""^J)	as CMlFrame) );
+					Labels_Tuto[I]		.add( (Frames_Instance[I][J].GetFirstChild("Label_Tuto") 		as CMlLabel) );
+					declare CMlFrame Frame_SubMenuEnd <=> (Page.GetFirstChild("Frame_SubMenuEnd"^J) as CMlFrame);
+					
+					if(J < 5)
+					{
+						declare Text BannerContent = GetBannerContent(J);
+						//Banner_SetContent("Prompt_Env_"^J,  BannerContent, G_MenuColor[J]);
+						///////////////
+						// SET BANNERS
+						///////////////
+						//Prompter_SetBanner("Prompt_Env_"^J^"2", BannerContent, 12000, 20, G_MenuColor[J]);
+						//Prompter_SetBannerIsActive("Prompt_Env_"^J^"2", True, True);
+
+						Prompter_SetBanner("Prompt_Env_"^J, BannerContent, 3000, 20, G_MenuColor[J]);
+						Prompter_SetBannerIsActive("Prompt_Env_"^J, True, False);
+						
+
+						declare CMlFrame Frame_Instance <=> (Page.GetFirstChild("Frame_Instance0"^J) as CMlFrame);
+						declare CMlQuad  Quad_Selector <=> (Frame_Instance.GetFirstChild("Quad_Selector") as CMlQuad);
+						Quad_Selector.Colorize = G_MenuColor[J];
+						declare CMlQuad Quad_SubMenuScreen <=> (Page.GetFirstChild("Quad_SubMenuScreen"^J) as CMlQuad);
+						declare CMlQuad SubMainMenuTurbo <=> (Page.GetFirstChild("SubMainMenuTurbo"^J) as CMlQuad);
+
+						Quad_SubMenuScreen.ChangeImageUrl(G_SubMenuScreen[J]);
+						SubMainMenuTurbo.Colorize = G_MenuColor[J];
+					}
+
+					declare CMlLabel Label_Title          <=> (Frames_Instance[I][J].GetFirstChild("Label_Title") as CMlLabel);
+					if(!MenuTitle.existskey(J)) continue;
+					if(J == 4)
+					{
+						//Frame_Menu.Hide();
+					}
+					
+					Label_Title.Value               = TL::ToUpperCase(MenuTitle[J]);
+					Label_Title.TextColor           = G_MenuColor[J];
+
+					//Quad_SubMenuLegend.BgColor      = MenuColor[J];
+					declare Integer NumberOfSubMenu = G_TextSubMenu[J].count;
+
+
+					for(K, 0, NumberOfSubMenu-1)
+					{
+						declare CMlFrame Frames_InstanceNext <=> (Page.GetFirstChild("Frame_InstanceSubMenu"^J^""^K) as CMlFrame);
+						declare CMlLabel Label_Next          <=> (Frames_InstanceNext.GetFirstChild("Label_SubMenu") as CMlLabel);
+						Frames_InstanceNext.Show();
+						if(G_TextSubMenu[J].existskey(K) || G_TextSubMenu[J][K] == "")
+						{
+							Label_Next.Show();
+							Label_Next.Value = G_TextSubMenu[J][K];
+							if(J ==2 && K == 4 && !G_SuperSoloAcces)
+							{
+								Label_Next.TextColor = <0.3, 0.3, 0.3>;
+							}
+							//HACKGC
+							if({{{ActualVersion}}} == 4 && J == 1 && (K == 2))
+							{
+								Label_Next.Opacity           = 0.5;
+								Label_Next.TextColor         = <0.6, 0.6, 0.6>;
+							}
+							//HACKEND
+						}
+						else
+						{
+							Label_Next.Hide();
+						}
+					}
+					declare Real FramePosnY = {{{PosYFirstQuad}}} + NumberOfSubMenu * - {{{SM_SizeY}}} + {{{SM_Separator}}};
+					Frame_SubMenuEnd.RelativePosition.Y = FramePosnY;
+				}
+			}
+		}
+		
+		Void InputCheatCode_Start() {
+			declare CMlFrame Frame_CheatInputs <=> (Page.GetFirstChild("Frame_CheatInputs") as CMlFrame);
+			Frame_CheatInputs.Show();
+			for (I, 0, 2)
+			{
+				declare CMlFrame Frame_CheatInput <=> (Frame_CheatInputs.GetFirstChild("Frame_CheatInput"^I) as CMlFrame);
+				for (J, 0, 2)
+				{
+					declare CMlQuad  Quad_InputIcon <=> (Frame_CheatInput.GetFirstChild("Quad_InputIcon"^J) as CMlQuad);
+					Quad_InputIcon.ImageUrl = "";
+				}
+			}
+			
+			G_UnlockCheats_Active = True;
+			G_UnlockCheats_Inputs.clear();
+		}
+		
+		Void InputCheatCode_OnCompletion()
+		{
+			declare CMlFrame Frame_CheatInputs <=> (Page.GetFirstChild("Frame_CheatInputs") as CMlFrame);
+			Frame_CheatInputs.Hide();
+			G_UnlockCheats_Active = False;
+			SendCustomEvent("UnlockCheat", G_UnlockCheats_Inputs);
+		}
+		
+		Void InputCheatCode_Abort() {
+			declare CMlFrame Frame_CheatInputs <=> (Page.GetFirstChild("Frame_CheatInputs") as CMlFrame);
+			Frame_CheatInputs.Hide();
+			G_UnlockCheats_Active = False;
+		}
+		
+		Void InputCheatCode_Input(Text _Input) {
+			if (!G_UnlockCheats_Active)
+				return;
+				
+			log(G_UnlockCheats_Inputs);
+			G_UnlockCheats_Inputs.add(_Input);
+			
+			declare CMlFrame Frame_CheatInputs <=> (Page.GetFirstChild("Frame_CheatInputs") as CMlFrame);
+			declare CMlFrame Frame_CheatInput <=> (Frame_CheatInputs.GetFirstChild("Frame_CheatInput"^(G_UnlockCheats_Inputs.count-1)) as CMlFrame);
+			for (J, 0, 2)
+			{
+				declare CMlQuad  Quad_InputIcon <=> (Frame_CheatInput.GetFirstChild("Quad_InputIcon"^J) as CMlQuad);
+				switch(J)
+				{
+					case 0:
+					{
+						switch(_Input)
+						{
+							case "Select": 	Quad_InputIcon.ImageUrl = "{{{IMG_PS_Select}}}";
+							case "Cancel": 	Quad_InputIcon.ImageUrl = "{{{IMG_PS_Cancel}}}";
+							case "AppMenu": Quad_InputIcon.ImageUrl = "{{{IMG_PS_Cancel}}}";
+							case "Action1": Quad_InputIcon.ImageUrl = "{{{IMG_PS_Action1}}}";
+							case "Action2": Quad_InputIcon.ImageUrl = "{{{IMG_PS_Action2}}}";
+						}
+					}
+					case 1:
+					{
+						switch(_Input)
+						{
+							case "Select": 	Quad_InputIcon.ImageUrl = "{{{IMG_XB_Select}}}";
+							case "Cancel": 	Quad_InputIcon.ImageUrl = "{{{IMG_XB_Cancel}}}";
+							case "AppMenu": Quad_InputIcon.ImageUrl = "{{{IMG_XB_Cancel}}}";
+							case "Action1": Quad_InputIcon.ImageUrl = "{{{IMG_XB_Action1}}}";
+							case "Action2": Quad_InputIcon.ImageUrl = "{{{IMG_XB_Action2}}}";
+						}
+					}
+					case 2:
+					{
+						switch(_Input)
+						{
+							case "Select": 	Quad_InputIcon.ImageUrl = "{{{IMG_PC_Select}}}";
+							case "Cancel": 	Quad_InputIcon.ImageUrl = "{{{IMG_PC_Cancel}}}";
+							case "AppMenu": Quad_InputIcon.ImageUrl = "{{{IMG_PC_Cancel}}}";
+							case "Action1": Quad_InputIcon.ImageUrl = "{{{IMG_PC_Action1}}}";
+							case "Action2": Quad_InputIcon.ImageUrl = "{{{IMG_PC_Action2}}}";
+						}
+					}
+				}
+			}
+			
+			if (G_UnlockCheats_Inputs.count == 3)
+				InputCheatCode_OnCompletion();
+		}
+
+		Void MoveToDown(Integer _MenuSelect)
+		{
+			{{{ParallaxMenu::BuildParallaxShowPage()}}}
+			declare CMlFrame Frame_Content <=> (Page.GetFirstChild("Frame_Content") as CMlFrame);
+			LibManialink_AnimStop(Frame_Content);
+			G_LockInput = Now + 300;
+
+			SetFramePosition(_MenuSelect, -200.);
+			SendCustomEvent("SetupMainMenuFilter", [_MenuSelect^""]);
+			MoveToStartMain(0.);
+			UpdateArrows();
+		}
+		
+		Void Input_Right() {
+			declare Boolean	Net_IsSmartStart  for Page;
+			if(Net_IsSmartStart) return;				
+			declare Integer IndexMaxX = {{{Count_InstancesX}}};
+			if(G_IndexSelectX < IndexMaxX - 1)
+			{
+				if (G_UnlockCheats_Active)
+					InputCheatCode_Abort();
+				//HACKGC
+				if({{{ActualVersion}}} == 4)
+				{
+					return;
+				}
+				//HACKEND
+				MoveToRight();
+			}
+		}
+		
+		Void Input_Left() {
+			declare Boolean	Net_IsSmartStart  for Page;
+			if(Net_IsSmartStart) return;
+			if(G_IndexSelectX > 0)
+			{
+				if (G_UnlockCheats_Active)
+					InputCheatCode_Abort();
+				//HACKGC
+				if({{{ActualVersion}}} == 4)
+				{
+					return;
+				}
+				//HACKEND
+				MoveToLeft();
+			}
+		}
+
+		Void Input_Select() {
+			//if(G_LockInput + 300 > Now) return;
+			//G_LockInput = Now + 250;
+			if (G_UnlockCheats_Active)
+			{
+				InputCheatCode_Input("Select");
+			}
+			else {
+				declare Boolean[Integer][Integer] TitleReachable for Page;
+				declare Boolean IsTitleReachable = IsTitleReachable(G_IndexSelectX, G_IndexLabelSelectY);
+				if(!IsTitleReachable)
+				{
+					SendCustomEvent("BuyGame", [""]);
+					return;
+				}
+
+				declare Text MainMenuChoose = SelectButton(G_IndexSelectX, G_IndexSelectY, G_IndexLabelSelectY);
+				if (MainMenuChoose == "UnlockCheats")
+				{
+					InputCheatCode_Start();
+				} else if(MainMenuChoose != "") {
+					// Audio.PlaySoundEvent("{{{SoundTransitionMain2Bill}}}", {{{Volumes::GetVolumedB("MenuTransitionMain2Bill")}}});
+					G_LockInput = Now + 250;
+					declare Text    GameSelect 			for This;
+					if(GameSelect != "Rounds")
+					{
+						SendCustomEvent("GotoPage", [MainMenuChoose]);
+					} else {
+						SendCustomEvent("Goto_SplitScreenMode", [MainMenuChoose]);
+					}
+					
+					declare Sound = Audio.CreateSound("{{{SoundPageForward}}}");
+					Sound.PanRadiusLfe 	= {{{Volumes::GetPanRadiusLfe("MenuUISpreadLarge")}}};
+					Audio.PlaySoundEvent(Sound, {{{Volumes::GetVolumedB("MenuPageForward")}}}, 0);
+					
+				}
+			}
+		}
+		
+		Void UpdateHelpersForPlatform(Integer _Platform) {
+			declare Text[] InputIds = [""];
+			declare Text[] AdditionnalInputIds = ["Quad_InputIcon"];
+	
+			declare CMlQuad  QuadInputIcon;
+			declare CMlFrame Frame_CheatInputs <=> (Page.GetFirstChild("Frame_CheatInputs") as CMlFrame);
+			for(F, 0, 2)
+			{
+				declare CMlFrame Frame_CheatInput <=> (Frame_CheatInputs.GetFirstChild("Frame_CheatInput"^F) as CMlFrame);
+				for (I, 0, 2) {
+					
+					for (J, 0, AdditionnalInputIds.count-1) {
+						QuadInputIcon <=> (Frame_CheatInput.GetFirstChild(AdditionnalInputIds[J]^I) as CMlQuad);
+						if (I == _Platform)
+							QuadInputIcon.Show();
+						else
+							QuadInputIcon.Hide();
+					}
+				}
+			}
+		}
+
+		main() {
+			Preload();
+			
+			declare Boolean	Net_IsSmartStart  for Page;
+			declare Integer	Net_PathStartMain for Page;
+			declare Integer	Net_PathSubMenu   for Page;
+
+			{{{BuilderHelper::MLEnableMenuNavigationInputs()}}}
+			{{{ParallaxMenu::InjectInMain()}}}
+			{{{Prompter2::InjectInInit()}}}
+
+			G_IndexSelectY = 0;
+			G_IndexSelectX = 2;
+			declare Integer IndexMaxX = {{{Count_InstancesX}}};
+			//declare Text[Integer][Integer] TextButton;
+			declare Text[Integer][Integer] QuadImageTutoUrl;
+			declare Text[Integer][Integer] TextTuto;
+
+			G_AudioSource = Audio.CreateSound("{{{SoundWelcome}}}", {{{Volumes::GetVolumedB("MenuWelcome")}}}, False, False, False);
+
+
+			for(I, 0, {{{Count_InstancesY-1}}})
+			{
+				//TextButton[I]        =  Text[Integer];
+				QuadImageTutoUrl[I]  =  Text[Integer];
+				TextTuto[I]          =  Text[Integer];
+			}
+
+			for(J,0,{{{Count_InstancesX-1}}})
+			{
+				G_TextSubMenu[J]       = Text[Integer];
+				G_TextSubMenuLegend[J] = Text[Integer];
+			}
+
+			G_HideTime              = -1;
+			G_ShowTime              = -1;
+			
+			G_TextSubMenu[0][0]      = "{{{MenuText::GetSubMenuTitle(0,0)}}}";
+			G_TextSubMenu[0][1]      = "{{{MenuText::GetSubMenuTitle(0,1)}}}";
+
+			G_TextSubMenu[1][0]      = "{{{MenuText::GetSubMenuTitle(1,0)}}}";
+			G_TextSubMenu[1][1]      = "{{{MenuText::GetSubMenuTitle(1,1)}}}";
+			G_TextSubMenu[1][2]      = "{{{MenuText::GetSubMenuTitle(1,2)}}}";
+			G_TextSubMenu[1][3]      = "{{{MenuText::GetSubMenuTitle(1,3)}}}";
+
+			G_TextSubMenu[2][0]      = "{{{MenuText::GetSubMenuTitle(2,0)}}}";
+			G_TextSubMenu[2][1]      = "{{{MenuText::GetSubMenuTitle(2,1)}}}";
+			G_TextSubMenu[2][2]      = "{{{MenuText::GetSubMenuTitle(2,2)}}}";
+			G_TextSubMenu[2][3]      = "{{{MenuText::GetSubMenuTitle(2,3)}}}";
+			//G_TextSubMenu[2][4]      = "{{{MenuText::GetSubMenuTitle(2,4)}}}";
+
+			G_TextSubMenu[3][0]      = "{{{MenuText::GetSubMenuTitle(3,0)}}}";
+			G_TextSubMenu[3][1]      = "{{{MenuText::GetSubMenuTitle(3,1)}}}";
+			
+			G_TextSubMenu[4][0]      = "{{{MenuText::GetSubMenuTitle(4,0)}}}";
+			G_TextSubMenu[4][1]      = "{{{MenuText::GetSubMenuTitle(4,1)}}}";
+			
+			G_MenuColor[0]             = {{{MenuColor::GetMenuColor(0)}}};
+			G_MenuColor[1]             = {{{MenuColor::GetMenuColor(1)}}};
+			G_MenuColor[2]             = {{{MenuColor::GetMenuColor(2)}}};
+			G_MenuColor[3]             = {{{MenuColor::GetMenuColor(3)}}};
+			G_MenuColor[4]             = {{{MenuColor::GetMenuColor(4)}}};
+
+			G_SubMenuScreen[0]         = "{{{SubMainMenuOnline}}}";
+			G_SubMenuScreen[1]         = "{{{SubMainMenuMultiLocal}}}";
+			G_SubMenuScreen[2]         = "{{{SubMainMenuCampaign}}}";
+			G_SubMenuScreen[3]         = "{{{SubMainMenuTrackBuilder}}}";
+			G_SubMenuScreen[4]         = "{{{SubMainMenuGarage}}}";
+
+			//HACK - Legend en mode 3 labels
+
+			G_TextSubMenuLegend[0][0]      = "{{{MenuText::GetSubMenuLegend(0,0)}}}";
+			G_TextSubMenuLegend[0][1]      = "{{{MenuText::GetSubMenuLegend(0,1)}}}";
+
+			G_TextSubMenuLegend[1][0]      = "{{{MenuText::GetSubMenuLegend(1,0)}}}";
+			G_TextSubMenuLegend[1][1]      = "{{{MenuText::GetSubMenuLegend(1,1)}}}";
+			G_TextSubMenuLegend[1][2]      = "{{{MenuText::GetSubMenuLegend(1,2)}}}";
+			G_TextSubMenuLegend[1][3]      = "{{{MenuText::GetSubMenuLegend(1,3)}}}";
+
+			G_TextSubMenuLegend[2][0]      = "{{{MenuText::GetSubMenuLegend(2,0)}}}";
+			G_TextSubMenuLegend[2][1]      = "{{{MenuText::GetSubMenuLegend(2,1)}}}";
+			G_TextSubMenuLegend[2][2]      = "{{{MenuText::GetSubMenuLegend(2,2)}}}";
+			G_TextSubMenuLegend[2][3]      = "{{{MenuText::GetSubMenuLegend(2,3)}}}";
+			G_TextSubMenuLegend[2][4]      = "{{{MenuText::GetSubMenuLegend(2,4)}}}";
+
+			G_TextSubMenuLegend[3][0]      = "{{{MenuText::GetSubMenuLegend(3,0)}}}";
+			G_TextSubMenuLegend[3][1]      = "{{{MenuText::GetSubMenuLegend(3,1)}}}";
+
+			G_TextSubMenuLegend[4][0]      = "{{{MenuText::GetSubMenuLegend(4,0)}}}";
+			G_TextSubMenuLegend[4][1]      = "{{{MenuText::GetSubMenuLegend(4,1)}}}";
+
+			Init();
+
+			//HACKGC
+			if({{{ActualVersion}}} == 4)
+			{
+				G_IndexLabelSelectY = 1;
+			}
+
+			declare CMlQuad  Garage2 <=> (Page.GetFirstChild("Garage2") as CMlQuad);
+			G_PositionBaseQuadGarage2 = Garage2.RelativePosition.Y;
+			declare CMlQuad  Garage3 <=> (Page.GetFirstChild("Garage3") as CMlQuad);
+			G_PositionBaseQuadGarage3 = Garage3.RelativePosition.Y;
+			
+			declare CMlQuad  MouseInput_PrevMenu  <=> (Page.GetFirstChild("MouseInput_PrevMenu") as CMlQuad);
+			declare CMlQuad  MouseInput_NextMenu <=> (Page.GetFirstChild("MouseInput_NextMenu") as CMlQuad);
+
+			declare Integer Page_MainSelectorPosition for Page;
+			Page_MainSelectorPosition = -1;
+			declare Integer Prev_MainSelectorPosition = -1;
+
+			
+			while(True) {
+				yield;
+				
+				if(! PageIsVisible) continue;
+				LibManialink_AnimLoop();
+				
+				{{{Prompter2::InjectInLoop()}}}
+				{{{Loading::InjectInLoop()}}}	
+
+				
+/* xbx: desactivé sous les conseils de thomas, voir si ça fix le pb de l'alloc grossisante.
+				if (G_MustAnimBuddiesChallenge && LastChallengeCountAnimTime + 1250 < Now)
+				{
+					LastChallengeCountAnimTime = Now;
+					LibManialink_SetTargetScale(Label_BuddiesChallenges, 1.1);
+					LibManialink_PresetAnim(Label_BuddiesChallenges, 150, "Linear");
+					LibManialink_SetTargetScale(Label_BuddiesChallenges, 1.);
+					LibManialink_PresetAnimChain(Label_BuddiesChallenges, 150, "Linear");
+				}
+*/
+
+				//Lévitation Quads Paralax
+				declare Real ButtonSelectedSinVar2  = ML::Sin(Now * 0.001) * 3.;
+				Garage2.RelativePosition.Y = G_PositionBaseQuadGarage2 + ButtonSelectedSinVar2;
+				declare Real ButtonSelectedSinVar3  = ML::Sin((Now+1953) * 0.00065) * 2.;
+				Garage3.RelativePosition.Y = G_PositionBaseQuadGarage3 + ButtonSelectedSinVar3;
+				//Garage2.Size = <70., -70.>;
+				//Garage2.AbsoluteScale = -1.;
+				//Garage2.RelativeRotation = 180.;
+				//Garage2.RelativePosition.Z = 100.;
+				//declare ETexAddress aaa = Mirror;
+				//Garage2.Image = ETexAddress;
+				//Garage2.Image = CImage ::ETexAddress::Mirror;
+
+				//Blink du quad de sélection
+				declare CMlFrame Frame_All <=> (Page.GetFirstChild("Frame_All") as CMlFrame);
+				declare CMlFrame Frame_Instance <=> (Page.GetFirstChild("Frame_Instance"^G_IndexSelectY^""^G_IndexSelectX) as CMlFrame);
+				declare CMlQuad  Quad_Selector <=> (Frame_Instance.GetFirstChild("Quad_Selector") as CMlQuad);
+			 	declare Real ButtonSelectedSinVar  = ML::Sin(Now * 0.01) * 0.5 + 0.5;
+   				declare Real ButtonSelectedOpacity = 0.0 + ButtonSelectedSinVar * 1.;
+   				Quad_Selector.Opacity = ButtonSelectedOpacity;
+
+   				//Arrows
+   				MouseInput_PrevMenu.RelativePosition.X  = -146 + ButtonSelectedSinVar;
+				MouseInput_NextMenu.RelativePosition.X =  146 - ButtonSelectedSinVar;
+
+				if(G_HideTime <= Now && G_HideTime != -1)
+				{
+					G_HideTime = -1;
+					
+					{{{ParallaxMenu::InjectInDetach()}}}
+					//Frame_All.Hide();
+					SendCustomEvent("MuteSFX", [""]);
+					SendCustomEvent("DetachPage", ["MainSelector"]);
+				}
+
+				if(G_ShowTime <= Now && G_ShowTime != -1)
+				{
+					Frame_All.Show();
+					declare CMlFrame  Frame_Content     <=> (Page.GetFirstChild("Frame_Content") as CMlFrame);
+					declare CMlFrame  Frame_Backgrounds <=> (Page.GetFirstChild("Frame_Backgrounds") as CMlFrame);
+					Frame_Content.ClipWindowRelativePosition     = <{{{ClipPosX}}}, {{{ClipPosY}}}>;
+					Frame_Content.ClipWindowSize                 = <{{{ClipSizeX}}}, {{{ClipSizeY}}}>;
+					Frame_Backgrounds.ClipWindowRelativePosition = <0., 0.>;
+					Frame_Backgrounds.ClipWindowSize             = <320., 180.>;
+					
+					//Frame_Content.ClipWindowActive               = False;
+					//Frame_Backgrounds.ClipWindowActive           = False;
+
+					G_ShowTime = -1;
+				}
+
+				if(Prev_MainSelectorPosition != Page_MainSelectorPosition)
+				{
+					if(Page_MainSelectorPosition != -1)	MoveToDown(Page_MainSelectorPosition);
+					Prev_MainSelectorPosition = Page_MainSelectorPosition;
+				}
+
+				{{{ClipTransitions::InjectInWhile(["Frame_Content","Frame_Backgrounds"])}}}
+
+				if (Input.PendingEvents.count != 0) {
+					declare Integer LastInputPlatform;
+					switch (Input.PendingEvents[Input.PendingEvents.count-1].Pad.Type) {
+						case CInputPad::EPadType::Keyboard 		: LastInputPlatform = {{{LibUIButtons::GetPlatform("PC")}}};
+						case CInputPad::EPadType::PlayStation 	: LastInputPlatform = {{{LibUIButtons::GetPlatform("PS4")}}};
+						case CInputPad::EPadType::XBox 			: LastInputPlatform = {{{LibUIButtons::GetPlatform("XB1")}}};
+						default 								: LastInputPlatform = {{{LibUIButtons::GetPlatform("PC")}}};
+					}
+					if (LastInputPlatform != G_ActiveButtonPlatform)
+					{
+						SendCustomEvent("SetActiveButtonPlaform", ["MainSelector", TL::ToText(LastInputPlatform)]);
+					}
+				}
+
+				foreach(Event in PendingEvents) {
+					
+					switch(Event.Type) {
+
+						case CMlEvent::Type::MenuNavigation: {
+							/*
+							if(G_LockInput == -1 && Event.MenuNavAction == CMlEvent::EMenuNavAction::Cancel)
+							{
+								SendCustomEvent("CancelLoading", ["MainSelector"]);
+							}
+							*/
+							if(G_LockInput + 100 > Now || G_LockInput == -1) continue;
+							G_LockInput = Now; // Sécurité pour éviter le double input
+							switch(Event.MenuNavAction) {
+								case CMlEvent::EMenuNavAction::Up : {
+									if(Net_IsSmartStart) continue;
+									if(G_IndexLabelSelectY > 0)
+									{
+										if (G_UnlockCheats_Active)
+											InputCheatCode_Abort();
+										G_IndexLabelSelectY -= 1;
+										Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+										UpdateSubMenuSelection(G_IndexLabelSelectY, G_IndexLabelSelectY + 1);
+									}
+								}
+								case CMlEvent::EMenuNavAction::Down : {
+									if(IsGoodCheatCode("Down"))SendCustomEvent("Cheat_SuperSolo", ["MainSelector"]);
+									if(Net_IsSmartStart) continue;
+									//if(G_IndexLabelSelectY < G_TextSubMenu[G_IndexSelectX].count - 1)
+									if(G_TextSubMenu[G_IndexSelectX].existskey(G_IndexLabelSelectY+1) && G_TextSubMenu[G_IndexSelectX][G_IndexLabelSelectY+1] != "")
+									{
+										if (G_UnlockCheats_Active)
+											InputCheatCode_Abort();
+										//HACKGC
+										if({{{ActualVersion}}} == 4 && G_IndexSelectX == 1 && G_IndexLabelSelectY == 1)
+										{
+											continue;
+										}
+										//HACKEND
+										G_IndexLabelSelectY += 1;
+										Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+										UpdateSubMenuSelection(G_IndexLabelSelectY, G_IndexLabelSelectY -1);
+									}
+								}
+								case CMlEvent::EMenuNavAction::Left : Input_Left();
+								case CMlEvent::EMenuNavAction::Right : Input_Right();
+								case CMlEvent::EMenuNavAction::Select : Input_Select();
+								case CMlEvent::EMenuNavAction::Action1 : {
+									if(IsGoodCheatCode("Action1"))SendCustomEvent("Cheat_SuperSolo", ["MainSelector"]);
+									if (G_UnlockCheats_Active)
+										InputCheatCode_Input("Action1");
+								}
+								case CMlEvent::EMenuNavAction::Action2 : {
+									if(IsGoodCheatCode("Action2"))SendCustomEvent("Cheat_SuperSolo", ["MainSelector"]);
+									//SendCustomEvent("Cheat_SuperSolo", ["MainSelector"]);
+									if (G_UnlockCheats_Active)
+										InputCheatCode_Input("Action2");
+								}
+								case CMlEvent::EMenuNavAction::Cancel : {
+									if (G_UnlockCheats_Active)
+										InputCheatCode_Input("Cancel");
+									else if (G_UnlockCheats_UnlockedCheat != "" && G_IndexSelectX == 1 && G_IndexLabelSelectY == 3) 
+										SendCustomEvent("ResetCheat", Text[]);
+									else {
+										SendCustomEvent("ResetCheat", Text[]);
+										if(Net_IsSmartStart)
+										{
+											//SendCustomEvent("ExitSmartStart", ["MainSelector"]);
+											continue;
+										}
+										Audio.PlaySoundEvent("{{{SoundBack}}}", {{{Volumes::GetVolumedB("MenuPageBack")}}});
+										declare Real InitFramePosX = ({{{MarginX_Button + SizeXQuad}}});
+										SendCustomEvent("FocusToStartMain", [""^InitFramePosX, "Right", G_IndexSelectX^""]);
+										SendCustomEvent("SetupMainMenuFilter", ["-1"]);
+										MoveToStartMain(-200.);
+										continue;
+	
+										declare CMlFrame Frame_Content <=> (Page.GetFirstChild("Frame_Content") as CMlFrame);
+										LibManialink_AnimStop(Frame_Content);
+										G_AudioSource.Stop();
+										SendCustomEvent("GotoPrevious", [""]);
+									}
+								}
+								case CMlEvent::EMenuNavAction::AppMenu : {
+									if (G_UnlockCheats_Active)
+										InputCheatCode_Input("Cancel");
+									else if (G_UnlockCheats_UnlockedCheat != "" && G_IndexSelectX == 1 && G_IndexLabelSelectY == 3) 
+										SendCustomEvent("ResetCheat", Text[]);
+									else {
+										SendCustomEvent("ResetCheat", Text[]);
+										if(Net_IsSmartStart)
+										{
+											//SendCustomEvent("ExitSmartStart", ["MainSelector"]);
+											continue;
+										}
+										Audio.PlaySoundEvent("{{{SoundBack}}}", {{{Volumes::GetVolumedB("MenuPageBack")}}});
+										declare Real InitFramePosX = ({{{MarginX_Button + SizeXQuad}}});
+										SendCustomEvent("FocusToStartMain", [""^InitFramePosX, "Right", G_IndexSelectX^""]);
+										SendCustomEvent("SetupMainMenuFilter", ["-1"]);
+										MoveToStartMain(-200.);
+										continue;
+	
+										declare CMlFrame Frame_Content <=> (Page.GetFirstChild("Frame_Content") as CMlFrame);
+										LibManialink_AnimStop(Frame_Content);
+										G_AudioSource.Stop();
+										SendCustomEvent("GotoPrevious", [""]);
+									}
+								}
+							}
+							break;
+						}
+						case CMlEvent::Type::MouseClick: {
+							declare Text[] InputId = TL::Split("_", Event.ControlId);
+							if (InputId.count < 2 || InputId[0] != "MouseInput")
+								continue;
+							switch (InputId[1]) {
+								case "PrevMenu" : Input_Left();
+								case "NextMenu" : Input_Right();
+								case "MenuSelection" : {
+									if (!Net_IsSmartStart)
+									{
+										declare Text[] SubMenuInfo = TL::Split(":", InputId[2]);
+										if(SubMenuInfo[0] == "2" && SubMenuInfo[1] == "4" && G_TextSubMenu[2][4] != "Super Solo") continue;
+										if (G_IndexSelectX == TL::ToInteger(SubMenuInfo[0]))
+										{
+											if (G_UnlockCheats_Active)
+												InputCheatCode_Abort();
+											declare Integer NewIndexY = TL::ToInteger(SubMenuInfo[1]);
+											if (NewIndexY >= 0 && NewIndexY < G_TextSubMenu[G_IndexSelectX].count && NewIndexY != G_IndexLabelSelectY) {
+												declare Integer PrevSelection = G_IndexLabelSelectY;
+												G_IndexLabelSelectY = NewIndexY;
+												Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+												UpdateSubMenuSelection(G_IndexLabelSelectY, PrevSelection);
+											}
+										}
+									}
+									Input_Select();
+								}
+							}
+						}
+						case CMlEvent::Type::MouseOver: {
+							declare Text[] InputId = TL::Split("_", Event.ControlId);
+							if (InputId.count < 2 || InputId[0] != "MouseInput")
+							{
+								continue;
+							}
+
+							switch (InputId[1]) {
+								case "MenuSelection" : {
+									if (!Net_IsSmartStart)
+									{
+										declare Text[] SubMenuInfo = TL::Split(":", InputId[2]);
+										if(SubMenuInfo[0] == "2" && SubMenuInfo[1] == "4" && G_TextSubMenu[2][4] != "Super Solo") continue;
+										if (G_IndexSelectX == TL::ToInteger(SubMenuInfo[0]))
+										{
+											if (G_UnlockCheats_Active)
+												InputCheatCode_Abort();
+											declare Integer NewIndexY = TL::ToInteger(SubMenuInfo[1]);
+											if (NewIndexY >= 0 && NewIndexY < G_TextSubMenu[G_IndexSelectX].count && NewIndexY != G_IndexLabelSelectY) {
+												declare Integer PrevSelection = G_IndexLabelSelectY;
+												G_IndexLabelSelectY = NewIndexY;
+												Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+												UpdateSubMenuSelection(G_IndexLabelSelectY, PrevSelection);
+											}
+										}
+									}
+								}
+							}
+						}
+						case CMlEvent::Type::PluginCustomEvent: {
+							switch(Event.PluginCustomEventType) {
+								case "Show" : {
+									declare PreviousPage = Event.CustomEventData[0];
+									EnableMenuNavigation(True,False,Null,1);
+									G_LockInput = Now;
+									Loading_SetIsLoading(False);
+									ShowPage(PreviousPage);
+									SendCustomEvent("IsSuperSolo", ["MainSelector"]);
+									
+									SendCustomEvent("GetTitleReachable", ["MainSelector"]);
+									
+									G_MustAnimBuddiesChallenge = False;
+									SendCustomEvent("GetStatsFromLocalCache", ["MainSelector"]);
+									
+									if(Net_IsSmartStart)
+									{
+										G_IndexLabelSelectY = Net_PathSubMenu;
+									}
+									UpdateSubMenuSelection(G_IndexLabelSelectY, G_IndexLabelSelectY + 1);
+									UpdateQuads(G_IndexSelectX, G_IndexSelectY, G_IndexSelectX, G_IndexSelectY);
+									SendCustomEvent("GetActiveButtonPlatform", ["MainSelector"]);
+									{{{_ShowAnim}}}
+								}
+								
+								case "Hide" : {
+									{{{_HideAnim}}}
+									declare PreviousPage = Event.CustomEventData[0];
+									if(PreviousPage == "Intro" || PreviousPage == "StartDemo")
+									{
+										declare CMlFrame Frame_Content <=> (Page.GetFirstChild("Frame_Content") as CMlFrame);
+										LibManialink_AnimStop(Frame_Content);
+										G_AudioSource.Stop();
+										// faudrait couper la musique pour avoir le fade quand on revient, mais j'y arrive pas.  un truc du genre declare Text[] None; MenuMusicController::SendEventMusic("SetTracks", None); pourrait marcher. mais faudrait comprendre l'architecture des layers pour y arriver..
+										
+										//SendCustomEvent("GotoPrevious", [""]);
+										SendCustomEvent("DetachPage", ["MainSelector"]);
+									}
+									else
+									{
+										//declare Boolean IsRecordCenter for This;
+										//declare Text	Net_ModeSelect		for Page;
+										//PreviousPage
+										//G_HideTime  = Now + 500;
+										SendCustomEvent("DetachPage", ["MainSelector"]);
+									}
+								}
+								case "PrivilegeFail" : {
+									G_LockInput = Now;
+									Loading_SetIsLoading(False);
+								}
+								case "SelectBuddiesChallengesBrowser" : {
+									if (G_IndexSelectX == 2)
+									{
+										UpdateSubMenuSelection(3, G_IndexLabelSelectY);
+										G_IndexLabelSelectY = 3;
+									}
+								}
+								case "SetCheatActivated" : {
+									declare CMlFrame Frame_SecretName <=> (Page.GetFirstChild("Frame_InstanceSubMenu13") as CMlFrame);
+									declare CMlLabel Label_SecretName <=> (Frame_SecretName.GetFirstChild("Label_SubMenu") as CMlLabel);
+									Label_SecretName.Value = Event.CustomEventData[0];
+									G_UnlockCheats_UnlockedCheat = Event.CustomEventData[1];
+									
+									if (G_UnlockCheats_UnlockedCheat != "HotSeat" && ParentApp.ManiaPlanet.TmTurbo_IsDemo)
+										Label_SecretName.TextColor = <0.3, 0.3, 0.3>;
+									else
+										Label_SecretName.Opacity = 1.;
+									
+									declare CMlFrame Frame_CheatInputs <=> (Page.GetFirstChild("Frame_CheatInputs") as CMlFrame);
+									Frame_CheatInputs.Show();
+								}
+								case "SetCheatReset" : {
+									declare CMlFrame Frame_SecretName <=> (Page.GetFirstChild("Frame_InstanceSubMenu13") as CMlFrame);
+									declare CMlLabel Label_SecretName <=> (Frame_SecretName.GetFirstChild("Label_SubMenu") as CMlLabel);
+									Label_SecretName.Value = _("Secret");
+									Label_SecretName.TextColor = <1., 1., 1.>;
+									G_UnlockCheats_UnlockedCheat = "";
+									declare CMlFrame Frame_CheatInputs <=> (Page.GetFirstChild("Frame_CheatInputs") as CMlFrame);
+									Frame_CheatInputs.Hide();
+								}
+								case "MoveSelection" : {
+									G_LockInput = Now+5000;
+
+									declare Text Direction     = Event.CustomEventData[0];
+									if(Direction == "Right")
+									{
+										if(G_IndexSelectX < IndexMaxX - 1)
+										{
+											MoveToRight();
+										}
+									}
+									else if(Direction == "Left")
+									{
+										if(G_IndexSelectX > 0)
+										{
+											MoveToLeft();
+										}
+									}
+									else if(Direction == "Down")
+									{
+										//Prev_MainSelectorPosition = MenuSelect;
+										//MoveToDown(MenuSelect);
+
+									}
+								}
+								case "RecordsLoaded": {
+									SendCustomEvent("GotoPage", ["RecordCenter"]);
+									SendCustomEvent("DetachPage", ["Main"]);
+								}
+								case "SetSuperSolo": {
+									G_TextSubMenu[2][4]       = "Super Solo";
+									//G_TextSubMenuLegend[2][4] = "{{{MenuText::GetSubMenuLegend(4,2)}}}";
+									G_SuperSoloAcces = True;
+									if(!G_IsSuperSoloSet)
+									{
+										Init();
+										G_MustAnimBuddiesChallenge = False;
+										SendCustomEvent("GetStatsFromLocalCache", ["MainSelector"]);
+									}
+								}
+								case "NoSuperSolo": {
+									G_TextSubMenu[2][4] = "";
+									//G_TextSubMenuLegend[2][4] = "{{{MenuText::GetSubMenuLegend(4,2)}}}";
+									G_SuperSoloAcces = True;
+									if(G_IndexLabelSelectY >= 4)
+									{
+										G_IndexLabelSelectY = 3;
+										UpdateSubMenuSelection(G_IndexLabelSelectY, G_IndexLabelSelectY -1);
+									}
+									if(!G_IsSuperSoloSet)
+									{
+										Init();
+									}
+								}
+
+								case "ShowSuperSoloFeature": {
+									G_TextSubMenu[2][4]       = "Super Solo";
+									//G_TextSubMenuLegend[2][4] = "{{{MenuText::GetSubMenuLegend(4,2)}}}";
+									G_SuperSoloAcces = False;
+									if(!G_IsSuperSoloSet) Init();
+								}
+								case "StatsReceived" : {
+									if (Event.CustomEventData.count == 3)
+										OnChallengesCountsReceived(TL::ToInteger(Event.CustomEventData[0]), TL::ToInteger(Event.CustomEventData[1]), Event.CustomEventData[2]);
+								}
+								case "StatsReceivedFromLocalCache" : {
+									if (Event.CustomEventData.count == 3) {
+										OnChallengesCountsReceived(TL::ToInteger(Event.CustomEventData[0]), TL::ToInteger(Event.CustomEventData[1]), Event.CustomEventData[2]);
+									}
+									SendCustomEvent("GetStats", ["MainSelector"]);
+								}
+								case "SplitScreenAnswer": {
+
+									declare Sound = Audio.CreateSound("{{{SoundPageForward}}}");
+									Sound.PanRadiusLfe 	= {{{Volumes::GetPanRadiusLfe("MenuUISpreadLarge")}}};
+									Audio.PlaySoundEvent(Sound, {{{Volumes::GetVolumedB("MenuPageForward")}}}, 0);
+
+									SendCustomEvent("GotoPage", ["KindOfTracks"]);
+								}
+								case "RecordCenterAnswer": {
+									declare Boolean IsRecordCenter for This;
+									IsRecordCenter = Event.CustomEventData[0] == "True";
+
+									declare Sound = Audio.CreateSound("{{{SoundPageForward}}}");
+									Sound.PanRadiusLfe 	= {{{Volumes::GetPanRadiusLfe("MenuUISpreadLarge")}}};
+									Audio.PlaySoundEvent(Sound, {{{Volumes::GetVolumedB("MenuPageForward")}}}, 0);
+									SendCustomEvent("GotoPage", ["MapsOverview"]);
+								}
+								case "SendTitleReachable": {
+									UpdateTitleLight();
+								}
+								case "SetActiveButtonPlatform" : {
+									G_ActiveButtonPlatform = TL::ToInteger(Event.CustomEventData[0]);
+									UpdateHelpersForPlatform(G_ActiveButtonPlatform);
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	--></script>
+	""";
+	
+	return MLText;
+}

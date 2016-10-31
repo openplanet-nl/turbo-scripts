@@ -1,0 +1,167 @@
+
+#Include "Libs/Openplanet/Manialink2.Script.txt"						as Manialink
+#Include "Libs/Openplanet/TMConsole/BuilderHelper.Script.txt"		as BuilderHelper
+#Include "Libs/Openplanet/TMConsole/FontManager.Script.txt" 			as Font
+
+#Const C_ImgBase	"file://Media/Manialinks/Nadeo/TMConsole/Images/"
+
+Text Build(Text _ShowAnim, Text _HideAnim) {
+
+
+	
+	declare Text IMGTrame          = C_ImgBase^"SystemStartBg2.dds";
+	
+	declare Text MLText = """
+	
+	
+	<frame id="Frame_All">
+		
+		<quad id="Quad_Intro" halign="center" valign="center" image="{{{IMGTrame}}}" sizen="320 180"  posn="0 0 0" opacity="1.0"/>
+		
+		<label id="Label_TitleIntro" halign="center" valign="center" style="TextButtonBig" posn="0 40 2" textprefix="" textsize="6"
+		 textfont="{{{Font::GetFontName("Main")}}}" sizen="260" autonewline="1" textcolor="fff" opacity="1."/>
+
+		<label halign="left" valign="up" style="TextButtonBig" posn="-130 10 2" id="Label_Intro" textsize="2"
+		 textfont="{{{Font::GetFontName("Main")}}}" sizen="260" autonewline="1" textcolor="fff" opacity="1."/>
+		
+		
+	</frame>
+	
+	
+	<script><!--
+		#Const DebugName  "L_Intro"
+		
+
+		#Const TimeNext  40000
+
+		{{{Manialink::GetIncludes()}}}
+		{{{Manialink::Load()}}}
+		{{{BuilderHelper::MLCommonFunctions()}}}
+		declare Integer G_LockInput;
+		declare Integer G_TimeNextPage;
+		declare Integer G_TimeAnim;
+
+		
+
+		Void AnimHide()
+		{
+			declare CMlLabel Label_TitleIntro <=> (Page.GetFirstChild("Label_TitleIntro") as CMlLabel);
+			declare CMlLabel Label_Intro      <=> (Page.GetFirstChild("Label_Intro") as CMlLabel);
+			declare CMlQuad  Quad_Intro       <=> (Page.GetFirstChild("Quad_Intro") as CMlQuad);
+
+			declare TimeAnimHide = 200;
+			
+			LibManialink_SetTargetOpacity(Label_TitleIntro, 0.);
+			LibManialink_PresetAnim(Label_TitleIntro, TimeAnimHide, "EaseLinear");
+			LibManialink_SetTargetOpacity(Label_Intro, 0.);
+			LibManialink_PresetAnim(Label_Intro, TimeAnimHide, "EaseLinear");
+			LibManialink_SetTargetOpacity(Quad_Intro, 0.);
+			LibManialink_PresetAnim(Quad_Intro, TimeAnimHide, "EaseLinear");
+			
+			G_TimeNextPage = Now + TimeAnimHide;
+		}
+		
+
+
+		Void AnimShow()
+		{
+			declare CMlLabel Label_TitleIntro <=> (Page.GetFirstChild("Label_TitleIntro") as CMlLabel);
+			declare CMlLabel Label_Intro      <=> (Page.GetFirstChild("Label_Intro") as CMlLabel);
+			declare CMlQuad  Quad_Intro       <=> (Page.GetFirstChild("Quad_Intro") as CMlQuad);
+
+			Label_TitleIntro.Opacity = 0.;
+			Label_Intro.Opacity      = 0.;
+			Quad_Intro.Opacity       = 0.;
+
+			declare TimeAnimHide = 200;
+			
+			LibManialink_SetTargetOpacity(Label_TitleIntro, 1.);
+			LibManialink_PresetAnim(Label_TitleIntro, TimeAnimHide, "EaseLinear");
+			LibManialink_SetTargetOpacity(Label_Intro, 1.);
+			LibManialink_PresetAnim(Label_Intro, TimeAnimHide, "EaseLinear");
+			LibManialink_SetTargetOpacity(Quad_Intro, 1.);
+			LibManialink_PresetAnim(Quad_Intro, TimeAnimHide, "EaseLinear");
+			
+			// G_TimeAnim = Now + TimeNext+500;
+		}
+		
+
+
+		main() {
+					
+			declare CMlLabel Label_Intro <=> (Page.GetFirstChild("Label_Intro") as CMlLabel);
+			declare CMlLabel Label_TitleIntro <=> (Page.GetFirstChild("Label_TitleIntro") as CMlLabel);
+			Label_TitleIntro.Value = _("WARNING: Read before playing");
+			Label_Intro.Value      = _("[Epilepsy]");
+			Label_Intro.LineSpacing = 1.2;
+
+			{{{BuilderHelper::MLEnableMenuNavigationInputs()}}}
+			EnableMenuNavigation(True,False,Null,1);
+
+			G_TimeAnim = -1;
+			G_TimeNextPage = -1;
+
+			AnimShow();
+			declare Boolean FirstTimeVisible = True;
+			
+			while(True) {
+				yield;
+				if(! PageIsVisible) continue;
+				
+				if(FirstTimeVisible) {
+					FirstTimeVisible = False;
+					G_TimeAnim = Now + TimeNext + 200;
+				}
+				
+				LibManialink_AnimLoop();
+
+				if(G_TimeNextPage < Now && G_TimeNextPage != -1)
+				{
+					SendCustomEvent("GotoPage", ["Intro"]);
+					G_TimeNextPage = -1;
+				}
+
+				if(G_TimeAnim < Now && G_TimeAnim != -1)
+				{
+					AnimHide();
+					G_TimeAnim = -1;
+				}
+
+				foreach(Event in PendingEvents) {
+					if(G_LockInput + 100 > Now || G_TimeNextPage != -1) continue;
+					switch(Event.Type) {
+
+						case CMlEvent::Type::MenuNavigation: {
+							switch(Event.MenuNavAction) {
+								case CMlEvent::EMenuNavAction::Select : {
+									G_TimeAnim = -1;
+									AnimHide();
+								}
+							}
+						}
+						
+						case CMlEvent::Type::PluginCustomEvent: {
+							
+							switch(Event.PluginCustomEventType) {
+								case "Show" : {
+									log("Show");
+									EnableMenuNavigation(True,False,Null,1);
+									G_LockInput              = Now;
+									{{{_ShowAnim}}}
+								}
+								
+								case "Hide" : {
+									{{{_HideAnim}}}
+									SendCustomEvent("DetachPage", ["IntroAdvise"]);
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	--></script>
+	""";
+	
+	return MLText;
+}

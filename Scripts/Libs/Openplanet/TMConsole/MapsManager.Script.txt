@@ -1,0 +1,697 @@
+#Include "Libs/Openplanet/TMConsole/Menu/MenuVersion.Script.txt"			as MenuVersion
+
+
+		
+Text MLMapsManager(Integer _NbEnviro) {
+	declare Text C_PCPathFilter		= """Campaigns\\""";
+	declare Text C_E3PathFilter		= """E3_Hands_On\\""";
+	declare Text C_PathWhite		= """01_White\\""";
+	declare Text C_PathGreen		= """02_Green\\""";
+	declare Text C_PathBlue			= """03_Blue\\""";
+	declare Text C_PathRed			= """04_Red\\""";
+	declare Text C_PathBlack		= """05_Black\\""";
+	declare Text C_PathCanyon 		= """01_Canyon\\""";
+	declare Text C_PathValley 		= """02_Valley\\""";
+	declare Text C_PathLagoon 		= """03_Lagoon\\""";
+	declare Text C_PathStadium 		= """04_Stadium\\""";
+
+	declare Text MLText = """
+	// <script><!-- // pour la colo syntaxique :)
+
+	declare Real[Integer]				G_CustomMapIndex; //Tableau qui permet de donner un ordre d'index pour les CustomMaps
+	declare Real[Integer][Integer]		G_CampaignMapIndex; //Tableau qui permet de donner un ordre d'index pour les CampaignMaps
+	declare Integer[Integer][Integer]	G_CustomMapsInfoIndex;
+	declare Boolean[Integer]			G_IsEnviroFolderOpen;
+	declare Integer[Integer]			G_EnviroByIndex; // 0:Stadium, 1:Canyon, 2:Valley, 3:Lagoon
+	declare Integer[Integer]			G_NumberOfMapByEnviro;
+	declare Integer[Integer]			G_PositionEnviro; // Indique où dans le tableau commence l'enviro
+
+	Void Private_SetLoadFilter(Text _PathFilter)
+	{
+		DataMgr.MapFilterStartWithPath = _PathFilter;
+		wait(DataMgr.Ready);
+	}
+
+	Text GetDifficulty(Integer _Index)
+	{
+		switch(_Index) {
+			case 0	: return "Custom";
+			case 1	: return "White";
+			case 2	: return "Green";
+			case 3 	: return "Blue";
+			case 4	: return "Red";
+			case 5 	: return "Black";
+		}
+		return "";
+	}
+	Text GetEnviro(Integer _Index)
+	{
+		declare Text Enviro;
+		switch(_Index) {
+			case 0	: Enviro = "Canyon";
+			case 1	: Enviro = "Valley";
+			case 2	: Enviro = "Lagoon";
+			case 3 	: Enviro = "Stadium";
+		}
+		return Enviro;
+	}
+
+	Integer GetEnviroIndex(Text _Name)
+	{
+		switch(_Name) {
+			case "Canyon"	: return 0;
+			case "Valley"	: return 1;
+			case "Lagoon"	: return 2;
+			case "Stadium" 	: return 3;
+		}
+		return 0;
+	}
+
+	Text CreateFilterPath(Text _Difficulty, Text _Enviro)
+	{
+		declare Text FilterPath;
+		declare Text DifficultyPath;
+		declare Text EnviroPath;
+		switch(_Difficulty)
+		{
+			case "White"   : DifficultyPath = "{{{C_PathWhite}}}";
+			case "Green"   : DifficultyPath = "{{{C_PathGreen}}}";
+			case "Blue"    : DifficultyPath = "{{{C_PathBlue}}}";
+			case "Red"     : DifficultyPath = "{{{C_PathRed}}}";
+			case "Black"   : DifficultyPath = "{{{C_PathBlack}}}";
+		}
+		switch(_Enviro)
+		{
+			case "Canyon"  : EnviroPath = "{{{C_PathCanyon}}}";
+			case "Valley"  : EnviroPath = "{{{C_PathValley}}}";
+			case "Lagoon"  : EnviroPath = "{{{C_PathLagoon}}}";
+			case "Stadium" : EnviroPath = "{{{C_PathStadium}}}";
+		}
+
+		declare Text Filter;
+		declare Integer ActualVersion = {{{MenuVersion::GetVersion()}}};
+		switch(ActualVersion)
+		{
+			case 1 : Filter = "{{{C_E3PathFilter}}}";
+			case 4 : Filter = "{{{C_E3PathFilter}}}";
+			default: Filter = "{{{C_PCPathFilter}}}";
+		}
+		
+		FilterPath = Filter ^ DifficultyPath ^ EnviroPath;
+		return FilterPath;
+	}
+
+	//Fonction qui renvois True si la map existe bien dans le tableau
+	Boolean IsMapFound(Integer _MapIndex, Integer _Enviro, Integer _Difficulty)
+	{
+		declare Integer[Integer][Integer][Integer]	MapInfoIndex		for This;
+		if(_Difficulty != 0)
+		{
+			if(MapInfoIndex.existskey(_Difficulty))
+			{
+				if(MapInfoIndex[_Difficulty].existskey(_Enviro))
+				{
+					if(MapInfoIndex[_Difficulty][_Enviro].existskey(_MapIndex))
+					{
+						return True;
+					}
+				}
+			}
+		}
+		else
+		{
+			if(G_CustomMapsInfoIndex.existskey(_Enviro) && _MapIndex < 5)
+			{
+				if(G_CustomMapsInfoIndex[_Enviro].existskey(_MapIndex))
+				{
+					return True;
+				}
+			}
+		}
+		return False;
+	}
+
+
+
+	/// 0, 1, 2, 3 pour Author, Gold, ...
+	Integer Private_GetMyMedal(CMapInfo _MapInfo, Text _GameMode)
+	{
+  		
+  		DataMgr.RetrieveRecords(_MapInfo, DataMgr.MenuUserId);
+  		wait(DataMgr.Ready);
+
+		declare Integer MyTime  = -1;
+		declare Text BestGhost;
+		switch(_GameMode)
+		{
+			case "Duo"  : BestGhost = "Duo_BestGhost";
+			case "Solo" : BestGhost = "Solo_BestGhost";
+			default     : BestGhost = "Solo_BestGhost";
+		}
+	    	
+		foreach(Record in DataMgr.Records)
+		{
+			if(Record.GhostName == BestGhost)
+			{
+				MyTime = Record.Time;
+				break;
+			}
+		}
+		
+		if(MyTime < 0) return 4; // pas de medaille
+		
+		declare Integer CurrentBestMedal = TMC_MEDAL_NONE;
+		foreach(Record in DataMgr.Records) {
+			if(Record.Medal != CHighScore::EMedal::None && Record.Time >= MyTime ) {
+				
+				declare Integer MedalValue = -1;
+				
+				switch(Record.Medal) {
+					case CHighScore::EMedal::Author : MedalValue = TMC_MEDAL_AUTHOR;
+					case CHighScore::EMedal::Gold	: MedalValue = TMC_MEDAL_GOLD;
+					case CHighScore::EMedal::Silver : MedalValue = TMC_MEDAL_SILVER;
+					case CHighScore::EMedal::Bronze : MedalValue = TMC_MEDAL_BRONZE;
+				}
+				
+				if(MedalValue < CurrentBestMedal) CurrentBestMedal = MedalValue;
+			}
+		}
+		
+    		return CurrentBestMedal;
+	}
+
+
+
+
+
+	CMapInfo GetMapInfo(Integer _DifficultySelect, Integer _Enviro, Integer _MapIndex)
+	{
+		declare Integer[Integer][Integer][Integer]	MapInfoIndex		for This;
+		
+		declare CMapInfo Map;
+		declare Integer Index;
+
+		if(_DifficultySelect != 0)
+		{
+			Index = MapInfoIndex[_DifficultySelect][_Enviro][_MapIndex];
+		}
+		else
+		{
+			Index = G_CustomMapsInfoIndex[_Enviro][_MapIndex];
+		}
+		Map <=> DataMgr.Maps[Index];
+		return Map;
+	}
+
+	Integer GetMyMedal(Integer _Difficulty, Integer _ArrayPosY, Integer _MapIndex)
+	{
+		declare CMapInfo Map = GetMapInfo(_Difficulty, _ArrayPosY, _MapIndex);
+		declare Text GameSelect for This;
+		return Private_GetMyMedal(Map, GameSelect);
+		
+		// HACK EG : pourquoi faire ça ??
+		/*
+		declare Integer[Integer][Integer][Integer] PlayerMedals for This;
+		declare Integer[Integer][Integer][Integer] PlayerMedalsDuo for This;
+		declare Text GameSelect for This;
+		declare Boolean LoadNewMedal = True;
+		
+		if(GameSelect == "Solo")
+		{
+			if(!PlayerMedals.existskey(_Difficulty))
+			{
+				PlayerMedals[_Difficulty] = Integer[Integer][Integer];
+				PlayerMedals[_Difficulty][_ArrayPosY] = Integer[Integer];
+				PlayerMedals[_Difficulty][_ArrayPosY][_MapIndex] = Integer;
+			}
+			else
+			{
+				if(!PlayerMedals[_Difficulty].existskey(_ArrayPosY))
+				{
+					PlayerMedals[_Difficulty][_ArrayPosY] = Integer[Integer];
+					PlayerMedals[_Difficulty][_ArrayPosY][_MapIndex] = Integer;
+
+				}
+				else
+				{
+					if(!PlayerMedals[_Difficulty][_ArrayPosY].existskey(_MapIndex))
+					{	
+						PlayerMedals[_Difficulty][_ArrayPosY][_MapIndex] = Integer;
+					}
+					else
+					{
+						LoadNewMedal = False;
+					}
+				}
+			}
+		}
+		else
+		{	
+			if(!PlayerMedalsDuo.existskey(_Difficulty))
+			{
+				PlayerMedalsDuo[_Difficulty] = Integer[Integer][Integer];
+				PlayerMedalsDuo[_Difficulty][_ArrayPosY] = Integer[Integer];
+				PlayerMedalsDuo[_Difficulty][_ArrayPosY][_MapIndex] = Integer;
+			}
+			else
+			{
+				if(!PlayerMedalsDuo[_Difficulty].existskey(_ArrayPosY))
+				{
+					PlayerMedalsDuo[_Difficulty][_ArrayPosY] = Integer[Integer];
+					PlayerMedalsDuo[_Difficulty][_ArrayPosY][_MapIndex] = Integer;
+
+				}
+				else
+				{
+					if(!PlayerMedalsDuo[_Difficulty][_ArrayPosY].existskey(_MapIndex))
+					{
+						PlayerMedalsDuo[_Difficulty][_ArrayPosY][_MapIndex] = Integer;
+					}
+					else
+					{
+						LoadNewMedal = False;
+					}
+				}
+			}
+		}
+		
+
+		declare Integer MyMedalSolo;
+		declare Integer MyMedalDuo;
+		if(LoadNewMedal)
+		{
+			declare CMapInfo Map = GetMapInfo(_Difficulty, _ArrayPosY, _MapIndex);
+			//MyMedal = Private_GetMyMedal(Map);
+			MyMedalSolo = Private_GetMyMedal(Map, "Solo");
+			MyMedalDuo  = Private_GetMyMedal(Map, "Duo");
+			
+			
+			if(GameSelect == "Solo")
+			{
+				PlayerMedals[_Difficulty][_ArrayPosY][_MapIndex]    = MyMedalSolo;
+			}
+			else if (GameSelect == "Duo")
+			{
+				PlayerMedalsDuo[_Difficulty][_ArrayPosY][_MapIndex] = MyMedalDuo;
+			}
+
+			yield;
+		}
+		else
+		{
+			if(GameSelect == "Solo")
+			{
+				MyMedalSolo = PlayerMedals[_Difficulty][_ArrayPosY][_MapIndex];
+			}
+			else if (GameSelect == "Duo")
+			{
+				MyMedalDuo = PlayerMedalsDuo[_Difficulty][_ArrayPosY][_MapIndex];
+			}
+		}
+
+		if(GameSelect == "Solo")
+		{
+			return MyMedalSolo;
+		}
+		else if (GameSelect == "Duo")
+		{
+			return MyMedalDuo;
+		}
+
+		return 4;
+		*/
+	}
+
+	Boolean MapIsValid(CMapInfo _Map)
+	{
+		// HACK : les dossiers apparaissent dans le DataMgr,
+		// et renvoient ce genre de choses : on les filtre.
+		if(_Map.CollectionName == "_Unassigned") return False;
+		if(_Map.AuthorLogin == "") return False;
+		return True;
+
+		/* OLD TO DELETE
+		// HACK : pour l'instant, on n'affiche que les maps de la campagne "Summer" ou PC
+		declare Text[] PathInfo = TL::Split("\\", _Map.Path);
+		if(PathInfo.count < 2) return False;
+		if(PathInfo[1] == "Summer" || PathInfo[1] == "PC" || PathInfo[1] == "PC - Duo" || PathInfo[1] == "PC - Solo") return True;
+		return False;
+		*/
+	}
+
+
+	Vec3 CreateMapIndice(CMapInfo _Map, Boolean _IsCustomMap){
+		declare Vec3 Indice = <0., 0., 0.>; //X: Difficulty | Y: Enviro | Z: MapIndex
+		declare Text Enviro = _Map.CollectionName;
+
+		switch(Enviro) {
+			case "Canyon" 	: Indice.Y = 0.;
+			case "Valley" 	: Indice.Y = 1.;
+			case "Lagoon" 	: Indice.Y = 2.;
+			case "Stadium" 	: Indice.Y = 3.;
+		}
+
+		declare Text[] PathInfo = TL::Split("\\", _Map.Path);
+		declare Real Difficulty;
+		if(PathInfo.existskey(1))
+		{
+			switch(PathInfo[1]) {
+				case "01_White" 	: Difficulty = 1.;
+				case "02_Green" 	: Difficulty = 2.;
+				case "03_Blue" 		: Difficulty = 3.;
+				case "04_Red" 		: Difficulty = 4.;
+				case "05_Black" 	: Difficulty = 5.;
+			}
+		}
+		Indice.X = Difficulty;
+
+		//declare Text[] NameInfo = TL::Split("0", _Map.Name);
+		declare Integer EnviroIndex = ML::NearestInteger(Indice.Y);
+		declare Integer IntDifficulty = ML::NearestInteger(Difficulty);
+		if(_IsCustomMap)
+		{
+			Indice.Z = G_CustomMapIndex[EnviroIndex];
+			G_CustomMapIndex[EnviroIndex] += 1.;
+			//Indice.Z = Indice.Y;
+		}
+		else
+		{
+			Indice.Z = G_CampaignMapIndex[IntDifficulty][EnviroIndex];
+			G_CampaignMapIndex[IntDifficulty][EnviroIndex] +=1.;
+		}
+		
+
+
+		return Indice;
+	}
+
+
+	Void RetrieveCustomMaps() {
+		G_CustomMapIndex[0] = 1.;
+		G_CustomMapIndex[1] = 1.;
+		G_CustomMapIndex[2] = 1.;
+		G_CustomMapIndex[3] = 1.;
+		G_CustomMapsInfoIndex.clear();
+
+		//Init le tableau
+		for(IndexEnviro, 0, C_NumberOfQuadCreateY) {
+			G_CustomMapsInfoIndex[IndexEnviro] = Integer[Integer];
+		}
+
+		foreach(Index => Map in DataMgr.Maps) {
+
+			//if(!MapIsValid(Map)) continue;
+
+			declare Vec3 MapIndice     = CreateMapIndice(Map, True);
+			declare Integer Difficulty = ML::NearestInteger(MapIndice.X);
+			declare Integer Enviro     = ML::NearestInteger(MapIndice.Y);
+			declare Integer MapIndex   = ML::NearestInteger(MapIndice.Z);
+			
+			G_CustomMapsInfoIndex[Enviro][MapIndex] = Index;
+		}
+	}
+
+	Void RetrieveCustomMaps2() {
+		G_CustomMapIndex[0] = 0.;
+		G_CustomMapIndex[1] = 0.;
+		G_CustomMapIndex[2] = 0.;
+		G_CustomMapIndex[3] = 0.;
+		G_CustomMapsInfoIndex.clear();
+
+		//Init le tableau
+		for(IndexEnviro, 0, C_NumberOfQuadCreateY) {
+			G_CustomMapsInfoIndex[IndexEnviro] = Integer[Integer];
+		}
+
+		declare Integer PositionX = 0;
+		declare Integer PositionY = 0;
+		foreach(Index => Map in DataMgr.Maps) {
+
+			//if(!MapIsValid(Map)) continue;
+			/*
+			declare Vec3 MapIndice     = CreateMapIndice(Map, True);
+			declare Integer Difficulty = ML::NearestInteger(MapIndice.X);
+			declare Integer Enviro     = ML::NearestInteger(MapIndice.Y);
+			declare Integer MapIndex   = ML::NearestInteger(MapIndice.Z);
+			*/
+			if(PositionX > 3)
+			{
+				PositionX = 0;
+				PositionY += 1;
+			}
+			else
+			{
+				PositionX += 1;
+			}
+
+			G_CustomMapsInfoIndex[PositionY][PositionX] = Index;
+		}
+	}
+
+
+	//Fonction qui réageance le tableau de map Campaign. Format 10 Maps par enviro
+	Void SortCampaignMaps() {
+		declare Integer[Integer][Integer][Integer] NewDisposition;
+		declare Integer[Integer][Integer][Integer] MapInfoIndex for This;
+
+		//Init le tableau
+		for(IndexDifficulty, 0, C_NumberOfQuadCreateY) {
+			//NewDisposition[IndexDifficulty] = Integer[Integer];
+		}
+		
+		declare Integer NewPosX;
+		declare Integer NewPosY;
+		foreach(Difficulty => EnviroArray in MapInfoIndex) {
+			NewDisposition[Difficulty] = Integer[Integer][Integer];
+			for(I,0,1) // On crée pour chaque difficulté les deux lignes sur Y où se trouveront les maps
+			{
+				NewDisposition[Difficulty][I] = Integer[Integer];
+			}
+
+
+			foreach(Enviro => IndexMaps in EnviroArray)
+			{
+				NewPosY = 0;
+				NewPosX = 0 + Enviro*5;
+					
+				foreach(Index in IndexMaps) //Il y a 5 niveaux de difficulté
+				{
+					NewDisposition[Difficulty][NewPosY][NewPosX] = Index;
+					
+					NewPosX += 1;
+					if(NewPosX >= (Enviro+1)*5)
+					{
+						NewPosX = 0 + Enviro*5;
+						NewPosY = 1;
+					}
+				}
+			}
+		}
+		MapInfoIndex.clear();
+
+		for(Difficulty, 0, NewDisposition.count -1) {
+			MapInfoIndex[Difficulty] = Integer[Integer][Integer];
+			for(PosY,0,1) // On crée pour chaque difficulté les deux lignes sur Y où se trouveront les maps
+			{
+				MapInfoIndex[Difficulty][PosY] = Integer[Integer];
+			}
+		}
+		MapInfoIndex = NewDisposition;
+	}
+
+
+	//Version de la fonction qui réageance le tableau de map en fonction des Folders Open ou Closed
+	Void SortWithFoldersStates() {
+		declare Integer[Integer][Integer]	NewDisposition;
+		declare Boolean[Integer]	IsButtonOpen; //Sert à garder une place dans le tableau affiché pour mettre le bouton "Open Folder"
+		G_CustomMapIndex[0] = 1.;
+		G_CustomMapIndex[1] = 1.;
+		G_CustomMapIndex[2] = 1.;
+		G_CustomMapIndex[3] = 1.;
+		IsButtonOpen[0]     = False;
+		IsButtonOpen[1]     = False;
+		IsButtonOpen[2]     = False;
+		IsButtonOpen[3]     = False;
+		
+
+		//Init le tableau
+		for(IndexDifficulty, 0, C_NumberOfQuadCreateY) {
+			NewDisposition[IndexDifficulty] = Integer[Integer];
+		}
+		
+		declare Integer PositionX = 0;
+		declare Integer PositionY = -1;
+		declare PrevEnviro = -1;
+		G_NumberOfMapByEnviro.clear();
+		G_NumberOfMapByEnviro[0] = 0;
+		G_NumberOfMapByEnviro[1] = 0;
+		G_NumberOfMapByEnviro[2] = 0;
+		G_NumberOfMapByEnviro[3] = 0;
+		declare Integer StartEnviroPosnY = 0;
+
+		foreach(Enviro => EnviroArray in G_CustomMapsInfoIndex) {
+			if(Enviro <= 3)
+			{
+				
+				G_PositionEnviro[Enviro] = StartEnviroPosnY;
+				if(EnviroArray.count <=0)
+				{
+					PositionY += 1;
+					StartEnviroPosnY +=1;
+				}
+
+				foreach(MapIndex => Index in EnviroArray)
+				{
+					G_NumberOfMapByEnviro[Enviro] +=1;
+					if(Enviro != PrevEnviro)
+					{
+						PositionY += 1;
+						StartEnviroPosnY +=1;
+						PositionX =  0;
+						PrevEnviro = Enviro;
+						/*
+						if(G_CustomMapsInfoIndex.existskey(Enviro-1))
+						{
+							if(G_CustomMapsInfoIndex[Enviro-1].count == 0)
+							{
+								PositionY += 1;
+							}
+						}
+						*/
+					}
+
+					if(!G_IsEnviroFolderOpen[Enviro])
+					{
+						NewDisposition[PositionY][MapIndex] = Index;
+					}
+					else 
+					{
+						PositionX += 1;
+						if(PositionX > 4)
+						{
+							PositionY += 1;
+							StartEnviroPosnY +=1;
+							PositionX  = 0;
+						}
+						NewDisposition[PositionY][PositionX] = Index;
+					}
+
+					//Crée une place pour le boutton "Open Folder"
+					if(PositionX == 3 && !IsButtonOpen[Enviro] && G_CustomMapsInfoIndex[Enviro].count > 4)
+					{
+						IsButtonOpen[Enviro] = True;
+						PositionX += 1;
+						if(PositionX > 4)
+						{
+							PositionY += 1;
+							PositionX  = 0;
+						}
+					}
+					G_EnviroByIndex[Index] = Enviro;
+				}
+			}
+		}
+		G_CustomMapsInfoIndex.clear();
+
+		for(I, 0, NewDisposition.count -1) {
+			G_CustomMapsInfoIndex[I] = Integer[Integer];
+		}
+		G_CustomMapsInfoIndex = NewDisposition;
+	}
+
+	Void RetrieveCampaignMaps() {
+		declare Integer[Integer][Integer][Integer] MapInfoIndex for This;
+		MapInfoIndex.clear();
+		
+		//Init le tableau
+		for(IndexDiff, 0, C_NbDifficulty) { 	// C_NbDifficulty : le nombre de diff, i.e. custom:0 + white:1 + green:2 + blue:3 + red:4 + black:5
+			MapInfoIndex[IndexDiff]       = Integer[Integer][Integer];
+			G_CampaignMapIndex[IndexDiff] = Real[Integer];
+			for(IndexEnviro, 0, {{{_NbEnviro - 1}}}) { 	// NbEnviro :  le nombre d'enviro, i.e. Stadium:0 + Canyon:1 + Valley:2 + Lagoon:3
+				MapInfoIndex[IndexDiff][IndexEnviro] = Integer[Integer];
+				G_CampaignMapIndex[IndexDiff][IndexEnviro] = 0.;
+			}
+		}
+
+		foreach(Index => Map in DataMgr.Maps) {
+
+			if(!MapIsValid(Map)) continue;
+
+			declare Vec3 MapIndice     = CreateMapIndice(Map, False);
+			declare Integer Difficulty = ML::NearestInteger(MapIndice.X);
+			declare Integer Enviro     = ML::NearestInteger(MapIndice.Y);
+			declare Integer MapIndex   = ML::NearestInteger(MapIndice.Z);
+
+			MapInfoIndex[Difficulty][Enviro][MapIndex] = Index;
+		}
+	}
+
+	Void LoadCampaignMaps(Text _PathFilter)
+	{	
+		Private_SetLoadFilter(_PathFilter);
+		DataMgr.RetrieveGameFiles(CDataMgr::EFileType::Map);
+		wait(DataMgr.Ready);
+		RetrieveCampaignMaps();
+
+		for(I,0,3)
+		{
+			G_PositionEnviro[I] = I;
+		}
+		SortCampaignMaps();
+		declare Integer[Integer][Integer][Integer] MapInfoIndex for This;
+	}
+
+	Void LoadCampaignMaps()
+	{
+
+		declare Text Filter;
+		declare Integer ActualVersion = {{{MenuVersion::GetVersion()}}};
+		switch(ActualVersion)
+		{
+			case 1 : Filter = "{{{C_E3PathFilter}}}";
+			case 4 : Filter = "{{{C_E3PathFilter}}}";
+			default: Filter = "{{{C_PCPathFilter}}}";
+		}
+		
+		LoadCampaignMaps(Filter);
+	}
+
+	Void LoadUserMaps()
+	{
+		wait(DataMgr.Ready);
+		DataMgr.RetrieveUserFiles (DataMgr.MenuUserId, "data0", CDataMgr::EFileType::Map);
+		wait(DataMgr.Ready);
+		for(I, 0, 3)
+		{
+			if(!G_IsEnviroFolderOpen.existskey(I))
+			{
+				G_IsEnviroFolderOpen[I] = False;
+			}
+		}
+
+		RetrieveCustomMaps();
+		SortWithFoldersStates();
+	}
+
+
+	Void OpenCustomFolder(Integer _Enviro)
+	{
+		G_IsEnviroFolderOpen[_Enviro] = True;
+	}
+	
+	Void CloseCustomFolder(Integer _Enviro)
+	{
+		G_IsEnviroFolderOpen[_Enviro] = False;
+	}
+	
+	""";
+	
+	return MLText;
+}
+
+Text MLMapsManager()
+{
+	declare Text MLText;
+	MLText = MLMapsManager(4);
+	return MLText;
+}

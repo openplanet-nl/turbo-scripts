@@ -1,0 +1,1448 @@
+
+#Include "Libs/Openplanet/Manialink2.Script.txt"								as Manialink
+#Include "Libs/Openplanet/TMConsole/FontManager.Script.txt"					as Font
+#Include "Libs/Openplanet/TMConsole/Colors.Script.txt"		   				as Colors
+#Include "Libs/Openplanet/UIPadButtons.Script.txt"							as LibUIButtons
+#Include "Libs/Openplanet/TMConsole/Live/LiveHelpers.Script.txt"				as LiveHelpers
+#Include "Libs/Openplanet/TMConsole/Menu/LibOnlineGameplay.Script.txt"		as Gameplay
+#Include "Libs/Openplanet/TMConsole/Selector.Script.txt"						as Selector
+#Include "Libs/Openplanet/TMConsole/MenuColor.Script.txt"					as MenuColor
+#Include "TextLib" 														as TextLib
+#Include "Libs/Openplanet/SystemText.Script.txt"								as SystemText
+
+
+#Const C_ImgBase 	"file://Media/Manialinks/Nadeo/TMConsole/Images/"
+#Const C_ImgBase2	"file://Media/Images/TMConsole/Ingame/"
+
+
+#Const C_BrowseSlot_SlotNb			10
+#Const C_BrowseSlot_Landmark		2
+
+#Const LabelSizen					90
+
+Text Build(Text _ShowAnim, Text _HideAnim) {
+
+	//IMAGES
+	declare Text 	IMGSlotSmallBg           = C_ImgBase2^"slot-medium-bg.dds";
+	declare Text 	IMGSlotSmallFg           = C_ImgBase2^"slot-medium-fg.dds";
+	declare Text 	IMGSlotMediumBg          = C_ImgBase2^"slot-medium-bg.dds";
+	declare Text 	IMGSlotMediumFg          = C_ImgBase^"slot-medium-fg2.dds";
+	declare Text 	IMGSlotBigBg             = C_ImgBase^"slot-big-bg2.dds";
+	declare Text 	IMGSlotBigFg             = C_ImgBase^"slot-big-fg2.dds";
+	declare Text 	IMGMenuBg                = C_ImgBase2^"menu-bg-1.dds";
+	declare Text	IMGBoardEmpty            = C_ImgBase^"board_Empty.tga";
+	
+	declare Integer Platform   = LibUIButtons::GetPlatform();
+	declare Text 	IMGSelect_PC      	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"), CManiaAppEvent::EMenuNavAction::Select);
+	declare Text 	IMGSelect_PS4      	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::Select);
+	declare Text 	IMGSelect_XB1      	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::Select);
+	
+	declare Text 	IMGCancel_PC      	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"), CManiaAppEvent::EMenuNavAction::Cancel);
+	declare Text 	IMGCancel_PS4      	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::Cancel);
+	declare Text 	IMGCancel_XB1      	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::Cancel);
+	
+	declare Text 	IMGAction1_PC      	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"), CManiaAppEvent::EMenuNavAction::Action1);
+	declare Text 	IMGAction1_PS4      	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::Action1);
+	declare Text 	IMGAction1_XB1      	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::Action1);
+	
+	declare Text 	IMGAction2_PC      	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"), CManiaAppEvent::EMenuNavAction::Action2);
+	declare Text 	IMGAction2_PS4      	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::Action2);
+	declare Text 	IMGAction2_XB1      	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::Action2);
+	
+	declare Text 	IMGPopupArrow            = C_ImgBase^"Online/RoomSettings/fleche.tga";
+	
+	declare Text TitleColor    = TextLib::ColorToText(MenuColor::GetMenuColor(2));
+	
+	//SIZES
+	declare Real	SM_SizeTotalX            = 259.0;
+	declare Real	SM_SizeTotalY            = 150.;
+	declare Real	SM_SizeY                 = 8.27;
+	declare Real	SM_Separator             = SM_SizeY * 0.095;
+	declare Real	SM_SizeYElement          = SM_SizeY; // - SM_Separator;
+	
+	declare Real	SizeXCircle 			= SM_SizeTotalX / 36.;
+	declare Real	SizeXInputSmall			= SizeXCircle * 5;
+	declare Real	SizeXInput				= SizeXCircle * 9;
+	
+	//POSITIONS
+	declare Real	SM_PosY                  = 60.;
+	declare Real	SM_PosYElementAlignTop   = 53.;
+	declare Real	PositionFirstQuadX       = 0.;
+	declare Real	PositionFirstQuadY       = 36.3;
+	
+	declare Real	SettingNamePosX			 = - SM_SizeTotalX / 4.; //+ 5.; //left haligned
+	declare Real	SettingValuePosX		 =   SM_SizeTotalX / 4.; //centered
+	
+	//BUDDIES
+	declare Real	Buddies_ArrowWidth = 4.;
+	declare Integer	Buddies_ColumnsCount = 4;
+	declare Integer	Buddies_LinesCount = 4;
+	declare Real 	Buddies_CardWidth = (SM_SizeTotalX - 2*Buddies_ArrowWidth) / Buddies_ColumnsCount;
+	declare Real	Buddies_CardHeight	= SM_SizeY * 8 / Buddies_LinesCount;
+	declare Real	Buddies_Separator = Buddies_CardHeight * 0.03;
+	
+	/////////////////////////
+	// FRAMEMODELS
+	/////////////////////////
+	declare MLText = """
+	<framemodel id="Frame_Setting">
+		<quad halign="center" valign="center" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeY}}}" bgcolor="333" id="Quad_Bg" scriptevents="1" opacity="0.3" />
+		
+		<quad halign="center" valign="center" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeYElement * 0.95}}}" image="{{{IMGSlotMediumBg}}}" 	posn="0 0 2" />
+		<quad halign="center" valign="center" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeYElement * 0.96}}}" image="{{{IMGSlotMediumFg}}}" 	posn="0 0 4" />
+		<quad halign="center" valign="center" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeYElement * 0.96}}}"	image="{{{IMGMenuBg}}}" 		posn="0 0 1" />
+		
+		<label halign="center" 	valign="center"  sizen="60"  posn="{{{SettingNamePosX}}}  0.8 3" textsize="4."	textcolor="fff" id="Setting_Name"  textprefix="$t" scale="1.2" textfont="{{{Font::GetFontName("Main")}}}"/>
+		<label halign="center" 	valign="center"  sizen="80"  posn="{{{SettingValuePosX}}} 0.8 3" textsize="3."	textcolor="fff" id="Setting_Value" textprefix="$t" textfont="{{{Font::GetFontName("Main")}}}"/>
+	</framemodel>
+	
+	<framemodel id="Frame_Buddy">
+		<quad id="Buddy_Avatar"						sizen="{{{Buddies_CardHeight - 2*Buddies_Separator}}} {{{Buddies_CardHeight - 2*Buddies_Separator}}}" posn="{{{Buddies_Separator}}} {{{-Buddies_Separator}}} 3.1" />
+		<quad 										sizen="{{{Buddies_CardWidth}}} {{{Buddies_CardHeight}}}" bgcolor="000F" posn="0 0 2.5" />
+		<quad id="Buddy_Selected" valign="bottom" 	sizen="{{{Buddies_CardWidth - Buddies_CardHeight}}} {{{Buddies_CardHeight * 0.3 - Buddies_Separator}}}" bgcolor="00E2FF" posn="{{{Buddies_CardHeight - Buddies_Separator}}} {{{-Buddies_CardHeight + Buddies_Separator}}} 3" />
+		<label id="Buddy_Name" 	valign="top" 		sizen="{{{Buddies_CardWidth - Buddies_CardHeight - 2*Buddies_Separator - 4.}}}" text="Test Buddy Name" style="BgMainMenuTitleHeader" textsize="2" textcolor="FFF" posn="{{{Buddies_CardHeight + 2.}}} {{{- Buddies_CardHeight * 0.16}}} 3" />
+	</framemodel>
+	
+	<framemodel id="Frame_BuddiesGroup">
+	""";
+		
+	for (I, 0, Buddies_LinesCount-1)
+	{	
+		declare Real TracksPosY = - I * Buddies_CardHeight;
+		for (J, 0, Buddies_ColumnsCount-1)
+		{
+			MLText ^= """
+				<frame  id="Frame_Buddy{{{I*Buddies_ColumnsCount+J}}}" posn="{{{- SM_SizeTotalX / 2. + Buddies_ArrowWidth + J * Buddies_CardWidth}}} {{{TracksPosY}}}" >
+					<frameinstance modelid="Frame_Buddy" />
+					<quad sizen="{{{Buddies_CardWidth}}} {{{Buddies_CardHeight}}}" posn="0 0 5" scriptevents="1" opacity="0." id="MouseInput_Buddy_{{{I}}}:{{{J}}}" />
+				</frame>
+			""";
+		}
+	}
+	
+	MLText ^= """
+	</framemodel>
+	
+
+	/////////////////////////
+	// MANIALINK
+	/////////////////////////
+	<frame id="Frame_General">
+		<frame id="Frame_Board_Settings">
+			<quad id="Quad_Board" posn="0 0 0" halign="center" valign="center" sizen="{{{259.5}}} {{{SM_SizeTotalY}}}" image="{{{IMGBoardEmpty}}}" />
+		</frame>
+		<frame id="Frame_Board_Infos" hidden="1">
+			<quad id="Quad_Board" posn="0 0 -2" halign="center" valign="center" sizen="{{{259.5}}} {{{SM_SizeTotalY}}}" image="{{{IMGBoardEmpty}}}" />
+		</frame>
+	""";
+			
+	/////////////////////////
+	// TITLE
+	/////////////////////////
+	MLText^="""
+	<frame id="Frame_Title" posn="0 1.0 0">
+		<quad halign="center" valign="bottom" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeY*2.}}}"
+		 image="{{{IMGSlotBigFg}}}"                  posn="0 {{{SM_PosY-2.8}}} 7" />
+		<quad  halign="center" valign="bottom" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeY*2.}}}"
+		 image="{{{IMGSlotBigBg}}}"                  posn="0 {{{SM_PosY-2.8}}} 5" />
+		<label halign="left" valign="center" textprefix="$t" textfont="{{{Font::GetFontName("Main")}}}" posn="{{{-(SM_SizeTotalX-2)/2.+1.}}}  {{{SM_PosY + SM_SizeY - 1.}}} 6" textcolor="{{{TitleColor}}}"
+		 id="Label_Title" textsize="13." text="{{{_("Challenge - Buddies")}}}" sizen="{{{SM_SizeTotalX-2.}}}" />
+	</frame>
+		
+	/////////////////////////
+	// CHALLENGE TITLE
+	/////////////////////////		
+	<frame id="Frame_ChallengeTitle" posn="0 {{{SM_PosYElementAlignTop}}} 3">
+		<quad halign="center" valign="center" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeYElement*0.96}}}" image="{{{IMGSlotMediumFg}}}"  
+		 posn="0 -0.1 5" />
+
+		<quad halign="center" valign="center" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeYElement*0.95}}}" image="{{{IMGSlotMediumBg}}}"
+		 posn="0 0 2" />
+
+		<label id="Label_ChallengeName" posn="{{{-SM_SizeTotalX/2.+2.}}} 0.6 4" halign="left" valign="center" sizen="150 7" textcolor="000" textprefix="$t"	textsize="4." textfont="{{{Font::GetFontName("Main")}}}" />
+		<quad halign="center" valign="center" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeYElement*0.96}}}" posn="0. -0.1 3" bgcolor="fff" opacity="0.95"/>
+	</frame>	
+	""";
+	
+	/////////////////////////
+	// INPUT INFOS
+	/////////////////////////
+	MLText ^= """<frame id="Frame_InputInfos" posn="0 {{{- 9 * SM_SizeY}}} 7">
+		<frame posn="{{{SM_SizeTotalX * 0.5}}} 0 0" id="FrameInputInfo_Cancel">
+			<quad halign="right" valign="bottom" 	sizen="{{{SizeXInputSmall}}} {{{SM_SizeY}}}"	image="{{{IMGSlotSmallBg}}}"   	posn="0 0 6" 	/>
+			<quad halign="right" valign="bottom" 	sizen="{{{SizeXInputSmall}}} {{{SM_SizeY}}}"	image="{{{IMGSlotSmallFg}}}"  	posn="0 0 8" 	/>
+		""";
+		for (I, 0, 2) {
+			declare Text Image;
+			switch (I) {
+				case LibUIButtons::GetPlatform("PC") 	: Image = IMGCancel_PC;
+				case LibUIButtons::GetPlatform("PS4") 	: Image = IMGCancel_PS4;
+				case LibUIButtons::GetPlatform("XB1") 	: Image = IMGCancel_XB1;
+			}
+		
+			MLText ^= """<quad halign="center" valign="center" 	sizen="{{{SizeXCircle*0.9}}} {{{SizeXCircle*0.9}}}"	id="QuadInputIcon_Cancel_{{{I}}}" image="{{{Image}}}" posn="{{{-SizeXCircle*0.5}}} {{{SM_SizeY*0.5}}} 7" """;
+			if (I != Platform)
+				MLText ^= """ hidden="1" """;
+			MLText ^= "/>";
+		}
+		MLText ^= """
+			<label halign="right" valign="center2" 	sizen="{{{SizeXInputSmall - SizeXCircle - 4. }}}" 	id="Label_Name" posn="{{{-SizeXCircle-2.}}} {{{SM_SizeY*0.5}}} 7"  textcolor="ddd" textsize="4." textfont="{{{Font::GetFontName("Main")}}}" textprefix="$t"/>
+			<quad halign="right" valign="bottom" 	sizen="{{{SizeXInputSmall}}} {{{SM_SizeY}}}" posn="0 0 9" opacity="0." scriptevents="1" id="MouseInput_InputInfo_Cancel"/>
+		</frame>
+		
+		<frame posn="{{{SM_SizeTotalX * 0.5 - SizeXInputSmall - SizeXCircle}}} 0 0" id="FrameInputInfo_Select" >
+			<quad halign="right" valign="bottom" 	sizen="{{{SizeXInputSmall}}} {{{SM_SizeY}}}"	image="{{{IMGSlotSmallBg}}}"   	posn="0 0 6" 	/>
+			<quad halign="right" valign="bottom" 	sizen="{{{SizeXInputSmall}}} {{{SM_SizeY}}}"	image="{{{IMGSlotSmallFg}}}"  	posn="0 0 8" 	/>
+		""";
+		
+		for (I, 0, 2) {
+			declare Text Image;
+			switch (I) {
+				case LibUIButtons::GetPlatform("PC") 	: Image = IMGSelect_PC;
+				case LibUIButtons::GetPlatform("PS4") 	: Image = IMGSelect_PS4;
+				case LibUIButtons::GetPlatform("XB1") 	: Image = IMGSelect_XB1;
+			}
+		
+			MLText ^= """<quad halign="center" valign="center" 	sizen="{{{SizeXCircle*0.9}}} {{{SizeXCircle*0.9}}}" posn="{{{-SizeXCircle*0.5}}} {{{SM_SizeY*0.5}}} 7" id="QuadInputIcon_Select_{{{I}}}" image="{{{Image}}}" """;
+			if (I != Platform)
+				MLText ^= """ hidden="1" """;
+			MLText ^= "/>";
+		}
+		
+		MLText ^= """
+			<label halign="right" valign="center2" 	sizen="{{{SizeXInputSmall - SizeXCircle - 4. }}}" 	id="Label_Name" posn="{{{-SizeXCircle-2.}}} {{{SM_SizeY*0.5}}} 7"  textcolor="ddd" textsize="4." textfont="{{{Font::GetFontName("Main")}}}" textprefix="$t"/>
+			<quad halign="right" valign="bottom" 	sizen="{{{SizeXInputSmall}}} {{{SM_SizeY}}}" posn="0 0 9" opacity="0." scriptevents="1" id="MouseInput_InputInfo_Select"/>
+		</frame>
+		
+		<frame posn="{{{SM_SizeTotalX * 0.5 - 2*SizeXInputSmall - 2*SizeXCircle}}} 0 0" id="FrameInputInfo_Action1" >
+			<quad halign="right" valign="bottom" 	sizen="{{{SizeXInput}}} {{{SM_SizeY}}}"	image="{{{IMGSlotSmallBg}}}"   	posn="0 0 6" 	/>
+			<quad halign="right" valign="bottom" 	sizen="{{{SizeXInput}}} {{{SM_SizeY}}}"	image="{{{IMGSlotSmallFg}}}"  	posn="0 0 8" 	/>
+		""";
+		
+			for (I, 0, 2) {
+			declare Text Image;
+			switch (I) {
+				case LibUIButtons::GetPlatform("PC") 	: Image = IMGAction1_PC;
+				case LibUIButtons::GetPlatform("PS4") 	: Image = IMGAction1_PS4;
+				case LibUIButtons::GetPlatform("XB1") 	: Image = IMGAction1_XB1;
+			}
+		
+			MLText ^= """<quad halign="center" valign="center" 	sizen="{{{SizeXCircle*0.9}}} {{{SizeXCircle*0.9}}}"	posn="{{{-SizeXCircle*0.5}}} {{{SM_SizeY*0.5}}} 7" id="QuadInputIcon_Action1_{{{I}}}" image="{{{Image}}}" """;
+			if (I != Platform)
+				MLText ^= """ hidden="1" """;
+			MLText ^= "/>";
+		}
+		
+		MLText ^= """
+			<label halign="right" valign="center2" 	sizen="{{{SizeXInput - SizeXCircle - 4. }}}" 	id="Label_Name" posn="{{{-SizeXCircle-2.}}} {{{SM_SizeY*0.5}}} 7"  textcolor="ddd" textsize="4." textfont="{{{Font::GetFontName("Main")}}}" textprefix="$t"/>
+			<quad halign="right" valign="bottom" 	sizen="{{{SizeXInput}}} {{{SM_SizeY}}}" posn="0 0 9" opacity="0." scriptevents="1" id="MouseInput_InputInfo_Action1"/>
+		</frame>
+		
+		<frame posn="{{{SM_SizeTotalX * 0.5 - SizeXInput - 2*SizeXInputSmall - 3*SizeXCircle}}} 0 0" id="FrameInputInfo_Action2" >
+			<quad halign="right" valign="bottom" 	sizen="{{{SizeXInput}}} {{{SM_SizeY}}}"	image="{{{IMGSlotSmallBg}}}"   	posn="0 0 6" 	/>
+			<quad halign="right" valign="bottom" 	sizen="{{{SizeXInput}}} {{{SM_SizeY}}}"	image="{{{IMGSlotSmallFg}}}"  	posn="0 0 8" 	/>
+		""";
+		
+			for (I, 0, 2) {
+			declare Text Image;
+			switch (I) {
+				case LibUIButtons::GetPlatform("PC") 	: Image = IMGAction2_PC;
+				case LibUIButtons::GetPlatform("PS4") 	: Image = IMGAction2_PS4;
+				case LibUIButtons::GetPlatform("XB1") 	: Image = IMGAction2_XB1;
+			}
+		
+			MLText ^= """<quad halign="center" valign="center" 	sizen="{{{SizeXCircle*0.9}}} {{{SizeXCircle*0.9}}}"	posn="{{{-SizeXCircle*0.5}}} {{{SM_SizeY*0.5}}} 7" id="QuadInputIcon_Action2_{{{I}}}" image="{{{Image}}}" """;
+			if (I != Platform)
+				MLText ^= """ hidden="1" """;
+			MLText ^= "/>";
+		}
+		
+		MLText ^= """
+			<label halign="right" valign="center2" 	sizen="{{{SizeXInput - SizeXCircle - 4. }}}" 	id="Label_Name" posn="{{{-SizeXCircle-2.}}} {{{SM_SizeY*0.5}}} 7"  textcolor="ddd" textsize="4." textfont="{{{Font::GetFontName("Main")}}}" textprefix="$t"/>
+			<quad halign="right" valign="bottom" 	sizen="{{{SizeXInput}}} {{{SM_SizeY}}}" posn="0 0 9" opacity="0." scriptevents="1" id="MouseInput_InputInfo_Action2"/>
+		</frame>
+	</frame>
+	""";
+	/////////////////////////
+	// BUDDIES
+	/////////////////////////	
+		MLText ^= """
+		
+		<frame id="Frame_SettingsSelector" posn="0 {{{PositionFirstQuadY + 0.2}}} 6.5">
+			<frame id="Frame_Settings_Buttons" posn="{{{SettingValuePosX}}}">			
+				<quad  	halign="center" valign="center"  sizen="{{{4/1.35}}} {{{4/1.35}}}" posn="{{{-LabelSizen / 2. - 1}}} 0 0.25" image="{{{IMGPopupArrow}}}" rot="180" id="MouseInput_SettingPrev" scriptevents="1" keepratio="Fit" />
+				<quad  	halign="center" valign="center"  sizen="{{{4/1.35}}} {{{4/1.35}}}" posn="{{{LabelSizen / 2. + 1}}}  0 0.25" image="{{{IMGPopupArrow}}}" rot="0"   id="MouseInput_SettingNext" scriptevents="1" keepratio="Fit" />
+			</frame>
+			<quad 	halign="center" valign="center" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeYElement * 0.9}}}" bgcolor="{{{Colors::GetColorHexa("Yellow")}}}" id="Quad_SettingsSelector" />
+		</frame>
+		
+		<frame id="Frame_Buddies" >
+			<frame id="Frame_EditBuddies" posn="{{{PositionFirstQuadX}}} {{{PositionFirstQuadY + 0.2 - 3 * SM_SizeY}}} 4.">
+				<quad halign="center" valign="center" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeY}}}" bgcolor="333" id="Quad_Bg" scriptevents="1" opacity="0.3" />
+			
+				<quad halign="center" valign="center" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeYElement * 0.95}}}" image="{{{IMGSlotMediumBg}}}" 	posn="0 0 1" />
+				<quad halign="center" valign="center" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeYElement * 0.96}}}" image="{{{IMGSlotMediumFg}}}" 	posn="0 0 4" />
+				<quad halign="center" valign="center" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeYElement * 0.96}}}"	 bgcolor="fff"	opacity="0.95" 	posn="0 0 2" />
+				
+				<label halign="center" 	valign="center"  sizen="60"  posn="0 0.8 3" textsize="4."	textcolor="000" text="{{{_("CHALLENGE YOUR BUDDIES")}}}" textprefix="$t" scale="1.2" textfont="{{{Font::GetFontName("Main")}}}"/>
+			</frame>
+		
+			<frame posn="0 {{{SM_SizeY}}}" id="Frame_BuddiesList">
+				<quad halign="center"   valign="center" sizen="{{{Buddies_ArrowWidth/1.35}}} {{{Buddies_ArrowWidth/1.35}}}" posn="{{{- SM_SizeTotalX/2. + Buddies_ArrowWidth / 2.0}}} {{{- Buddies_CardHeight * Buddies_LinesCount /2.}}} 3" image="{{{IMGPopupArrow}}}" rot="180" scriptevents="1" id="MouseInput_BuddiesPrev" keepratio="Fit" />
+				<quad halign="center"   valign="center" sizen="{{{Buddies_ArrowWidth/1.35}}} {{{Buddies_ArrowWidth/1.35}}}" posn="{{{ SM_SizeTotalX/2. - Buddies_ArrowWidth / 2.0}}} {{{- Buddies_CardHeight * Buddies_LinesCount /2.}}} 3" image="{{{IMGPopupArrow}}}" rot="0"  scriptevents="1" id="MouseInput_BuddiesNext" keepratio="Fit" />
+				<quad halign="center"   valign="top"	sizen="{{{SM_SizeTotalX}}} {{{SM_SizeY * 10.}}}" posn="0 0 2" bgcolor="000F" />
+				<frame posn="0 0 5">
+					{{{Selector::InsertFrameworkInManialink(14, Buddies_CardWidth, Buddies_CardHeight*0.98, -Buddies_CardWidth/2. + Buddies_CardHeight/2, 0., 0., 0.)}}}
+				</frame>
+				<frame clip="1" clipsizen="{{{Buddies_CardWidth * Buddies_ColumnsCount}}} {{{Buddies_CardHeight * Buddies_LinesCount}}}" clipposn="0 {{{- Buddies_CardHeight * Buddies_LinesCount / 2.}}}" id="Frame_BuddiesCards" >
+					<frameinstance id="Frame_BuddiesGroup0" modelid="Frame_BuddiesGroup"/>
+					<frameinstance id="Frame_BuddiesGroup1" modelid="Frame_BuddiesGroup" posn="{{{SM_SizeTotalX}}}" />
+				</frame>
+				
+				<label halign="center" valign="center2" textprefix="$t" textfont="{{{Font::GetFontName("Main")}}}" posn="0 {{{-SM_SizeY * 5}}} 10" id="Label_LoadingBuddies" textsize="13." text="{{{_("Loading")}}}" hidden="1"/>
+				
+			</frame>
+		
+			<frame posn="0 {{{PositionFirstQuadY + 0.2 + SM_SizeY}}} 4." id="Frame_Duration">
+				<frameinstance modelid="Frame_Setting"/>
+				<quad halign="center" valign="center" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeYElement * 0.96}}}" opacity="0." scriptevents="1" posn="0 0 2" id="MouseInput_Setting_0" />
+			</frame>
+			
+			<frame posn="0 {{{PositionFirstQuadY + 0.2}}} 4." id="Frame_Tries" >
+				<frameinstance modelid="Frame_Setting"/>
+				<quad halign="center" valign="center" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeYElement * 0.96}}}" opacity="0." scriptevents="1" posn="0 0 2" id="MouseInput_Setting_1" />
+			</frame>
+			
+			<frame posn="0 {{{PositionFirstQuadY + 0.2 - SM_SizeY}}} 4." 	id="Frame_Train" >
+				<frameinstance modelid="Frame_Setting"/>
+				<quad halign="center" valign="center" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeYElement * 0.96}}}" opacity="0." scriptevents="1" posn="0 0 2" id="MouseInput_Setting_2" />
+			</frame>
+			
+			<frame posn="0 {{{PositionFirstQuadY + 0.2 - 2 * SM_SizeY}}} 4." 	id="Frame_Ghosts">
+				<frameinstance modelid="Frame_Setting"/>
+				<quad halign="center" valign="center" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeYElement * 0.96}}}" opacity="0." scriptevents="1" posn="0 0 2" id="MouseInput_Setting_3" />
+			</frame>
+			
+			<frame id="Frame_LaunchChallenge" posn="0 {{{PositionFirstQuadY + 0.2 - 12 * SM_SizeY}}} 4">
+				<quad halign="center" valign="center" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeY}}}" bgcolor="333" id="Quad_Bg" scriptevents="1" opacity="0.3" />
+		
+				<quad halign="center" valign="center" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeYElement * 0.96}}}" opacity="0." scriptevents="1" posn="0 0 5" id="MouseInput_Launch" />
+		
+				<quad halign="center" valign="center" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeYElement * 0.95}}}" image="{{{IMGSlotMediumBg}}}" 	posn="0 0 2" />
+				<quad halign="center" valign="center" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeYElement * 0.96}}}" image="{{{IMGSlotMediumFg}}}" 	posn="0 0 4" />
+				<quad halign="center" valign="center" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeYElement * 0.96}}}"	 	bgcolor="000"				posn="0 0 1" />
+				<label halign="center" 	valign="center"  sizen="60"  posn="0 0.8 3" textsize="4."	textcolor="fff" text="{{{_("LAUNCH CHALLENGE")}}}" textprefix="$t" scale="1.2" textfont="{{{Font::GetFontName("Main")}}}"/>
+			</frame>
+		</frame>
+	</frame>
+	
+	<script><!--
+		#Const DebugName  "L_ChallengeBuddies"
+		
+		#Const C_DisplayedBuddiesFramesCount {{{Buddies_LinesCount * Buddies_ColumnsCount}}}
+		
+		#Include "TextLib" as TL
+		#Include "MathLib" as ML
+		
+		{{{Manialink::GetIncludes()}}}
+		{{{Manialink::Load()}}}
+		
+		declare Integer			G_LockInput;
+		declare Integer 		G_PageSwitchLock;
+		//Pages & Tabs
+		declare Integer			G_IndexFocusX;
+		declare Integer			G_IndexFocusY;
+		
+		declare Text[][]		G_Settings;				//valeurs des settings
+		
+		declare Boolean			G_ChallengeRetrieved;
+		
+		//Duration
+		declare Integer			G_Duration;
+		declare Text[] 			G_DurationTexts;
+		
+		//Train
+		declare Boolean 		G_TrainEnabled;
+		declare Text[]			G_TrainTexts;
+		
+		//Ghosts
+		declare Boolean			G_ShowGhosts;
+		
+		//Tries
+		declare Integer			G_Tries;
+		declare Text[]			G_TriesTexts;
+		
+		//BuddiesList State
+		declare Integer[]		G_AlreadyAddedBuddies;
+		declare Integer			G_FirstDisplayedBuddyIndex;
+		declare Integer			G_FirstDisplayedBuddyFrameIndex;
+		
+		/////////////////
+		// JSON
+		/////////////////
+		{{{LiveHelpers::InjectConverters()}}}
+		{{{LiveHelpers::InjectJson()}}}
+				
+		/////////////////
+		// SELECTION
+		/////////////////
+		Void UpdateSelection()
+		{
+			declare CMlFrame Frame_Buddies <=> (Page.GetFirstChild("Frame_Buddies") as CMlFrame);
+			declare CMlFrame Frame_SelectorBuddies <=> (Frame_Buddies.GetFirstChild("Frame_Selector") as CMlFrame);
+			declare CMlFrame Frame_Selector    <=> (Page.GetFirstChild("Frame_SettingsSelector")     as CMlFrame);
+			if (G_IndexFocusY < {{{Buddies_LinesCount}}}) //on est sur un buddy
+			{
+				declare CMlFrame FrameBuddies_Displayed <=> (Frame_Buddies.GetFirstChild("Frame_BuddiesGroup"^G_FirstDisplayedBuddyFrameIndex) as CMlFrame);
+				declare CMlFrame FrameBuddy <=> (FrameBuddies_Displayed.GetFirstChild("Frame_Buddy"^TL::ToText(G_IndexFocusY * {{{Buddies_ColumnsCount}}} + G_IndexFocusX)) as CMlFrame);
+				
+				Frame_Selector.Hide();
+				Frame_SelectorBuddies.Show();
+				Frame_SelectorBuddies.RelativePosition.X = FrameBuddy.RelativePosition.X; //- {{{Buddies_CardWidth/2.}}}+0.1;
+				Frame_SelectorBuddies.RelativePosition.Y = FrameBuddy.RelativePosition.Y; //+ {{{Buddies_CardHeight/2.}}}-0.3;
+			} else if (G_IndexFocusY >= {{{Buddies_LinesCount + 1}}}) { //SETTINGS
+				declare Text CurrentFrameId;
+				switch (G_IndexFocusY)
+				{
+					case {{{Buddies_LinesCount + 1}}} : CurrentFrameId = "Frame_Duration";
+					case {{{Buddies_LinesCount + 2}}} : CurrentFrameId = "Frame_Tries";
+					case {{{Buddies_LinesCount + 3}}} : CurrentFrameId = "Frame_Train";
+					case {{{Buddies_LinesCount + 4}}} : CurrentFrameId = "Frame_Ghosts";
+				}
+				declare CMlFrame CurrentFrame <=> (Frame_Buddies.GetFirstChild(CurrentFrameId) as CMlFrame);
+				Frame_SelectorBuddies.Hide();
+				Frame_Selector.Show();
+				Frame_Selector.RelativePosition.X      = 0.;
+				Frame_Selector.RelativePosition.Y      = CurrentFrame.RelativePosition.Y + 0.2;
+				declare CMlQuad Quad_SettingsSelector <=> (Frame_Selector.GetFirstChild("Quad_SettingsSelector") as CMlQuad);
+				Quad_SettingsSelector.BgColor = {{{MenuColor::GetMenuColor(2)}}};
+				declare CMlFrame Frame_Settings_Buttons <=> (Frame_Selector.GetFirstChild("Frame_Settings_Buttons") as CMlFrame);
+				Frame_Settings_Buttons.Show();
+			} else if (G_IndexFocusY == {{{Buddies_LinesCount}}}) { //LAUNCH CLASH
+				declare CMlFrame Frame_LaunchChallenge <=> (Frame_Buddies.GetFirstChild("Frame_LaunchChallenge") as CMlFrame);
+				Frame_SelectorBuddies.Hide();
+				Frame_Selector.Show();
+				Frame_Selector.RelativePosition.X      = 0.;
+				Frame_Selector.RelativePosition.Y      = Frame_LaunchChallenge.RelativePosition.Y + 0.2;
+				declare CMlQuad Quad_SettingsSelector <=> (Frame_Selector.GetFirstChild("Quad_SettingsSelector") as CMlQuad);
+				if (G_AlreadyAddedBuddies.count != 0)
+					Quad_SettingsSelector.BgColor = {{{Colors::GetColor("Green")}}};
+				else
+					Quad_SettingsSelector.BgColor = {{{Colors::GetColor("Grey")}}};
+				declare CMlFrame Frame_Settings_Buttons <=> (Frame_Selector.GetFirstChild("Frame_Settings_Buttons") as CMlFrame);
+				Frame_Settings_Buttons.Hide();
+			}
+		}
+		
+		/////////////////
+		// CHALLENGE NAME
+		/////////////////
+		Void UpdateLabelChallengeName()
+		{	
+			declare Text[Text] RequestedChallenge for Page;
+			declare Boolean IsNewChallenge for Page;
+			declare Text Author;
+			declare Text Style;
+			declare Text Duration;
+			if (RequestedChallenge.existskey("displayname"))
+				Author = RequestedChallenge["displayname"];
+		
+			if (RequestedChallenge.existskey("duration"))
+			{
+				declare DurationIndex = TL::ToInteger(RequestedChallenge["duration"]);
+				if (DurationIndex != 0)
+				{
+					Duration = " - "^TL::GetTranslatedText(G_Settings[1][DurationIndex]);
+				}
+			}
+			
+			if (RequestedChallenge.existskey("style"))
+			{
+				Style = " - "^TL::GetTranslatedText(RequestedChallenge["style"]);
+			}
+			
+			declare CMlLabel LabelChallengeName <=> (Page.GetFirstChild("Label_ChallengeName") as CMlLabel);
+			LabelChallengeName.Value = TL::Compose("%1%2%3", Author, Duration, Style);
+		}
+		
+		/////////////////
+		// DATE
+		/////////////////
+		Integer[] GetEndDate(Integer _Duration, Integer _Year, Integer _Month, Integer _Day) {
+			declare Integer[] DaysPerMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+			if ((_Year / 4) * 4 == _Year)
+				DaysPerMonth[1] = 29;	
+			declare Integer EndDay;
+			
+			//_Duration : 0-5 = days | 6-9 = weeks | 10 = 1month
+			if (_Duration == 10)
+				EndDay = _Day + DaysPerMonth[_Month-1] - 1;
+			else if (_Duration >= 6) {
+				EndDay = _Day + (_Duration - 5) * 7 - 1;
+			} else {
+				EndDay = _Day + _Duration; //+1-1
+			}
+			
+			if (EndDay <= DaysPerMonth[_Month-1])
+				return [_Year, _Month, EndDay];
+			
+			declare EndMonth = _Month;
+			declare EndYear = _Year;
+			while (EndDay > DaysPerMonth[EndMonth-1])
+			{
+				EndDay -= DaysPerMonth[EndMonth-1];
+				EndMonth += 1;
+				if (EndMonth == 13)
+				{
+					EndMonth = 1;
+					EndYear += 1;
+					if ((EndYear / 4) * 4 == EndYear)
+						DaysPerMonth[1] = 29;
+					else
+						DaysPerMonth[1] = 28;
+				}
+			}
+			return [EndYear, EndMonth, EndDay];
+		}
+		
+		Text GetDateText(Integer _Duration) {
+			declare Text[] DateText = TL::Split(" ", CurrentLocalDateText);
+			declare Text[] DateText_WithoutTime = TL::Split("/", DateText[0]);
+			
+			declare Integer Year = TL::ToInteger(DateText_WithoutTime[0]);
+			declare Integer Month = TL::ToInteger(DateText_WithoutTime[1]);
+			declare Integer Day = TL::ToInteger(DateText_WithoutTime[2]);
+			
+			declare Integer[] EndDate = GetEndDate(_Duration, Year, Month, Day);
+			
+			declare Text DayText;
+			if (EndDate[2] < 10)
+				DayText = "0";
+			DayText ^= EndDate[2];
+			declare Text MonthText;
+			if (EndDate[1] < 10)
+				MonthText = "0";
+			MonthText ^= EndDate[1];
+			
+			return TL::Compose(_("|end date of a buddies challenges, day/month|ends on %1/%2"), DayText, MonthText);
+		}
+		
+		Void Duration_Update()
+		{
+			declare CMlFrame Frame_Duration <=> (Page.GetFirstChild("Frame_Duration") as CMlFrame);
+			declare CMlLabel Label_Value <=> (Frame_Duration.GetFirstChild("Setting_Value") as CMlLabel);
+			
+			declare Text Value = G_DurationTexts[G_Duration];
+			if (G_Duration < G_DurationTexts.count-1)
+			{
+				declare DateText = GetDateText(G_Duration);
+				Value ^=" - "^TL::GetTranslatedText(DateText);
+			}
+			Label_Value.Value = Value;
+		}
+		
+		Void Duration_OnPrev()
+		{
+			G_Duration -= 1;
+			if (G_Duration < 0)
+				G_Duration = G_DurationTexts.count - 1;
+			Duration_Update();
+		}
+		
+		Void Duration_OnNext()
+		{
+			G_Duration += 1;
+			if (G_Duration >= G_DurationTexts.count)
+				G_Duration = 0;
+			Duration_Update();
+		}
+		
+		/////////////////
+		// TRIES
+		/////////////////
+		Void Tries_Update()
+		{	
+			declare CMlFrame Frame_Tries <=> (Page.GetFirstChild("Frame_Tries") as CMlFrame);
+			declare CMlLabel Label_Value <=> (Frame_Tries.GetFirstChild("Setting_Value") as CMlLabel);
+			Label_Value.Value = G_TriesTexts[G_Tries];
+		}
+		
+		Void Tries_OnPrev()
+		{
+			G_Tries -= 1;
+			if (G_Tries < 0)
+				G_Tries = G_TriesTexts.count - 1;
+			Tries_Update();
+		}
+		
+		Void Tries_OnNext()
+		{
+			G_Tries += 1;
+			if (G_Tries >= G_TriesTexts.count)
+				G_Tries = 0;
+			Tries_Update();
+		}
+		
+		/////////////////
+		// TRAIN
+		/////////////////
+		Void Train_Update()
+		{	
+			declare CMlFrame Frame_Train <=> (Page.GetFirstChild("Frame_Train") as CMlFrame);
+			declare CMlLabel Label_Value <=> (Frame_Train.GetFirstChild("Setting_Value") as CMlLabel);
+			if (G_TrainEnabled)
+				Label_Value.Value = G_TrainTexts[1];
+			else
+				Label_Value.Value = G_TrainTexts[0];
+		}
+		
+		Void Train_OnChange()
+		{
+			G_TrainEnabled = !G_TrainEnabled;
+			Train_Update();
+		}
+		
+		/////////////////
+		// SHOW GHOSTS
+		/////////////////
+		Void Ghosts_Update()
+		{	
+			declare CMlFrame Frame_Ghosts <=> (Page.GetFirstChild("Frame_Ghosts") as CMlFrame);
+			declare CMlLabel Label_Value <=> (Frame_Ghosts.GetFirstChild("Setting_Value") as CMlLabel);
+			if (G_ShowGhosts)
+				Label_Value.Value = _("Yes");
+			else
+				Label_Value.Value = _("No");
+		}
+		
+		Void Ghosts_OnChange()
+		{
+			G_ShowGhosts = !G_ShowGhosts;
+			Ghosts_Update();
+		}
+		
+		Void Settings_Init()
+		{	
+			G_Settings.clear();
+			G_Settings.add({{{dump(Gameplay::GetRoomStyles())}}});
+			G_Settings.add({{{dump(Gameplay::GetDurations())}}});
+		
+			declare CMlFrame Frame_Duration <=> (Page.GetFirstChild("Frame_Duration") as CMlFrame);
+			declare CMlLabel Label_Name <=> (Frame_Duration.GetFirstChild("Setting_Name") as CMlLabel);
+			//L16N Calendar duration of a buddies challenge
+			Label_Name.Value = _("Calendar duration");
+			
+			declare CMlFrame Frame_Tries <=> (Page.GetFirstChild("Frame_Tries") as CMlFrame);
+			Label_Name <=> (Frame_Tries.GetFirstChild("Setting_Name") as CMlLabel);
+			//L16N Max number of races the challenged buddies are able to play within this buddies challenge
+			Label_Name.Value = _("Maximum races");
+			
+			declare CMlFrame Frame_Train <=> (Page.GetFirstChild("Frame_Train") as CMlFrame);
+			Label_Name <=> (Frame_Train.GetFirstChild("Setting_Name") as CMlLabel);
+			//L16N On the line where you choose to enable train or not for a given buddies challenge
+			Label_Name.Value = _("Train mode");
+			
+			declare CMlFrame Frame_Ghosts <=> (Page.GetFirstChild("Frame_Ghosts") as CMlFrame);
+			Label_Name <=> (Frame_Ghosts.GetFirstChild("Setting_Name") as CMlLabel);
+			//L16N On the line where you choose to enable showing ghosts or not for a given buddies challenge
+			Label_Name.Value = _("Show ghosts");
+		}	
+
+		/////////////////
+		// INPUT INFOS
+		/////////////////
+		Void InitInputsInfo() {
+			declare CMlLabel Label_InputName;
+			declare CMlQuad  Quad_InputIcon;
+		
+			//BACK
+			declare CMlFrame FrameInputCancel <=> (Page.GetFirstChild("FrameInputInfo_Cancel") as CMlFrame);
+			Label_InputName <=> (FrameInputCancel.GetFirstChild("Label_Name") as CMlLabel);
+			Label_InputName.Value = _("|16 chars max|BACK");
+			//SELECT
+			declare CMlFrame FrameInputSelect <=> (Page.GetFirstChild("FrameInputInfo_Select") as CMlFrame);
+			Label_InputName <=> (FrameInputSelect.GetFirstChild("Label_Name") as CMlLabel);
+			Label_InputName.Value = _("|16 chars max|SELECT");
+			//ACTION1
+			declare CMlFrame FrameInputAction1 <=> (Page.GetFirstChild("FrameInputInfo_Action1") as CMlFrame);
+			FrameInputAction1.Show();
+			Label_InputName <=> (FrameInputAction1.GetFirstChild("Label_Name") as CMlLabel);
+			Label_InputName.Value = "{{{SystemText::GetShowProfileTextForInputCard()}}}";
+			//ACTION2
+			declare CMlFrame FrameInputAction2 <=> (Page.GetFirstChild("FrameInputInfo_Action2") as CMlFrame);
+			Label_InputName <=> (FrameInputAction2.GetFirstChild("Label_Name") as CMlLabel);
+			Label_InputName.Value = _("|16 chars max|RESET SELECTION");
+			FrameInputAction2.Hide();
+		}
+		
+		{{{LibUIButtons::Inject_SetInputInfoTextSelected()}}}
+	
+		Void ToggleInputInfo(Text _Input, Boolean _IsHovered) {
+			declare CMlFrame FrameInput <=> (Page.GetFirstChild("FrameInputInfo_"^_Input) as CMlFrame);
+			declare CMlLabel LabelInputInfo <=> (FrameInput.GetFirstChild("Label_Name") as CMlLabel);
+			SetInputInfoTextSelected(LabelInputInfo, _IsHovered);
+		}
+		
+		Void ResetInputInfos() {
+			ToggleInputInfo("Select", False);
+			ToggleInputInfo("Cancel", False);
+			ToggleInputInfo("Action2", False);
+		}
+		
+		Void UpdateInputsInfo() {	
+		
+			declare CMlLabel Label_InputName;
+		
+			declare CMlFrame FrameInputSelect <=> (Page.GetFirstChild("FrameInputInfo_Select") as CMlFrame);
+			declare CMlFrame FrameInputAction1 <=> (Page.GetFirstChild("FrameInputInfo_Action1") as CMlFrame);
+			declare CMlFrame FrameInputAction2 <=> (Page.GetFirstChild("FrameInputInfo_Action2") as CMlFrame);
+		
+			declare Text[Text][] RequestedBuddies for Page;
+		
+			
+			if (G_IndexFocusY < {{{Buddies_LinesCount}}})
+			{	
+				if (RequestedBuddies.count == 0)
+				{
+					FrameInputSelect.Hide();
+					FrameInputAction1.Hide();
+					FrameInputAction2.Hide();
+				} else {
+					FrameInputSelect.Show();
+					Label_InputName <=> (FrameInputSelect.GetFirstChild("Label_Name") as CMlLabel);
+					if (G_AlreadyAddedBuddies.exists(G_IndexFocusY * {{{Buddies_ColumnsCount}}} + G_IndexFocusX))
+						Label_InputName.Value = _("|16 chars max|UNSELECT");
+					else
+						Label_InputName.Value = _("|16 chars max|SELECT");
+					FrameInputAction1.Show();
+					FrameInputAction2.Show();
+				}
+			} else if (G_IndexFocusY == {{{Buddies_LinesCount}}} ){
+				FrameInputAction1.Hide();
+				FrameInputAction2.Hide();
+				if (G_AlreadyAddedBuddies.count != 0)
+				{
+					FrameInputSelect.Show();
+					Label_InputName <=> (FrameInputSelect.GetFirstChild("Label_Name") as CMlLabel);
+					Label_InputName.Value = _("|16 chars max|SELECT");
+				} else {
+					FrameInputSelect.Hide();
+				}
+			} else {
+				FrameInputAction2.Hide();
+				FrameInputAction1.Hide();
+				FrameInputSelect.Hide();
+			}
+		}	
+		
+		/////////////////
+		// BUDDIES
+		/////////////////	
+		Void Buddies_SetArrowsVisibility(Boolean _IsUpArrowVisible, Boolean _IsDownArrowVisible)
+		{
+			declare CMlQuad UpArrow <=> (Page.GetFirstChild("MouseInput_BuddiesPrev") as CMlQuad);
+			declare CMlQuad DownArrow <=> (Page.GetFirstChild("MouseInput_BuddiesNext") as CMlQuad);
+			if (_IsUpArrowVisible != UpArrow.Visible)
+			{
+				if (_IsUpArrowVisible)
+					UpArrow.Show();
+				else
+					UpArrow.Hide();
+			}
+			if (_IsDownArrowVisible != DownArrow.Visible)
+			{
+				if (_IsDownArrowVisible)
+					DownArrow.Show();
+				else
+					DownArrow.Hide();
+			}
+		}
+		
+		Void Buddies_SetFromResult()
+		{
+			declare Text[Text][] RequestedBuddies for Page;
+			G_FirstDisplayedBuddyIndex = 0;
+			
+			Buddies_SetArrowsVisibility(False, RequestedBuddies.count > C_DisplayedBuddiesFramesCount);
+			
+			declare CMlFrame Frame_Buddies_Displayed <=> (Page.GetFirstChild("Frame_BuddiesGroup"^G_FirstDisplayedBuddyFrameIndex) as CMlFrame);
+			
+			if (RequestedBuddies.count == 0)
+			{
+				//on affiche une frame ("empty tracklist") et on cache les autres
+				G_IndexFocusX = 0;
+				
+				//Frame NoBuddies ?
+				for (I, 1, C_DisplayedBuddiesFramesCount - 1)
+				{
+					declare CMlFrame Frame_Buddy <=> (Frame_Buddies_Displayed.GetFirstChild("Frame_Buddy"^I) as CMlFrame);
+					Frame_Buddy.Hide();
+				}
+				declare CMlFrame Frame_Buddy <=> (Frame_Buddies_Displayed.GetFirstChild("Frame_Buddy"^0) as CMlFrame);
+				Frame_Buddy.Show();
+				declare CMlLabel Buddy_Name <=> (Frame_Buddy.GetFirstChild("Buddy_Name") as CMlLabel);
+				Buddy_Name.Value = _("No Buddies");
+				declare CMlQuad Buddy_Avatar <=> (Frame_Buddy.GetFirstChild("Buddy_Avatar") as CMlQuad);
+				Buddy_Avatar.Hide();
+				return;
+			}
+				
+			// -> On remplit les N frames visibles
+			for (I, 0, C_DisplayedBuddiesFramesCount - 1)
+			{
+				declare CMlFrame Frame_Buddy <=> (Frame_Buddies_Displayed.GetFirstChild("Frame_Buddy"^I) as CMlFrame);
+				if (I >= RequestedBuddies.count)
+				{					
+					Frame_Buddy.Hide();
+				} else {
+					declare CMlLabel Buddy_Name <=> (Frame_Buddy.GetFirstChild("Buddy_Name") as CMlLabel);
+					Buddy_Name.Value = RequestedBuddies[I]["displayname"];
+					declare CMlQuad Buddy_Avatar <=> (Frame_Buddy.GetFirstChild("Buddy_Avatar") as CMlQuad);
+					Buddy_Avatar.ImageUrl = "file://Avatars/"^RequestedBuddies[I]["login"]^"/default";
+					Buddy_Avatar.Show();
+					Frame_Buddy.Show();
+					declare CMlQuad Buddy_Selected <=> (Frame_Buddy.GetFirstChild("Buddy_Selected") as  CMlQuad);
+					if (G_AlreadyAddedBuddies.exists(I))
+						Buddy_Selected.BgColor = <1., 1., 0.>;
+					else
+						Buddy_Selected.BgColor = <0., 0.88, 1.>;
+				}
+			}
+		}
+		
+		Void Buddies_OnPrevPage()
+		{
+			if (Now < G_PageSwitchLock + 300)
+				return;
+			G_PageSwitchLock = Now;
+				
+			declare Text[Text][] RequestedBuddies for Page;	
+			declare CMlFrame FrameBuddiesDisplayed = (Page.GetFirstChild("Frame_BuddiesGroup"^G_FirstDisplayedBuddyFrameIndex) as CMlFrame);
+			declare CMlFrame FrameBuddiesHidden = (Page.GetFirstChild("Frame_BuddiesGroup"^((G_FirstDisplayedBuddyFrameIndex+1)%2)) as CMlFrame);
+			
+			//remplir la frameinstance cachée et la mettre a gauche
+			FrameBuddiesHidden.RelativePosition.X = - {{{SM_SizeTotalX}}};
+			
+			for (I, 0, C_DisplayedBuddiesFramesCount-1)
+			{					
+				declare CMlFrame Frame_Buddy <=> (FrameBuddiesHidden.GetFirstChild("Frame_Buddy"^I) as CMlFrame);
+				declare CMlLabel Buddy_Name <=> (Frame_Buddy.GetFirstChild("Buddy_Name") as CMlLabel);
+				Buddy_Name.Value = RequestedBuddies[G_FirstDisplayedBuddyIndex - C_DisplayedBuddiesFramesCount + I]["displayname"];
+				declare CMlQuad Buddy_Avatar <=> (Frame_Buddy.GetFirstChild("Buddy_Avatar") as CMlQuad);
+				Buddy_Avatar.ImageUrl = "file://Avatars/"^RequestedBuddies[G_FirstDisplayedBuddyIndex - C_DisplayedBuddiesFramesCount + I]["login"]^"/default";
+				Buddy_Avatar.Show();
+				declare CMlQuad Buddy_Selected <=> (Frame_Buddy.GetFirstChild("Buddy_Selected") as  CMlQuad);
+				Frame_Buddy.Show();
+			
+				if (G_AlreadyAddedBuddies.exists(I+G_FirstDisplayedBuddyIndex-C_DisplayedBuddiesFramesCount))
+					Buddy_Selected.BgColor = <1., 1., 0.>;
+				else
+					Buddy_Selected.BgColor = <0., 0.88, 1.>;
+			}
+			
+			G_FirstDisplayedBuddyIndex -= C_DisplayedBuddiesFramesCount;
+			G_FirstDisplayedBuddyFrameIndex = ((G_FirstDisplayedBuddyFrameIndex + 1) % 2);
+			
+			declare Real FrameBuddiesDisplayed_NewPosX = {{{SM_SizeTotalX}}};
+
+			//anims
+			declare Vec3 NewDisplayedFramePos = <FrameBuddiesDisplayed_NewPosX, FrameBuddiesDisplayed.RelativePosition.Y, FrameBuddiesDisplayed.RelativePosition.Z>;
+			LibManialink_SetTargetPosition(FrameBuddiesDisplayed, NewDisplayedFramePos);
+			LibManialink_PresetAnim(FrameBuddiesDisplayed, 400, "EaseOutQuint"); //EaseOutQuint
+			LibManialink_SetTargetPosition(FrameBuddiesHidden, <0., FrameBuddiesHidden.RelativePosition.Y, FrameBuddiesHidden.RelativePosition.Z>);
+			LibManialink_PresetAnim(FrameBuddiesHidden, 400, "EaseOutQuint"); //EaseOutQuint
+			
+			Buddies_SetArrowsVisibility(G_FirstDisplayedBuddyIndex > 0, RequestedBuddies.count > G_FirstDisplayedBuddyIndex + C_DisplayedBuddiesFramesCount);
+		}
+		
+		Void Buddies_OnNextPage()
+		{
+			if (Now < G_PageSwitchLock + 300)
+				return;
+			G_PageSwitchLock = Now;
+			
+			declare Text[Text][] RequestedBuddies for Page;	
+			declare CMlFrame FrameBuddiesDisplayed = (Page.GetFirstChild("Frame_BuddiesGroup"^G_FirstDisplayedBuddyFrameIndex) as CMlFrame);
+			declare CMlFrame FrameBuddiesHidden = (Page.GetFirstChild("Frame_BuddiesGroup"^((G_FirstDisplayedBuddyFrameIndex+1)%2)) as CMlFrame);
+			
+			//remplir la frameinstance cachée et la mettre a droite
+			FrameBuddiesHidden.RelativePosition.X = {{{SM_SizeTotalX}}};
+			
+			for (I, 0, C_DisplayedBuddiesFramesCount-1)
+			{
+				declare CMlFrame Frame_Buddy <=> (FrameBuddiesHidden.GetFirstChild("Frame_Buddy"^I) as CMlFrame);
+				if (G_FirstDisplayedBuddyIndex + C_DisplayedBuddiesFramesCount + I < RequestedBuddies.count)
+				{
+					declare CMlQuad Buddy_Avatar <=> (Frame_Buddy.GetFirstChild("Buddy_Avatar") as CMlQuad);
+					Buddy_Avatar.ImageUrl = "file://Avatars/"^RequestedBuddies[G_FirstDisplayedBuddyIndex + C_DisplayedBuddiesFramesCount + I]["login"]^"/default";
+					Buddy_Avatar.Show();
+					declare CMlLabel Buddy_Name <=> (Frame_Buddy.GetFirstChild("Buddy_Name") as CMlLabel);
+					Buddy_Name.Value = RequestedBuddies[G_FirstDisplayedBuddyIndex + C_DisplayedBuddiesFramesCount+I]["displayname"];
+					declare CMlQuad Buddy_Selected <=> (Frame_Buddy.GetFirstChild("Buddy_Selected") as  CMlQuad);
+					Frame_Buddy.Show();
+			
+					if (G_AlreadyAddedBuddies.exists(I+G_FirstDisplayedBuddyIndex+C_DisplayedBuddiesFramesCount))
+						Buddy_Selected.BgColor = <1., 1., 0.>;
+					else
+						Buddy_Selected.BgColor = <0., 0.88, 1.>;
+				} else {
+					Frame_Buddy.Hide();
+				}	
+			}
+			
+			G_FirstDisplayedBuddyIndex += C_DisplayedBuddiesFramesCount;
+			G_FirstDisplayedBuddyFrameIndex = ((G_FirstDisplayedBuddyFrameIndex + 1) % 2);
+			G_IndexFocusY = ML::Min(G_IndexFocusY, (RequestedBuddies.count - 1 - G_FirstDisplayedBuddyIndex - 1) / {{{Buddies_ColumnsCount}}});
+			G_IndexFocusX = ML::Min(G_IndexFocusX, (RequestedBuddies.count - 1 - (G_FirstDisplayedBuddyIndex + G_IndexFocusY*{{{Buddies_ColumnsCount}}})));
+			
+			declare Real FrameBuddiesDisplayed_NewPosX = {{{-SM_SizeTotalX}}};
+
+			//anims
+			declare Vec3 NewDisplayedFramePos = <FrameBuddiesDisplayed_NewPosX, FrameBuddiesDisplayed.RelativePosition.Y, FrameBuddiesDisplayed.RelativePosition.Z>;
+			LibManialink_SetTargetPosition(FrameBuddiesDisplayed, NewDisplayedFramePos);
+			LibManialink_PresetAnim(FrameBuddiesDisplayed, 400, "EaseOutQuint"); //EaseOutQuint
+			LibManialink_SetTargetPosition(FrameBuddiesHidden, <0., FrameBuddiesHidden.RelativePosition.Y, FrameBuddiesHidden.RelativePosition.Z>);
+			LibManialink_PresetAnim(FrameBuddiesHidden, 400, "EaseOutQuint"); //EaseOutQuint
+			
+			Buddies_SetArrowsVisibility(G_FirstDisplayedBuddyIndex > 0, RequestedBuddies.count > G_FirstDisplayedBuddyIndex + C_DisplayedBuddiesFramesCount);
+		}
+		
+		Void Buddies_OnNext()
+		{
+			declare Text[Text][] RequestedBuddies for Page;	
+
+			declare CMlFrame FrameBuddiesDisplayed = (Page.GetFirstChild("Frame_BuddiesGroup"^G_FirstDisplayedBuddyFrameIndex) as CMlFrame);
+		
+			if (RequestedBuddies.count == 0)
+				return;
+			// -> Check si il faut scroll
+			if (G_FirstDisplayedBuddyIndex + C_DisplayedBuddiesFramesCount >= RequestedBuddies.count && G_IndexFocusX == {{{Buddies_ColumnsCount-1}}})
+				return; //La sélection est le plus a droite possible
+			if (G_IndexFocusX < {{{Buddies_ColumnsCount-1}}}) //lastindex
+			{
+				if (G_FirstDisplayedBuddyIndex + G_IndexFocusY * {{{Buddies_ColumnsCount}}} + (G_IndexFocusX+1) <= RequestedBuddies.count - 1)
+				{
+					G_IndexFocusX += 1;
+				} else
+					return; //la dernière map de la tracklist est sélectionnée, on ne peut pas aller plus loin
+			} else if(G_FirstDisplayedBuddyIndex + C_DisplayedBuddiesFramesCount < RequestedBuddies.count) { //si on peut, il faut scroll
+				G_IndexFocusX = 0;
+				Buddies_OnNextPage();
+			}
+			UpdateSelection();
+			UpdateInputsInfo();
+		}
+		
+		Void Buddies_OnPrev()
+		{
+			declare Text[Text][] RequestedBuddies for Page;	
+
+			// -> Check si il faut scroll
+			if (G_FirstDisplayedBuddyIndex == 0 && G_IndexFocusX == 0)
+				return; //La sélection est le plus a droite possible
+			if (G_IndexFocusX > 0)
+			{
+				G_IndexFocusX -= 1;
+			} else if(G_FirstDisplayedBuddyIndex > 0) { //si on peut, il faut scroll
+				G_IndexFocusX = {{{Buddies_ColumnsCount-1}}};
+				Buddies_OnPrevPage();
+			}
+			UpdateSelection();
+			UpdateInputsInfo();
+		}
+		
+		Void Buddy_ToggleSelected(Integer _FrameIndex)
+		{
+			declare CMlFrame FrameBuddiesDisplayed <=> (Page.GetFirstChild("Frame_BuddiesGroup"^G_FirstDisplayedBuddyFrameIndex) as CMlFrame);
+			declare CMlFrame FrameBuddy <=> (FrameBuddiesDisplayed.GetFirstChild("Frame_Buddy"^_FrameIndex) as CMlFrame);
+			declare CMlQuad Buddy_Selected <=> (FrameBuddy.GetFirstChild("Buddy_Selected") as  CMlQuad);
+		
+			if (G_AlreadyAddedBuddies.exists(G_FirstDisplayedBuddyIndex + _FrameIndex))
+			{
+				G_AlreadyAddedBuddies.remove(G_FirstDisplayedBuddyIndex + _FrameIndex);
+				Buddy_Selected.BgColor = <0., 0.88, 1.>;
+			} else {
+				G_AlreadyAddedBuddies.add(G_FirstDisplayedBuddyIndex + _FrameIndex);
+				Buddy_Selected.BgColor = <1., 1., 0.>;
+			}
+			UpdateInputsInfo();
+		}
+		
+		/////////////////
+		// INIT & SAVE
+		/////////////////
+		Void Init()
+		{
+			declare CMlQuad Quad_Selector <=> (Page.GetFirstChild("Quad_Selector") as CMlQuad);
+			Quad_Selector.Colorize = {{{MenuColor::GetMenuColor(2)}}};
+		
+			Settings_Init();
+			
+			G_ChallengeRetrieved = False;
+			G_Duration = 2;
+			G_DurationTexts = [	"1 "^TL::GetTranslatedText(_("day")),
+								"2 "^TL::GetTranslatedText(_("days")),
+								"3 "^TL::GetTranslatedText(_("days")),
+								"4 "^TL::GetTranslatedText(_("days")),
+								"5 "^TL::GetTranslatedText(_("days")),
+								"6 "^TL::GetTranslatedText(_("days")),
+								"1 "^TL::GetTranslatedText(_("week")),
+								"2 "^TL::GetTranslatedText(_("weeks")),
+								"3 "^TL::GetTranslatedText(_("weeks")),
+								"4 "^TL::GetTranslatedText(_("weeks")),
+								"1 "^TL::GetTranslatedText(_("month")),
+								_("No limit")];
+								
+			G_Tries = 2;
+			//L16N The "Maximum Races" value, when set to "no maximum race"
+			G_TriesTexts = [ 	"1",
+								"2",
+								"3",
+								"5",
+								"10",
+								"15",
+								"20",
+								_("No limit")];
+								
+			G_TrainTexts = [	TL::GetTranslatedText(_("|train mode is| disabled")),
+								TL::GetTranslatedText(_("|train mode is| enabled"))];
+			
+		}   
+		
+		/////////////////
+		// STATE
+		/////////////////	
+		Void SendRequestBuddies () {
+			declare CMlFrame Frame_Buddies <=> (Page.GetFirstChild("Frame_Buddies") as CMlFrame);
+			declare CMlLabel Label_Loading <=> (Frame_Buddies.GetFirstChild("Label_LoadingBuddies") as CMlLabel);
+			Label_Loading.Show();
+			declare CMlFrame Frame_Cards <=> (Frame_Buddies.GetFirstChild("Frame_BuddiesCards") as CMlFrame);
+			Frame_Cards.Hide();
+			SendCustomEvent("RequestBuddies", Text[]);
+		}
+	
+		Void Back() {
+			SendCustomEvent("GotoPrevious", [""]);
+			{{{_HideAnim}}}
+			SendCustomEvent("DetachPage", ["ChallengeBuddies"]);	
+		}
+			
+		Void OnShow() {
+			ResetInputInfos();
+			G_IndexFocusX = 0;
+			G_IndexFocusY = {{{Buddies_LinesCount + 1 }}};
+			UpdateSelection();
+			
+			G_ChallengeRetrieved = False;
+			G_AlreadyAddedBuddies.clear();
+			declare CMlLabel Label_Title <=> (Page.GetFirstChild("Label_Title") as CMlLabel);
+			Label_Title.Value = _("Challenge - Buddies");
+			
+			declare Text[Text] RequestedChallenge for Page;
+			G_Duration = 2;
+			Duration_Update();
+			G_Tries = 2;
+			Tries_Update();
+			G_TrainEnabled = True;
+			Train_Update();
+			G_ShowGhosts = False;
+			Ghosts_Update();
+			SendRequestBuddies();
+			UpdateInputsInfo();
+			SendCustomEvent("ChallengeBuddies_RetrieveContext", Text[]);
+		}
+		
+		Void SendChallenge() {
+			if (!G_ChallengeRetrieved || G_AlreadyAddedBuddies.count == 0)
+				return;
+			declare Text[Text][] RequestedBuddies for Page;
+			
+			//PLAYERS
+			declare Text RequestBody = "{\"players\":[";
+			for (I, 0, G_AlreadyAddedBuddies.count-1)
+			{
+				if (I != 0)
+					RequestBody ^= ",";
+				RequestBody ^= "\""^RequestedBuddies[G_AlreadyAddedBuddies[I]]["login"]^"\"";
+			}
+			
+			
+			//DURATION
+			RequestBody ^= "],\"end_date\":\"";
+			
+			if (G_Duration < G_DurationTexts.count-1)
+			{
+				declare Text[] DateText = TL::Split(" ", CurrentLocalDateText);
+				declare Text[] DateText_WithoutTime = TL::Split("/", DateText[0]);
+				declare Integer Year = TL::ToInteger(DateText_WithoutTime[0]);
+				declare Integer Month = TL::ToInteger(DateText_WithoutTime[1]);
+				declare Integer Day = TL::ToInteger(DateText_WithoutTime[2]);
+				declare Integer[] EndDate = GetEndDate(G_Duration, Year, Month, Day);
+				RequestBody ^= EndDate[0]^"-";
+				if (EndDate[1] < 10)
+					RequestBody ^= "0";
+				RequestBody ^= EndDate[1]^"-";
+				if (EndDate[2] < 10)
+					RequestBody ^= "0";
+				RequestBody ^= EndDate[2]	;
+				RequestBody ^= "T23:59:59+0100";
+			}
+			//TRIES
+			RequestBody ^= "\",\"max_tries\":";
+			if (G_Tries < G_TriesTexts.count-1)
+				RequestBody ^= G_TriesTexts[G_Tries];
+			else
+				RequestBody ^= "-1";
+			
+			//TRAIN
+			RequestBody ^= ",\"trainable\":";
+			if (G_TrainEnabled)
+				RequestBody ^= "true";
+			else
+				RequestBody ^= "false";
+				
+			//GHOSTS
+			RequestBody ^= ",\"show_ghosts\":";
+			if (G_ShowGhosts)
+				RequestBody ^= "true";
+			else
+				RequestBody ^= "false";
+				
+			RequestBody ^= "}";
+			SendCustomEvent("ChallengeBuddies", [RequestBody]);
+		}
+		
+		Void Input_Select() {
+			declare Text[Text][] RequestedBuddies for Page;
+			if (RequestedBuddies.count != 0)
+			{
+				if (G_IndexFocusY < {{{Buddies_LinesCount}}})
+				{
+					Buddy_ToggleSelected(G_IndexFocusY * {{{Buddies_ColumnsCount}}} + G_IndexFocusX);
+				} else if (G_IndexFocusY == {{{Buddies_LinesCount}}}) {
+					SendChallenge();
+				}
+			} else if (G_IndexFocusY == {{{Buddies_LinesCount}}}) {
+				Back();
+			}
+		}
+		
+		Void Input_Action1() {
+			declare Text[Text][] RequestedBuddies for Page;
+			if (RequestedBuddies.count != 0 && G_IndexFocusY < {{{Buddies_LinesCount}}})
+				SendCustomEvent("ShowProfile", [RequestedBuddies[G_FirstDisplayedBuddyIndex + G_IndexFocusY * {{{Buddies_ColumnsCount}}} + G_IndexFocusX]["login"]]);
+		}
+		
+		Void Input_Action2() {
+			G_AlreadyAddedBuddies.clear();
+			Buddies_SetFromResult();
+			UpdateInputsInfo();
+		}
+		
+		Void UpdateHelpersForPlatform(Integer _Platform) {
+			declare Text[] AdditionnalInputIds = ["QuadInputIcon_Select_", "QuadInputIcon_Cancel_", "QuadInputIcon_Action1_", "QuadInputIcon_Action2_"];
+	
+			declare CMlQuad  QuadInputIcon;
+			for (I, 0, 2) {
+				for (J, 0, AdditionnalInputIds.count-1) {
+					QuadInputIcon <=> (Page.GetFirstChild(AdditionnalInputIds[J]^I) as CMlQuad);
+					if (I == _Platform)
+						QuadInputIcon.Show();
+					else
+						QuadInputIcon.Hide();
+				}
+			}
+		}
+			
+		/////////////////
+		// MAIN
+		/////////////////
+		main() {
+			Init();
+			InitInputsInfo();
+			
+			declare CMlQuad  Quad_SettingsSelector <=> (Page.GetFirstChild("Quad_SettingsSelector") as CMlQuad);
+			
+			declare Text[Text]	 RequestedChallenge for Page;
+			declare Text[Text][] RequestedBuddies for Page;
+			
+			G_IndexFocusX = 0; declare Prev_IndexFocusX = G_IndexFocusX;
+			G_IndexFocusY = 0; declare Prev_IndexFocusY = G_IndexFocusY;
+			
+			declare Integer ActiveButtonPlatform = {{{Platform}}};
+			
+			while(True) {
+				yield;
+				if(! PageIsVisible) continue;
+				LibManialink_AnimLoop();
+				
+				{{{Selector::InsertInLoop()}}}
+				
+				///////////////////////////////////
+				//Blink de Quad_SettingsSelector (les lignes)
+				///////////////////////////////////
+				if (G_IndexFocusY > {{{Buddies_LinesCount}}} || (G_IndexFocusY == {{{Buddies_LinesCount}}} && G_AlreadyAddedBuddies.count != 0))
+				{
+					declare Real QuadSelectedSinVar  = ML::Sin(Now * 0.01) * 0.5 + 0.5;
+					Quad_SettingsSelector.Opacity    = QuadSelectedSinVar;
+				} else {
+					Quad_SettingsSelector.Opacity    = 1.;
+				}
+				
+				if (Input.PendingEvents.count != 0) {
+					declare Integer LastInputPlatform;
+					switch (Input.PendingEvents[Input.PendingEvents.count-1].Pad.Type) {
+						case CInputPad::EPadType::Keyboard 		: LastInputPlatform = {{{LibUIButtons::GetPlatform("PC")}}};
+						case CInputPad::EPadType::PlayStation 	: LastInputPlatform = {{{LibUIButtons::GetPlatform("PS4")}}};
+						case CInputPad::EPadType::XBox 			: LastInputPlatform = {{{LibUIButtons::GetPlatform("XB1")}}};
+						default 								: LastInputPlatform = {{{LibUIButtons::GetPlatform("PC")}}};
+					}
+					if (LastInputPlatform != ActiveButtonPlatform)
+						SendCustomEvent("SetActiveButtonPlaform", ["ChallengeBuddies", TL::ToText(LastInputPlatform)]);
+				}
+
+				foreach(Event in PendingEvents) {
+					switch(Event.Type) {
+						case CMlEvent::Type::MouseClick: {
+							if (ActiveButtonPlatform !=  {{{LibUIButtons::GetPlatform("PC")}}})
+								SendCustomEvent("SetActiveButtonPlaform", ["ChallengeBuddies", TL::ToText({{{LibUIButtons::GetPlatform("PC")}}})]);
+							declare Text[] InputId = TL::Split("_", Event.ControlId);
+							if (InputId.count < 2 || InputId[0] != "MouseInput")
+								continue;
+							switch (InputId[1]) {
+								case "Setting" : {
+									G_IndexFocusY = TL::ToInteger(InputId[2]) + {{{Buddies_LinesCount + 1}}};
+									UpdateInputsInfo();
+									UpdateSelection();
+								}
+								case "Launch" : {
+									G_IndexFocusY = {{{Buddies_LinesCount}}};
+									UpdateInputsInfo();
+									UpdateSelection();
+									Input_Select();
+								}
+								case "SettingPrev" : {
+									if (G_IndexFocusY == {{{Buddies_LinesCount + 1}}})
+										Duration_OnPrev();
+									else if (G_IndexFocusY == {{{Buddies_LinesCount + 2}}})
+										Tries_OnPrev();
+									else if (G_IndexFocusY == {{{Buddies_LinesCount + 3}}})
+										Train_OnChange();
+									else if (G_IndexFocusY == {{{Buddies_LinesCount + 4}}})
+										Ghosts_OnChange();
+								}
+								case "SettingNext" : {
+									if (G_IndexFocusY == {{{Buddies_LinesCount + 1}}})
+										Duration_OnNext();
+									else if (G_IndexFocusY == {{{Buddies_LinesCount + 2}}})
+										Tries_OnNext();
+									else if (G_IndexFocusY == {{{Buddies_LinesCount + 3}}})
+										Train_OnChange();
+									else if (G_IndexFocusY == {{{Buddies_LinesCount + 4}}})
+										Ghosts_OnChange();
+								}
+								case "Buddy" : {
+									declare Text[] BuddyIndexes = TL::Split(":", InputId[2]);
+									G_IndexFocusY = TL::ToInteger(BuddyIndexes[0]);
+									G_IndexFocusX = TL::ToInteger(BuddyIndexes[1]);
+									UpdateInputsInfo();
+									UpdateSelection();
+									Input_Select();
+								}
+								case "BuddiesPrev" : {
+									Buddies_OnPrevPage();
+									UpdateInputsInfo();
+									UpdateSelection();
+								}
+								case "BuddiesNext" : {
+									Buddies_OnNextPage();
+									UpdateInputsInfo();
+									UpdateSelection();
+								}
+								case "InputInfo" : {
+									switch (InputId[2]) {
+										case "Select" : Input_Select();
+										case "Cancel" : Back();
+										case "AppMenu" : Back();
+										case "Action1" : Input_Action1();
+										case "Action2" : Input_Action2();
+									}
+								}
+							}
+						}
+						case CMlEvent::Type::MouseOver: {
+							declare Text[] InputId = TL::Split("_", Event.ControlId);
+							if (InputId.count < 2 || InputId[0] != "MouseInput")
+								continue;
+							switch (InputId[1]) {
+								case "Setting" : {
+									G_IndexFocusY = TL::ToInteger(InputId[2]) + {{{Buddies_LinesCount + 1}}};
+									UpdateInputsInfo();
+									UpdateSelection();
+								}
+								case "Buddy" : {
+									declare Text[] BuddyIndexes = TL::Split(":", InputId[2]);
+									G_IndexFocusY = TL::ToInteger(BuddyIndexes[0]);
+									G_IndexFocusX = TL::ToInteger(BuddyIndexes[1]);
+									UpdateInputsInfo();
+									UpdateSelection();
+								}
+								case "Launch" : {
+									G_IndexFocusY = {{{Buddies_LinesCount}}};
+									UpdateInputsInfo();
+									UpdateSelection();
+								}
+								case "InputInfo" : ToggleInputInfo(InputId[2], True);
+							}
+						}
+						case CMlEvent::Type::MouseOut: {
+							declare Text[] InputId = TL::Split("_", Event.ControlId);
+							if (InputId.count < 2 || InputId[0] != "MouseInput")
+								continue;
+							switch (InputId[1]) {
+								case "InputInfo" : ToggleInputInfo(InputId[2], False);
+							}
+						}
+						case CMlEvent::Type::PluginCustomEvent: {
+							switch(Event.PluginCustomEventType) {
+								case "Show" : {
+									{{{_ShowAnim}}}
+									EnableMenuNavigation(True,False,Null,2);
+									OnShow();
+									SendCustomEvent("GetActiveButtonPlatform", ["ChallengeBuddies"]);
+								}
+								case "SetActiveButtonPlatform" : {
+									ActiveButtonPlatform = TL::ToInteger(Event.CustomEventData[0]);
+									UpdateHelpersForPlatform(ActiveButtonPlatform);
+								}
+								case "Hide" : {
+									{{{_HideAnim}}}
+									EnableMenuNavigation(True,False,Null,0);
+									SendCustomEvent("DetachPage", ["ChallengeManager"]);
+								}
+								case "BuddiesSent" : {
+									declare CMlLabel Label_Loading <=> (Page.GetFirstChild("Label_LoadingBuddies") as CMlLabel);
+									Label_Loading.Hide();
+									declare CMlFrame Frame_Cards <=> (Page.GetFirstChild("Frame_BuddiesCards") as CMlFrame);
+									Frame_Cards.Show();
+									Buddies_SetFromResult();
+								}
+								case "Request_GetChallenge_Success" : {
+									UpdateLabelChallengeName();
+									G_ChallengeRetrieved = True;
+								}
+								case "Request_ChallengeBuddies_Success" : {
+									SendCustomEvent("SetMenuContext", ["ChallengeBrowser", "MustGotoBuddies"]);
+									Back();
+								}
+							}
+						}
+						
+						//INPUTS
+						case CMlEvent::Type::MenuNavigation: {
+							if(G_LockInput + 50 > Now) continue;
+							G_LockInput = Now; // sécurité pour éviter le double input
+							switch(Event.MenuNavAction) {
+								case CMlEvent::EMenuNavAction::PageUp : {
+									if (G_FirstDisplayedBuddyIndex > 0)
+									{
+										Buddies_OnPrevPage();
+										UpdateInputsInfo();
+										UpdateSelection();
+										
+									}
+								}
+								case CMlEvent::EMenuNavAction::PageDown : {
+									if(G_FirstDisplayedBuddyIndex + C_DisplayedBuddiesFramesCount < RequestedBuddies.count)
+									{
+										Buddies_OnNextPage();
+										UpdateInputsInfo();
+										UpdateSelection();
+									}
+								}
+								case CMlEvent::EMenuNavAction::Up : {
+									if (G_IndexFocusY > 0)
+									{
+										if (G_IndexFocusY < {{{Buddies_LinesCount}}} || G_IndexFocusY >= {{{Buddies_LinesCount + 1}}} || (G_IndexFocusY == {{{Buddies_LinesCount}}} && G_FirstDisplayedBuddyIndex + C_DisplayedBuddiesFramesCount <= RequestedBuddies.count))
+											G_IndexFocusY -= 1;
+										else {
+											declare DisplayedBuddies = RequestedBuddies.count - G_FirstDisplayedBuddyIndex;
+											if (DisplayedBuddies < G_IndexFocusX + 1)
+												G_IndexFocusY = 0;
+											else
+												G_IndexFocusY = (RequestedBuddies.count - G_FirstDisplayedBuddyIndex - G_IndexFocusX - 1) / {{{Buddies_ColumnsCount}}};
+										}
+									} else {
+										G_IndexFocusY = {{{Buddies_LinesCount + 4}}};
+									}
+									UpdateInputsInfo();
+									UpdateSelection();
+								}
+								case CMlEvent::EMenuNavAction::Down : {
+									if (G_IndexFocusY < {{{Buddies_LinesCount}}})
+									{
+										if (G_FirstDisplayedBuddyIndex + (G_IndexFocusY+1)*{{{Buddies_ColumnsCount}}} + G_IndexFocusX < RequestedBuddies.count)
+										{
+											G_IndexFocusY += 1;
+										} else {
+											G_IndexFocusY = {{{Buddies_LinesCount}}};
+										}
+									} else if (G_IndexFocusY <= {{{Buddies_LinesCount+3}}}) {
+										G_IndexFocusY += 1;
+									} else {
+										G_IndexFocusY = 0;
+									}
+									UpdateInputsInfo();
+									UpdateSelection();
+								}
+								case CMlEvent::EMenuNavAction::Left : {
+									if (G_IndexFocusY < {{{Buddies_LinesCount}}})
+										Buddies_OnPrev();
+									else if (G_IndexFocusY == {{{Buddies_LinesCount + 1}}})
+										Duration_OnPrev();
+									else if (G_IndexFocusY == {{{Buddies_LinesCount + 2}}})
+										Tries_OnPrev();
+									else if (G_IndexFocusY == {{{Buddies_LinesCount + 3}}})
+										Train_OnChange();
+									else if (G_IndexFocusY == {{{Buddies_LinesCount + 4}}})
+										Ghosts_OnChange();
+								}
+								case CMlEvent::EMenuNavAction::Right : {
+									if (G_IndexFocusY < {{{Buddies_LinesCount}}})
+										Buddies_OnNext();
+									else if (G_IndexFocusY == {{{Buddies_LinesCount + 1}}})
+										Duration_OnNext();
+									else if (G_IndexFocusY == {{{Buddies_LinesCount + 2}}})
+										Tries_OnNext();
+									else if (G_IndexFocusY == {{{Buddies_LinesCount + 3}}})
+										Train_OnChange();
+									else if (G_IndexFocusY == {{{Buddies_LinesCount + 4}}})
+										Ghosts_OnChange();
+								}
+								case CMlEvent::EMenuNavAction::Select : {
+									Input_Select();
+								}
+								case CMlEvent::EMenuNavAction::Cancel : {
+									Back();
+								}
+								case CMlEvent::EMenuNavAction::AppMenu : {
+									Back();
+								}
+								case CMlEvent::EMenuNavAction::Action1 : {
+									Input_Action1();
+								}
+								case CMlEvent::EMenuNavAction::Action2 : { //Y
+									//Reset buddies selection
+									Input_Action2();
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	--></script>
+	""";
+	
+	return MLText;
+}

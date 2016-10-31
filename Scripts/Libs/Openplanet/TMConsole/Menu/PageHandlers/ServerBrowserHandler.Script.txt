@@ -1,0 +1,204 @@
+#Include "TextLib"			as TextLib
+#Include "Libs/Openplanet/TMConsole/Logger.Script.txt"										as Logger
+#Include "Libs/Openplanet/TMConsole/Menu/MenuLayers.Script.txt"								as Layers
+#Include "Libs/Openplanet/TMConsole/PopUpManager.Script.txt"									as PopUpManager
+#Include "Libs/Openplanet/TMConsole/Menu/Controller/ServerController.Script.txt" 			as ServerController
+#Include "Libs/Openplanet/TMConsole/Menu/Controller/OnlinePrivilegeController.Script.txt"	as OnlinePrivilegeController
+#Include "Libs/Openplanet/TMConsole/Menu/Controller/PrivilegeController.Script.txt"			as PrivilegeController
+#Include "Libs/Openplanet/TMConsole/Menu/MenuContext.Script.txt"								as MenuContext
+#Include "Libs/Openplanet/TMConsole/Menu/LoadingScreen.Script.txt"							as LoadingScreen
+
+declare Boolean G_PrevIsLimitedToCanyon;
+
+Void WarnNotEnoughParams(CMlAppEvent _Event) {
+	Logger::Warn("[Menucontroller] event "^_Event.CustomEventType^": not enough params ["^_Event.CustomEventData^"]");
+}
+
+Void RequestMyRooms() {
+	ServerController::GetMyRooms("ServerBrowser");
+}
+
+Void RequestAllServers(Integer _Offset, Integer _Length, Text _Filters, Text _LevelClass) {
+	ServerController::GetAllServers("ServerBrowser", _Offset, _Length, _Filters, _LevelClass);
+}
+
+Void RequestFavorites(Integer _Offset, Integer _Length, Text _Filters, Text _LevelClass) {
+	ServerController::GetFavorites("ServerBrowser", _Offset, _Length, _Filters, _LevelClass);
+}
+
+Void RequestDeleteRoom(Integer _RoomId)
+{
+	//DEAD CODE
+}
+
+Void RequestServerStatus(Integer _ServerId)
+{
+	ServerController::GetServerOnlineStatus("ServerBrowser", _ServerId);
+}
+
+Void RequestServerStart(Integer _RoomIndex, Text _Password) {
+	ServerController::ServerStart("ServerBrowser", _RoomIndex, _Password);
+}
+
+Void RequestServerStop(Integer _RoomIndex) {
+	ServerController::ServerStop("ServerBrowser", _RoomIndex);
+}
+
+Void RequestServerMaps(Integer _RoomIndex) {
+	ServerController::GetServerMaps("ServerBrowser", _RoomIndex);
+}
+
+Void SendFiltersForEdition()
+{
+	declare CUILayer ServerBrowser = Layers::Get("ServerBrowser");
+	declare CUILayer ServerBrowserFilters = Layers::Get("ServerBrowserFilters");
+	
+	declare Text[][] CurrentFilters for ServerBrowser.LocalPage;
+	declare Text[][] Filters for ServerBrowserFilters.LocalPage;
+	Filters = CurrentFilters;
+	
+	LayerCustomEvent(ServerBrowserFilters, "FiltersSent", [""]);
+}
+
+Void SendFiltersToServerBrowser()
+{
+	declare CUILayer ServerBrowser = Layers::Get("ServerBrowser");
+	declare CUILayer ServerBrowserFilters = Layers::Get("ServerBrowserFilters");
+	
+	declare Text[][] CurrentFilters for ServerBrowser.LocalPage;
+	declare Text[][] Filters for ServerBrowserFilters.LocalPage;
+	CurrentFilters = Filters;
+	
+	LayerCustomEvent(ServerBrowserFilters, "FiltersSent", [""]);
+}
+
+Void CheckTargeted_ViewUgcRequired(Text[] _Logins) {
+	OnlinePrivilegeController::CheckTargeted_ViewUgcRequired("ServerBrowser", _Logins);
+}
+
+Void Loop() {
+	declare Boolean IsLimitedToCanyon = ManiaPlanet.TmTurbo_IsPartialInstall || ManiaPlanet.TmTurbo_IsDemo;
+	if (G_PrevIsLimitedToCanyon != IsLimitedToCanyon)
+	{
+		declare CUILayer ServerBrowser = Layers::Get("ServerBrowser");
+		LayerCustomEvent(ServerBrowser, "SetIsLimitedToCanyon", [TextLib::ToText(IsLimitedToCanyon)]);
+	}
+	
+	foreach(Event in PendingEvents) {
+		if(Event.Type != CMlAppEvent::EType::LayerCustomEvent) continue;
+		switch(Event.CustomEventType) {
+			case "RequestMyRooms" : {
+				RequestMyRooms();
+			}
+			case "RequestAllServers" : {
+				if (Event.CustomEventData.count < 4)
+					WarnNotEnoughParams(Event);
+				else {
+					declare Integer Offset = TextLib::ToInteger(Event.CustomEventData[0]);
+					declare Integer Length = TextLib::ToInteger(Event.CustomEventData[1]);
+					declare Text Filters = Event.CustomEventData[2];
+					declare Text LevelClass = Event.CustomEventData[3];
+					RequestAllServers(Offset, Length, Filters, LevelClass);
+				}
+			}
+			case "RequestFavorites" : {
+				if (Event.CustomEventData.count < 4)
+					WarnNotEnoughParams(Event);
+				else {
+					declare Integer Offset = TextLib::ToInteger(Event.CustomEventData[0]);
+					declare Integer Length = TextLib::ToInteger(Event.CustomEventData[1]);
+					declare Text Filters = Event.CustomEventData[2];
+					declare Text LevelClass = Event.CustomEventData[3];
+					RequestFavorites(Offset, Length, Filters, LevelClass);
+				}
+			}
+			case "RequestServerStatus" : {
+				if (Event.CustomEventData.count < 1)
+					WarnNotEnoughParams(Event);
+				else
+					RequestServerStatus(TextLib::ToInteger(Event.CustomEventData[0]));
+			}
+			case "RequestServerStart" : {
+				if (Event.CustomEventData.count < 2)
+					WarnNotEnoughParams(Event);
+				else
+					RequestServerStart(TextLib::ToInteger(Event.CustomEventData[0]), Event.CustomEventData[1]);
+			}
+			case "RequestServerStop" : {
+				if (Event.CustomEventData.count < 1)
+					WarnNotEnoughParams(Event);
+				else
+					RequestServerStop(TextLib::ToInteger(Event.CustomEventData[0]));
+			}
+			case "RequestServerMaps" : {
+				if (Event.CustomEventData.count < 1)
+					WarnNotEnoughParams(Event);
+				else
+					RequestServerMaps(TextLib::ToInteger(Event.CustomEventData[0]));
+			}
+			case "RequestDeleteRoom" : {
+				if (Event.CustomEventData.count < 1)
+					WarnNotEnoughParams(Event);
+				else
+					RequestDeleteRoom(TextLib::ToInteger(Event.CustomEventData[0]));
+			}
+			case "PopUpLevelTooLow" : {
+				if (Event.CustomEventData.count < 2)
+					WarnNotEnoughParams(Event);
+				else
+					PopUpManager::AddPopUp2(10 , TextLib::Compose(_("You can't join this room. You need at least %1 Global Ranking Points."), ""^Event.CustomEventData[1]), "Ok", False);
+			}
+			case "PopUp_MyRoomsRestricted" : {
+				PrivilegeController::IsFullPrivilege();
+			}
+			case "PopUp_CanyonRestricted" : {
+				if (ManiaPlanet.TmTurbo_IsPartialInstall)
+					PopUpManager::AddPopUp2(0, _("You will only see Canyon rooms because the game is not fully installed."), "", False);
+				else if (ManiaPlanet.TmTurbo_IsDemo)
+					PopUpManager::AddPopUp2(0, TextLib::GetTranslatedText(_("Welcome to the free one-hour online trial. "))^TextLib::GetTranslatedText(_("You will only see Canyon rooms because you have the Trial version. Unlock the full game to unlock all environments")), "", False);
+			}
+			case "PopUpLevelTooHigh" : { //oblsolète non ?
+				//DEAD CODE
+			}
+			case "JoinServer" : {
+				if (Event.CustomEventData.count < 1)
+					WarnNotEnoughParams(Event);
+				else
+					ManiaPlanet.OpenLink(Event.CustomEventData[0], CManiaPlanet::ELinkType::ManialinkBrowser);
+			}
+			case "SendFiltersForEdition" : {
+				SendFiltersForEdition();
+			}
+			case "SendFiltersToServerBrowser" : {
+				SendFiltersToServerBrowser();
+			}
+			case "HackTempoHideFilters" : {
+				//log("hide filters");
+				Layers::Detach("ServerBrowserFilters");
+			}
+			case "ServerBrowser_GetContext" : {
+				declare Text[] Context = MenuContext::GetContext("ServerBrowser");
+				if (Context.count == 1 && Context[0] == "SetOngletFocusNewRoom")
+				{
+					declare CUILayer ServerBrowser = Layers::Get("ServerBrowser");
+					LayerCustomEvent(ServerBrowser, "SetOngletFocusNewRoom", Text[]);
+				}
+			}
+			case "ServerInfo_CheckTargeted_ViewUgcRequired" : {
+				CheckTargeted_ViewUgcRequired(TextLib::Split(",", Event.CustomEventData[0]));
+			}
+			case "ServerInfo_Check_PlayMultiplayerSession" : {
+				OnlinePrivilegeController::Check_PlayMultiplayerSession("ServerBrowser");
+				LoadingScreen::SetLoadingType(2, 0);
+			}
+			case "SetLiveStreamingEnabled" : {
+				ManiaPlanet.IsLiveStreamingEnabled = (Event.CustomEventData[0] == "True");
+			}
+			case "GetIsLimitedToCanyon" : {
+				declare Boolean IsLimitedToCanyon = ManiaPlanet.TmTurbo_IsPartialInstall || ManiaPlanet.TmTurbo_IsDemo;
+				declare CUILayer ServerBrowser = Layers::Get("ServerBrowser");
+				LayerCustomEvent(ServerBrowser, "SetIsLimitedToCanyon", [TextLib::ToText(IsLimitedToCanyon)]);
+			}
+		}
+	}
+}

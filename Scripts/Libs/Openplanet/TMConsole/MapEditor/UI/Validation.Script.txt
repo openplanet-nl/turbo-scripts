@@ -1,0 +1,639 @@
+/** 
+ * Validation UI
+ */
+
+#Const Version		"2016-03-14"
+#Const ScriptName	"Validation.Script.txt"
+
+#Include "TextLib" as TL
+#Include "Libs/Openplanet/Buttons.Script.txt" as Buttons
+#Include "Libs/Openplanet/MLEffects.Script.txt" as MLE
+#Include "Libs/Openplanet/Manialink3.Script.txt" as Manialink
+#Include "Libs/Openplanet/TMConsole/FontManager.Script.txt" as Font
+#Include "Libs/Openplanet/TMConsole/MapEditor/UI/Colors.Script.txt" as Colors
+#Include "Libs/Openplanet/TMConsole/MapEditor/UI/Stylesheet.Script.txt" as Styles
+
+// ---------------------------------- //
+// Constants
+// ---------------------------------- //
+#Const C_DefaultVisibility	False
+#Const C_BgAnim False	///< Anim button background on mouse over/out
+#Const C_DemoSony			False
+// Pop up
+#Const C_PopUp_Improve	0
+#Const C_PopUp_Exit		1
+
+// ---------------------------------- //
+// Constants
+// ---------------------------------- //
+declare Ident G_ValidationLayerId;
+
+// ---------------------------------- //
+// Functions
+// ---------------------------------- //
+// ---------------------------------- //
+// Public
+// ---------------------------------- //
+// ---------------------------------- //
+/** Return the version number of the script
+ *
+ *	@return							The version number of the script
+ */
+Text GetScriptVersion() {
+	return Version;
+}
+
+// ---------------------------------- //
+/** Return the name of the script
+ *
+ *	@return							The name of the script
+ */
+Text GetScriptName() {
+	return ScriptName;
+}
+
+// ---------------------------------- //
+/** Get the validation manialink
+ *
+ * @param	_Validation				True if it's a validation run, False if it's a test run
+ *
+ *	@return							The manialink
+ */
+Text Private_GetValidationML(Boolean _Validation) {
+	declare ButtonConfirm = Buttons::Menu_Select();
+	declare ButtonCancel = Buttons::Menu_Cancel();
+	declare ButtonMenu = Buttons::Editor_LeaveValidation();
+	declare ButtonThumbnail = Buttons::Editor_TakeThumbnail();
+	
+	if (C_DemoSony) {
+		ButtonCancel = Buttons::Menu_Select();
+	}
+	
+	//L16N [MapEditor] Text displayed next to the player's best time on the track.
+	declare BestTime = TL::Compose("%1:", _("Personnal record"));
+	//L16N [MapEditor] Text displayed next to the player's last time on the track.
+	declare YourTime = TL::Compose("%1:", _("Last time"));
+	
+	declare FontMain = Font::GetFontName("Main");
+	declare LeaveMessage = "";
+	declare LeaveConfirmation = "";
+	declare HideAuthorTime = "";
+	if (_Validation) {
+		//L16N [MapEditor] Title of the pop-up asking the player if he really wants to leave the track validation
+		LeaveMessage = _("Leave track validation");
+		//L16N [MapEditor] Pop-up asking the player if he really wants to leave the track validation
+		LeaveConfirmation = _("Are you sure you want to leave the track validation?");
+	} else {
+		//L16N [MapEditor] Title of the pop-up asking the player if he really wants to leave the test race
+		LeaveMessage = _("Leave test");
+		//L16N [MapEditor] Pop-up asking the player if he really wants to leave the test race
+		LeaveConfirmation = _("Are you sure you want to leave the test?");
+		HideAuthorTime = "hidden=\"1\"";
+	}
+	
+	//L16N [MapEditor] Text displayed next to a button's picture describing the action of this button. Here: taking a screenshot to use as the thumbnail of the track.
+	declare ThumbnailMessage = _("Save track thumbnail");
+	
+	// Copy from Libs/Nadeo/TMConsole/Ingame/UI/UI.Script.txt
+	declare	G_FontMain				= Font::GetFontName("Main");
+	declare G_FontMainSmall 		= Font::GetFontName("MainSmall");
+	declare C_RATIO					= 12.962;
+	declare C_RATIO_1CIRCLE			= 0.06666666667;
+	declare C_RACE_MAPNAME_SIZE_X 	= 70.;
+	declare C_MARGINS_GLOBALRATIO	= 1.;
+	declare C_IMGPATH				= "file://Media/Images/TMConsole/Ingame/";
+	declare C_IMG_BG				= "slot-medium-bg.dds";
+	declare C_IMG_FG				= "slot-medium-fg.dds";
+	declare C_IMG_BG_LINE			= "menu-bg-1.dds";
+	declare MapNameSizeXElement		= C_RACE_MAPNAME_SIZE_X * C_RATIO_1CIRCLE * 13.;
+	declare MapNameSizeY 			= C_RACE_MAPNAME_SIZE_X / C_RATIO;
+	declare MapNameSeparator 		= MapNameSizeY * 0.095;
+	declare OpponentNamePosX		= 1.;
+	declare OpponentMargins			= 1.5;
+	declare OpponentTimeSizeRatio 	= 0.66;
+	declare OpponentSizeX			= C_RACE_MAPNAME_SIZE_X;
+	declare OpponentSizeY			= MapNameSizeY;
+	declare OpponentSizeXElement	= MapNameSizeXElement;
+	declare OpponentSizeYElement	= MapNameSizeY - MapNameSeparator;
+	declare OpponentTextsSizeX		= OpponentSizeX - OpponentNamePosX - OpponentMargins - 10.;
+	declare OpponentTimePosX		= OpponentSizeXElement - 2;
+	declare OpponentTimeSizeX		= OpponentTimeSizeRatio * OpponentTextsSizeX;
+	declare OpponentTextPosY		= OpponentSizeY * 0.5 - 0.25;
+	declare OpponentScreenMarginsRatio 	= 1. * C_MARGINS_GLOBALRATIO;
+	declare OpponentScreenMarginsY	= 20 * OpponentScreenMarginsRatio;
+	declare TextStyleMain			= """ textfont="{{{G_FontMain}}}" textsize="3" scale="0.95" """;
+	declare TextStyleMainSmall		= """ textfont="{{{G_FontMainSmall}}}" textsize="3" scale="0.95" """;
+	declare QuadStyleBg				= """ size="{{{C_RACE_MAPNAME_SIZE_X}}} {{{MapNameSizeY}}}" image="{{{C_IMGPATH^C_IMG_BG_LINE}}}" """;
+	
+	declare PopUpSizeX = 25.;
+	declare PopUpSizeY = 6.;
+	declare OptionSize = (PopUpSizeX - 1.) * 0.5;
+	declare ButtonSize = 0.9;
+	
+	declare LeaveMessagePosY = -60;
+	declare HelperButtonSize = 8.;
+	
+	// Pairing pad
+	declare MainUserControllerId = 0;
+	if (UserMgr != Null && UserMgr.MainUserPad != Null) MainUserControllerId = UserMgr.MainUserPad.ControllerId;
+	
+	return """
+<manialink version="3" name="MapEditor:Validation">
+<stylesheet>
+	<style class="bg-normal" bgcolor="000" opacity="0.7" />
+	{{{Styles::Get()}}}
+</stylesheet>
+<frame id="Frame_Global">
+	<quad z-index="-10" opacity="0" hidden="1" class="turbo2-screen-validation" id="Quad_ScreenValidation" />
+	<frame z-index="-5" id="Frame_Snap">
+		<quad pos="-160 0" size="70 180" valign="center" opacity="0" bgcolor="000" hidden="1" id="Quad_SnapLeft" />
+		<quad pos="160 0" size="70 180" halign="right" valign="center" opacity="0" bgcolor="000" hidden="1" id="Quad_SnapRight" />
+	</frame>
+	<frame pos="{{{160 * 1. - OpponentSizeX}}} {{{90-OpponentScreenMarginsY}}}" z-index="1" {{{HideAuthorTime}}} id="Frame_AuthorTime">
+		<frame pos="100 0" hidden="1" id="Frame_AuthorTimeAnim">
+			<frame pos="0 0" z-index="2">
+				<label pos="{{{OpponentNamePosX}}} {{{-OpponentTextPosY}}}" z-index="2" size="{{{OpponentTextsSizeX}}}" valign="center" {{{TextStyleMain}}} text="{{{
+					//L16N [MapEditor] Text displayed next to the player's best time on the track
+					_("Best time")
+				}}}" />
+				<label pos="{{{OpponentTimePosX}}} {{{-OpponentTextPosY}}}" z-index="2" size="{{{OpponentTimeSizeX}}}" valign="center" halign="right" textcolor="{{{TL::ColorToText(Colors::GetColor(Colors::Color_Trackmaster()))}}}" {{{TextStyleMainSmall}}} id="Label_Time" />
+				<quad pos="0. {{{-MapNameSeparator}}}" z-index="1" size="{{{MapNameSizeXElement}}} {{{OpponentSizeYElement}}}" valign="top" image="{{{C_IMGPATH^C_IMG_BG}}}" />
+				<quad pos="0. {{{-MapNameSeparator}}}" z-index="3" size="{{{MapNameSizeXElement}}} {{{OpponentSizeYElement}}}" valign="top" image="{{{C_IMGPATH^C_IMG_FG}}}" />
+			</frame>
+			<frame z-index="0">
+				<quad id="Quad_Bg1" pos="0. 0." {{{QuadStyleBg}}} />
+				<quad id="Quad_Bg2" pos="0. {{{-MapNameSizeY}}}" {{{QuadStyleBg}}} />
+			</frame>
+		</frame>
+	</frame>
+	<frame pos="0 -100" z-index="2" hidden="1" id="Frame_Info">
+		<frame pos="0 10">
+			{{{Buttons::ML_Button(ButtonThumbnail, ["size" => HelperButtonSize^" "^HelperButtonSize, "halign" => "right", "id" => "Button_Icon"])}}}
+			<label pos="1 0" size="300 10" valign="center2" textemboss="1" textfont="{{{FontMain}}}" textprefix="$t" text="{{{ThumbnailMessage}}}" id="Label_Message" />
+		</frame>
+		<frame>
+			{{{Buttons::ML_Button(ButtonMenu, ["size" => HelperButtonSize^" "^HelperButtonSize, "halign" => "right", "id" => "Button_Icon"])}}}
+			<label pos="1 0" size="300 10" valign="center2" textemboss="1" textfont="{{{FontMain}}}" textprefix="$t" text="{{{LeaveMessage}}}" id="Label_Message" />
+		</frame>
+	</frame>
+	<frame z-index="2" id="Frame_PopUps">
+		<frame pos="0 {{{92. + Styles::GetSize2(<0., PopUpSizeY>, Styles::CircleSize_Bottom()).Y}}}" hidden="1" id="Frame_Validation">
+			{{{Styles::BuildBackground(<0., 0., 0.>, <PopUpSizeX, PopUpSizeY>, Styles::CircleSize_Bottom(), Styles::Align_CenterTop())}}}
+			{{{Styles::BuildLine(<0., 0., 1.>, <PopUpSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_CenterTop(), Colors::Color_Purple(), True, True, Text[Text])}}}
+			{{{Styles::BuildLabel(<0., -0.45, 2.>, <PopUpSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_CenterCenter2(), [
+				//L16N [MapEditor] Title of the pop-up displayed when the player finish the track validation
+				"text" => _("Track validation"), "class" => "turbo2-text-title"
+			])}}}
+			<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<0., -1., 3.>, Styles::CircleSize_Bottom()))}}}>
+				{{{Styles::BuildQuad(<0., 0., 0.>, <PopUpSizeX, PopUpSizeY-2.>, Styles::CircleSize_Bottom(), Styles::Align_CenterTop(), ["bgcolor" => Colors::GetColorML(Colors::Color_SoftBlack())])}}}
+				{{{Styles::BuildLabel(<-1., -1.45, 1.>, <PopUpSizeX*0.5, 1.>, Styles::CircleSize_Bottom(), Styles::Align_RightCenter2(), ["text" => BestTime, "class" => "turbo2-text-validation"])}}}
+				{{{Styles::BuildLabel(<-1.25, -1.45, 1.>, <PopUpSizeX*0.5, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftCenter2(), ["class" => "turbo2-text-validation", "id" => "Label_BestTime"])}}}
+				{{{Styles::BuildLabel(<-1., -2.45, 1.>, <PopUpSizeX*0.5, 1.>, Styles::CircleSize_Bottom(), Styles::Align_RightCenter2(), ["text" => YourTime, "class" => "turbo2-text-validation"])}}}
+				{{{Styles::BuildLabel(<-1.25, -2.45, 1.>, <PopUpSizeX*0.5, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftCenter2(), ["class" => "turbo2-text-validation", "id" => "Label_YourTime"])}}}
+				{{{Styles::BuildLabel(<-1.1, -2.45, 1.>, <PopUpSizeX*0.5, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftCenter2(), ["text" => "Trackmaster", "textprefix" => "$t", "textcolor" => TL::ColorToText(Colors::GetColor(Colors::Color_Trackmaster())), "class" => "turbo2-text-validation", "id" => "Label_New"])}}}
+			</frame>
+			<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<PopUpSizeX*0.5-OptionSize-1, -PopUpSizeY+1., 6.>, Styles::CircleSize_Bottom()))}}} id="Button_Cancel">
+				{{{Styles::BuildLine(<0., 0., 0.>, <OptionSize, 1.>, Styles::CircleSize_Bottom(), Styles::Align_RightTop(), Colors::Color_Black(), True, True, ["scriptevents" => "1", MLE::Data_Triggers() => "B1", "class" => MLE::ML_Class(), "id" => "Quad_Cancel"])}}}
+				{{{Styles::BuildButton(ButtonCancel, <-0.5, -0.5, 2.>, <ButtonSize, ButtonSize>, Styles::CircleSize_Bottom(), Styles::Align_CenterCenter(), Text[Text])}}}
+				{{{Styles::BuildLabel(<-1., -0.45, 1.>, <OptionSize-1., 1.>, Styles::CircleSize_Bottom(), Styles::Align_RightCenter2(), [
+					//L16N Imperative. Menu option to ask the player if she wants to "improve her time"
+					"text" => _("Improve"), MLE::Data_Effects() => """B1:{{{MLE::Effect_LabelHover()}}}""", "class" => """turbo2-text-button {{{MLE::ML_Class()}}}"""
+				])}}}
+			</frame>
+			<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<PopUpSizeX*0.5, -PopUpSizeY+1., 5.>, Styles::CircleSize_Bottom()))}}} id="Button_Confirm">
+				{{{Styles::BuildLine(<0., 0., 0.>, <OptionSize, 1.>, Styles::CircleSize_Bottom(), Styles::Align_RightTop(), Colors::Color_Black(), True, True, ["scriptevents" => "1", MLE::Data_Triggers() => "B2", "class" => MLE::ML_Class(), "id" => "Quad_Confirm"])}}}
+				{{{Styles::BuildButton(ButtonConfirm, <-0.5, -0.5, 2.>, <ButtonSize, ButtonSize>, Styles::CircleSize_Bottom(), Styles::Align_CenterCenter(), Text[Text])}}}
+				{{{Styles::BuildLabel(<-1., -0.45, 1.>, <OptionSize-1., 1.>, Styles::CircleSize_Bottom(), Styles::Align_RightCenter2(), [
+					//L16N [MapEditor] Confirm the track validation and return to the track editor
+					"text" => _("Validate & exit"), MLE::Data_Effects() => """B2:{{{MLE::Effect_LabelHover()}}}""", "class" => """turbo2-text-button {{{MLE::ML_Class()}}}"""
+				])}}}
+			</frame>
+		</frame>
+		<frame pos="0 132" hidden="1" id="Frame_Exit">
+			<quad z-index="0" size="180 30" halign="center" class="bg-normal" />
+			<frame pos="0 -2" z-index="1">
+				<label size="170 8" halign="center" text="{{{LeaveMessage}}}" />
+				<label pos="0 -10" size="170 8" halign="center" text="{{{LeaveConfirmation}}}" /> 
+			</frame>
+			<frame pos="85 -25" z-index="2">
+				<frame id="Button_Confirm">
+					{{{Buttons::ML_Button(ButtonConfirm, ["size" => "8 8", "halign" => "right"])}}}
+					<label pos="1 0" size="60 10" text="{{{
+						//L16N [MapEditor] Confirm button in a pop-up
+						_("Yes")
+					}}}" id="Label_Confirm" />
+				</frame>
+				<frame id="Button_Cancel">
+					{{{Buttons::ML_Button(ButtonCancel, ["size" => "8 8", "halign" => "right"])}}}
+					<label pos="1 0" size="60 10" text="{{{
+						//L16N [MapEditor] Cancel button in a pop-up
+						_("No")
+					}}}" id="Label_Cancel" />
+				</frame>
+			</frame>
+		</frame>
+	</frame>
+</frame>
+<script><!--
+#Include "TextLib" as TL
+#Include "MathLib" as ML
+{{{Manialink::DefaultIncludes()}}}
+{{{MLE::ML_Includes()}}}
+
+declare Boolean G_CanSeeInfo;
+declare CMlQuad Quad_SnapLeft;
+declare CMlQuad Quad_SnapRight;
+
+{{{Manialink::Animations(["EaseOutQuad"])}}}
+{{{Buttons::ML_Functions()}}}
+{{{MLE::ML_Functions()}}}
+
+Void SetTime(Integer _BestTime, Integer _YourTime) {
+	declare Frame_Validation <=> (Page.GetFirstChild("Frame_Validation") as CMlFrame);
+	declare Label_BestTime <=> (Frame_Validation.GetFirstChild("Label_BestTime") as CMlLabel);
+	
+	if (_BestTime < 0) Label_BestTime.Value = "--:--.--";
+	else Label_BestTime.Value = TL::TimeToText(_BestTime, True);
+	
+	declare Label_YourTime <=> (Frame_Validation.GetFirstChild("Label_YourTime") as CMlLabel);
+	Label_YourTime.Value = TL::TimeToText(_YourTime, True);
+	
+	declare Label_New <=> (Frame_Validation.GetFirstChild("Label_New") as CMlLabel);
+	if (_YourTime <= _BestTime || _BestTime <= 0) {
+		Label_New.RelativePosition_V3.X = Label_YourTime.RelativePosition_V3.X + Label_YourTime.ComputeWidth(Label_YourTime.Value) + 1.;
+		Label_New.Visible = True;
+	} else {
+		Label_New.Visible = False;
+	}
+	
+	declare Frame_AuthorTime <=> (Page.GetFirstChild("Frame_AuthorTime") as CMlFrame);
+	declare Label_Time <=> (Frame_AuthorTime.GetFirstChild("Label_Time") as CMlLabel);
+	if (_BestTime < 0) Label_Time.Value = "--:--.--";
+	else Label_Time.Value = TL::TimeToText(_BestTime, True);
+}
+
+Void SetVisibility(Boolean _Visible, Integer _PopUp) {
+	switch (_PopUp) {
+		case {{{C_PopUp_Improve}}}: {
+			if (_Visible) {
+				EnableMenuNavigationInputs = True;
+				
+				LibManialink_Anim({{{Manialink::Inject("""<frame pos="0 -110" hidden="1" id="Frame_Info" />""")}}}, 250, "EaseOutQuad");
+				G_CanSeeInfo = False;
+				
+				LibManialink_Anim({{{Manialink::Inject("""<frame pos="0 25" hidden="0" id="Frame_Validation" />""")}}}, 250, "EaseOutQuad");
+				LibManialink_Anim({{{Manialink::Inject("""<frame pos="100 0" hidden="1" id="Frame_AuthorTimeAnim" />""")}}}, 250, "EaseOutQuad");
+					
+				declare Frame_Validation <=> (Page.GetFirstChild("Frame_Validation") as CMlFrame);
+				declare Button_Cancel <=> (Frame_Validation.GetFirstChild("Button_Cancel") as CMlFrame);
+				declare Button_Confirm <=> (Frame_Validation.GetFirstChild("Button_Confirm") as CMlFrame);
+				if ({{{C_DemoSony}}}) {
+					Button_Confirm.Visible = False;
+					Button_Cancel.Visible = True;
+					Frame_Validation.RelativeScale = 1.8;
+					Button_Cancel.RelativePosition_V3.X = Button_Confirm.RelativePosition_V3.X;
+				} else {
+					Button_Confirm.Visible = True;
+					Button_Cancel.Visible = True;
+					Frame_Validation.RelativeScale = 1.;
+					declare Position = {{{Styles::GetPosition2(<PopUpSizeX*0.5-OptionSize-1, -PopUpSizeY+1., 6.>, Styles::CircleSize_Bottom())}}};
+					Button_Cancel.RelativePosition_V3.X = Position.X;
+					
+					LibManialink_Anim({{{Manialink::Inject("""<frame opacity="1" hidden="0" id="Quad_ScreenValidation" />""")}}}, 250, "EaseOutQuad");
+				}
+			} else {
+				EnableMenuNavigationInputs = False;
+				LibManialink_Anim({{{Manialink::Inject("""<frame pos="0 132" hidden="1" id="Frame_Validation" />""")}}}, 250, "EaseOutQuad");
+				LibManialink_Anim({{{Manialink::Inject("""<frame opacity="0" hidden="1" id="Quad_ScreenValidation" />""")}}}, 250, "EaseOutQuad");
+				
+				if (!{{{C_DemoSony}}}) {
+					//LibManialink_Anim({{{Manialink::Inject("""<frame pos="0 {{{LeaveMessagePosY}}}" hidden="0" id="Frame_Info" />""")}}}, 250, "EaseOutQuad");
+					G_CanSeeInfo = True;
+					
+					LibManialink_Anim({{{Manialink::Inject("""<frame pos="0 0" hidden="0" id="Frame_AuthorTimeAnim" />""")}}}, 250, "EaseOutQuad");
+				}
+			}
+		}
+		case {{{C_PopUp_Exit}}}: {
+			if (_Visible) {
+				EnableMenuNavigationInputs = True;
+				
+				LibManialink_Anim({{{Manialink::Inject("""<frame pos="0 -110" hidden="1" id="Frame_Info" />""")}}}, 250, "EaseOutQuad");
+				G_CanSeeInfo = False;
+				
+				LibManialink_Anim({{{Manialink::Inject("""<frame pos="0 25" hidden="0" id="Frame_Exit" />""")}}}, 250, "EaseOutQuad");
+				LibManialink_Anim({{{Manialink::Inject("""<frame pos="100 0" hidden="1" id="Frame_AuthorTimeAnim" />""")}}}, 250, "EaseOutQuad");
+			} else {
+				EnableMenuNavigationInputs = False;
+				LibManialink_Anim({{{Manialink::Inject("""<frame pos="0 132" hidden="1" id="Frame_Exit" />""")}}}, 250, "EaseOutQuad");
+				if (!{{{C_DemoSony}}}) {
+					//LibManialink_Anim({{{Manialink::Inject("""<frame pos="0 {{{LeaveMessagePosY}}}" hidden="0" id="Frame_Info" />""")}}}, 250, "EaseOutQuad");
+					G_CanSeeInfo = True;
+					
+					LibManialink_Anim({{{Manialink::Inject("""<frame pos="0 0" hidden="0" id="Frame_AuthorTimeAnim" />""")}}}, 250, "EaseOutQuad");
+				}
+			}
+		}
+	}
+}
+
+Void Confirm(Boolean _Validate) {
+	declare netwrite Net_LibUIValidation_AnswerUpdate for Teams[0] = -1;
+	declare netwrite Net_LibUIValidation_Answer for Teams[0] = True;
+	declare netwrite Net_LibUIValidation_Distance for Teams[0] = 0.;
+	Net_LibUIValidation_Answer = _Validate;
+	Net_LibUIValidation_AnswerUpdate = Now;
+	Net_LibUIValidation_Distance = InputPlayer.Distance;
+}
+
+Void MenuInput(CMlEvent::EMenuNavAction _Input) {
+	if ({{{C_DemoSony}}}) {
+		switch (_Input) {
+			case CMlEvent::EMenuNavAction::Select: Confirm(False);
+		}
+	} else {
+		switch (_Input) {
+			case CMlEvent::EMenuNavAction::Select: Confirm(True);
+			case CMlEvent::EMenuNavAction::Cancel: Confirm(False);
+			case CMlEvent::EMenuNavAction::AppMenu: Confirm(False);
+		}
+	}
+}
+
+Void CenterLeaveMessage() {
+	declare Frame_Info <=> (Page.GetFirstChild("Frame_Info") as CMlFrame);
+	foreach (Control in Frame_Info.Controls) {
+		declare Frame_Tmp <=> (Control as CMlFrame);
+		declare Button_Icon <=> (Frame_Tmp.GetFirstChild("Button_Icon") as CMlQuad);
+		declare Label_Message <=> (Frame_Tmp.GetFirstChild("Label_Message") as CMlLabel);
+		declare Size = {{{HelperButtonSize}}} + 1. + Label_Message.ComputeWidth(Label_Message.Value, True);
+		if (Size > Label_Message.Size.X) Size = Label_Message.Size.X;
+		Button_Icon.RelativePosition_V3.X = -(Size*0.5) + {{{HelperButtonSize}}};
+		Label_Message.RelativePosition_V3.X = Button_Icon.RelativePosition_V3.X + 1.;
+	}
+}
+
+Void PlaySnapAnim() {
+	LibManialink_AnimStop(Quad_SnapLeft);
+	LibManialink_AnimStop(Quad_SnapRight);
+	
+	LibManialink_Anim(Quad_SnapLeft, {{{Manialink::Inject("""<quad opacity="1" hidden="0" />""")}}}, 200, "EaseOutQuad");
+	LibManialink_Anim(Quad_SnapRight, {{{Manialink::Inject("""<quad opacity="1" hidden="0" />""")}}}, 200, "EaseOutQuad");
+	LibManialink_AnimInsert(Quad_SnapLeft, {{{Manialink::Inject("""<quad opacity="0" hidden="1" />""")}}}, 400, 400, "EaseOutQuad");
+	LibManialink_AnimInsert(Quad_SnapRight, {{{Manialink::Inject("""<quad opacity="0" hidden="1" />""")}}}, 400, 400, "EaseOutQuad");
+}
+
+main() {
+	LibButtons_Init();
+  LibMLEffects_Init();
+	
+	declare Frame_Snap <=> (Page.GetFirstChild("Frame_Snap") as CMlFrame);
+	Quad_SnapLeft <=> (Frame_Snap.GetFirstChild("Quad_SnapLeft") as CMlQuad);
+	Quad_SnapRight <=> (Frame_Snap.GetFirstChild("Quad_SnapRight") as CMlQuad);
+	
+	declare netwrite Integer Net_MainUserControllerId for UI;
+	declare netwrite Net_LibUIValidation_AnswerUpdate for Teams[0] = -1;
+	declare netwrite Net_LibUIValidation_Answer for Teams[0] = True;
+	declare netwrite Net_LibUIValidation_Distance for Teams[0] = 0.;
+	Net_MainUserControllerId = {{{MainUserControllerId}}};
+	Net_LibUIValidation_AnswerUpdate = -1;
+	Net_LibUIValidation_Answer = True;
+	Net_LibUIValidation_Distance = 0.;
+	
+	declare netread Net_LibUIValidation_Visibility for Teams[0] = {{{C_DefaultVisibility}}};
+	declare netread Net_LibUIValidation_VisibilityPopUp for Teams[0] = -1;
+	declare PrevVisibility = {{{C_DefaultVisibility}}};
+	
+	declare netread Net_LibUIValidation_SnapAnim for Teams[0] = -1;
+	declare PrevSnapAnim = Net_LibUIValidation_SnapAnim;
+	
+	G_CanSeeInfo = False;
+	declare InfoVisible = False;
+	
+	declare netread Net_LibUIValidation_BestTime for Teams[0] = 0;
+	declare netread Net_LibUIValidation_YourTime for Teams[0] = 0;
+	declare PrevBestTime = -1;
+	declare PrevYourTime = -1;
+	
+	CenterLeaveMessage();
+	SetVisibility({{{C_DefaultVisibility}}}, {{{C_PopUp_Improve}}});
+	SetVisibility({{{C_DefaultVisibility}}}, {{{C_PopUp_Exit}}});
+	SetTime(Net_LibUIValidation_BestTime, Net_LibUIValidation_YourTime);
+	
+	while (True) {
+		yield;
+		
+		LibManialink_AnimLoop();
+		LibButtons_Loop();
+    LibMLEffects_Loop();
+		
+		if (PrevVisibility != Net_LibUIValidation_Visibility) {
+			PrevVisibility = Net_LibUIValidation_Visibility;
+			SetVisibility(Net_LibUIValidation_Visibility, Net_LibUIValidation_VisibilityPopUp);
+		}
+		
+		if (PrevBestTime != Net_LibUIValidation_BestTime || PrevYourTime != Net_LibUIValidation_YourTime) {
+			PrevBestTime = Net_LibUIValidation_BestTime;
+			PrevYourTime = Net_LibUIValidation_YourTime;
+			SetTime(Net_LibUIValidation_BestTime, Net_LibUIValidation_YourTime);
+		}
+		
+		if (PrevSnapAnim != Net_LibUIValidation_SnapAnim) {
+			PrevSnapAnim = Net_LibUIValidation_SnapAnim;
+			PlaySnapAnim();
+		}
+		
+		foreach (Event in PendingEvents) {
+			if (Event.Type == CMlEvent::Type::MenuNavigation) {
+				declare ManageEvent = True;
+				foreach (Pad in Input.Pads) {
+					if (Pad.Type == CInputPad::EPadType::Keyboard) continue;
+					if (Event.MenuNavAction == CMlEvent::EMenuNavAction::Select && Pad.A > 100) ManageEvent = False;
+					else if (Event.MenuNavAction == CMlEvent::EMenuNavAction::Cancel && Pad.B > 100) ManageEvent = False;
+					else if (Event.MenuNavAction == CMlEvent::EMenuNavAction::AppMenu && Pad.Menu > 100) ManageEvent = False;
+				}
+				if (ManageEvent) MenuInput(Event.MenuNavAction);
+			} else if (Event.Type == CMlEvent::Type::KeyPress) {
+				if (Event.KeyCode == {{{Buttons::GetThumbnailKeyCode()}}} || Event.KeyName == "{{{Buttons::GetThumbnailKeyName()}}}") {
+					declare netwrite Net_LibUIValidation_ThumbnailUpdate for Teams[0] = -1;
+					Net_LibUIValidation_ThumbnailUpdate = Now;
+				}
+			} else if (Event.Type == CMlEvent::Type::MouseClick) {
+				if (Event.ControlId == "Quad_Confirm") {
+					MenuInput(CMlEvent::EMenuNavAction::Select);
+				} else if (Event.ControlId == "Quad_Cancel") {
+					MenuInput(CMlEvent::EMenuNavAction::Cancel);
+				}
+			} else if (Event.Type == CMlEvent::Type::MouseOut) {
+				if (Event.ControlId == "Quad_Confirm" || Event.ControlId == "Quad_Cancel") {
+					if ({{{C_BgAnim}}}) LibManialink_Anim(
+						(Event.Control as CMlQuad),
+						{{{Manialink::Inject("""<quad colorize="{{{Colors::GetColorML(Colors::Color_Black())}}}" />""")}}},
+						250,
+						"EaseOutQuad"
+					);
+				}
+			} else if (Event.Type == CMlEvent::Type::MouseOver) {
+				if (Event.ControlId == "Quad_Confirm" || Event.ControlId == "Quad_Cancel") {
+					if ({{{C_BgAnim}}}) LibManialink_Anim(
+						(Event.Control as CMlQuad),
+						{{{Manialink::Inject("""<quad colorize="{{{Colors::GetColorML(Colors::Color_Red())}}}" />""")}}},
+						250,
+						"EaseOutQuad"
+					);
+				}
+			}
+		}
+		
+		if (G_CanSeeInfo && InputPlayer != Null) {
+			if (InfoVisible && (InputPlayer.Speed <= -10 || InputPlayer.Speed >= 10)) {
+				LibManialink_Anim({{{Manialink::Inject("""<frame pos="0 -110" hidden="1" id="Frame_Info" />""")}}}, 250, "EaseOutQuad");
+				InfoVisible = False;
+			} else if (!InfoVisible && InputPlayer.Speed == 0) {
+				LibManialink_Anim({{{Manialink::Inject("""<frame pos="0 {{{LeaveMessagePosY}}}" hidden="0" id="Frame_Info" />""")}}}, 250, "EaseOutQuad");
+				InfoVisible = True;
+			}
+		}
+	}
+}
+--></script>
+</manialink>	
+""";
+}
+
+// ---------------------------------- //
+/** Set the times to display in the UI
+ *
+ *	@param	_BestTime				The best validation time in ms
+ *	@param	_YourTime				The player validation time in ms
+ */
+Void SetTime(Integer _BestTime, Integer _YourTime) {
+	declare netwrite Net_LibUIValidation_BestTime for Mode.Teams[0] = 0;
+	declare netwrite Net_LibUIValidation_YourTime for Mode.Teams[0] = 0;
+	Net_LibUIValidation_BestTime = _BestTime;
+	Net_LibUIValidation_YourTime = _YourTime;
+}
+
+// ---------------------------------- //
+/** Set the menu visibility
+ *
+ *	@param	_Visible				Show the pop up if True
+ *	@param	_PopUp					The pop up to show or hide
+ */
+Void SetVisibility(Boolean _Visible, Integer _PopUp) {
+	declare netwrite Net_LibUIValidation_Visibility for Mode.Teams[0] = C_DefaultVisibility;
+	declare netwrite Net_LibUIValidation_VisibilityPopUp for Mode.Teams[0] = -1;
+	Net_LibUIValidation_Visibility = _Visible;
+	Net_LibUIValidation_VisibilityPopUp = _PopUp;
+}
+
+// ---------------------------------- //
+/// Show the menu
+Void Show() {
+	SetVisibility(True, C_PopUp_Improve);
+}
+
+// ---------------------------------- //
+/// Hide the menu
+Void Hide() {
+	SetVisibility(False, C_PopUp_Improve);
+}
+
+// ---------------------------------- //
+/// Show the exit confirmation
+/*Void ShowExit() {
+	SetVisibility(True, C_PopUp_Exit);
+}*/
+
+// ---------------------------------- //
+/// Hide the exit confirmation
+/*Void HideExit() {
+	SetVisibility(False, C_PopUp_Exit);
+}*/
+
+// ---------------------------------- //
+/** Check the last time the thumbnail was updated
+ *
+ *	@return							The last time the thumbnail was updated
+ */
+Integer GetThumbnailUpdate() {
+	declare netread Net_LibUIValidation_ThumbnailUpdate for Mode.Teams[0] = -1;
+	return Net_LibUIValidation_ThumbnailUpdate;
+}
+
+// ---------------------------------- //
+/** Check the last time the answer was updated
+ *
+ *	@return							The last time the answer was updated
+ */
+Integer GetAnswerUpdate() {
+	declare netread Net_LibUIValidation_AnswerUpdate for Mode.Teams[0] = -1;
+	return Net_LibUIValidation_AnswerUpdate;
+}
+
+// ---------------------------------- //
+/** Check the last answer given by the player
+ *
+ *	@return							The last answer
+ */
+Boolean GetAnswer() {
+	Hide();
+	
+	declare netread Net_LibUIValidation_Answer for Mode.Teams[0] = True;
+	return Net_LibUIValidation_Answer;
+}
+
+// ---------------------------------- //
+/** Check the distance drived by the player
+ *
+ *	@return							The distance
+ */
+Real GetDistance() {
+	declare netread Net_LibUIValidation_Distance for Mode.Teams[0] = 0.;
+	return Net_LibUIValidation_Distance;
+}
+
+// ---------------------------------- //
+/// Screen animation when taking the track thumbnail
+Void Snap() {
+	declare netwrite Net_LibUIValidation_SnapAnim for Mode.Teams[0] = -1;
+	Net_LibUIValidation_SnapAnim += 1;
+}
+
+// ---------------------------------- //
+/// Unload the library
+Void Unload() {
+	if (Mode.UIManager.UILayers.existskey(G_ValidationLayerId)) {
+		declare Removed = Mode.UIManager.UIAll.UILayers.removekey(G_ValidationLayerId);
+		Mode.UIManager.UILayerDestroy(Mode.UIManager.UILayers[G_ValidationLayerId]);
+	}
+}
+
+// ---------------------------------- //
+/** Load the library
+ *
+ * @param	_Validation				True if it's a validation run, False if it's a test run
+ */
+Void Load(Boolean _Validation) {
+	Unload();
+	
+	Buttons::Load();
+	declare LayerValidation <=> Mode.UIManager.UILayerCreate();
+	G_ValidationLayerId = LayerValidation.Id;
+	LayerValidation.ManialinkPage = Private_GetValidationML(_Validation);
+	if (!Mode.UIManager.UIAll.UILayers.existskey(G_ValidationLayerId)) Mode.UIManager.UIAll.UILayers.add(LayerValidation);
+	Buttons::Unload();
+	
+	declare netwrite Net_LibUIValidation_Visibility for Mode.Teams[0] = C_DefaultVisibility;
+	declare netwrite Net_LibUIValidation_VisibilityPopUp for Mode.Teams[0] = -1;
+	Net_LibUIValidation_Visibility = C_DefaultVisibility;
+	Net_LibUIValidation_VisibilityPopUp = -1;
+	
+	declare netwrite Net_LibUIValidation_BestTime for Mode.Teams[0] = 0;
+	declare netwrite Net_LibUIValidation_YourTime for Mode.Teams[0] = 0;
+	Net_LibUIValidation_BestTime = 0;
+	Net_LibUIValidation_YourTime = 0;
+	
+	declare netwrite Net_LibUIValidation_SnapAnim for Mode.Teams[0] = -1;
+	Net_LibUIValidation_SnapAnim = 0;
+}

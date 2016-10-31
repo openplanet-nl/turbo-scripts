@@ -1,0 +1,485 @@
+/** 
+ * Transitions library
+ */
+
+#Const Version		"2016-01-18"
+#Const ScriptName	"Transitions.Script.txt"
+
+#Include "MapUnits" as MU
+#Include "Libs/Openplanet/TMConsole/MapEditor/Macroblock.Script.txt" as Macroblock
+
+// ---------------------------------- //
+// Globales
+// ---------------------------------- //
+declare Int3[Ident] G_TransitionsPositions; ///< The position of the transition macroblock model relative to the terrain
+declare Ident[][Text] G_TerrainsTransitionsIds; ///< Ids of the transitions macroblock model for each terrain
+declare Text[] G_ClipsWithTransition; ///< Clips that can be connected to a transition
+declare CMacroblockModel[] G_Transitions; ///< Macroblock models with transitions
+
+// ---------------------------------- //
+// Functions
+// ---------------------------------- //
+// ---------------------------------- //
+// Private
+// ---------------------------------- //
+// ---------------------------------- //
+/** Save a transition
+ *
+ *	@param	_TerrainName		Name of the terrain block model that can be transitionned
+ *	@param	_TransitionModel	Macroblock model that can be used as transition
+ *	@param	_Position			The position of the transition macroblock model relative to the terrain
+ */
+Void Private_AddTransition(Text _TerrainName, CMacroblockModel _TransitionModel, Int3 _Position) {
+	if (_TerrainName == "" || _TransitionModel == Null) return;
+	
+	if (!G_TerrainsTransitionsIds.existskey(_TerrainName)) G_TerrainsTransitionsIds[_TerrainName] = Ident[];
+	G_TerrainsTransitionsIds[_TerrainName].add(_TransitionModel.Id);
+	
+	G_TransitionsPositions[_TransitionModel.Id] = _Position;
+	
+	declare ClipNames = Macroblock::GetClipNames(_TransitionModel);
+	foreach (ClipName in ClipNames) {
+		declare ConnectableClips = Macroblock::GetConnectableClips(ClipName);
+		foreach (ConnectableClip in ConnectableClips) {
+			if (!G_ClipsWithTransition.exists(ConnectableClip)) G_ClipsWithTransition.add(ConnectableClip);
+		}
+	}
+}
+
+// ---------------------------------- //
+/** Generate an origin identifier
+ *
+ *	@param	_Coord				The coordinates
+ *	@param	_Dir				The direction
+ *	@param	_ClipId				The clip id
+ *
+ *	@return						The origin identifier
+ */
+Text Private_GetOrigin(Int3 _Coord, CEditorPlugin::CardinalDirections _Dir, Integer _ClipId) {
+	return _Coord^"/"^_Dir^"/"^_ClipId;
+}
+
+// ---------------------------------- //
+// Public
+// ---------------------------------- //
+// ---------------------------------- //
+/** Return the version number of the script
+ *
+ *	@return						The version number of the script
+ */
+Text GetScriptVersion() {
+	return Version;
+}
+
+// ---------------------------------- //
+/** Return the name of the script
+ *
+ *	@return						The name of the script
+ */
+Text GetScriptName() {
+	return ScriptName;
+}
+
+// ---------------------------------- //
+/** Clear the transitions info of a macroblock model
+ *
+ *	@param	_MacroblockModel	The macroblock model to clear
+ */
+Void ClearTransitions(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return;
+	
+	declare LibTransitions_TransitionsSelected for _MacroblockModel = -1;
+	LibTransitions_TransitionsSelected = -1;
+	
+	// Don't clear empty arrays
+	declare LibTransitions_TransitionsIds for _MacroblockModel = Ident[];
+	if (LibTransitions_TransitionsIds.count > 0) {
+		declare LibTransitions_TransitionsCoords for _MacroblockModel = Int3[];
+		declare LibTransitions_TransitionsDirs for _MacroblockModel = CEditorPlugin::CardinalDirections[];
+		declare LibTransitions_TransitionsOrigins for _MacroblockModel = Integer[][Text];
+		LibTransitions_TransitionsIds.clear();
+		LibTransitions_TransitionsCoords.clear();
+		LibTransitions_TransitionsDirs.clear();
+		LibTransitions_TransitionsOrigins.clear();
+	}
+	
+	declare Removed = G_Transitions.remove(_MacroblockModel);
+}
+
+// ---------------------------------- //
+/// Clear transitions info on all macroblocks
+Void ClearAllTransitions() {
+	if (G_Transitions.count <= 0) return;
+	
+	foreach (MacroblockModel in G_Transitions) {
+		ClearTransitions(MacroblockModel);
+	}
+}
+
+// ---------------------------------- //
+/** Check if a macroblock need a transition block to be placed
+ *
+ *	@param	_MacroblockModel	The macroblock model to check
+ *	@param	_Coord				The coordinates of the macroblock
+ *	@param	_Dir				The direction of the macroblock
+ *
+ *	@return						True if the macroblock has at least one transition available, False otherwise
+ */
+Boolean SearchTransitions(CMacroblockModel _MacroblockModel, Int3 _Coord, CEditorPlugin::CardinalDirections _Dir) {
+	if (_MacroblockModel == Null) return False;
+	
+	// If the macroblock can be placed, then it doesn't need a transition
+	if (CanPlaceMacroblock_NoTerrain(_MacroblockModel, _Coord, _Dir)) return False;
+	
+	// Don't search a transition for macroblock that can't be connected to a transition anyway
+	if (!G_ClipsWithTransition.containsoneof(Macroblock::GetClipNames(_MacroblockModel))) return False;
+	
+	// Get informations about the macroblock
+	declare Variant <=> Macroblock::GetBlockModelVariant(_MacroblockModel);
+	if (Variant == Null) return False;
+	
+	//declare DisconnectedClips = MapContent::GetDisconnectedClips(_MacroblockModel, _Coord, _Dir); ///< It's cheaper to try all clips than to compute which clips are disconnected and try only them
+	declare ClipsCoords = Macroblock::GetClipCoords(_MacroblockModel, _Coord, _Dir);
+	declare ClipsDirs = Macroblock::GetClipDirs(_MacroblockModel, _Dir);
+	declare ClipsNames = Macroblock::GetClipNames(_MacroblockModel);
+	
+	declare LibTransitions_TransitionsSelected for _MacroblockModel = -1;
+	declare LibTransitions_TransitionsIds for _MacroblockModel = Ident[];
+	declare LibTransitions_TransitionsCoords for _MacroblockModel = Int3[];
+	declare LibTransitions_TransitionsDirs for _MacroblockModel = CEditorPlugin::CardinalDirections[];
+	declare LibTransitions_TransitionsOrigins for _MacroblockModel = Integer[][Text];
+	declare HasTransitions = False;
+	
+	// Check for each disconnected clip if a transition is necessary and available
+	/*foreach (ClipId in DisconnectedClips) {*/
+	foreach (ClipId => ClipCoord in ClipsCoords) {
+		declare ValidClipDir = MU::GetOpposedDir(ClipsDirs[ClipId]);
+		declare ValidClipCoord = MU::GetNeighbourCoord(ClipsCoords[ClipId], ValidClipDir);
+		declare ValidClipNames = Macroblock::GetConnectableClips(ClipsNames[ClipId]);
+		
+		// Find the transitions that can be used
+		for (Y, 0, 1) {
+			declare Block <=> GetBlock(ClipsCoords[ClipId] - <0, Y, 0>);
+			if (Block == Null || !G_TerrainsTransitionsIds.existskey(Block.BlockModel.Name)) continue; //< Transition not necessary/available, skip
+			declare TransitionsIds = G_TerrainsTransitionsIds[Block.BlockModel.Name];
+			
+			// Check each transition
+			foreach (TransitionId in TransitionsIds) {
+				declare TransitionMacroblockModel <=> MacroblockModels[TransitionId];
+				
+				// Get variant
+				declare Variant <=> Macroblock::GetBlockModelVariant(TransitionMacroblockModel);
+				if (Variant == Null) continue;
+		
+				// Data of the next macroblock
+				declare TransitionClipsNames = Macroblock::GetClipNames(TransitionMacroblockModel);
+				declare TransitionClipsOffsets = Macroblock::GetClipOffsets(TransitionMacroblockModel);
+				declare TransitionClipsDirs = Macroblock::GetClipDirs(TransitionMacroblockModel);
+				
+				foreach (TransitionClipId => TransitionClipName in TransitionClipsNames) {
+					// Skip clips that can't be connected
+					if (!ValidClipNames.exists(TransitionClipName)) continue;
+					
+					// Determine next block coord and dir
+					if (!TransitionClipsOffsets.existskey(TransitionClipId) || !TransitionClipsDirs.existskey(TransitionClipId)) continue;
+					declare TransitionDir = MU::SubDirs(ValidClipDir, TransitionClipsDirs[TransitionClipId]);
+					declare TransitionCoord = ValidClipCoord - MU::GetRotatedOffsetPositive(TransitionClipsOffsets[TransitionClipId], TransitionDir, Variant.Size);
+					
+					if (CanPlaceMacroblock_NoTerrain(TransitionMacroblockModel, TransitionCoord, TransitionDir)) {
+						declare Placed = PlaceMacroblock_NoTerrain(TransitionMacroblockModel, TransitionCoord, TransitionDir);
+						
+						// We can place a transition, save it
+						if (CanPlaceMacroblock_NoTerrain(_MacroblockModel, _Coord, _Dir)) {
+							LibTransitions_TransitionsIds.add(TransitionId);
+							LibTransitions_TransitionsCoords.add(TransitionCoord);
+							LibTransitions_TransitionsDirs.add(TransitionDir);
+							
+							declare Origin = Private_GetOrigin(_Coord, _Dir, ClipId);
+							if (!LibTransitions_TransitionsOrigins.existskey(Origin)) LibTransitions_TransitionsOrigins[Origin] = Integer[];
+							LibTransitions_TransitionsOrigins[Origin].add(LibTransitions_TransitionsIds.count - 1);
+							
+							HasTransitions = True;
+							if (!G_Transitions.exists(_MacroblockModel)) G_Transitions.add(_MacroblockModel);
+						}
+						
+						declare Removed = RemoveMacroblock_NoTerrain(TransitionMacroblockModel, TransitionCoord, TransitionDir);
+					}
+				}
+			}
+		}
+	}
+	
+	return HasTransitions;
+}
+
+// ---------------------------------- //
+/** Get an array of selectable transitions for a macroblock model
+ *	You need to use the SearchTransition() function on the macroblock first
+ *
+ *	@param	_MacroblockModel	The macroblock model to check
+ *
+ *	@return						An array containing the selectable transitions if any
+ */
+Integer[] GetTransitions(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return Integer[];
+	
+	declare Transitions = Integer[];
+	declare LibTransitions_TransitionsIds for _MacroblockModel = Ident[];
+	for (I, 0, LibTransitions_TransitionsIds.count - 1) {
+		Transitions.add(I);
+	}
+	
+	return Transitions;
+}
+
+// ---------------------------------- //
+/** Check if a macroblock has at least one transition
+ *	You need to use the SearchTransition() function on the macroblock first
+ *
+ *	@param	_MacroblockModel	The macroblock model to check
+ *
+ *	@return						True if the macroblock model has at least one transition available, False otherwise
+ */
+Boolean HasTransitions(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return False;
+	
+	declare LibTransitions_TransitionsIds for _MacroblockModel = Ident[];
+	return (LibTransitions_TransitionsIds.count > 0);
+}
+
+// ---------------------------------- //
+/** Select the transition to use for a macroblock model
+ *
+ *	@param	_MacroblockModel	The macroblock model to update
+ *	@param	_Transition			The transition to use
+ */
+Void SelectTransition(CMacroblockModel _MacroblockModel, Integer _Transition) {
+	if (_MacroblockModel == Null) return;
+	
+	declare LibTransitions_TransitionsSelected for _MacroblockModel = -1;
+	declare LibTransitions_TransitionsIds for _MacroblockModel = Ident[];
+	if (LibTransitions_TransitionsIds.count <= 0) return;
+	
+	if (LibTransitions_TransitionsIds.existskey(_Transition)) {
+		LibTransitions_TransitionsSelected = _Transition;
+	} else {
+		LibTransitions_TransitionsSelected = 0;
+	}
+}
+
+// ---------------------------------- //
+/** Get an array of selectable transitions for a macroblock model with a given coordinates, direction and clip
+ *	You need to use the SearchTransition() function on the macroblock first
+ *
+ *	@param	_MacroblockModel	The macroblock model to check
+ *	@param	_Coord				The coordinates of the macroblock model
+ *	@param	_Dir				The direction of the macroblock model 
+ *	@param	_ClipId				The clip to use on the macroblock model
+ *
+ *	@return						An array containing the selectable transitions if any
+ */
+Integer[] GetTransitions(CMacroblockModel _MacroblockModel, Int3 _Coord, CEditorPlugin::CardinalDirections _Dir, Integer _ClipId) {
+	if (_MacroblockModel == Null) return Integer[];
+	
+	declare LibTransitions_TransitionsOrigins for _MacroblockModel = Integer[][Text];
+	declare Origin = Private_GetOrigin(_Coord, _Dir, _ClipId);
+	
+	if (!LibTransitions_TransitionsOrigins.existskey(Origin)) return Integer[];
+	
+	return LibTransitions_TransitionsOrigins[Origin];
+}
+
+// ---------------------------------- //
+/** Get a transition macroblock model
+ *
+ *	@param	_MacroblockModel	The macroblock model to check
+ *	@param	_Transition			The transition to get
+ */
+CMacroblockModel GetTransitionMacroblockModel(CMacroblockModel _MacroblockModel, Integer _Transition) {
+	if (_MacroblockModel == Null) return Null;
+	
+	declare LibTransitions_TransitionsIds for _MacroblockModel = Ident[];
+	if (!LibTransitions_TransitionsIds.existskey(_Transition)) return Null;
+	
+	declare MacroblockModelId = LibTransitions_TransitionsIds[_Transition];
+	if (!MacroblockModels.existskey(MacroblockModelId)) return Null;
+	
+	return MacroblockModels[MacroblockModelId];
+}
+
+// ---------------------------------- //
+/** Get a transition coordinates
+ *
+ *	@param	_MacroblockModel	The macroblock model to check
+ *	@param	_Transition			The transition to get
+ */
+Int3 GetTransitionCoord(CMacroblockModel _MacroblockModel, Integer _Transition) {
+	if (_MacroblockModel == Null) return Int3;
+	
+	declare LibTransitions_TransitionsCoords for _MacroblockModel = Int3[];
+	if (!LibTransitions_TransitionsCoords.existskey(_Transition)) return Int3;
+	
+	return LibTransitions_TransitionsCoords[_Transition];
+}
+
+// ---------------------------------- //
+/** Get a transition direction
+ *
+ *	@param	_MacroblockModel	The macroblock model to check
+ *	@param	_Transition			The transition to get
+ */
+CEditorPlugin::CardinalDirections GetTransitionDir(CMacroblockModel _MacroblockModel, Integer _Transition) {
+	if (_MacroblockModel == Null) return CEditorPlugin::CardinalDirections::North;
+	
+	declare LibTransitions_TransitionsDirs for _MacroblockModel = CEditorPlugin::CardinalDirections[];
+	if (!LibTransitions_TransitionsDirs.existskey(_Transition)) return CEditorPlugin::CardinalDirections::North;
+	
+	return LibTransitions_TransitionsDirs[_Transition];
+}
+
+// ---------------------------------- //
+/** Check if a macroblock model is a transition
+ *
+ *	@param	_MacroblockModel	The macroblock model to check
+ *
+ *	@return						True if the macroblock model is a transition, False otherwise
+ */
+Boolean IsTransition(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return False;
+	
+	return (G_TransitionsPositions.existskey(_MacroblockModel.Id));
+}
+
+// ---------------------------------- //
+/// Unload the library
+Void Unload() {
+	G_TerrainsTransitionsIds.clear();
+	G_TransitionsPositions.clear();
+	G_ClipsWithTransition.clear();
+	
+	ClearAllTransitions();
+}
+
+// ---------------------------------- //
+/// Load the library
+Void Load() {
+	Unload();
+	
+	// Find the transition blocks for Canyon
+	if (Map.CollectionName == "Canyon") {
+		foreach (Key => MacroblockModel in MacroblockModels) {
+			switch (Macroblock::GetFullName(MacroblockModel)) {
+				case "RoadRace\\Bridges\\DirtCliffRightFree"			: Private_AddTransition("DirtCliff8", MacroblockModel, <0, 0, 0>);
+				case "RoadRace\\Bridges\\DirtCliffLeftFree"				: Private_AddTransition("DirtCliff8", MacroblockModel, <0, 0, 0>);
+				case "RoadMain\\Bridges\\DirtCliffFree"					: Private_AddTransition("DirtCliff8", MacroblockModel, <0, 0, 0>);
+				case "Tunnel\\Transitions\\DirtCliffLowFree"			: Private_AddTransition("DirtCliff8", MacroblockModel, <0, -1, 0>);
+				case "Tunnel\\Transitions\\DirtCliffLow2Free"			: Private_AddTransition("DirtCliff8", MacroblockModel, <0, -1, 0>);
+				case "Tunnel\\Transitions\\DirtCliffHighFree"			: Private_AddTransition("DirtCliff8", MacroblockModel, <0, 0, 0>);
+				
+				case "RoadRace\\Bridges\\WaterCliffRightFree"			: Private_AddTransition("WaterCliff12", MacroblockModel, <0, 0, 0>);
+				case "RoadRace\\Bridges\\WaterCliffLeftFree"			: Private_AddTransition("WaterCliff12", MacroblockModel, <0, 0, 0>);
+				case "RoadMain\\Bridges\\WaterCliffFree"				: Private_AddTransition("WaterCliff12", MacroblockModel, <0, 0, 0>);
+				case "CliffHigh\\Transitions\\CliffHighRightToMainFree"	: Private_AddTransition("WaterCliff12", MacroblockModel, <0, 0, 0>);
+				case "CliffHigh\\Transitions\\CliffHighLeftToMainFree"	: Private_AddTransition("WaterCliff12", MacroblockModel, <0, 0, 0>);
+				case "CliffHigh\\Transitions\\MainToCliffHighLeftFree"	: Private_AddTransition("WaterCliff12", MacroblockModel, <0, 0, 0>);
+				case "CliffHigh\\Transitions\\MainToCliffHighRightFree"	: Private_AddTransition("WaterCliff12", MacroblockModel, <0, 0, 0>);
+				case "CliffLow\\Transitions\\MainToCliffLowLeftFree"	: Private_AddTransition("WaterCliff12", MacroblockModel, <0, 0, 0>);
+				case "CliffLow\\Transitions\\MainToCliffLowRightFree"	: Private_AddTransition("WaterCliff12", MacroblockModel, <0, 0, 0>);
+				case "Tunnel\\Transitions\\WaterCliffHighToMainFree"	: Private_AddTransition("WaterCliff12", MacroblockModel, <0, 0, 0>);
+				case "Tunnel\\Transitions\\WaterCliffMedToMainFree"		: Private_AddTransition("WaterCliff12", MacroblockModel, <0, 0, 0>);
+				case "Tunnel\\Transitions\\WaterCliffLowToMainFree"		: Private_AddTransition("WaterCliff12", MacroblockModel, <0, 0, 0>);
+				
+				case "RoadRace\\Bridges\\HillRightFree"					: Private_AddTransition("DirtHill2", MacroblockModel, <0, 0, 0>);
+				case "RoadRace\\Bridges\\HillLeftFree"					: Private_AddTransition("DirtHill2", MacroblockModel, <0, 0, 0>);
+				case "RoadMain\\Bridges\\HillFree"						: Private_AddTransition("DirtHill2", MacroblockModel, <0, 0, 0>);
+				case "Hill\\Transitions\\HillRightToMainFree"			: Private_AddTransition("DirtHill2", MacroblockModel, <0, 0, 0>);
+				case "Hill\\Transitions\\HillLeftToMainFree"			: Private_AddTransition("DirtHill2", MacroblockModel, <0, 0, 0>);
+			}
+			
+			if (Key % 100 == 0) yield;
+		}
+	} else if (Map.CollectionName == "Valley") {
+		foreach (Key => MacroblockModel in MacroblockModels) {
+			switch (Macroblock::GetFullName(MacroblockModel)) {
+				case "Castle\\Transitions\\CastleBridgeToRoad"		: Private_AddTransition("LakeShore", MacroblockModel, <0, 0, 0>);
+				case "RoadDirt\\Obstacles\\CrossRiverLeft"			: Private_AddTransition("LakeShore", MacroblockModel, <0, 0, 0>);
+				case "RoadDirt\\Obstacles\\CrossRiveRight"			: Private_AddTransition("LakeShore", MacroblockModel, <0, 0, 0>);
+				case "RoadDirt\\Roads\\RiverCrossStraight"			: Private_AddTransition("LakeShore", MacroblockModel, <0, 0, 0>);
+				case "RoadDirt\\Roads\\Diag2x2Pond"					: Private_AddTransition("LakeShore", MacroblockModel, <0, 0, 0>);
+				case "RoadDirt\\Roads\\Diag2x2PondMirror"			: Private_AddTransition("LakeShore", MacroblockModel, <0, 0, 0>);
+				case "RoadDirt\\Roads\\Diag2x2Lake"					: Private_AddTransition("LakeShore", MacroblockModel, <0, 0, 0>);
+				case "RoadDirt\\Roads\\Diag2x2LakeMirror"			: Private_AddTransition("LakeShore", MacroblockModel, <0, 0, 0>);
+				
+				case "RoadDirt\\Transitions\\ForestLargeToRoadDirt"	: Private_AddTransition("GrassToForest", MacroblockModel, <0, 0, 0>);
+				
+				case "Road2Way\\Bridges\\GrassHills"				: Private_AddTransition("GrassHill1", MacroblockModel, <0, 0, 0>);
+				case "Road4Way\\Bridges\\GrassHills"				: Private_AddTransition("GrassHill1", MacroblockModel, <0, 0, 0>);
+				
+				case "Tunnel\\Transitions\\4WayGrassCliff2"			: Private_AddTransition("GrassCliff2", MacroblockModel, <0, 0, 0>);
+				case "Tunnel\\Transitions\\GrassCliff2"				: Private_AddTransition("GrassCliff2", MacroblockModel, <0, 0, 0>);
+				case "Road2Way\\Bridges\\GrassCliff2"				: Private_AddTransition("GrassCliff2", MacroblockModel, <0, 0, 0>);
+				case "Road4Way\\Bridges\\GrassCliff2"				: Private_AddTransition("GrassCliff2", MacroblockModel, <0, 0, 0>);
+				
+				case "Tunnel\\Transitions\\4WayGrassCliff8"			: Private_AddTransition("GrassCliff8", MacroblockModel, <0, 0, 0>);
+				case "Tunnel\\Transitions\\4WayGrassCliff8_1"		: Private_AddTransition("GrassCliff8", MacroblockModel, <0, 0, 0>);
+				case "Tunnel\\Transitions\\4WayGrassCliff8_2"		: Private_AddTransition("GrassCliff8", MacroblockModel, <0, 0, 0>);
+				case "Tunnel\\Transitions\\4WayGrassCliff8_3"		: Private_AddTransition("GrassCliff8", MacroblockModel, <0, 0, 0>);
+				case "Tunnel\\Transitions\\GrassCliff8"				: Private_AddTransition("GrassCliff8", MacroblockModel, <0, 0, 0>);
+				case "Tunnel\\Transitions\\GrassCliff8_1"			: Private_AddTransition("GrassCliff8", MacroblockModel, <0, 0, 0>);
+				case "Tunnel\\Transitions\\GrassCliff8_2"			: Private_AddTransition("GrassCliff8", MacroblockModel, <0, 0, 0>);
+				case "Tunnel\\Transitions\\GrassCliff8_3"			: Private_AddTransition("GrassCliff8", MacroblockModel, <0, 0, 0>);
+				case "Road2Way\\Bridges\\GrassCliff8"				: Private_AddTransition("GrassCliff8", MacroblockModel, <0, 0, 0>);
+				case "Road4Way\\Bridges\\GrassCliff8"				: Private_AddTransition("GrassCliff8", MacroblockModel, <0, 0, 0>);
+			}
+			
+			if (Key % 100 == 0) yield;
+		}
+	} else if (Map.CollectionName == "Stadium") {
+		foreach (Key => MacroblockModel in MacroblockModels) {
+			switch (Macroblock::GetFullName(MacroblockModel)) {
+				case "RoadDirt\\Slopes\\StraightShort"		: Private_AddTransition("StadiumDirtHill", MacroblockModel, <0, 0, 0>);
+				case "RoadDirt\\Slopes\\StraightLong"		: Private_AddTransition("StadiumDirtHill", MacroblockModel, <0, 0, 0>);
+				case "RoadDirt\\Slopes\\StraightWave"		: Private_AddTransition("StadiumDirtHill", MacroblockModel, <0, 0, 0>);
+				case "RoadDirt\\Slopes\\CurveRight"			: Private_AddTransition("StadiumDirtHill", MacroblockModel, <0, 0, 0>);
+				case "RoadDirt\\Slopes\\CurveLeft"			: Private_AddTransition("StadiumDirtHill", MacroblockModel, <0, 0, 0>);
+				
+				case "RoadDirt\\Obstacles\\FenceCross01"	: Private_AddTransition("StadiumDirtBorder", MacroblockModel, <0, 0, 0>);
+			}
+			
+			if (Key % 100 == 0) yield;
+		}
+	} else if (Map.CollectionName == "Lagoon") {
+		foreach (Key => MacroblockModel in MacroblockModels) {
+			switch (Macroblock::GetFullName(MacroblockModel)) {
+				case "RoadMain\\Transitions\\BridgeBeach"					: Private_AddTransition("Beach", MacroblockModel, <0, 0, 0>);
+				
+				case "RoadMain\\Transitions\\BridgeCliffLand"				: Private_AddTransition("LandCliff12", MacroblockModel, <0, 0, 0>);
+				case "Tunnel\\Transitions\\TunnelToRoadMainCliffGround10"	: Private_AddTransition("LandCliff12", MacroblockModel, <0, 0, 0>);
+				case "Tunnel\\Transitions\\TunnelToRoadMainCliffGround8"	: Private_AddTransition("LandCliff12", MacroblockModel, <0, 0, 0>);
+				case "Tunnel\\Transitions\\TunnelToRoadMainCliffGround6"	: Private_AddTransition("LandCliff12", MacroblockModel, <0, 0, 0>);
+				case "Tunnel\\Transitions\\TunnelToRoadMainCliffGround4"	: Private_AddTransition("LandCliff12", MacroblockModel, <0, 0, 0>);
+				case "Tunnel\\Transitions\\TunnelToRoadMainCliffGround2"	: Private_AddTransition("LandCliff12", MacroblockModel, <0, 0, 0>);
+				case "Tunnel\\Transitions\\TunnelToRoadMainCliffGround0"	: Private_AddTransition("LandCliff12", MacroblockModel, <0, 0, 0>);
+				
+				case "RoadMain\\Transitions\\BridgeCliffWater"				: Private_AddTransition("SeaCliff13", MacroblockModel, <0, 0, 0>);
+				case "Tunnel\\Transitions\\TunnelToRoadMainCliffWater11"	: Private_AddTransition("SeaCliff13", MacroblockModel, <0, 0, 0>);
+				case "Tunnel\\Transitions\\TunnelToRoadMainCliffWater9"		: Private_AddTransition("SeaCliff13", MacroblockModel, <0, 0, 0>);
+				case "Tunnel\\Transitions\\TunnelToRoadMainCliffWater7"		: Private_AddTransition("SeaCliff13", MacroblockModel, <0, 0, 0>);
+				case "Tunnel\\Transitions\\TunnelToRoadMainCliffWater5"		: Private_AddTransition("SeaCliff13", MacroblockModel, <0, 0, 0>);
+				case "Tunnel\\Transitions\\TunnelToRoadMainCliffWater3"		: Private_AddTransition("SeaCliff13", MacroblockModel, <0, 0, 0>);
+				case "Tunnel\\Transitions\\TunnelToRoadMainCliffWater1"		: Private_AddTransition("SeaCliff13", MacroblockModel, <0, 0, 0>);
+				
+				case "RoadMain\\Transitions\\BridgeHill6"					: Private_AddTransition("LandHill6", MacroblockModel, <0, 0, 0>);
+				case "Tunnel\\Transitions\\TunnelToRoadMainHill64"			: Private_AddTransition("LandHill6", MacroblockModel, <0, 0, 0>);
+				case "Tunnel\\Transitions\\TunnelToRoadMainHill62"			: Private_AddTransition("LandHill6", MacroblockModel, <0, 0, 0>);
+				case "Tunnel\\Transitions\\TunnelToRoadMainHill61"			: Private_AddTransition("LandHill6", MacroblockModel, <0, 0, 0>);
+				
+				case "RoadMain\\Transitions\\BridgeHill"					: Private_AddTransition("LandHill", MacroblockModel, <0, 0, 0>);
+				case "RoadMain\\Slopes\\SlopeHill"							: Private_AddTransition("LandHill", MacroblockModel, <0, 0, 0>);
+				case "Tunnel\\Transitions\\TunnelToRoadMainSlope"			: Private_AddTransition("LandHill", MacroblockModel, <0, 0, 0>);
+			}
+			
+			if (Key % 100 == 0) yield;
+		}
+	}
+}

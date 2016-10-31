@@ -1,0 +1,150 @@
+#Include "TextLib"			as TextLib
+#Include "Libs/Openplanet/TMConsole/Menu/MenuLayers.Script.txt"								as Layers
+#Include "Libs/Openplanet/TMConsole/Logger.Script.txt"										as Logger
+#Include "Libs/Openplanet/TMConsole/Live/LiveHelpers.Script.txt" 							as LiveHelpers
+#Include "Libs/Openplanet/TMConsole/Live/LiveAuth.Script.txt"								as LiveAuth
+#Include "Libs/Openplanet/TMConsole/PopUpManager.Script.txt"									as PopUpManager
+#Include "Libs/Openplanet/TMConsole/Menu/Controller/TrackController.Script.txt"				as TrackController
+#Include "Libs/Openplanet/TMConsole/Menu/Controller/UserController.Script.txt"				as UserController
+#Include "Libs/Openplanet/TMConsole/Menu/Controller/OnlinePrivilegeController.Script.txt"	as OnlinePrivilegeController
+#Include "Libs/Openplanet/TMConsole/Menu/Controller/PrivilegeController.Script.txt"			as PrivilegeController
+#Include "Libs/Openplanet/TMConsole/Menu/PageHandlers/ConnectionHandler.Script.txt"			as ConnectionHandler
+
+declare Boolean G_MustUploadTrack;
+declare Text	G_TrackToUpload;
+
+Void WarnNotEnoughParams(CMlAppEvent _Event) {
+	Logger::Warn("[Menucontroller] event "^_Event.CustomEventType^": not enough params ["^_Event.CustomEventData^"]");
+}
+
+Void RequestUploadedTracks(Integer _Offset, Integer _Length) {
+	TrackController::GetUploadedTracks("TrackbuilderWorkshop", _Offset, _Length);
+}
+
+Void RequestFavoriteAuthorsTracks(Integer _Offset, Integer _Length) {
+	TrackController::GetFavoriteAuthorsTracks("TrackbuilderWorkshop", _Offset, _Length);
+}
+
+Void RequestFavoriteTracks(Integer _Offset, Integer _Length) {
+	TrackController::GetFavoriteTracks("TrackbuilderWorkshop", _Offset, _Length);
+}
+
+Void RequestAllTracks(Integer _Offset, Integer _Length) {
+	TrackController::GetAllTracks("TrackbuilderWorkshop", _Offset, _Length);
+}
+
+Void RequestGetBuddies() {
+	UserController::Layer_GetBuddies("TrackbuilderWorkshop");
+}
+
+Void RequestBuddiesTracks(Integer _Offset, Integer _Length, Text[] _BuddiesLoginsToUse) {
+	TrackController::GetBuddiesTracks("TrackbuilderWorkshop", _Offset, _Length, _BuddiesLoginsToUse);
+}
+
+Void UploadTrack()
+{
+	G_MustUploadTrack = False;
+	wait(DataMgr.Ready);
+	DataMgr.UploadUserFile(LiveHelpers::GetAPIUrl()^"me/maps", G_TrackToUpload, "", LiveAuth::Auth_GetLinearizedHeader());
+	wait(DataMgr.Ready);
+	G_TrackToUpload = "";
+	declare CUILayer TrackbuilderWorkshop = Layers::Get("TrackbuilderWorkshop");
+	LayerCustomEvent(TrackbuilderWorkshop, "TrackUploaded", Text[]);
+}
+
+Void Loop() {
+	if (G_MustUploadTrack)
+		UploadTrack();
+	
+	if (ExternalRequest_Type == "RecheckUserPrivilege") {
+		ExternalRequest_Clear ();
+		declare CUILayer TrackbuilderWorkshop = Layers::Get("TrackbuilderWorkshop");
+		LayerCustomEvent(TrackbuilderWorkshop, "RecheckPrivilege", [TextLib::ToText(ConnectionHandler::CheckIsConnected())]);
+	}
+	
+	foreach(Event in PendingEvents) {
+		if(Event.Type != CMlAppEvent::EType::LayerCustomEvent) continue;
+		switch(Event.CustomEventType) {
+			case "TrackbuilderWorkshop_RequestUploadedTracks" : {
+				RequestUploadedTracks(TextLib::ToInteger(Event.CustomEventData[0]), TextLib::ToInteger(Event.CustomEventData[1]));
+			}
+			case "TrackbuilderWorkshop_RequestFavoriteTracks" : {
+				log("favtracksrequest");
+				RequestFavoriteTracks(TextLib::ToInteger(Event.CustomEventData[0]), TextLib::ToInteger(Event.CustomEventData[1]));
+			}
+			case "TrackbuilderWorkshop_RequestFavoriteAuthorsTracks" : {
+				RequestFavoriteAuthorsTracks(TextLib::ToInteger(Event.CustomEventData[0]), TextLib::ToInteger(Event.CustomEventData[1]));
+			}
+			case "TrackbuilderWorkshop_RequestAllTracks" : {
+				RequestAllTracks(TextLib::ToInteger(Event.CustomEventData[0]), TextLib::ToInteger(Event.CustomEventData[1]));
+			}
+			case "TrackbuilderWorkshop_RequestBuddiesTracks" : {
+				RequestBuddiesTracks(TextLib::ToInteger(Event.CustomEventData[0]), TextLib::ToInteger(Event.CustomEventData[1]), TextLib::Split(",", Event.CustomEventData[2]));
+			}
+			case "TrackbuilderWorkshop_RequestRandomTracks" : {
+				TrackController::GetRandomTracks("TrackbuilderWorkshop", TextLib::ToInteger(Event.CustomEventData[0]), TextLib::ToInteger(Event.CustomEventData[1]), Event.CustomEventData[2]);
+			}
+			case "TrackbuilderWorkshop_UploadUserFile" : {
+				if (Event.CustomEventData.count < 1) {
+					WarnNotEnoughParams(Event);
+					continue;
+				}
+				G_MustUploadTrack = True;
+				G_TrackToUpload = Event.CustomEventData[0];
+			}
+			case "TrackbuilderWorkshop_Check_DownloadUgc" : {
+				OnlinePrivilegeController::CheckForAllUsers_DownloadUgc("TrackbuilderWorkshop");
+			}
+			case "TrackbuilderWorkshop_CheckTargeted_ViewUgc" : {
+				OnlinePrivilegeController::CheckTargetedForAllUsers_ViewUgc("TrackbuilderWorkshop", TextLib::Split(",", Event.CustomEventData[0]));
+			}
+			case "TrackbuilderWorkshop_CheckMasterServerConnection" : {
+				declare CUILayer TrackbuilderWorkshop = Layers::Get("TrackbuilderWorkshop");
+				LayerCustomEvent(TrackbuilderWorkshop, "MSConnectionStatus", [TextLib::ToText(ConnectionHandler::CheckIsConnected())]);
+				log("checkingIsConnected "^ConnectionHandler::CheckIsConnected());
+			}
+			case "RequestGetBuddies" : RequestGetBuddies();
+			case "RequestReconnection" : ConnectionHandler::AskConnectionToMasterServer("TrackbuilderWorkshop", Event.CustomEventData[0]);
+			case "GetIsLimitedToCanyon" : {
+				declare Boolean IsLimitedToCanyon = ManiaPlanet.TmTurbo_IsPartialInstall || ManiaPlanet.TmTurbo_IsDemo;
+				declare CUILayer TrackbuilderWorkshop = Layers::Get("TrackbuilderWorkshop");
+				LayerCustomEvent(TrackbuilderWorkshop, "SetIsLimitedToCanyon", [TextLib::ToText(IsLimitedToCanyon)]);
+			}
+			case "RemoveFavorite" : {
+				if (Event.CustomEventData[2] == "True") //RemoveFavoriteAuthor
+					TrackController::SetAuthorsAsFavorite("TrackbuilderWorkshop", Event.CustomEventData[1], Event.CustomEventData[0], False);
+				else
+					TrackController::SetTracksAsFavorite("TrackbuilderWorkshop", Event.CustomEventData[0], False);
+			}
+			case "AddFavorite" : {
+				TrackController::SetTracksAsFavorite("TrackbuilderWorkshop", Event.CustomEventData[0], True);
+			}
+			case "AddFavoriteAuthor" : {
+				TrackController::SetAuthorsAsFavorite("TrackbuilderWorkshop", Event.CustomEventData[1], Event.CustomEventData[0], True);
+			}
+			case "PopUpAuthorAdded" : {
+				PopUpManager::AddPopUp2(0, _("The author of the track has been successfully added to your favorite authors!"), "", False);
+			}
+			case "PopUpAuthorRemoved" : {
+				PopUpManager::AddPopUp2(0, _("The author of the track has been successfully removed from your favorite authors!"), "", False);
+			}
+			case "PopUpTrackAdded" : {
+				PopUpManager::AddPopUp2(0, _("The track has been successfully added to your favorite tracks!"), "", False);
+			}
+			case "PopUpTrackRemoved" : {
+				PopUpManager::AddPopUp2(0, _("The track has been successfully removed from your favorite tracks!"), "", False);
+			}
+			case "GetIsUbisoftClub" : {
+				declare CUILayer TrackbuilderWorkshop = Layers::Get("TrackbuilderWorkshop");
+				LayerCustomEvent(TrackbuilderWorkshop, "SetIsUbisoftClub", [TextLib::ToText(PrivilegeController::IsUbisoftClub(False, ""))]);
+			}
+			case "GetIsUbisoftClubForNextTab" : {
+				declare Boolean IsUbisoftClub = PrivilegeController::IsUbisoftClub(True, "TrackbuilderWorkshop");
+				declare CUILayer TrackbuilderWorkshop = Layers::Get("TrackbuilderWorkshop");
+				if (IsUbisoftClub)
+					LayerCustomEvent(TrackbuilderWorkshop, Event.CustomEventData[0], Text[]);
+				LayerCustomEvent(TrackbuilderWorkshop, "SetIsUbisoftClub", [TextLib::ToText(IsUbisoftClub)]);
+			}
+		}
+	}
+}

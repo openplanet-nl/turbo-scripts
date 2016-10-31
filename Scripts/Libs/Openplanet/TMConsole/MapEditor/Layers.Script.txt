@@ -1,0 +1,118 @@
+/** 
+ * Layers library.
+ */
+
+#Const Version		"2015-04-14"
+#Const ScriptName	"Layers.Script.txt"
+
+// ---------------------------------- //
+// Globales
+// ---------------------------------- //
+declare Ident[Text] G_LibLayers_LayersIds;
+
+// ---------------------------------- //
+// Functions
+// ---------------------------------- //
+// ---------------------------------- //
+// Public
+// ---------------------------------- //
+// ---------------------------------- //
+/** Return the version number of the script
+ *
+ *	@return						The version number of the script
+ */
+Text GetScriptVersion() {
+	return Version;
+}
+
+// ---------------------------------- //
+/** Return the name of the script
+ *
+ *	@return						The name of the script
+ */
+Text GetScriptName() {
+	return ScriptName;
+}
+
+// ---------------------------------- //
+/** Create a layer
+ *
+ *	@param	_Name				The name of the layer to create
+ *
+ *	@return						The created layer
+ */
+CUILayer Create(Text _Name) {
+	declare CUILayer Layer;
+	
+	Layer <=> UILayerCreate();
+	G_LibLayers_LayersIds[_Name] = Layer.Id;
+	
+	return Layer;
+}
+
+// ---------------------------------- //
+/** Destroy the layer with the specified id
+ *
+ *	@param	_Id					The id of the layer to destroy
+ */
+Void Destroy(Ident _Id) {
+	if (UILayers.existskey(_Id)) UILayerDestroy(UILayers[_Id]);
+	declare Removed = G_LibLayers_LayersIds.remove(_Id);
+}
+
+// ---------------------------------- //
+/** Destroy the layer with the specified name
+ *
+ *	@param	_Name				The name of the layer to destroy
+ */
+Void Destroy(Text _Name) {
+	if (!G_LibLayers_LayersIds.existskey(_Name)) return;
+	Destroy(G_LibLayers_LayersIds[_Name]);
+}
+
+// ---------------------------------- //
+/// Destroy all the layers created by the plugin
+Void DestroyAll() {
+	foreach (LayerId in G_LibLayers_LayersIds) Destroy(LayerId);
+}
+
+// ---------------------------------- //
+/** Get a layer from its name
+ *
+ *	@param	_Name				The name of the layer to get
+ *
+ *	@return						The layer if found, Null otherwise
+ */
+CUILayer Get(Text _Name) {
+	if (!G_LibLayers_LayersIds.existskey(_Name)) return Null;
+	declare LayerId = G_LibLayers_LayersIds[_Name];
+	if (!UILayers.existskey(LayerId)) return Null;
+	
+	return UILayers[LayerId];
+}
+
+// ---------------------------------- //
+/** Get the local page of a layer
+ *
+ *	@param	_Name				The name of the layer to get
+ *
+ *	@return						The page if found, Null otherwise
+ */
+CMlPage GetPage(Text _Name) {
+	declare Layer <=> Get(_Name);
+	if (Layer == Null) return Null;
+	
+	return Layer.LocalPage;
+}
+
+// ---------------------------------- //
+/// Unload the library
+Void Unload() {
+	DestroyAll();
+}
+
+// ---------------------------------- //
+/// Load the library
+Void Load() {
+	Unload();
+}

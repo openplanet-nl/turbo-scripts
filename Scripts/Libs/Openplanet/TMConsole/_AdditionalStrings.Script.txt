@@ -1,0 +1,39 @@
+#Const PS4TRC_TrophySetDetails 	_("Trackmania Turbo Trophy Set")
+#Const AchvtDirtyHandsHackFix	_("Build and save a track in advanced mode")
+
+#Const Browser_Loading 			_("Retrieving rooms. Please wait.")
+#Const NoSpace_Create 			_("You have no more space to create tracks. You must delete or upload some tracks before creating new ones.")
+#Const NoSpace_Edit 			_("You have no more space to edit tracks. You must delete or upload some tracks before editing some.")
+// L16N refers to Tracks ("Favorites Tracks")
+#Const TracksFavoriteTab_Name 	_("Favorites")
+#Const TracksOnlineTab_Name 	_("Online Tracks")
+// L16N refers to Tracks ("Get more Tracks")
+#Const TracksOnlineTab_More 	_("Get More")
+
+//L16N. Infinitive. Action for the player to change his nickname during game
+#Const HotseatRounds_ChangeName	_("Change Name")
+#Const ENDOfONEHOURTRIAL 		_("Your free one-hour online trial is expired.")
+//L16N. Infinitive. Unmute player in voice chat in scores table
+#Const UNMUTEPLAYER				_("Unmute")
+
+#Const INVITATION_2ND_PLAYER	_("Invitations can only be used by the user who started the game")
+#Const PLEASEWAIT				_("Please wait...")
+
+#Const LIGHT_SETTING			_("|Setting to chose the quality of lights computation|Trackbuilder lighting quality")
+#Const LIGHT_SETTING_FAST		_("|Setting to chose the quality of lights computation|Fast")
+#Const LIGHT_SETTING_NICE		_("|Setting to chose the quality of lights computation|Nice")
+#Const LIGHT_SETTING_ASK		_("|Setting to chose the quality of lights computation|Always ask")
+#Const LIGHT_SETTING_QUESTION	_("|Setting to chose the quality of lights computation|Lighting quality")
+
+#Const BETA_UPLAY_NEEDED		_("A Uplay account is required to access the beta.")
+#Const BETA_CONNECTION_NEEDED	_("You have to be connected to access the beta.")
+#Const BETA_CONNECTION_REQUIRED	_("Connection Required")
+
+#Const KEYBOARD_DEF_CTRLS		_("Keyboard default controls")
+
+#Const UPLAY_FAIL_SDK			_("Uplay PC has stopped running. You should close and restart your game to prevent any loss of functionality.")
+#Const UPLAY_FAIL_SERVICES 		_("Uplay PC is temporarily unavailable. We’ll reconnect you as soon as possible. The action you are currently attempting could not be completed.")
+#Const UPLAY_FAIL_SIGNEDOUT		_("You have been signed out of Uplay. This title requires access to some Uplay services. Please quit the game and sign-in to Uplay.")
+#Const UPLAY_FAIL_SESSION		_("Your Uplay log in details are not correct. You have been signed out of Uplay. This title requires access to some Uplay services. Please quit the game and sign-in to Uplay.")
+#Const UPLAY_FAIL_GAMESERVERS	_("Online Services are temporarily unavailable. We’ll reconnect you as soon as possible. The action you are currently attempting could not be completed.")
+#Const UPLAY_FAIL_NOTINSTALLED	_("Uplay PC is not currently installed. Your game needs access to some Uplay services. You can download the Uplay PC installer from Uplay.com.")

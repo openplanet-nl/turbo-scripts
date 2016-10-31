@@ -1,0 +1,530 @@
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//	WARNING
+///////////////
+//
+//	This file is deprecated
+//
+//	Cf. LBServerBrowser for the current implementation of the ServerBrowserFilters frame.
+//
+//
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#Include "Libs/Openplanet/Manialink2.Script.txt"								as Manialink
+#Include "Libs/Openplanet/TMConsole/FontManager.Script.txt"					as Font
+#Include "Libs/Openplanet/UIPadButtons.Script.txt"							as LibUIButtons
+#Include "Libs/Openplanet/TMConsole/Menu/LibOnlineGameplay.Script.txt"		as GamePlay
+
+#Const C_ImgBase 	"file://Media/Manialinks/Nadeo/TMConsole/Images/"
+#Const C_ImgBase2	"file://Media/Images/TMConsole/Ingame/"
+
+
+#Const C_FiltersCount 5
+
+Text Build(Text _ShowAnim, Text _HideAnim) {
+	
+	declare Text[][] AllFilters;
+	
+	AllFilters.add(GamePlay::GetMaxPlayers());
+	AllFilters.add(GamePlay::GetGameModesDisplayNames());
+	AllFilters.add(GamePlay::GetRoomEnvironments());
+	AllFilters.add(GamePlay::GetRoomStyles());
+	AllFilters.add(GamePlay::GetDurations());
+	
+	//IMAGES
+	declare Text 	IMGSlotSmallBg           = C_ImgBase2^"slot-medium-bg.dds";
+	declare Text 	IMGSlotSmallFg           = C_ImgBase2^"slot-medium-fg.dds";
+	declare Text 	IMGSlotMediumBg          = C_ImgBase2^"slot-medium-bg.dds";
+	declare Text 	IMGSlotMediumFg          = C_ImgBase^"slot-medium-fg2.dds";
+	declare Text 	IMGSlotBigBg             = "file://Media/_ERR_.dds";	//C_ImgBase^"slot-big-bg2.dds";
+	declare Text 	IMGSlotBigFg             = C_ImgBase^"slot-big-fg2.dds";
+	declare Text 	IMGMenuBg                = "file://Media/_ERR_.dds";	//C_ImgBase2^"menu-bg-1.png";
+	
+	declare Text 	IMGBackground            = "file://Media/_ERR_.dds";	//C_ImgBase^"PlaceHolder/small-lago1.jpg";
+
+	declare Integer Platform   = LibUIButtons::GetPlatform();
+	declare Text 	IMGSelect  = LibUIButtons::GetImage(Platform, CManiaAppEvent::EMenuNavAction::Select);
+	declare Text 	IMGCancel  = LibUIButtons::GetImage(Platform, CManiaAppEvent::EMenuNavAction::Cancel);
+	declare Text 	IMGAction2 = LibUIButtons::GetImage(Platform, CManiaAppEvent::EMenuNavAction::Action2);
+	
+	//SIZES
+	declare Real	SM_SizeTotalX            = 200.0;
+	declare Real	SM_SizeFilterX			 = SM_SizeTotalX / C_FiltersCount;
+	declare Real	SM_SizeOngletInfoX       = 17.5; //c'est la largeur de L1/R1 (je suppose)
+	declare Real	SM_SizeY                 = 8.27;
+	declare Real	SM_Separator             = SM_SizeY * 0.095;
+	declare Real	SM_SizeYElement          = SM_SizeY - SM_Separator;
+
+	//POSITIONS
+	declare Real	SM_PosY                  = 60.;	
+	declare Real	PositionFirstQuadY       = 36.3;
+	
+	/////////////////////////
+	// FRAMEMODELS
+	/////////////////////////
+	declare MLText = """
+	<framemodel id="FrameModel_Landmark">
+		<label 
+			id="Label_LandmarkName"
+			posn="0 0 1"
+			halign="center" 
+			valign="center" 
+			sizen="30 7"
+			textcolor="fff"
+			text=""
+		/>
+	</framemodel>
+	
+	<framemodel id="Frame_SubMenu">
+		<quad halign="center" valign="center" sizen="{{{SM_SizeFilterX}}} {{{SM_SizeYElement}}}" image="{{{IMGSlotMediumBg}}}" opacity="1.0"
+		 posn="0 0 2" />
+	<quad halign="center" valign="center" sizen="{{{SM_SizeFilterX}}} {{{SM_SizeYElement}}}" image="{{{IMGSlotMediumFg}}}" opacity="1.0"
+		 posn="0 0 4" />
+	<quad halign="center" valign="center" sizen="{{{SM_SizeFilterX}}} {{{SM_SizeY}}}" image="{{{IMGMenuBg}}}" opacity="1."
+		 posn="0 0 1" />
+	</framemodel>
+	
+	<framemodel id="FrameModel_InputInfo">
+		<quad halign="center" valign="bottom" sizen="50 {{{SM_SizeYElement}}}"
+		 image="{{{IMGSlotSmallBg}}}"   posn="0 0 6" opacity="1."/>
+		<label halign="right" valign="center" posn="12 4.5 7" textcolor="ddd" text="BACK"
+		 id="Label_Name" textsize="3."  sizen="34"  opacity="1.0"/>
+		<quad halign="center" valign="bottom" sizen="50 {{{SM_SizeYElement}}}"
+		 image="{{{IMGSlotSmallFg}}}"  posn="0 0 8" opacity="1.0"/>
+		<quad halign="center" valign="center" sizen="6 6"
+		 id="Quad_Icon" image=""  posn="18.5 4 7" opacity="1.0"/>
+	</framemodel>
+	
+	<framemodel id="FrameModel_FilterValue">
+		<frameinstance modelid="Frame_SubMenu" />
+		<label id="label_filtervalue"  halign="left"  valign="center" posn="{{{- SM_SizeFilterX * 0.5 + 2}}} 0.5 3" sizen="{{{SM_SizeFilterX - 4}}}" />
+	</framemodel>
+	
+	<framemodel id="FrameModel_FilterChoice">
+		<frameinstance modelid="Frame_SubMenu" />
+		<quad  id="button_checkfilter" halign="left"   valign="center" posn="{{{- SM_SizeFilterX * 0.5 + 2}}} 0 3" sizen="{{{SM_SizeYElement * 0.8}}} {{{SM_SizeYElement * 0.8}}}" style="Icons64x64_1" substyle="Check" />
+		<label id="label_filtername"  halign="left"  valign="center" posn="{{{- SM_SizeFilterX * 0.5 + 4 + SM_SizeYElement * 0.8}}} 0.5 3" sizen="100" />
+	</framemodel>
+
+	/////////////////////////
+	// MANIALINK
+	/////////////////////////
+	<frame id="Frame_General" posn="0 0 25">
+		<quad 	
+			id="Quad_BackGround"
+			posn="0 0 -3"
+			halign="center" 
+			valign="center" 
+			sizen="320 180"
+			image="{{{IMGBackground}}}"
+		/>
+		<quad halign="center" valign="center" sizen="{{{SM_SizeFilterX}}} {{{SM_SizeYElement}}}" bgcolor="900" id="Quad_FilterSelector" opacity="1.0" posn="0 0 2.5" hidden="1"/>
+	""";
+			
+	/////////////////////////
+	// TITLE
+	/////////////////////////
+	MLText^="""
+	<frame id="Frame_Title" posn="0 -15.64 0">
+		<quad halign="center" valign="bottom" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeY*2.}}}"
+		 image="{{{IMGSlotBigFg}}}"                  posn="0 {{{SM_PosY-2.8}}} 7" opacity="1."/>
+		<quad  halign="center" valign="bottom" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeY*2.}}}"
+		 image="{{{IMGSlotBigBg}}}"                  posn="0 {{{SM_PosY-2.8}}} 5" opacity="1."/>
+		<label halign="left" valign="center"  textfont="{{{Font::GetFontName("Title")}}}" posn="{{{-(SM_SizeTotalX-2)/2.}}}  {{{SM_PosY + SM_SizeY - 1.}}} 6" textcolor="fff"
+		 id="Label_Title" textsize="13." text="{{{_("Filters selection")}}}" sizen="{{{SM_SizeTotalX-2.}}}"  opacity="1.0"/>
+	</frame>
+	
+	/////////////////////////
+	// ONGLETS
+	/////////////////////////		
+	//BG + highlight + L1R1
+	<frame id="Frame_Onglet" posn="0 {{{PositionFirstQuadY}}} -3">
+		<quad halign="center" valign="center" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeYElement*0.95}}}" image="{{{IMGSlotMediumFg}}}"  
+		 posn="0 0 4" opacity="1.0"/>
+
+		<quad halign="left" valign="center" sizen="{{{SM_SizeTotalX/C_FiltersCount}}} {{{SM_SizeYElement*0.95}}}"        
+		 posn="{{{-SM_SizeTotalX/2.}}} 0 3" bgcolor="13d" opacity="1.0" id="OngletFocus" />
+
+		<quad halign="center" valign="center" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeYElement*0.95}}}" image="{{{IMGSlotMediumBg}}}"
+		 posn="0 0 2" opacity="1.0" />
+
+		<label halign="center" valign="center"  posn="{{{-(SM_SizeTotalX + SM_SizeOngletInfoX) / 2.}}} 0.5 3" textcolor="ddd" text="L1"
+		 id="Label_PageDown" textsize="3." sizen="{{{SM_SizeOngletInfoX}}}"  opacity="1.0"/>
+		<label halign="center" valign="center"  posn="{{{(SM_SizeTotalX + SM_SizeOngletInfoX) / 2.}}} 0.5 3" textcolor="ddd" text="R1"
+		 id="Label_PageUp" textsize="3." sizen="{{{SM_SizeOngletInfoX}}}"  opacity="1.0"/>
+	</frame>
+	""";
+	
+	//Tabs
+	for(I, 0, C_FiltersCount-1) {
+		declare Real PosnX = - SM_SizeTotalX / 2 + (I + 0.5) * ((SM_SizeTotalX)/C_FiltersCount); 
+		MLText ^= """
+		<frameinstance 
+			modelid="FrameModel_Landmark" 
+			posn="{{{PosnX}}} {{{PositionFirstQuadY+0.5}}} 0"
+			halign="center" 
+			valign="center" 
+			id="FrameInstance_Landmark{{{I}}}" 
+		/>
+		<frameinstance id="FrameInstance_FilterValue{{{I}}}" modelid="FrameModel_FilterValue" posn="{{{PosnX}}} {{{PositionFirstQuadY - SM_SizeY}}}" />
+		""";
+	}
+	
+	/////////////////////////
+	// INPUT INFOS
+	/////////////////////////
+	MLText ^= """<frame id="Frame_InputInfos" posn="0 -74.8 7">
+	""";
+	for(I, 0, 2) {
+		declare Real PosnX = 104. - I*57.4;
+		MLText ^= """
+		<frameinstance 
+			modelid="FrameModel_InputInfo" 
+			posn="{{{PosnX}}} 0 0"
+			halign="center" 
+			valign="center" 
+			id="FrameInstance_InputInfo{{{I}}}" 
+		/>
+		""";
+	}
+	MLText ^= """
+	</frame>
+	""";
+	
+	/////////////////////////
+	// FILTERS
+	/////////////////////////
+	for (I, 0, C_FiltersCount-1)
+	{
+		MLText ^= """<frame id="FrameFilter{{{I}}}" posn="{{{- SM_SizeTotalX / 2 + (I + 0.5) * ((SM_SizeTotalX)/C_FiltersCount)}}} {{{PositionFirstQuadY - SM_SizeY * 2}}}" hidden="1">""";
+		for (J, 0, AllFilters[I].count-1)
+		{
+			MLText ^= """<frameinstance modelid="FrameModel_FilterChoice" id="FrameFilterChoice{{{J}}}" posn="0 {{{-SM_SizeY * J}}}"/>""";
+		}
+		MLText ^= "</frame>";
+	}
+			
+	MLText ^= """
+	</frame>
+	
+	<script><!--
+		#Const DebugName  "L_ServerBrowserFilters"
+			
+		
+		{{{Manialink::GetIncludes()}}}
+		{{{Manialink::Load()}}}
+		
+		declare Integer						G_LockInput;
+		
+		//Pages & tabs
+		declare Integer						G_IndexFocusY;
+		declare Text[]						G_Onglets;
+		declare Integer						G_OngletFocus;
+		declare Integer						G_TimeSwitchOnglet;		
+		
+		declare Text[][] G_AllFilters;
+		
+		Void Init()
+		{
+			G_Onglets.add(_("Max Players"));
+			G_Onglets.add(_("Game Modes"));
+			G_Onglets.add(_("Environments"));
+			G_Onglets.add(_("Styles"));
+			G_Onglets.add(_("Durations"));
+			
+			G_AllFilters.add({{{dump(GamePlay::GetMaxPlayers())}}});
+			G_AllFilters.add({{{dump(GamePlay::GetGameModes())}}});
+			G_AllFilters.add({{{dump(GamePlay::GetRoomEnvironments())}}});
+			G_AllFilters.add({{{dump(GamePlay::GetRoomStyles())}}});
+			G_AllFilters.add({{{dump(GamePlay::GetDurations())}}});
+
+			declare Text[][] Filters for Page;
+			Filters = [Text[],Text[],Text[],Text[],Text[]];
+			
+			for(I, 0, G_Onglets.count - 1)
+			{
+				declare CMlFrame  FrameInstance_Landmark <=> (Page.GetFirstChild("FrameInstance_Landmark"^I) as CMlFrame);
+				declare CMlLabel  Label_LandmarkName <=> (FrameInstance_Landmark.GetFirstChild("Label_LandmarkName") as CMlLabel);
+				Label_LandmarkName.Value = G_Onglets[I];
+				
+				declare CMlFrame  FrameInstance_FilterChoices <=> (Page.GetFirstChild("FrameFilter"^I) as CMlFrame);
+				for (J, 0, G_AllFilters[I].count - 1)
+				{
+					declare CMlFrame FrameInstance_FilterChoice <=> (FrameInstance_FilterChoices.GetFirstChild("FrameFilterChoice"^J) as CMlFrame);
+					declare CMlLabel Label_FilterName <=> (FrameInstance_FilterChoice.GetFirstChild("label_filtername") as CMlLabel);
+					Label_FilterName.Value = G_AllFilters[I][J];
+				}
+			}
+		}
+		
+		//////////////////
+		// INPUT INFO
+		//////////////////
+		Void InitInputsInfo() {
+			declare CMlLabel Label_InputName;
+			declare CMlQuad  Quad_InputIcon;
+		
+			//SELECT
+			declare CMlFrame FrameInputSelect <=> (Page.GetFirstChild("FrameInstance_InputInfo0") as CMlFrame);
+			Label_InputName <=> (FrameInputSelect.GetFirstChild("Label_Name") as CMlLabel);
+			Label_InputName.Value = _("TOGGLE FILTER");
+			Quad_InputIcon <=> (FrameInputSelect.GetFirstChild("Quad_Icon") as CMlQuad);
+			Quad_InputIcon.ImageUrl = "{{{IMGSelect}}}";
+			//CANCEL
+			declare CMlFrame FrameInputCancel <=> (Page.GetFirstChild("FrameInstance_InputInfo1") as CMlFrame);
+			Label_InputName <=> (FrameInputCancel.GetFirstChild("Label_Name") as CMlLabel);
+			Label_InputName.Value = _("BACK");
+			Quad_InputIcon <=> (FrameInputCancel.GetFirstChild("Quad_Icon") as CMlQuad);
+			Quad_InputIcon.ImageUrl = "{{{IMGCancel}}}";
+			//ACTION2
+			declare CMlFrame FrameInputAction2 <=> (Page.GetFirstChild("FrameInstance_InputInfo2") as CMlFrame);
+			Label_InputName <=> (FrameInputAction2.GetFirstChild("Label_Name") as CMlLabel);
+			Label_InputName.Value = _("RESET FILTERS");
+			Quad_InputIcon <=> (FrameInputAction2.GetFirstChild("Quad_Icon") as CMlQuad);
+			Quad_InputIcon.ImageUrl = "{{{IMGAction2}}}";
+		}
+		
+		//////////////////
+		// ONGLETS
+		//////////////////
+		Void SwitchOnglet()
+		{
+			declare CMlQuad  OngletFocus <=> (Page.GetFirstChild("OngletFocus") as CMlQuad);
+			declare Real NewFramePosX = {{{-SM_SizeTotalX/2.}}} + G_OngletFocus *  {{{SM_SizeTotalX/C_FiltersCount-0.02}}};
+			declare Vec3 NewFramePos  = <NewFramePosX, OngletFocus.RelativePosition.Y, OngletFocus.RelativePosition.Z>;
+			LibManialink_SetTargetPosition(OngletFocus, NewFramePos);
+			LibManialink_PresetAnim(OngletFocus, 250, "EaseOutQuint");
+			G_TimeSwitchOnglet = Now + 500;
+			G_IndexFocusY = 0;
+		}
+
+		Void SetOnglet()
+		{
+			declare CMlQuad  OngletFocus <=> (Page.GetFirstChild("OngletFocus") as CMlQuad);
+			declare Real NewFramePosX = {{{-SM_SizeTotalX/2.}}} + G_OngletFocus *  {{{SM_SizeTotalX/C_FiltersCount}}};
+			declare Vec3 NewFramePos  = <NewFramePosX, OngletFocus.RelativePosition.Y, OngletFocus.RelativePosition.Z>;
+			OngletFocus.RelativePosition = NewFramePos;
+			G_IndexFocusY = 0;
+		}
+		
+		//////////////////
+		// FILTER CHOICES
+		//////////////////
+		Void HideFilterChoices(Integer _OngletIndex)
+		{
+			declare CMlFrame FrameInstance_FilterChoices <=> (Page.GetFirstChild("FrameFilter"^_OngletIndex) as CMlFrame);
+			FrameInstance_FilterChoices.Hide(); //plus tard, animer
+		}
+		
+		Void ShowFilterChoices()
+		{	//for filter G_OngletFocus
+			declare CMlFrame FrameInstance_FilterChoices <=> (Page.GetFirstChild("FrameFilter"^G_OngletFocus) as CMlFrame);
+			FrameInstance_FilterChoices.Show(); //plus tard, animer
+		}
+		
+		Text GetRecapTextForFilter(Integer _FilterIndex)
+		{
+			declare Text[][] Filters for Page;
+			declare Text[] Filter = Filters[_FilterIndex];
+			declare Text RecapText = "";
+			if (Filter.count == 0 || Filter.count == G_AllFilters[_FilterIndex].count)
+				RecapText = "ANY";
+			else {
+				declare Integer FilterCount = 0;
+				for (I, 0, G_AllFilters[_FilterIndex].count-1)
+				{
+					if(Filter.exists(G_AllFilters[_FilterIndex][I]))
+					{	
+						if (_FilterIndex >= 2 && FilterCount >= 2)
+						{
+							RecapText ^= ",...";
+							break;
+						}
+						if (FilterCount != 0)
+							RecapText^=", ";
+						RecapText ^= G_AllFilters[_FilterIndex][I];
+						FilterCount += 1;
+					}
+				}
+			}
+			return RecapText;
+		}
+		
+		Void ToggleFilterChoice()
+		{	//(on Select)
+			declare Text[][] Filters for Page;
+			
+			declare Boolean WasChecked = Filters[G_OngletFocus].exists(G_AllFilters[G_OngletFocus][G_IndexFocusY]);
+		
+			declare CMlFrame FrameInstance_Filter <=> (Page.GetFirstChild("FrameFilter"^G_OngletFocus) as CMlFrame);
+			declare CMlFrame FrameInstance_FilterChoice <=> (FrameInstance_Filter.GetFirstChild("FrameFilterChoice"^G_IndexFocusY) as CMlFrame);
+			declare CMlQuad  Quad_CheckFilter <=> (FrameInstance_FilterChoice.GetFirstChild("button_checkfilter") as CMlQuad);
+			if (WasChecked)
+			{
+				Filters[G_OngletFocus].remove(G_AllFilters[G_OngletFocus][G_IndexFocusY]);
+				Quad_CheckFilter.StyleSelected = False;
+			} else {
+				Filters[G_OngletFocus].add(G_AllFilters[G_OngletFocus][G_IndexFocusY]);
+				Quad_CheckFilter.StyleSelected = True;
+			}
+			
+			declare CMlFrame FrameInstance_FilterValue <=> (Page.GetFirstChild("FrameInstance_FilterValue"^G_OngletFocus) as CMlFrame);
+			declare CMlLabel Label_FilterValue <=> (FrameInstance_FilterValue.GetFirstChild("label_filtervalue") as CMlLabel);
+			Label_FilterValue.Value = GetRecapTextForFilter(G_OngletFocus);
+			log(Label_FilterValue.Value);
+		}
+		
+		Void UpdateFilterChoiceSelection()
+		{
+			declare CMlQuad Quad_Selector <=> (Page.GetFirstChild("Quad_FilterSelector") as CMlQuad);
+			Quad_Selector.RelativePosition = <- {{{SM_SizeTotalX/2}}}  + (G_OngletFocus + 0.5) * {{{SM_SizeTotalX / C_FiltersCount}}}, {{{PositionFirstQuadY - 2 * SM_SizeY}}} - G_IndexFocusY * {{{SM_SizeY}}}	 , Quad_Selector.RelativePosition.Z>; //à l'occasion, corréler ces valeurs avec celles qui sont définies plus haut
+			Quad_Selector.Show();
+		}
+		
+		Void UpdateDisplayFromFilters()
+		{	//met les QuadCheck dans le bon état, génère les textes récapitulatifs (appelé quand on entre dans le menu)
+			declare Text[][] Filters for Page;
+			for (I, 0, G_AllFilters.count-1)
+			{
+				declare CMlFrame FrameInstance_FilterValue <=> (Page.GetFirstChild("FrameInstance_FilterValue"^I) as CMlFrame);
+				declare CMlLabel Label_FilterValue <=> (FrameInstance_FilterValue.GetFirstChild("label_filtervalue") as CMlLabel);
+				Label_FilterValue.Value = GetRecapTextForFilter(I);
+				
+				declare CMlFrame FrameInstance_Filter <=> (Page.GetFirstChild("FrameFilter"^I) as CMlFrame);
+				declare Text[] SelectedFilters = Filters[I];
+				for (J, 0, G_AllFilters[I].count-1)
+				{
+						declare CMlFrame FrameInstance_FilterChoice <=> (FrameInstance_Filter.GetFirstChild("FrameFilterChoice"^J) as CMlFrame);
+						declare CMlQuad  Quad_CheckFilter <=> (FrameInstance_FilterChoice.GetFirstChild("button_checkfilter") as CMlQuad);
+						Quad_CheckFilter.StyleSelected = SelectedFilters.exists(G_AllFilters[I][J]);
+				}
+			}
+		}
+		
+		Void ResetFilters()
+		{
+			declare Text[][] Filters for Page;
+			for (I, 0, Filters.count-1)
+				Filters[I].clear();
+			UpdateDisplayFromFilters();
+		}
+		
+		//////////////////
+		// MAIN
+		//////////////////
+		main() {
+			Init();
+			InitInputsInfo();
+			
+			EnableMenuNavigation(True,False,Null,5);
+			
+			declare Text[][] Filters for Page; //Filters[0] est un tableau de strings correspondant à des entiers, mais ça facilite le traitement & le passage de la valeur entre les menus			
+			
+			declare Integer      PrevOngletFocus;
+
+			G_IndexFocusY = 0;
+			G_OngletFocus = 0;	PrevOngletFocus = G_OngletFocus;
+			
+			ShowFilterChoices();
+			UpdateFilterChoiceSelection();
+			UpdateDisplayFromFilters();
+			
+			while(True) {
+				yield;
+				if(! PageIsVisible) continue;
+				LibManialink_AnimLoop();
+
+				if(PrevOngletFocus != G_OngletFocus)
+				{
+					HideFilterChoices(PrevOngletFocus);
+					UpdateFilterChoiceSelection();
+					ShowFilterChoices();
+					PrevOngletFocus = G_OngletFocus;
+				}
+
+				foreach(Event in PendingEvents) {
+					switch(Event.Type) {
+
+						case CMlEvent::Type::PluginCustomEvent: {
+							switch(Event.PluginCustomEventType) {
+								case "Show" : {
+									{{{_ShowAnim}}}
+									SetOnglet();
+									ShowFilterChoices();
+									UpdateFilterChoiceSelection();
+									UpdateDisplayFromFilters();
+								}
+								case "Hide" : {
+									{{{_HideAnim}}}
+									//SendCustomEvent("DetachPage", ["CommunityTracks"]);
+								}
+								case "FiltersSent" : {
+									UpdateDisplayFromFilters();
+								}
+							}
+						}
+					
+						case CMlEvent::Type::MenuNavigation: {					
+							if(G_LockInput + 50 > Now) continue;
+							G_LockInput = Now; // Sécurité pour éviter le double input
+							switch(Event.MenuNavAction) {
+								case CMlEvent::EMenuNavAction::PageUp : {
+									if(G_OngletFocus > 0)
+									{
+										G_OngletFocus -= 1;
+										SwitchOnglet();
+									}
+								}
+								case CMlEvent::EMenuNavAction::PageDown : {
+									if(G_OngletFocus < {{{C_FiltersCount-1}}})
+									{
+										G_OngletFocus += 1;
+										SwitchOnglet();
+									}
+								}
+								case CMlEvent::EMenuNavAction::Select : {
+									ToggleFilterChoice();
+								}
+								case CMlEvent::EMenuNavAction::Cancel : {
+									SendCustomEvent("SendFiltersToServerBrowser", [""]);
+									SendCustomEvent("GotoPrevious", [""]);
+									{{{_HideAnim}}}
+									SendCustomEvent("DetachPage", ["ServerBrowserFilters"]);		
+								}
+								case CMlEvent::EMenuNavAction::AppMenu : {
+									SendCustomEvent("SendFiltersToServerBrowser", [""]);
+									SendCustomEvent("GotoPrevious", [""]);
+									{{{_HideAnim}}}
+									SendCustomEvent("DetachPage", ["ServerBrowserFilters"]);		
+								}
+								case CMlEvent::EMenuNavAction::Up : {
+									if(G_IndexFocusY > 0)
+									{
+										G_IndexFocusY -= 1;
+										UpdateFilterChoiceSelection();
+									}
+								}
+								case CMlEvent::EMenuNavAction::Down : {
+									if(G_IndexFocusY < G_AllFilters[G_OngletFocus].count - 1)
+									{
+										G_IndexFocusY += 1;
+										UpdateFilterChoiceSelection();
+									}
+								}
+								case CMlEvent::EMenuNavAction::Action1 : {
+									//X : rien
+								}
+								case CMlEvent::EMenuNavAction::Action2 : {
+									//Y
+									ResetFilters();
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	--></script>
+	""";
+	
+	return MLText;
+}

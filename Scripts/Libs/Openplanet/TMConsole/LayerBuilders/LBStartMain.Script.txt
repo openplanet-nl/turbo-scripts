@@ -1,0 +1,1429 @@
+#Include "TextLib"														as TextLib
+#Include "MathLib"														as MathLib
+#Include "Libs/Openplanet/Manialink2.Script.txt"								as Manialink
+#Include "Libs/Openplanet/TMConsole/PanelParameter.Script.txt"	            as PanelParameter
+#Include "Libs/Openplanet/TMConsole/FontManager.Script.txt"					as Font
+#Include "Libs/Openplanet/TMConsole/Colors.Script.txt"		   				as Colors
+#Include "Libs/Openplanet/UIPadButtons.Script.txt"							as LibUIButtons
+#Include "Libs/Openplanet/TMConsole/Prompter2.Script.txt"					as Prompter2
+#Include "Libs/Openplanet/TMConsole/Menu/MenuVersion.Script.txt"				as MenuVersion
+#Include "Libs/Openplanet/TMConsole/LibAudio.Script.txt"						as LibAudio
+#Include "Libs/Openplanet/TMConsole/Volumes.Script.txt"						as Volumes
+
+#Const C_ImgBase 	"file://Media/Manialinks/Nadeo/TMConsole/Images/"
+#Const C_ImgBase2	"file://Media/Images/TMConsole/Ingame/"
+#Const C_ImgBaseSM	"MainMenu/StartMain/"
+#Const C_VideoBase	"file://Media/Manialinks/Nadeo/TMConsole/Video/"
+
+#Const C_BrowseSlot_SlotNb			6
+#Const C_BrowseSlot_Landmark		5
+
+#Const C_VIDEO_HELICO				0
+#Const C_VIDEO_FLYINGCARS1			1
+
+#Const SizeXSlot					150.
+#Const SizeYSlot					10.
+#Const Count_InstancesX				1
+#Const Count_InstancesY				10
+#Const LabelSizen					30
+#Const C_RATIO						26.3
+#Const HACK_PlayerPosition          12
+
+
+#Const C_EcartTitleY                -5.
+
+Text Build(Text _ShowAnim, Text _HideAnim) {
+	
+	
+	declare Text 	IMGSlotSmallBg           = C_ImgBase2^"slot-medium-bg.dds";
+	declare Text 	IMGSlotSmallFg           = C_ImgBase2^"slot-medium-fg.dds";
+	declare Real	SM_SizeTotalX            = 259.0;
+	declare Real	SM_SizeX                 = 217.5;
+	declare Real	SM_SizeY                 = SM_SizeX / C_RATIO;
+	declare Real	SM_SizeOngletInfoX       = 17.5;
+	declare Real	SM_Separator             = SM_SizeY * 0.095;
+	declare Real	SM_SizeYElement          = SM_SizeY - SM_Separator;
+	
+	declare Text	ImgSelectCampaign        = C_ImgBase ^ C_ImgBaseSM ^ "SOLO-01.png2";
+	declare Text	ImgSelectOnline          = C_ImgBase ^ C_ImgBaseSM ^ "ONLINE-01.png2";
+	declare Text	ImgSelectTrackB          = C_ImgBase ^ C_ImgBaseSM ^ "TRACK-01.png2";
+	declare Text	ImgSelectLocal           = C_ImgBase ^ C_ImgBaseSM ^ "VS-01.png2";
+	declare Text	ImgSelectGarage          = C_ImgBase ^ C_ImgBaseSM ^ "GARAGE-01.png2";
+	
+	
+	declare Integer Platform                 = LibUIButtons::GetPlatform();
+	
+	declare Integer  ActualVersion           = MenuVersion::GetVersion();
+	declare Text     IMGInsterCoin1          = C_ImgBase2^"insert-coin.dds";
+	declare Text     IMGInsterCoin2          = C_ImgBase2^"insert-coin-blink.dds";
+	
+	declare Text 	Action1                  = LibUIButtons::GetImage(Platform, CManiaAppEvent::EMenuNavAction::Action1);
+	declare Text 	Action2                  = LibUIButtons::GetImage(Platform, CManiaAppEvent::EMenuNavAction::Action2);
+	declare Text 	IMGSelect                = LibUIButtons::GetImage(Platform, CManiaAppEvent::EMenuNavAction::Select);
+	
+	declare Text 	IMG_PC_Action1           = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"),  CManiaAppEvent::EMenuNavAction::Action1);
+	declare Text 	IMG_PS_Action1           = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::Action1);
+	declare Text 	IMG_XB_Action1           = LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::Action1);
+	
+	declare Text 	SoundPageForward         = LibAudio::GetSound("PageForward");
+	declare Text 	SoundMove                = LibAudio::GetSoundMove();
+	
+	declare Real   PosYFirstQuad             = 22.25;
+	declare Real[] PosXQuads                 = [8.4, -0.3, 6.4, 2.1, 8.1, 15.0, 12.65, 11.0];
+	
+	declare Text    RandMascotPart1          = "file://Media/Painter/Stickers/mascot";
+	declare Text    RandMascotPart2          = "";
+	declare Integer RandMascotPart3          = MathLib::Rand(1, 80);
+	if(RandMascotPart3 < 10) RandMascotPart2 = "0";
+	declare Text    RandMascotPart4          = "/DO.dds";
+	declare Text    RandMascot               = RandMascotPart1 ^ RandMascotPart2 ^ RandMascotPart3 ^ RandMascotPart4;
+	
+	declare Text    IMGOnline                =  C_ImgBase ^ C_ImgBaseSM ^ "Online.dds";
+	declare Text    IMGCampaign              =  C_ImgBase ^ C_ImgBaseSM ^ "Campaign.dds";
+	declare Text    IMGCampaignMedal         =  C_ImgBase ^ C_ImgBaseSM ^ "Patch01/CampaignMedal.dds";
+	declare Text    IMGArcade                =  C_ImgBase ^ C_ImgBaseSM ^ "Multiplayer.dds";
+	declare Text    IMGGarage                =  C_ImgBase ^ C_ImgBaseSM ^ "Garage.dds";
+	declare Text    IMGTrackbuilder          =  C_ImgBase ^ C_ImgBaseSM ^ "Trackbuilder.dds";
+	declare Text	IMGUPLAY                 =  C_ImgBase ^ C_ImgBaseSM ^ "UbisoftClub.dds";
+	declare Text	IMGSettings              =  C_ImgBase ^ C_ImgBaseSM ^ "Settings.dds";
+	declare Text	IMGExit         	     =  C_ImgBase ^ C_ImgBaseSM ^ "Exit.dds";
+	declare Text	IMGBillBoard             =  C_ImgBase ^ C_ImgBaseSM ^ "subcomp_helico_optim_billboard.dds";
+	declare Text	IMGTMTurbo               =  C_ImgBase ^ "DefaultNews.jpg";
+	
+	declare Text IMGMedal          		= C_ImgBase2^"medal-author.dds";
+	declare Text IMGMedalBronze         = "file://Media/Images/Medal.png";
+	declare Text IMGMedalSilver         = C_ImgBase2^"medal-silver.dds";
+	declare Text IMGMedalGold           = C_ImgBase2^"medal-gold.dds";
+
+	declare Text    VideoHelicoPath          =  C_VideoBase ^ "mainmenu_helico3.webm";
+	declare Text    VideoFlyingCars1         =  C_VideoBase ^ "mainmenu_flyingcars_1.webm";
+	declare Text    VideoHelicoPath2         =  C_VideoBase ^ "subcomp_helico_optim_helico.webm";
+	declare Text	VideoBillBoardDefault    =  C_VideoBase ^ "StartMain/subcomp_trailer.webm";
+	
+	declare Vec2    SizeTrackbuilder         =  <68., 15.33>;
+	declare Vec2    SizeOnline               =  <67.33, 15.33>;
+	declare Vec2    SizeCampaign             =  <64., 16.66>;
+	declare Vec2    SizeArcade               =  <62., 15.33>;
+	declare Vec2    SizeGarage               =  <65.33, 15.33>;
+	declare Vec2    SizeUPlay                =  <33.33, 9.33>;
+	declare Vec2    SizeSettings             =  <24.33, 9.33>;
+	declare Vec2    SizeExit                 =  <14., 9.33>;
+	
+	declare Vec3 	Color_Bronze 			 = Colors::GetColor("Bronze");
+	declare Vec3 	Color_Silver 			 = Colors::GetColor("Silver");
+	declare Vec3 	Color_Gold 				 = Colors::GetColor("Gold");
+	declare Vec3 	Color_Master 			 = Colors::GetColor("GreenMaster");
+	
+	declare Vec2    SizeHelico               =  <166.66, 166.66>;
+	declare Vec2    SizeFlyingCars1          =  <320., 180.>;
+	
+	declare Text    IMGArrowR                =  C_ImgBase ^ C_ImgBaseSM ^ "RightArrow.dds";
+	declare Text    IMGArrowL                =  C_ImgBase ^ C_ImgBaseSM ^ "LeftArrow.dds";
+	
+	declare Integer IndexYMax = PosXQuads.count-1;
+
+	declare Text	IMGPLACEHOLDER           =  C_ImgBase ^ C_ImgBaseSM ^ "PH.jpg";
+	declare Text	IMGBillBoardBg           =  C_ImgBase ^ "DefaultNews.jpg";
+	
+	declare Text MLText = """
+	<quad halign="center" valign="center" image="{{{IMGPLACEHOLDER}}}" sizen="320 180" opacity="0.0" posn="0 0 50" />
+
+	<framemodel id="FrameModel_Landmark">
+		<label 
+			id="Label_LandmarkName"
+			posn="0 0 0"
+			halign="center" 
+			valign="center" 
+			sizen="51"
+			textfont="{{{Font::GetFontName("Main")}}}"
+			textcolor="000"
+			text="Popular"
+		/>
+
+		<quad halign="center" valign="center"
+		sizen="{{{(SM_SizeTotalX - SM_SizeOngletInfoX)/C_BrowseSlot_Landmark-0.2}}} {{{SM_SizeYElement*0.95}}}"
+		posn="-0.2 -0.6 0" bgcolor="00E2FF" opacity="0.6"/>
+	</framemodel>
+	
+	<framemodel id="FrameModel_InputInfo">
+		<quad halign="center" valign="bottom" sizen="50 {{{SM_SizeYElement}}}"
+		 image="{{{IMGSlotSmallFg}}}"  posn="0 0 8" opacity="1.0"/>
+		<label halign="right" valign="center" posn="14 4.5 7" textcolor="ddd" text="BACK"
+		 id="Label_InputInfo" textsize="3."  sizen="34"  opacity="1.0"/>
+		<quad halign="center" valign="center" sizen="7 7" bgcolor="900" id="Quad_InputInfo"
+		 image=""  posn="18.5 4 7" opacity="1.0" />
+		<quad halign="center" valign="bottom" sizen="50 {{{SM_SizeYElement}}}"
+		 image="{{{IMGSlotSmallBg}}}"   posn="0 0 6" opacity="1."/>
+	</framemodel>
+
+	<framemodel id="Frame_Button">
+		<frame id="Frame_Title">
+			<quad hidden="0" id="Quad_Menu" posn="-25 0 2" halign="center" valign="center" sizen="100 22.5" opacity="1.0"/>
+			<quad hidden="1" id="Quad_MenuMedal" posn="-25 0 3" halign="center" valign="center" sizen="100 22.5" opacity="1.0"/>
+			<quad id="Quad_Medal"  posn="-25 5 2.5" image="{{{IMGMedal}}}" colorize="{{{TextLib::ColorToText(Color_Bronze)}}}" halign="center" valign="center" sizen="22.4 22.5" hidden="1" keepratio="Fit" />
+		</frame>
+	</framemodel>
+
+	
+	<frame id="Frame_General" posn="0 0 2" hidden="0">
+		<label halign="left" valign="center" posn="-150 -80. 7" textcolor="000" text="{{{_("Version:")}}} {{{ManiaPlanet.ExeVersion}}}"
+	 id="Label_VersionExe" textsize="2."  sizen="48"  opacity="0.8" textfont="{{{Font::GetFontName("Main")}}}"/>
+			""";
+			if(SystemPlatform == CManiaPlanet::ESystemPlatform::XBoxOne)
+			{
+				MLText ^="""
+		<frame id="InfoInput" posn="5 0">
+			<quad halign="center" valign="center" sizen="6.8 6.8" image="{{{Action2}}}" keepratio="Fit" posn="138.7 -74.7 0" opacity="1.0" />
+			<label halign="right" valign="center" posn="134.6 -74.4 0" text="{{{_("|XboxOne Option|Switch Profile")}}}" textfont="{{{Font::GetFontName("Main")}}}"
+			id="Label_Uplay" textsize="4." sizen="70" opacity="1.0" textprefix="$t"/>
+			<quad halign="center" valign="center" sizen="6.8 6.8" image="{{{IMGSelect}}}" keepratio="Fit" posn="138.7 -74.7 0" opacity="0.0" />
+			<label halign="right" valign="center" posn="134.6 -74.4 0" text="{{{_("Select")}}}" textfont="{{{Font::GetFontName("Main")}}}"
+			 id="Label_Select" textsize="4." sizen="34" opacity="0.0" textprefix="$t"/>
+		</frame>
+			""";
+			}
+			MLText ^="""
+
+		<quad id="VideoBackGround" halign="center" valign="center"
+		sizen="320 180" scale="1." image="" posn="0 0 50"/>
+		<frame id="HelicoAndBilboard" posn="-69 -26 -5">
+			<quad 
+				posn="6.4 100.7 7"
+				halign="center" 
+				valign="center" 
+				sizen="116 87.33" 
+				keepratio="Fit"
+				image="{{{VideoHelicoPath2}}}"
+			/>
+			<quad 
+				posn="-1 21.6 8"
+				halign="center" 
+				valign="center" 
+				sizen="142 122" 
+				keepratio="Fit"
+				image="{{{IMGBillBoard}}}"
+				scriptevents="1"
+				id="MouseInput_Ads"
+			/>
+			<quad 
+				id="Quad_Ads"
+				posn="0 0 2"
+				halign="center" 
+				valign="center" 
+				sizen="132 72" 
+				pincorners="<-0.896,1>:<0.94,0.522>:<1,-1>:<-1,-0.764>"
+				image="{{{IMGTMTurbo}}}"
+			/>
+			<quad 
+				id=""
+				posn="0 0 0"
+				halign="center" 
+				valign="center" 
+				sizen="132 72" 
+				pincorners="<-0.896,1>:<0.94,0.522>:<1,-1>:<-1,-0.764>"
+				image="{{{IMGBillBoardBg}}}"
+			/>
+			<frame posn="71 -7.7 0">
+				<quad 	
+					hidden="0"
+					id="Quad_ArrowAds"
+					halign="center" 
+					valign="center" 
+					sizen="8.0 9.33" 
+					opacity="1.0"
+					keepratio="Fit"
+					image="{{{IMGArrowL}}}"
+				/>
+			</frame>
+		</frame>
+
+		<frame id="PrompterAds" posn="-139 -72. 10">
+			{{{Prompter2::InjectInManialink("PromptAds", <9. , 0.6, 0.>, <95.5, 84.>, 3, Font::GetFontName("Main"), "")}}}
+		</frame>
+			
+		<label halign="left" valign="center" posn="-122.0 79.4 4" text="" textfont="{{{Font::GetFontName("Main")}}}"
+		 id="Label_Welcome" textsize="5." opacity="1.0" textcolor="{{{Colors::GetColorHexa("White")}}}" textprefix="$t"/>
+		<quad 	
+			hidden="0"
+			id="Quad_Menu3"
+			posn="-146 78.3 2"
+			halign="center" 
+			valign="center" 
+			sizen="14.3 18.5" 
+			opacity="1.0"
+			keepratio="Fit"
+			image="{{{RandMascot}}}"
+		/>
+		<frame id="Frame_Boards" scale="1.0" posn="68 10 0">
+			<quad 	
+				hidden="0"
+				id="Quad_Selection"
+				posn="0 0 0"
+				halign="center" 
+				valign="center" 
+				sizen="320 180" 
+			/>
+			
+			<frame id="Frame_Title">
+
+				<frame id="Frame_Arrow">
+					<quad 	
+						hidden="0"
+						id="Quad_Arrow"
+						posn="{{{PosXQuads[0]-80.4}}} {{{PosYFirstQuad+0.7}}} 0"
+						halign="center" 
+						valign="center" 
+						sizen="8.0 9.33" 
+						opacity="1.0"
+						keepratio="Fit"
+						image="{{{IMGArrowR}}}"
+					/>
+				</frame>
+				""";
+
+	for(I, 0, PosXQuads.count-1)
+	{
+		//declare Real IndexX = J*1.;
+		//declare Real PosnX = PosXFirstQuad + IndexX*SizeXQuad + IndexX*MarginX_Button*1. - MarginX_Button;
+		declare Integer EcartPositionY = I/5;
+		declare Real PosnY = PosYFirstQuad + I * -12.35 + EcartPositionY*-(C_EcartTitleY+ (I-5)*-10.0);
+		declare Real PosnX = PosXQuads[I]*0.45+5.;
+		if(I> 4)
+		{
+			PosnY = PosYFirstQuad + 5 * -12.35 -(C_EcartTitleY+ (I-5)*7.0)-2.4;
+			PosnX = PosXQuads[I]*0.1- (I-6)*3.2;
+		}
+		MLText^="""
+			<frame posn="{{{PosXQuads[I]}}} {{{PosnY}}} {{{I+1}}}" id="Frame_Instance{{{I}}}" >
+				<frameinstance modelid="Frame_Button"/>
+				<quad posn="-25 0 5" halign="center" valign="center" sizen="100 22.5" opacity="0." scriptevents="1" id="MouseInput_MenuSelection_{{{I}}}" hidden="1"/>
+			</frame>
+			<frame id="Frame_PromptTitle{{{I}}}"  hidden="0">
+				{{{Prompter2::InjectInManialink("PromptTitle"^I, <PosnX , PosnY+ 0.3, 0.>, <65.5, 300.>, 2, Font::GetFontName("Main"))}}}
+			</frame>
+			""";
+	}
+	MLText^="""
+			</frame>
+		</frame>
+		<frame id="Frame_InsertCoin"  hidden="1">
+			<quad halign="center" valign="center" image="{{{IMGInsterCoin1}}}" sizen="224 84" keepratio="Fit" posn="0 9 7"   opacity="1.0" id="Quad_InsertCoin1"/>
+			<quad halign="center" valign="center" image="{{{IMGInsterCoin2}}}" sizen="224 10" keepratio="Fit" posn="0 -33 7" opacity="1.0" id="Quad_InsertCoin2"/>
+		</frame>
+		<frame id="Frame_BuyGame" hidden="1" posn="2.5 4">
+			<quad posn="144.6 -72.8 14" halign="right" valign="center" sizen="70 9.5" opacity="0." scriptevents="1" id="MouseInput_BuyGame" bgcolor="009" hidden="0"/>
+			""";
+		for (I, 0, 2) {
+			declare Text Image;
+			switch (I) {
+				case LibUIButtons::GetPlatform("PC") 	: Image = IMG_PC_Action1;
+				case LibUIButtons::GetPlatform("PS4") 	: Image = IMG_PS_Action1;
+				case LibUIButtons::GetPlatform("XB1") 	: Image = IMG_XB_Action1;
+			}
+		
+			MLText ^= """<quad id="Quad_Action1{{{I}}}" posn="140.6 -72.8 10" halign="center"  valign="center"  sizen="8.0 8."  opacity="1.0" keepratio="Fit" image="{{{Image}}}" />""";
+		
+		}
+	MLText ^= """
+			<label halign="right" valign="center" posn="137.0 -71.8 10" text="{{{_("Unlock the full game")}}}" textfont="{{{Font::GetFontName("Main")}}}"
+			 id="Label_BuyGame" textsize="3." opacity="1.0" textcolor="{{{Colors::GetColorHexa("Red")}}}" textprefix="$t"/>
+		</frame>
+
+	</frame>
+	
+
+	<script><!--
+		#Const DebugName  "L_StartMain"
+		
+		#Const TMC_MEDAL_AUTHOR      0
+		#Const TMC_MEDAL_GOLD        1
+		#Const TMC_MEDAL_SILVER      2
+		#Const TMC_MEDAL_BRONZE      3
+		#Const TMC_MEDAL_NONE        4
+		#Const C_TimeStartClip        {{{PanelParameter::GetTimeStartClip()}}}
+		#Const C_TimeAnimClip         {{{PanelParameter::GetTimeAnimClip()}}}
+		#Const C_TimeStartClip2       {{{PanelParameter::GetTimeStartClip2()}}}
+		#Const C_TimeAnimClip2        {{{PanelParameter::GetTimeAnimClip2()}}}
+		#Const C_TimeTransitionPage2  {{{PanelParameter::GetTimeTransitionPage2()}}}
+		#Const C_TimeVideo	         2000000
+		
+		
+		#Include "TextLib" as TL
+		#Include "MathLib" as ML
+		
+		{{{Manialink::GetIncludes()}}}
+		{{{Manialink::Load()}}}
+		declare Integer						G_LockInput;
+		declare Real						G_PositionTransition;
+		declare Integer						G_IndexX;
+		declare Integer						G_IndexY;
+		declare Integer						G_IndexYMax;
+		declare Text[Integer][Integer]		G_ImgSelection;
+		declare CVideo						G_VideoHelico;
+		declare CVideo						G_VideoAds;
+		declare Text						G_ImageAds;
+		//declare CVideo						G_VideoNoAds;
+		declare CVideo						G_VideoFlyingCars1;
+		declare Integer						G_TimeVideo;
+		declare Integer 					G_HideTime;
+		declare Integer 					G_ShowTime;
+		declare Boolean 					G_Visible;
+		declare Boolean 					G_IsAdsLoad;
+		declare Text 						G_AdsCurUrl;
+		
+		{{{Prompter2::InjectInGlobals()}}}
+		{{{Prompter2::InjectInFunctions()}}}
+		Text GetImgMenuPath(Integer _MenuSelect)
+		{
+			switch(_MenuSelect)
+			{
+				case 0 : return "{{{IMGTrackbuilder}}}";
+				case 1 : return "{{{IMGOnline}}}";
+				case 2 : return "{{{IMGCampaign}}}";
+				case 3 : return "{{{IMGArcade}}}";
+				case 4 : return "{{{IMGGarage}}}";
+				case 5 : return "{{{IMGUPLAY}}}";
+				case 6 : return "{{{IMGSettings}}}";
+				case 7 : return "{{{IMGExit}}}";
+			}
+			return "";
+		}
+
+		Vec2 GetImgMenuSize(Integer _MenuSelect)
+		{
+			switch(_MenuSelect)
+			{
+				case 0 : return {{{SizeTrackbuilder}}};
+				case 1 : return {{{SizeOnline}}};
+				case 2 : return {{{SizeCampaign}}};
+				case 3 : return {{{SizeArcade}}};
+				case 4 : return {{{SizeGarage}}};
+				case 5 : return {{{SizeUPlay}}};
+				case 6 : return {{{SizeSettings}}};
+				case 7 : return {{{SizeExit}}};
+			}
+			return {{{SizeTrackbuilder}}};
+		}
+
+		Text GetPrompterText(Integer _MenuSelect)
+		{
+			switch(_MenuSelect)
+			{
+				case 0 : return _("create your own track and share it");
+				case 1 : return _("challenge players from around the world and create your own tournaments");
+				case 2 : return _("official campaign & challenges");
+				case 3 : return _("local multiplayer modes to challenge your friends");
+				case 4 : return _("customise your cars & music playlist");
+				case 5 : return _("Go to the Ubisoft Club");
+				case 6 : return _("Adjust the game settings & show the credits");
+				case 7 : return _("Exit the game");
+			}
+			return "";
+		}
+
+		Void LaunchVideoAnim(Integer _Index)
+		{
+			switch(_Index)
+			{
+				case {{{C_VIDEO_HELICO}}}:{
+					declare CMlQuad VideoTransition <=> (Page.GetFirstChild("VideoBackGround") as CMlQuad);
+					VideoTransition.RelativePosition.X = -240.;
+					VideoTransition.RelativePosition.Z = -1.;
+					declare Vec3 NewFramePos  = <228., VideoTransition.RelativePosition.Y, VideoTransition.RelativePosition.Z>;
+					LibManialink_SetTargetPosition(VideoTransition, NewFramePos);
+					LibManialink_PresetAnim(VideoTransition, 3000, "EaseLinear");
+				}
+				case {{{C_VIDEO_FLYINGCARS1}}}:{
+					declare CMlQuad VideoTransition <=> (Page.GetFirstChild("VideoBackGround") as CMlQuad);
+					VideoTransition.RelativePosition.X = 0.;
+					VideoTransition.RelativePosition.Z = 0.;
+				}
+			}
+		}
+
+		Text GetVideo(Integer _Index)
+		{
+			switch(_Index)
+			{
+				case {{{C_VIDEO_HELICO}}} : return "{{{VideoHelicoPath}}}";
+				case {{{C_VIDEO_FLYINGCARS1}}} : return "{{{VideoFlyingCars1}}}";
+			}
+			return "";
+		}
+
+		Vec2 GetVideoSize(Integer _Index)
+		{
+			
+			switch(_Index)
+			{
+				case {{{C_VIDEO_HELICO}}} : return {{{SizeHelico}}};
+				case {{{C_VIDEO_FLYINGCARS1}}} : return {{{SizeFlyingCars1}}};
+			}
+			
+			return <0., 0.>;
+		}
+
+		CVideo GetCVideo(Integer _Index)
+		{
+
+			switch(_Index)
+			{
+				case {{{C_VIDEO_HELICO}}} : return G_VideoHelico;
+				case {{{C_VIDEO_FLYINGCARS1}}} : return G_VideoFlyingCars1;
+			}
+
+			return Null;
+			}
+
+		Void StartVideo(Integer _Index)
+		{
+			if(! PageIsVisible) return;
+
+			declare VideoPath = GetVideo(_Index);
+			if(VideoPath == "") return;
+
+			return;
+			declare CVideo VideoPlay = GetCVideo(_Index);
+			declare CMlQuad VideoTransition <=> (Page.GetFirstChild("VideoBackGround") as CMlQuad);
+			VideoTransition.Size = GetVideoSize(_Index);
+			VideoTransition.Image = VideoPlay.Image;
+
+
+			/*
+			if(G_IntroMusic == Null) {
+			G_IntroMusic = Audio.CreateSound("", {{{Volumes::GetVolumedB("MenuMusicVideoIntro")}}}, False, False, False);
+			}
+
+			G_IntroMusic.Stop();
+			G_IntroMusic.Play();
+			*/
+
+			VideoPlay.Stop();
+			VideoPlay.Play();
+
+			LaunchVideoAnim(_Index);
+
+		}
+
+		Void ChangeMedalLevelColor(Integer _Level)
+		{
+			declare Vec3 MedalColor;
+			switch(_Level)
+			{
+				case 0 : MedalColor = {{{Color_Master}}};
+				case 1 : MedalColor = {{{Color_Gold}}};
+				case 2 : MedalColor = {{{Color_Silver}}};
+				case 3 : MedalColor = {{{Color_Bronze}}};
+				//default: MedalColor = {{{Color_Bronze}}};
+			}
+			declare Vec2 ImgMenuSize = GetImgMenuSize(2);
+			declare CMlFrame  Frame_Boards <=> (Page.GetFirstChild("Frame_Instance2")     as CMlFrame);
+			declare CMlQuad Quad_MenuMedal <=> (Frame_Boards.GetFirstChild("Quad_MenuMedal") as CMlQuad);
+			Quad_MenuMedal.ChangeImageUrl("{{{IMGCampaignMedal}}}");
+			Quad_MenuMedal.Colorize = MedalColor;
+			if(MedalColor == <0., 0., 0.>) Quad_MenuMedal.Hide();
+			else                 Quad_MenuMedal.Show();
+			Quad_MenuMedal.Size = ImgMenuSize;
+		}
+		
+		// si _ForcedNextNewsId < 0 => on ne force pas
+		Void ShowNextNews(CMlQuad _Quad_Ads, Integer _ForcedNextNewsId) 
+		{
+			declare Integer 	UplayNewsUpdate			for LocalUser;
+			declare Text[] 		UplayNewsID				for LocalUser;
+			declare Text[] 		UplayNewsMediaUrls		for LocalUser;
+			declare Text[] 		UplayNewsMediaType		for LocalUser;
+			declare Text[] 		UplayNewsBodys			for LocalUser;
+			declare Integer[] 	UplayNewsDisplayTime	for LocalUser;
+			declare Text[] 		UplayNewsLinkType		for LocalUser;
+			declare Text[] 		UplayNewsLinkUrls		for LocalUser;
+			
+			declare Integer UplayDisplayedNewsIndex	for LocalUser;
+			declare Integer UplayDisplayedNewsTime	for LocalUser;
+			
+			// log(Now^"> ShowNextNews : "^UplayDisplayedNewsIndex^" UplayNewsUpdate = "^UplayNewsUpdate);
+			// log(Now^"> UplayNewsID : "^UplayNewsID);
+			
+			declare Integer NbNews = UplayNewsMediaUrls.count;
+			if(NbNews <= 0) return;
+			
+			if(
+				(0 >= UplayNewsID.count) ||
+				(0 >= UplayNewsMediaUrls.count) ||
+				(0 >= UplayNewsMediaType.count) ||
+				(0 >= UplayNewsBodys.count) ||
+				(0 >= UplayNewsDisplayTime.count) ||
+				(0 >= UplayNewsLinkType.count) ||
+				(0 >= UplayNewsLinkUrls.count)) 
+			{
+				log("WARNING : probleme de recuperation des news: aucune new affichee");
+				return;
+			}
+			
+			if(_ForcedNextNewsId >= 0)  {
+				UplayDisplayedNewsIndex = _ForcedNextNewsId;
+			} else {
+				UplayDisplayedNewsIndex = (UplayDisplayedNewsIndex + 1) % NbNews;
+			}
+			
+			
+			
+			if(
+				UplayDisplayedNewsIndex < 0 ||
+				(UplayDisplayedNewsIndex >= UplayNewsID.count) ||
+				(UplayDisplayedNewsIndex >= UplayNewsMediaUrls.count) ||
+				(UplayDisplayedNewsIndex >= UplayNewsMediaType.count) ||
+				(UplayDisplayedNewsIndex >= UplayNewsBodys.count) ||
+				(UplayDisplayedNewsIndex >= UplayNewsDisplayTime.count) ||
+				(UplayDisplayedNewsIndex >= UplayNewsLinkType.count) ||
+				(UplayDisplayedNewsIndex >= UplayNewsLinkUrls.count)) 
+			{
+				log("WARNING : incoherence dans les indices de news (affichage de la premiere.");
+				UplayDisplayedNewsIndex = 0;
+			}
+			
+			declare Text	NewsID		= UplayNewsID[UplayDisplayedNewsIndex];
+			declare Text	MediaUrls	= UplayNewsMediaUrls[UplayDisplayedNewsIndex];
+			declare Text	MediaType	= UplayNewsMediaType[UplayDisplayedNewsIndex];
+			declare Text	Bodys		= UplayNewsBodys[UplayDisplayedNewsIndex];
+			declare Integer	DisplayTime	= UplayNewsDisplayTime[UplayDisplayedNewsIndex];
+			declare Text	LinkType	= UplayNewsLinkType[UplayDisplayedNewsIndex];
+			declare Text	LinkUrls	= UplayNewsLinkUrls[UplayDisplayedNewsIndex];
+			
+			// log(Now^"> update news index");
+			SendCustomEvent("NewsIsSeen", [NewsID]);
+			
+			UplayDisplayedNewsTime 	= Now + (1000 * DisplayTime);
+			
+			// News Text
+			
+			Prompter_SetBanner("PromptAds", Bodys, 5000, 20, <0., 0., 0.>);
+			Prompter_SetBannerIsActive("PromptAds", True, False);
+			
+			// News Video
+			G_IsAdsLoad = False;
+			if (G_AdsCurUrl != MediaUrls) {
+				if (G_VideoAds != Null) {
+					_Quad_Ads.Image = Null;
+					Video.DestroyVideo(G_VideoAds);
+					G_VideoAds = Null;
+				}
+				
+				G_AdsCurUrl = "";
+				
+				// log("NewsID: "^NewsID^", MediaUrls: "^MediaUrls);
+				
+				if (MediaUrls != "") {
+					switch(MediaType) {
+						case "Video" : {
+							G_VideoAds = Video.CreateVideo(MediaUrls, True, False);
+							G_ImageAds = "";
+							G_AdsCurUrl = MediaUrls;
+						}
+						case "Image" : {
+							// log("       Image");
+							G_VideoAds = Null;
+							G_ImageAds = MediaUrls;
+							_Quad_Ads.ChangeImageUrl(MediaUrls);
+							G_AdsCurUrl = MediaUrls;
+						} default : {
+							G_VideoAds = Null;
+							G_ImageAds = "";
+						}
+					}
+				}
+			}
+		}
+		
+		Void ShowNextNews(CMlQuad _Quad_Ads) {
+			ShowNextNews(_Quad_Ads, -1);
+		}
+		
+		Void Init()
+		{
+			declare CMlQuad  Quad_Ads <=> (Page.GetFirstChild("Quad_Ads") as CMlQuad);
+			if(Quad_Ads != Null) {
+				// log(Now^"> ShowNextNews Init");
+				ShowNextNews(Quad_Ads, 0);
+			}
+			
+			// LoadVideo();
+			declare CMlFrame  Frame_Boards     <=> (Page.GetFirstChild("Frame_Boards")     as CMlFrame);
+			declare CMlFrame  Frame_InsertCoin <=> (Page.GetFirstChild("Frame_InsertCoin") as CMlFrame);
+			//Label_Welcome.Value = _("Welcome to Trackmania Turbo");
+			declare CMlFrame  Frame_BuyGame     <=> (Page.GetFirstChild("Frame_BuyGame")     as CMlFrame);
+			if({{{ActualVersion}}} == 4)
+			{
+				Frame_Boards.Hide();
+				Frame_InsertCoin.Show();
+			}
+			else
+			{
+				Frame_Boards.Show();
+				Frame_InsertCoin.Hide();
+			}
+
+			if({{{ManiaPlanet.TmTurbo_IsDemo}}})
+			{
+				Frame_BuyGame.Show();
+			}
+
+			for(I, 0, G_IndexYMax)
+			{
+				declare CMlFrame  Frame_Boards <=> (Page.GetFirstChild("Frame_Instance"^I)     as CMlFrame);
+				declare CMlQuad  Quad_Menu     <=> (Frame_Boards.GetFirstChild("Quad_Menu")   as CMlQuad);
+				declare CMlQuad MouseInput_MenuSelection <=> (Page.GetFirstChild("MouseInput_MenuSelection_"^I) as CMlQuad);
+				
+				declare Text ImgMenuPath = GetImgMenuPath(I);
+				declare Vec2 ImgMenuSize = GetImgMenuSize(I);
+				Quad_Menu.ChangeImageUrl(ImgMenuPath);
+				Quad_Menu.Size = ImgMenuSize;
+				MouseInput_MenuSelection.Size = ImgMenuSize;
+				MouseInput_MenuSelection.Show();
+				
+				if (I == 2) {
+					declare CMlQuad Quad_MenuMedal <=> (Frame_Boards.GetFirstChild("Quad_MenuMedal") as CMlQuad);
+					Quad_MenuMedal.ChangeImageUrl("{{{IMGCampaignMedal}}}");
+					Quad_MenuMedal.Colorize = {{{Color_Bronze}}};
+					Quad_MenuMedal.Hide();
+					Quad_MenuMedal.Size = ImgMenuSize;
+					
+					//Color_Master
+					//Color_Gold
+					//Color_Silver
+					//Color_Bronze
+					
+					declare CMlQuad Quad_Medal <=> (Frame_Boards.GetFirstChild("Quad_Medal") as CMlQuad);
+					//Quad_Medal.Size.X = ImgMenuSize.X * 0.238;
+					//Quad_Medal.Size.Y = ImgMenuSize.Y;
+					//Quad_Medal.RelativePosition.X = Quad_Menu.RelativePosition.X - ImgMenuSize.X * 0.5+7.4;
+					//Quad_Medal.RelativePosition.Y = Quad_Menu.RelativePosition.Y                      +1.5;
+					//Quad_Medal.Show();
+				}
+
+				declare CMlFrame  Frame_PromptTitle <=> (Page.GetFirstChild("Frame_PromptTitle"^I)     as CMlFrame);
+				declare CMlFrame  PromptTitle <=> (Frame_PromptTitle.GetFirstChild("PromptTitle"^I)     as CMlFrame);
+				PromptTitle.Hide();
+				declare Text PromterText = GetPrompterText(I);
+				Prompter_SetBanner("PromptTitle"^I, PromterText, 3600, 10);
+				Prompter_SetBannerIsActive("PromptTitle"^I, True, True);
+				Frame_PromptTitle.RelativePosition.X = -25.;
+			}
+			SendCustomEvent("SetMedalColor", ["StartMain"]);
+		}
+		
+		Integer GetMenuSelect()
+		{
+			switch(G_IndexY)
+			{
+				case 1: return 0;
+				case 3: return 1;
+				case 2: return 2;
+				case 0: return 3;
+				case 4: return 4;
+				case 5: return 5;
+				case 6: return 6;
+				case 7: return 7;
+			}
+			return 0;
+		}
+
+		Integer GetMenuIndex(Integer _MenuSelect)
+		{
+			switch(_MenuSelect)
+			{
+				case 0: return 1;
+				case 1: return 3;
+				case 2: return 2;
+				case 3: return 0;
+				case 4: return 4;
+				case 5: return 5;
+				case 6: return 6;
+				case 7: return 7;
+			}
+			return 0;
+		}
+		
+		Integer GetMenuIndex(Text _URL)
+		{
+			switch(_URL)
+			{
+				case "trackbuilder": return 0;
+				case "online":       return 1;
+				case "campaign":     return 2;
+				case "multiplayer":  return 3;
+				case "garage":       return 4;
+			}
+			return 2;
+		}
+
+		Void UnlightAds()
+		{
+			declare CMlQuad  Quad_ArrowAds <=> (Page.GetFirstChild("Quad_ArrowAds") as CMlQuad);
+			Quad_ArrowAds.Hide();
+		}
+		
+		Void LightAds()
+		{
+			declare CMlQuad  Quad_ArrowAds <=> (Page.GetFirstChild("Quad_ArrowAds") as CMlQuad);
+			Quad_ArrowAds.Show();
+		}
+
+
+		Void UpdateUndoSelection()
+		{
+			declare CMlFrame Frame_Instance <=> (Page.GetFirstChild("Frame_Instance"^G_IndexY)	as CMlFrame);
+			declare CMlFrame Frame_Arrow <=> (Page.GetFirstChild("Frame_Arrow") 			    as CMlFrame);
+			
+			declare CMlFrame Frame_Title	<=> (Frame_Instance.GetFirstChild("Frame_Title") as CMlFrame);
+			//declare CMlQuad  Quad_Menu      <=> (Frame_Instance.GetFirstChild("Quad_Menu")   as CMlQuad);
+			declare Real NewFramePosX = 0.;
+			declare Real NewFramePosY = 0.;
+			declare Vec3 NewFramePos  = <NewFramePosX, NewFramePosY, Frame_Title.RelativePosition.Z>;
+			LibManialink_SetTargetPosition(Frame_Title, NewFramePos);
+			LibManialink_PresetAnim(Frame_Title, 250, "EaseOutQuint");
+			//Quad_Menu.Opacity = 1.;
+
+			declare CMlFrame Frame_PromptTitle <=> (Page.GetFirstChild("Frame_PromptTitle"^G_IndexY)     as CMlFrame);
+			declare CMlFrame  PromptTitle <=> (Frame_PromptTitle.GetFirstChild("PromptTitle"^G_IndexY)     as CMlFrame);
+			PromptTitle.Hide();
+			Frame_Arrow.Hide();
+			NewFramePos  = <-25., 0., 0.>;
+			LibManialink_SetTargetPosition(Frame_PromptTitle, NewFramePos);
+			LibManialink_PresetAnim(Frame_PromptTitle, 250, "EaseOutQuint");
+		}
+		
+		Void UpdateSelection()
+		{
+			//declare CMlQuad  Quad_Selection <=> (Page.GetFirstChild("Quad_Selection") as CMlQuad);
+			//Quad_Selection.ChangeImageUrl(G_ImgSelection[G_IndexY][G_IndexX]);
+			declare CMlFrame Frame_Arrow <=> (Page.GetFirstChild("Frame_Arrow") 			    as CMlFrame);
+			Frame_Arrow.Show();
+
+			declare Real ArrowPosX;
+			declare Real ArrowPosY;
+			
+			declare Integer EcartPositionY = G_IndexY/5;
+
+			ArrowPosY = {{{PosYFirstQuad+1.4}}} + G_IndexY * -18.2 + EcartPositionY*-({{{C_EcartTitleY}}}+ (G_IndexY-5)*-10.0);
+			
+			ArrowPosY = {{{PosYFirstQuad+1.4}}} + G_IndexY * -12.35 + EcartPositionY*-({{{C_EcartTitleY}}}+ (G_IndexY-5)*-10.0);
+			if(G_IndexY> 4) ArrowPosY = {{{PosYFirstQuad+1.4}}} + 5 * -12.35 + EcartPositionY*-({{{C_EcartTitleY}}}+ (G_IndexY-5)*7.0)-2.4;
+			//if(I> 4) PosnY = PosYFirstQuad + 5 * -12.35 -(C_EcartTitleY+ (I-5)*7.0)-2.4;
+			//declare Real PosnY = PosYFirstQuad + I * -12.35 + EcartPositionY*-(C_EcartTitleY+ (I-5)*-10.0);
+			switch(G_IndexY)
+			{
+				case 0 : ArrowPosX = {{{PosXQuads[0]-67.0}}};
+				case 1 : ArrowPosX = {{{PosXQuads[1]-67.3}}};
+				case 2 : ArrowPosX = {{{PosXQuads[2]-67.0}}};
+				case 3 : ArrowPosX = {{{PosXQuads[3]-65.7}}};
+				case 4 : ArrowPosX = {{{PosXQuads[4]-66.2}}};
+				case 5 : ArrowPosX = {{{PosXQuads[5]-49.2}}};
+				case 6 : ArrowPosX = {{{PosXQuads[6]-45.2}}};
+				case 7 : ArrowPosX = {{{PosXQuads[7]-45.2}}};
+			}
+			declare CMlQuad  Quad_Arrow <=> (Page.GetFirstChild("Quad_Arrow") as CMlQuad);
+			Quad_Arrow.RelativePosition = <ArrowPosX, ArrowPosY, 8.>;
+
+
+			declare CMlFrame Frame_Instance <=> (Page.GetFirstChild("Frame_Instance"^G_IndexY)     as CMlFrame);
+			declare CMlFrame Frame_Title	<=> (Frame_Instance.GetFirstChild("Frame_Title") as CMlFrame);
+			//declare CMlQuad  Quad_Menu      <=> (Frame_Instance.GetFirstChild("Quad_Menu")   as CMlQuad);
+			declare Real NewFramePosX = - 2.;
+			declare Real NewFramePosY = 2.;
+			declare Vec3 NewFramePos  = <NewFramePosX, NewFramePosY, Frame_Title.RelativePosition.Z>;
+			LibManialink_SetTargetPosition(Frame_Title, NewFramePos);
+			//LibManialink_SetTargetSize(Frame_Title, ImgMenuSize);
+			LibManialink_PresetAnim(Frame_Title, 250, "EaseOutQuint");
+			
+			declare CMlFrame Frame_PromptTitle <=> (Page.GetFirstChild("Frame_PromptTitle"^G_IndexY)     as CMlFrame);
+			declare CMlFrame  PromptTitle <=> (Frame_PromptTitle.GetFirstChild("PromptTitle"^G_IndexY)     as CMlFrame);
+			PromptTitle.Show();
+			NewFramePos  = <0., 0., 0.>;
+			LibManialink_SetTargetPosition(Frame_PromptTitle, NewFramePos);
+			LibManialink_PresetAnim(Frame_PromptTitle, 400, "EaseOutBack");
+
+		}
+
+		Void SetSelection(Integer _MenuSelect)
+		{
+			switch(_MenuSelect)
+			{
+				case 0: {
+					G_IndexY = 0;
+					G_IndexX = 0;
+				}
+				case 1: {
+					G_IndexY = 1;
+					G_IndexX = 0;
+				}
+				case 2: {
+					G_IndexY = 2;
+					G_IndexX = 0;
+				}
+				case 3: {
+					G_IndexY = 3;
+					G_IndexX = 0;
+				}
+				case 4: {
+					G_IndexY = 4;
+					G_IndexX = 0;
+				}
+			}
+			UpdateSelection();
+		}
+
+		Void HideFrame(Real _Direction)
+		{
+			declare CMlFrame  Frame_General <=> (Page.GetFirstChild("Frame_General") as CMlFrame);
+			
+			declare Real NewFramePosY = G_PositionTransition;
+			declare Vec3 NewFramePos  = <Frame_General.RelativePosition.X, NewFramePosY, Frame_General.RelativePosition.Z>;
+			LibManialink_SetTargetPosition(Frame_General, NewFramePos);
+			LibManialink_PresetAnim(Frame_General, 1450, "EaseOutQuint");
+		}
+
+
+
+		Void ShowFrame(Real _InitFramePosX, Text _StartPosition)
+		{
+			declare CMlFrame  Frame_General <=> (Page.GetFirstChild("Frame_General") as CMlFrame);
+			
+			Frame_General.RelativePosition.Y = 200.;
+			Frame_General.RelativePosition.X = 0.;
+			G_PositionTransition = Frame_General.RelativePosition.Y;
+			
+			declare Vec3 NewFramePos  = <0., 0., Frame_General.RelativePosition.Z>;
+			LibManialink_SetTargetPosition(Frame_General, NewFramePos);
+			LibManialink_PresetAnim(Frame_General, 1450, "EaseOutQuint");
+		}
+
+		Void SetFramePositionStart()
+		{
+			declare CMlFrame  Frame_General <=> (Page.GetFirstChild("Frame_General") as CMlFrame);
+			Frame_General.RelativePosition.Y = 0.;
+			Frame_General.RelativePosition.X = 0.;
+			G_PositionTransition = 200.;
+		}
+
+		
+		Text GetCurrentNewsID() {
+			declare Integer 	UplayDisplayedNewsIndex	for LocalUser;
+			declare Text[] 		UplayNewsID				for LocalUser;
+			
+			if(UplayNewsID.count <= UplayDisplayedNewsIndex || UplayDisplayedNewsIndex < 0) {
+			// if(UplayNewsID.count <= UplayDisplayedNewsIndex) {
+				if(UplayDisplayedNewsIndex >= 0) log(Now^"> InGameNews : erreur de recuperation de l'id");
+				return "";
+			}
+			
+			return UplayNewsID[UplayDisplayedNewsIndex];
+		}
+		
+		Text GetCurrentNewsLinkType() {
+			declare Integer 	UplayDisplayedNewsIndex	for LocalUser;
+			declare Text[] 		UplayNewsLinkType		for LocalUser;
+			
+			if(UplayNewsLinkType.count <= UplayDisplayedNewsIndex || UplayDisplayedNewsIndex < 0) {
+				if(UplayDisplayedNewsIndex >= 0) log(Now^"> InGameNews : erreur de recuperation du type de link");
+				return "";
+			}
+			
+			return UplayNewsLinkType[UplayDisplayedNewsIndex];
+		}
+		
+		Text GetCurrentNewsLinkUrl() {
+			declare Integer 	UplayDisplayedNewsIndex	for LocalUser;
+			declare Text[] 		UplayNewsLinkUrls		for LocalUser;
+			
+			if(UplayNewsLinkUrls.count <= UplayDisplayedNewsIndex || UplayDisplayedNewsIndex < 0) {
+				if(UplayDisplayedNewsIndex >= 0) log(Now^"> InGameNews : erreur de recuperation de URL du link");
+				return "";
+			}
+			
+			return UplayNewsLinkUrls[UplayDisplayedNewsIndex];
+		}
+		
+		Text GetCurrentNewsBody() {
+			declare Integer 	UplayDisplayedNewsIndex	for LocalUser;
+			declare Text[] 		UplayNewsBodys			for LocalUser;
+			
+			if(UplayNewsBodys.count <= UplayDisplayedNewsIndex || UplayDisplayedNewsIndex < 0) {
+				if(UplayDisplayedNewsIndex >= 0) log(Now^"> InGameNews : erreur de recuperation de Body du link");
+				return "";
+			}
+			
+			return UplayNewsBodys[UplayDisplayedNewsIndex];
+		}
+		
+		Void Input_Select() {
+			if(G_IndexX != 0)
+			{
+				declare Text NewsID 	= GetCurrentNewsID();
+				declare Text LinkType 	= GetCurrentNewsLinkType();
+				declare Text LinkURL 	= GetCurrentNewsLinkUrl();
+				declare Text NewsBody 	= GetCurrentNewsBody();
+				
+				SendCustomEvent("NewsIsClicked", [NewsID]);
+				
+				// log(Now^"> LinkType: "^LinkType^", LinkURL: "^LinkURL);
+				if(LinkType == "pstore" || LinkType == "sstore") {
+					SendCustomEvent("BuyGame", [""]);
+					return;
+				} else if(LinkType == "menu") {
+					G_IndexY = GetMenuIndex(LinkURL);
+					UnlightAds();
+				}
+				else if(LinkType == "uplay") {
+					//SendCustomEvent("AskUplay", [LinkURL]);
+					SendCustomEvent("UPlayConnect_DirectLaunch", [""]);
+					return;
+				}
+				else if(LinkType == "weblink") {
+					SendCustomEvent("OpenLink", [LinkURL, NewsBody]);
+					return;
+				} else {
+					G_IndexY = 2;
+					UnlightAds();
+				}
+			}
+			
+			declare Integer MenuSelect = GetMenuSelect();
+			
+			if({{{ActualVersion}}} == 4)
+			{
+				MenuSelect = 1;
+			}
+			if(MenuSelect > 4)
+			{
+				switch(MenuSelect)
+				{
+					//case 5: SendCustomEvent("AskUplay", ["StartMain"]);
+					case 5: SendCustomEvent("UPlayConnect_DirectLaunch", [""]);
+					case 6: SendCustomEvent("GotoPage", ["Settings"]);
+					case 7: SendCustomEvent("QuitGame", [""]);
+				}
+				return;
+			}
+			UpdateUndoSelection();
+			// return; // HACK EG ?
+			HideFrame(1.);
+			declare Sound = Audio.CreateSound("{{{SoundPageForward}}}");
+			Sound.PanRadiusLfe 	= {{{Volumes::GetPanRadiusLfe("MenuUISpreadLarge")}}};
+			Audio.PlaySoundEvent(Sound, {{{Volumes::GetVolumedB("MenuPageForward")}}}, 0);
+			SendCustomEvent("FocusToMain", ["Down", MenuSelect^""]);
+			EnableMenuNavigation(True,False,Null,0);
+			G_LockInput = Now + 300;
+		}
+
+		Void UpdateHelpersForPlatform(Integer _Platform) {
+			declare Text[] InputIds = [""];
+			declare Text[] AdditionnalInputIds = ["Quad_Action1"];
+	
+
+			declare CMlQuad  QuadInputIcon;
+			for (I, 0, 2) {
+				for (J, 0, AdditionnalInputIds.count-1) {
+					QuadInputIcon <=> (Page.GetFirstChild(AdditionnalInputIds[J]^I) as CMlQuad);
+					if (I == _Platform)
+						QuadInputIcon.Show();
+					else
+						QuadInputIcon.Hide();
+				}
+			}
+		}
+
+		main() {
+
+			{{{Prompter2::InjectInInit()}}}
+
+			Init();
+
+
+			
+			G_ImgSelection[0]    = Text[Integer];
+			G_ImgSelection[1]    = Text[Integer];
+			G_ImgSelection[0][0] = "{{{ImgSelectCampaign}}}";
+			G_ImgSelection[0][2] = "{{{ImgSelectGarage}}}";
+			G_ImgSelection[1][0] = "{{{ImgSelectLocal}}}";
+			G_ImgSelection[1][1] = "{{{ImgSelectOnline}}}";
+			G_ImgSelection[1][2] = "{{{ImgSelectTrackB}}}";
+			
+			declare Boolean	Net_IsSmartStart  for Page;
+			declare Integer	Net_PathStartMain for Page;
+			G_TimeVideo = -1;
+			G_HideTime  = -1;
+			G_ShowTime  = -1;
+			G_Visible   = False;
+			G_IsAdsLoad = True;
+			
+			declare CMlFrame Frame_HelicoAndBilboard <=> (Page.GetFirstChild("HelicoAndBilboard") as CMlFrame);
+			declare CMlQuad  Quad_Ads                <=> (Page.GetFirstChild("Quad_Ads") as CMlQuad);
+			declare CMlQuad  Quad_ArrowAds           <=> (Page.GetFirstChild("Quad_ArrowAds") as CMlQuad);
+			
+			declare Integer UplayDisplayedNewsIndex	for LocalUser;
+			declare Integer UplayDisplayedNewsTime	for LocalUser;
+			declare Text[] UplayNewsMediaUrls		for LocalUser;
+			
+			UplayDisplayedNewsIndex = -1;
+			UplayDisplayedNewsTime	= 0;
+			
+			if(UplayNewsMediaUrls.count <= 0) {
+				Prompter_SetBanner("PromptAds", _("Welcome to Trackmania Turbo"), 5000, 20, <0., 0., 0.>);
+				Prompter_SetBannerIsActive("PromptAds", True, False);
+			}
+			
+			declare Integer ActiveButtonPlatform;
+
+
+			while(True) {
+				yield;
+				if(! PageIsVisible) continue;
+				LibManialink_AnimLoop();
+				
+				{{{Prompter2::InjectInLoop()}}}
+				
+
+				if(G_TimeVideo < Now && G_TimeVideo != -1)
+				{
+					StartVideo(0);
+					G_TimeVideo = Now + C_TimeVideo;
+				}
+			
+				if(G_ShowTime <= Now && G_ShowTime != -1)
+				{
+					declare CMlFrame Frame_General <=> (Page.GetFirstChild("Frame_General") as CMlFrame);
+					Frame_General.Show();
+
+					G_ShowTime = -1;
+				}
+
+				if(G_HideTime <= Now && G_HideTime != -1)
+				{
+					declare CMlFrame Frame_General <=> (Page.GetFirstChild("Frame_General") as CMlFrame);
+					Frame_General.Hide();
+					SendCustomEvent("DetachPage", ["StartMain"]);
+					G_HideTime = -1;
+				}
+
+				if (G_Visible) {
+					/*
+					if(G_ImageAds != "" && G_AdsCurUrl != MediaUrls) {
+						
+					}
+					*/
+					
+					// on arrete la video par defaut et on joue la video de News
+					if(!G_IsAdsLoad && G_VideoAds != Null && !G_VideoAds.DownloadInProgress)
+					{
+						// G_VideoNoAds.Stop();
+						// // G_VideoNoAds.EndProcessing();
+						G_VideoAds.BeginProcessing();
+						G_VideoAds.Play();
+						Quad_Ads.Image = G_VideoAds.Image;
+						G_IsAdsLoad = True;
+					}
+					else if (Quad_Ads.Image != Null && G_ImageAds != "") {
+						// G_ImageAds
+						//G_VideoNoAds.Stop();
+						Quad_Ads.ChangeImageUrl(G_ImageAds);
+						G_IsAdsLoad = True;
+					}
+					else if (Quad_Ads.Image == Null)
+					{
+						// log("Quad_Ads.Image is Null");
+						
+						// G_VideoNoAds.BeginProcessing();
+						// G_VideoNoAds.Play();
+						// Quad_Ads.Image = G_VideoNoAds.Image;
+						// Quad_Ads.ChangeImageUrl("{{{IMGTMTurbo}}}");
+					}
+					
+					declare Boolean UpdateNews = UplayNewsMediaUrls.count > 1;
+					if(UpdateNews && Now > UplayDisplayedNewsTime) {
+						// log(Now^"> ShowNextNews UpdateNews");
+						ShowNextNews(Quad_Ads);
+					}
+				}
+				
+
+				declare CMlFrame  Frame_Arrow <=> (Page.GetFirstChild("Frame_Arrow") as CMlFrame);
+				declare Real ButtonSelectedSinVar = ML::Sin(Now * 0.01) * 0.5;
+				Frame_Arrow.RelativePosition.X    = ButtonSelectedSinVar*1.4;
+				Quad_ArrowAds.RelativePosition.X  = ButtonSelectedSinVar*1.4;
+   				
+
+				
+			 	declare Real ButtonSelectedSinVar2  = ML::Sin(Now * 0.00107) * 2.3;
+				Frame_HelicoAndBilboard.RelativePosition.Y = ButtonSelectedSinVar2 -26.;
+
+				if (Input.PendingEvents.count != 0) {
+					declare Integer LastInputPlatform;
+					switch (Input.PendingEvents[Input.PendingEvents.count-1].Pad.Type) {
+						case CInputPad::EPadType::Keyboard 		: LastInputPlatform = {{{LibUIButtons::GetPlatform("PC")}}};
+						case CInputPad::EPadType::PlayStation 	: LastInputPlatform = {{{LibUIButtons::GetPlatform("PS4")}}};
+						case CInputPad::EPadType::XBox 			: LastInputPlatform = {{{LibUIButtons::GetPlatform("XB1")}}};
+						default 								: LastInputPlatform = {{{LibUIButtons::GetPlatform("PC")}}};
+					}
+					if (LastInputPlatform != ActiveButtonPlatform)
+					{
+						SendCustomEvent("SetActiveButtonPlaform", ["StartMain", TL::ToText(LastInputPlatform)]);
+					}
+				}
+
+				foreach(Event in PendingEvents) {
+					switch(Event.Type) {
+
+						case CMlEvent::Type::PluginCustomEvent: {
+							switch(Event.PluginCustomEventType) {
+								case "Show" : {
+									//G_TimeVideo = Now + C_TimeVideo;
+									{{{_ShowAnim}}}
+									declare CMlFrame  Frame_General <=> (Page.GetFirstChild("Frame_General") as CMlFrame);
+									LibManialink_AnimStop(Frame_General);
+									
+									G_IndexYMax = {{{IndexYMax}}};
+									declare Text PreviousPage = Event.CustomEventData[0];
+									if(PreviousPage == "StartDemo" || PreviousPage == "Location")
+									{
+										Init();
+										G_IndexY = 2;
+										//SendCustomEvent("SetupMainMenuFilter", ["-1"]);
+									}
+									
+									if(Net_IsSmartStart)
+									{
+										SetSelection(Net_PathStartMain);
+									}
+
+									if(PreviousPage == "Intro" || PreviousPage == "StartDemo" || PreviousPage == "Location")
+									{
+										G_ShowTime  = Now;
+
+										UpdateSelection();
+										UnlightAds();
+										EnableMenuNavigation(True,False,Null,2);
+										SetFramePositionStart();
+										
+										// IN GAME NEWS
+										// log(Now^"> ShowNextNews PreviousPage Intro");
+										ShowNextNews(Quad_Ads, 0);
+									}
+									else
+									{
+										G_LockInput = Now + C_TimeTransitionPage2;
+										G_ShowTime  = Now + C_TimeTransitionPage2;
+										//G_ShowTime  = -1;
+										//G_ShowTime  = Now;
+									}
+									G_HideTime  = -1;
+									G_Visible = True;
+									SendCustomEvent("GetActiveButtonPlatform", ["StartMain"]);
+
+								}
+								case "Hide" : {
+									{{{_HideAnim}}}
+									Quad_Ads.Image = Null;
+									if (G_VideoAds != Null)	 {
+										G_VideoAds.Stop();
+										G_VideoAds.EndProcessing();
+										G_IsAdsLoad = False;
+									}
+									/*
+									if (G_VideoNoAds != Null) {
+										G_VideoNoAds.Stop();
+										G_VideoNoAds.EndProcessing();
+									}*/
+									
+									G_HideTime  = Now;
+									G_LockInput = Now;
+									G_ShowTime  = -1;
+									G_Visible = False;
+								}
+								case "SetActiveButtonPlatform" : {
+									ActiveButtonPlatform = TL::ToInteger(Event.CustomEventData[0]);
+									log("ActiveButtonPlatform:"  ^ ActiveButtonPlatform);
+									UpdateHelpersForPlatform(ActiveButtonPlatform);
+								}
+								case "SetMedalColor" : {
+									declare Integer MedalLevel = TL::ToInteger(Event.CustomEventData[0]);
+									ChangeMedalLevelColor(MedalLevel);
+								}
+								case "GetFocus" : {
+									G_LockInput = Now + 300;
+									declare Real InitFramePosX = TL::ToReal(Event.CustomEventData[0]);
+									declare Text StarPosition  = Event.CustomEventData[1];
+									declare Integer MenuSelect = TL::ToInteger(Event.CustomEventData[2]);
+									MenuSelect = GetMenuIndex(MenuSelect);
+									SetSelection(MenuSelect);
+									ShowFrame(InitFramePosX, StarPosition);
+									EnableMenuNavigation(True,False,Null,2);
+									
+									SendCustomEvent("NewsIsSeen", [GetCurrentNewsID()]);
+								}
+							}
+						}
+						//HACK
+						case CMlEvent::Type::KeyPress: {
+							switch(Event.KeyName) {
+								case "Numpad0" : {
+									//SendCustomEvent("RequestTracksList", [""]);
+								}
+							}
+						}
+						//HACKEND
+						case CMlEvent::Type::MouseClick: {
+							declare Text[] InputId = TL::Split("_", Event.ControlId);
+							if (InputId.count < 2 || InputId[0] != "MouseInput")
+								continue;
+								log("InputId: " ^ InputId);
+							switch (InputId[1]) {
+								case "MenuSelection" : {
+									declare Selection = TL::ToInteger(InputId[2]);
+									if (G_IndexX == 0 && Selection == G_IndexY)
+									{
+										Input_Select();
+										continue;
+									}
+									if (!Net_IsSmartStart || Selection == Net_PathStartMain) {
+										if(G_IndexX < 0)
+										{
+											UnlightAds();
+											G_IndexX += 1;
+										}
+										UpdateUndoSelection();
+										Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+										G_IndexY = Selection;
+										UpdateSelection();
+										Input_Select();
+									}
+								}
+								case "Ads" : {
+									if(G_IndexX > -1)
+									{
+										UpdateUndoSelection();
+										LightAds();
+										G_IndexX -= 1;
+									}
+									Input_Select();
+								}
+								case "BuyGame" : {
+									if({{{ManiaPlanet.TmTurbo_IsDemo}}})
+									{
+										SendCustomEvent("BuyGame", [""]);
+									}
+								}
+							}
+						}
+						case CMlEvent::Type::MouseOver : {
+							if(G_LockInput + 50 > Now) continue;
+							declare Text[] InputId = TL::Split("_", Event.ControlId);
+							if (InputId.count < 2 || InputId[0] != "MouseInput")
+								continue;
+							switch (InputId[1]) {
+								case "MenuSelection" : {
+									declare Selection = TL::ToInteger(InputId[2]);
+									if (G_IndexX == 0 && Selection == G_IndexY)
+										continue;
+									if (!Net_IsSmartStart || Selection == Net_PathStartMain) {
+										if(G_IndexX < 0)
+										{
+											UnlightAds();
+											G_IndexX += 1;
+										}
+										UpdateUndoSelection();
+										Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+										G_IndexY = Selection;
+										UpdateSelection();
+									}
+								}
+								case "Ads" : {
+									if(G_IndexX > -1)
+									{
+										UpdateUndoSelection();
+										LightAds();
+										G_IndexX -= 1;
+									}
+								}
+							}
+						}
+						case CMlEvent::Type::MenuNavigation: {
+							if(G_LockInput + 50 > Now) continue;
+							G_LockInput = Now; // Sécurité pour éviter le double input
+							switch(Event.MenuNavAction) {
+								case CMlEvent::EMenuNavAction::Cancel : {
+									//rien
+								}
+								case CMlEvent::EMenuNavAction::Up : {
+									if(Net_IsSmartStart) continue;
+									if(G_IndexY > 0 && G_IndexX == 0)
+									{
+										UpdateUndoSelection();
+										UnlightAds();
+										Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+										if(G_IndexX == 1)
+										{
+											G_IndexX = 0;
+										}
+										G_IndexY -= 1;
+										UpdateSelection();
+									}
+								}
+								case CMlEvent::EMenuNavAction::Down : {
+									if(Net_IsSmartStart) continue;
+									if(G_IndexY < G_IndexYMax && G_IndexX == 0)
+									{
+										Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+										UpdateUndoSelection();
+										UnlightAds();
+										G_IndexY += 1;
+										UpdateSelection();
+									}
+								}
+								case CMlEvent::EMenuNavAction::Right : {
+									if(G_IndexX < 0)
+									{
+										UpdateSelection();
+										UnlightAds();
+										G_IndexX += 1;
+									}
+								}
+								case CMlEvent::EMenuNavAction::Left : {
+									if(G_IndexX > -1)
+									{
+										UpdateUndoSelection();
+										LightAds();
+										G_IndexX -= 1;
+									}
+								}
+								case CMlEvent::EMenuNavAction::Select : Input_Select();
+								case CMlEvent::EMenuNavAction::Action1 : {
+									if({{{ManiaPlanet.TmTurbo_IsDemo}}})
+									{
+										SendCustomEvent("BuyGame", [""]);
+									}
+									//StartVideo(0);
+									//SendCustomEvent("GotoPage", ["Settings"]);
+								}
+								case CMlEvent::EMenuNavAction::Action2 : {
+								""";
+
+								if(SystemPlatform == CManiaPlanet::ESystemPlatform::XBoxOne)
+								{
+									MLText ^="""
+									SendCustomEvent("SwitchUser", [""]);
+									""";
+								}
+								MLText ^="""
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	--></script>
+	""";
+	
+	return MLText;
+}

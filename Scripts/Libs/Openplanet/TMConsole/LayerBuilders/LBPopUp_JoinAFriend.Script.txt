@@ -1,0 +1,502 @@
+
+#Include "Libs/Openplanet/Manialink2.Script.txt"								as Manialink
+#Include "Libs/Openplanet/TMConsole/PanelParameter.Script.txt"	            as PanelParameter
+#Include "Libs/Openplanet/TMConsole/Live/LiveHelpers.Script.txt"				as LiveHelpers
+#Include "Libs/Openplanet/TMConsole/Menu/LibOnlineGameplay.Script.txt"		as GamePlay
+#Include "Libs/Openplanet/UIPadButtons.Script.txt"							as LibUIButtons
+
+#Include "Libs/Openplanet/TMConsole/LayerBuilders/LBServerBrowser_ServerInfo.Script.txt" as ServerInfo
+
+#Const C_ImgBase 	"file://Media/Manialinks/Nadeo/TMConsole/Images/"
+
+#Const Count_InstancesY				11
+
+Text Build(Text _ShowAnim, Text _HideAnim) {
+
+	//IMAGES
+	declare Text IMGEchelonPrefix  	= C_ImgBase^"Online/BrowseServers/echelons/Echelon_";
+
+	declare Integer Platform = LibUIButtons::GetPlatform();
+	
+	//SIZES
+
+	//POSITIONS
+
+	ServerInfo::Init(False, True);	
+	declare MLText = """	
+		<frame id="Frame_General">
+			{{{ServerInfo::InjectInManialink()}}}
+		</frame>
+	
+	<script><!--
+		#Const DebugName  "L_PopUp_JoinAFriend"
+		#Const C_IsServerOnlineRequestDelay		2000 //on attend 2s entre chaque requete
+		#Const C_TimeTransitionPage2  {{{PanelParameter::GetTimeTransitionPage2()}}}
+		
+		#Const C_STATUS_INFORMATION	0
+		#Const C_STATUS_BROWSER   	42
+		
+		
+		{{{ServerInfo::InjectInConst()}}}
+		
+		#Include "TextLib" as TL
+		
+		{{{Manialink::GetIncludes()}}}
+		{{{Manialink::Load()}}}
+		
+		declare Integer						G_LockInput;
+		declare Integer						G_HideTime;
+		declare Integer 					G_ServerBrowserStatus;
+		declare Integer 					G_CurrentSelectedRoomIndex;
+		
+		{{{ServerInfo::InjectInGlobals()}}}
+		
+		//Gameplay
+		declare Text[]						G_RoomsStyles;
+		declare Text[]						G_RoomsDurations;
+		declare Text[]						G_RoomsGameModesDisplayNames;
+		
+		declare Boolean						G_RequestJoinServer;
+		
+		declare Integer						G_IsServerOnlineRequestLastTime;
+		declare Boolean						G_IsWaitingForServerStarted;	//wait the "running" state for the server 
+		declare Text						G_IsWaitingForServer_ServerId;	//the server we're waiting
+		
+		//Images
+		declare Text[] G_Images_Echelon;
+		
+		{{{LiveHelpers::InjectConverters()}}}
+		{{{LiveHelpers::InjectFilters()}}}
+		
+		Void HidePage()
+		{
+			G_HideTime  = Now + C_TimeTransitionPage2;
+			G_LockInput = Now + C_TimeTransitionPage2;
+		}
+		
+		Vec3 GetEnvironmentColorize(Text _Environments, Text _Environment)
+		{
+			
+			if (TL::Find(_Environment, _Environments, True, False))
+			{
+				return <1., 1., 0.>;
+			} else {
+				return <.5, .5, .5>;
+			}
+			return <1., 1., 1.>;
+		}
+		
+		{{{LibUIButtons::Inject_SetInputInfoTextSelected()}}}
+		
+		Void ToggleInputInfo(Text _Name, Boolean _Hovered) {
+			declare CMlFrame FrameInput <=> (Page.GetFirstChild(_Name) as CMlFrame);
+			declare CMlLabel LabelInputInfo <=> (FrameInput.GetFirstChild("Label_Name") as CMlLabel);
+			SetInputInfoTextSelected(LabelInputInfo, _Hovered);
+		}
+		
+		{{{ServerInfo::InjectInFunctions()}}}
+		
+		Void Quit()
+		{
+			G_IsWaitingForServerStarted = False;
+			G_IsWaitingForServer_ServerId = "";
+			G_IsServerOnlineRequestLastTime = 0;
+			{{{_HideAnim}}}
+			SendCustomEvent("GotoPrevious", [""]);
+		}
+		
+		Void ServerBrowserStatus_Switch(Integer _Integer)
+		{
+			if (_Integer != C_STATUS_INFORMATION)
+				Quit();
+		}
+		
+		Void JoinServer()
+		{	
+			if (TitleFlow.JoinServer_ServerInfo == Null)
+				return;
+				
+			//Check LP
+			if (LocalUser.LadderPoints < TitleFlow.JoinServer_ServerInfo.LadderServerLimitMin)
+			{
+				SendCustomEvent("ServerBrowser_PopUp_NotEnoughLP", [TL::ToText(LocalUser.LadderPoints), TL::ToText(TitleFlow.JoinServer_ServerInfo.LadderServerLimitMin)]);
+				SetJoinStatus(C_JOINSTATUS_NONE);
+				Quit();
+				return;
+			}
+			//Check isFull
+			if (TitleFlow.JoinServer_ServerInfo.PlayerCount >= TitleFlow.JoinServer_ServerInfo.MaxPlayerCount)
+			{
+				SendCustomEvent("ServerBrowser_PopUp_RoomIsFull", Text[]);
+				SetJoinStatus(C_JOINSTATUS_NONE);
+				Quit();
+				return;
+			}
+			
+			PresenceMgr.SetPresence(DataMgr.MenuUserId, CPresenceMgr::ERichPresence::Multi);
+			TitleFlow.JoinServer_Join(False/*, "" */);
+			declare Integer LastUpdate = Now;
+			while(!TitleFlow.IsReady)
+			{
+				if (Now - LastUpdate >= 30000)
+					break;
+				LastUpdate = Now;
+				LibManialink_AnimLoop();
+				ProgressBar_Update();
+				yield;
+			}
+			
+			SetJoinStatus(C_JOINSTATUS_NONE);
+			PresenceMgr.SetPresence(DataMgr.MenuUserId, CPresenceMgr::ERichPresence::MainMenu);
+			SendCustomEvent("OnExitRoom", Text[]);
+			Quit();
+		}
+		
+		Void UpdateJoin()
+		{
+			declare Text[Text][] RequestedRooms for Page;
+			declare Text[Text] FocusedRoom = RequestedRooms[G_CurrentSelectedRoomIndex];
+			if (G_Join_Started && RequestedRooms[G_CurrentSelectedRoomIndex]["status"] == GetStatus("Error") || ProgressBar_IsTimeout())
+			{
+				SetJoinStatus(C_JOINSTATUS_ERROR);
+				return;
+			} else if (FocusedRoom["status"] == GetStatus("Running") && FocusedRoom["required_state"] == GetRequiredState(True)) {	
+				G_IsServerOnlineRequestLastTime = Now;
+				declare ServerName = FocusedRoom["dedicated_login"];
+				wait(TitleFlow.IsReady);
+				if (FocusedRoom["is_private"] == "true")
+				{
+					TitleFlow.JoinServer_GetInfo(ServerName, G_ServerInfo_JoinPassword);
+				} else {
+					TitleFlow.JoinServer_GetInfo(ServerName);
+				}
+				wait(TitleFlow.IsReady);
+				if (TitleFlow.LatestResult == CTitleFlow::EResult::Error_Net_ServerUnreachable)
+				{
+					SetJoinStatus(C_JOINSTATUS_ERROR);
+					return;
+				}
+				if (TitleFlow.JoinServer_ServerInfo != Null)
+				{
+					SetJoinStatus(C_JOINSTATUS_JOIN);
+					JoinServer();
+				} else {
+					SetJoinStatus(C_JOINSTATUS_WAITMS);	
+				}
+			} else {
+				//Live poll
+				SendCustomEvent("RequestServerStatus", [FocusedRoom["id"]]);
+				G_IsServerOnlineRequestLastTime = -1;
+				SetJoinStatus(C_JOINSTATUS_STARTING);
+			}
+		}
+		
+		Void UpdateStatusForJoin()
+		{
+			G_RequestJoinServer = False;
+			declare Text[Text][] RequestedRooms for Page;
+			declare Text[Text] FocusedRoom = RequestedRooms[G_CurrentSelectedRoomIndex];
+			if (LocalUser.LadderPoints < TL::ToInteger(FocusedRoom["ladder_limit_min"]))
+			{
+				SendCustomEvent("ServerBrowser_PopUp_NotEnoughLP", [TL::ToText(LocalUser.LadderPoints), FocusedRoom["ladder_limit_min"]]);
+				Quit();
+				return;
+			}
+			SendCustomEvent("RequestServerStatus", [FocusedRoom["id"]]);
+			SetJoinStatus(C_JOINSTATUS_STATUS);
+		}
+		
+		Void StartJoin()
+		{
+			declare Text[Text][] RequestedRooms for Page;
+			declare Text[Text] FocusedRoom = RequestedRooms[G_CurrentSelectedRoomIndex];
+			
+			//on essaye de start même si on a un statut d'erreur
+			if (FocusedRoom["status"] == GetStatus("Running"))
+			{
+				wait(TitleFlow.IsReady);
+				if (FocusedRoom["is_private"] == "true")
+				{
+					TitleFlow.JoinServer_GetInfo(FocusedRoom["dedicated_login"], G_ServerInfo_JoinPassword);
+				} else {
+					TitleFlow.JoinServer_GetInfo(FocusedRoom["dedicated_login"]);
+				}
+				wait(TitleFlow.IsReady);		
+				ProgressBar_Reset();
+				ProgressBar_Show();
+				if (TitleFlow.LatestResult == CTitleFlow::EResult::Error_Net_ServerUnreachable)
+				{
+					SetJoinStatus(C_JOINSTATUS_ERROR);
+					return;
+				}
+				if (TitleFlow.JoinServer_ServerInfo != Null)
+				{
+					ProgressBar_StartAt("Join");
+					SetJoinStatus(C_JOINSTATUS_JOIN);
+					JoinServer();
+				} else {
+					ProgressBar_StartAt("MS");
+					G_IsServerOnlineRequestLastTime = 0;
+					SetJoinStatus(C_JOINSTATUS_WAITMS);
+				}
+			} else {
+				ProgressBar_Reset();
+				ProgressBar_Show();
+				ProgressBar_StartAt("Start");
+				G_IsServerOnlineRequestLastTime = 0;
+				if (FocusedRoom["required_state"] == GetRequiredState(False))
+				{	
+					G_Join_Started = False;
+					if (FocusedRoom["is_private"] == "true")
+						SendCustomEvent("RequestServerStart", [FocusedRoom["id"], G_ServerInfo_JoinPassword]);
+					else
+						SendCustomEvent("RequestServerStart", [FocusedRoom["id"], ""]);
+				}	
+				SetJoinStatus(C_JOINSTATUS_STARTING);
+			}
+		}
+		
+		//////////////////
+		// INIT
+		//////////////////
+		Void Init()
+		{
+			G_ServerBrowserStatus = C_STATUS_INFORMATION;
+			G_CurrentSelectedRoomIndex = 0;
+			
+			{{{ServerInfo::InjectInInit()}}}
+			
+			G_IsWaitingForServerStarted = False;
+			G_IsWaitingForServer_ServerId = "";
+			G_IsServerOnlineRequestLastTime = 0;
+			
+			G_RoomsStyles = {{{dump(GamePlay::GetRoomStyles())}}};
+			G_RoomsDurations = {{{dump(GamePlay::GetDurations())}}};
+			G_RoomsGameModesDisplayNames = {{{dump(GamePlay::GetGameModesDisplayNames())}}};
+			
+			G_RequestJoinServer = False;
+			
+			G_Images_Echelon = ["{{{IMGEchelonPrefix}}}0.tga", 
+								"{{{IMGEchelonPrefix}}}1.tga", 
+								"{{{IMGEchelonPrefix}}}2.tga",
+								"{{{IMGEchelonPrefix}}}3.tga", 
+								"{{{IMGEchelonPrefix}}}4.tga", 
+								"{{{IMGEchelonPrefix}}}5.tga", 
+								"{{{IMGEchelonPrefix}}}6.tga", 
+								"{{{IMGEchelonPrefix}}}7.tga",	
+								"{{{IMGEchelonPrefix}}}8.tga", 
+								"{{{IMGEchelonPrefix}}}9.tga"];	
+		}
+		//////////////////
+		// MAIN
+		//////////////////
+		main() {
+			Init();
+			EnableMenuNavigation(True,False,Null,2);
+			
+			G_HideTime = -1;
+			
+			declare Text[Text][] RequestedRooms for Page;
+			declare Text[Text][] RequestedRoomMaps for Page;
+			
+			declare Text Net_SessionIdToJoin for Page;
+			declare Text Net_LoginToJoin for Page;
+			declare Text Net_PasswordToJoin for Page;
+			
+			declare Integer ActiveButtonPlatform = {{{Platform}}};
+			
+			declare Integer MaxLadderPoints for Page;
+			MaxLadderPoints = -1;
+			
+			{{{ServerInfo::InjectBeforeLoop()}}}
+			
+			while(True) {
+				yield;
+				
+				if(! PageIsVisible) continue;
+				LibManialink_AnimLoop();
+				
+				{{{ServerInfo::InjectInLoop()}}}
+				
+				if(G_HideTime <= Now && G_HideTime != -1)
+				{
+					G_HideTime = -1;
+					SendCustomEvent("DetachPage", ["PopUp_JoinAFriend"]);
+				}
+				
+				if (Input.PendingEvents.count != 0) {
+					declare Integer LastInputPlatform;
+					switch (Input.PendingEvents[Input.PendingEvents.count-1].Pad.Type) {
+						case CInputPad::EPadType::Keyboard 		: LastInputPlatform = {{{LibUIButtons::GetPlatform("PC")}}};
+						case CInputPad::EPadType::PlayStation 	: LastInputPlatform = {{{LibUIButtons::GetPlatform("PS4")}}};
+						case CInputPad::EPadType::XBox 			: LastInputPlatform = {{{LibUIButtons::GetPlatform("XB1")}}};
+						default 								: LastInputPlatform = {{{LibUIButtons::GetPlatform("PC")}}};
+					}
+					if (LastInputPlatform != ActiveButtonPlatform)
+						SendCustomEvent("SetActiveButtonPlaform", ["PopUp_JoinAFriend", TL::ToText(LastInputPlatform)]);
+				}
+		
+				//EVENTS
+				foreach(Event in PendingEvents) {
+					switch(Event.Type) {
+						case CMlEvent::Type::EntrySubmit : {
+							if (Event.ControlId != "ServerPassword")
+								continue;
+							ServerInfo_AskPassword_OnValidate();
+						}
+						case CMlEvent::Type::MouseClick: {
+							declare Text[] InputId = TL::Split("_", Event.ControlId);
+							if (InputId.count < 2 || InputId[0] != "MouseInput")
+								continue;
+							switch (InputId[1]) {
+								case "ServerInfoInputInfo" : {
+									switch (InputId[2]) {
+										case "Cancel": {
+											SetJoinStatus(C_JOINSTATUS_NONE);
+											ServerBrowserStatus_Switch(C_STATUS_BROWSER);
+										}
+										case "AppMenu": {
+											SetJoinStatus(C_JOINSTATUS_NONE);
+											ServerBrowserStatus_Switch(C_STATUS_BROWSER);
+										}
+										case "Select": {
+											if (!G_CanJoinServer || G_ServerInfo_IsCheckingNpAvailabilityForJoin)
+												continue;
+											if (G_JoinStatus == C_JOINSTATUS_ERROR || G_JoinStatus == C_JOINSTATUS_NONE)
+											{
+												G_ServerInfo_JoinPassword = "";
+												G_ServerInfo_IsCheckingNpAvailabilityForJoin = True;
+												SendCustomEvent("ServerInfo_Check_PlayMultiplayerSession", Text[]);
+											}
+										}
+									}
+								}
+								case "Password" : {
+									switch (InputId[2]) {
+										case "Select" : ServerInfo_AskPassword_OnValidate();
+										case "Cancel" : {
+											ServerInfo_AskPassword_OnBack();
+											SetJoinStatus(C_JOINSTATUS_NONE);
+										}
+										case "AppMenu" : {
+											ServerInfo_AskPassword_OnBack();
+											SetJoinStatus(C_JOINSTATUS_NONE);
+										}
+									}
+								}
+							}
+						}
+						case CMlEvent::Type::MouseOver: {
+							{{{ServerInfo::InjectInMouseOver()}}}
+						}
+						case CMlEvent::Type::MouseOut: {
+							{{{ServerInfo::InjectInMouseOut()}}}
+						}
+						case CMlEvent::Type::PluginCustomEvent: {
+							switch(Event.PluginCustomEventType) {
+								case "Show" : {
+									{{{_ShowAnim}}}
+									EnableMenuNavigation(True,False,Null,2);
+									RequestedRooms.clear();
+									SendCustomEvent("PopUpJoinAFriend_Check_PlayMultiplayerSession", Text[]);
+									SendCustomEvent("GetActiveButtonPlatform", ["PopUp_JoinAFriend"]);
+								}
+								case "SetActiveButtonPlatform" : {
+									ActiveButtonPlatform = TL::ToInteger(Event.CustomEventData[0]);
+									ServerInfo_UpdateHelpersForPlatform(ActiveButtonPlatform);
+								}
+								case "Hide" : {
+									{{{_HideAnim}}}
+									HidePage();
+								}
+								case "Request_GetRoomByLogin_Success" : {
+									if(RequestedRooms[0]["environments"] != "Canyon")
+										SendCustomEvent("CheckCanyonRestriction", Text[]);
+									else
+										G_MustDisplayServerInfo = True;
+								}
+								case "Request_GetRoomByLogin_Failure" : {
+									Quit();
+								}
+								case "CanyonRestrictionChecked" : {
+									if (Event.CustomEventData[0] == "True")
+										G_MustDisplayServerInfo = True;
+									else
+										Quit();
+								}
+								case "ServerMapsAlreadyReceived" : {
+									ServerInfo_OnServerMapsReceived();
+									SendCustomEvent("ServerInfo_Check_PlayMultiplayerSession", Text[]);
+								}
+								case "PlayMultiAlreadyChecked" : {
+									ServerInfo_OnJoinServerPrivilegeChecked();
+								}
+								case "Check_PlayMultiplayerSession_Succeeded" : {
+									if (Net_LoginToJoin != "")
+									{
+										SendCustomEvent("RetrieveServer", [Net_LoginToJoin]);	
+										G_ServerInfo_JoinPassword = Net_PasswordToJoin;
+									} else {
+										SendCustomEvent("RetrieveAutoJoinInfoFromSessionId", [Net_SessionIdToJoin]);
+									}
+								}
+								case "Check_PlayMultiplayerSession_Failed" : {
+									Quit();
+								}
+								case "Request_StartRoom_Success": {
+									G_Join_Started = True;
+								}
+								case "Request_StartRoom_Failure": {
+									G_Join_Started = True;
+									if (G_JoinStatus != C_JOINSTATUS_ERROR && G_JoinStatus != C_JOINSTATUS_NONE)
+										SetJoinStatus(C_JOINSTATUS_ERROR);
+									Quit();
+								}
+								case "Request_ServerStatus_Result": {
+									G_IsServerOnlineRequestLastTime = Now;
+									
+									if (G_CurrentSelectedRoomIndex >= RequestedRooms.count || RequestedRooms[G_CurrentSelectedRoomIndex]["id"] != Event.CustomEventData[0])
+										continue; //not the server you're looking for
+										
+									RequestedRooms[G_CurrentSelectedRoomIndex]["required_state"] 	= Event.CustomEventData[1];
+									RequestedRooms[G_CurrentSelectedRoomIndex]["status"]			= Event.CustomEventData[2];
+									RequestedRooms[G_CurrentSelectedRoomIndex]["is_online"]			= Event.CustomEventData[3];
+									RequestedRooms[G_CurrentSelectedRoomIndex]["debug_logs"]		= Event.CustomEventData[4];
+									RequestedRooms[G_CurrentSelectedRoomIndex]["starting"]			= Event.CustomEventData[5];
+									
+									if (G_ServerBrowserStatus == C_STATUS_INFORMATION)
+									{
+										if (G_JoinStatus == C_JOINSTATUS_STATUS)
+											StartJoin();
+										else
+											ServerInfo_UpdateFromStatus();
+									}
+								}
+								case "Request_ServerStatus_Error" : {
+									Quit();
+								}
+								case "GetSessionInfo_Succeeded" : {
+									SendCustomEvent("RetrieveServer", [Net_LoginToJoin]);	
+									G_ServerInfo_JoinPassword = Net_PasswordToJoin;
+								}
+								case "GetSessionInfo_Failed" : {
+									Quit();
+								}
+							}
+						}
+					
+						case CMlEvent::Type::MenuNavigation: {
+							if(G_LockInput + 50 > Now) continue;
+							if (Event.MenuNavAction == CMlEvent::EMenuNavAction::Cancel && (G_JoinStatus == C_JOINSTATUS_NONE || G_JoinStatus == C_JOINSTATUS_ERROR))
+								Quit();
+							else if (RequestedRooms.count != 0)
+								{{{ServerInfo::InjectInMenuNavigation()}}}	
+						}
+					}
+				}
+			}
+		}
+	--></script>
+	""";
+	return MLText;
+}

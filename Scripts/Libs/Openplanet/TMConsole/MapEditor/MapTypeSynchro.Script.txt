@@ -1,0 +1,205 @@
+/** 
+ *	MapType synchronization library
+ */
+
+#Const Version		"2016-01-14"
+#Const ScriptName	"MapTypeSynchro.Script.txt"
+
+// ---------------------------------- //
+// Functions
+// ---------------------------------- //
+// ---------------------------------- //
+// Public
+// ---------------------------------- //
+
+// ---------------------------------- //
+/** Return the version number of the script
+ *
+ *	@return		The version number of the script
+ */
+Text GetScriptVersion() {
+	return Version;
+}
+
+// ---------------------------------- //
+/** Return the name of the script
+ *
+ *	@return		The name of the script
+ */
+Text GetScriptName() {
+	return ScriptName;
+}
+
+// ---------------------------------- //
+/// Ask a synchronization to the map type
+Void AskSynchro() {
+	declare LibMapTypeSynchro_AskSynchro for Map = -1;
+	LibMapTypeSynchro_AskSynchro = Now;
+}
+
+// ---------------------------------- //
+/// Valid a synchronization from the map type
+Void ValidSynchro() {
+	declare LibMapTypeSynchro_AskSynchro for Map = -1;
+	declare LibMapTypeSynchro_ValidSynchro for Map = -1;
+	LibMapTypeSynchro_ValidSynchro = LibMapTypeSynchro_AskSynchro;
+}
+
+// ---------------------------------- //
+/** Check if the map type and the plugin editor are syncrhonized
+ *
+ *	@return							True if the scripts are synchronized, False otherwise
+ */
+Boolean Synchronized() {
+	declare LibMapTypeSynchro_AskSynchro for Map = -1;
+	declare LibMapTypeSynchro_ValidSynchro for Map = -1;
+	return LibMapTypeSynchro_AskSynchro == LibMapTypeSynchro_ValidSynchro;
+}
+
+// ---------------------------------- //
+/** Save the length of the map
+ *
+ *	@param	_Length					The length of the map
+ */
+Void SetLength(Real _Length) {
+	declare LibMapTypeSynchro_Length for Map = 0.;
+	LibMapTypeSynchro_Length = _Length;
+}
+
+// ---------------------------------- //
+/** Get the length of the map
+ *
+ *	@return							The length of the map
+ */
+Real GetLength() {
+	declare LibMapTypeSynchro_Length for Map = 0.;
+	return LibMapTypeSynchro_Length;
+}
+
+// ---------------------------------- //
+/** Set the thumbnail camera position
+ *
+ *	@param _Pos						The position of the camera
+ */
+Void SetThumbnailPos(Vec3 _Pos) {
+	declare LibMapTypeSynchro_Pos for Map = <0., 0., 0.>;
+	LibMapTypeSynchro_Pos = _Pos;
+}
+
+// ---------------------------------- //
+/** Get the thumbnail camera position
+ *
+ *	@return							The thumbnail camera position
+ */
+Vec3 GetThumbnailPos() {
+	declare LibMapTypeSynchro_Pos for Map = <0., 0., 0.>;
+	return LibMapTypeSynchro_Pos;
+}
+
+// ---------------------------------- //
+/** Set the thumbnail camera rotation
+ *
+ *	@param _Pos						The rotation of the camera
+ */
+Void SetThumbnailRot(Vec3 _Rot) {
+	declare LibMapTypeSynchro_Rot for Map = <0., 0., 0.>;
+	LibMapTypeSynchro_Rot = _Rot;
+}
+
+// ---------------------------------- //
+/** Get the thumbnail camera rotation
+ *
+ *	@return							The thumbnail camera rotation
+ */
+Vec3 GetThumbnailRot() {
+	declare LibMapTypeSynchro_Rot for Map = <0., 0., 0.>;
+	return LibMapTypeSynchro_Rot;
+}
+
+// ---------------------------------- //
+/** Set the thumbnail camera fov
+ *
+ *	@param _Fov						The fov of the camera
+ */
+Void SetThumbnailFov(Real _Fov) {
+	declare LibMapTypeSynchro_Fov for Map = 0.;
+	LibMapTypeSynchro_Fov = _Fov;
+}
+
+// ---------------------------------- //
+/** Get the thumbnail camera fov
+ *
+ *	@return							The thumbnail camera fov
+ */
+Real GetThumbnailFov() {
+	declare LibMapTypeSynchro_Fov for Map = 0.;
+	return LibMapTypeSynchro_Fov;
+}
+
+// ---------------------------------- //
+/** Set the thumbnail camera update date
+ *
+ *	@param _Update					The date
+ */
+Void SetThumbnailUpdate(Integer _Update) {
+	declare LibMapTypeSynchro_Update for Map = 0;
+	LibMapTypeSynchro_Update = _Update;
+}
+
+// ---------------------------------- //
+/** Get the thumbnail camera update date
+ *
+ *	@return							The thumbnail camera update date
+ */
+Integer GetThumbnailUpdate() {
+	declare LibMapTypeSynchro_Update for Map = 0;
+	return LibMapTypeSynchro_Update;
+}
+
+// ---------------------------------- //
+/** Temporarily save a validation time
+ *
+ *	@param							The validation time
+ */
+Void TimeToRestore(Integer _Time) {
+	declare LibMapTypeSynchro_SavedValidationTime for Map = -1;
+	LibMapTypeSynchro_SavedValidationTime = _Time;
+}
+
+// ---------------------------------- //
+/** Get a temporarily saved a validation time
+ *
+ *	@return							The validation time
+ */
+Integer TimeToRestore() {
+	declare LibMapTypeSynchro_SavedValidationTime for Map = -1;
+	return LibMapTypeSynchro_SavedValidationTime;
+}
+
+// ---------------------------------- //
+/** New validation
+ *
+ *	@param	_New					True if the validation was updated
+ */
+Void NewValidation(Boolean _New) {
+	declare LibMapTypeSynchro_NewValidation for Map = False;
+	LibMapTypeSynchro_NewValidation = _New;
+}
+Boolean NewValidation() {
+	declare LibMapTypeSynchro_NewValidation for Map = False;
+	return LibMapTypeSynchro_NewValidation;
+}
+
+// ---------------------------------- //
+/** Force the map to be validated or not
+ *
+ *	@param	_Forced					True to force
+ */
+Void ForceValidation(Boolean _Forced) {
+	declare LibMapTypeSynchro_ForceValidation for Map = False;
+	LibMapTypeSynchro_ForceValidation = _Forced;
+}
+Boolean ForcedValidation() {
+	declare LibMapTypeSynchro_ForceValidation for Map = False;
+	return LibMapTypeSynchro_ForceValidation;
+}

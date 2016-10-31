@@ -1,0 +1,641 @@
+
+#Include "Libs/Openplanet/Manialink2.Script.txt"								as Manialink
+#Include "Libs/Openplanet/TMConsole/Menu/LibLoading.Script.txt"				as Loading
+#Include "Libs/Openplanet/TMConsole/PanelParameter.Script.txt"	            as PanelParameter
+#Include "Libs/Openplanet/TMConsole/Live/LiveHelpers.Script.txt"				as LiveHelpers
+#Include "Libs/Openplanet/TMConsole/Menu/LibOnlineGameplay.Script.txt"		as GamePlay
+#Include "Libs/Openplanet/UIPadButtons.Script.txt"							as LibUIButtons
+
+#Include "Libs/Openplanet/TMConsole/LayerBuilders/LBChallengeBrowser_Filters.Script.txt" 			as Filters
+#Include "Libs/Openplanet/TMConsole/LayerBuilders/LBChallengeBrowser_Browser.Script.txt" 			as Browser
+#Include "Libs/Openplanet/TMConsole/LayerBuilders/LBChallengeBrowser_ChallengeOptions.Script.txt" 	as ChallengeOptions
+
+#Const C_ImgBase 	"file://Media/Manialinks/Nadeo/TMConsole/Images/"
+
+#Const Count_InstancesY				11
+
+Text Build(Text _ShowAnim, Text _HideAnim) {
+
+	//IMAGES
+	declare Text IMGBoard       	= C_ImgBase^"board_Empty.tga";	
+	declare Text IMGEchelonPrefix  	= C_ImgBase^"Online/BrowseServers/echelons/Echelon_";
+	
+	//SIZES
+	declare Real	SM_SizeTotalX            = 259.0;
+	declare Real	SM_SizeTotalY            = 150.;
+	declare Real	SM_SizeY                 = 8.27;
+
+	//POSITIONS
+	declare Real	PositionFirstQuadX       = 0.;
+	declare Real	PositionFirstQuadY       = 36.3;
+	
+	declare Integer Platform = LibUIButtons::GetPlatform();
+
+	//L16N Displayed while the browser is loading
+	Loading::Init(<SM_SizeTotalX, SM_SizeY*Count_InstancesY>, <PositionFirstQuadX, (PositionFirstQuadY - (SM_SizeY*(Count_InstancesY+1)) / 2.)>, 400, _("Retrieving information. Please wait."));
+	Filters::Init();
+
+	declare MLText = """	
+		<frame id="Frame_General">
+			<quad id="Quad_Board" posn="0 0 0" halign="center" valign="center" sizen="{{{259.5}}} {{{SM_SizeTotalY}}}" opacity="1.0" image="{{{IMGBoard}}}" />
+	""";
+
+	/////////////////////////
+	// LOADING
+	/////////////////////////		
+	MLText ^= """{{{Loading::InjectInManialink()}}}""";
+	
+	/////////////////////////
+	// BROWSER
+	/////////////////////////
+	MLText ^= """{{{Browser::InjectInManialink()}}}""";
+	
+	/////////////////////////
+	// FILTERS
+	/////////////////////////
+	MLText ^= """{{{Filters::InjectInManialink()}}}""";
+	
+	/////////////////////////
+	// CHALLENGEOPTIONS
+	/////////////////////////
+	MLText ^= """{{{ChallengeOptions::InjectInManialink()}}}""";
+	
+	MLText ^= """
+	</frame>
+	
+	<script><!--
+		#Const DebugName  "L_ChallengeBrowser"
+		#Const C_IsServerOnlineRequestDelay		2000 //on attend 2s entre chaque requete
+		#Const C_TimeTransitionPage2  {{{PanelParameter::GetTimeTransitionPage2()}}}
+		#Const C_ServerInfoLists_Speed 100
+		
+		#Const C_STATUS_NONE 				0
+		#Const C_STATUS_BROWSER				1
+		#Const C_STATUS_FILTERS				2
+		#Const C_STATUS_CHALLENGEOPTIONS	3
+		
+		#Const C_ONGLET_PLAY				0
+		#Const C_ONGLET_FIND				1
+		#Const C_ONGLET_CREATE				2
+		
+		#Const C_POSTINSTALLACTION_NONE		0
+		#Const C_POSTINSTALLACTION_TRAIN	1
+		#Const C_POSTINSTALLACTION_RACE		2
+		#Const C_POSTINSTALLACTION_BUDDIES	3
+		
+		
+		{{{Manialink::GetIncludes()}}}
+		{{{Manialink::Load()}}}
+		
+		declare Integer						G_LockInput;
+		declare Integer						G_HideTime;
+		declare Integer 					G_ChallengeBrowserStatus;
+		
+		declare Boolean						G_IsLimitedToCanyon;
+		
+		{{{Browser::InjectInGlobals()}}}
+		{{{Filters::InjectInGlobals()}}}
+		{{{ChallengeOptions::InjectInGlobals()}}}
+		
+		declare Boolean 					G_GotoFindIfNoChallenge;
+		declare Boolean						G_MustSelectFirstChallenge;
+		declare Boolean						G_MustRefreshChallengeInfo;
+		declare Boolean						G_IsInChallengeTracks;
+		declare Boolean						G_IsInChallengeManager;
+		declare Boolean						G_IsInRace;
+		declare Integer						G_PostInstallAction;
+		
+		declare Boolean						G_InstallingChallenge;
+		
+		//Images
+		declare Text[] G_Images_Echelon;
+		
+		//Gameplay
+		declare Text[]						G_ChallengesStyles;
+		declare Text[]						G_ChallengesDurations;
+		declare Text[]						G_ChallengesEnvironments;
+		
+		{{{Loading::InjectInGlobals()}}}
+		{{{Loading::InjectInFunctions()}}}
+		
+		{{{LiveHelpers::InjectConverters()}}}
+		{{{LiveHelpers::InjectFilters()}}}
+		
+		Void HidePage()
+		{
+			G_HideTime  = Now + C_TimeTransitionPage2;
+			G_LockInput = Now + C_TimeTransitionPage2;
+		}
+			
+		Void InstallChallenge()
+		{
+			G_InstallingChallenge = True;
+			declare Text[Text][] RequestedChallenges for Page;
+			SendCustomEvent("RequestInstallChallenge", [RequestedChallenges[G_CurrentSelectedChallengeIndex]["id"]]);
+		}
+		
+		Void ChallengeBuddies(Text _ChallengeId)
+		{
+			SendCustomEvent("SetMenuContext", ["ChallengeBuddies", _ChallengeId]);
+			SendCustomEvent("GotoPage", ["ChallengeBuddies"]);
+			{{{_HideAnim}}}
+			SendCustomEvent("DetachPage", ["ChallengeBrowser"]);
+			G_IsInChallengeManager = True;
+		}
+		
+		{{{LibUIButtons::Inject_SetInputInfoTextSelected()}}}
+	
+		Void ToggleInputInfo(Text _Context, Text _Input, Boolean _Hovered) {
+			declare CMlFrame FrameInput <=> (Page.GetFirstChild(_Context^"_InputInfo_"^_Input) as CMlFrame);
+			declare CMlLabel LabelInputInfo <=> (FrameInput.GetFirstChild("Label_Name") as CMlLabel);
+			SetInputInfoTextSelected(LabelInputInfo, _Hovered);
+		}
+			
+		{{{Browser::InjectInFunctions()}}}
+		{{{Filters::InjectInFunctions()}}}
+		{{{ChallengeOptions::InjectInFunctions()}}}
+		
+		Void Info_Hide() 
+		{
+		}
+		
+		Void Info_Show()
+		{
+		}
+		
+		//////////////////
+		// STATUS SWITCH
+		//////////////////
+		Void ChallengeBrowserStatus_Switch(Integer _NewStatus)
+		{
+			switch (G_ChallengeBrowserStatus)
+			{
+				//case C_STATUS_BROWSER 		: Browser_Hide(); //A priori le browser ne fait rien quand il se cache
+				case C_STATUS_FILTERS 			: Filters_Hide();
+				case C_STATUS_CHALLENGEOPTIONS	: ChallengeOptions_Hide();
+			}
+			
+			G_ChallengeBrowserStatus = _NewStatus;
+			
+			switch (G_ChallengeBrowserStatus)
+			{
+				case C_STATUS_BROWSER 				: Browser_Show();
+				case C_STATUS_FILTERS 				: Filters_Show();
+				case C_STATUS_CHALLENGEOPTIONS		: ChallengeOptions_Show();
+			}
+		}
+		
+		Void Open()
+		{
+			ChallengeBrowserStatus_Switch(C_STATUS_BROWSER);
+		}
+		
+		Void Quit()
+		{
+			Filters_Reset();
+			{{{_HideAnim}}}
+			SendCustomEvent("GotoPrevious", [""]);
+		}
+		
+		Void GotoBuddiesChallenges()
+		{
+			Quit();
+			SendCustomEvent("GotoPage", ["BuddiesChallengeBrowser"]);
+		}
+		
+		Void CreateNewChallenge()
+		{
+			SendCustomEvent("SetNewChallenge", Text[]);
+			SendCustomEvent("GotoPage", ["ChallengeManager"]);
+			{{{_HideAnim}}}
+			SendCustomEvent("DetachPage", ["ChallengeBrowser"]);
+			G_IsInChallengeManager = True;
+		}
+		
+		//////////////////
+		// INIT
+		//////////////////
+		Void Init()
+		{
+			G_IsLimitedToCanyon 		= False;
+			G_MustSelectFirstChallenge 	= False;
+			G_IsInChallengeTracks 		= False;
+			G_IsInChallengeManager 		= False;
+			G_IsInRace 			  		= False;
+			G_IsTraining 				= False;
+			G_GotoFindIfNoChallenge		= False;
+			G_MustRefreshChallengeInfo	= False;
+			
+			G_InstallingChallenge = False;
+			
+			G_ChallengeBrowserStatus = C_STATUS_NONE;
+			
+			{{{Loading::InjectInInit()}}}
+			
+			{{{ChallengeOptions::InjectInInit()}}}
+			{{{Browser::InjectInInit()}}}
+			{{{Filters::InjectInInit()}}}
+			
+			G_ChallengesStyles = {{{dump(GamePlay::GetRoomStyles())}}};
+			G_ChallengesDurations = {{{dump(GamePlay::GetDurations())}}};
+			G_ChallengesEnvironments = {{{dump(GamePlay::GetRoomEnvironments())}}};
+			//enviros
+			//mapscounts
+			
+			G_Images_Echelon = ["{{{IMGEchelonPrefix}}}0.tga", 
+								"{{{IMGEchelonPrefix}}}1.tga", 
+								"{{{IMGEchelonPrefix}}}2.tga",
+								"{{{IMGEchelonPrefix}}}3.tga", 
+								"{{{IMGEchelonPrefix}}}4.tga", 
+								"{{{IMGEchelonPrefix}}}5.tga", 
+								"{{{IMGEchelonPrefix}}}6.tga", 
+								"{{{IMGEchelonPrefix}}}7.tga",	
+								"{{{IMGEchelonPrefix}}}8.tga", 
+								"{{{IMGEchelonPrefix}}}9.tga"];	
+		}
+		
+		Void OnRequestedChallengesReceived(Integer _Onglet)
+		{
+			declare Text[Text][] RequestedChallenges for Page;
+			
+			G_RequestError = False;
+			if (G_OngletFocus != _Onglet)
+				return;
+			Loading_SetIsLoading(False);
+			
+			declare Real NbPages = (RequestedChallenges.count*1.0 - 1)/({{{Count_InstancesY}}}*1.0);
+			G_Prev_PageIndex = G_PageIndex;
+			SetPageMax(ML::CeilingInteger(NbPages));
+			if (G_NextPageOnRequestCompletion && G_Prev_PageIndex < NbPages - 1)
+				G_Prev_PageIndex += 1;
+			G_PageIndex = ML::Min(G_Prev_PageIndex, ML::CeilingInteger(NbPages)-1);
+			if (G_PageIndex < 0)
+				G_PageIndex = 0;
+			
+			declare CMlLabel Label_Status 		<=> (Page.GetFirstChild("Label_Status") as CMlLabel);
+			declare CMlLabel Label_Ratings 		<=> (Page.GetFirstChild("Label_Ratings") as CMlLabel);
+			if (G_OngletFocus == C_ONGLET_CREATE)
+			{
+				Label_Status.Show();
+				Label_Ratings.Hide();
+				for (I, 0, {{{Count_InstancesY}}}-1)
+				{
+					declare CMlFrame Frame_Ratings <=> (Page.GetFirstChild("Frame_Ratings"^I) as CMlFrame);
+					Frame_Ratings.Hide();
+				}
+			} else {
+				Label_Ratings.Show();
+				Label_Status.Hide();
+			}
+			if (G_OngletFocus == C_ONGLET_CREATE && G_MustSelectFirstChallenge)
+			{
+				if (RequestedChallenges.count != 0)
+				{
+					G_PageIndex = 0;
+					G_IndexSelectY = 0;
+					G_IndexFocusY = 0;
+					G_CurrentSelectedChallengeIndex = 0;
+				}
+			}
+			
+			Update2DArray(True);
+			UpdateInputsInfo();
+			
+			if (G_OngletFocus == C_ONGLET_CREATE && G_MustSelectFirstChallenge)
+			{
+				G_MustSelectFirstChallenge = False;
+				ChallengeBrowserStatus_Switch(C_STATUS_CHALLENGEOPTIONS);
+			} else if (G_ChallengeBrowserStatus == C_STATUS_CHALLENGEOPTIONS) {
+				ChallengeOptions_Refresh();
+			}
+		}
+		
+		Void OnRequestedChallengesFailure()
+		{
+			declare Text[Text][] RequestedChallenges for Page;
+			
+			G_RequestError = True;
+			Loading_SetIsLoading(False);
+			declare Real NbPages = (RequestedChallenges.count*1.0 - 1)/({{{Count_InstancesY}}}*1.0);
+			SetPageMax(ML::CeilingInteger(NbPages));
+			Update2DArray(True);
+			UpdateInputsInfo();
+			if (G_ChallengeBrowserStatus != C_STATUS_BROWSER)
+				ChallengeBrowserStatus_Switch(C_STATUS_BROWSER);
+		}
+		
+		//////////////////
+		// MAIN
+		//////////////////
+		main() {
+			Init();
+			
+			EnableMenuNavigation(True,False,Null,2);
+
+			declare Text[Text][] RequestedChallenges for Page;	
+			declare Text[Text][] RequestedChallengeMaps for Page;
+			
+			declare Integer ActiveButtonPlatform = {{{Platform}}};
+			
+			declare Text[][] CurrentFilters for Page;
+			
+			G_HideTime = -1;
+
+			{{{Browser::InjectBeforeLoop()}}}
+			{{{ChallengeOptions::InjectBeforeLoop()}}}
+			
+			while(True) {
+				yield;
+				
+				if(! PageIsVisible) continue;
+				LibManialink_AnimLoop();
+				
+				{{{Browser::InjectInLoop()}}}
+				{{{ChallengeOptions::InjectInLoop()}}}
+				
+				if(G_HideTime <= Now && G_HideTime != -1)
+				{
+					G_HideTime = -1;
+					SendCustomEvent("DetachPage", ["ChallengeBrowser"]);
+				}
+
+				{{{Loading::InjectInLoop()}}}	
+								
+				if (Input.PendingEvents.count != 0) {
+					declare Integer LastInputPlatform;
+					switch (Input.PendingEvents[Input.PendingEvents.count-1].Pad.Type) {
+						case CInputPad::EPadType::Keyboard 		: LastInputPlatform = {{{LibUIButtons::GetPlatform("PC")}}};
+						case CInputPad::EPadType::PlayStation 	: LastInputPlatform = {{{LibUIButtons::GetPlatform("PS4")}}};
+						case CInputPad::EPadType::XBox 			: LastInputPlatform = {{{LibUIButtons::GetPlatform("XB1")}}};
+						default 								: LastInputPlatform = {{{LibUIButtons::GetPlatform("PC")}}};
+					}
+					if (LastInputPlatform != ActiveButtonPlatform)
+						SendCustomEvent("SetActiveButtonPlaform", ["ChallengeBrowser", TL::ToText(LastInputPlatform)]);
+				}
+								
+				//EVENTS
+				foreach(Event in PendingEvents) {
+					switch(Event.Type) {
+						case CMlEvent::Type::PluginCustomEvent: {
+							switch(Event.PluginCustomEventType) {
+								case "Show" : {
+									{{{_ShowAnim}}}
+									ToggleInputInfo("Browser", "Select", False);
+									ToggleInputInfo("Browser", "Cancel", False);
+									ToggleInputInfo("Browser", "Action1", False);
+									ToggleInputInfo("Browser", "LStickPress", False);
+									ToggleInputInfo("ChallengeOptions", "Select", False);
+									ToggleInputInfo("ChallengeOptions", "Cancel", False);
+									EnableMenuNavigation(True,False,Null,2);
+									if (G_IsInChallengeTracks)
+									{
+										if (G_OngletFocus == C_ONGLET_FIND) {
+											G_OngletFocus = C_ONGLET_PLAY;
+											SwitchOnglet();
+											G_IndexFocusY = 0;
+											SendRequestChallenges();
+											G_IsInChallengeTracks = False;
+										} else {
+											ChallengeOptions_Refresh();
+										}
+									} else if (G_IsInRace) {
+										G_IsInRace = False;
+										//ChallengeBrowserStatus_Switch(C_STATUS_BROWSER);
+										SendRequestChallenges();
+									} else if (G_IsInChallengeManager) {
+										G_IsInChallengeManager = False;
+										if (G_ChallengeBrowserStatus == C_STATUS_CHALLENGEOPTIONS)
+										{
+											if (G_OngletFocus == C_ONGLET_PLAY)
+											{
+												ChallengeOptions_Refresh();
+											} else {
+												G_OngletFocus = C_ONGLET_PLAY;
+												SwitchOnglet();
+												G_IndexFocusY = 0;		
+												SendRequestChallenges();
+											}
+											SendCustomEvent("GetMustGotoBuddies", Text[]);
+										}
+									} else {
+										G_PageIndex = 0;
+										G_Prev_PageIndex = 0;
+										G_GotoFindIfNoChallenge = True;
+										G_OngletFocus = C_ONGLET_PLAY;
+										PrevOngletFocus = G_OngletFocus;
+										SetOnglet();
+										ChallengeBrowserStatus_Switch(C_STATUS_BROWSER);
+									}
+									G_LastRefreshTime = Now;
+									SendCustomEvent("GetIsLimitedToCanyon", Text[]);
+									SendCustomEvent("GetActiveButtonPlatform", ["ChallengeBrowser"]);
+								}
+								case "SetActiveButtonPlatform" : {
+									ActiveButtonPlatform = TL::ToInteger(Event.CustomEventData[0]);
+									Filters_UpdateHelpersForPlatform(ActiveButtonPlatform);
+									Browser_UpdateHelpersForPlatform(ActiveButtonPlatform);
+									ChallengeOptions_UpdateHelpersForPlatform(ActiveButtonPlatform);
+								}
+								case "MustGotoBuddies" : {
+									SendCustomEvent("PopUpAskGotoBuddies", Text[]);
+								}
+								case "Hide" : {
+									{{{_HideAnim}}}
+									HidePage();
+								}
+								case "SetOngletFocusNewChallenge" : {
+									G_OngletFocus = C_ONGLET_CREATE;
+									SwitchOnglet();
+									SendRequestChallenges();
+									G_MustSelectFirstChallenge = True;
+								}
+								case "Request_InstalledChallenges_Success" : {
+									if (RequestedChallenges.count == 0 && G_GotoFindIfNoChallenge && G_OngletFocus == 0)
+									{
+										G_OngletFocus = C_ONGLET_FIND;
+										SwitchOnglet();
+										G_IndexFocusY = 0;		
+										SendRequestChallenges();
+									} else {
+										OnRequestedChallengesReceived(0);
+									}
+									G_GotoFindIfNoChallenge = False;
+								}
+								case "Request_GetInstalledChallenge_Success" : {
+									if (G_ChallengeBrowserStatus == C_STATUS_CHALLENGEOPTIONS)
+										ChallengeOptions_OnChallengeReceived();
+								}	
+								case "Request_GetInstalledChallenge_Failure" : {
+									ChallengeBrowserStatus_Switch(C_STATUS_BROWSER);
+								}
+								case "Request_GetChallengeMaps_Success" : {
+									declare Text[Text][] RequestedChallengeMaps for Page;
+									declare Text[Text][] ChallengeTracks for Page;
+									ChallengeTracks = RequestedChallengeMaps;
+									if (G_ChallengeBrowserStatus == C_STATUS_CHALLENGEOPTIONS)
+										ChallengeOptions_OnChallengeReceived();
+								}
+								case "Request_GetChallengeMaps_Failure" : {
+									ChallengeBrowserStatus_Switch(C_STATUS_BROWSER);
+								}
+								case "Request_AllChallenges_Success" : {
+									OnRequestedChallengesReceived(1);
+								}
+								case "Request_MyChallenges_Success" : {
+									OnRequestedChallengesReceived(2);
+								}
+								case "Request_AllChallenges_Failure" : {
+									OnRequestedChallengesFailure();
+								}
+								case "Request_InstalledChallenges_Failure" : {
+									OnRequestedChallengesFailure();
+								}
+								case "Request_MyChallenges_Failure" : {
+									OnRequestedChallengesFailure();
+								}
+								case "Request_PublishChallenge_Success" : {
+									Loading_SetIsLoading(False);
+									SendCustomEvent("PopUpChallengePublished", Text[]);
+									ChallengeBrowserStatus_Switch(C_STATUS_BROWSER);
+								}
+								case "Request_PublishChallenge_Failure" : {
+									Loading_SetIsLoading(False);
+								}
+								case "Request_InstallChallenge_Success" : {
+									G_InstallingChallenge = False;
+									declare Text ChallengeId = RequestedChallenges[G_CurrentSelectedChallengeIndex]["id"];
+									
+									switch (G_PostInstallAction)
+									{
+										case C_POSTINSTALLACTION_TRAIN 		: ChallengeOptions_OnTrain(ChallengeId);
+										case C_POSTINSTALLACTION_RACE 		: ChallengeOptions_OnRace(ChallengeId);
+										case C_POSTINSTALLACTION_BUDDIES 	: ChallengeBuddies(ChallengeId);
+										case C_POSTINSTALLACTION_NONE		: 
+										{
+											SendCustomEvent("PopUpChallengeInstalled", Text[]);
+											G_OngletFocus = C_ONGLET_PLAY;
+											SwitchOnglet();
+											G_IndexFocusY = 0;
+											SendRequestChallenges();
+										}
+									}
+								}
+								case "Request_InstallChallenge_Failure" : {
+									G_InstallingChallenge = False;
+								}
+								case "Request_UninstallChallenge_Success" : {
+									SendCustomEvent("PopUpChallengeRemoved", Text[]);
+									Loading_SetIsLoading(False);
+									ChallengeBrowserStatus_Switch(C_STATUS_BROWSER);
+								}
+								case "Request_UninstallChallenge_Failure" : {
+									Loading_SetIsLoading(False);
+								}
+								case "DeleteChallenge" : {
+									if (Event.CustomEventData[0] == "True")
+										SendCustomEvent("RequestUninstallChallenge", [RequestedChallenges[G_CurrentSelectedChallengeIndex]["id"]]);
+								}
+								case "GotoBuddiesChallenges" : {
+									if (Event.CustomEventData[0] == "True")
+										GotoBuddiesChallenges();
+								}
+								case "SetIsLimitedToCanyon" : {
+									declare Boolean IsLimitedToCanyon = Event.CustomEventData[0] == "True";
+									if (IsLimitedToCanyon != G_IsLimitedToCanyon)
+									{
+										G_IsLimitedToCanyon = IsLimitedToCanyon;
+										if (G_IsLimitedToCanyon)
+											SendCustomEvent("PopUp_CanyonRestricted", Text[]);
+										if (G_IsLimitedToCanyon || G_ChallengeBrowserStatus == C_STATUS_BROWSER)
+											ChallengeBrowserStatus_Switch(C_STATUS_BROWSER);
+									}
+								}
+							}
+						}
+						case CMlEvent::Type::KeyPress: {
+							if (G_ChallengeBrowserStatus == C_STATUS_BROWSER) {
+								{{{Browser::InjectInKeyPress()}}}
+							}
+						}
+						case CMlEvent::Type::MouseClick: {
+							if (ActiveButtonPlatform !=  {{{LibUIButtons::GetPlatform("PC")}}})
+								SendCustomEvent("SetActiveButtonPlaform", ["ChallengeBrowser", TL::ToText({{{LibUIButtons::GetPlatform("PC")}}})]);
+							switch (G_ChallengeBrowserStatus)
+							{
+								case C_STATUS_FILTERS :
+								{
+									{{{Filters::InjectInMouseClick()}}}
+								}
+								case C_STATUS_BROWSER :
+								{
+									{{{Browser::InjectInMouseClick()}}}
+								}
+								case C_STATUS_CHALLENGEOPTIONS :
+								{
+									{{{ChallengeOptions::InjectInMouseClick()}}}
+								}
+							}
+						}
+						case CMlEvent::Type::MouseOver: {
+							switch (G_ChallengeBrowserStatus)
+							{
+								case C_STATUS_FILTERS :
+								{
+									{{{Filters::InjectInMouseOver()}}}
+								}
+								case C_STATUS_BROWSER :
+								{
+									{{{Browser::InjectInMouseOver()}}}
+								}
+								case C_STATUS_CHALLENGEOPTIONS :
+								{
+									{{{ChallengeOptions::InjectInMouseOver()}}}
+								}
+							}
+						}
+						case CMlEvent::Type::MouseOut: {
+							switch (G_ChallengeBrowserStatus)
+							{
+								case C_STATUS_FILTERS :
+								{
+									{{{Filters::InjectInMouseOut()}}}
+								}
+								case C_STATUS_BROWSER :
+								{
+									{{{Browser::InjectInMouseOut()}}}
+								}
+								case C_STATUS_CHALLENGEOPTIONS :
+								{
+									{{{ChallengeOptions::InjectInMouseOut()}}}
+								}
+							}
+						}
+						case CMlEvent::Type::MenuNavigation: {
+							if(G_LockInput + 50 > Now) continue;
+							//if(Loading_GetIsLoading()) continue;
+							G_LockInput = Now;
+							switch (G_ChallengeBrowserStatus)
+							{
+								case C_STATUS_FILTERS :
+								{
+									{{{Filters::InjectInMenuNavigation()}}}
+								}
+								case C_STATUS_BROWSER :
+								{
+									{{{Browser::InjectInMenuNavigation()}}}
+								}
+								case C_STATUS_CHALLENGEOPTIONS :
+								{
+									{{{ChallengeOptions::InjectInMenuNavigation()}}}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	--></script>
+	""";
+	
+	return MLText;
+}

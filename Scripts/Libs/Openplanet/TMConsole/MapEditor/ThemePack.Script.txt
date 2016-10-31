@@ -1,0 +1,1552 @@
+/** 
+ * Theme pack library
+ */
+
+#Const Version		"2016-02-23"
+#Const ScriptName	"ThemePack.Script.txt"
+
+#Include "TextLib" as TL
+#Include "Libs/Openplanet/TMConsole/MapEditor/Utils.Script.txt" as Utils
+#Include "Libs/Openplanet/TMConsole/MapEditor/Macroblock.Script.txt" as Macroblock
+
+// ---------------------------------- //
+// Constants
+// ---------------------------------- //
+/// Modes
+#Const C_Mode_Track			0	///< Track mode
+#Const C_Mode_Terrain		1	///< Terrain mode
+#Const C_Mode_Decoration	2	///< Decoration mode
+/// Translations
+#Const C_Translations [
+	"Canyon" => [
+		//L16N [MapEditor] Name of a group of blocks
+		_("|BlockStyle|Grand Prix"),
+		//L16N [MapEditor] Name of a group of blocks
+		_("|BlockStyle|Road"),
+		//L16N [MapEditor] Name of a group of blocks
+		_("|BlockStyle|Arena"),
+		//L16N [MapEditor] Name of a group of blocks
+		_("|BlockStyle|Gallery"),
+		//L16N [MapEditor] Name of a group of blocks
+		_("|BlockStyle|Wall"),
+		//L16N [MapEditor] Name of a group of blocks
+		_("|BlockStyle|Cliff"),
+		//L16N [MapEditor] Name of a group of blocks
+		_("|BlockStyle|Tunnel"),
+		
+		//L16N [MapEditor] Name of a group of blocks
+		_("|BlockStyle|Decoration"),
+		
+		//L16N [MapEditor] Name of a group of decoration blocks
+		_("|BlockCategory|Podium"),
+		//L16N [MapEditor] Name of a group of decoration blocks
+		_("|BlockCategory|Wall"),
+		//L16N [MapEditor] Name of a group of decoration blocks
+		_("|BlockCategory|Vegetation"),
+		//L16N [MapEditor] Name of a group of decoration blocks
+		_("|BlockCategory|Cliff"),
+		//L16N [MapEditor] Name of a group of decoration blocks
+		_("|BlockCategory|Structure"),
+		//L16N [MapEditor] Name of a group of decoration blocks
+		_("|BlockCategory|Flying"),
+		//L16N [MapEditor] Name of a group of decoration blocks
+		_("|BlockCategory|Sign"),
+		//L16N [MapEditor] Name of a group of decoration blocks
+		_("|BlockCategory|Pipeline"),
+		
+		//L16N [MapEditor] Name of a landscape
+		_("|Landscape|Plateau"),
+		//L16N [MapEditor] Name of a landscape
+		_("|Landscape|Water"),
+		//L16N [MapEditor] Name of a landscape
+		_("|Landscape|Rift"),
+		//L16N [MapEditor] Name of a landscape
+		_("|Landscape|Hills"),
+		//L16N [MapEditor] Name of a landscape
+		_("|Landscape|Empty"),
+		
+		//L16N [MapEditor] Category of decoration blocks
+		//_("|Decoration|Desert"),
+		//L16N [MapEditor] Category of decoration blocks
+		//_("|Decoration|Forest"),
+		//L16N [MapEditor] Category of decoration blocks
+		//_("|Decoration|Pipelines"),
+		//L16N [MapEditor] Category of decoration blocks
+		//_("|Decoration|Signs"),
+		//L16N [MapEditor] Category of decoration blocks
+		//_("|Decoration|Structures"),
+		
+		//L16N [MapEditor] Category of decoration blocks
+		_("|Decoration|Nature"),
+		//L16N [MapEditor] Category of decoration blocks
+		"|Decoration|International Turbo",
+		//L16N [MapEditor] Category of decoration blocks
+		_("|Decoration|Technology"),
+		//L16N [MapEditor] Category of decoration blocks
+		_("|Decoration|Desert")
+	],
+	"Valley" => [
+		//L16N [MapEditor] Name of a group of blocks
+		_("|BlockStyle|Road"),
+		//L16N [MapEditor] Name of a group of blocks
+		_("|BlockStyle|Highway"),
+		//L16N [MapEditor] Name of a group of blocks
+		_("|BlockStyle|Dirt"),
+		//L16N [MapEditor] Name of a group of blocks
+		_("|BlockStyle|Cliff"),
+		//L16N [MapEditor] Name of a group of blocks
+		_("|BlockStyle|Tunnel"),
+		//L16N [MapEditor] Name of a group of blocks
+		_("|BlockStyle|Castle"),
+		//L16N [MapEditor] Name of a group of blocks
+		_("|BlockStyle|Arena"),
+		
+		//L16N [MapEditor] Name of a group of blocks
+		_("|BlockStyle|Decoration"),
+		
+		//L16N [MapEditor] Name of a group of decoration blocks
+		_("|BlockCategory|Podium"),
+		//L16N [MapEditor] Name of a group of decoration blocks
+		_("|BlockCategory|Cliff"),
+		//L16N [MapEditor] Name of a group of decoration blocks
+		_("|BlockCategory|Vegetation"),
+		//L16N [MapEditor] Name of a group of decoration blocks
+		_("|BlockCategory|Farm"),
+		//L16N [MapEditor] Name of a group of decoration blocks
+		_("|BlockCategory|House"),
+		//L16N [MapEditor] Name of a group of decoration blocks
+		_("|BlockCategory|Flying"),
+		//L16N [MapEditor] Name of a group of decoration blocks
+		_("|BlockCategory|Sign"),
+		//L16N [MapEditor] Name of a group of decoration blocks
+		_("|BlockCategory|Structure"),
+		
+		//L16N [MapEditor] Name of a landscape
+		_("|Landscape|Mountains"),
+		//L16N [MapEditor] Name of a landscape
+		_("|Landscape|Water"),
+		//L16N [MapEditor] Name of a landscape
+		_("|Landscape|Forest"),
+		//L16N [MapEditor] Name of a landscape
+		_("|Landscape|Fields"),
+		//L16N [MapEditor] Name of a landscape
+		_("|Landscape|Empty"),
+		
+		//L16N [MapEditor] Category of decoration blocks
+		//_("|Decoration|Farms"),
+		//L16N [MapEditor] Category of decoration blocks
+		//_("|Decoration|Houses"),
+		//L16N [MapEditor] Category of decoration blocks
+		//_("|Decoration|Industrial"),
+		//L16N [MapEditor] Category of decoration blocks
+		//_("|Decoration|Natural"),
+		//L16N [MapEditor] Category of decoration blocks
+		//_("|Decoration|Signs"),
+		
+		//L16N [MapEditor] Category of decoration blocks
+		_("|Decoration|Nature"),
+		//L16N [MapEditor] Category of decoration blocks
+		"|Decoration|International Turbo",
+		//L16N [MapEditor] Category of decoration blocks
+		_("|Decoration|Technology"),
+		//L16N [MapEditor] Category of decoration blocks
+		_("|Decoration|Village")
+	],
+	"Stadium" => [
+		//L16N [MapEditor] Name of a group of blocks
+		_("|BlockStyle|Simple"),
+		//L16N [MapEditor] Name of a group of blocks
+		_("|BlockStyle|Slope"),
+		//L16N [MapEditor] Name of a group of blocks
+		_("|BlockStyle|Tilt"),
+		//L16N [MapEditor] Name of a group of blocks
+		_("|BlockStyle|Trench"),
+		//L16N [MapEditor] Name of a group of blocks
+		_("|BlockStyle|Dirt"),
+		//L16N [MapEditor] Name of a group of blocks
+		_("|BlockStyle|Platform"),
+		//L16N [MapEditor] Name of a group of blocks
+		_("|BlockStyle|Arena"),
+		
+		//L16N [MapEditor] Name of a group of blocks
+		_("|BlockStyle|Decoration"),
+		
+		//L16N [MapEditor] Name of a group of decoration blocks
+		_("|BlockCategory|Podium"),
+		//L16N [MapEditor] Name of a group of decoration blocks
+		_("|BlockCategory|Sculpture"),
+		//L16N [MapEditor] Name of a group of decoration blocks
+		_("|BlockCategory|Pillar"),
+		//L16N [MapEditor] Name of a group of decoration blocks
+		_("|BlockCategory|Inflatable"),
+		//L16N [MapEditor] Name of a group of decoration blocks
+		_("|BlockCategory|Flying"),
+		//L16N [MapEditor] Name of a group of decoration blocks
+		_("|BlockCategory|Sign"),
+		//L16N [MapEditor] Name of a group of decoration blocks
+		_("|BlockCategory|Dome"),
+		
+		//L16N [MapEditor] Name of a landscape
+		_("|Landscape|Towers"),
+		//L16N [MapEditor] Name of a landscape
+		_("|Landscape|Grass"),
+		//L16N [MapEditor] Name of a landscape
+		_("|Landscape|Dirt"),
+		//L16N [MapEditor] Name of a landscape
+		_("|Landscape|Pool"),
+		//L16N [MapEditor] Name of a landscape
+		_("|Landscape|Empty"),
+		
+		//L16N [MapEditor] Category of decoration blocks
+		//_("|Decoration|Bridges"),
+		//L16N [MapEditor] Category of decoration blocks
+		//_("|Decoration|Domes"),
+		//L16N [MapEditor] Category of decoration blocks
+		//_("|Decoration|Inflatables"),
+		//L16N [MapEditor] Category of decoration blocks
+		//_("|Decoration|Pillars"),
+		//L16N [MapEditor] Category of decoration blocks
+		//_("|Decoration|Sculptures"),
+		
+		//L16N [MapEditor] Category of decoration blocks
+		_("|Decoration|Nature"),
+		//L16N [MapEditor] Category of decoration blocks
+		"|Decoration|International Turbo",
+		//L16N [MapEditor] Category of decoration blocks
+		_("|Decoration|Technology"),
+		//L16N [MapEditor] Category of decoration blocks
+		_("|Decoration|Inflatables")
+	],
+	"Lagoon" => [
+		//L16N [MapEditor] Name of a group of blocks
+		_("|BlockStyle|Highway"),
+		//L16N [MapEditor] Name of a group of blocks
+		_("|BlockStyle|Slope"),
+		//L16N [MapEditor] Name of a group of blocks
+		_("|BlockStyle|Road"),
+		//L16N [MapEditor] Name of a group of blocks
+		_("|BlockStyle|Tunnel"),
+		//L16N [MapEditor] Name of a group of blocks
+		_("|BlockStyle|Offroad"),
+		//L16N [MapEditor] Name of a group of blocks
+		_("|BlockStyle|Rollercoaster"),
+		//L16N [MapEditor] Name of a group of blocks
+		_("|BlockStyle|Arena"),
+		//L16N [MapEditor] Name of a group of blocks
+		_("|BlockStyle|City"),
+		//L16N [MapEditor] Name of a group of blocks
+		_("|BlockStyle|Garden"),
+		
+		//L16N [MapEditor] Name of a group of blocks
+		_("|BlockStyle|Decoration"),
+		
+		//L16N [MapEditor] Name of a group of decoration blocks
+		_("|BlockCategory|Podium"),
+		//L16N [MapEditor] Name of a group of decoration blocks
+		_("|BlockCategory|Ship"),
+		//L16N [MapEditor] Name of a group of decoration blocks
+		_("|BlockCategory|Vegetation"),
+		//L16N [MapEditor] Name of a group of decoration blocks
+		_("|BlockCategory|Building"),
+		//L16N [MapEditor] Name of a group of decoration blocks
+		_("|BlockCategory|Structure"),
+		//L16N [MapEditor] Name of a group of decoration blocks
+		_("|BlockCategory|Flying"),
+		//L16N [MapEditor] Name of a group of decoration blocks
+		_("|BlockCategory|Sign"),
+		
+		//L16N [MapEditor] Name of a landscape
+		_("|Landscape|Big island"),
+		//L16N [MapEditor] Name of a landscape
+		_("|Landscape|Mountains"),
+		//L16N [MapEditor] Name of a landscape
+		_("|Landscape|Beach"),
+		//L16N [MapEditor] Name of a landscape
+		_("|Landscape|Jungle"),
+		//L16N [MapEditor] Name of a landscape
+		_("|Landscape|Empty"),
+		
+		//L16N [MapEditor] Category of decoration blocks
+		//_("|Decoration|Buildings"),
+		//L16N [MapEditor] Category of decoration blocks
+		//_("|Decoration|Natural"),
+		//L16N [MapEditor] Category of decoration blocks
+		//_("|Decoration|Ship"),
+		//L16N [MapEditor] Category of decoration blocks
+		//_("|Decoration|Structures"),
+		
+		//L16N [MapEditor] Category of decoration blocks
+		_("|Decoration|Nature"),
+		//L16N [MapEditor] Category of decoration blocks
+		"|Decoration|International Turbo",
+		//L16N [MapEditor] Category of decoration blocks
+		_("|Decoration|Technology"),
+		//L16N [MapEditor] Category of decoration blocks
+		_("|Decoration|Wood")
+	],
+	"All" => [
+		//L16N [MapEditor] Name of a group of blocks
+		_("|BlockCategory|Straight"),
+		//L16N [MapEditor] Name of a group of blocks
+		_("|BlockCategory|Turbo"),
+		//L16N [MapEditor] Name of a group of blocks
+		_("|BlockCategory|Turn"),
+		//L16N [MapEditor] Name of a group of blocks
+		_("|BlockCategory|Slope"),
+		//L16N [MapEditor] Name of a group of blocks
+		_("|BlockCategory|Checkpoint"),
+		//L16N [MapEditor] Name of a group of blocks
+		_("|BlockCategory|Finish"),
+		//L16N [MapEditor] Name of a group of blocks
+		_("|BlockCategory|Transition"),
+		//L16N [MapEditor] Name of a group of blocks
+		_("|BlockCategory|Obstacle")
+	]
+]
+
+// ---------------------------------- //
+// Globales
+// ---------------------------------- //
+declare Ident G_LoadRequestId;					///< Id of the config file load request
+declare Boolean G_ConfigFileLoaded;				///< Config file load status
+declare Text[Integer] G_TrackStyles;			///< The track styles
+declare Text[Integer] G_StartStyles;			///< Track styles containing a start block
+declare Text[Integer] G_LandStyles;				///< The land styles
+declare Text[Integer] G_DecoStyles;				///< The deco styles
+declare Integer G_TrackStyle;					///< The current track style
+declare Integer G_LandStyle;					///< The current land style
+declare Integer G_DecoStyle;					///< The deco style
+declare Text[][Integer] G_ClipsStyles;			///< Clips associeted with each track style
+declare Text[][Integer] G_TrackCategories;		///< List all categories
+declare Text[][Integer] G_DecoCategories;		///< List all deco categories
+declare Text[][Integer] G_LayersTypes;			///< Type of each terrain layer
+declare Real[][Integer] G_LayersFrequencies;	///< Frequency setting for each terrain layer
+declare Real[][Integer] G_LayersOctaves;		///< Octave setting for each terrain layer
+declare Text[Real][][Integer] G_TerrainsIds;	///< List of terrains ids and their height intervals
+declare Real[Text][Integer] G_DecorationsIds;	///< List of decoration ids and their probability to be used
+declare CMacroblockModel[Integer] G_Terrains;	///< Macroblock to use as terrain
+declare Boolean G_UseRandomLandStyle;			///< Use random landscape generation
+declare Boolean G_DisplayLog;					///< Display logs
+declare Integer G_Mode;							///< Current mode
+declare Real[Text] G_DecoRatios;				///< Default ratios for decoration
+declare Vec3[Text] G_DecoColors;				///< Colors for the decoration
+declare CMacroblockModel[][Integer][Integer] G_AvailableMacroblockModels; ///< List available macroblocks
+
+// ---------------------------------- //
+// Functions
+// ---------------------------------- //
+// ---------------------------------- //
+// Private
+// ---------------------------------- //
+// ---------------------------------- //
+/** Check if the config load request exists
+ *
+ *	@return							True if the request exists, False otherwise
+ */
+Boolean Private_RequestExists() {
+	return G_LoadRequestId != NullId && Http.Requests.existskey(G_LoadRequestId);
+}
+
+// ---------------------------------- //
+/** Convert a Text to a vec3
+ *
+ *	@param	_In						The Text to convert
+ *
+ *	@return							The Vec3
+ */
+Vec3 Private_TextToVec3(Text _In) {
+	declare In = TL::Split(",", TL::ReplaceChars(_In, " ", "")); //< Remove space
+	declare Vec3 Out;
+	if (In.existskey(0)) Out.X = TL::ToReal(In[0]);
+	if (In.existskey(1)) Out.Y = TL::ToReal(In[1]);
+	if (In.existskey(2)) Out.Z = TL::ToReal(In[2]);
+	
+	return Out;
+}
+
+// ---------------------------------- //
+/** Read the config file
+ *
+ *	@param	_Config					The content of the config file
+ */
+Void Private_ReadConfig(Text _Config) {
+	declare XmlFile <=> Xml.Create(_Config);
+	declare AllMacroblockFound = True;
+	
+	if (XmlFile != Null && XmlFile.Root.Name == "themepacks") {
+		foreach (NodeEnvironment in XmlFile.Root.Children) {
+			if (Map.CollectionName != NodeEnvironment.GetAttributeText("name", "")) continue;
+			
+			foreach (NodeStyles in NodeEnvironment.Children) {
+				if (NodeStyles.Name == "trackstyles") {
+					foreach (NodeTrackStyle in NodeStyles.Children) {
+						yield;
+						
+						declare HasStart = False;
+						declare MacroblockModelOrder = 0;
+						declare TrackStyleId = NodeTrackStyle.GetAttributeInteger("id", -1);
+						G_TrackStyles[TrackStyleId] = NodeTrackStyle.GetAttributeText("name", "");
+						G_TrackCategories[TrackStyleId] = Text[];
+						
+						declare Clips = NodeTrackStyle.GetAttributeText("clips", "");
+						if (Clips != "") {
+							G_ClipsStyles[TrackStyleId] = TL::Split(",", Clips);
+						}
+						
+						declare TrackStyleRandomDisabled = NodeTrackStyle.GetAttributeInteger("randomdisabled", 0);
+						
+						foreach (NodeCategory in NodeTrackStyle.Children) {
+							declare CategoryName = NodeCategory.GetAttributeText("name", "");
+							if (!G_TrackCategories[TrackStyleId].exists(CategoryName)) G_TrackCategories[TrackStyleId].add(CategoryName);
+							
+							declare CategoryRandomDisabled = NodeCategory.GetAttributeInteger("randomdisabled", -1);
+							if (CategoryRandomDisabled < 0) CategoryRandomDisabled = TrackStyleRandomDisabled;
+							
+							foreach (NodeMacroblock in NodeCategory.Children) {
+								declare MacroblockFullName = NodeMacroblock.GetAttributeText("id", "");
+								if (MacroblockFullName == "") continue;
+								
+								declare MacroblockRandomDisabled = NodeMacroblock.GetAttributeInteger("randomdisabled", -1);
+								if (MacroblockRandomDisabled < 0) MacroblockRandomDisabled = CategoryRandomDisabled;
+								
+								declare MacroblockRandomOnly = NodeMacroblock.GetAttributeBoolean("randomonly", False);
+								
+								declare MacroblockModelFound = False;
+								declare MacroblockModelsFound = Macroblock::GetMacroblockModelsFromFullName(MacroblockFullName);
+								foreach (MacroblockModel in MacroblockModelsFound) {
+								//foreach (MacroblockModel in MacroblockModels) {
+									if (MacroblockFullName != Macroblock::GetFullName(MacroblockModel)) continue;
+									
+									MacroblockModelFound = True;
+									if (!MacroblockRandomOnly && (MacroblockModel.HasStart || MacroblockModel.HasMultilap)) HasStart = True;
+									
+									declare LibThemePack_Loaded for MacroblockModel = False;
+									LibThemePack_Loaded = True;
+									
+									declare LibThemePack_TrackCategory for MacroblockModel = Text[Integer];
+									LibThemePack_TrackCategory[TrackStyleId] = CategoryName;
+									
+									declare LibThemePack_IsSymmetrical for MacroblockModel = False;
+									LibThemePack_IsSymmetrical = NodeMacroblock.GetAttributeBoolean("symmetrical", False);
+									
+									declare LibThemePack_TrackOrder for MacroblockModel = Integer[Integer];
+									LibThemePack_TrackOrder[TrackStyleId] = MacroblockModelOrder;
+									MacroblockModelOrder += 1;
+									
+									declare LibThemePack_Name for MacroblockModel = "";
+									LibThemePack_Name = NodeMacroblock.GetAttributeText("name", "");
+									
+									declare LibThemePack_IsSimple for MacroblockModel = False;
+									LibThemePack_IsSimple = NodeMacroblock.GetAttributeBoolean("simple", False);
+									
+									declare LibThemePack_RandomDisabled for MacroblockModel = False;
+									LibThemePack_RandomDisabled = (MacroblockRandomDisabled > 0);
+									
+									declare LibThemePack_IsListed for MacroblockModel = False;
+									LibThemePack_IsListed = True;
+									
+									declare LibThemePack_IsRandomOnly for MacroblockModel = False;
+									LibThemePack_IsRandomOnly = MacroblockRandomOnly;
+									
+									declare LibThemePack_FollowUp for MacroblockModel = "";
+									LibThemePack_FollowUp = NodeMacroblock.GetAttributeText("followup", "");
+									
+									declare LibThemePack_Terraforming for MacroblockModel = False;
+									LibThemePack_Terraforming = NodeMacroblock.GetAttributeBoolean("terraforming", False);
+									
+									declare LibThemePack_AvailableInTrial for MacroblockModel = False;
+									LibThemePack_AvailableInTrial = NodeMacroblock.GetAttributeBoolean("trial", False);
+									
+									declare LibThemePack_IsOriented for MacroblockModel = False;
+									LibThemePack_IsOriented = NodeMacroblock.GetAttributeBoolean("oriented", False);
+									
+									declare LibThemePack_NoRespawn for MacroblockModel = False;
+									LibThemePack_NoRespawn = NodeMacroblock.GetAttributeBoolean("norespawn", False);
+									
+									declare LibThemePack_RandomSkin for MacroblockModel = True;
+									LibThemePack_RandomSkin = NodeMacroblock.GetAttributeBoolean("randomskin", True);
+								}
+								
+								if (G_DisplayLog && !MacroblockModelFound) {
+									Utils::Log("["^ScriptName^"] Can't find macroblock : "^MacroblockFullName);
+									AllMacroblockFound = False;
+								}
+							}
+						}
+						
+						if (HasStart) G_StartStyles[TrackStyleId] = G_TrackStyles[TrackStyleId];
+					}
+				} else if (G_UseRandomLandStyle && NodeStyles.Name == "landstyles") {
+					foreach (NodeLandStyle in NodeStyles.Children) {
+						yield;
+						
+						declare LandStyleId = NodeLandStyle.GetAttributeInteger("id", -1);
+						G_LandStyles[LandStyleId] = NodeLandStyle.GetAttributeText("name", "");
+						G_LayersTypes[LandStyleId] = Text[];
+						G_LayersFrequencies[LandStyleId] = Real[];
+						G_LayersOctaves[LandStyleId] = Real[];
+						G_TerrainsIds[LandStyleId] = Text[Real][];
+						G_DecorationsIds[LandStyleId] = Real[Text];
+						
+						foreach (NodeType in NodeLandStyle.Children) {
+							if (NodeType.Name == "terrain") {
+								foreach (NodeLayer in NodeType.Children) {
+									G_LayersTypes[LandStyleId].add(NodeLayer.GetAttributeText("type", ""));
+									G_LayersFrequencies[LandStyleId].add(NodeLayer.GetAttributeReal("frequency", 0.4));
+									G_LayersOctaves[LandStyleId].add(NodeLayer.GetAttributeReal("octaves", 10.));
+									G_TerrainsIds[LandStyleId].add(Text[Real]);
+									
+									foreach (NodeBlock in NodeLayer.Children) {
+										declare BlockId = NodeBlock.GetAttributeText("id", "");
+										declare BlockHeight = NodeBlock.GetAttributeReal("height", -1.);
+										
+										G_TerrainsIds[LandStyleId][G_TerrainsIds[LandStyleId].count-1][BlockHeight] = BlockId;
+									}
+									
+									G_TerrainsIds[LandStyleId][G_TerrainsIds[LandStyleId].count-1] = G_TerrainsIds[LandStyleId][G_TerrainsIds[LandStyleId].count-1].sortkey();
+								}
+							} else if (NodeType.Name == "decoration") {
+								foreach (NodeCategory in NodeType.Children) {
+									declare CategoryId = NodeCategory.GetAttributeText("id", "");
+									if (CategoryId == "") continue;
+									declare CategoryRatio = NodeCategory.GetAttributeReal("ratio", 0.);
+									G_DecorationsIds[LandStyleId][CategoryId] = CategoryRatio;
+								}
+							}
+						}
+					}
+				} else if (NodeStyles.Name == "decostyles") {
+					foreach (NodeDecoStyle in NodeStyles.Children) {
+						yield;
+						
+						declare MacroblockModelOrder = 0;
+						declare DecoStyleId = NodeDecoStyle.GetAttributeInteger("id", -1);
+						G_DecoStyles[DecoStyleId] = NodeDecoStyle.GetAttributeText("name", "");
+						G_DecoCategories[DecoStyleId] = Text[];
+						
+						foreach (NodeCategory in NodeDecoStyle.Children) {
+							declare CategoryName = NodeCategory.GetAttributeText("name", "");
+							if (!G_DecoCategories[DecoStyleId].exists(CategoryName)) G_DecoCategories[DecoStyleId].add(CategoryName);
+							
+							declare DecoRatio = NodeCategory.GetAttributeReal("ratio", 0.);
+							G_DecoRatios[CategoryName] = DecoRatio;
+							
+							declare DecoColor = NodeCategory.GetAttributeText("color", "");
+							G_DecoColors[CategoryName] = Private_TextToVec3(DecoColor);
+							
+							foreach (NodeMacroblock in NodeCategory.Children) {
+								declare MacroblockFullName = NodeMacroblock.GetAttributeText("id", "");
+								if (MacroblockFullName == "") continue;
+								
+								declare MacroblockRandomOnly = NodeMacroblock.GetAttributeBoolean("randomonly", False);
+								
+								declare MacroblockModelFound = False;
+								declare MacroblockModelsFound = Macroblock::GetMacroblockModelsFromFullName(MacroblockFullName);
+								foreach (MacroblockModel in MacroblockModelsFound) {
+								//foreach (MacroblockModel in MacroblockModels) {
+									if (MacroblockFullName != Macroblock::GetFullName(MacroblockModel)) continue;
+									
+									declare LibThemePack_Loaded for MacroblockModel = False;
+									LibThemePack_Loaded = True;
+									
+									declare LibThemePack_DecoCategory for MacroblockModel = Text[Integer];
+									LibThemePack_DecoCategory[DecoStyleId] = CategoryName;
+									MacroblockModelFound = True;
+									
+									declare LibThemePack_DecoOrder for MacroblockModel = Integer[Integer];
+									LibThemePack_DecoOrder[DecoStyleId] = MacroblockModelOrder;
+									MacroblockModelOrder += 1;
+									
+									declare LibThemePack_Name for MacroblockModel = "";
+									LibThemePack_Name = NodeMacroblock.GetAttributeText("name", "");
+									
+									declare LibThemePack_IsListed for MacroblockModel = False;
+									LibThemePack_IsListed = True;
+									
+									declare LibThemePack_IsRandomOnly for MacroblockModel = False;
+									LibThemePack_IsRandomOnly = MacroblockRandomOnly;
+									
+									declare LibThemePack_Terraforming for MacroblockModel = False;
+									LibThemePack_Terraforming = NodeMacroblock.GetAttributeBoolean("terraforming", False);
+									
+									declare LibThemePack_AvailableInTrial for MacroblockModel = False;
+									LibThemePack_AvailableInTrial = NodeMacroblock.GetAttributeBoolean("trial", False);
+									
+									declare LibThemePack_RandomSkin for MacroblockModel = True;
+									LibThemePack_RandomSkin = NodeMacroblock.GetAttributeBoolean("randomskin", True);
+								}
+								
+								if (G_DisplayLog && !MacroblockModelFound) {
+									Utils::Log("["^ScriptName^"] Can't find macroblock : "^MacroblockFullName);
+									AllMacroblockFound = False;
+								}
+							}
+						}
+					}
+				} else if (!G_UseRandomLandStyle && NodeStyles.Name == "terrainstyles") {
+					foreach (NodeTerrainStyle in NodeStyles.Children) {
+						declare TerrainStyleId = NodeTerrainStyle.GetAttributeInteger("id", -1);
+						G_LandStyles[TerrainStyleId] = NodeTerrainStyle.GetAttributeText("name", "");
+						declare MacroblockFullName = NodeTerrainStyle.GetAttributeText("blockid", "");
+						
+						declare MacroblockModelFound = False;
+						declare MacroblockModelsFound = Macroblock::GetMacroblockModelsFromFullName(MacroblockFullName);
+						foreach (MacroblockModel in MacroblockModelsFound) {
+						//foreach (MacroblockModel in MacroblockModels) {
+							if (MacroblockFullName != Macroblock::GetFullName(MacroblockModel)) continue;
+							
+							declare LibThemePack_Loaded for MacroblockModel = False;
+							LibThemePack_Loaded = True;
+							
+							MacroblockModelFound = True;
+							G_Terrains[TerrainStyleId] = MacroblockModel;
+						}
+						if (G_DisplayLog && !MacroblockModelFound) {
+							Utils::Log("["^ScriptName^"] Can't find macroblock : "^MacroblockFullName);
+							AllMacroblockFound = False;
+						}
+					}
+				}
+			}
+		}
+		
+		G_ConfigFileLoaded = True;
+	}
+	Xml.Destroy(XmlFile);
+	
+	if (G_DisplayLog && AllMacroblockFound) {
+		Utils::Log("["^ScriptName^"] All macroblocks found.");
+	}
+}
+
+// ---------------------------------- //
+/** Clear the data on the macroblock models
+ *
+ *	@param	_Async					Yield between macroblocks
+ */
+Void Private_ClearMacroblockModels(Boolean _Async) {
+	foreach (Key => MacroblockModel in MacroblockModels) {
+		declare LibThemePack_Loaded for MacroblockModel = False;
+		if (LibThemePack_Loaded) {
+			LibThemePack_Loaded = False;
+			
+			declare LibThemePack_TrackCategory for MacroblockModel = Text[Integer];
+			declare LibThemePack_DecoCategory for MacroblockModel = Text[Integer];
+			declare LibThemePack_IsSymmetrical for MacroblockModel = False;
+			declare LibThemePack_TrackOrder for MacroblockModel = Integer[Integer];
+			declare LibThemePack_DecoOrder for MacroblockModel = Integer[Integer];
+			declare LibThemePack_Name for MacroblockModel = "";
+			declare LibThemePack_IsSimple for MacroblockModel = False;
+			declare LibThemePack_RandomDisabled for MacroblockModel = False;
+			declare LibThemePack_IsListed for MacroblockModel = False;
+			declare LibThemePack_IsRandomOnly for MacroblockModel = False;
+			declare LibThemePack_FollowUp for MacroblockModel = "";
+			declare LibThemePack_Terraforming for MacroblockModel = False;
+			declare LibThemePack_AvailableInTrial for MacroblockModel = False;
+			declare LibThemePack_IsOriented for MacroblockModel = False;
+			declare LibThemePack_NoRespawn for MacroblockModel = False;
+			declare LibThemePack_RandomSkin for MacroblockModel = True;
+			LibThemePack_TrackCategory.clear();
+			LibThemePack_DecoCategory.clear();
+			LibThemePack_IsSymmetrical = False;
+			LibThemePack_TrackOrder.clear();
+			LibThemePack_DecoOrder.clear();
+			LibThemePack_Name = "";
+			LibThemePack_IsSimple = False;
+			LibThemePack_RandomDisabled = False;
+			LibThemePack_IsListed = False;
+			LibThemePack_IsRandomOnly = False;
+			LibThemePack_FollowUp = "";
+			LibThemePack_Terraforming = False;
+			LibThemePack_AvailableInTrial = False;
+			LibThemePack_IsOriented = False;
+			LibThemePack_NoRespawn = False;
+			LibThemePack_RandomSkin = True;
+		}
+		
+		if (_Async && Key % 200 == 0) yield;
+	}
+}
+
+// ---------------------------------- //
+// Public
+// ---------------------------------- //
+// ---------------------------------- //
+/** Return the version number of the script
+ *
+ *	@return							The version number of the script
+ */
+Text GetScriptVersion() {
+	return Version;
+}
+
+// ---------------------------------- //
+/** Return the name of the script
+ *
+ *	@return							The name of the script
+ */
+Text GetScriptName() {
+	return ScriptName;
+}
+
+// ---------------------------------- //
+/** Check if the configuration file is loaded
+ *
+ *	@return							True if the library is loaded, False otherwise
+ */
+Boolean LoadConfig_IsLoaded() {
+	return G_ConfigFileLoaded;
+}
+
+// ---------------------------------- //
+/** Start to load the configuration file
+ *
+ *	@param	_ConfigPath				Path to the config file
+ */
+Void LoadConfig_Start(Text _ConfigPath) {
+	if (Http.SlotsAvailable <= 0) return;
+	
+	G_ConfigFileLoaded = False;
+	G_TrackCategories.clear();
+	G_LayersTypes.clear();
+	G_LayersFrequencies.clear();
+	G_LayersOctaves.clear();
+	G_TerrainsIds.clear();
+	G_DecorationsIds.clear();
+	
+	Private_ClearMacroblockModels(False);
+	
+	declare Request <=> Http.CreateGet(_ConfigPath, False);
+	if (Request != Null) G_LoadRequestId = Request.Id;
+}
+
+// ---------------------------------- //
+/** Check if the configuration file is still loading
+ *
+ *	@return							True if the library is loading, False otherwise
+ */
+Boolean LoadConfig_IsLoading() {
+	if (Private_RequestExists()) {
+		return !Http.Requests[G_LoadRequestId].IsCompleted;
+	}
+	
+	return False;
+}
+
+// ---------------------------------- //
+/// Configuration file loaded
+Void Sync_LoadConfig_End() {
+	if (!Private_RequestExists()) return;
+	
+	declare Request <=> Http.Requests[G_LoadRequestId];
+	if (Request.IsCompleted) {
+		Private_ReadConfig(Request.Result);
+	}
+	
+	Http.Destroy(Request);
+	G_LoadRequestId = NullId;
+}
+
+// ---------------------------------- //
+/** Check if a macroblock model is listed in the theme pack xml
+ *
+ *	@param	_MacroblockModel		The macroblock model to check
+ *
+ *	@return							True if the macroblock model is listed, False otherwise
+ */
+Boolean IsListed(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return False;
+	
+	declare LibThemePack_IsListed for _MacroblockModel = False;
+	return LibThemePack_IsListed;
+}
+
+// ---------------------------------- //
+/** Check if a macroblock model is available in the selected track style
+ *
+ *	@param	_MacroblockModel		The macroblock model to check
+ *
+ *	@return							True if the macroblock model is available, False otherwise
+ */
+Boolean IsAvailable(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return False;
+	
+	declare LibThemePack_IsRandomOnly for _MacroblockModel = False;
+	if (LibThemePack_IsRandomOnly) return False;
+	
+	if (G_Mode == C_Mode_Decoration) {
+		declare LibThemePack_DecoCategory for _MacroblockModel = Text[Integer];
+		return (LibThemePack_DecoCategory.existskey(G_DecoStyle));
+	}
+	
+	declare LibThemePack_TrackCategory for _MacroblockModel = Text[Integer];
+	return (LibThemePack_TrackCategory.existskey(G_TrackStyle));
+}
+
+// ---------------------------------- //
+/** Check if a macroblock model is used in the random generator only
+ *
+ *	@param	_MacroblockModel		The macroblock model to check
+ *
+ *	@return							True if the macroblock model is for the random generator only, False otherwise
+ */
+Boolean IsRandomOnly(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return False;
+	
+	declare LibThemePack_IsRandomOnly for _MacroblockModel = False;
+	return LibThemePack_IsRandomOnly;
+}
+
+// ---------------------------------- //
+/** Check if a macroblock model is symmetrical
+ *
+ *	@param	_MacroblockModel		The macroblock model to check
+ *
+ *	@return							True if the macroblock is symmetrical, False otherwise
+ */
+Boolean IsSymmetrical(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return False;
+	
+	declare LibThemePack_IsSymmetrical for _MacroblockModel = False;
+	return LibThemePack_IsSymmetrical;
+}
+
+// ---------------------------------- //
+/** Check if a macroblock model is simple (eg :straigh line)
+ *
+ *	@param	_MacroblockModel		The macroblock model to check
+ *
+ *	@return							True if the macroblock is simple, False otherwise
+ */
+Boolean IsSimple(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return False;
+	
+	declare LibThemePack_IsSimple for _MacroblockModel = False;
+	return LibThemePack_IsSimple;
+}
+
+// ---------------------------------- //
+/** Check if a macroblock model is disabled in random generation
+ *
+ *	@param	_MacroblockModel		The macroblock model to check
+ *
+ *	@return							True if the macroblock is disabled, False otherwise
+ */
+Boolean IsRandomDisabled(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return False;
+	
+	declare LibThemePack_RandomDisabled for _MacroblockModel = False;
+	return LibThemePack_RandomDisabled;
+}
+
+// ---------------------------------- //
+/** Get the order of a macroblock model
+ *
+ *	@param	_MacroblockModel		The macroblock model to check
+ *
+ *	@return							The order of the macroblock
+ */
+Integer GetOrder(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return 0;
+	
+	if (G_Mode == C_Mode_Decoration) {
+		declare LibThemePack_DecoOrder for _MacroblockModel = Integer[Integer];
+		if (!LibThemePack_DecoOrder.existskey(G_DecoStyle)) return 0;
+		return LibThemePack_DecoOrder[G_DecoStyle];
+	}
+	
+	declare LibThemePack_TrackOrder for _MacroblockModel = Integer[Integer];
+	if (!LibThemePack_TrackOrder.existskey(G_TrackStyle)) return 0;
+	return LibThemePack_TrackOrder[G_TrackStyle];
+}
+
+// ---------------------------------- //
+/** Get the name of a macroblock model
+ *
+ *	@param	_MacroblockModel		The macroblock model to check
+ *
+ *	@return							The name of the macroblock
+ */
+Text GetName(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return "";
+	
+	declare LibThemePack_Name for _MacroblockModel = "";
+	return LibThemePack_Name;
+}
+
+// ---------------------------------- //
+/** Get the macroblock that should be placed after the provided macroblock
+ *
+ *	@param	_MacroblockModel		The previous macroblock model
+ *
+ *	@return							The full name of the macroblock that should follow
+ */
+Text GetFollowUp(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return "";
+	
+	declare LibThemePack_FollowUp for _MacroblockModel = "";
+	return LibThemePack_FollowUp;
+}
+
+// ---------------------------------- //
+/** Check if the macroblock is allowed to place terraforming
+ *
+ *	@param	_MacroblockModel		The macroblock model to check
+ *
+ *	@return							True if the macroblock can place terrain, False otherwise
+ */
+Boolean CanPlaceTerrain(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return False;
+	
+	declare LibThemePack_Terraforming for _MacroblockModel = False;
+	return LibThemePack_Terraforming;
+}
+
+// ---------------------------------- //
+/** Check if a macroblock model is available in trial version
+ *
+ *	@param	_MacroblockModel		The macroblock model to check
+ *
+ *	@return							True if the macroblock model is available, False otherwise
+ */
+Boolean AvailableInTrial(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return False;
+	
+	declare LibThemePack_AvailableInTrial for _MacroblockModel = False;
+	return LibThemePack_AvailableInTrial;
+}
+
+// ---------------------------------- //
+/** Check if a macroblock model is oriented
+ *
+ *	@param	_MacroblockModel		The macroblock model to check
+ *
+ *	@return							True if the macroblock model is oriented, False otherwise
+ */
+Boolean IsOriented(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return False;
+	
+	declare LibThemePack_IsOriented for _MacroblockModel = False;
+	return LibThemePack_IsOriented;
+}
+
+// ---------------------------------- //
+/** Check if a macroblock model is not respawnable
+ *
+ *	@param	_MacroblockModel		The macroblock model to check
+ *
+ *	@return							True if the macroblock model is not respawnable, False otherwise
+ */
+Boolean NoRespawn(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return False;
+	
+	declare LibThemePack_NoRespawn for _MacroblockModel = False;
+	return LibThemePack_NoRespawn;
+}
+
+// ---------------------------------- //
+/** Check if a macroblock model can be skinned randomly
+ *
+ *	@param	_MacroblockModel		The macroblock model to check
+ *
+ *	@return							True if the macroblock model can be skinned randomly, False otherwise
+ */
+Boolean CanSkin(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return False;
+	
+	declare LibThemePack_RandomSkin for _MacroblockModel = True;
+	return LibThemePack_RandomSkin;
+}
+
+// ---------------------------------- //
+/** Get the styles of a macroblock model
+ *
+ *	@param	_MacroblockModel		The macroblock model to check
+ *
+ *	@return							The styles of the macroblock model
+ */
+Integer[] GetStyles(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return Integer[];
+	
+	declare StylesIds = Integer[];
+	
+	if (G_Mode == C_Mode_Decoration) {
+		declare LibThemePack_DecoCategory for _MacroblockModel = Text[Integer];
+		foreach (DecoStyleId => Category in LibThemePack_DecoCategory) {
+			StylesIds.add(DecoStyleId);
+		}
+	} else {
+		declare LibThemePack_TrackCategory for _MacroblockModel = Text[Integer];
+		foreach (TrackStyleId => Category in LibThemePack_TrackCategory) {
+			StylesIds.add(TrackStyleId);
+		}
+	}
+	
+	return StylesIds;
+}
+
+// ---------------------------------- //
+/** Get the styles names of a macroblock model
+ *
+ *	@param	_MacroblockModel		The macroblock model to check
+ *
+ *	@return							The styles names of the macroblock model
+ */
+Text[] GetStylesNames(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return Text[];
+	
+	declare StylesNames = Text[];
+	
+	if (G_Mode == C_Mode_Decoration) {
+		declare LibThemePack_DecoCategory for _MacroblockModel = Text[Integer];
+		foreach (DecoStyleId => Category in LibThemePack_DecoCategory) {
+			StylesNames.add(G_DecoStyles[DecoStyleId]);
+		}
+	} else {
+		declare LibThemePack_TrackCategory for _MacroblockModel = Text[Integer];
+		foreach (TrackStyleId => Category in LibThemePack_TrackCategory) {
+			StylesNames.add(G_TrackStyles[TrackStyleId]);
+		}
+	}
+		
+	return StylesNames;
+}
+
+// ---------------------------------- //
+/** Get the number of terrain layers
+ *
+ *	@return							The number of layers
+ */
+Integer GetLayersCount() {
+	if (!G_LayersFrequencies.existskey(G_LandStyle)) return 0;
+	return G_LayersFrequencies[G_LandStyle].count;
+}
+
+// ---------------------------------- //
+/** Get the type of a given terrain layer
+ *
+ *	@param	_Layer					The layer to check
+ *
+ *	@return							The type of the layer if found, an empty Text otherwise
+ */
+Text GetType(Integer _Layer) {
+	if (!G_LayersTypes.existskey(G_LandStyle)) return "";
+	if (!G_LayersTypes[G_LandStyle].existskey(_Layer)) return "";
+	return G_LayersTypes[G_LandStyle][_Layer];
+}
+
+// ---------------------------------- //
+/** Get the frequency of a given terrain layer
+ *
+ *	@param	_Layer					The layer to check
+ *
+ *	@return							The frequency of the layer if found, 0. otherwise
+ */
+Real GetFrequency(Integer _Layer) {
+	if (!G_LayersFrequencies.existskey(G_LandStyle)) return 0.;
+	if (!G_LayersFrequencies[G_LandStyle].existskey(_Layer)) return 0.;
+	return G_LayersFrequencies[G_LandStyle][_Layer];
+}
+
+// ---------------------------------- //
+/** Get the octaves of a given terrain layer
+ *
+ *	@param	_Layer					The layer to check
+ *
+ *	@return							The octaves of the layer if found, 0. otherwise
+ */
+Real GetOctaves(Integer _Layer) {
+	if (!G_LayersOctaves.existskey(G_LandStyle)) return 0.;
+	if (!G_LayersOctaves[G_LandStyle].existskey(_Layer)) return 0.;
+	return G_LayersOctaves[G_LandStyle][_Layer];
+}
+
+// ---------------------------------- //
+/** Get the terrains height intervals of a given terrain layer
+ *
+ *	@param	_Layer					The layer to check
+ *
+ *	@return							The terrains height intervals of the layer
+ */
+Text[Real] GetTerrainsIntervals(Integer _Layer) {
+	if (!G_TerrainsIds.existskey(G_LandStyle)) return Text[Real];
+	if (!G_TerrainsIds[G_LandStyle].existskey(_Layer)) return Text[Real];
+	return G_TerrainsIds[G_LandStyle][_Layer];
+}
+
+// ---------------------------------- //
+/** Check if a ratio exists for a given decoration category
+ *
+ *	@param	_Category				The category to check
+ *
+ *	@return							True if the categorie exists, False otherwise
+ */
+Boolean ExistsDecorationRatio(Text _Category) {
+	if (!G_DecorationsIds.existskey(G_LandStyle)) return False;
+	return G_DecorationsIds[G_LandStyle].existskey(_Category);
+}
+
+// ---------------------------------- //
+/** Get the ratio of a given decoration category
+ *
+ *	@param	_Category				The category to check
+ *
+ *	@return							The ratio of the category if found, 0. otherwise
+ */
+Real GetDecorationRatio(Text _Category) {
+	if (!G_DecorationsIds.existskey(G_LandStyle)) return 0.;
+	if (!G_DecorationsIds[G_LandStyle].existskey(_Category)) return 0.;
+	return G_DecorationsIds[G_LandStyle][_Category];
+}
+
+// ---------------------------------- //
+/** Get the currently selected style
+ *
+ *	@return							The style
+ */
+Integer GetTrackStyle() {
+	return G_TrackStyle;
+}
+
+// ---------------------------------- //
+/** Get the currently selected land style
+ *
+ *	@return							The land style
+ */
+Integer GetLandStyle() {
+	return G_LandStyle;
+}
+
+// ---------------------------------- //
+/** Get the currently selected deco style
+ *
+ *	@return							The deco style
+ */
+Integer GetDecoStyle() {
+	return G_DecoStyle;
+}
+
+// ---------------------------------- //
+/** Get the page number (index + 1) of the currently selected track style
+ *
+ *	@return							The track style page number
+ */
+Integer GetTrackStylePage() {
+	declare Page = 1;
+	foreach (TrackStyleId => TrackStyleName in G_TrackStyles) {
+		if (TrackStyleId == G_TrackStyle) break;
+		Page += 1;
+	}
+	return Page;
+}
+
+// ---------------------------------- //
+/** Get the page number (index + 1) of the currently selected start style
+ *
+ *	@return							The start style page number
+ */
+Integer GetStartStylePage() {
+	declare Page = 1;
+	foreach (StartStyleId => StartStyleName in G_StartStyles) {
+		if (StartStyleId == G_TrackStyle) break;
+		Page += 1;
+	}
+	return Page;
+}
+
+// ---------------------------------- //
+/** Get the currently selected track style name
+ *
+ *	@return							The track style
+ */
+Text GetTrackStyleName() {
+	if (!G_TrackStyles.existskey(G_TrackStyle)) return "";
+	return G_TrackStyles[G_TrackStyle];
+}
+
+// ---------------------------------- //
+/** Get the currently selected land style name
+ *
+ *	@return							The land style
+ */
+Text GetLandStyleName() {
+	if (!G_LandStyles.existskey(G_LandStyle)) return "";
+	return G_LandStyles[G_LandStyle];
+}
+
+// ---------------------------------- //
+/** Get the currently selected decoration style name
+ *
+ *	@return							The decoration style
+ */
+Text GetDecoStyleName() {
+	if (!G_DecoStyles.existskey(G_DecoStyle)) return "";
+	return G_DecoStyles[G_DecoStyle];
+}
+
+// ---------------------------------- //
+/** Get the category of a macroblock model
+ *
+ *	@param	_MacroblockModel		The macroblock model to check
+ *
+ *	@return							The category of the macroblock model if found, an empty Text otherwise
+ */
+Text GetCategory(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return "";
+	
+	if (G_Mode == C_Mode_Decoration) {
+		declare LibThemePack_DecoCategory for _MacroblockModel = Text[Integer];
+		if (!LibThemePack_DecoCategory.existskey(G_DecoStyle)) return "";
+		return LibThemePack_DecoCategory[G_DecoStyle];
+	}
+	
+	declare LibThemePack_TrackCategory for _MacroblockModel = Text[Integer];
+	if (!LibThemePack_TrackCategory.existskey(G_TrackStyle)) return "";
+	return LibThemePack_TrackCategory[G_TrackStyle];
+}
+
+// ---------------------------------- //
+/** Get the name of all categories available in the theme pack
+ *
+ *	@return							The names of all categories
+ */
+Text[] GetAllCategories() {
+	if (G_Mode == C_Mode_Decoration) {
+		if (!G_DecoCategories.existskey(G_DecoStyle)) return Text[];
+		return G_DecoCategories[G_DecoStyle];
+	}
+	
+	if (!G_TrackCategories.existskey(G_TrackStyle)) return Text[];
+	return G_TrackCategories[G_TrackStyle];
+}
+
+// ---------------------------------- //
+/** Get the indexes and names of all track styles available in the theme pack
+ *
+ *	@return							The indexes and names of all track styles
+ */
+Text[Integer] GetTrackStyles() {
+	return G_TrackStyles;
+}
+
+// ---------------------------------- //
+/** Get the indexes and names of all track styles containing a start available in the theme pack
+ *
+ *	@return							The indexes and names of all track styles containing a start
+ */
+Text[Integer] GetStartStyles() {
+	return G_StartStyles;
+}
+
+// ---------------------------------- //
+/** Get the indexes and names of all track styles available in the theme pack
+ *
+ *	@return							The indexes and names of all land styles
+ */
+Text[Integer] GetLandStyles() {
+	return G_LandStyles;
+}
+
+// ---------------------------------- //
+/** Get the indexes and names of all decoration styles available in the theme pack
+ *
+ *	@return							The indexes and names of all decoration styles
+ */
+Text[Integer] GetDecoStyles() {
+	return G_DecoStyles;
+}
+
+// ---------------------------------- //
+/** Get the number of track styles
+ *
+ *	@return							The track styles count
+ */
+Integer GetTrackStylesCount() {
+	return G_TrackStyles.count;
+}
+
+// ---------------------------------- //
+/** Get the number of start styles
+ *
+ *	@return							The start styles count
+ */
+Integer GetStartStylesCount() {
+	return G_StartStyles.count;
+}
+
+// ---------------------------------- //
+/** Get the number of decoration styles
+ *
+ *	@return							The decoration styles count
+ */
+Integer GetDecoStylesCount() {
+	return G_DecoStyles.count;
+}
+
+// ---------------------------------- //
+/** Get the name of all track styles available in the theme pack
+ *
+ *	@return							The names of all track styles
+ */
+Text[] GetTrackStylesNames() {
+	declare TrackStyles = Text[];
+	foreach (TrackStyle in G_TrackStyles) {
+		TrackStyles.add(TrackStyle);
+	}
+	return TrackStyles;
+}
+
+// ---------------------------------- //
+/** Get the name of all track styles available in the theme pack
+ *
+ *	@return							The names of all land styles
+ */
+Text[] GetLandStylesNames() {
+	declare LandStyles = Text[];
+	foreach (LandStyle in G_LandStyles) {
+		LandStyles.add(LandStyle);
+	}
+	return LandStyles;
+}
+
+// ---------------------------------- //
+/** Get the name of all decoration styles available in the theme pack
+ *
+ *	@return							The names of all decoration styles
+ */
+Text[] GetDecoStylesNames() {
+	declare DecoStyles = Text[];
+	foreach (DecoStyle in G_DecoStyles) {
+		DecoStyles.add(DecoStyle);
+	}
+	return DecoStyles;
+}
+
+// ---------------------------------- //
+/** Get a track style name from its id
+ *
+ *	@param	_TrackStyleId			Id of the track style to get
+ *
+ *	@return							The name of the track style
+ */
+Text GetTrackStyleNameFromId(Integer _TrackStyleId) {
+	if (!G_TrackStyles.existskey(_TrackStyleId)) return "";
+	return G_TrackStyles[_TrackStyleId];
+}
+
+// ---------------------------------- //
+/** Get a decoration style name from its id
+ *
+ *	@param	_DecoStyleId			Id of the decoration style to get
+ *
+ *	@return							The name of the decoration style
+ */
+Text GetDecoStyleNameFromId(Integer _DecoStyleId) {
+	if (!G_DecoStyles.existskey(_DecoStyleId)) return "";
+	return G_DecoStyles[_DecoStyleId];
+}
+
+// ---------------------------------- //
+/** Get the track style associated with a clip
+ *
+ *	@param	_ClipName				The name of the clip to check
+ *
+ *	@return							The id of the track style associoted with the clip if found, -1 otherwise
+ */
+Integer GetClipTrackStyle(Text _ClipName) {
+	foreach (TrackStyleId => ClipsNames in G_ClipsStyles) {
+		if (ClipsNames.exists(_ClipName)) return TrackStyleId;
+	}
+	return -1;
+}
+
+// ---------------------------------- //
+/** Select a track, land and deco styles
+ *
+ *	@param	_TrackStyle				The track style to select
+ *	@param	_LandStyle				The land style to select
+ *	@param	_DecoStyle				The deco style to select
+ */
+Void Select(Integer _TrackStyle, Integer _LandStyle) {
+	G_TrackStyle = _TrackStyle;
+	G_LandStyle = _LandStyle;
+}
+
+// ---------------------------------- //
+/// Get the mode constants
+Integer Mode_Track() { return C_Mode_Track; }
+Integer Mode_Terrain() { return C_Mode_Terrain; }
+Integer Mode_Decoration() { return C_Mode_Decoration; }
+
+// ---------------------------------- //
+/** Set the mode
+ *
+ *	@param	_Mode					The mode to use
+ */
+Void SetMode(Integer _Mode) {
+	G_Mode = _Mode;
+	
+	// Automatically select the right decoration style
+	if (G_Mode == C_Mode_Decoration) {
+		foreach (DecoStyleId => DecoStyleName in G_DecoStyles) {
+			G_DecoStyle = DecoStyleId;
+			break;
+		}
+	}
+}
+
+// ---------------------------------- //
+/** Get the macroblock model associated to a terrain id
+ *
+ *	@param	_TerrainId				The terrain id
+ *
+ *	@return							The terrain macroblock model
+ */
+CMacroblockModel GetTerrain(Text _TerrainId) {
+	if (!G_LandStyles.exists(_TerrainId)) return Null;
+	declare LandStyle = G_LandStyles.keyof(_TerrainId);
+	if (!G_Terrains.existskey(LandStyle)) return Null;
+	return G_Terrains[LandStyle];
+}
+
+// ---------------------------------- //
+/** Get the currently selected terrain
+ *
+ *	@return							The terrain macroblock model
+ */
+CMacroblockModel GetTerrain() {
+	if (!G_Terrains.existskey(G_LandStyle)) return Null;
+	return G_Terrains[G_LandStyle];
+}
+
+// ---------------------------------- //
+/** Use random landscape generation
+ *
+ *	@param	_UseRandom				True to use random generation
+ */
+Void UseRandomLandscapeGeneration(Boolean _UseRandom) {
+	G_UseRandomLandStyle = _UseRandom;
+}
+
+// ---------------------------------- //
+/** Get the ratio of each decoration category
+ *
+ *	@return							The decoration ratios
+ */
+Real[Text] GetDecoRatios() {
+	return G_DecoRatios;
+}
+
+// ---------------------------------- //
+/** Get the color of each decoration category
+ *
+ *	@return							The decoration colors
+ */
+Vec3[Text] GetDecoColors() {
+	return G_DecoColors;
+}
+
+// ---------------------------------- //
+/// Generate the list of available macroblock models
+Void Sync_GenerateMacroblockModelsList() {
+	G_AvailableMacroblockModels = [
+		C_Mode_Track => CMacroblockModel[][Integer],
+		C_Mode_Decoration => CMacroblockModel[][Integer]
+	];
+	
+	foreach (Key => MacroblockModel in MacroblockModels) {
+		if (Key % 100 == 0) yield;
+		
+		if (!Macroblock::GetValidity(MacroblockModel)) continue;
+		if (!IsListed(MacroblockModel)) continue;
+		
+		
+		declare LibThemePack_DecoCategory for MacroblockModel = Text[Integer];
+		foreach (DecoStyleId => CategoryName in LibThemePack_DecoCategory) {
+			if (!G_AvailableMacroblockModels[C_Mode_Decoration].existskey(DecoStyleId)) {
+				G_AvailableMacroblockModels[C_Mode_Decoration][DecoStyleId] = CMacroblockModel[];
+			}
+			G_AvailableMacroblockModels[C_Mode_Decoration][DecoStyleId].add(MacroblockModel);
+		}
+		declare LibThemePack_TrackCategory for MacroblockModel = Text[Integer];
+		foreach (TrackStyleId => CategoryName in LibThemePack_TrackCategory) {
+			if (!G_AvailableMacroblockModels[C_Mode_Track].existskey(TrackStyleId)) {
+				G_AvailableMacroblockModels[C_Mode_Track][TrackStyleId] = CMacroblockModel[];
+			}
+			G_AvailableMacroblockModels[C_Mode_Track][TrackStyleId].add(MacroblockModel);
+		}
+	}
+}
+
+// ---------------------------------- //
+/** Get the available macroblock models
+ *
+ *	@return							The macroblock models
+ */
+CMacroblockModel[] GetMacroblockModels() {
+	declare Mode = -1;
+	declare Category = -1;
+	if (G_Mode == C_Mode_Decoration) {
+		Mode = C_Mode_Decoration;
+		Category = G_DecoStyle;
+	} else {
+		Mode = C_Mode_Track;
+		Category = G_TrackStyle;
+	}
+	
+	if (
+		G_AvailableMacroblockModels.existskey(Mode) &&
+		G_AvailableMacroblockModels[Mode].existskey(Category)
+	) {
+		return G_AvailableMacroblockModels[Mode][Category];
+	}
+	
+	return CMacroblockModel[];
+}
+
+// ---------------------------------- //
+/// Unload the library
+Void Unload() {
+	if (Private_RequestExists()) {
+		Http.Destroy(Http.Requests[G_LoadRequestId]);
+	}
+	
+	G_LoadRequestId = NullId;
+	G_ConfigFileLoaded = False;
+	G_TrackStyles.clear();
+	G_StartStyles.clear();
+	G_LandStyles.clear();
+	G_DecoStyles.clear();
+	G_TrackStyle = -1;
+	G_LandStyle = -1;
+	G_DecoStyle = -1;
+	G_ClipsStyles.clear();
+	G_TrackCategories.clear();
+	G_DecoCategories.clear();
+	G_LayersFrequencies.clear();
+	G_LayersOctaves.clear();
+	G_TerrainsIds.clear();
+	G_DecorationsIds.clear();
+	G_Terrains.clear();
+	G_DisplayLog = False;
+	G_Mode = C_Mode_Track;
+	G_Terrains.clear();
+	G_UseRandomLandStyle = False;
+	G_DecoRatios.clear();
+	G_DecoColors.clear();
+	G_AvailableMacroblockModels.clear();
+	
+	Private_ClearMacroblockModels(True);
+}
+
+// ---------------------------------- //
+/** Load the library
+ *
+ *	@param	_DisplayLog				Display logs
+ */
+Void Load(Boolean _DisplayLog) {
+	Unload();
+	
+	G_DisplayLog = _DisplayLog;
+	SetMode(C_Mode_Track);
+}

@@ -1,0 +1,631 @@
+#Include "Libs/Openplanet/TMConsole/Logger.Script.txt"										as Logger
+#Include "Libs/Openplanet/TMConsole/Menu/MenuLayers.Script.txt"								as Layers
+#Include "Libs/Openplanet/TMConsole/Live/LiveEvent.Script.txt" 								as LiveEvent
+#Include "Libs/Openplanet/TMConsole/Live/LiveHttp.Script.txt" 								as LiveHttp
+#Include "Libs/Openplanet/TMConsole/Live/LiveXml.Script.txt" 								as LiveXml
+
+#Const C_MapsApiUrl "http://preprod.live.nadeo.com/maps-api"
+
+#Const	C_REQUESTSTATUS_NOREQUEST 	0
+#Const	C_REQUESTSTATUS_WAITING 	1
+#Const	C_REQUESTSTATUS_COMPLETE 	2
+
+#Const C_REQUESTTYPE_NONE				-1
+#Const C_REQUESTTYPE_ALLPLAYLISTS		0
+#Const C_REQUESTTYPE_MYPLAYLISTS		1
+#Const C_REQUESTTYPE_SPECPLAYLIST		2
+#Const C_REQUESTTYPE_NEWPLAYLIST		3
+#Const C_REQUESTTYPE_ADDTOPLAYLIST		4
+#Const C_REQUESTTYPE_REMOVEFROMPLAYLIST 5
+
+declare Text[]				G_AllPlaylistsId;
+declare Text				G_SpecPlaylistId;
+declare Text[]				G_MyPlaylistsId;
+declare Text[Text]			G_PlaylistsName;
+declare Text[Text] 			G_PlaylistsAuthor;
+declare Text[][Text]		G_PlaylistsStyles;
+declare Text[Text][][Text] 	G_PlaylistsMaps;
+declare Text[Text]			G_PlaylistsScript;
+
+declare Text[]				G_NewPlaylistTracksList;
+
+//Request Ids
+declare Text 				G_RequestAllPlaylistsId;
+declare Text 				G_RequestMyPlaylistsId;
+declare Text 				G_RequestSpecPlaylistId;
+declare Text				G_RequestCreateNewPlaylistId;
+declare Text				G_RequestAddTrackToPlaylistId;
+declare Text				G_RequestRemoveTrackToPlaylistId;
+
+//Request Managers
+declare Integer[Integer]	G_RequestStatus;
+declare Integer				G_RequestType;
+
+//Internal Datas
+declare Text				G_SpecPlaylistRequestedId;
+declare Text				G_LayerToSend;		
+declare Boolean				G_IsNewPlaylistEditedPlaylist;
+declare	Text				G_CurPlaylistId;
+declare Text				G_CurTrackId;
+
+//external datas
+declare Text				G_EditedPlaylistId;
+
+Text CreatePlaylistJson() {
+	// declare Text[] SortedTracks;
+	// declare Integer Count = 0;
+	// foreach(Track in G_NewPlaylistTracksList) {
+		// SortedTracks.add("""{ "map":"{{{Track}}}", "position":"{{{Count}}}"}""");
+		// Count += 1;
+	// }
+	// SortedTracks.add("1");
+	// G_NewPlaylistName = "MyPlaylist#1";
+	// G_NewPlaylistStyles.add("lol");
+	
+	declare Text JSon = """{
+		"author":"{{{LocalUser.Login}}}", 
+		"styles" : [""], 
+		"maps":[256,255],
+		"script":"cup"
+	}
+	""";
+	return JSon;
+}
+
+//	Datas for AllPlaylists
+//	declare Integer				Net_AllPlaylistsUpdate
+//  declare Text[] 				Net_AllPlaylistsId
+//	declare Text[Text]			Net_AllPlaylistsName
+//	declare Text[][Text]		Net_AllPlaylistsStyles
+//	declare Text[Text][][Text]	Net_AllPlaylistsMaps
+//	
+//	
+//	Datas for MyPlaylists
+//	declare Integer				Net_MyPlaylistsUpdate
+// 	declare Text[] 				Net_MyPlaylistsId
+//	declare Text[Text]			Net_MyPlaylistsName
+//	declare Text[][Text]		Net_MyPlaylistsStyles
+//	declare Text[Text][][Text]	Net_MyPlaylistsMaps
+//
+//
+// Datas for SpecPlaylist
+//	declare Integer				Net_SpecPlaylistUpdate
+// 	declare Text 				Net_SpecPlaylistId
+//	declare Text				Net_SpecPlaylistName
+//	declare Text[]				Net_SpecPlaylistStyles
+//	declare Text[Text][]		Net_SpecPlaylistMaps 
+//
+//	Data for EditedPlaylist
+// 	
+//	
+
+// Functions to call in the Handlers
+//-----------------------------------------------------------//
+Void GetAllPlaylistsToUI(Text _LayerName) {
+	// log("Here Get All Playlist");
+	G_LayerToSend 				= _LayerName;
+	G_RequestType				= C_REQUESTTYPE_ALLPLAYLISTS;
+}
+
+Void GetMyPlaylistsToUI(Text _LayerName) {
+	G_LayerToSend 				= _LayerName;
+	G_RequestType				= C_REQUESTTYPE_MYPLAYLISTS;
+}
+
+Void GetSpecPlaylistToUI(Text _LayerName, Text _Id) {
+	G_LayerToSend 				= _LayerName;
+	G_RequestType				= C_REQUESTTYPE_SPECPLAYLIST;
+	G_SpecPlaylistRequestedId	= _Id;
+}
+
+Void RequestRemovePlaylist(Integer _PlaylistId) {
+	declare Ident RequestId = LiveHttp::Manialib_Http_PostAsync("http://preprod.live.nadeo.com/maps-api/me/playlists/"^_PlaylistId^"/delete", "");
+}
+
+Void AddTrackToPlaylist(Text _LayerToSendFeedback, Text _PlaylistId, Text _TrackId) {
+	G_LayerToSend 			= _LayerToSendFeedback;
+	G_CurTrackId			= _TrackId;
+	G_CurPlaylistId 		= _PlaylistId;
+	G_RequestType 			= C_REQUESTTYPE_ADDTOPLAYLIST;
+}
+
+Void RemoveTrackFromPlaylist(Text _LayerToSendFeedback, Text _PlaylistId, Text _TrackId) {
+	G_LayerToSend 			= _LayerToSendFeedback;
+	G_CurTrackId			= _TrackId;
+	G_CurPlaylistId 		= _PlaylistId;
+	G_RequestType 			= C_REQUESTTYPE_REMOVEFROMPLAYLIST;
+}
+
+Void CreatePlaylist(Text _LayerForFeedback, Boolean _IsEditedPlaylist) {
+	if(_LayerForFeedback != "") {
+		G_LayerToSend 						= _LayerForFeedback;
+	}
+
+	G_RequestType				= C_REQUESTTYPE_NEWPLAYLIST;
+	G_IsNewPlaylistEditedPlaylist 		= _IsEditedPlaylist;
+}
+
+Void SendEditedPlaylistIdToUI(Text _LayerName) {
+	declare CUILayer LayerToSend = Layers::Get(G_LayerToSend);
+	if(LayerToSend == Null) return;
+	
+	declare Text Net_EditedPlaylistId for LayerToSend.LocalPage;
+	Net_EditedPlaylistId = G_EditedPlaylistId;
+}
+
+Text GetEditedPlaylist() {
+	return G_EditedPlaylistId;
+}
+
+Void SetEditedPlaylist(Text _PlaylistId) {
+	G_EditedPlaylistId = ""^_PlaylistId;
+}
+
+//-----------------------------------------------------------//
+Text GetFeedbackText(Boolean _Succeed) {
+	if(G_RequestType == C_REQUESTTYPE_NEWPLAYLIST) {
+		if(_Succeed) 	return "PlaylistCreationSucceed";
+		else			return "PlaylistCreationFailed";
+	} else if(G_RequestType == C_REQUESTTYPE_ADDTOPLAYLIST) {
+		if(_Succeed) 	return "AddTrackSucceed";
+		else			return "AddTrackFailed";
+	} else if(G_RequestType == C_REQUESTTYPE_REMOVEFROMPLAYLIST) {
+		if(_Succeed) 	return "RemoveTrackSucceed";
+		else			return "RemoveTrackFailed";
+	} else if(G_RequestType == C_REQUESTTYPE_MYPLAYLISTS) {
+		if(_Succeed) 	return "MyPlaylistsSent";
+		else			return "MyPlaylistsNotSent";
+	} else if(G_RequestType == C_REQUESTTYPE_SPECPLAYLIST) {
+		if(_Succeed) 	return "SpecPlaylistSent";
+		else			return "SpecPlaylistNotSent";
+	} else if(G_RequestType == C_REQUESTTYPE_ALLPLAYLISTS) {
+		if(_Succeed) 	return "AllPlaylistSent";
+		else			return "AllPlaylistNotSent";
+	}
+	return "";
+}
+
+Void SendFeedbackToUI(Boolean _Succeed) {
+	declare CUILayer LayerToSend = Layers::Get(G_LayerToSend);
+	if(LayerToSend == Null) return;
+	declare Text FeedbackText = GetFeedbackText(_Succeed);
+	LayerCustomEvent(LayerToSend, FeedbackText, [""]);
+}
+
+Void WarnNotEnoughParamsLive() {
+	log("NOT ENOUGH PARAMS FOR PLAYLIST");
+}
+
+Void WarnNotEnoughParams(CMlAppEvent _Event) {
+	Logger::Warn("[Menucontroller] event "^_Event.CustomEventType^": not enough params ["^_Event.CustomEventData^"]");
+}
+
+Void ReInitRequest() {
+	G_LayerToSend = "";
+	G_RequestType = C_REQUESTTYPE_NONE;
+}
+
+Void ReInitRequestsStatus() {
+	G_RequestStatus[C_REQUESTTYPE_ALLPLAYLISTS] 		= C_REQUESTSTATUS_NOREQUEST;
+	G_RequestStatus[C_REQUESTTYPE_MYPLAYLISTS] 			= C_REQUESTSTATUS_NOREQUEST;
+	G_RequestStatus[C_REQUESTTYPE_SPECPLAYLIST] 		= C_REQUESTSTATUS_NOREQUEST;
+	G_RequestStatus[C_REQUESTTYPE_NEWPLAYLIST] 			= C_REQUESTSTATUS_NOREQUEST;
+	G_RequestStatus[C_REQUESTTYPE_ADDTOPLAYLIST] 		= C_REQUESTSTATUS_NOREQUEST;
+	G_RequestStatus[C_REQUESTTYPE_REMOVEFROMPLAYLIST] 	= C_REQUESTSTATUS_NOREQUEST;
+}	
+
+Void Load() {
+	ReInitRequestsStatus();
+	ReInitRequest();
+}
+
+//FOR DEBUG ONLY
+Void RequestAllPlaylists() {
+	declare Ident RequestId									= LiveHttp::Manialib_Http_GetAsync(C_MapsApiUrl^"/playlists");
+	G_RequestAllPlaylistsId 								= RequestId^"";
+	G_RequestStatus[C_REQUESTTYPE_ALLPLAYLISTS] 			= C_REQUESTSTATUS_WAITING;
+}
+
+Void RequestMyPlaylists() {
+	declare Ident RequestId 								= LiveHttp::Manialib_Http_GetAsync(C_MapsApiUrl^"/me/playlists?login="^LocalUser.Login^"&length="^10^"&offset="^0);
+	G_RequestMyPlaylistsId 									= RequestId^"";
+	G_RequestStatus[C_REQUESTTYPE_MYPLAYLISTS] 				= C_REQUESTSTATUS_WAITING;
+}
+
+Void RequestSpecPlaylist() {
+	declare Ident RequestId 								= LiveHttp::Manialib_Http_GetAsync(C_MapsApiUrl^"/playlists/"^G_SpecPlaylistRequestedId);
+	G_RequestSpecPlaylistId 								= RequestId^"";
+	G_RequestStatus[C_REQUESTTYPE_SPECPLAYLIST] 			= C_REQUESTSTATUS_WAITING;
+}
+
+Void RequestAddTrackToPlaylist() {
+	declare Ident RequestId									= LiveHttp::Manialib_Http_PostAsync(C_MapsApiUrl^"/me/playlists/"^G_CurPlaylistId^"/maps/"^G_CurTrackId, "");
+	G_RequestAddTrackToPlaylistId							= RequestId^"";
+	G_RequestStatus[C_REQUESTTYPE_ADDTOPLAYLIST] 			= C_REQUESTSTATUS_WAITING;
+}
+
+Void RequestRemoveTrackFromPlaylist() {
+	declare Ident RequestId									= LiveHttp::Manialib_Http_PostAsync(C_MapsApiUrl^"/me/playlists/"^G_CurPlaylistId^"/maps/"^G_CurTrackId^"/remove", "");
+	G_RequestRemoveTrackToPlaylistId						= RequestId^"";
+	G_RequestStatus[C_REQUESTTYPE_REMOVEFROMPLAYLIST] 		= C_REQUESTSTATUS_WAITING;
+}
+
+Void RequestNewPlaylist() {
+	declare Text Json = """{
+      "author":"{{{LocalUser.Login}}}", "styles": [""], "maps": [], "script": "Time Attack"
+    }""";
+
+	declare Ident RequestId = LiveHttp::Manialib_Http_PostAsync("http://preprod.live.nadeo.com/maps-api/me/playlists", Json);
+	G_RequestCreateNewPlaylistId									= RequestId^"";
+	G_RequestStatus[C_REQUESTTYPE_NEWPLAYLIST]						= C_REQUESTSTATUS_WAITING;
+}
+
+Text[] ExtractStylesFromPlaylistNode(CXmlNode PlaylistNode) {
+    declare Text[] Styles;
+    foreach(Style in PlaylistNode.GetFirstChild("styles").Children) {
+        if(Style.Name == "entry") {
+            Styles.add(Style.TextContents);
+        }
+    }
+    return Styles;
+}
+
+Text[] ExtractStylesFromXmlDoc(CXmlDocument _Doc) {
+    declare Text[] Styles;
+    foreach(Style in _Doc.GetFirstChild("styles").Children) {
+        if(Style.Name == "entry") {
+            Styles.add(Style.TextContents);
+        }
+    }
+    return Styles;
+}
+
+Void SendAllPlaylistsToUI() {
+	declare CUILayer LayerToSend = Layers::Get(G_LayerToSend);
+	if(LayerToSend == Null) return;
+	
+	declare Integer				Net_RequestedPlaylistsUpdate				for LayerToSend.LocalPage;
+	declare Text[] 				Net_RequestedPlaylistsId 					for LayerToSend.LocalPage;
+	declare Text[Text]			Net_RequestedPlaylistsName 					for LayerToSend.LocalPage;
+	declare Text[][Text]		Net_RequestedPlaylistsStyles 				for LayerToSend.LocalPage;
+	declare Text[Text][][Text]	Net_RequestedPlaylistsMaps 					for LayerToSend.LocalPage;
+	declare Text[Text]			Net_RequestedPlaylistsScript				for LayerToSend.LocalPage;
+	
+	Net_RequestedPlaylistsId.clear();
+	Net_RequestedPlaylistsName.clear();
+	Net_RequestedPlaylistsStyles.clear();
+	Net_RequestedPlaylistsMaps.clear();
+	Net_RequestedPlaylistsScript.clear();
+	
+	Net_RequestedPlaylistsUpdate 	+= 1;
+	Net_RequestedPlaylistsId 		= G_AllPlaylistsId;
+	
+	foreach(Id in G_AllPlaylistsId) {
+		Net_RequestedPlaylistsName[Id]			= G_PlaylistsName[Id];
+		Net_RequestedPlaylistsStyles[Id]		= G_PlaylistsStyles[Id];
+		Net_RequestedPlaylistsMaps[Id]			= G_PlaylistsMaps[Id];
+		Net_RequestedPlaylistsScript[Id]		= G_PlaylistsScript[Id];
+	}
+	
+	
+}
+
+Void SendMyPlaylistsToUI() {
+	declare CUILayer LayerToSend = Layers::Get(G_LayerToSend);
+	if(LayerToSend == Null) return;
+	
+	/*
+	declare Integer				Net_MyPlaylistsUpdate		for LayerToSend.LocalPage;
+	declare Text[] 				Net_MyPlaylistsId 			for LayerToSend.LocalPage;
+	declare Text[Text]			Net_MyPlaylistsName 		for LayerToSend.LocalPage;
+	declare Text[][Text]		Net_MyPlaylistsStyles 		for LayerToSend.LocalPage;
+	declare Text[Text][][Text]	Net_MyPlaylistsMaps 		for LayerToSend.LocalPage;
+	*/
+	
+	declare Integer				Net_RequestedPlaylistsUpdate				for LayerToSend.LocalPage;
+	declare Text[] 				Net_RequestedPlaylistsId 					for LayerToSend.LocalPage;
+	declare Text[Text]			Net_RequestedPlaylistsName 					for LayerToSend.LocalPage;
+	declare Text[][Text]		Net_RequestedPlaylistsStyles 				for LayerToSend.LocalPage;
+	declare Text[Text][][Text]	Net_RequestedPlaylistsMaps 					for LayerToSend.LocalPage;
+	declare Text[Text]			Net_RequestedPlaylistsScript				for LayerToSend.LocalPage;
+	
+	Net_RequestedPlaylistsId.clear();
+	Net_RequestedPlaylistsName.clear();
+	Net_RequestedPlaylistsStyles.clear();
+	Net_RequestedPlaylistsMaps.clear();
+	Net_RequestedPlaylistsScript.clear();
+	
+	Net_RequestedPlaylistsUpdate 	+= 1;
+	Net_RequestedPlaylistsId		= G_MyPlaylistsId;
+	
+	foreach(Id in G_MyPlaylistsId) {
+		Net_RequestedPlaylistsName[Id]			= G_PlaylistsName[Id];
+		Net_RequestedPlaylistsStyles[Id]		= G_PlaylistsStyles[Id];
+		Net_RequestedPlaylistsMaps[Id]			= G_PlaylistsMaps[Id];
+		Net_RequestedPlaylistsScript[Id]		= G_PlaylistsScript[Id];
+	}
+	
+}
+
+Void SendEditedPlaylistToUI(Text _LayerToSend) {
+	declare CUILayer LayerToSend = Layers::Get(_LayerToSend);
+	if(LayerToSend == Null) return;
+	
+	/*
+	declare Integer				Net_SpecPlaylistUpdate			for LayerToSend.LocalPage;
+	declare Text 				Net_SpecPlaylistId 				for LayerToSend.LocalPage;
+	declare Text				Net_SpecPlaylistName 			for LayerToSend.LocalPage;
+	declare Text[]				Net_SpecPlaylistStyles 			for LayerToSend.LocalPage;
+	declare Text[Text][]		Net_SpecPlaylistMaps 			for LayerToSend.LocalPage;
+	*/
+	
+	declare Integer				Net_RequestedPlaylistsUpdate				for LayerToSend.LocalPage;
+	declare Text[] 				Net_RequestedPlaylistsId 					for LayerToSend.LocalPage;
+	declare Text[Text]			Net_RequestedPlaylistsName 					for LayerToSend.LocalPage;
+	declare Text[][Text]		Net_RequestedPlaylistsStyles 				for LayerToSend.LocalPage;
+	declare Text[Text][][Text]	Net_RequestedPlaylistsMaps 					for LayerToSend.LocalPage;
+	declare Text[Text]			Net_RequestedPlaylistsScript				for LayerToSend.LocalPage;
+	
+	Net_RequestedPlaylistsId.clear();
+	Net_RequestedPlaylistsName.clear();
+	Net_RequestedPlaylistsStyles.clear();
+	Net_RequestedPlaylistsMaps.clear();
+	Net_RequestedPlaylistsScript.clear();
+	
+	Net_RequestedPlaylistsUpdate 						+= 1;
+	Net_RequestedPlaylistsId.add(G_EditedPlaylistId);
+	Net_RequestedPlaylistsName[G_EditedPlaylistId] 		= G_PlaylistsName[G_EditedPlaylistId];
+	Net_RequestedPlaylistsStyles[G_EditedPlaylistId]	= G_PlaylistsStyles[G_EditedPlaylistId];
+	Net_RequestedPlaylistsMaps[G_EditedPlaylistId]		= G_PlaylistsMaps[G_EditedPlaylistId];
+	Net_RequestedPlaylistsScript[G_EditedPlaylistId]	= G_PlaylistsScript[G_EditedPlaylistId];
+	
+}
+
+Void SendSpecPlaylistToUI() {
+	declare CUILayer LayerToSend = Layers::Get(G_LayerToSend);
+	if(LayerToSend == Null) return;
+	
+	/*
+	declare Integer				Net_SpecPlaylistUpdate			for LayerToSend.LocalPage;
+	declare Text 				Net_SpecPlaylistId 				for LayerToSend.LocalPage;
+	declare Text				Net_SpecPlaylistName 			for LayerToSend.LocalPage;
+	declare Text[]				Net_SpecPlaylistStyles 			for LayerToSend.LocalPage;
+	declare Text[Text][]		Net_SpecPlaylistMaps 			for LayerToSend.LocalPage;
+	*/
+	
+	declare Integer				Net_RequestedPlaylistsUpdate				for LayerToSend.LocalPage;
+	declare Text[] 				Net_RequestedPlaylistsId 					for LayerToSend.LocalPage;
+	declare Text[Text]			Net_RequestedPlaylistsName 					for LayerToSend.LocalPage;
+	declare Text[][Text]		Net_RequestedPlaylistsStyles 				for LayerToSend.LocalPage;
+	declare Text[Text][][Text]	Net_RequestedPlaylistsMaps 					for LayerToSend.LocalPage;
+	declare Text[Text]			Net_RequestedPlaylistsScript				for LayerToSend.LocalPage;
+	
+	Net_RequestedPlaylistsId.clear();
+	Net_RequestedPlaylistsName.clear();
+	Net_RequestedPlaylistsStyles.clear();
+	Net_RequestedPlaylistsMaps.clear();
+	Net_RequestedPlaylistsScript.clear();
+	
+	Net_RequestedPlaylistsUpdate 					+= 1;
+	Net_RequestedPlaylistsId.add(G_SpecPlaylistId);
+	Net_RequestedPlaylistsName[G_SpecPlaylistId] 	= G_PlaylistsName[G_SpecPlaylistId];
+	Net_RequestedPlaylistsStyles[G_SpecPlaylistId]	= G_PlaylistsStyles[G_SpecPlaylistId];
+	Net_RequestedPlaylistsMaps[G_SpecPlaylistId]	= G_PlaylistsMaps[G_SpecPlaylistId];
+	Net_RequestedPlaylistsScript[G_SpecPlaylistId]	= G_PlaylistsScript[G_SpecPlaylistId];
+	
+	/*
+	Net_SpecPlaylistUpdate			+= 1;
+	Net_SpecPlaylistId 				= G_SpecPlaylistId;
+	Net_SpecPlaylistName 			= G_PlaylistsName[G_SpecPlaylistId];
+	Net_SpecPlaylistStyles 			= G_PlaylistsStyles[G_SpecPlaylistId];
+	Net_SpecPlaylistMaps			= G_PlaylistsMaps[G_SpecPlaylistId];
+	*/
+}
+
+Void DistributePlaylistsDatas(Text _RequestResult) {
+	declare CXmlDocument Doc = LiveXml::Manialib_Xml_CreateDocument(_RequestResult);
+	declare Text CurPlaylistId;
+
+	if(G_RequestType == C_REQUESTTYPE_MYPLAYLISTS) {
+		G_MyPlaylistsId.clear();
+	}
+	
+	if(G_RequestType == C_REQUESTTYPE_SPECPLAYLIST) {
+		if(G_SpecPlaylistId != "") {
+			G_PlaylistsName[G_SpecPlaylistId]				= "";
+			G_PlaylistsAuthor[G_SpecPlaylistId]	 			= "";
+			G_PlaylistsStyles[G_SpecPlaylistId].clear();
+			G_PlaylistsMaps[G_SpecPlaylistId].clear();
+		}
+		
+		G_SpecPlaylistId								= Doc.GetFirstChild("id").TextContents;
+		G_PlaylistsName[G_SpecPlaylistId]				= Doc.GetFirstChild("name").TextContents;
+		G_PlaylistsAuthor[G_SpecPlaylistId]	 			= Doc.GetFirstChild("author").TextContents;
+		G_PlaylistsScript[G_SpecPlaylistId]				= Doc.GetFirstChild("script").TextContents;
+		G_PlaylistsStyles[G_SpecPlaylistId]				= ExtractStylesFromXmlDoc(Doc);
+		
+		if(Doc.GetFirstChild("maps") !=  Null) {
+			G_PlaylistsMaps[G_SpecPlaylistId]			= LiveXml::Manialib_Xml_NodeToArray2(Doc.GetFirstChild("maps"));
+		} else {
+			G_PlaylistsMaps[G_SpecPlaylistId]			= Text[Text][];
+		}
+		
+	}else if(G_RequestType == C_REQUESTTYPE_NEWPLAYLIST) {
+		declare Text CurId = Doc.GetFirstChild("id").TextContents;
+		G_MyPlaylistsId.add(CurId);		
+		CurPlaylistId 									= CurId;
+		G_PlaylistsName[CurPlaylistId]					= Doc.GetFirstChild("name").TextContents;
+		G_PlaylistsAuthor[CurPlaylistId]	 			= Doc.GetFirstChild("author").TextContents;
+		G_PlaylistsScript[CurPlaylistId]				= Doc.GetFirstChild("script").TextContents;
+		G_PlaylistsStyles[CurPlaylistId]				= ExtractStylesFromXmlDoc(Doc);
+		
+		if(Doc.GetFirstChild("maps") !=  Null) {
+			G_PlaylistsMaps[CurPlaylistId]			= LiveXml::Manialib_Xml_NodeToArray2(Doc.GetFirstChild("maps"));
+		} else {
+			G_PlaylistsMaps[CurPlaylistId]			= Text[Text][];
+		}
+	} else {
+		foreach(IndexPlaylist => Playlist in Doc.GetFirstChild("result").Children) {
+			if(G_RequestType == C_REQUESTTYPE_ALLPLAYLISTS) {
+				G_AllPlaylistsId.add(Playlist.GetFirstChild("id").TextContents);
+				CurPlaylistId 								= G_AllPlaylistsId[G_AllPlaylistsId.count-1];
+			} else if(G_RequestType == C_REQUESTTYPE_SPECPLAYLIST) {
+				G_SpecPlaylistId							= Playlist.TextContents;
+				G_SpecPlaylistId							= Playlist.GetFirstChild("id").TextContents;
+				G_SpecPlaylistId							= G_SpecPlaylistRequestedId;
+				CurPlaylistId 								= G_SpecPlaylistId;
+			} else if(G_RequestType == C_REQUESTTYPE_MYPLAYLISTS) {
+				G_MyPlaylistsId.add(Playlist.GetFirstChild("id").TextContents);
+				CurPlaylistId 								= G_MyPlaylistsId[G_MyPlaylistsId.count-1];
+			} else if(G_RequestType == C_REQUESTTYPE_NEWPLAYLIST) {
+				declare Text CurId = Playlist.GetFirstChild("id").TextContents;
+				G_MyPlaylistsId.add(CurId);
+				CurPlaylistId 								= CurId;
+			}
+			
+			G_PlaylistsName[CurPlaylistId]				= Playlist.GetFirstChild("name").TextContents;
+			G_PlaylistsAuthor[CurPlaylistId]	 		= Playlist.GetFirstChild("author").TextContents;
+			G_PlaylistsStyles[CurPlaylistId]			= ExtractStylesFromPlaylistNode(Playlist);
+
+			if(Playlist.GetFirstChild("maps") !=  Null) {
+				G_PlaylistsMaps[CurPlaylistId]			= LiveXml::Manialib_Xml_NodeToArray2(Playlist.GetFirstChild("maps"));
+			} else {
+				G_PlaylistsMaps[CurPlaylistId]			= Text[Text][];
+			}
+			G_PlaylistsScript[CurPlaylistId]			= Playlist.GetFirstChild("script").TextContents;
+		}
+	}
+	
+	LiveXml::Manialib_Xml_DestroyDocument(Doc);
+}
+
+Void SendDatasToUILoop() {
+	//S'il y a une requête lancée
+	if(G_RequestType != C_REQUESTTYPE_NONE) {
+		declare Boolean ReInitValue = False;
+		declare Integer ValueToReinit = -1;
+		
+		if(G_RequestStatus[G_RequestType] == C_REQUESTSTATUS_COMPLETE) {
+			if(G_RequestType == C_REQUESTTYPE_ALLPLAYLISTS) {
+				SendAllPlaylistsToUI();
+				SendFeedbackToUI(True);
+				ReInitRequest();
+			} else if(G_RequestType == C_REQUESTTYPE_MYPLAYLISTS) {
+				SendMyPlaylistsToUI();
+				SendFeedbackToUI(True);
+				ReInitRequest();
+			} else if(G_RequestType == C_REQUESTTYPE_SPECPLAYLIST) {
+				SendSpecPlaylistToUI();
+				SendFeedbackToUI(True);
+				ValueToReinit 		= C_REQUESTTYPE_SPECPLAYLIST;
+				ReInitValue 		= True;
+				ReInitRequest();
+			} else if(G_RequestType == C_REQUESTTYPE_NEWPLAYLIST) {
+				
+				SendMyPlaylistsToUI();
+				SendFeedbackToUI(True);
+				ReInitRequest();
+				
+				// ReInitRequest();
+				/*
+				if(G_IsNewPlaylistEditedPlaylist) {
+					G_RequestStatus[C_REQUESTTYPE_MYPLAYLISTS] = C_REQUESTSTATUS_NOREQUEST;
+					G_RequestType = C_REQUESTTYPE_MYPLAYLISTS;
+				}
+				*/
+				
+			} else if(G_RequestType == C_REQUESTTYPE_ADDTOPLAYLIST) {
+				SendFeedbackToUI(True);
+				ReInitRequest();
+			} else if(G_RequestType == C_REQUESTTYPE_REMOVEFROMPLAYLIST) {
+				SendFeedbackToUI(True);
+				ReInitRequest();
+			}
+		//S'il y a un quelconque problème, on ne réessaye pas de renvoyer les données à l'UI
+		} else if(G_RequestStatus[G_RequestType] == C_REQUESTSTATUS_NOREQUEST) {
+			if(G_RequestType == C_REQUESTTYPE_ALLPLAYLISTS) {
+				RequestAllPlaylists();
+			} else if(G_RequestType == C_REQUESTTYPE_MYPLAYLISTS) {
+				RequestMyPlaylists();
+			} else if(G_RequestType == C_REQUESTTYPE_SPECPLAYLIST) {
+				RequestSpecPlaylist();
+			} else if(G_RequestType == C_REQUESTTYPE_NEWPLAYLIST) {
+				RequestNewPlaylist();
+			} else if(G_RequestType == C_REQUESTTYPE_ADDTOPLAYLIST) {
+				RequestAddTrackToPlaylist();
+			} else if(G_RequestType == C_REQUESTTYPE_REMOVEFROMPLAYLIST) {
+				RequestRemoveTrackFromPlaylist();
+			}
+		}
+		if(ReInitValue) {
+			G_RequestStatus[C_REQUESTTYPE_SPECPLAYLIST] = C_REQUESTSTATUS_NOREQUEST;
+		}
+	}
+}
+
+Void LiveLoop() {
+	foreach(LiveEvent in LiveEvent::Manialib_Event_PendingEvents()) {
+		switch(LiveEvent[0][0]) {
+			case "Manialib.Http.Success": {
+				declare Text CurRequestId = LiveEvent[1][0];
+				declare Text RequestResult;
+				switch(CurRequestId) {
+					
+					case G_RequestAllPlaylistsId : {
+						if(LiveEvent[1].count < 1) {
+							WarnNotEnoughParamsLive();
+							continue;
+						}
+						RequestResult = LiveEvent[1][1];
+						DistributePlaylistsDatas(RequestResult);
+						G_RequestStatus[C_REQUESTTYPE_ALLPLAYLISTS] = C_REQUESTSTATUS_COMPLETE;
+					}
+					case G_RequestMyPlaylistsId : {
+						if(LiveEvent[1].count < 1) {
+							WarnNotEnoughParamsLive();
+							continue;
+						}
+						RequestResult = LiveEvent[1][1];
+						DistributePlaylistsDatas(RequestResult);
+						G_RequestStatus[C_REQUESTTYPE_MYPLAYLISTS] = C_REQUESTSTATUS_COMPLETE;
+					}
+					case G_RequestSpecPlaylistId : {
+						if(LiveEvent[1].count < 1) {
+							WarnNotEnoughParamsLive();
+							continue;
+						}
+						RequestResult = LiveEvent[1][1];
+						DistributePlaylistsDatas(RequestResult);
+						G_RequestStatus[C_REQUESTTYPE_SPECPLAYLIST] = C_REQUESTSTATUS_COMPLETE;
+					}
+					case G_RequestCreateNewPlaylistId : {
+						if(LiveEvent[1].count < 1) {
+							WarnNotEnoughParamsLive();
+							continue;
+						}
+						
+						RequestResult = LiveEvent[1][1];
+						DistributePlaylistsDatas(RequestResult);
+						G_RequestStatus[C_REQUESTTYPE_NEWPLAYLIST] = C_REQUESTSTATUS_COMPLETE;
+					}
+					case G_RequestAddTrackToPlaylistId : {
+						if(LiveEvent[1].count < 1) {
+							WarnNotEnoughParamsLive();
+							continue;
+						}
+						
+						G_RequestStatus[C_REQUESTTYPE_ADDTOPLAYLIST] = C_REQUESTSTATUS_COMPLETE;
+					}
+					case G_RequestRemoveTrackToPlaylistId : {
+						if(LiveEvent[1].count < 1) {
+							WarnNotEnoughParamsLive();
+							continue;
+						}
+						G_RequestStatus[C_REQUESTTYPE_REMOVEFROMPLAYLIST] = C_REQUESTSTATUS_COMPLETE;
+					}
+				}
+			}
+		}
+	}
+	SendDatasToUILoop();
+}

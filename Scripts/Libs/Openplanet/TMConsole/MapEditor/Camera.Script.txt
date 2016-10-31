@@ -1,0 +1,1089 @@
+/** 
+ * Camera related functions library
+ */
+
+#Const Version		"2016-03-04"
+#Const ScriptName	"Camera.Script.txt"
+
+#Include "MathLib" as ML
+#Include "MapUnits" as MU
+#Include "AnimLib" as AL
+#Include "Libs/Openplanet/Manialink3.Script.txt" as Manialink
+#Include "Libs/Openplanet/TMConsole/MapEditor/Utils.Script.txt" as Utils
+#Include "Libs/Openplanet/TMConsole/MapEditor/Layers.Script.txt" as Layers
+#Include "Libs/Openplanet/TMConsole/MapEditor/Macroblock.Script.txt" as Macroblock
+#Include "Libs/Openplanet/TMConsole/MapEditor/MapContent.Script.txt" as MapContent
+#Include "Libs/Openplanet/TMConsole/MapEditor/UI/BlockHelp.Script.txt" as UI_Help
+#Include "Libs/Openplanet/TMConsole/MapEditor/UI/Tuto.Script.txt" as UI_Tuto
+
+// ---------------------------------- //
+// Constants
+// ---------------------------------- //
+#Const C_CameraAnimationDuration	250				///< Duration of the camera animations
+#Const C_FadeDuration				500				///< Duration of the fade in/out
+#Const C_CameraDistance				125.			///< Default distance of the camera
+#Const C_ZoomLevels					[1., 3., 7.]	///< Available zoom levels
+#Const C_ForceCamera				False			///< Force camera properties
+#Const C_VerticalMinRot				0.15			///< Minimum vertical rotation
+#Const C_HorizontalMouseRatio		0.015			///< Ratio to apply to horizontal mouse movement
+#Const C_VerticalMouseRatio			0.035			///< Ratio to apply to vertical mouse movement
+#Const C_MouseZoomStep				25.				///< Zoom distance with the mouse wheel
+#Const C_MouseZoomMin				125.			///< Minimum zoom value with the mouse
+#Const C_MouseZoomMax				875.			///< Maximum zoom value with the mouse
+/// VR
+#Const C_VR_WorldScale_Editor		0.0015	// 0.0015
+#Const C_VR_WorldScale_Default		1.
+#Const C_VR_MoveScale_Editor		1.	// 10.
+#Const C_VR_MoveScale_Default		1.25
+#Const C_VR_MoveStep				10.
+#Const C_VR_HudDistance_Editor		0.5
+#Const C_VR_HudDistance_Default		1.
+
+// ---------------------------------- //
+// Globales
+// ---------------------------------- //
+declare Real G_CameraZoom;		///< Current camera zoom
+declare Real G_CameraDistance;	///< Current camera distance 
+declare Int3 G_CameraRotation;	///< Current camera rotation
+declare Vec3 G_ForcedCameraPos;	///< Forced camera position
+declare Vec2 G_ForcedCameraDir;	///< Forced camera direction
+declare Real G_ForcedCameraDist;///< Forced camera distance
+declare Boolean G_HMD_IsActive;	///< Detect HMD on/off
+declare Boolean G_CenterOnClips;///< Center the camera on the macroblock clips
+declare Vec2 G_PrevMousePos;	///< Previous mouse position
+declare Boolean G_PrevMouseMiddleButton; ///< Previous middle mouse button state
+declare Boolean G_EnableMouseRotation; ///< Enable mouse rotation of the camera
+declare Boolean G_EnableMouseZoom; ///< Enable mouse zoom of the camera
+declare Real[Text] G_TerraformingZoom; ///< Terraforming camera zoom
+declare Boolean G_MouseNeedInit;	///< Mouse control need to be initialized
+declare Boolean G_MouseRotated;	///< Used the mouse to rotate the camera
+declare Boolean G_MouseZoomed;	///< Used the mouse to zoom the camera
+declare Real G_MouseZoomMin; ///< Minimum zoom level
+declare Real G_MouseZoomMax; ///< Maximum zoom level
+/// Animations properties
+// Move
+declare Integer G_PartyEditor_Move_StartTime;
+declare Integer G_PartyEditor_Move_EndTime;
+declare Vec3 G_PartyEditor_Move_StartValue;
+declare Vec3 G_PartyEditor_Move_EndValue;
+declare Vec3 G_PartyEditor_Move_DeltaValue;
+// Rotate
+declare Integer G_PartyEditor_Rotate_StartTime;
+declare Integer G_PartyEditor_Rotate_EndTime;
+declare Vec2 G_PartyEditor_Rotate_StartValue;
+declare Vec2 G_PartyEditor_Rotate_EndValue;
+declare Vec2 G_PartyEditor_Rotate_DeltaValue;
+// Zoom
+declare Integer G_PartyEditor_Zoom_StartTime;
+declare Integer G_PartyEditor_Zoom_EndTime;
+declare Real G_PartyEditor_Zoom_StartValue;
+declare Real G_PartyEditor_Zoom_EndValue;
+declare Real G_PartyEditor_Zoom_DeltaValue;
+
+// ---------------------------------- //
+// Functions
+// ---------------------------------- //
+// ---------------------------------- //
+// Private
+// ---------------------------------- //
+// ---------------------------------- //
+/** Get the camera manialink
+ *
+ *	@return						The manialink
+ */
+Text Private_GetCameraML() {
+	return """
+<manialink version="3" name="MapEditor:Camera">
+<frame id="Frame_Global">
+	<quad pos="-160 90" size="320 180" bgcolor="000" opacity="0" hidden="1" id="Quad_Fade" />
+</frame>
+<script><!--
+#Include "MathLib" as ML
+{{{Manialink::DefaultIncludes()}}}
+
+{{{Manialink::Animations(["EaseOutQuad"])}}}
+
+Void FadeIn() {
+	LibManialink_Anim({{{Manialink::Inject("""<quad opacity="0" hidden="1" id="Quad_Fade" />""")}}}, {{{C_FadeDuration}}}, "EaseOutQuad");
+}
+
+Void FadeOut() {
+	LibManialink_Anim({{{Manialink::Inject("""<quad opacity="1" hidden="0" id="Quad_Fade" />""")}}}, {{{C_FadeDuration}}}, "EaseOutQuad");
+}
+
+main() {
+	declare L_ActionUpdate for Page = -1;
+	declare L_Action for Page = "";
+	
+	declare PrevActionUpdate = -1;
+	
+	while (True) {
+		yield;
+		LibManialink_AnimLoop();
+		
+		if (PrevActionUpdate != L_ActionUpdate) {
+			PrevActionUpdate = L_ActionUpdate;
+			switch (L_Action) {
+				case "FadeIn": FadeIn();
+				case "FadeOut": FadeOut();
+			}
+		}
+	}
+}
+--></script>
+</manialink>
+""";
+}
+
+// ---------------------------------- //
+/** Start move animation
+ *
+ *	@param	_Target					Target position
+ *	@param	_Duration				Duration of the animation
+ */
+Void Private_StartMove(Vec3 _Target, Integer _Duration) {
+	// Skip anim
+	if (G_PartyEditor_Move_StartTime == -1) {
+		if (_Target == CameraTargetPosition) return;
+	} else {
+		if (_Target == G_PartyEditor_Move_EndValue) return;
+	}
+	
+	G_PartyEditor_Move_StartTime = Now;
+	G_PartyEditor_Move_EndTime = G_PartyEditor_Move_StartTime + _Duration;
+	G_PartyEditor_Move_StartValue = CameraTargetPosition;
+	G_PartyEditor_Move_EndValue = _Target;
+	G_PartyEditor_Move_DeltaValue = G_PartyEditor_Move_EndValue - G_PartyEditor_Move_StartValue;
+}
+
+// ---------------------------------- //
+/** Start rotate animation
+ *
+ *	@param	_Target					Target rotation
+ *	@param	_Duration				Duration of the animation
+ */
+Void Private_StartRotate(Vec2 _Target, Integer _Duration) {
+	// Skip anim
+	if (G_PartyEditor_Rotate_StartTime == -1) {
+		if (_Target == <CameraHAngle, CameraVAngle>) return;
+	} else {
+		if (_Target == G_PartyEditor_Rotate_EndValue) return;
+	}
+	
+	G_PartyEditor_Rotate_StartTime = Now;
+	G_PartyEditor_Rotate_EndTime = G_PartyEditor_Rotate_StartTime + _Duration;
+	G_PartyEditor_Rotate_StartValue = <CameraHAngle, CameraVAngle>;
+	G_PartyEditor_Rotate_EndValue = _Target;
+	G_PartyEditor_Rotate_DeltaValue = G_PartyEditor_Rotate_EndValue - G_PartyEditor_Rotate_StartValue;
+	
+	if (G_PartyEditor_Rotate_DeltaValue.X > ML::PI()) G_PartyEditor_Rotate_DeltaValue.X = G_PartyEditor_Rotate_DeltaValue.X - (2 * ML::PI());
+	if (G_PartyEditor_Rotate_DeltaValue.X < -ML::PI()) G_PartyEditor_Rotate_DeltaValue.X = (2 * ML::PI()) + G_PartyEditor_Rotate_DeltaValue.X;
+}
+
+// ---------------------------------- //
+/** Start zoom animation
+ *
+ *	@param	_Target					Target zoom
+ *	@param	_Duration				Duration of the animation
+ */
+Void Private_StartZoom(Real _Target, Integer _Duration) {
+	// Skip anim
+	if (G_PartyEditor_Zoom_StartTime == -1) {
+		if (_Target == CameraToTargetDistance) return;
+	} else {
+		if (_Target == G_PartyEditor_Zoom_EndValue) return;
+	}
+	
+	G_PartyEditor_Zoom_StartTime = Now;
+	G_PartyEditor_Zoom_EndTime = G_PartyEditor_Zoom_StartTime + _Duration;
+	G_PartyEditor_Zoom_StartValue = CameraToTargetDistance;
+	G_PartyEditor_Zoom_EndValue = _Target;
+	G_PartyEditor_Zoom_DeltaValue = G_PartyEditor_Zoom_EndValue - G_PartyEditor_Zoom_StartValue;
+	
+	// Adapt help UI radius to zoom
+	if (_Target <= G_CameraDistance) {
+		UI_Help::SetRadius(1.);
+	} else if (_Target <= G_CameraDistance * 2.) {
+		UI_Help::SetRadius(0.9);
+	} else {
+		UI_Help::SetRadius(0.8);
+	}
+}
+
+// ---------------------------------- //
+/// Stop move animation
+Void Private_StopMove() {
+	G_PartyEditor_Move_StartTime = -1;
+	G_PartyEditor_Move_EndTime = -1;
+	G_PartyEditor_Move_StartValue = <0., 0., 0.>;
+	G_PartyEditor_Move_EndValue = <0., 0., 0.>;
+	G_PartyEditor_Move_DeltaValue = <0., 0., 0.>;
+}
+
+// ---------------------------------- //
+/// Stop rotate animation
+Void Private_StopRotate() {
+	G_PartyEditor_Rotate_StartTime = -1;
+	G_PartyEditor_Rotate_EndTime = -1;
+	G_PartyEditor_Rotate_StartValue = <0., 0.>;
+	G_PartyEditor_Rotate_EndValue = <0., 0.>;
+	G_PartyEditor_Rotate_DeltaValue = <0., 0.>;
+}
+
+// ---------------------------------- //
+/// Stop zoom animation
+Void Private_StopZoom() {
+	G_PartyEditor_Zoom_StartTime = -1;
+	G_PartyEditor_Zoom_EndTime = -1;
+	G_PartyEditor_Zoom_StartValue = 0.;
+	G_PartyEditor_Zoom_EndValue = 0.;
+	G_PartyEditor_Zoom_DeltaValue = 0.;
+}
+
+// ---------------------------------- //
+/// Loop when VR is active
+Void Private_LoopVR() {
+	// Get move direction from the pad
+	declare Vec3 Move;
+	if (Input.Pads.count > 0) {
+		foreach (Pad in Input.Pads) {
+			if (Pad.RightStickX < -0.1 || Pad.RightStickX > 0.1) {
+				Move.X = Pad.RightStickX * -C_VR_MoveStep;
+			}
+			if (Pad.RightStickY < -0.1 || Pad.RightStickY > 0.1) {
+				Move.Z = Pad.RightStickY * -C_VR_MoveStep;
+			}
+		}
+	} else {
+		if (EditorInputIsDown_CameraLeft) Move.X = C_VR_MoveStep;
+		else if (EditorInputIsDown_CameraRight) Move.X = -C_VR_MoveStep;
+		else if (EditorInputIsDown_CameraUp) Move.Z = C_VR_MoveStep;
+		else if (EditorInputIsDown_CameraDown) Move.Z = -C_VR_MoveStep;
+	}
+	
+	// Adjust direction for the HMD
+	declare Yaw = -ManiaPlanet.HMD_HeadYaw;
+	declare CS = ML::Cos(Yaw);
+	declare SN = ML::Sin(Yaw);
+	declare RotatedMove = <Move.X * CS - Move.Z * SN, 0., Move.X * SN + Move.Z * CS>;
+	
+	/*if (RotatedMove.X != 0.) CameraTargetPosition.X += RotatedMove.X;
+	if (RotatedMove.Z != 0.) CameraTargetPosition.Z += RotatedMove.Z;*/
+}
+
+// ---------------------------------- //
+// Public
+// ---------------------------------- //
+// ---------------------------------- //
+/// Get the zoom constants
+Real Default_ZoomMin() { return C_MouseZoomMin; }
+Real Default_ZoomMax() { return C_MouseZoomMax; }
+
+// ---------------------------------- //
+/** Set the zoom minimum and maximum values
+ *
+ *	@param	_Min					Minimum zoom distance
+ *	@param	_Max					Maximum zoom distance
+ */
+Void SetZoomMinMax(Real _Min, Real _Max) {
+	G_MouseZoomMin = _Min;
+	G_MouseZoomMax = _Max;
+}
+
+// ---------------------------------- //
+/// Reset default minimum and maximum zoom values
+Void DefaultZoomMinMax() {
+	G_MouseZoomMin = C_MouseZoomMin;
+	G_MouseZoomMax = C_MouseZoomMax;
+}
+
+// ---------------------------------- //
+/// Find the nearest rotation unit for the current camera rotation
+Void FixRotation() {
+	declare Rot = <CameraHAngle, CameraVAngle>;
+	if (Rot.X < 0) Rot.X = 2 * ML::PI() + Rot.X;
+	if (Rot.Y < 0) Rot.Y = 2 * ML::PI() + Rot.Y;
+	G_CameraRotation = <ML::NearestInteger(Rot.X / (ML::PI() / 4.)), ML::NearestInteger(Rot.Y / (ML::PI() / 8.)), 0>;
+}
+
+// ---------------------------------- //
+/// Find the nearest zoom level for the current camera distance
+Void FixZoom() {
+	declare ZoomLevel = CameraToTargetDistance / G_CameraDistance;
+	declare NewCameraZoom = C_ZoomLevels[C_ZoomLevels.count-1];
+	foreach (Value in C_ZoomLevels) {
+		if (Value > ZoomLevel) break;
+		NewCameraZoom = Value;
+	}
+	G_CameraZoom = NewCameraZoom;
+}
+
+// ---------------------------------- //
+/** Decide to center the camera on the macroblock clips or not
+ *
+ *	@param	_Center					True to center on clips, False otherwise
+ */
+Void CenterOnClips(Boolean _Center) {
+	G_CenterOnClips = _Center;
+}
+
+// ---------------------------------- //
+/** Move the camera to a new position and adjust the camera distance to the macroblock model
+ *
+ *	@param	_Coord					The new target coordinates
+ *	@param	_Duration				The move duration
+ */
+Void MoveTo(Int3 _Coord, Integer _Duration) {
+	// Center the camera on the macroblock
+	declare NewCameraTargetPosition = Utils::GetWorldPosition(_Coord);
+	declare TargetedBlock = GetBlock(_Coord);
+	
+	if (CursorMacroblockModel != Null) {
+		// Center the camera on the block // Center the camera on the macroblock
+		declare Vec3 OffsetPosition;
+		if (G_CenterOnClips) OffsetPosition = Macroblock::GetClipsCenter(CursorMacroblockModel, CursorDir);
+		else OffsetPosition = <0.5 * CollectionSquareSize, 0., 0.5 * CollectionSquareSize>;
+		// Lower camera to center the block inside the UI
+		OffsetPosition.Y -= CollectionSquareHeight;
+		NewCameraTargetPosition += OffsetPosition;
+		
+		// Adjust the camera distance to the macroblock size
+		G_CameraDistance = C_CameraDistance;
+	} else  if (TargetedBlock != Null) {
+		// Center the camera on the block
+		declare CBlockModelVariant Variant;
+		if (TargetedBlock.BlockModel.VariantGround != Null) Variant <=> TargetedBlock.BlockModel.VariantGround;
+		else if (TargetedBlock.BlockModel.VariantAir != Null) Variant <=> TargetedBlock.BlockModel.VariantAir;
+		if (Variant != Null) {
+			declare OffsetSize = MU::GetRotatedOffset(Variant.Size, CursorDir);
+			declare OffsetPosition = <ML::Abs(OffsetSize.X) * 0.5 * CollectionSquareSize, ML::Abs(OffsetSize.Y) * 0.5 * CollectionSquareHeight, ML::Abs(OffsetSize.Z) * 0.5 * CollectionSquareSize>;
+			// Lower camera to center the block inside the UI
+			OffsetPosition.Y -= CollectionSquareHeight;
+			NewCameraTargetPosition += OffsetPosition;
+		}
+	} else {
+		G_CameraDistance = C_CameraDistance;
+		NewCameraTargetPosition += <0.5 * CollectionSquareSize, 0., 0.5 * CollectionSquareSize>;
+	}
+	
+	if (!G_MouseRotated && !G_MouseZoomed) Private_StartZoom(G_CameraDistance * G_CameraZoom, _Duration);
+	Private_StartMove(NewCameraTargetPosition, _Duration);
+}
+
+// ---------------------------------- //
+/// Overload MoveTo()
+Void MoveTo(Int3 _Coord) {
+	MoveTo(_Coord, C_CameraAnimationDuration);
+}
+
+// ---------------------------------- //
+/** Move the camera to a new position
+ *
+ *	@param	_Position			The new position
+ *	@param	_Duration			The move duration
+ */
+Void MoveTo(Vec3 _Position, Integer _Duration) {
+	Private_StartMove(_Position, _Duration);
+}
+
+// ---------------------------------- //
+/// Overload MoveTo()
+Void MoveTo(Vec3 _Position) {
+	MoveTo(_Position, C_CameraAnimationDuration);
+}
+
+// ---------------------------------- //
+/** Rotate the camera to the given rotation
+ *
+ *	@param	_Rot					The targeted rotation
+ *	@param	_Duration				The rotation duration
+ */
+Void RotateTo(Vec2 _Rot, Integer _Duration) {
+	Private_StartRotate(_Rot, _Duration);
+}
+
+// ---------------------------------- //
+/// Overload RotateTo()
+Void RotateTo(Vec2 _Rot) {
+	RotateTo(_Rot, C_CameraAnimationDuration);
+}
+
+// ---------------------------------- //
+/** Rotate the camera to the given cardinal direction
+ *
+ *	@param	_Direction				The targeted direction
+ *	@param	_VAngle					The vertical angle
+ *	@param	_Duration				The rotation duration
+ */
+Void RotateTo(CEditorPlugin::CardinalDirections _Direction, Integer _VAngle, Integer _Duration) {
+	switch (_Direction) {
+		case CEditorPlugin::CardinalDirections::North	: G_CameraRotation.X = 0;
+		case CEditorPlugin::CardinalDirections::East	: G_CameraRotation.X = 6;
+		case CEditorPlugin::CardinalDirections::South	: G_CameraRotation.X = 4;
+		case CEditorPlugin::CardinalDirections::West	: G_CameraRotation.X = 2;
+	}
+	
+	G_CameraRotation.Y = _VAngle;
+	
+	Private_StartRotate(<(G_CameraRotation.X * (ML::PI() / 4.)), C_VerticalMinRot+(G_CameraRotation.Y * (ML::PI() / 8.))>, _Duration);
+}
+
+// ---------------------------------- //
+/// Overload RotateTo()
+Void RotateTo(CEditorPlugin::CardinalDirections _Direction, Integer _VAngle) {
+	RotateTo(_Direction, _VAngle, C_CameraAnimationDuration);
+}
+
+// ---------------------------------- //
+/// Overload RotateTo()
+Void RotateTo(CEditorPlugin::CardinalDirections _Direction) {
+	RotateTo(_Direction, G_CameraRotation.Y, C_CameraAnimationDuration);
+}
+
+// ---------------------------------- //
+/** Rotate the camera to the given rotation
+ *
+ *	@param	_X						Horizontal rotation
+ *	@param	_Y						Vertical rotation
+ *	@param	_Durection				The rotation duration
+ */
+Void RotateTo(Integer _X, Integer _Y, Integer _Duration) {
+	G_CameraRotation.X = _X;
+	if (G_CameraRotation.X < 0.) G_CameraRotation.X = 7;
+	else if (G_CameraRotation.X > 7) G_CameraRotation.X = 0;
+	
+	G_CameraRotation.Y = _Y;
+	if (G_CameraRotation.Y < 0) G_CameraRotation.Y = 0;
+	else if (G_CameraRotation.Y > 3) G_CameraRotation.Y = 3;
+	
+	Private_StartRotate(<(G_CameraRotation.X * (ML::PI() / 4.)), C_VerticalMinRot+(G_CameraRotation.Y * (ML::PI() / 8.))>, _Duration);
+}
+
+// ---------------------------------- //
+/// Overload RotateTo()
+Void RotateTo(Integer _X, Integer _Y) {
+	RotateTo(_X, _Y, C_CameraAnimationDuration);
+}
+
+// ---------------------------------- //
+/** Rotate the camera
+ *
+ *	@param	_Shift					The number of units the camera will rotate horizontally or vertically
+ *	@param	_Durection				The rotation duration
+ */
+Void Rotate(Vec2 _Shift, Integer _Duration) {
+	if (G_MouseRotated) FixRotation();
+	
+	G_CameraRotation.X += ML::NearestInteger(_Shift.X);
+	if (G_CameraRotation.X < 0.) G_CameraRotation.X = 7;
+	else if (G_CameraRotation.X > 7) G_CameraRotation.X = 0;
+	
+	G_CameraRotation.Y += ML::NearestInteger(_Shift.Y);
+	if (G_CameraRotation.Y < 0) G_CameraRotation.Y = 0;
+	else if (G_CameraRotation.Y > 3) G_CameraRotation.Y = 3;
+	
+	Private_StartRotate(<(G_CameraRotation.X * (ML::PI() / 4.)), C_VerticalMinRot+(G_CameraRotation.Y * (ML::PI() / 8.))>, _Duration);
+}
+
+// ---------------------------------- //
+/// Overload Rotate()
+Void Rotate(Vec2 _Rot) {
+	Rotate(_Rot, C_CameraAnimationDuration);
+}
+
+// ---------------------------------- //
+/** Select a zoom level
+ *
+ *	@param	_ZoomLevel				The zoom level to use, if it doesn't exist then select the next available zoom
+ *	@param	_Duration				Duration of the zoom
+ */
+Void Zoom(Integer _ZoomLevel, Integer _Duration) {
+	if (G_MouseZoomed) FixZoom();
+	declare NewZoomLevel = _ZoomLevel; 
+	
+	if (_ZoomLevel < 0 || !C_ZoomLevels.existskey(NewZoomLevel)) {
+		NewZoomLevel = C_ZoomLevels.keyof(G_CameraZoom) + 1;
+		if (!C_ZoomLevels.existskey(NewZoomLevel)) NewZoomLevel = 0;
+	}
+	
+	G_CameraZoom = C_ZoomLevels[NewZoomLevel];
+	
+	Private_StartZoom(G_CameraZoom * G_CameraDistance, _Duration);
+}
+
+// ---------------------------------- //
+/// Overload ZoomTo()
+Void Zoom(Integer _ZoomLevel) {
+	Zoom(_ZoomLevel, C_CameraAnimationDuration);
+}
+
+// ---------------------------------- //
+/// Loop through zoom levels
+Void Zoom() {
+	Zoom(-1);
+}
+
+// ---------------------------------- //
+/** Select a custom zoom level
+ *
+ *	@param	_Zoom					The zoom to use
+ *	@param	_Duration				Duration of the zoom
+ */
+Void ZoomTo(Real _Zoom, Integer _Duration) {
+	Private_StartZoom(_Zoom, _Duration);
+}
+
+// ---------------------------------- //
+/// Overload ZoomTo()
+Void ZoomTo(Real _ZoomLevel) {
+	ZoomTo(_ZoomLevel, C_CameraAnimationDuration);
+}
+
+// ---------------------------------- //
+/** Return the current rotation of the camera
+ *
+ *	@return							The rotation of the camera
+ */
+Int3 GetRotation() {
+	return G_CameraRotation;
+}
+
+// ---------------------------------- //
+/** Get the current level of zoom
+ *
+ *	@return							The current level of zoom
+ */
+Integer GetZoomLevel() {
+	return C_ZoomLevels.keyof(G_CameraZoom);
+}
+
+Void FadeIn() {
+	declare Page <=> Layers::GetPage("Camera");
+	declare L_ActionUpdate for Page = -1;
+	declare L_Action for Page = "";
+	L_Action = "FadeIn";
+	L_ActionUpdate = Now;
+}
+
+Void FadeOut() {
+	declare Page <=> Layers::GetPage("Camera");
+	declare L_ActionUpdate for Page = -1;
+	declare L_Action for Page = "";
+	L_Action = "FadeOut";
+	L_ActionUpdate = Now;
+}
+
+// ---------------------------------- //
+/** Zoom on the map start block
+ *
+ *	@param	_Duration				Duration of the zoom
+ */
+Void ZoomToStartBlock(Integer _Duration) {
+	declare StartBlock <=> GetStartLineBlock();
+	if (StartBlock == Null) return;
+	
+	declare Rotation = <0., ML::PI()/8.>;
+	switch (StartBlock.Direction) {
+		case CBlock::CardinalDirections::North: Rotation.X = 0.;
+		case CBlock::CardinalDirections::East: Rotation.X = 3.*(ML::PI()/2.);
+		case CBlock::CardinalDirections::South: Rotation.X = ML::PI();
+		case CBlock::CardinalDirections::West: Rotation.X = ML::PI()/2.;
+	}
+	
+	MoveTo(StartBlock.Coord, _Duration);
+	RotateTo(Rotation, _Duration);
+	ZoomTo(25., _Duration);
+}
+
+// ---------------------------------- //
+/** Center the camera on the map
+ *
+ *	@param	_Type					The type of blocks to check
+ *	@param	_ZoomMax				The maximum zoom value
+ */
+Void CenterOnMap(Integer _Type, Real _ZoomMax) {
+	declare TrackBarycentre = MapContent::GetMapBarycentre(_Type);
+	declare TrackBoundingBox = MapContent::GetMapBoundingBox(_Type);
+	declare TrackBoundingBoxMin = TrackBoundingBox[0];
+	declare TrackBoundingBoxMax = TrackBoundingBox[1];
+	declare TrackDiameter = ML::Distance(
+		<TrackBoundingBoxMin.X*1., 0., TrackBoundingBoxMin.Z*1.>, 
+		<TrackBoundingBoxMax.X*1., 0., TrackBoundingBoxMax.Z*1.>
+	);
+	declare TrackDiameterMax = ML::Distance(
+		<0., 0., 0.>,
+		<Map.Size.X*1., 0., Map.Size.Z*1.>
+	);
+	declare ZoomRatio = ML::Sqrt(TrackDiameter / TrackDiameterMax);
+	MoveTo(TrackBarycentre);
+	ZoomTo(_ZoomMax * ZoomRatio);
+}
+
+// ---------------------------------- //
+/** Update the thumbnail camera
+ *
+ *	@param	_Type					The type of blocks to display in the thumbnail
+ */
+Void UpdateThumbnail(Integer _Type) {
+	/*declare Position = Utils::GetWorldPosition(MapContent::GetMapBarycentre(_Type));
+	Position += <-0.25 * Map.Size.X * CollectionSquareSize, Map.Size.Y * CollectionSquareHeight, -0.25 * Map.Size.Z * CollectionSquareSize>;
+	
+	ThumbnailCameraPosition = Position;
+	ThumbnailCameraVAngle = ML::PI()/5.;
+	ThumbnailCameraHAngle = ML::PI()/4.;
+	ThumbnailCameraRoll = 0.;*/
+	
+	declare TargetPosition = Utils::GetWorldPosition(MapContent::GetMapBarycentre(_Type));
+	declare HAngle = CameraHAngle;
+	declare VAngle = CameraVAngle;
+	if (HAngle < 0) HAngle = (2 * ML::PI()) + HAngle;
+	declare CustomCameraPosition = <
+		- ML::Sin(HAngle) * ML::Cos(VAngle) * CameraToTargetDistance,
+		ML::Sin(VAngle) * CameraToTargetDistance,
+		- ML::Cos(HAngle) * ML::Cos(VAngle) * CameraToTargetDistance
+	>;
+	ThumbnailCameraPosition = TargetPosition + CustomCameraPosition;
+	ThumbnailCameraVAngle = CameraVAngle;
+	ThumbnailCameraHAngle = CameraHAngle;
+	ThumbnailCameraRoll = 0.;
+	ThumbnailCameraFovY = 90.;
+}
+
+// ---------------------------------- //
+/** Update the thumbnail camera
+ *
+ *	@param	_Pos					The position of the camera
+ *	@param	_Rot					The rotation of the camera
+ */
+Void UpdateThumbnail(Vec3 _Pos, Vec3 _Rot, Real _Fov) {
+	ThumbnailCameraPosition = _Pos;
+	ThumbnailCameraVAngle = _Rot.Y;
+	ThumbnailCameraHAngle = _Rot.X;
+	ThumbnailCameraRoll = _Rot.Z;
+	ThumbnailCameraFovY = _Fov;
+}
+
+// ---------------------------------- //
+/** Position the camera to the given coordinates and rotation
+ *
+ *	@param	_Pos					The position of the camera
+ *	@param	_Rot					The rotation of the camera
+ *	@param	_Duration				Duration of the move
+ */
+Void GoTo(Vec3 _Pos, Vec2 _Rot, Integer _Duration) {
+	declare Pi180 = ML::PI() / 180.;
+	
+	declare Sin = ML::Sin(_Rot.Y * Pi180);
+	if (Sin == 0.) Sin = 1.;
+	declare Tan = ML::Tan(_Rot.Y * Pi180);
+	if (Tan == 0.) Tan = 1.;
+	declare Dist = _Pos.Y / Sin;
+	declare L = _Pos.Y / Tan;
+	
+	declare Vec3 PosP;
+	declare Vec3 RotP;
+	if (_Rot.X < 90.) {
+		RotP.X = _Rot.X * Pi180;
+		PosP.X = ML::Sin(RotP.X) * L;
+		PosP.Z = ML::Cos(RotP.X) * L;
+	} else if (_Rot.X >= 90. && _Rot.X < 180.) {
+		RotP.X = (_Rot.X - 90.) * Pi180;
+		PosP.X = ML::Cos(RotP.X) * L;
+		PosP.Z = -ML::Sin(RotP.X) * L;
+	} else if (_Rot.X >= 180. && _Rot.X < 270.) {
+		RotP.X = (_Rot.X - 180.) * Pi180;
+		PosP.X = -ML::Sin(RotP.X) * L;
+		PosP.Z = -ML::Cos(RotP.X) * L;
+	} else {
+		RotP.X = (_Rot.X - 270) * Pi180;
+		PosP.X = -ML::Cos(RotP.X) * L;
+		PosP.Z = ML::Sin(RotP.X) * L;
+	}
+	
+	MoveTo(<_Pos.X + PosP.X, 0., _Pos.Z + PosP.Z>, _Duration);
+	ZoomTo(Dist, _Duration);
+	RotateTo(<_Rot.X * Pi180, _Rot.Y * Pi180>, _Duration);
+}
+
+// ---------------------------------- //
+/** Position the camera to the given coordinates and rotation
+ *
+ *	@param	_Pos					The position of the camera
+ *	@param	_Rot					The rotation of the camera
+ */
+Void GoTo(Vec3 _Pos, Vec2 _Rot) {
+	GoTo(_Pos, _Rot, C_CameraAnimationDuration);
+}
+
+// ---------------------------------- //
+/** Get the coordinates of the block targeted by the camera
+ *
+ *	@return							The coordinates
+ */
+Int3 GetTargetedCoord() {
+	declare Vec3 Position;
+	
+	if (G_PartyEditor_Move_StartTime >= 0) {
+		Position = G_PartyEditor_Move_EndValue;
+	} else {
+		Position = CameraTargetPosition;
+	}
+	
+	return <
+		ML::FloorInteger(Position.X / CollectionSquareSize), 
+		ML::FloorInteger((Position.Y + (CollectionGroundY * CollectionSquareHeight)) / CollectionSquareHeight), 
+		ML::FloorInteger(Position.Z / CollectionSquareSize)
+	>;
+}
+
+// ---------------------------------- //
+/// Get world scale constants
+Real WorldScale_Default() { return C_VR_WorldScale_Default; }
+Real WorldScale_Editor() { return C_VR_WorldScale_Editor; }
+
+// ---------------------------------- //
+/** Select world scale
+ *
+ *	@param	_Scale					The scale to use
+ */
+Void SetWorldScale(Real _Scale) {
+	if (ManiaPlanet.HMD_IsActive) ManiaPlanet.HMD_WorldScale = _Scale;
+	else ManiaPlanet.HMD_WorldScale = C_VR_WorldScale_Default;
+}
+
+// ---------------------------------- //
+/// Get move scale constants
+Real MoveScale_Default() { return C_VR_MoveScale_Default; }
+Real MoveScale_Editor() { return C_VR_MoveScale_Editor; }
+
+// ---------------------------------- //
+/** Select move scale
+ *
+ *	@param	_Scale					The scale to use
+ */
+Void SetMoveScale(Real _Scale) {
+	if (ManiaPlanet.HMD_IsActive) ManiaPlanet.HMD_MoveScale = _Scale;
+	else ManiaPlanet.HMD_MoveScale = C_VR_MoveScale_Default;
+}
+
+// ---------------------------------- //
+/// Get hud distance constants
+Real HudDistance_Default() { return C_VR_HudDistance_Default; }
+Real HudDistance_Editor() { return C_VR_HudDistance_Editor; }
+
+// ---------------------------------- //
+/** Select hud distance
+ *
+ *	@param	_Distance				The distance to use
+ */
+Void SetHudDistance(Real _Distance) {
+	if (ManiaPlanet.HMD_IsActive) ManiaPlanet.HMD_HUD_Distance = _Distance;
+	else ManiaPlanet.HMD_HUD_Distance = C_VR_HudDistance_Default;
+}
+
+// ---------------------------------- //
+/// Reset HMD head tracking
+Void ResetTracking() {
+	ManiaPlanet.HMD_ResetTracking();
+}
+
+// ---------------------------------- //
+/** Initialize the camera properties
+ *
+ *	@param	_LastBlockCoord			Position of the last placed block
+ */
+Void Init(Int3 _LastBlockCoord) {
+	G_CameraDistance = C_CameraDistance;
+	G_CameraZoom = C_ZoomLevels[1];
+	G_CameraRotation = <1, 2, 0>;
+	
+	if (_LastBlockCoord == Utils::NullCoord()) {
+		declare CenterBlockPosition = <Map.Size.X/2, CollectionGroundY, Map.Size.Z/2>;
+		CameraTargetPosition = Utils::GetWorldPosition2(CenterBlockPosition);
+		CameraVAngle = G_CameraRotation.Y * ML::PI()/8.;
+		CameraHAngle = G_CameraRotation.X * ML::PI()/4.;
+		CameraToTargetDistance = G_CameraDistance * G_CameraZoom;
+	} else {
+		CameraTargetPosition = Utils::GetWorldPosition2(_LastBlockCoord);
+		CameraVAngle = G_CameraRotation.Y * ML::PI()/8.;
+		CameraHAngle = G_CameraRotation.X * ML::PI()/4.;
+		CameraToTargetDistance = G_CameraDistance * G_CameraZoom;
+	}
+	
+	G_ForcedCameraPos = CameraTargetPosition;
+	G_ForcedCameraDir = <CameraHAngle, CameraVAngle>;
+	G_ForcedCameraDist = CameraToTargetDistance;
+	
+	Private_StopMove();
+	Private_StopRotate();
+	Private_StopZoom();
+}
+
+// ---------------------------------- //
+/// Initialize the camera properties
+Void Init() {
+	Init(Utils::NullCoord());
+}
+
+// ---------------------------------- //
+/// Init the camera for mouse control
+Void MouseInit() {
+	FixRotation();
+	MoveTo(<Map.Size.X/2, CollectionGroundY, Map.Size.Z/2>);
+	if (G_TerraformingZoom.existskey(Map.CollectionName)) {
+		ZoomTo(G_TerraformingZoom[Map.CollectionName]);
+	}
+	G_MouseNeedInit = False;
+}
+
+// ---------------------------------- //
+/** Set the zoom to use in the terraforming sequence
+ *
+ *	@param	_Zoom					The zoom to use
+ */
+Void SetTerraformingZoom(Real[Text] _Zoom) {
+	G_TerraformingZoom = _Zoom;
+}
+
+// ---------------------------------- //
+/** Set the mouse initialization status
+ *
+ *	@param	_Init					True if the mouse is initialized, False otherwise
+ */
+Void MouseNeedInit(Boolean _Init) {
+	G_MouseNeedInit = _Init;
+}
+
+// ---------------------------------- //
+/** Get the mouse initialization status
+ *
+ *	@return							The mouse initialization status
+ */
+Boolean MouseNeedInit() {
+	return G_MouseNeedInit;
+}
+
+// ---------------------------------- //
+/** Enable mouse to control the rotation of the camera
+ *
+ *	@param	_Enable					True to enable, False to disable
+ */
+Void EnableMouseRotation(Boolean _Enable) {
+	G_EnableMouseRotation = _Enable;
+}
+
+// ---------------------------------- //
+/** Enable mouse to control the rotation of the camera
+ *
+ *	@param	_Enable					True to enable, False to disable
+ */
+Void EnableMouseZoom(Boolean _Enable) {
+	G_EnableMouseZoom = _Enable;
+}
+
+// ---------------------------------- //
+/// Update mouse input
+Void MouseLoop() {
+	// Move camera with the mouse
+	if (G_EnableMouseRotation) {
+		if (G_PrevMouseMiddleButton != Input.MouseMiddleButton) {
+			G_PrevMouseMiddleButton = Input.MouseMiddleButton;
+			G_PrevMousePos = Input.MousePos;
+		}
+		
+		if (Input.MouseMiddleButton) {
+			declare Move = Input.MousePos - G_PrevMousePos;
+			G_PrevMousePos = Input.MousePos;
+			CameraHAngle -= Move.X * C_HorizontalMouseRatio;
+			CameraVAngle -= Move.Y * C_VerticalMouseRatio;
+			if (CameraVAngle < C_VerticalMinRot) CameraVAngle = C_VerticalMinRot;
+			
+			if (Move != <0., 0.>) {
+				if (G_MouseNeedInit) MouseInit();
+				if (!G_MouseRotated) G_MouseRotated = True;
+				
+				// Validate camera tuto
+				if (UI_Tuto::IsEnabledAndVisible(UI_Tuto::Tuto_CameraMove_Mouse())) {
+					UI_Tuto::Validate(UI_Tuto::Tuto_CameraMove_Mouse());
+				}
+			}
+		}
+	}
+	
+	// Zoom camera with the mouse
+	if (G_EnableMouseZoom) {
+		declare UpdateZoom = False;
+		foreach (Event in PendingEvents) {
+			if (Event.IsFromMouse && Event.Type == CEditorPluginEvent::Type::EditorInput) {
+				if (Event.Input == CEditorPluginEvent::EInput::CursorRaise) {
+					CameraToTargetDistance -= C_MouseZoomStep;
+					UpdateZoom = True;
+				} else if (Event.Input == CEditorPluginEvent::EInput::CursorLower) {
+					CameraToTargetDistance += C_MouseZoomStep;
+					UpdateZoom = True;
+				}
+			}
+		}
+		
+		if (UpdateZoom) {
+			if (CameraToTargetDistance > G_MouseZoomMax) CameraToTargetDistance = G_MouseZoomMax;
+			if (CameraToTargetDistance < G_MouseZoomMin) CameraToTargetDistance = G_MouseZoomMin;
+			if (!G_MouseZoomed) G_MouseZoomed = True;
+			
+			// Adapt help UI radius to zoom
+			if (CameraToTargetDistance <= G_CameraDistance) {
+				UI_Help::SetRadius(1.);
+			} else if (CameraToTargetDistance <= G_CameraDistance * 2.) {
+				UI_Help::SetRadius(0.9);
+			} else {
+				UI_Help::SetRadius(0.8);
+			}
+			
+			// Validate camera tuto
+			if (UI_Tuto::IsEnabledAndVisible(UI_Tuto::Tuto_CameraMove_Mouse())) {
+				UI_Tuto::Validate(UI_Tuto::Tuto_CameraMove_Mouse());
+			}
+		}
+	}
+}
+
+// ---------------------------------- //
+/// Play camera animations
+Void Loop() {
+	// Detect HMD on/off
+	if (G_HMD_IsActive != ManiaPlanet.HMD_IsActive) {
+		Utils::Log("[Camera] VR HMD status changed. HMD_IsActive : "^ManiaPlanet.HMD_IsActive);
+		G_HMD_IsActive = ManiaPlanet.HMD_IsActive;
+		SetWorldScale(C_VR_WorldScale_Editor);
+		SetMoveScale(C_VR_MoveScale_Editor);
+		SetHudDistance(C_VR_HudDistance_Editor);
+		
+		// Reset camera position and rotation
+		if (ManiaPlanet.HMD_IsActive) {
+			/*CameraHAngle = 0.;
+			CameraVAngle = 0.;
+			CameraToTargetDistance = 0.;
+			CameraTargetPosition = <Map.Size.X * CollectionSquareSize * 0.5, CollectionGroundY * CollectionSquareHeight * 0.5, Map.Size.Z * CollectionSquareSize * 0.5>;*/
+			ResetTracking();
+		}
+	}
+	
+	/*if (ManiaPlanet.HMD_IsActive) {
+		Private_LoopVR();
+		return;
+	}*/
+	
+	// Move
+	if (G_PartyEditor_Move_StartTime >= 0 && Now >= G_PartyEditor_Move_StartTime && Now < G_PartyEditor_Move_EndTime) {
+		for (I, 0, 2) {
+			CameraTargetPosition[I] = AL::EaseOutQuad(
+				Now - G_PartyEditor_Move_StartTime, 
+				G_PartyEditor_Move_StartValue[I], 
+				G_PartyEditor_Move_DeltaValue[I], 
+				G_PartyEditor_Move_EndTime - G_PartyEditor_Move_StartTime
+			);
+		}
+		G_ForcedCameraPos = CameraTargetPosition;
+	} else if (G_PartyEditor_Move_StartTime >= 0 && Now >= G_PartyEditor_Move_StartTime && Now >= G_PartyEditor_Move_EndTime) {
+		for (I, 0, 2) {
+			CameraTargetPosition[I] = G_PartyEditor_Move_StartValue[I] + G_PartyEditor_Move_DeltaValue[I];
+		}
+		Private_StopMove();
+		G_ForcedCameraPos = CameraTargetPosition;
+	}
+	
+	// Rotate
+	if (G_PartyEditor_Rotate_StartTime >= 0 && Now >= G_PartyEditor_Rotate_StartTime && Now < G_PartyEditor_Rotate_EndTime) {
+		CameraHAngle = AL::EaseOutQuad(
+			Now - G_PartyEditor_Rotate_StartTime, 
+			G_PartyEditor_Rotate_StartValue.X, 
+			G_PartyEditor_Rotate_DeltaValue.X, 
+			G_PartyEditor_Rotate_EndTime - G_PartyEditor_Rotate_StartTime
+		);
+		CameraVAngle = AL::EaseOutQuad(
+			Now - G_PartyEditor_Rotate_StartTime, 
+			G_PartyEditor_Rotate_StartValue.Y, 
+			G_PartyEditor_Rotate_DeltaValue.Y, 
+			G_PartyEditor_Rotate_EndTime - G_PartyEditor_Rotate_StartTime
+		);
+		G_ForcedCameraDir = <CameraHAngle, CameraVAngle>;
+		if (G_MouseRotated) G_MouseRotated = False;
+	} else if (G_PartyEditor_Rotate_StartTime >= 0 && Now >= G_PartyEditor_Rotate_StartTime && Now >= G_PartyEditor_Rotate_EndTime) {
+		CameraHAngle = G_PartyEditor_Rotate_StartValue.X + G_PartyEditor_Rotate_DeltaValue.X;
+		CameraVAngle = G_PartyEditor_Rotate_StartValue.Y + G_PartyEditor_Rotate_DeltaValue.Y;
+		Private_StopRotate();
+		G_ForcedCameraDir = <CameraHAngle, CameraVAngle>;
+		if (G_MouseRotated) G_MouseRotated = False;
+	}
+	
+	// Zoom
+	if (G_PartyEditor_Zoom_StartTime >= 0 && Now >= G_PartyEditor_Zoom_StartTime && Now < G_PartyEditor_Zoom_EndTime) {
+		CameraToTargetDistance = AL::EaseOutQuad(
+			Now - G_PartyEditor_Zoom_StartTime, 
+			G_PartyEditor_Zoom_StartValue, 
+			G_PartyEditor_Zoom_DeltaValue, 
+			G_PartyEditor_Zoom_EndTime - G_PartyEditor_Zoom_StartTime
+		);
+		G_ForcedCameraDist = CameraToTargetDistance;
+		if (G_MouseZoomed) G_MouseZoomed = False;
+	} else if (G_PartyEditor_Zoom_StartTime >= 0 && Now >= G_PartyEditor_Zoom_StartTime && Now >= G_PartyEditor_Zoom_EndTime) {
+		CameraToTargetDistance = G_PartyEditor_Zoom_StartValue + G_PartyEditor_Zoom_DeltaValue;
+		Private_StopZoom();
+		G_ForcedCameraDist = CameraToTargetDistance;
+		if (G_MouseZoomed) G_MouseZoomed = False;
+	}
+	
+	if (C_ForceCamera) {
+		if (CameraTargetPosition != G_ForcedCameraPos) CameraTargetPosition = G_ForcedCameraPos;
+		if (CameraHAngle != G_ForcedCameraDir.X) CameraHAngle = G_ForcedCameraDir.X;
+		if (CameraVAngle != G_ForcedCameraDir.Y) CameraVAngle = G_ForcedCameraDir.Y;
+		if (CameraToTargetDistance != G_ForcedCameraDist) CameraToTargetDistance = G_ForcedCameraDist;
+	}
+}
+
+// ---------------------------------- //
+/** Return the version number of the script
+ *
+ *	@return							The version number of the script
+ */
+Text GetScriptVersion() {
+	return Version;
+}
+
+// ---------------------------------- //
+/** Return the name of the script
+ *
+ *	@return							The name of the script
+ */
+Text GetScriptName() {
+	return ScriptName;
+}
+
+// ---------------------------------- //
+/// Unload the library
+Void Unload() {
+	Layers::Destroy("Camera");
+	
+	Init();
+	
+	G_CenterOnClips = False;
+}
+
+// ---------------------------------- //
+/// Load the library
+Void Load() {
+	declare LayerCamera <=> Layers::Create("Camera");
+	LayerCamera.ManialinkPage = Private_GetCameraML();
+	
+	G_EnableMouseRotation = False;
+	G_EnableMouseZoom = False;
+	G_MouseRotated = False;
+	G_MouseZoomed = False;
+	G_MouseZoomMin = C_MouseZoomMin;
+	G_MouseZoomMax = C_MouseZoomMax;
+	
+	G_HMD_IsActive = ManiaPlanet.HMD_IsActive;
+	SetWorldScale(C_VR_WorldScale_Editor);
+	SetMoveScale(C_VR_MoveScale_Editor);
+	SetHudDistance(C_VR_HudDistance_Editor);
+}

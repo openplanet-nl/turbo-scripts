@@ -1,0 +1,157 @@
+
+#Include "Libs/Openplanet/Manialink2.Script.txt"					as Manialink
+#Include "Libs/Openplanet/UIPadButtons.Script.txt"				as LibUIButtons
+#Include "Libs/Openplanet/TMConsole/FontManager.Script.txt"		as Font
+
+#Const C_ImgBase 	"file://Media/Manialinks/Nadeo/TMConsole/Images/"
+ 
+Text Build(Text _ShowAnim, Text _HideAnim) {
+	
+	declare Text Loading = C_ImgBase ^ "Load.tga";
+	declare Text IMGAction2          = LibUIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Action2);
+
+	declare Text MLText = """
+	
+	<frame id="Frame_All" posn="152 85 10" hidden="0">
+		<quad  halign="center" valign="center" sizen="6 6" image="{{{Loading}}}" posn="0 -0.2 1"    opacity="1.0" id="Quad_Loading" />
+		<quad  halign="center" valign="center" sizen="6 6" image="{{{IMGAction2}}}" posn="0 -0.2 0" opacity="1.0" id="Quad_Online" style="Icons128x128_1" substyle="Vehicles" />
+		<label halign="right"   valign="center" sizen="30"  text="Se connecter" posn="-4 0.4 0" textfont="{{{Font::GetFontName("TitleSmall")}}}" opacity="1.0" id="Label_Online"   hidden="0" />
+		
+
+	</frame>
+
+	<script><!--
+		#Const DebugName  "L_OnlineInfo"
+		#Include "TextLib" as TL
+		#Include "MathLib" as ML
+		
+		{{{Manialink::GetIncludes()}}}
+		{{{Manialink::Load()}}}
+		
+		declare Boolean G_IsLoading;
+		declare Boolean G_IsConnect;
+		
+		Void Preload()
+		{
+			PreloadImage("{{{IMGAction2}}}");
+			PreloadImage("{{{Loading}}}");
+		}
+
+
+		Void IsConnecting()
+		{
+			declare CMlFrame  Frame_All <=> (Page.GetFirstChild("Frame_All") as CMlFrame);
+			declare CMlQuad  Quad_Loading <=> (Page.GetFirstChild("Quad_Loading") as CMlQuad);
+			declare CMlQuad  Quad_Online  <=> (Page.GetFirstChild("Quad_Online")  as CMlQuad);
+			declare CMlLabel Label_Online <=> (Page.GetFirstChild("Label_Online") as CMlLabel);
+			Frame_All.Show();
+			Quad_Loading.Show();
+			Quad_Online.Hide();
+			G_IsConnect = False;
+			G_IsLoading = True;
+			Label_Online.Value = _("Connecting");
+		}
+
+		Void ConnectionEnd()
+		{
+			log("["^Now^"] -Connected to Server-");
+			declare CMlQuad  Quad_Loading <=> (Page.GetFirstChild("Quad_Loading") as CMlQuad);
+			declare CMlQuad  Quad_Online  <=> (Page.GetFirstChild("Quad_Online")  as CMlQuad);
+			declare CMlLabel Label_Online <=> (Page.GetFirstChild("Label_Online") as CMlLabel);
+			declare CMlFrame  Frame_All <=> (Page.GetFirstChild("Frame_All") as CMlFrame);
+			Frame_All.Show();
+			Quad_Loading.Hide();
+			Quad_Online.Show();
+			Quad_Online.ChangeImageUrl("");
+			G_IsConnect = True;
+		 	G_IsLoading = False;
+			Label_Online.Value = _("Connected");
+		}
+
+		Void NotConnected()
+		{
+			declare CMlQuad  Quad_Loading <=> (Page.GetFirstChild("Quad_Loading") as CMlQuad);
+			declare CMlQuad  Quad_Online  <=> (Page.GetFirstChild("Quad_Online")  as CMlQuad);
+			declare CMlFrame  Frame_All <=> (Page.GetFirstChild("Frame_All") as CMlFrame);
+			declare CMlLabel Label_Online <=> (Page.GetFirstChild("Label_Online") as CMlLabel);
+			Frame_All.Show();
+			Quad_Loading.Hide();
+			Quad_Online.Hide();
+			Quad_Online.ChangeImageUrl("{{{IMGAction2}}}");
+			//Quad_Online.ChangeImageUrl("");
+			G_IsConnect = False;
+		 	G_IsLoading = False;
+			Label_Online.Value = _("Not Connected");
+
+		}
+
+
+		Void CheckEtatConnection(Text _EtatConnection)
+		{
+			switch(_EtatConnection) {
+				case "NotConnected" : NotConnected();
+				case "Connecting"   : IsConnecting();
+				case "Connected"    : ConnectionEnd();
+			}
+		}
+
+		Void Loading()
+		{
+			declare CMlQuad Quad_Loading <=> (Page.GetFirstChild("Quad_Loading") as CMlQuad);
+			declare Integer Rotation = ML::NearestInteger(Quad_Loading.RelativeRotation)%2;
+		 	
+		 	declare Real ButtonSelectedSinVar  = ML::Sin(Now * 0.03) * 0.5;
+		 	if(ButtonSelectedSinVar < 0 && Rotation == 0)
+		 	{
+				Quad_Loading.RelativeRotation += 45;
+
+		 	}
+		 	else if(ButtonSelectedSinVar > 0 && Rotation == 1)
+		 	{
+				Quad_Loading.RelativeRotation += 45;
+
+		 	}
+		 	if(Quad_Loading.RelativeRotation == 360.) Quad_Loading.RelativeRotation = 0.;
+
+		}
+
+
+		main() {
+			NotConnected();
+
+			while(True) {
+				yield;
+				//if(! PageIsVisible) continue;
+				LibManialink_AnimLoop();
+				if(G_IsLoading) Loading();
+
+				//log(Now);
+				foreach(Event in PendingEvents) {
+					switch(Event.Type) {
+						case CMlEvent::Type::PluginCustomEvent: {
+							switch(Event.PluginCustomEventType) {
+								case "Show" : {
+									//EnableMenuNavigation(True ,True ,Null,1);
+									{{{_ShowAnim}}}
+								}
+								case "Hide" : {
+									{{{_HideAnim}}}
+								}
+								
+								case "CheckEtatConnection" : {
+									declare Text[] EtatConnection = TL::Split("::", Event.CustomEventData[0]);
+									CheckEtatConnection(EtatConnection[2]);
+								}
+							}
+						}
+					}
+				}
+			}	
+		}
+		
+
+	--></script>
+	""";
+	
+	return MLText;
+}

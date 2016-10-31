@@ -1,0 +1,133 @@
+#Include "TextLib"			as TextLib
+#Include "Libs/Openplanet/TMConsole/Logger.Script.txt"										as Logger
+#Include "Libs/Openplanet/TMConsole/Menu/MenuLayers.Script.txt"								as Layers
+#Include "Libs/Openplanet/TMConsole/PopUpManager.Script.txt"									as PopUpManager
+#Include "Libs/Openplanet/TMConsole/Menu/Controller/ChallengeController.Script.txt" 			as ChallengeController
+#Include "Libs/Openplanet/TMConsole/MenuColor.Script.txt"		   							as MenuColor
+
+
+
+declare Boolean G_PrevIsLimitedToCanyon;
+
+Void WarnNotEnoughParams(CMlAppEvent _Event) {
+	Logger::Warn("[Menucontroller] event "^_Event.CustomEventType^": not enough params ["^_Event.CustomEventData^"]");
+}
+
+Void RequestChallengeTries(Integer _ChallengeId, Integer _Offset, Integer _Length)
+{
+	ChallengeController::GetChallengeTries("BuddiesChallengeBrowser", _ChallengeId, _Offset, _Length);
+}
+
+Void RequestGiveUpRace(Integer _ChallengeId, Integer _RaceId)
+{
+	ChallengeController::FinishRace("BuddiesChallengeBrowser", _ChallengeId, _RaceId);
+}
+
+Void RequestInstallChallenge(Integer _ChallengeId)
+{
+	ChallengeController::InstallChallenge("BuddiesChallengeBrowser", _ChallengeId);
+}
+
+Void RequestRemoveChallenge(Integer _ChallengeId, Boolean _CountsForChallengesCount)
+{
+	ChallengeController::RemoveBuddyChallenge("BuddiesChallengeBrowser", _ChallengeId, _CountsForChallengesCount);
+}
+
+Void RequestBuddiesChallenges(Integer _Offset, Integer _Length)
+{
+	ChallengeController::GetBuddiesChallenges("BuddiesChallengeBrowser", _Offset, _Length);
+}
+
+Void RequestBuddiesChallenge(Integer _ChallengeInstanceId, Integer _ChallengeId)
+{
+	ChallengeController::GetBuddiesChallenge("BuddiesChallengeBrowser", _ChallengeInstanceId, _ChallengeId);
+}
+
+Void Loop() {
+	declare Boolean IsLimitedToCanyon = ManiaPlanet.TmTurbo_IsPartialInstall || ManiaPlanet.TmTurbo_IsDemo;
+	if (G_PrevIsLimitedToCanyon != IsLimitedToCanyon)
+	{
+		declare CUILayer BuddiesChallengeBrowser = Layers::Get("BuddiesChallengeBrowser");
+		LayerCustomEvent(BuddiesChallengeBrowser, "SetIsLimitedToCanyon", [TextLib::ToText(IsLimitedToCanyon)]);
+	}
+
+	foreach(Event in PendingEvents) {
+		if(Event.Type != CMlAppEvent::EType::LayerCustomEvent) continue;
+		switch(Event.CustomEventType) {
+			case "RequestChallengeTries" : {
+				declare Integer ChallengeId = TextLib::ToInteger(Event.CustomEventData[0]);
+				declare Integer Offset		= TextLib::ToInteger(Event.CustomEventData[1]);
+				declare Integer Length		= TextLib::ToInteger(Event.CustomEventData[2]);
+				RequestChallengeTries(ChallengeId, Offset, Length);
+			}
+			case "RequestInstallChallenge" : {
+				declare Integer ChallengeId = TextLib::ToInteger(Event.CustomEventData[0]);
+				RequestInstallChallenge(ChallengeId);
+			}
+			case "RequestRemoveChallenge" : {
+				declare Integer ChallengeId = TextLib::ToInteger(Event.CustomEventData[0]);
+				declare Boolean CountsForChallengesCount = Event.CustomEventData[1] == "True";
+				RequestRemoveChallenge(ChallengeId, CountsForChallengesCount);
+			}
+			case "RequestBuddiesChallenges" : {
+				declare Integer Offset = TextLib::ToInteger(Event.CustomEventData[0]);
+				declare Integer Length = TextLib::ToInteger(Event.CustomEventData[1]);
+				RequestBuddiesChallenges(Offset, Length);
+			}
+			case "RequestBuddiesChallenge" : {
+				RequestBuddiesChallenge(TextLib::ToInteger(Event.CustomEventData[0]), TextLib::ToInteger(Event.CustomEventData[1]));
+			}
+			case "AutoGiveUpRace" : {
+				declare Integer ChallengeId = TextLib::ToInteger(Event.CustomEventData[0]);
+				declare Integer RaceId = TextLib::ToInteger(Event.CustomEventData[1]);
+				RequestGiveUpRace(ChallengeId, RaceId);
+			}
+			case "GiveUpRace" : {
+				declare Integer ChallengeId = TextLib::ToInteger(Event.CustomEventData[0]);
+				declare Integer RaceId = TextLib::ToInteger(Event.CustomEventData[1]);
+				RequestGiveUpRace(ChallengeId, RaceId);
+			}
+			case "PopUpGiveUpRaceAskYesNo" : {
+				declare Text TitleColor = TextLib::ColorToText(MenuColor::GetMenuColor(2));
+				PopUpManager::AddAskYesNo2(_("You already have a pending race on this challenge that is not counting for this buddies challenge. You must give it up to continue. Give up race ?"),_("Give Up Race ?"), TitleColor, "BuddiesChallengeBrowser_GiveUpRace");
+			}
+			case "BuddiesChallengeBrowser_GiveUpRace_AskYesNo" : {
+				if (Event.CustomEventData.count < 1)
+					WarnNotEnoughParams(Event);
+				else {
+					declare CUILayer BuddiesChallengeBrowser = Layers::Get("BuddiesChallengeBrowser");
+					LayerCustomEvent(BuddiesChallengeBrowser, "GiveUpRace", [Event.CustomEventData[0]]);
+				}
+			}
+			case "PopUp_CanyonRestricted" : {
+				if (ManiaPlanet.TmTurbo_IsPartialInstall)
+					PopUpManager::AddPopUp2(0, _("You will only see Canyon challenges because the game is not fully installed."), "", False);
+				else if (ManiaPlanet.TmTurbo_IsDemo)
+					PopUpManager::AddPopUp2(0, _("You will only see Canyon challenges because you have the Trial version. Unlock the full game to unlock all features."), "", False);
+			}
+			case "PopUp_CannotTrain" : {
+				PopUpManager::AddPopUp2(0, _("You cannot train a challenge with a pending race"), "", False);
+			}
+			case "PopUp_MustValidate" : {
+				PopUpManager::AddPopUp2(0, _("You cannot publish a challenge without validating it first"), "", False);
+			}
+			case "PopUpChallengePublished" : {
+				PopUpManager::AddPopUp2(0, _("Challenge successfully published !"), "", False);
+			}
+			case "PopUpChallengeInstalled" : {
+				PopUpManager::AddPopUp2(0, _("Challenge successfully added !"), "", False);
+			}
+			case "PopUpChallengeRemoved" : {
+				PopUpManager::AddPopUp2(0, _("Challenge successfully removed !"), "", False);
+			}
+			case "GetIsLimitedToCanyon" : {
+				declare Boolean IsLimitedToCanyon = ManiaPlanet.TmTurbo_IsPartialInstall || ManiaPlanet.TmTurbo_IsDemo;
+				declare CUILayer BuddiesChallengeBrowser = Layers::Get("BuddiesChallengeBrowser");
+				LayerCustomEvent(BuddiesChallengeBrowser, "SetIsLimitedToCanyon", [TextLib::ToText(IsLimitedToCanyon)]);
+			}
+			case "BuddiesChallengesBrowsed" : {
+				ChallengeController::SetBuddiesChallengesBrowsed();
+			}
+		}
+	}
+}

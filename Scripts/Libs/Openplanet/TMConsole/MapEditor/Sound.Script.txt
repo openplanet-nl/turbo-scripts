@@ -1,0 +1,114 @@
+/** 
+ * Sound library
+ */
+#Const Version		"2015-12-31"
+#Const ScriptName	"Sound.Script.txt"
+
+#Include "Libs/Openplanet/TMConsole/Volumes.Script.txt" as Volumes
+
+// ---------------------------------- //
+// Constants
+// ---------------------------------- //
+/// Sounds for each environments
+#Const C_Sounds_All [
+	"EditorAutoFinish"					=> "file://Media/Sounds/TMConsole/MapEditor/SFX_UI_AutomaticFinishTrack.ogg",
+	"EditorBlockHelp"					=> "file://Media/Sounds/TMConsole/MapEditor/SFX_UI_Pop-Up_InterfaceSmall.wav",
+	"EditorBlockMove"					=> "file://Media/Sounds/TMConsole/MapEditor/SFX_UI_BlocMove.wav",
+	"EditorBlockMoveDown"				=> "file://Media/Sounds/TMConsole/MapEditor/SFX_UI_BlocMoveDown.wav",
+	"EditorBlockMoveUp"					=> "file://Media/Sounds/TMConsole/MapEditor/SFX_UI_BlocMoveUp.wav",
+	"EditorBlockRotate"					=> "file://Media/Sounds/TMConsole/MapEditor/SFX_UI_BlocRotate.wav",
+	"EditorBlockSelection"				=> "file://Media/Sounds/TMConsole/MapEditor/SFX_UI_ClicRosace.wav",
+	"EditorDisplayUI"					=> "file://Media/Sounds/TMConsole/MapEditor/SFX_UI_Pop-Up_InterfaceBlocCategory.wav",
+	"EditorPlaceBlockCheckpoint"		=> "file://Media/Sounds/TMConsole/MapEditor/SFX_UI_BlocPlaceCheckpoint.wav",
+	"EditorPlaceBlockCommon"			=> "file://Media/Sounds/TMConsole/MapEditor/SFX_UI_BlocPlaceCommon.wav",
+	"EditorPlaceBlockDeco"				=> "file://Media/Sounds/TMConsole/MapEditor/SFX_UI_BlocPlaceDeco.wav",
+	"EditorPlaceBlockFinish"			=> "file://Media/Sounds/TMConsole/MapEditor/SFX_UI_BlocPlaceFinish.wav",
+	"EditorPlaceBlockStart"				=> "file://Media/Sounds/TMConsole/MapEditor/SFX_UI_BlocPlaceStart.wav",
+	"EditorPopUp"						=> "file://Media/Sounds/TMConsole/MapEditor/SFX_UI_Pop-UpQuestionScreen.wav",
+	"EditorRandomGenerationFinished"	=> "file://Media/Sounds/TMConsole/MapEditor/RdmGen_Finished.ogg",
+	"EditorRemoveBlock"					=> "file://Media/Sounds/TMConsole/MapEditor/SFX_UI_BlocRemove.wav",
+	"EditorSimpleSelectMacroblock"		=> "file://Media/Sounds/TMConsole/MapEditor/SFX_UI_ClicInterfaceLeftRight.wav",
+	"EditorSimpleSelectFamily"			=> "file://Media/Sounds/TMConsole/MapEditor/SFX_UI_ClicInterfaceUpDown.wav",
+	"EditorTestStart"					=> "file://Media/Sounds/TMConsole/MapEditor/SFX_UI_TestTrack.wav",
+	"EditorValidationStop"				=> "file://Media/Sounds/TMConsole/MapEditor/SFX_UI_TerminateValidateTrack.ogg",
+	"EditorWrongAction"					=> "file://Media/Sounds/TMConsole/MapEditor/SFX_UI_WrongAction.wav",
+	"EditorMenuMove"					=> "file://Media/Sounds/TMConsole/event-focus.wav",
+	"EditorMenuCancel"					=> "file://Media/Sounds/TMConsole/event-on.wav",
+	"EditorMenuValid"					=> "file://Media/Sounds/TMConsole/event-validate.wav"
+]
+
+// ---------------------------------- //
+// Globales
+// ---------------------------------- //
+declare CAudioSource[Text] G_Sounds;	///< Editor sounds
+
+// ---------------------------------- //
+// Functions
+// ---------------------------------- //
+// ---------------------------------- //
+// Public
+// ---------------------------------- //
+// ---------------------------------- //
+/** Return the version number of the script
+ *
+ *	@return						The version number of the script
+ */
+Text GetScriptVersion() {
+	return Version;
+}
+
+// ---------------------------------- //
+/** Return the name of the script
+ *
+ *	@return						The name of the script
+ */
+Text GetScriptName() {
+	return ScriptName;
+}
+
+// ---------------------------------- //
+/** Play a sound from the library
+ *
+ *	@param	_Name					The name of the sound to play
+ */
+Void Play(Text _Name) {
+	declare CAudioSource Sound;
+	if (G_Sounds.existskey(_Name)) Sound <=> G_Sounds[_Name];
+	if (Sound == Null) return;
+	
+	Sound.Stop();
+	Sound.Play();
+}
+
+// ---------------------------------- //
+/// Unload the library
+Void Unload() {
+	foreach (Sound in G_Sounds) {
+		Audio.DestroySound(Sound);
+	}
+	G_Sounds.clear();
+}
+
+// ---------------------------------- //
+/// Load the library
+Void Load() {
+	Unload();
+	
+	// Load global sounds
+	declare Count = 0;
+	foreach (SoundName => SoundFile in C_Sounds_All) {
+		// log("SoundName : "^SoundName);
+		declare Sound = Audio.CreateSound(
+			SoundFile,
+			Volumes::GetVolumedB(SoundName),
+			False,
+			False,
+			False
+		);
+		Sound.PanRadiusLfe = Volumes::GetPanRadiusLfe("MenuUISpreadLarge");
+		G_Sounds[SoundName] = Sound;
+		
+		Count += 1;
+		if (Count%3 == 0) yield;
+	}
+}

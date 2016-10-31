@@ -1,0 +1,667 @@
+/** 
+ * Map style selection menu UI
+ */
+
+#Const Version		"2016-03-14"
+#Const ScriptName	"MapStyleSelection.Script.txt"
+
+#Include "TextLib" as TL
+#Include "Libs/Openplanet/Buttons.Script.txt" as Buttons
+#Include "Libs/Openplanet/MLEffects.Script.txt" as MLE
+#Include "Libs/Openplanet/Manialink3.Script.txt" as Manialink
+#Include "Libs/Openplanet/TMConsole/MapEditor/Layers.Script.txt" as Layers
+#Include "Libs/Openplanet/TMConsole/MapEditor/Sound.Script.txt" as Sound
+#Include "Libs/Openplanet/TMConsole/MapEditor/UI/Colors.Script.txt" as Colors
+#Include "Libs/Openplanet/TMConsole/MapEditor/UI/Stylesheet.Script.txt" as Styles
+
+// ---------------------------------- //
+// Constants
+// ---------------------------------- //
+#Const C_DefaultVisibility	False	///< Default visibility
+#Const C_BgAnim False ///< Anim butotn background on mouse over/out
+// Selection
+#Const C_Style_Race			1
+#Const C_Style_Tech			2
+#Const C_Style_Lol			3
+#Const C_Style_Fullspeed	4
+#Const C_Style_Platform		5
+#Const C_Style_Offroad		6
+#Const C_Style_Trial		7
+#Const C_Style_Concept		8
+#Const C_Style_Pressforward	9
+#Const C_Style_Smash		11
+#Const C_Style_Stunts		12
+#Const C_Style_Bonus		13
+#Const C_Style_Random		10
+
+#Const C_StylesDescriptions [
+	1 => _("Those tracks just require you to finish with the best time. No muss, no fuss, just race !"),
+	2 => _("Those tracks feature many turns, U-Turns, and braking zones. Watch out for your racing line !"),
+	3 => _("Most of the time short ones, those tracks are based on a single obstacle that often require luck to be cleared successfully."),
+	4 => _("Those maps are meant to be played without letting go of the accelerator. Go full throttle !"),
+	5 => _("Those tracks feature many traps and jumps. Watch out below !"),
+	6 => _("Those tracks are set up in natural areas. Don't get lost !"),
+	7 => _("Generally hard tracks, featuring obstacles to be overcome at low speed."),
+	8 => _("Those tracks are built upon a single strong idea or concept, making them easily recognizable."),
+	9 => _("You only need to keep pressing the accelerator in those maps, don't touch anything else. Enjoy the show !"),
+	11 => _("Those tracks offer long straights, often filled with obstacles, that are well suited for button mashing. Work out your thumbs !"),
+	12 => _("Those tracks feature massive jumps, loops and half pipes : each trick done in the air gives you boost upon landing !"),
+	13 => _("Those tracks are generally Multilap ones, where various bonuses are awarded upon passing each checkpoint. Let the frenzy begin !")
+]
+/// Events
+#Const C_Event_Hover	"LibMapStyleSelection_Hover"
+#Const C_Event_Click	"LibMapStyleSelection_Click"
+#Const C_Event_Cancel	"LibMapStyleSelection_Cancel"
+#Const C_Event_Confirm	"LibMapStyleSelection_Confirm"
+
+// ---------------------------------- //
+// Globales
+// ---------------------------------- //
+declare Integer[] G_Selection;
+declare Text[Integer] G_StylesRawNames;
+declare Text[Integer] G_StylesNames;
+
+// ---------------------------------- //
+// Functions
+// ---------------------------------- //
+// ---------------------------------- //
+// Private
+// ---------------------------------- //
+// ---------------------------------- //
+/** Get the map style selection menu manialink
+ *
+ *	@return						The manialink
+ */
+Text Private_GetMapStyleSelectionML() {
+	declare OptionsCount = 12;
+	declare Options = "";
+	declare DescriptionSizeY = 3.;
+	declare MenuSizeX = 36.;
+	declare MenuSizeY = OptionsCount + DescriptionSizeY + 3.;
+	declare MenuPosY = 9.;
+	declare OptionSize = 8.;
+	declare ButtonSize = 0.9;
+	
+	declare ButtonConfirm = Buttons::Menu_Select();
+	declare ButtonCancel = Buttons::Menu_Cancel();
+	
+	Options = """
+<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<0., 0., 0.>, Styles::CircleSize_Bottom()))}}} data-value="{{{C_Style_Race}}}">
+	{{{Styles::BuildLine(<0., 0., 0.>, <MenuSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), Colors::Color_Black(), True, True, ["scriptevents" => "1", "id" => "Quad_Button"])}}}
+	{{{Styles::BuildLabel(<0., -0.45, 1.>, <MenuSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftCenter2(), [
+		//L16N [MapEditor] Track style
+		"text" => _("Race"), "class" => "turbo2-text-menu"
+	])}}}
+</frame>
+<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<0., -1., 0.>, Styles::CircleSize_Bottom()))}}} data-value="{{{C_Style_Tech}}}">
+	{{{Styles::BuildLine(<0., 0., 0.>, <MenuSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), Colors::Color_Black(), True, True, ["scriptevents" => "1", "id" => "Quad_Button"])}}}
+	{{{Styles::BuildLabel(<0., -0.45, 1.>, <MenuSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftCenter2(), [
+		//L16N [MapEditor] Track style
+		"text" => _("Tech"), "class" => "turbo2-text-menu"
+	])}}}
+</frame>
+<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<0., -2., 0.>, Styles::CircleSize_Bottom()))}}} data-value="{{{C_Style_Lol}}}">
+	{{{Styles::BuildLine(<0., 0., 0.>, <MenuSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), Colors::Color_Black(), True, True, ["scriptevents" => "1", "id" => "Quad_Button"])}}}
+	{{{Styles::BuildLabel(<0., -0.45, 1.>, <MenuSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftCenter2(), [
+		//L16N [MapEditor] Track style
+		"text" => _("Lol"), "class" => "turbo2-text-menu"
+	])}}}
+</frame>
+<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<0., -3., 0.>, Styles::CircleSize_Bottom()))}}} data-value="{{{C_Style_Fullspeed}}}">
+	{{{Styles::BuildLine(<0., 0., 0.>, <MenuSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), Colors::Color_Black(), True, True, ["scriptevents" => "1", "id" => "Quad_Button"])}}}
+	{{{Styles::BuildLabel(<0., -0.45, 1.>, <MenuSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftCenter2(), [
+		//L16N [MapEditor] Track style
+		"text" => _("Fullspeed"), "class" => "turbo2-text-menu"
+	])}}}
+</frame>
+<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<0., -4., 0.>, Styles::CircleSize_Bottom()))}}} data-value="{{{C_Style_Platform}}}">
+	{{{Styles::BuildLine(<0., 0., 0.>, <MenuSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), Colors::Color_Black(), True, True, ["scriptevents" => "1", "id" => "Quad_Button"])}}}
+	{{{Styles::BuildLabel(<0., -0.45, 1.>, <MenuSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftCenter2(), [
+		//L16N [MapEditor] Track style
+		"text" => _("Platform"), "class" => "turbo2-text-menu"
+	])}}}
+</frame>
+<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<0., -5., 0.>, Styles::CircleSize_Bottom()))}}} data-value="{{{C_Style_Offroad}}}">
+	{{{Styles::BuildLine(<0., 0., 0.>, <MenuSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), Colors::Color_Black(), True, True, ["scriptevents" => "1", "id" => "Quad_Button"])}}}
+	{{{Styles::BuildLabel(<0., -0.45, 1.>, <MenuSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftCenter2(), [
+		//L16N [MapEditor] Track style
+		"text" => _("Offroad"), "class" => "turbo2-text-menu"
+	])}}}
+</frame>
+<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<0., -6., 0.>, Styles::CircleSize_Bottom()))}}} data-value="{{{C_Style_Trial}}}">
+	{{{Styles::BuildLine(<0., 0., 0.>, <MenuSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), Colors::Color_Black(), True, True, ["scriptevents" => "1", "id" => "Quad_Button"])}}}
+	{{{Styles::BuildLabel(<0., -0.45, 1.>, <MenuSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftCenter2(), [
+		//L16N [MapEditor] Track style
+		"text" => _("Trial"), "class" => "turbo2-text-menu"
+	])}}}
+</frame>
+<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<0., -7., 0.>, Styles::CircleSize_Bottom()))}}} data-value="{{{C_Style_Concept}}}">
+	{{{Styles::BuildLine(<0., 0., 0.>, <MenuSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), Colors::Color_Black(), True, True, ["scriptevents" => "1", "id" => "Quad_Button"])}}}
+	{{{Styles::BuildLabel(<0., -0.45, 1.>, <MenuSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftCenter2(), [
+		//L16N [MapEditor] Track style
+		"text" => _("Concept"), "class" => "turbo2-text-menu"
+	])}}}
+</frame>
+<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<0., -8., 0.>, Styles::CircleSize_Bottom()))}}} data-value="{{{C_Style_Pressforward}}}">
+	{{{Styles::BuildLine(<0., 0., 0.>, <MenuSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), Colors::Color_Black(), True, True, ["scriptevents" => "1", "id" => "Quad_Button"])}}}
+	{{{Styles::BuildLabel(<0., -0.45, 1.>, <MenuSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftCenter2(), [
+		//L16N [MapEditor] Track style
+		"text" => _("Pressforward"), "class" => "turbo2-text-menu"
+	])}}}
+</frame>
+<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<0., -9., 0.>, Styles::CircleSize_Bottom()))}}} data-value="{{{C_Style_Smash}}}">
+	{{{Styles::BuildLine(<0., 0., 0.>, <MenuSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), Colors::Color_Black(), True, True, ["scriptevents" => "1", "id" => "Quad_Button"])}}}
+	{{{Styles::BuildLabel(<0., -0.45, 1.>, <MenuSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftCenter2(), [
+		//L16N [MapEditor] Track style
+		"text" => "Smash", "class" => "turbo2-text-menu"
+	])}}}
+</frame>
+<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<0., -10., 0.>, Styles::CircleSize_Bottom()))}}} data-value="{{{C_Style_Stunts}}}">
+	{{{Styles::BuildLine(<0., 0., 0.>, <MenuSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), Colors::Color_Black(), True, True, ["scriptevents" => "1", "id" => "Quad_Button"])}}}
+	{{{Styles::BuildLabel(<0., -0.45, 1.>, <MenuSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftCenter2(), [
+		//L16N [MapEditor] Track style
+		"text" => "Stunts", "class" => "turbo2-text-menu"
+	])}}}
+</frame>
+<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<0., -11., 0.>, Styles::CircleSize_Bottom()))}}} data-value="{{{C_Style_Bonus}}}">
+	{{{Styles::BuildLine(<0., 0., 0.>, <MenuSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), Colors::Color_Black(), True, True, ["scriptevents" => "1", "id" => "Quad_Button"])}}}
+	{{{Styles::BuildLabel(<0., -0.45, 1.>, <MenuSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftCenter2(), [
+		//L16N [MapEditor] Track style
+		"text" => "Bonus", "class" => "turbo2-text-menu"
+	])}}}
+</frame>
+""";
+	
+	return """
+<manialink version="3" name="MapEditor:MapStyleSelection">
+<stylesheet>
+	{{{Styles::Get()}}}
+</stylesheet>
+<frame z-index="12" id="Frame_Global">
+	<quad z-index="0" opacity="0" hidden="1" class="turbo2-screen-overlay" id="Quad_ScreenOverlay" />
+	<frame pos="0 -92" z-index="2" hidden="1" id="Frame_MapStyleSelection">
+		<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<-MenuSizeX*0.5, 0., 0.>, Styles::CircleSize_Bottom()))}}}>
+			{{{Styles::BuildBackground(<0., 0., 0.>, <MenuSizeX, MenuSizeY>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop())}}}
+			{{{Styles::BuildLine(<0., 0., 1.>, <MenuSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), Colors::Color_White(), True, True, Text[Text])}}}
+			{{{Styles::BuildLabel(<0., -0.45, 2.>, <MenuSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftCenter2(), [
+				//L16N [MapEditor] Select a style for the track (tech, lol, fullspeed, ...)
+				"text" => _("Select style"), "textcolor" => Colors::GetColorML(Colors::Color_Black()), "class" => "turbo2-text-title"
+			])}}}
+			<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<0., -2., 5.>, Styles::CircleSize_Bottom()))}}} id="Frame_Buttons">
+				{{{Options}}}
+			</frame>
+			{{{Styles::BuildQuad(<0., -MenuSizeY+DescriptionSizeY+1., 3.>, <MenuSizeX, DescriptionSizeY>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), ["bgcolor" => Colors::GetColorML(Colors::Color_Grey())])}}}
+			{{{Styles::BuildLabel(<0., -MenuSizeY+DescriptionSizeY*0.5+1., 4.>, <MenuSizeX, DescriptionSizeY>, Styles::CircleSize_Bottom(), Styles::Align_LeftCenter2(), [
+				"autonewline" => "1", "maxline" => TL::ToText(DescriptionSizeY), "textcolor" => Colors::GetColorML(Colors::Color_LightGrey()), "class" => "turbo2-text-progress-description", "id" => "Label_Description"
+			])}}}
+		</frame>
+		<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<MenuSizeX*0.5-OptionSize-1., -MenuSizeY+1., 6.>, Styles::CircleSize_Bottom()))}}} id="Button_Cancel">
+			{{{Styles::BuildLine(<0., 0., 0.>, <OptionSize, 1.>, Styles::CircleSize_Bottom(), Styles::Align_RightTop(), Colors::Color_Black(), True, True, ["scriptevents" => "1", MLE::Data_Triggers() => "B1", "class" => MLE::ML_Class(), "id" => "Quad_Cancel"])}}}
+			{{{Styles::BuildButton(ButtonCancel, <-0.5, -0.5, 2.>, <ButtonSize, ButtonSize>, Styles::CircleSize_Bottom(), Styles::Align_CenterCenter(), Text[Text])}}}
+			{{{Styles::BuildLabel(<-1., -0.45, 1.>, <OptionSize-1., 1.>, Styles::CircleSize_Bottom(), Styles::Align_RightCenter2(), [
+				//L16N [MapEditor] Cancel an action
+				"text" => _("Cancel"), MLE::Data_Effects() => """B1:{{{MLE::Effect_LabelHover()}}}""", "class" => """turbo2-text-button {{{MLE::ML_Class()}}}""", "id" => "Label_Cancel"
+			])}}}
+		</frame>
+		<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<MenuSizeX*0.5, -MenuSizeY+1., 5.>, Styles::CircleSize_Bottom()))}}} id="Button_Confirm">
+			{{{Styles::BuildLine(<0., 0., 0.>, <OptionSize, 1.>, Styles::CircleSize_Bottom(), Styles::Align_RightTop(), Colors::Color_Black(), True, True, ["scriptevents" => "1", MLE::Data_Triggers() => "B2", "class" => MLE::ML_Class(), "id" => "Quad_Confirm"])}}}
+			{{{Styles::BuildButton(ButtonConfirm, <-0.5, -0.5, 2.>, <ButtonSize, ButtonSize>, Styles::CircleSize_Bottom(), Styles::Align_CenterCenter(), Text[Text])}}}
+			{{{Styles::BuildLabel(<-1., -0.45, 1.>, <OptionSize-1., 1.>, Styles::CircleSize_Bottom(), Styles::Align_RightCenter2(), [
+				//L16N [MapEditor] Confirm an action
+				"text" => _("|Infinitive|Confirm"), MLE::Data_Effects() => """B2:{{{MLE::Effect_LabelHover()}}}""", "class" => """turbo2-text-button {{{MLE::ML_Class()}}}""", "id" => "Label_Confirm"
+			])}}}
+		</frame>
+	</frame>
+</frame>
+<script><!--
+#Include "TextLib" as TL
+#Include "AnimLib" as AL
+{{{Manialink::DefaultIncludes()}}}
+{{{MLE::ML_Includes()}}}
+
+#Const C_Black	{{{Colors::GetColor(Colors::Color_Black())}}}
+#Const C_Red	{{{Colors::GetColor(Colors::Color_Red())}}}
+
+#Const C_StylesDescriptions {{{dump(C_StylesDescriptions)}}}
+
+declare Integer[] G_Selectables;
+declare CMlQuad G_QuadSelected;
+declare CMlLabel G_LabelDescription;
+
+{{{Manialink::Animations(["EaseOutQuad"])}}}
+{{{Buttons::ML_Functions()}}}
+{{{MLE::ML_Functions()}}}
+
+Void InitSelectables() {
+	G_Selectables.clear();
+	declare Frame_Buttons <=> (Page.GetFirstChild("Frame_Buttons") as CMlFrame);
+	foreach (Control in Frame_Buttons.Controls) {
+		declare Value for Control = -1;
+		Value = TL::ToInteger(Control.DataAttributeGet("value"));
+		G_Selectables.add(Value);
+		
+		declare Frame_Button <=> (Control as CMlFrame);
+		declare Quad_Button <=> (Frame_Button.GetFirstChild("Quad_Button") as CMlQuad);
+		declare ItemKey for Quad_Button = -1;
+		ItemKey = Value;
+	}
+}
+
+Void SelectButton(Integer _Selected) {
+	declare Frame_Buttons <=> (Page.GetFirstChild("Frame_Buttons") as CMlFrame);
+	foreach (Control in Frame_Buttons.Controls) {
+		declare Frame_Button <=> (Control as CMlFrame);
+		declare Quad_Button <=> (Frame_Button.GetFirstChild("Quad_Button") as CMlQuad);
+		declare Value for Frame_Button = -1;
+		if (Value == _Selected) {
+			G_QuadSelected <=> Quad_Button;
+			//LibManialink_Anim(Quad_Button, {{{Manialink::Inject("""<quad colorize="{{{Colors::GetColorML(Colors::Color_Red())}}}" />""")}}}, 250, "EaseOutQuad");
+		} else {
+			LibManialink_Anim(Quad_Button, {{{Manialink::Inject("""<quad colorize="{{{Colors::GetColorML(Colors::Color_Black())}}}" />""")}}}, 25, "EaseOutQuad");
+		}
+	}
+	
+	if (C_StylesDescriptions.existskey(_Selected)) {
+		G_LabelDescription.Value = C_StylesDescriptions[_Selected];
+	}
+}
+
+Void SetVisibility(Boolean _Visible) {
+	if (_Visible) {
+		LibManialink_Anim({{{Manialink::Inject("""<frame pos="0 {{{Styles::GetSize2(<0., MenuPosY>, Styles::CircleSize_Bottom()).Y}}}" hidden="0" id="Frame_MapStyleSelection" />""")}}}, 250, "EaseOutQuad");
+		declare L_Background for Page = False;
+		if (L_Background) LibManialink_Anim({{{Manialink::Inject("""<frame opacity="1" hidden="0" id="Quad_ScreenOverlay" />""")}}}, 10, "EaseOutQuad");
+	} else {
+		LibManialink_Anim({{{Manialink::Inject("""<frame pos="0 -92" hidden="1" id="Frame_MapStyleSelection" />""")}}}, 250, "EaseOutQuad");
+		LibManialink_AnimInsert({{{Manialink::Inject("""<frame opacity="0" hidden="1" id="Quad_ScreenOverlay" />""")}}}, 500, 10, "EaseOutQuad");
+	}
+}
+
+main() {
+	G_LabelDescription <=> (Page.GetFirstChild("Label_Description") as CMlLabel);
+	
+	declare L_Visibility for Page = {{{C_DefaultVisibility}}};
+	declare L_SelectedUpdate for Page = -1;
+	declare L_Selected for Page = -1;
+	
+	declare PrevVisibility = {{{C_DefaultVisibility}}};
+	declare PrevSelectedUpdate = -1;
+	
+	G_Selectables.clear();
+	
+	// Fix
+	declare CMlControl[] LibManialink_Anims for Page;
+	LibManialink_Anims.clear();
+	
+	InitSelectables();
+	LibButtons_Init();
+  LibMLEffects_Init();
+	
+	declare AnimDir = 1;
+	declare AnimStartTime = Now;
+	declare AnimDuration = 350;
+	
+	while (True) {
+		yield;
+		
+		LibManialink_AnimLoop();
+		LibButtons_Loop();
+    LibMLEffects_Loop();
+		
+		if (PrevVisibility != L_Visibility) {
+			PrevVisibility = L_Visibility;
+			SetVisibility(L_Visibility);
+		}
+		
+		if (PrevSelectedUpdate != L_SelectedUpdate) {
+			PrevSelectedUpdate = L_SelectedUpdate;
+			SelectButton(L_Selected);
+			
+			AnimDir = 1;
+			AnimStartTime = Now;
+		}
+		
+		foreach (Event in PendingEvents) {
+			if (Event.Type == CMlEvent::Type::MouseClick) {
+				if (Event.Control != Null && Event.ControlId == "Quad_Button") {
+					declare ItemKey for Event.Control = -1;
+					SendCustomEvent("{{{C_Event_Click}}}", [TL::ToText(ItemKey)]);
+				} else if (Event.ControlId == "Quad_Confirm") {
+					SendCustomEvent("{{{C_Event_Confirm}}}", Text[]);
+				} else if (Event.ControlId == "Quad_Cancel") {
+					SendCustomEvent("{{{C_Event_Cancel}}}", Text[]);
+				}
+			} else if (Event.Type == CMlEvent::Type::MouseOut) {
+				if (Event.ControlId == "Quad_Confirm" || Event.ControlId == "Quad_Cancel") {
+					if ({{{C_BgAnim}}}) LibManialink_Anim(
+						(Event.Control as CMlQuad),
+						{{{Manialink::Inject("""<quad colorize="{{{Colors::GetColorML(Colors::Color_Black())}}}" />""")}}},
+						250,
+						"EaseOutQuad"
+					);
+				}
+			} else if (Event.Type == CMlEvent::Type::MouseOver) {
+				if (Event.Control != Null && Event.ControlId == "Quad_Button") {
+					declare ItemKey for Event.Control = -1;
+					SendCustomEvent("{{{C_Event_Hover}}}", [TL::ToText(ItemKey)]);
+				} else if (Event.ControlId == "Quad_Confirm" || Event.ControlId == "Quad_Cancel") {
+					if ({{{C_BgAnim}}}) LibManialink_Anim(
+						(Event.Control as CMlQuad),
+						{{{Manialink::Inject("""<quad colorize="{{{Colors::GetColorML(Colors::Color_Red())}}}" />""")}}},
+						250,
+						"EaseOutQuad"
+					);
+				}
+			}
+		}
+		
+		if (L_Visibility && G_QuadSelected != Null) {
+			if (AnimDir > 0) {
+				declare X = AL::EaseOutQuad(Now - AnimStartTime, C_Black.X, C_Red.X - C_Black.X, AnimDuration);
+				declare Y = AL::EaseOutQuad(Now - AnimStartTime, C_Black.Y, C_Red.Y - C_Black.Y, AnimDuration);
+				declare Z = AL::EaseOutQuad(Now - AnimStartTime, C_Black.Z, C_Red.Z - C_Black.Z, AnimDuration);
+				
+				G_QuadSelected.Colorize = <X, Y, Z>;
+				if (Now > AnimStartTime + AnimDuration) {
+					AnimDir = -1;
+					AnimStartTime = Now;
+				}
+			} else if (AnimDir < 0) {
+				declare X = AL::EaseOutQuad(Now - AnimStartTime, C_Red.X, C_Black.X - C_Red.X, AnimDuration);
+				declare Y = AL::EaseOutQuad(Now - AnimStartTime, C_Red.Y, C_Black.Y - C_Red.Y, AnimDuration);
+				declare Z = AL::EaseOutQuad(Now - AnimStartTime, C_Red.Z, C_Black.Z - C_Red.Z, AnimDuration);
+				
+				G_QuadSelected.Colorize = <X, Y, Z>;
+				if (Now > AnimStartTime + AnimDuration) {
+					AnimDir = 1;
+					AnimStartTime = Now;
+				}
+			}
+		}
+	}
+}
+--></script>
+</manialink>	
+""";
+}
+
+// ---------------------------------- //
+// Public
+// ---------------------------------- //
+// ---------------------------------- //
+/** Return the version number of the script
+ *
+ *	@return						The version number of the script
+ */
+Text GetScriptVersion() {
+	return Version;
+}
+
+// ---------------------------------- //
+/** Return the name of the script
+ *
+ *	@return						The name of the script
+ */
+Text GetScriptName() {
+	return ScriptName;
+}
+
+// ---------------------------------- //
+/// Get the events constants
+Text Event_Hover() { return C_Event_Hover; }
+Text Event_Click() { return C_Event_Click; }
+Text Event_Confirm() { return C_Event_Confirm; }
+Text Event_Cancel() { return C_Event_Cancel; }
+
+// ---------------------------------- //
+/// Get the selection constants
+Integer Style_Race()			{ return C_Style_Race; }
+Integer Style_Tech()			{ return C_Style_Tech; }
+Integer Style_Lol()				{ return C_Style_Lol; }
+Integer Style_Fullspeed()		{ return C_Style_Fullspeed; }
+Integer Style_Platform()		{ return C_Style_Platform; }
+Integer Style_Offroad()			{ return C_Style_Offroad; }
+Integer Style_Trial()			{ return C_Style_Trial; }
+Integer Style_Concept()			{ return C_Style_Concept; }
+Integer Style_Pressforward()	{ return C_Style_Pressforward; }
+Integer Style_Smash()			{ return C_Style_Smash; }
+Integer Style_Stunts()			{ return C_Style_Stunts; }
+Integer Style_Bonus()			{ return C_Style_Bonus; }
+Integer Style_Random()			{ return C_Style_Random; }
+
+// ---------------------------------- //
+/** Select a button in the map style selection menu
+ *
+ *	@param	_Selection			The button to select
+ *	@param	_PlaySound			Play a sound
+ */
+Void Select(Integer _Selection, Boolean _PlaySound) {
+	if (!G_Selection.exists(_Selection)) return;
+	
+	declare Page <=> Layers::GetPage("MapStyleSelection");
+	declare L_SelectedUpdate for Page = -1;
+	declare L_Selected for Page = C_Style_Race;
+	L_Selected = _Selection;
+	L_SelectedUpdate = Now;
+	
+	if (_PlaySound) Sound::Play("EditorMenuMove");
+}
+
+// ---------------------------------- //
+/// Overload Select()
+Void Select(Integer _Selection) {
+	Select(_Selection, False);
+}
+
+// ---------------------------------- //
+/** Select the next or the previous button in the map style selection menu
+ *
+ *	@param	_Shift				In which direction to shift
+ */
+Void Shift(Integer _Shift) {
+	declare Page <=> Layers::GetPage("MapStyleSelection");
+	declare L_Selected for Page = C_Style_Race;
+	declare Key = G_Selection.keyof(L_Selected);
+	if (Key < 0) Key = 0;
+	
+	Key += _Shift;
+	if (Key < 0) Key = G_Selection.count - 1;
+	else if (Key > G_Selection.count - 1) Key = 0;
+	
+	Select(G_Selection[Key]);
+}
+
+// ---------------------------------- //
+/// Go to the next entry in the map style selection menu
+Void Next() {
+	Sound::Play("EditorMenuMove");
+	Shift(1);
+}
+
+// ---------------------------------- //
+/// Go to the previous entry in the map style selection menu
+Void Prev() {
+	Sound::Play("EditorMenuMove");
+	Shift(-1);
+}
+
+// ---------------------------------- //
+/** Check if the map style selection menu is visible
+ *
+ *	@return						True if the map style selection menu is visible, False otherwise
+ */
+Boolean IsVisible() {
+	declare Page <=> Layers::GetPage("MapStyleSelection");
+	declare L_Visibility for Page = C_DefaultVisibility;
+	return L_Visibility;
+}
+
+// ---------------------------------- //
+/** Set the map style selection menu visibility
+ *
+ *	@param	_Visible			Show the map style selection menu if True
+ */
+Void SetVisibility(Boolean _Visible) {
+	declare Page <=> Layers::GetPage("MapStyleSelection");
+	declare L_Visibility for Page = C_DefaultVisibility;
+	
+	if (_Visible && !L_Visibility) {
+		declare L_Selected for Page = C_Style_Race;
+		Select(L_Selected);
+	}
+	
+	L_Visibility = _Visible;
+}
+
+// ---------------------------------- //
+/// Show the map style selection menu
+Void Show() {
+	SetVisibility(True);
+}
+
+// ---------------------------------- //
+/// Hide the map style selection menu
+Void Hide() {
+	SetVisibility(False);
+}
+
+// ---------------------------------- //
+/** Display the background or not
+ *
+ *	@param	_Display			True to display, False to hide
+ */
+Void DisplayBackground(Boolean _Display) {
+	declare Page <=> Layers::GetPage("MapStyleSelection");
+	declare L_Background for Page = False;
+	L_Background = _Display;
+}
+
+// ---------------------------------- //
+/** Valid the current selection
+ *
+ *	@return						The current selection
+ */
+Integer Valid() {
+	declare Page <=> Layers::GetPage("MapStyleSelection");
+	declare L_Selected for Page = C_Style_Race;
+	
+	Sound::Play("EditorMenuValid");
+	if (G_Selection.exists(L_Selected)) return L_Selected;
+	return C_Style_Race;
+}
+
+// ---------------------------------- //
+/** Get the selected style name
+ *
+ *	@return						The style name
+ */
+Text GetStyleName() {
+	declare Page <=> Layers::GetPage("MapStyleSelection");
+	declare L_Selected for Page = C_Style_Race;
+	
+	if (G_StylesNames.existskey(L_Selected)) return G_StylesNames[L_Selected];
+	return G_StylesNames[C_Style_Race];
+}
+
+// ---------------------------------- //
+/** Get the selected style raw name
+ *
+ *	@return						The style raw name
+ */
+Text GetStyleRawName() {
+	declare Page <=> Layers::GetPage("MapStyleSelection");
+	declare L_Selected for Page = C_Style_Race;
+	
+	if (G_StylesRawNames.existskey(L_Selected)) return G_StylesRawNames[L_Selected];
+	return G_StylesRawNames[C_Style_Race];
+}
+
+// ---------------------------------- //
+/** Get the a style raw name from its id
+ *
+ *	@param	_StyleId			The id of the style to get
+ *
+ *	@return						The style raw name
+ */
+Text GetStyleRawName(Integer _StyleId) {
+	if (G_StylesRawNames.existskey(_StyleId)) return G_StylesRawNames[_StyleId];
+	return G_StylesRawNames[C_Style_Race];
+}
+
+// ---------------------------------- //
+/// Unload the library
+Void Unload() {
+	Layers::Destroy("MapStyleSelection");
+	//Layers::Unload();
+	
+	G_Selection = [C_Style_Race, C_Style_Tech, C_Style_Lol, C_Style_Fullspeed, C_Style_Platform, C_Style_Offroad, C_Style_Trial, C_Style_Concept, C_Style_Pressforward, C_Style_Smash, C_Style_Stunts, C_Style_Bonus];
+}
+
+// ---------------------------------- //
+/// Load the library
+Void Load() {
+	Unload();
+	
+	G_StylesRawNames = [
+		C_Style_Race => "Race",
+		C_Style_Tech => "Tech",
+		C_Style_Lol => "Lol",
+		C_Style_Fullspeed => "Fullspeed",
+		C_Style_Platform => "Platform",
+		C_Style_Offroad => "Offroad",
+		C_Style_Trial => "Trial",
+		C_Style_Concept => "Concept",
+		C_Style_Pressforward => "Pressforward",
+		C_Style_Smash => "Smash",
+		C_Style_Stunts => "Stunts",
+		C_Style_Bonus => "Bonus",
+		C_Style_Random => "Random"
+	];
+	
+	G_StylesNames = [
+		//L16N [MapEditor] Track style
+		C_Style_Race => _("Race"),
+		//L16N [MapEditor] Track style
+		C_Style_Tech => _("Tech"),
+		//L16N [MapEditor] Track style
+		C_Style_Lol => _("Lol"),
+		//L16N [MapEditor] Track style
+		C_Style_Fullspeed => _("Fullspeed"),
+		//L16N [MapEditor] Track style
+		C_Style_Platform => _("Platform"),
+		//L16N [MapEditor] Track style
+		C_Style_Offroad => _("Offroad"),
+		//L16N [MapEditor] Track style
+		C_Style_Trial => _("Trial"),
+		//L16N [MapEditor] Track style
+		C_Style_Concept => _("Concept"),
+		//L16N [MapEditor] Track style
+		C_Style_Pressforward => _("Pressforward"),
+		//L16N [MapEditor] Track style
+		C_Style_Smash => "Smash",
+		//L16N [MapEditor] Track style
+		C_Style_Stunts => "Stunts",
+		//L16N [MapEditor] Track style
+		C_Style_Bonus => "Bonus",
+		//L16N [MapEditor] Track style
+		C_Style_Random => _("Random")
+	];
+	
+	//Layers::Load();
+	Buttons::Load();
+	declare LayerMapStyleSelection <=> Layers::Create("MapStyleSelection");
+	LayerMapStyleSelection.ManialinkPage = Private_GetMapStyleSelectionML();
+	Buttons::Unload();
+	
+	declare Page <=> LayerMapStyleSelection.LocalPage;
+	declare L_Visibility for Page = C_DefaultVisibility;
+	declare L_Selected for Page = C_Style_Race;
+	declare L_SelectedUpdate for Page = -1;
+	declare L_Background for Page = False;
+	L_Visibility = C_DefaultVisibility;
+	L_Selected = C_Style_Race;
+	L_SelectedUpdate = -1;
+	L_Background = False;
+	
+	Hide();
+}

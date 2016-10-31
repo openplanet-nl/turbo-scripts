@@ -1,0 +1,1440 @@
+#Include "Libs/Openplanet/TMConsole/MenuColor.Script.txt"					as MenuColor
+#Include "Libs/Openplanet/TMConsole/FontManager.Script.txt"					as Font
+#Include "Libs/Openplanet/UIPadButtons.Script.txt"							as LibUIButtons
+#Include "Libs/Openplanet/TMConsole/Colors.Script.txt"		   				as Colors
+#Include "Libs/Openplanet/SystemText.Script.txt"								as SystemText
+
+#Include "TextLib" as TL
+
+#Const C_ImgBase 	"file://Media/Manialinks/Nadeo/TMConsole/Images/"
+#Const C_ImgBase2	"file://Media/Images/TMConsole/Ingame/"
+#Const C_ImgBaseFlags	"file://Media/Manialinks/Nadeo/TMConsole/Images/Helmets/Drapeaux/NewFlag/"
+
+
+#Const C_BrowseSlot_Landmark 2
+
+Text InjectInManialink () {
+	//IMAGES
+	declare Text 	IMGSlotSmallBg           = C_ImgBase2^"slot-medium-bg.dds";
+	declare Text 	IMGSlotSmallFg           = C_ImgBase2^"slot-medium-fg.dds";
+	declare Text 	IMGSlotMediumBg          = C_ImgBase2^"slot-medium-bg.dds";
+	declare Text 	IMGSlotMediumFg          = C_ImgBase^"slot-medium-fg2.dds";
+	declare Text 	IMGSlotBigBg             = C_ImgBase^"slot-big-bg2.dds";
+	declare Text 	IMGSlotBigFg             = C_ImgBase^"slot-big-fg2.dds";
+	declare Text 	IMGMenuBg                = C_ImgBase2^"menu-bg-1.dds";
+	declare Text 	IMGBackground            = C_ImgBase^"SystemStartBg2.dds";
+
+	declare Integer Platform   = LibUIButtons::GetPlatform();
+	declare Text 	IMGR1_PC      	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"), CManiaAppEvent::EMenuNavAction::PageUp);
+	declare Text 	IMGR1_PS4      	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::PageUp);
+	declare Text 	IMGR1_XB1      	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::PageUp);
+	
+	declare Text 	IMGL1_PC      	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"), CManiaAppEvent::EMenuNavAction::PageDown);
+	declare Text 	IMGL1_PS4      	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::PageDown);
+	declare Text 	IMGL1_XB1      	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::PageDown);
+	
+	declare Text 	IMGSelect_PC      	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"), CManiaAppEvent::EMenuNavAction::Select);
+	declare Text 	IMGSelect_PS4      	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::Select);
+	declare Text 	IMGSelect_XB1      	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::Select);
+	
+	declare Text 	IMGCancel_PC      	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"), CManiaAppEvent::EMenuNavAction::Cancel);
+	declare Text 	IMGCancel_PS4      	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::Cancel);
+	declare Text 	IMGCancel_XB1      	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::Cancel);
+	
+	declare Text 	IMGAction2_PC      	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"), CManiaAppEvent::EMenuNavAction::Action2);
+	declare Text 	IMGAction2_PS4      	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::Action2);
+	declare Text 	IMGAction2_XB1      	= LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::Action2);
+	
+	declare Text IMGMedalNoMedal        = C_ImgBase2^"medal-empty.dds";
+	declare Text IMGMedalBronze         = C_ImgBase2^"medal-bronze.dds";
+	declare Text IMGMedalSilver         = C_ImgBase2^"medal-silver.dds";
+	declare Text IMGMedalGold           = C_ImgBase2^"medal-gold.dds";
+	declare Text IMGMedalTrackmaster    = C_ImgBase2^"medal-author.dds";
+	declare Text IMGStunts				= C_ImgBase^"Online/BrowseServers/Challenge_Stunts.png";
+	
+	declare Text IMGArrow				= C_ImgBase^"Arrow.tga";
+	declare Text IMGLocked              = C_ImgBase^"locked-2x2.dds";
+	
+	
+	
+
+	//declare Text	IMGChallengeRating = C_ImgBaseDev^"Championship_Rating.png";
+	
+	declare Text	TitleColor = TL::ColorToText(MenuColor::GetMenuColor(2));
+	
+	//POS & SIZE
+	declare Real	ChallengeOptions_SizeY			= 8.27;
+	
+	declare Real	ChallengeOptions_PosY			= ChallengeOptions_SizeY * 4.;
+	
+	declare Real 	ChallengeOptions_SizeX			= 215.0;
+	
+	declare Real	ChallengeOptions_SizeXInfo						= ChallengeOptions_SizeX * 0.23;
+	declare Real	ChallengeOptions_SizeXTracks					= ChallengeOptions_SizeX * 0.77;	
+	declare Real	ChallengeOptions_SizeXTrackCard 				= ChallengeOptions_SizeXTracks / 5.;
+	declare Real	ChallengeOptions_MarginXTrackCard 				= ChallengeOptions_SizeXTrackCard * 0.05;
+	declare Real	ChallengeOptions_SizeXTrackCardWithoutMargin 	= ChallengeOptions_SizeXTrackCard - ChallengeOptions_MarginXTrackCard;
+	
+	declare Real	ChallengeOptions_SizeLR 	    = 17.5;
+	
+	declare Real	ChallengeOptions_SizeXCircle					= ChallengeOptions_SizeX * 1. / 30.;
+	declare Real	ChallengeOptions_SizeXInput						= ChallengeOptions_SizeXCircle * 7.;
+	
+	declare Real	ChallengeOptions_SizeYTracks					= ChallengeOptions_SizeY * 8;	
+	declare Real	ChallengeOptions_SizeYTrackCard 				= ChallengeOptions_SizeYTracks / 2.;
+	declare Real	ChallengeOptions_MarginYTrackCard 				= ChallengeOptions_SizeYTrackCard * 0.05;
+	declare Real	ChallengeOptions_SizeYTrackCardWithoutMargin 	= ChallengeOptions_SizeYTrackCard - ChallengeOptions_MarginYTrackCard;
+	
+	declare Real 	ChallengeOptions_PosResult_Ranking				= ChallengeOptions_SizeX * 0.03;
+	declare Real 	ChallengeOptions_PosResult_Name					= ChallengeOptions_SizeX * 0.1;	
+	declare Real	ChallengeOptions_PosResult_Score				= ChallengeOptions_SizeX * 0.5;
+	declare Real 	ChallengeOptions_PosResult_Time					= ChallengeOptions_SizeX * 0.7;
+	declare Real	ChallengeOptions_PosResult_Tries				= ChallengeOptions_SizeX * 0.85;
+	
+	declare Real 	ChallengeOptions_SizeYElement = ChallengeOptions_SizeY; // * 0.905;
+	
+	
+	//////////////////////////////
+	// FRAMEMODELS
+	//////////////////////////////
+	declare MLText = """
+		<framemodel id="Frame_ChallengeOptionsCard">
+			<quad sizen="{{{ChallengeOptions_SizeXInfo}}} {{{ChallengeOptions_SizeYElement}}}" 	image="{{{IMGSlotMediumBg}}}" 	posn="0 0 2" />
+			<quad sizen="{{{ChallengeOptions_SizeXInfo}}} {{{ChallengeOptions_SizeYElement}}}" 	image="{{{IMGSlotMediumFg}}}" 	posn="0 0 4" />
+			<quad sizen="{{{ChallengeOptions_SizeXInfo}}} {{{ChallengeOptions_SizeY}}}"		 	image="{{{IMGMenuBg}}}" 	 	posn="0 0 1" />
+		</framemodel>
+		
+		<framemodel id="Frame_ChallengeOptions_Onglet">
+			<label 	halign="center" valign="center" posn="0 0.2 5"		sizen="60 7" id="Label_LandmarkName"   textfont="{{{Font::GetFontName("Main")}}}" textcolor="000"	textprefix="$t" />
+			<quad 	halign="center" valign="center" posn="-0.2 0 0" 	sizen="{{{(ChallengeOptions_SizeX - ChallengeOptions_SizeLR)/C_BrowseSlot_Landmark-0.2}}} {{{ChallengeOptions_SizeYElement*0.95}}}"  bgcolor="00E2FF" opacity="0.6"/>
+		</framemodel>
+		
+		<framemodel id="Frame_ChallengeOptions_TrackCard">
+			<quad 	halign="left" 	valign="top" sizen="{{{ChallengeOptions_SizeXTrackCardWithoutMargin+0.5}}} 	{{{ChallengeOptions_SizeYTrackCardWithoutMargin+0.5}}}"	bgcolor="fff"  	image="{{{IMGLocked}}}" posn="-0.5 -0.3 6" 				id="Quad_Locked" hidden="1"/>
+			<quad 	halign="left" 	valign="top" sizen="{{{ChallengeOptions_SizeXTrackCardWithoutMargin}}} 		{{{ChallengeOptions_SizeYTrackCardWithoutMargin}}}" 	bgcolor="fff"																	id="Quad_Thumbnail"/>
+			<quad 	halign="left" 	valign="top" sizen="{{{ChallengeOptions_SizeXTrackCardWithoutMargin}}} 		{{{ChallengeOptions_SizeY}}}" 							bgcolor="000"  							posn="0 0 2"/>
+			<quad 	halign="center" valign="center" sizen="{{{ChallengeOptions_SizeY * 0.9}}} {{{ChallengeOptions_SizeY*0.9}}}" 								bgcolor="0009" 	image="{{{IMGMedalNoMedal}}}"		posn="{{{ChallengeOptions_SizeXTrackCardWithoutMargin-ChallengeOptions_SizeY*0.45 -2}}} {{{- 0.5 * ChallengeOptions_SizeY}}} 5"  	id="Quad_Medal"/>
+			<label 	halign="right" 	valign="center"  textfont="{{{Font::GetFontName("Main")}}}" 		posn="5. {{{-ChallengeOptions_SizeY * 0.5 + 1.}}} 4" text="#" textsize="4" sizen="5."/>
+			<label 	halign="left" 	valign="center2" textfont="{{{Font::GetFontName("NumberBig")}}}" 	posn="5. {{{-ChallengeOptions_SizeY * 0.5}}} 4" sizen="{{{ChallengeOptions_SizeXTrackCardWithoutMargin * 0.6}}}" textsize="4" id="Label_TrackName"/>
+			<frame id="Frame_Result" posn="{{{ChallengeOptions_SizeXTrackCardWithoutMargin * 0.5}}} {{{-ChallengeOptions_SizeY}}} 0.5">
+				<quad 	halign="center"   valign="top" 		sizen="{{{ChallengeOptions_SizeXTrackCardWithoutMargin}}} {{{ChallengeOptions_SizeY * 0.5}}}"				bgcolor="000"  		opacity="0.6"							posn="0 0"/>
+				<label	halign="center"   valign="center2"  textfont="{{{Font::GetFontName("Main")}}}" 	posn="0 {{{-ChallengeOptions_SizeY * 0.25}}} 1" sizen="{{{ChallengeOptions_SizeXTrackCardWithoutMargin * 0.9}}}" 	textsize="2" id="Label_Result" text=""/>
+			</frame>
+		</framemodel>
+		<framemodel id="Frame_ChallengeOptions_Result">
+			<label 	halign="left" valign="center2" textfont="{{{Font::GetFontName("Main")}}}" 	posn="{{{ChallengeOptions_PosResult_Ranking}}} 	{{{-ChallengeOptions_SizeY * 0.5}}} 0" sizen="{{{ChallengeOptions_SizeX * 0.06}}}" textsize="3" textprefix="$t" id="Label_Ranking"/>
+			<label 	halign="left" valign="center2" textfont="{{{Font::GetFontName("Main")}}}" 	posn="{{{ChallengeOptions_PosResult_Name}}} 	{{{-ChallengeOptions_SizeY * 0.5}}} 0" sizen="{{{ChallengeOptions_SizeX * 0.37}}}" textsize="3" textprefix="$t" id="Label_Name"/>
+			<label 	halign="left" valign="center2" textfont="{{{Font::GetFontName("Main")}}}" 	posn="{{{ChallengeOptions_PosResult_Score}}} 	{{{-ChallengeOptions_SizeY * 0.5}}} 0" sizen="{{{ChallengeOptions_SizeX * 0.17}}}" textsize="3" textprefix="$t" id="Label_Score"/>
+			<label 	halign="left" valign="center2" textfont="{{{Font::GetFontName("Main")}}}" 	posn="{{{ChallengeOptions_PosResult_Time}}} 	{{{-ChallengeOptions_SizeY * 0.5}}} 0" sizen="{{{ChallengeOptions_SizeX * 0.12}}}" textsize="3" textprefix="$t" id="Label_Time"/>
+			<label 	halign="left" valign="center2" textfont="{{{Font::GetFontName("Main")}}}" 	posn="{{{ChallengeOptions_PosResult_Tries}}} 	{{{-ChallengeOptions_SizeY * 0.5}}} 0" sizen="{{{ChallengeOptions_SizeX * 0.12}}}" textsize="3" textprefix="$t" id="Label_Tries"/>
+		</framemodel>
+	""";
+	
+	//////////////////////////////
+	// FRAME SERVER INFO
+	//////////////////////////////
+
+	MLText ^= """<frame id="Frame_ChallengeOptions" posn="0 {{{ChallengeOptions_PosY}}} 20" hidden="1">""";
+	
+	/////////////////
+	// FRAME TITLE & BG
+	/////////////////
+	MLText ^= """
+		<frame id="Frame_Main">
+			<frame id="Frame_Title" posn="0 0 0">
+				<quad posn="0 -23.8 -3" halign="center" valign="center" sizen="320 180" image="{{{IMGBackground}}}" hidden="1" />
+				<quad halign="center" valign="bottom" sizen="{{{ChallengeOptions_SizeX}}} {{{ChallengeOptions_SizeY*2.}}}"	 image="{{{IMGSlotBigFg}}}"                  posn="0 0 7" opacity="1."/>
+				<quad  halign="center" valign="bottom" sizen="{{{ChallengeOptions_SizeX}}} {{{ChallengeOptions_SizeY*2.}}}"	 image="{{{IMGSlotBigBg}}}"                  posn="0 0 5" opacity="1."/>
+				<label halign="left" valign="center" textprefix="$t" textfont="{{{Font::GetFontName("Main")}}}" posn="{{{-(ChallengeOptions_SizeX-2)/2.}}}  {{{ChallengeOptions_SizeY + 1.8}}} 6" textcolor="{{{TitleColor}}}" textsize="13." text="{{{_("Buddies Challenge")}}}" sizen="{{{ChallengeOptions_SizeX-7.-ChallengeOptions_SizeY * 1.6}}}"  opacity="1.0"/>
+				<quad  	halign="right" valign="center" sizen="{{{ChallengeOptions_SizeY * 1.6}}} {{{ChallengeOptions_SizeY * 1.6}}}" image="{{{IMGStunts}}}"										 posn="{{{ChallengeOptions_SizeX * 0.5 - 5.}}} {{{ChallengeOptions_SizeY}}} 6" id="Title_Quad_Stunts" />
+			</frame>
+			<frame id="Frame_ChallengeTitle" posn="0 {{{-ChallengeOptions_SizeY*0.5}}}  3">
+				<quad halign="center" valign="center" sizen="{{{ChallengeOptions_SizeX}}} {{{ChallengeOptions_SizeYElement*0.96}}}" image="{{{IMGSlotMediumFg}}}" posn="0 -0.1 5" />
+				<quad halign="center" valign="center" sizen="{{{ChallengeOptions_SizeX}}} {{{ChallengeOptions_SizeYElement*0.95}}}" image="{{{IMGSlotMediumBg}}}" posn="0 0 2" />
+				<quad halign="center" valign="center" sizen="{{{ChallengeOptions_SizeX}}} {{{ChallengeOptions_SizeYElement*0.96}}}" posn="0. -0.1 3" bgcolor="fff" opacity="0.95"/>
+				<quad halign="left"   valign="center" sizen="{{{ChallengeOptions_SizeY * 0.8}}} {{{ChallengeOptions_SizeY * 0.8}}}" posn="{{{-ChallengeOptions_SizeX/2. + 2.}}} 0 4" id="Quad_ChallengeFlag" />
+				<label id="Label_ChallengeName" posn="{{{-ChallengeOptions_SizeX/2.+ 6.+ ChallengeOptions_SizeY * 0.8}}} 0.6 4" halign="left" valign="center" sizen="{{{ChallengeOptions_SizeX * 0.7}}} 7" textcolor="000" textprefix="$t" textsize="4."	textfont="{{{Font::GetFontName("Main")}}}" />
+				<frame id="frame_showauthorprofile">
+					<quad 	halign="right"  valign="center" posn="{{{ChallengeOptions_SizeX/2.}}} 0.2 5" sizen="{{{ChallengeOptions_SizeXInput + ChallengeOptions_SizeXCircle}}} {{{ChallengeOptions_SizeY}}}" opacity="0." scriptevents="1" id="MouseInput_OptionInputInfo_Action2"  />
+				""";
+			
+			for (I, 0, 2) {
+			declare Text Image;
+			switch (I) {
+				case LibUIButtons::GetPlatform("PC") 	: Image = IMGAction2_PC;
+				case LibUIButtons::GetPlatform("PS4") 	: Image = IMGAction2_PS4;
+				case LibUIButtons::GetPlatform("XB1") 	: Image = IMGAction2_XB1;
+			}
+		
+			MLText ^= """<quad 	halign="center" valign="center" posn="{{{ChallengeOptions_SizeX/2.-ChallengeOptions_SizeXCircle*0.5}}} 0.2 4" sizen="{{{ChallengeOptions_SizeXCircle*0.9}}} {{{ChallengeOptions_SizeXCircle*0.9}}} 6" image="{{{Image}}}" id="ChallengeOptions_ShowGamercardIcon_{{{I}}}" """;
+			if (I != Platform)
+				MLText ^= """ hidden="1" """;
+			MLText ^= "/>";
+		}
+		
+		MLText ^= """
+					<label 	halign="right" valign="center" posn="{{{ChallengeOptions_SizeX/2.-ChallengeOptions_SizeXCircle-2.}}}  0.6 4" sizen="{{{ChallengeOptions_SizeXInput - 4. }}}" text="{{{SystemText::GetShowProfileTextForInputCard()}}}" id="Label_Name" textcolor="000"  textsize="4." textfont="{{{Font::GetFontName("Main")}}}" textprefix="$t" />
+				</frame>
+			</frame>	
+			<frame id="Frame_Options" posn="{{{-ChallengeOptions_SizeX * 0.5}}} {{{-2 * ChallengeOptions_SizeY}}}">
+				<quad id="Quad_OptionsSelector" bgcolor="{{{TitleColor}}}" sizen="{{{ChallengeOptions_SizeXInfo}}} {{{2*ChallengeOptions_SizeYElement}}}" posn="0 0 2.5" />
+				<frame id="Frame_Play">
+					<frame id="Frame_Train" >
+						<label posn="{{{ChallengeOptions_SizeXInfo*0.5}}} {{{-ChallengeOptions_SizeY}}} 3" sizen="{{{ChallengeOptions_SizeXInfo * 0.9}}}" autonewline="1" maxline="3" textprefix="$t" id="Label_Option" style="TextValueSmallSm" halign="center" valign="center2" textsize="3."/>
+						<quad sizen="{{{ChallengeOptions_SizeXInfo}}} {{{2*ChallengeOptions_SizeYElement}}}" 		image="{{{IMGSlotMediumBg}}}" 	posn="0 0 2" />
+						<quad sizen="{{{ChallengeOptions_SizeXInfo}}} {{{2*ChallengeOptions_SizeYElement}}}" 		image="{{{IMGSlotMediumFg}}}" 	posn="0 0 4" />
+						<quad sizen="{{{ChallengeOptions_SizeXInfo}}} {{{2*ChallengeOptions_SizeYElement}}}" 		opacity="0." scriptevents="1" 	posn="0 0 5" id="MouseInput_Option_0" />
+					</frame>
+					<frame id="Frame_Race" posn="0 {{{-2* ChallengeOptions_SizeY}}}">
+						<label posn="{{{ChallengeOptions_SizeXInfo*0.5}}} {{{-ChallengeOptions_SizeY}}} 3" sizen="{{{ChallengeOptions_SizeXInfo * 0.9}}}" autonewline="1" maxline="3" textprefix="$t" id="Label_Option" style="TextValueSmallSm" halign="center" valign="center2" textsize="3."/>
+						<quad sizen="{{{ChallengeOptions_SizeXInfo}}} {{{2*ChallengeOptions_SizeYElement}}}" 		image="{{{IMGSlotMediumBg}}}" 	posn="0 0 2" />
+						<quad sizen="{{{ChallengeOptions_SizeXInfo}}} {{{2*ChallengeOptions_SizeYElement}}}" 		image="{{{IMGSlotMediumFg}}}" 	posn="0 0 4" />
+						<quad sizen="{{{ChallengeOptions_SizeXInfo}}} {{{2*ChallengeOptions_SizeYElement}}}" 		opacity="0." scriptevents="1" 	posn="0 0 5" id="MouseInput_Option_1" />
+					</frame>
+					<frame id="Frame_Buddies" posn="0 {{{-4* ChallengeOptions_SizeY}}}">
+						<label posn="{{{ChallengeOptions_SizeXInfo*0.5}}} {{{-ChallengeOptions_SizeY}}} 3" sizen="{{{ChallengeOptions_SizeXInfo * 0.9}}}" autonewline="1" maxline="3" textprefix="$t" id="Label_Option" style="TextValueSmallSm" halign="center" valign="center2" textsize="3."/>
+						<quad sizen="{{{ChallengeOptions_SizeXInfo}}} {{{2*ChallengeOptions_SizeYElement}}}" 		image="{{{IMGSlotMediumBg}}}" 	posn="0 0 2" />
+						<quad sizen="{{{ChallengeOptions_SizeXInfo}}} {{{2*ChallengeOptions_SizeYElement}}}" 		image="{{{IMGSlotMediumFg}}}" 	posn="0 0 4"/>
+						<quad sizen="{{{ChallengeOptions_SizeXInfo}}} {{{2*ChallengeOptions_SizeYElement}}}" 		opacity="0." scriptevents="1" 	posn="0 0 5" id="MouseInput_Option_2" />
+					</frame>
+					<frame id="Frame_Install" posn="0 {{{-6* ChallengeOptions_SizeY}}}">
+						<label posn="{{{ChallengeOptions_SizeXInfo*0.5}}} {{{-ChallengeOptions_SizeY}}} 3" sizen="{{{ChallengeOptions_SizeXInfo * 0.9}}}" textprefix="$t" id="Label_Option" style="TextValueSmallSm" halign="center" valign="center2" textsize="3."/>
+						<quad sizen="{{{ChallengeOptions_SizeXInfo}}} {{{2*ChallengeOptions_SizeYElement}}}" 		image="{{{IMGSlotMediumBg}}}" 	posn="0 0 2" />
+						<quad sizen="{{{ChallengeOptions_SizeXInfo}}} {{{2*ChallengeOptions_SizeYElement}}}" 		image="{{{IMGSlotMediumFg}}}" 	posn="0 0 4"/>
+						<quad sizen="{{{ChallengeOptions_SizeXInfo}}} {{{2*ChallengeOptions_SizeYElement}}}" 		opacity="0." scriptevents="1" 	posn="0 0 5" id="MouseInput_Option_3" />
+					</frame>
+				</frame>
+				
+				<frame id="Frame_Results">
+					<quad sizen="{{{ChallengeOptions_SizeX}}} {{{ChallengeOptions_SizeYElement}}}" 	image="{{{IMGSlotMediumBg}}}" 	posn="0 0 2" />
+					<quad sizen="{{{ChallengeOptions_SizeX}}} {{{ChallengeOptions_SizeYElement}}}" 	image="{{{IMGSlotMediumFg}}}" 	posn="0 0 4" />
+					<quad sizen="{{{ChallengeOptions_SizeX}}} {{{ChallengeOptions_SizeY}}}"		 	image="{{{IMGMenuBg}}}" 	 	posn="0 0 1" />	
+					<label 	halign="left" valign="center2" textfont="{{{Font::GetFontName("Main")}}}" 	posn="{{{ChallengeOptions_PosResult_Ranking}}} 	{{{-ChallengeOptions_SizeY * 0.5}}} 3" textsize="3" textprefix="$t" sizen="{{{ChallengeOptions_SizeX * 0.06}}}" text="{{{_("|ChallengeResults column name|Rank")}}}" />
+					<label 	halign="left" valign="center2" textfont="{{{Font::GetFontName("Main")}}}" 	posn="{{{ChallengeOptions_PosResult_Name}}} 	{{{-ChallengeOptions_SizeY * 0.5}}} 3" textsize="3" textprefix="$t" sizen="{{{ChallengeOptions_SizeX * 0.37}}}" text="{{{_("|ChallengeResults column name|Player")}}}"/>
+					<label 	halign="left" valign="center2" textfont="{{{Font::GetFontName("Main")}}}" 	posn="{{{ChallengeOptions_PosResult_Score}}} 	{{{-ChallengeOptions_SizeY * 0.5}}} 3" textsize="3" textprefix="$t" sizen="{{{ChallengeOptions_SizeX * 0.17}}}" text="{{{_("|ChallengeResults column name|Score")}}}" />
+					<label 	halign="left" valign="center2" textfont="{{{Font::GetFontName("Main")}}}" 	posn="{{{ChallengeOptions_PosResult_Time}}} 	{{{-ChallengeOptions_SizeY * 0.5}}} 3" textsize="3" textprefix="$t" sizen="{{{ChallengeOptions_SizeX * 0.12}}}" text="{{{_("|ChallengeResults column name|Total time")}}}"/>
+					<label 	halign="left" valign="center2" textfont="{{{Font::GetFontName("Main")}}}" 	posn="{{{ChallengeOptions_PosResult_Tries}}} 	{{{-ChallengeOptions_SizeY * 0.5}}} 3" textsize="3" textprefix="$t" sizen="{{{ChallengeOptions_SizeX * 0.12}}}" text="{{{_("|ChallengeResults column name|Tries")}}}"/>
+					<quad scriptevents="1" id="MouseInput_OptionsNextResults" 	halign="center" valign="center" keepratio="Fit" sizen="12.0 12.0" image="{{{IMGArrow}}}" posn="{{{ChallengeOptions_SizeX + 10.}}} {{{-4. * ChallengeOptions_SizeY}}} 11" 		colorize="{{{TL::ColorToText(Colors::GetColor("White"))}}}" hidden="1"/>
+					<quad scriptevents="1" id="MouseInput_OptionsPrevResults" 	halign="center" valign="center" keepratio="Fit" rot="180" 	sizen="12.0 12.0" image="{{{IMGArrow}}}" posn="-10. {{{-4. * ChallengeOptions_SizeY}}} 11"  	colorize="{{{TL::ColorToText(Colors::GetColor("White"))}}}" hidden="1"/>
+					
+	""";			
+			
+		for (I, 0, 6)
+		{
+			MLText ^= """
+				<quad sizen="{{{ChallengeOptions_SizeX}}} {{{ChallengeOptions_SizeYElement}}}" 	image="{{{IMGSlotMediumBg}}}" 	posn="0 {{{-ChallengeOptions_SizeY*(I+1)}}} 2" />
+				<quad sizen="{{{ChallengeOptions_SizeX}}} {{{ChallengeOptions_SizeYElement}}}" 	image="{{{IMGSlotMediumFg}}}" 	posn="0 {{{-ChallengeOptions_SizeY*(I+1)}}} 4" />
+				<quad sizen="{{{ChallengeOptions_SizeX}}} {{{ChallengeOptions_SizeYElement}}}"  posn="0 {{{-ChallengeOptions_SizeY*(I+1)}}} 5" opacity="0." scriptevents="1" id="MouseInput_Buddy_{{{I}}}" />
+				<quad sizen="{{{ChallengeOptions_SizeX}}} {{{ChallengeOptions_SizeY}}}"		 	image="{{{IMGMenuBg}}}" 	 	posn="0 {{{-ChallengeOptions_SizeY*(I+1)}}} 1" />	
+				<frameinstance modelid="Frame_ChallengeOptions_Result" id="Frame_Result{{{I}}}" posn="0 {{{-ChallengeOptions_SizeY*(I+1)}}} 3"/>
+			""";
+		}
+		
+	MLText ^= """		
+				<quad halign="left" valign="top" sizen="{{{ChallengeOptions_SizeX}}} {{{ChallengeOptions_SizeY}}}" bgcolor="{{{TitleColor}}}" id="Quad_ResultsSelector" posn="0 0 3.5" hidden="1" />
+				</frame>	
+			</frame>
+			
+			<frame id="Frame_Loading" posn="{{{-ChallengeOptions_SizeX * 0.5}}} 0 8">
+				<quad  sizen="{{{ChallengeOptions_SizeX}}} {{{ChallengeOptions_SizeY*10}}}" bgcolor="000F" />				
+				<label halign="center" valign="center2" textprefix="$t" textfont="{{{Font::GetFontName("Main")}}}" posn="{{{ChallengeOptions_SizeX*0.5}}} {{{-ChallengeOptions_SizeY*5}}} 10" id="Label_Loading" textsize="13." text="{{{_("Loading")}}}"  opacity="1.0"/>
+			</frame>
+			
+			<frame id="Frame_Tracks" posn="{{{ChallengeOptions_SizeX * 0.5}}} {{{- 2 * ChallengeOptions_SizeY}}} 8">
+				<quad halign="right" posn="0 0 -0.5" sizen="{{{ChallengeOptions_SizeXTracks}}} {{{ChallengeOptions_SizeYTracks}}}" bgcolor="000F" />
+				<frame id="Frame_Content" hidden="1">
+			
+	""";
+	
+	for (I, 0, 1)
+	{
+		declare PosnY = - I * ChallengeOptions_SizeYTrackCard - ChallengeOptions_MarginYTrackCard * 0.5;
+		for (J, 0, 4)
+		{
+			declare PosnX = (J - 5)* ChallengeOptions_SizeXTrackCard + ChallengeOptions_MarginXTrackCard * 0.5;
+			MLText^= """<frameinstance modelid="Frame_ChallengeOptions_TrackCard" posn="{{{PosnX}}} {{{PosnY}}} 0" id="Frame_TrackCard{{{I}}}{{{J}}}" />""";
+		}
+	}
+	MLText ^= "</frame></frame>";
+	
+	////////////////
+	//ONGLETS
+	////////////////	
+	 MLText ^= """
+		<quad 					sizen="{{{ChallengeOptions_SizeX * 0.5}}} {{{ChallengeOptions_SizeY}}}"	image="{{{IMGMenuBg}}}" 	 	posn="{{{- ChallengeOptions_SizeX * 0.5}}} {{{- ChallengeOptions_SizeY}}} -1" />
+		<quad halign="right" 	sizen="{{{ChallengeOptions_SizeX * 0.5}}} {{{ChallengeOptions_SizeY}}}"	image="{{{IMGMenuBg}}}" 	 	posn="{{{ChallengeOptions_SizeX * 0.5}}} {{{- ChallengeOptions_SizeY}}} -1" />
+		<frame id="Frame_Onglet" posn="0 {{{- ChallengeOptions_SizeY * 1.5}}} 10">
+			<quad halign="center" 	valign="center" sizen="{{{ChallengeOptions_SizeX}}} {{{ChallengeOptions_SizeYElement*0.95}}}" 	image="{{{IMGSlotMediumFg}}}" posn="0 0 5" />			
+			<quad halign="center" 	valign="center" sizen="{{{ChallengeOptions_SizeX}}} {{{ChallengeOptions_SizeYElement*0.95}}}" 	image="{{{IMGSlotMediumBg}}}" posn="0 0 2" />
+	""";
+	
+		for (I, 0, 2) {
+		declare Text ImageR1;
+		declare Text ImageL1;
+		switch (I) {
+			case LibUIButtons::GetPlatform("PC") : {
+				ImageR1 = IMGR1_PC;
+				ImageL1 = IMGL1_PC;
+			}				
+			case LibUIButtons::GetPlatform("PS4") : {
+				ImageR1 = IMGR1_PS4;
+				ImageL1 = IMGL1_PS4;
+			}
+			case LibUIButtons::GetPlatform("XB1") : {
+				ImageR1 = IMGR1_XB1;
+				ImageL1 = IMGL1_XB1;
+			}
+		}
+		
+		MLText ^= """<quad halign="right" 	valign="center" sizen="8 8" id="MouseInput_NextTab_{{{I}}}" scriptevents="1" image="{{{ImageR1}}}" keepratio="Fit" posn="{{{ChallengeOptions_SizeX * 0.5 - 0.5}}} 0.2 3" """;
+		if (I != Platform)
+			MLText ^= """ hidden="1" """;
+		MLText ^= """/>
+			<quad halign="left" 	valign="center" sizen="8 8" id="MouseInput_PrevTab_{{{I}}}" scriptevents="1" image="{{{ImageL1}}}" keepratio="Fit" posn="{{{- ChallengeOptions_SizeX * 0.5 + 0.5}}} 0.2 3" """;
+		if (I != Platform)
+			MLText ^= """ hidden="1" """;
+		MLText ^= "/>";
+	}
+	
+	MLText ^= """
+			<quad halign="center" 	valign="center" sizen="{{{(ChallengeOptions_SizeX - ChallengeOptions_SizeLR)/C_BrowseSlot_Landmark-0.2}}} {{{ChallengeOptions_SizeYElement*0.95}}}"	 posn="{{{-ChallengeOptions_SizeX/2.}}} 0 4" bgcolor="00E2FF" id="ChallengeOptions_OngletFocus" />
+	""";
+	for(I, 0, C_BrowseSlot_Landmark-1) {
+		declare Real PosnX = (ChallengeOptions_SizeLR - ChallengeOptions_SizeX) * 0.5 + (I + 0.5) * ((ChallengeOptions_SizeX-ChallengeOptions_SizeLR)/C_BrowseSlot_Landmark); 
+		MLText ^= """
+			<frameinstance modelid="Frame_ChallengeOptions_Onglet" posn="{{{PosnX}}} 0 3" id="FrameInstance_ChallengeOptions_Onglet{{{I}}}" />
+			<quad id="MouseInput_Landmark_{{{I}}}" halign="center" valign="center" sizen="{{{(ChallengeOptions_SizeX - ChallengeOptions_SizeLR)/C_BrowseSlot_Landmark-0.2}}} {{{ChallengeOptions_SizeYElement*0.95}}}" posn="{{{PosnX-0.2}}} 0 5" opacity="0." scriptevents="1"/>
+		""";
+	}
+	
+	MLText ^= "</frame>";
+	
+	////////////////
+	//INPUT
+	////////////////
+	MLText ^= """<frame id="Frame_InputInfos" posn="0 {{{- 11 * ChallengeOptions_SizeY}}} 7">""";
+	//SELECT
+	MLText ^= """<frame id="ChallengeOptions_InputInfo_Select" posn="{{{ChallengeOptions_SizeX/2.}}}" >
+		<quad 	halign="right" valign="bottom" posn="0 0 6" 	sizen="{{{ChallengeOptions_SizeXInput}}} {{{ChallengeOptions_SizeY}}}" image="{{{IMGSlotSmallBg}}}"   />
+		<quad 	halign="right" valign="bottom" posn="0 0 8" 	sizen="{{{ChallengeOptions_SizeXInput}}} {{{ChallengeOptions_SizeY}}}" image="{{{IMGSlotSmallFg}}}"   />
+		<quad 	halign="right" valign="bottom" posn="0 0 9" 	sizen="{{{ChallengeOptions_SizeXInput}}} {{{ChallengeOptions_SizeY}}}" opacity="0." scriptevents="1" id="MouseInput_OptionInputInfo_Select"  />
+	""";
+		for (I, 0, 2) {
+			declare Text Image;
+			switch (I) {
+				case LibUIButtons::GetPlatform("PC") 	: Image = IMGSelect_PC;
+				case LibUIButtons::GetPlatform("PS4") 	: Image = IMGSelect_PS4;
+				case LibUIButtons::GetPlatform("XB1") 	: Image = IMGSelect_XB1;
+			}
+		
+			MLText ^= """<quad 	halign="center" valign="center" posn="{{{-ChallengeOptions_SizeXCircle*0.5}}} {{{ChallengeOptions_SizeY*0.5}}} 7" sizen="{{{ChallengeOptions_SizeXCircle*0.8}}} {{{ChallengeOptions_SizeXCircle*0.8}}} 6" image="{{{Image}}}" id="ChallengeOptions_InputInfo_Select_{{{I}}}" """;
+			if (I != Platform)
+				MLText ^= """ hidden="1" """;
+			MLText ^= "/>";
+		}
+	MLText ^= """
+		<label 	halign="right" valign="center2" posn="{{{-ChallengeOptions_SizeXCircle-2.}}}  {{{ChallengeOptions_SizeY*0.5}}} 7" sizen="{{{ChallengeOptions_SizeXInput - ChallengeOptions_SizeXCircle - 4. }}}" 	id="Label_Name" textcolor="ddd"  textsize="4." textfont="{{{Font::GetFontName("Main")}}}" textprefix="$t" />
+	</frame>""";
+	
+	//CANCEL
+	MLText ^= """<frame id="ChallengeOptions_InputInfo_Cancel" posn="{{{ChallengeOptions_SizeX/2. - ChallengeOptions_SizeXInput - ChallengeOptions_SizeXCircle * 0.5}}}" >
+		<quad 	halign="right" valign="bottom" posn="0 0 6" 	sizen="{{{ChallengeOptions_SizeXInput}}} {{{ChallengeOptions_SizeY}}}" image="{{{IMGSlotSmallBg}}}"   />
+		<quad 	halign="right" valign="bottom" posn="0 0 8" 	sizen="{{{ChallengeOptions_SizeXInput}}} {{{ChallengeOptions_SizeY}}}" image="{{{IMGSlotSmallFg}}}"   />
+		<quad 	halign="right" valign="bottom" posn="0 0 9" 	sizen="{{{ChallengeOptions_SizeXInput}}} {{{ChallengeOptions_SizeY}}}" opacity="0." scriptevents="1" id="MouseInput_OptionInputInfo_Cancel"  />
+	""";
+		for (I, 0, 2) {
+			declare Text Image;
+			switch (I) {
+				case LibUIButtons::GetPlatform("PC") 	: Image = IMGCancel_PC;
+				case LibUIButtons::GetPlatform("PS4") 	: Image = IMGCancel_PS4;
+				case LibUIButtons::GetPlatform("XB1") 	: Image = IMGCancel_XB1;
+			}
+		
+			MLText ^= """<quad 	halign="center" valign="center" posn="{{{-ChallengeOptions_SizeXCircle*0.5}}} {{{ChallengeOptions_SizeY*0.5}}} 7" 	sizen="{{{ChallengeOptions_SizeXCircle*0.8}}} {{{ChallengeOptions_SizeXCircle*0.8}}} 6" id="ChallengeOptions_InputInfo_Cancel_{{{I}}}" image="{{{Image}}}" """;
+			if (I != Platform)
+				MLText ^= """ hidden="1" """;
+			MLText ^= "/>";
+		}
+	MLText ^= """
+		<label 	halign="right" valign="center2" posn="{{{-ChallengeOptions_SizeXCircle-2.}}} {{{ChallengeOptions_SizeY*0.5}}} 7" sizen="{{{ChallengeOptions_SizeXInput - ChallengeOptions_SizeXCircle - 4. }}}" 	id="Label_Name" textcolor="ddd"  textsize="4." textfont="{{{Font::GetFontName("Main")}}}" textprefix="$t"/>
+	</frame>""";
+
+	//ACTION2
+	MLText ^= """<frame id="ChallengeOptions_InputInfo_Action2" posn="{{{ChallengeOptions_SizeX/2. - 3*ChallengeOptions_SizeXInput - 1.5*ChallengeOptions_SizeXCircle}}}" >
+		<quad 	halign="right" valign="bottom" posn="0 0 6" 	sizen="{{{ChallengeOptions_SizeXInput}}} {{{ChallengeOptions_SizeY}}}" image="{{{IMGSlotSmallBg}}}"   />
+		<quad 	halign="right" valign="bottom" posn="0 0 8" 	sizen="{{{ChallengeOptions_SizeXInput}}} {{{ChallengeOptions_SizeY}}}" image="{{{IMGSlotSmallFg}}}"   />
+		<quad 	halign="right" valign="bottom" posn="0 0 9" 	sizen="{{{ChallengeOptions_SizeXInput}}} {{{ChallengeOptions_SizeY}}}" opacity="0." scriptevents="1" id="MouseInput_OptionInputInfo_Action2"  />
+	""";
+		for (I, 0, 2) {
+			declare Text Image;
+			switch (I) {
+				case LibUIButtons::GetPlatform("PC") 	: Image = IMGAction2_PC;
+				case LibUIButtons::GetPlatform("PS4") 	: Image = IMGAction2_PS4;
+				case LibUIButtons::GetPlatform("XB1") 	: Image = IMGAction2_XB1;
+			}
+		
+			MLText ^= """<quad 	halign="center" valign="center" posn="{{{-ChallengeOptions_SizeXCircle*0.5}}} {{{ChallengeOptions_SizeY*0.5}}} 7" 	sizen="{{{ChallengeOptions_SizeXCircle*0.8}}} {{{ChallengeOptions_SizeXCircle*0.8}}} 6" id="ChallengeOptions_InputInfo_Action2_{{{I}}}" image="{{{Image}}}" """;
+			if (I != Platform)
+				MLText ^= """ hidden="1" """;
+			MLText ^= "/>";
+		}
+	MLText ^= """
+		<label 	halign="right" valign="center2" posn="{{{-ChallengeOptions_SizeXCircle-2.}}} {{{ChallengeOptions_SizeY*0.5}}} 7" sizen="{{{ChallengeOptions_SizeXInput - ChallengeOptions_SizeXCircle - 4. }}}" 	id="Label_Name" textcolor="ddd"  textsize="4." textfont="{{{Font::GetFontName("Main")}}}" textprefix="$t"/>
+	</frame>""";
+	
+	MLText ^= """</frame>
+		<quad posn="0 {{{-ChallengeOptions_PosY}}} -2" sizen="320 180" bgcolor="000" halign="center" opacity="0.75" valign="center" hidden="0"/>
+	</frame>	
+	</frame>
+	""";
+	return MLText;
+}
+
+Text InjectInGlobals()
+{
+	declare Globals = """
+		declare Integer		G_ChallengeOptions_FocusIndex;
+		declare Integer		G_ChallengeOptions_ResultsPage;
+		
+		declare Text[]		G_ChallengeOptions_Onglets;
+		declare Integer		G_ChallengeOptions_OngletFocus;
+		declare Integer		G_ChallengeOptions_TimeSwitchOnglet;
+		
+		declare Integer		G_ChallengeOptions_ChallengeInstanceId;
+		declare Integer 	G_ChallengeOptions_ChallengeId;
+		
+		declare Boolean		G_MustRefreshChallengeInfo;
+		declare Boolean 	G_MustRetrieveTrainRecords;
+		declare Boolean		G_MustGotoRaceOnRaceGivenUp;
+		declare Integer[]	G_TrainRecords;
+		
+		declare Boolean 	G_HasARace;
+		declare Boolean		G_IsPublished;
+		declare Boolean		G_IsPublishable;
+		declare Boolean		G_IsExpired;
+		declare Boolean		G_CanTrain;
+	""";
+	
+	return Globals;
+}
+
+Text InjectInInit()
+{
+	declare Init = """
+		G_ChallengeOptions_OngletFocus = 0;
+		G_MustGotoRaceOnRaceGivenUp = False;
+		
+		//L16N Title of the tab in which the player can play on championship tracks
+		G_ChallengeOptions_Onglets.add(_("Play"));
+		//L16N Title of the tab in which the player can browse a championship's results
+		G_ChallengeOptions_Onglets.add(_("Results"));
+			
+		for(I, 0, {{{C_BrowseSlot_Landmark}}} - 1)
+		{
+			declare CMlFrame  Frame_Onglet <=> (Page.GetFirstChild("FrameInstance_ChallengeOptions_Onglet"^I) as CMlFrame);
+			declare CMlLabel  Label_LandmarkName <=> (Frame_Onglet.GetFirstChild("Label_LandmarkName") as CMlLabel);
+			Label_LandmarkName.Value = G_ChallengeOptions_Onglets[I];	
+		}		
+		ChallengeOptions_SetOnglet();
+		G_MustRetrieveTrainRecords = False;
+		ChallengeOptions_InitInputsInfo();
+	""";
+
+	return Init;
+}
+
+Text InjectInFunctions()
+{
+	declare Real 	ChallengeOptions_SizeX			= 215.0;
+	declare Real	ChallengeOptions_SizeLR 	    = 17.5;
+
+	declare Text IMGMedalNoMedal        = C_ImgBase2^"medal-empty.dds";
+	declare Text IMGMedalBronze         = C_ImgBase2^"medal-bronze.dds";
+	declare Text IMGMedalSilver         = C_ImgBase2^"medal-silver.dds";
+	declare Text IMGMedalGold           = C_ImgBase2^"medal-gold.dds";
+	declare Text IMGMedalTrackmaster    = C_ImgBase2^"medal-author.dds";
+	
+	declare Functions = """
+		///////////////////////
+		// ONGLETS
+		///////////////////////
+		
+		
+		Void ChallengeOptions_SwitchOnglet()
+		{
+			declare CMlQuad  OngletFocus <=> (Page.GetFirstChild("ChallengeOptions_OngletFocus") as CMlQuad);
+			declare Real NewFramePosX = {{{(ChallengeOptions_SizeLR - ChallengeOptions_SizeX) * 0.5}}} + (0.5 + G_ChallengeOptions_OngletFocus) *  {{{(ChallengeOptions_SizeX-ChallengeOptions_SizeLR)/C_BrowseSlot_Landmark}}};
+			declare Vec3 NewFramePos  = <NewFramePosX, OngletFocus.RelativePosition.Y, OngletFocus.RelativePosition.Z>;
+			LibManialink_SetTargetPosition(OngletFocus, NewFramePos);
+			LibManialink_PresetAnim(OngletFocus, 250, "EaseOutQuint");
+			G_ChallengeOptions_TimeSwitchOnglet = Now; //+ 500;
+		}
+		
+		Void ChallengeOptions_SetOnglet()
+		{
+			declare CMlQuad  OngletFocus <=> (Page.GetFirstChild("ChallengeOptions_OngletFocus") as CMlQuad);
+			declare Real NewFramePosX = {{{(ChallengeOptions_SizeLR - ChallengeOptions_SizeX) * 0.5}}} + (0.5 + G_ChallengeOptions_OngletFocus) *  {{{(ChallengeOptions_SizeX-ChallengeOptions_SizeLR)/C_BrowseSlot_Landmark}}};
+			declare Vec3 NewFramePos  = <NewFramePosX, OngletFocus.RelativePosition.Y, OngletFocus.RelativePosition.Z>;
+			OngletFocus.RelativePosition = NewFramePos;
+		}
+		
+		//////////////////
+		// INPUT INFO
+		//////////////////
+		Void ChallengeOptions_InitInputsInfo() {
+			declare CMlLabel Label_InputName;
+			declare CMlQuad  Quad_InputIcon;
+		
+			declare CMlFrame Frame_ChallengeOptions <=> (Page.GetFirstChild("Frame_ChallengeOptions") as CMlFrame);
+			//SELECT
+			declare CMlFrame FrameInputSelect <=> (Frame_ChallengeOptions.GetFirstChild("ChallengeOptions_InputInfo_Select") as CMlFrame);
+			Label_InputName <=> (FrameInputSelect.GetFirstChild("Label_Name") as CMlLabel);
+			//L16N Displayed next to a button icon to explain what it does
+			Label_InputName.Value = _("|16 chars max|SELECT");
+			//CANCEL
+			declare CMlFrame FrameInputCancel <=> (Frame_ChallengeOptions.GetFirstChild("ChallengeOptions_InputInfo_Cancel") as CMlFrame);
+			Label_InputName <=> (FrameInputCancel.GetFirstChild("Label_Name") as CMlLabel);
+			//L16N Displayed next to a button icon to explain what it does
+			Label_InputName.Value = _("|16 chars max|BACK");
+			//ACTION2
+			declare CMlFrame FrameInputAction2 <=> (Frame_ChallengeOptions.GetFirstChild("ChallengeOptions_InputInfo_Action2") as CMlFrame);
+			Label_InputName <=> (FrameInputAction2.GetFirstChild("Label_Name") as CMlLabel);
+			Label_InputName.Value = "{{{SystemText::GetShowProfileTextForInputCard()}}}";
+			FrameInputAction2.Hide();
+		}
+		
+		Void ChallengeOptions_UpdateInputsInfo() {
+			declare Text[Text][] RequestedChallenges for Page;
+			declare Text[Text][] ChallengeResults for Page;
+			
+			declare CMlFrame Frame_ChallengeOptions <=> (Page.GetFirstChild("Frame_ChallengeOptions") as CMlFrame);
+			declare CMlFrame FrameInputSelect <=> (Frame_ChallengeOptions.GetFirstChild("ChallengeOptions_InputInfo_Select") as CMlFrame);
+			declare CMlFrame FrameInputAction2 <=> (Frame_ChallengeOptions.GetFirstChild("ChallengeOptions_InputInfo_Action2") as CMlFrame);
+			
+			declare CMlFrame Frame_AuthorProfile <=> (Frame_ChallengeOptions.GetFirstChild("frame_showauthorprofile") as CMlFrame);
+			
+			if (G_ChallengeOptions_OngletFocus == 0)
+			{
+				FrameInputAction2.Hide();
+				FrameInputSelect.Show();
+				if (LocalUser.Login == RequestedChallenges[G_CurrentSelectedChallengeIndex]["author"])
+					Frame_AuthorProfile.Hide();
+				else
+					Frame_AuthorProfile.Show();
+			} else {
+				FrameInputSelect.Hide();
+				if (G_ChallengeOptions_FocusIndex == 0)
+				{
+					FrameInputAction2.Hide();
+					if (LocalUser.Login == RequestedChallenges[G_CurrentSelectedChallengeIndex]["author"])
+					Frame_AuthorProfile.Hide();
+					else
+						Frame_AuthorProfile.Show();
+				} else {
+					Frame_AuthorProfile.Hide();
+					if (LocalUser.Login == ChallengeResults[G_ChallengeOptions_ResultsPage * 7 + G_ChallengeOptions_FocusIndex - 1]["login"])
+						FrameInputAction2.Hide();
+					else
+						FrameInputAction2.Show();
+				}
+			}
+		}
+		
+		Text DateFieldToText(Text _Date)
+		{
+			declare Text[] DateText = TL::Split("T", _Date);
+			declare Text[] DateText_WithoutTime = TL::Split("-", DateText[0]);
+			if (DateText_WithoutTime.count != 3)
+				return "";
+			return DateText_WithoutTime[2]^"/"^DateText_WithoutTime[1]^"/"^DateText_WithoutTime[0];
+		}
+		
+		Void ChallengeOptions_InitTrackCardFromTime(Integer _TrackIndex, Integer _Time, Boolean _IsRaceOrElseTrain)
+		{
+			declare Text[Text][] 	ChallengeTracks for Page;
+			
+			declare Integer AuthorTime 	= TL::ToInteger(ChallengeTracks[_TrackIndex]["author_challenge_time"]);
+			declare Integer GoldTime 	= TL::ToInteger(ChallengeTracks[_TrackIndex]["gold_challenge_time"]);
+			declare Integer SilverTime 	= TL::ToInteger(ChallengeTracks[_TrackIndex]["silver_challenge_time"]);
+			declare Integer BronzeTime 	= TL::ToInteger(ChallengeTracks[_TrackIndex]["bronze_challenge_time"]);
+			
+			declare CMlFrame FrameChallengeOptions 	<=> (Page.GetFirstChild("Frame_ChallengeOptions") as CMlFrame);
+			declare CMlFrame Frame_Tracks			<=> (FrameChallengeOptions.GetFirstChild("Frame_Tracks") as CMlFrame);
+			
+			declare CMlFrame TrackFrame <=> (Frame_Tracks.GetFirstChild("Frame_TrackCard"^(_TrackIndex/5)^(_TrackIndex - (_TrackIndex/5) * 5)) as CMlFrame);
+			
+			declare CMlFrame Frame_Result <=> (TrackFrame.GetFirstChild("Frame_Result") as CMlFrame);
+			Frame_Result.Show();
+			declare CMlQuad	QuadMedal <=> (TrackFrame.GetFirstChild("Quad_Medal") as CMlQuad);
+			QuadMedal.Show();
+			declare CMlLabel Label_Result <=> (TrackFrame.GetFirstChild("Label_Result") as CMlLabel);
+			
+			if (_Time <= 0)
+			{
+				QuadMedal.ImageUrl = "{{{IMGMedalNoMedal}}}";
+			} else if (_Time <= AuthorTime) {
+				QuadMedal.ImageUrl = "{{{IMGMedalTrackmaster}}}";
+			} else if (_Time <= GoldTime) {
+				QuadMedal.ImageUrl = "{{{IMGMedalGold}}}";
+			} else if (_Time <= SilverTime) {
+				QuadMedal.ImageUrl = "{{{IMGMedalSilver}}}";
+			} else if (_Time <= BronzeTime) {
+				QuadMedal.ImageUrl = "{{{IMGMedalBronze}}}";
+			} else {
+				QuadMedal.ImageUrl = "{{{IMGMedalNoMedal}}}";
+			}
+			
+			if (_Time <= 0)
+			{
+				if (_IsRaceOrElseTrain)
+				{
+					//L16N Displayed on a track that has not been finished yet
+					Label_Result.Value = TL::GetTranslatedText(_("Not raced"));
+				} else {
+					//L16N Displayed on a track that has not been trained yet
+					Label_Result.Value = TL::GetTranslatedText(_("Not trained"));
+				}
+			} else {
+				Label_Result.Value = TimeToText(_Time, False);
+			}
+		}
+		
+		Void ChallengeOptions_ClearTrackCard(Integer _TrackIndex)
+		{
+			declare CMlFrame FrameChallengeOptions 	<=> (Page.GetFirstChild("Frame_ChallengeOptions") as CMlFrame);
+			declare CMlFrame Frame_Tracks			<=> (FrameChallengeOptions.GetFirstChild("Frame_Tracks") as CMlFrame);
+			
+			declare CMlFrame TrackFrame <=> (Frame_Tracks.GetFirstChild("Frame_TrackCard"^(_TrackIndex/5)^(_TrackIndex - (_TrackIndex/5) * 5)) as CMlFrame);
+			
+			declare CMlFrame Frame_Result <=> (TrackFrame.GetFirstChild("Frame_Result") as CMlFrame);
+			Frame_Result.Hide();
+			declare CMlQuad	QuadMedal <=> (TrackFrame.GetFirstChild("Quad_Medal") as CMlQuad);
+			QuadMedal.Hide();
+		}
+		
+		Void ChallengeOptions_UpdateResultsFromPage()
+		{
+			declare Text[Text][] ChallengeResults for Page;
+			declare CMlFrame FrameChallengeOptions 	<=> (Page.GetFirstChild("Frame_ChallengeOptions") as CMlFrame);
+			
+			for (I, 0, 6)
+			{	
+				declare CMlFrame Frame_Result <=> (FrameChallengeOptions.GetFirstChild("Frame_Result"^I) as CMlFrame);
+				declare CMlQuad  MouseInput_Buddy <=> (FrameChallengeOptions.GetFirstChild("MouseInput_Buddy_"^I) as CMlQuad);
+				declare Integer Index = G_ChallengeOptions_ResultsPage * 7 + I;
+				if (Index >= ChallengeResults.count)
+				{
+					Frame_Result.Hide();
+					MouseInput_Buddy.Hide();
+				} else {
+					declare CMlLabel Label_Ranking <=> (Frame_Result.GetFirstChild("Label_Ranking") as CMlLabel);
+					declare CMlLabel Label_Name <=> (Frame_Result.GetFirstChild("Label_Name") as CMlLabel);
+					declare CMlLabel Label_Score <=> (Frame_Result.GetFirstChild("Label_Score") as CMlLabel);
+					declare CMlLabel Label_Time <=> (Frame_Result.GetFirstChild("Label_Time") as CMlLabel);
+					declare CMlLabel Label_Tries <=> (Frame_Result.GetFirstChild("Label_Tries") as CMlLabel);
+					
+					declare Vec3 TextColor;
+					if (LocalUser.Login == ChallengeResults[Index]["login"])
+						TextColor={{{MenuColor::GetMenuColor(2)}}};
+					else
+						TextColor = <1., 1., 1.>;
+					
+					Label_Ranking.TextColor = TextColor;
+					Label_Name.TextColor 	= TextColor;
+					Label_Score.TextColor 	= TextColor;
+					Label_Time.TextColor 	= TextColor;
+					Label_Tries.TextColor 	= TextColor;
+					
+					if (ChallengeResults[Index].existskey("rank"))
+						Label_Ranking.Value = ChallengeResults[Index]["rank"];
+					else
+						Label_Ranking.Value = "-";
+					
+					Label_Name.Value = ChallengeResults[Index]["displayname"];
+					if (ChallengeResults[Index].existskey("total_time"))
+						Label_Time.Value = TimeToText(TL::ToInteger(ChallengeResults[Index]["total_time"]), False);
+					else
+						Label_Time.Value = "--:--.---";
+					declare Integer Tries_Left = TL::ToInteger(ChallengeResults[Index]["tries_left"]);
+					if (Tries_Left >= 0)
+						Label_Tries.Value = ChallengeResults[Index]["tries_left"];
+					else
+						Label_Tries.Value = "∞";
+					if (ChallengeResults[Index].existskey("score"))
+						Label_Score.Value = ChallengeResults[Index]["score"];
+					else
+						Label_Score.Value = "-";
+					Frame_Result.Show();
+				}
+			}
+			
+			declare CMlQuad MouseInput_OptionsNextResults <=> (FrameChallengeOptions.GetFirstChild("MouseInput_OptionsNextResults") as CMlQuad);
+			declare CMlQuad MouseInput_OptionsPrevResults <=> (FrameChallengeOptions.GetFirstChild("MouseInput_OptionsPrevResults") as CMlQuad);
+			if (G_ChallengeOptions_ResultsPage > 0)
+				MouseInput_OptionsPrevResults.Show();
+			else
+				MouseInput_OptionsPrevResults.Hide();
+			if ((G_ChallengeOptions_ResultsPage+1)*7 < ChallengeResults.count)
+				MouseInput_OptionsNextResults.Show();
+			else
+				MouseInput_OptionsNextResults.Hide();
+		}
+		
+		Void ChallengeOptions_UpdateTracksFromSelection()
+		{
+			declare Text[Text] 		Challenge for Page;
+			declare Text[Text][] 	ChallengeTracks for Page;
+			
+			if (Challenge["installed"] == "0")
+			{
+				//CLEAR ALL
+				for (I, 0, ChallengeTracks.count-1)
+					ChallengeOptions_ClearTrackCard(I);
+				return;
+			}
+			
+			if (G_ChallengeOptions_FocusIndex == 0)
+			{	//TRAIN RESULTS
+				if (G_TrainRecords.count == 0)
+					return;
+				for (I, 0, G_TrainRecords.count - 1)
+					ChallengeOptions_InitTrackCardFromTime(I, G_TrainRecords[I], False);
+			} else if (G_ChallengeOptions_FocusIndex == 1) {
+				//BEST RACE
+				for (I, 0, ChallengeTracks.count - 1)
+				{
+					if (ChallengeTracks[I].existskey("best_race_time"))
+						ChallengeOptions_InitTrackCardFromTime(I, TL::ToInteger(ChallengeTracks[I]["best_race_time"]), True);
+					else
+						ChallengeOptions_InitTrackCardFromTime(I, -1, True);
+				}
+			} else {
+				//CLEAR ALL
+				for (I, 0, ChallengeTracks.count-1)
+					ChallengeOptions_ClearTrackCard(I);
+			}
+		}
+		
+		Void ChallengeOptions_UpdateSelection()
+		{
+			declare CMlFrame FrameChallengeOptions 	<=> (Page.GetFirstChild("Frame_ChallengeOptions") as CMlFrame);
+			declare CMlQuad Quad_OptionsSelector <=> (FrameChallengeOptions.GetFirstChild("Quad_OptionsSelector") as CMlQuad);
+			declare CMlQuad	 Quad_ResultsSelector <=> (FrameChallengeOptions.GetFirstChild("Quad_ResultsSelector") as CMlQuad);
+			if (G_ChallengeOptions_OngletFocus == 0)
+			{
+				declare CMlFrame Frame_Play <=> (FrameChallengeOptions.GetFirstChild("Frame_Play") as CMlFrame);
+				declare CMlFrame CurrentFrame;
+				switch (G_ChallengeOptions_FocusIndex)
+				{
+					case 0 : CurrentFrame <=> (Frame_Play.GetFirstChild("Frame_Train") as CMlFrame);
+					case 1 : CurrentFrame <=> (Frame_Play.GetFirstChild("Frame_Race") as CMlFrame);
+					case 2 : CurrentFrame <=> (Frame_Play.GetFirstChild("Frame_Buddies") as CMlFrame);
+					case 3 : CurrentFrame <=> (Frame_Play.GetFirstChild("Frame_Install") as CMlFrame);
+				}
+				Quad_OptionsSelector.RelativePosition.X = CurrentFrame.RelativePosition.X;
+				Quad_OptionsSelector.RelativePosition.Y = CurrentFrame.RelativePosition.Y;
+				Quad_OptionsSelector.Show();
+				Quad_ResultsSelector.Hide();
+				ChallengeOptions_UpdateTracksFromSelection();
+			} else {
+				//results
+				if (G_ChallengeOptions_FocusIndex == 0)
+					Quad_ResultsSelector.Hide();
+				else {
+					declare CMlFrame CurrentFrame <=> (FrameChallengeOptions.GetFirstChild("Frame_Result"^(G_ChallengeOptions_FocusIndex-1)) as CMlFrame);
+					Quad_ResultsSelector.RelativePosition.X = CurrentFrame.RelativePosition.X;
+					Quad_ResultsSelector.RelativePosition.Y = CurrentFrame.RelativePosition.Y;
+					Quad_ResultsSelector.Show();
+				}
+				Quad_OptionsSelector.Hide();
+			}
+			ChallengeOptions_UpdateInputsInfo();
+		}
+		
+		Void ChallengeOptions_UpdateDisplayForOnglet(Boolean _IsOngletAnimated)
+		{
+			declare CMlFrame Frame_ChallengeOptions <=> (Page.GetFirstChild("Frame_ChallengeOptions") as CMlFrame);
+			declare CMlFrame Frame_Tracks			<=> (Frame_ChallengeOptions.GetFirstChild("Frame_Tracks") as CMlFrame);
+			declare CMlFrame Frame_Play				<=> (Frame_ChallengeOptions.GetFirstChild("Frame_Play") as CMlFrame);
+			declare CMlFrame Frame_Results			<=> (Frame_ChallengeOptions.GetFirstChild("Frame_Results") as CMlFrame);
+			declare CMlFrame Frame_Loading			<=> (Frame_ChallengeOptions.GetFirstChild("Frame_Loading") as CMlFrame);
+			declare CMlFrame Frame_Onglet			<=> (Frame_ChallengeOptions.GetFirstChild("Frame_Onglet") as CMlFrame);
+			Frame_Onglet.Show();
+			Frame_Loading.Hide();
+			
+			switch (G_ChallengeOptions_OngletFocus)
+			{
+				case 0 : {
+					Frame_Play.Show();
+					Frame_Tracks.Show();
+					Frame_Results.Hide();
+				}
+				case 1 : {
+					Frame_Play.Hide();
+					Frame_Tracks.Hide();
+					Frame_Results.Show();
+					G_ChallengeOptions_ResultsPage = 0;
+					ChallengeOptions_UpdateResultsFromPage();
+				}
+			}
+			if (_IsOngletAnimated)
+				ChallengeOptions_SwitchOnglet();
+			else
+				ChallengeOptions_SetOnglet();
+			ChallengeOptions_UpdateSelection();
+		}
+		
+		Void ChallengeOptions_RetrieveTrainRecords()
+		{
+			declare Text[Text] 		Challenge for Page;
+			declare Text[Text][] 	ChallengeTracks for Page;
+		
+			G_MustRetrieveTrainRecords = False;
+			wait(DataMgr.Ready);
+			for (I, 0, ChallengeTracks.count - 1)
+			{
+				DataMgr.RetrieveRecordsNoMedals(ChallengeTracks[I]["uid"], DataMgr.MenuUserId);
+				wait(DataMgr.Ready);
+				declare Integer BestRecordIndex = -1;
+				for (J, 0, DataMgr.Records.count - 1)
+				{
+					if (BestRecordIndex == -1 || DataMgr.Records[J].Time < DataMgr.Records[BestRecordIndex].Time)
+					{
+						declare Text[] SplitGhostName = TL::Split("_", DataMgr.Records[J].GhostName);
+						if (SplitGhostName.count != 3 || TL::ToInteger(SplitGhostName[1]) != TL::ToInteger(Challenge["id"]))
+							continue;
+						BestRecordIndex = J;
+					}
+				}
+				declare Integer BestTime;
+				if (BestRecordIndex != -1)
+				{
+					BestTime  = DataMgr.Records[BestRecordIndex].Time;
+				} else {
+					BestTime  = -1;
+				}
+				G_TrainRecords.add(BestTime);
+			}
+			declare CMlFrame FrameChallengeOptions 	<=> (Page.GetFirstChild("Frame_ChallengeOptions") as CMlFrame);
+			ChallengeOptions_UpdateDisplayForOnglet(False);
+		}
+		
+		///////////////////////
+		// CHALLENGE OPTIONS
+		///////////////////////
+		Void ChallengeOptions_SetTracksFromResult()
+		{
+			declare Text[Text][] 	ChallengeTracks for Page;
+			
+			declare CMlFrame Frame_ChallengeOptions <=> (Page.GetFirstChild("Frame_ChallengeOptions") as CMlFrame);
+			declare CMlFrame Frame_Tracks			<=> (Frame_ChallengeOptions.GetFirstChild("Frame_Tracks") as CMlFrame);
+			declare CMlFrame Frame_Content			<=> (Frame_Tracks.GetFirstChild("Frame_Content") as CMlFrame);
+			Frame_Content.Show();
+			
+			for (I, 0, 1)
+			{
+				for (J, 0, 4)
+				{
+					declare TrackIndex =  I*5 + J;
+					declare CMlFrame Frame_TrackCard 	<=> (Frame_Tracks.GetFirstChild("Frame_TrackCard"^I^J) as CMlFrame);
+					declare CMlQuad  Quad_Locked		<=> (Frame_TrackCard.GetFirstChild("Quad_Locked") as CMlQuad);
+					if (TrackIndex >= ChallengeTracks.count)
+					{
+						Quad_Locked.Show();
+					} else {
+						declare CMlLabel Label_TrackName <=> (Frame_TrackCard.GetFirstChild("Label_TrackName") as CMlLabel);
+						//Label_TrackName.Value = ChallengeTracks[TrackIndex]["name"];
+						Label_TrackName.Value = TL::ToText(TrackIndex+1);
+						declare CMlQuad Quad_Thumbnail <=> (Frame_TrackCard.GetFirstChild("Quad_Thumbnail") as CMlQuad);
+						Quad_Thumbnail.ImageUrl = ChallengeTracks[TrackIndex]["thumbnail_url"];
+						Quad_Locked.Hide();
+					}
+				}
+			}
+		}
+		
+		Void ChallengeOptions_Hide()
+		{
+			declare CMlFrame FrameChallengeOptions <=> (Page.GetFirstChild("Frame_ChallengeOptions") as CMlFrame);
+			FrameChallengeOptions.Hide();
+			declare CMlQuad MouseInput_OptionsNextResults <=> (FrameChallengeOptions.GetFirstChild("MouseInput_OptionsNextResults") as CMlQuad);
+			MouseInput_OptionsNextResults.Hide();
+			declare CMlQuad MouseInput_OptionsPrevResults <=> (FrameChallengeOptions.GetFirstChild("MouseInput_OptionsPrevResults") as CMlQuad);
+			MouseInput_OptionsPrevResults.Hide();
+			
+			G_MustRefreshChallengeInfo = False;
+		}
+		
+		Void ChallengeOptions_AutoGiveUpRace()
+		{
+			declare Text[Text] 		Challenge for Page;
+			declare Text[Text][] 	ChallengeTracks for Page;
+			
+			if (G_ChallengeBrowserStatus != C_STATUS_CHALLENGEOPTIONS)
+				return;
+			
+			if (!G_HasARace)
+				return;
+			
+			if (TL::ToInteger(Challenge["currentrace_next_map_index"]) >= ChallengeTracks.count)
+				SendCustomEvent("AutoGiveUpRace", [Challenge["id"], Challenge["currentrace_id"]]);
+		}
+		
+	
+		Void ChallengeOptions_OnChallengeReceived()
+		{
+		
+			declare CMlFrame FrameChallengeOptions 	<=> (Page.GetFirstChild("Frame_ChallengeOptions") as CMlFrame);
+			declare CMlFrame Frame_Play				<=> (FrameChallengeOptions.GetFirstChild("Frame_Play") as CMlFrame);
+			
+			declare CMlFrame Frame_Train			<=>	(Frame_Play.GetFirstChild("Frame_Train") as CMlFrame);
+			declare CMlLabel Label_Train	 		<=> (Frame_Train.GetFirstChild("Label_Option") as CMlLabel);
+			
+			declare CMlFrame Frame_Race				<=>	(Frame_Play.GetFirstChild("Frame_Race") as CMlFrame);
+			declare CMlLabel Label_Race		 		<=> (Frame_Race.GetFirstChild("Label_Option") as CMlLabel);
+			
+			declare CMlFrame Frame_Install 			<=> (Frame_Play.GetFirstChild("Frame_Install") as CMlFrame);
+			declare CMlLabel Label_Install	 		<=> (Frame_Install.GetFirstChild("Label_Option") as CMlLabel);
+			
+			declare CMlFrame Frame_Buddies 			<=> (Frame_Play.GetFirstChild("Frame_Buddies") as CMlFrame);
+			declare CMlLabel Label_Buddies	 		<=> (Frame_Buddies.GetFirstChild("Label_Option") as CMlLabel);
+			
+			declare Text[Text] Challenge for Page;
+			G_HasARace = Challenge.existskey("currentrace_id") && Challenge["currentrace_id"] != "";
+			G_CanTrain = Challenge.existskey("buddies_challenge_trainable") && Challenge["buddies_challenge_trainable"] == "true";
+			G_IsPublished = Challenge.existskey("status") && Challenge["status"] == "3";
+			G_IsPublishable = Challenge.existskey("status") && Challenge["status"] == "2";
+			G_IsExpired = Challenge.existskey("buddies_challenge_is_expired") && Challenge["buddies_challenge_is_expired"] == "true";
+			
+			if (G_HasARace || !G_CanTrain)
+				Label_Train.Opacity = 0.5;
+			else
+				Label_Train.Opacity = 1.;
+			if (G_CanTrain)
+				Label_Train.Value = _("|Infinitive|Train");
+			else
+				Label_Train.Value = _("|Buddies challenge, train mode|Train Disabled");
+			
+			Label_Install.Value = _("|Infinitive|Remove");
+			
+			if (G_IsExpired)
+			{
+				Label_Race.Value = _("Challenge expired");
+				Label_Race.Opacity = 0.5;
+			} else {
+				declare Integer TriesLeft = TL::ToInteger(Challenge["buddies_challenge_tries_left"]);
+				declare Integer MaxTries = TL::ToInteger(Challenge["buddies_challenge_max_tries"]);
+				
+				if (G_HasARace) {
+					Label_Race.Value = _("Resume Race");
+					Label_Race.Opacity = 1.;
+				} else {
+					if (TriesLeft == 0)
+					{
+						Label_Race.Value = _("No tries left");
+						Label_Race.Opacity = 0.5;
+					} else if (MaxTries > 0) {
+						if (TriesLeft == 1)
+						{
+							Label_Race.Value = _("Race\n(1 try left)");
+						} else {
+							Label_Race.Value = TL::Compose("%1\n(%2 %3)", _("|Infinitive|Race"), Challenge["buddies_challenge_tries_left"], _("|in X tries left|tries left"));
+						}
+						Label_Race.Opacity = 1.;
+					} else {
+						Label_Race.Value = _("|Infinitive|Race");
+						Label_Race.Opacity = 1.;
+					}
+				}
+			}
+			Label_Buddies.Value = _("|Infinitive|Challenge Buddies");
+			
+			//NAME
+			declare Text Author;
+			declare Text Duration;
+			declare Text Style;
+			if (Challenge.existskey("displayname"))
+				Author = Challenge["displayname"]; //hostName
+			else
+				Author = "";
+			if (Challenge.existskey("duration"))
+			{
+				declare Integer DurationId = TL::ToInteger(Challenge["duration"]);
+				if (DurationId != 0)
+					Duration = " - "^TL::GetTranslatedText(G_ChallengesDurations[DurationId]);
+			}	
+			if (Challenge.existskey("style"))
+			{
+				Style = " - "^TL::GetTranslatedText(Challenge["style"]);	
+			}
+			declare CMlLabel Label_ChallengeName 	<=> (FrameChallengeOptions.GetFirstChild("Label_ChallengeName") as CMlLabel);
+			Label_ChallengeName.Value = TL::Compose("%1%2%3", Author, Duration, Style);
+			
+			//STUNTS
+			declare CMlQuad Quad_Stunts		<=> (FrameChallengeOptions.GetFirstChild("Title_Quad_Stunts") as CMlQuad);
+			if (Challenge.existskey("stunts") && Challenge["stunts"] == "true")
+				Quad_Stunts.Show();
+			else
+				Quad_Stunts.Hide();
+			
+			//FLAG
+			declare CMlQuad Quad_Flag <=> (FrameChallengeOptions.GetFirstChild("Quad_ChallengeFlag") as CMlQuad);
+			if (Challenge.existskey("country") && Challenge["country"] != "")
+				Quad_Flag.ImageUrl = "{{{C_ImgBaseFlags}}}"^GetCountryFlag(Challenge["country"]);
+			else
+				Quad_Flag.ImageUrl = "";
+			
+			G_MustRefreshChallengeInfo = False;
+			G_MustRetrieveTrainRecords = True;
+			G_TrainRecords.clear();
+			ChallengeOptions_AutoGiveUpRace();
+			ChallengeOptions_SetTracksFromResult();
+		}
+		
+		Void ChallengeOptions_Refresh()
+		{
+			G_MustRefreshChallengeInfo = True;
+			declare Text[Text]		Challenge for Page;
+			declare Text[Text][] 	ChallengeTracks for Page;
+			
+			SendCustomEvent("RequestBuddiesChallenge", [TL::ToText(G_ChallengeOptions_ChallengeInstanceId), TL::ToText(G_ChallengeOptions_ChallengeId)]);
+			Challenge.clear();
+			ChallengeTracks.clear();
+			
+			
+			declare CMlFrame FrameChallengeOptions 	<=> (Page.GetFirstChild("Frame_ChallengeOptions") as CMlFrame);
+			declare CMlFrame Frame_Play				<=> (FrameChallengeOptions.GetFirstChild("Frame_Play") as CMlFrame);
+			declare CMlFrame Frame_Tracks			<=> (FrameChallengeOptions.GetFirstChild("Frame_Tracks") as CMlFrame);
+			declare CMlFrame Frame_Loading			<=> (FrameChallengeOptions.GetFirstChild("Frame_Loading") as CMlFrame);
+			declare CMlFrame Frame_Onglet			<=> (FrameChallengeOptions.GetFirstChild("Frame_Onglet") as CMlFrame);
+			declare CMlQuad Quad_OptionsSelector <=> (FrameChallengeOptions.GetFirstChild("Quad_OptionsSelector") as CMlQuad);
+			
+			Frame_Play.Hide();
+			Frame_Tracks.Hide();
+			Frame_Onglet.Hide();
+			Frame_Loading.Show();
+			Quad_OptionsSelector.Hide();
+		}
+		
+		Void ChallengeOptions_Show() 
+		{
+			G_ChallengeOptions_FocusIndex = 0;
+			G_ChallengeOptions_OngletFocus = 0;
+			
+			ToggleInputInfo("ChallengeOptions", "Select", False);
+			ToggleInputInfo("ChallengeOptions", "Cancel", False);
+			
+			for (I, 0, 2) {	
+				declare CMlQuad QuadPrevTab <=> (Page.GetFirstChild("MouseInput_PrevTab_"^I) as CMlQuad);
+				declare CMlQuad QuadNextTab <=> (Page.GetFirstChild("MouseInput_NextTab_"^I) as CMlQuad);
+				QuadPrevTab.Opacity = 1.;
+				QuadPrevTab.Scale = 1.;
+				QuadNextTab.Opacity = 1.;
+				QuadNextTab.Scale = 1.;
+			}
+			
+			declare Text[Text][] RequestedChallenges for Page;
+			G_ChallengeOptions_ChallengeInstanceId 	= TL::ToInteger(RequestedChallenges[G_CurrentSelectedChallengeIndex]["buddies_challenge_id"]);
+			G_ChallengeOptions_ChallengeId 			= TL::ToInteger(RequestedChallenges[G_CurrentSelectedChallengeIndex]["id"]);
+			
+			ChallengeOptions_Refresh();
+			declare CMlFrame FrameChallengeOptions <=> (Page.GetFirstChild("Frame_ChallengeOptions") as CMlFrame);
+			FrameChallengeOptions.Show();
+		}
+		
+		Void ChallengeOptions_OnTrain(Text _ChallengeId)
+		{
+			G_IsInChallengeTracks = True;
+			SendCustomEvent("GotoPage", ["ChallengeTracks"]);
+			SendCustomEvent("SendTracksToChallengeTracks_Train", ["BuddiesChallengeBrowser", _ChallengeId]);
+			SendCustomEvent("DetachPage", ["BuddiesChallengeBrowser"]);
+		}
+		
+		Void ChallengeOptions_GotoRace()
+		{
+			G_IsInChallengeTracks = True;
+			SendCustomEvent("GotoPage", ["ChallengeTracks"]);
+			SendCustomEvent("SendTracksToChallengeTracks_RaceFor", [TL::ToText(G_ChallengeOptions_ChallengeId), TL::ToText(G_ChallengeOptions_ChallengeInstanceId)]); 
+			SendCustomEvent("DetachPage", ["BuddiesChallengeBrowser"]);
+		}
+		
+		Void ChallengeOptions_OnRace(Text _ChallengeId)
+		{
+			declare Text[Text] Challenge for Page;
+			if (Challenge.existskey("currentrace_playable") && Challenge["currentrace_playable"] == "0")
+				SendCustomEvent("PopUpGiveUpRaceAskYesNo", Text[]);
+			else
+				ChallengeOptions_GotoRace();
+		}
+	
+		Void ChallengeOptions_OnRemove() {
+			declare Text[Text] Challenge for Page;
+			declare Boolean CountsForChallengesCount = !(G_IsExpired || (Challenge.existskey("buddies_challenge_tries_left") && Challenge["buddies_challenge_tries_left"] == "0"));
+			SendCustomEvent("RequestRemoveChallenge", [Challenge["buddies_challenge_id"], TL::ToText(CountsForChallengesCount)]);
+		}
+
+		Void ChallengeOptions_OnSelect() {
+			declare Text[Text] Challenge for Page;
+			
+			if (((TL::ToInteger(Challenge["buddies_challenge_tries_left"]) == 0 && !G_HasARace) || G_IsExpired) && G_ChallengeOptions_FocusIndex == 1)
+				return;
+			if ((G_HasARace || !G_CanTrain) && G_ChallengeOptions_FocusIndex == 0)
+				return;
+			if (G_ChallengeOptions_FocusIndex == 3)
+			{
+				ChallengeOptions_OnRemove();
+				return;
+			}
+			
+			if (Challenge["installed"] == "0")
+			{
+				InstallChallenge();
+				switch (G_ChallengeOptions_FocusIndex)
+				{
+					case 0 : G_PostInstallAction = C_POSTINSTALLACTION_TRAIN;
+					case 1 : G_PostInstallAction = C_POSTINSTALLACTION_RACE;
+					case 2 : G_PostInstallAction = C_POSTINSTALLACTION_BUDDIES;
+				}
+				return;
+			}
+			
+			switch (G_ChallengeOptions_FocusIndex)
+			{
+				case 0 : if (!G_HasARace && G_CanTrain) ChallengeOptions_OnTrain(Challenge["id"]);
+				case 1 : ChallengeOptions_OnRace(Challenge["id"]);
+				case 2 : ChallengeBuddies(Challenge["id"]);	
+			}
+		}
+		
+		Void ChallengeOptions_OnUp()
+		{
+			if (G_ChallengeOptions_OngletFocus == 0)
+			{
+				if (G_ChallengeOptions_FocusIndex > 0)
+					G_ChallengeOptions_FocusIndex -= 1;
+				else
+					G_ChallengeOptions_FocusIndex = 3;
+			} else {
+				declare Text[Text][] ChallengeResults for Page;
+				if (G_ChallengeOptions_FocusIndex > 0)
+					G_ChallengeOptions_FocusIndex -= 1;
+				else
+					G_ChallengeOptions_FocusIndex = ML::Min(7, ChallengeResults.count - G_ChallengeOptions_ResultsPage * 7 /*-1+1*/);
+			}
+			ChallengeOptions_UpdateSelection();
+			
+		}
+		
+		Void ChallengeOptions_OnDown()
+		{
+			if (G_ChallengeOptions_OngletFocus == 0)
+			{
+				if (G_ChallengeOptions_FocusIndex < 3)
+					G_ChallengeOptions_FocusIndex += 1;
+				else
+					G_ChallengeOptions_FocusIndex = 0;
+			} else {
+				declare Text[Text][] ChallengeResults for Page;
+				if (G_ChallengeOptions_FocusIndex < ML::Min(7, ChallengeResults.count - G_ChallengeOptions_ResultsPage * 7 /*-1+1*/))
+					G_ChallengeOptions_FocusIndex += 1;
+				else
+					G_ChallengeOptions_FocusIndex = 0;
+			}
+			ChallengeOptions_UpdateSelection();
+		}
+		
+		Void Input_SwitchOnglet(Integer _Target) {
+			if (G_MustRefreshChallengeInfo || G_TrainRecords.count == 0)
+				return;
+			if (_Target < 0 || _Target > {{{C_BrowseSlot_Landmark-1}}} || _Target == G_ChallengeOptions_OngletFocus)
+				return;
+			G_ChallengeOptions_OngletFocus = _Target;
+			G_ChallengeOptions_FocusIndex = 0;
+			ChallengeOptions_UpdateDisplayForOnglet(True);
+		}
+		
+		Void ChallengeOptions_UpdateHelpersForPlatform(Integer _Platform) {
+			declare Text[] AdditionnalInputIds = ["ChallengeOptions_InputInfo_Select_", "ChallengeOptions_InputInfo_Cancel_", "ChallengeOptions_InputInfo_Action2_", "ChallengeOptions_ShowGamercardIcon_", "MouseInput_NextTab_", "MouseInput_PrevTab_"];
+	
+			declare CMlQuad  QuadInputIcon;
+			for (I, 0, 2) {
+				for (J, 0, AdditionnalInputIds.count-1) {
+					QuadInputIcon <=> (Page.GetFirstChild(AdditionnalInputIds[J]^I) as CMlQuad);
+					if (I == _Platform)
+						QuadInputIcon.Show();
+					else
+						QuadInputIcon.Hide();
+				}
+			}
+		}
+		
+		Void SetInputInfoNotSelected_Black(Text _Name) {
+			declare CMlFrame FrameInput <=> (Page.GetFirstChild(_Name) as CMlFrame);
+			declare CMlLabel LabelInputInfo <=> (FrameInput.GetFirstChild("Label_Name") as CMlLabel);
+			SetInputInfoTextSelected(LabelInputInfo, False, <0., 0., 0.>);
+		}
+		
+	""";
+
+	return Functions;
+}
+
+Text InjectBeforeLoop()
+{
+	declare BeforeLoop = """
+		declare CMlQuad ChallengeOptions_ResultsSelector 			<=> (Page.GetFirstChild("Quad_ResultsSelector") as CMlQuad);
+		declare CMlQuad  Quad_OptionsSelector <=> (Page.GetFirstChild("Quad_OptionsSelector") as CMlQuad);
+		
+		declare CMlQuad  	MouseInput_OptionsPrevResults  <=> (Page.GetFirstChild("MouseInput_OptionsPrevResults") as CMlQuad);
+		declare CMlQuad  	MouseInput_OptionsNextResults <=> (Page.GetFirstChild("MouseInput_OptionsNextResults") as CMlQuad);
+		
+	""";
+	
+	return BeforeLoop;
+}
+
+Text InjectInLoop()
+{
+	declare Real 	ChallengeOptions_SizeX			= 215.0;
+	declare Real	ArrowPos_Left 					= -10.;
+	declare Real 	ArrowPos_Right					= ChallengeOptions_SizeX + 10.;
+
+	declare Loop = """
+		
+		Quad_OptionsSelector.Opacity = ButtonSelectedSinVar;
+		
+		if (G_ChallengeBrowserStatus == C_STATUS_CHALLENGEOPTIONS)
+		{
+			ChallengeOptions_ResultsSelector.Opacity = ButtonSelectedSinVar;
+			if (G_ChallengeOptions_OngletFocus == 1) {
+				MouseInput_OptionsPrevResults.RelativePosition.X  = {{{ArrowPos_Left}}} + ButtonSelectedSinVar;
+				MouseInput_OptionsNextResults.RelativePosition.X = {{{ArrowPos_Right}}} - ButtonSelectedSinVar;
+			}
+		}
+		
+		if (G_MustRetrieveTrainRecords)
+			ChallengeOptions_RetrieveTrainRecords();
+			
+	""";
+	return Loop;
+}
+
+Text InjectInMouseClick() {
+	declare MouseClick = """
+		if(Loading_GetIsLoading()) 
+			continue;
+		declare Text[] InputId = TL::Split("_", Event.ControlId);
+		if (InputId.count < 2 || InputId[0] != "MouseInput")
+			continue;
+		switch (InputId[1]) {
+			case "Landmark" 		: Input_SwitchOnglet(TL::ToInteger(InputId[2]));
+			case "PrevTab"			: Input_SwitchOnglet(G_ChallengeOptions_OngletFocus-1);
+			case "NextTab"			: Input_SwitchOnglet(G_ChallengeOptions_OngletFocus+1);
+			case "Option" : {
+				if (G_MustRefreshChallengeInfo || G_TrainRecords.count == 0)
+					continue;
+				G_ChallengeOptions_FocusIndex = TL::ToInteger(InputId[2]);
+				ChallengeOptions_UpdateSelection();
+				ChallengeOptions_OnSelect();
+			}
+			case "OptionsNextResults": {
+				declare Text[Text][] ChallengeResults for Page;
+				if ((G_ChallengeOptions_ResultsPage+1)*7 < ChallengeResults.count)
+				{
+					G_ChallengeOptions_ResultsPage += 1;
+					ChallengeOptions_UpdateResultsFromPage();
+				}	
+			}
+			case "OptionsPrevResults": {
+				if (G_ChallengeOptions_ResultsPage > 0)
+				{
+					G_ChallengeOptions_ResultsPage -= 1;
+					ChallengeOptions_UpdateResultsFromPage();
+				}
+			}
+			case "OptionInputInfo" : {
+				switch (InputId[2]) {
+					case "Cancel": ChallengeBrowserStatus_Switch(C_STATUS_BROWSER);
+					case "Select": {
+						if (G_MustRefreshChallengeInfo || G_TrainRecords.count == 0)
+							continue;
+						ChallengeOptions_OnSelect();
+					}	
+					case "Action2": {
+						if (G_MustRefreshChallengeInfo || G_TrainRecords.count == 0)
+							continue;
+						if (G_ChallengeOptions_OngletFocus == 0 || G_ChallengeOptions_FocusIndex == 0)
+						{
+							declare Text[Text] Challenge for Page;
+							if (Challenge["author"] != LocalUser.Login)
+								SendCustomEvent("ShowProfile", [Challenge["author"]]);
+						} else {
+							//selectedbuddy
+							declare Text[Text][] ChallengeResults for Page;
+							if (ChallengeResults[G_ChallengeOptions_ResultsPage * 7 + G_ChallengeOptions_FocusIndex - 1]["login"] != LocalUser.Login)
+								SendCustomEvent("ShowProfile", [ChallengeResults[G_ChallengeOptions_ResultsPage * 7 + G_ChallengeOptions_FocusIndex - 1]["login"]]);
+						}
+					}
+				}
+			}
+		}
+	""";
+	
+	return MouseClick;
+}
+
+Text InjectInMouseOver() {
+	declare MouseOver = """
+		if (Loading_GetIsLoading())
+			continue;
+		declare Text[] InputId = TL::Split("_", Event.ControlId);
+		if (InputId.count < 2 || InputId[0] != "MouseInput")
+			continue;
+		switch (InputId[1]) {
+			case "Option" : {
+				if (G_MustRefreshChallengeInfo || G_TrainRecords.count == 0)
+					continue;
+				G_ChallengeOptions_FocusIndex = TL::ToInteger(InputId[2]);
+				ChallengeOptions_UpdateSelection();
+			}
+			case "Buddy" : {
+				if (G_MustRefreshChallengeInfo || G_TrainRecords.count == 0)
+					continue;
+				G_ChallengeOptions_FocusIndex = 1 + TL::ToInteger(InputId[2]);
+				ChallengeOptions_UpdateSelection();
+			}
+			case "PrevTab" : {
+				for (I, 0, 2) {	
+					declare CMlQuad QuadInputIcon <=> (Page.GetFirstChild("MouseInput_PrevTab_"^I) as CMlQuad);
+					QuadInputIcon.Opacity = 0.6;
+					QuadInputIcon.Scale = 0.95;
+				}
+			}
+			case "NextTab" : {
+				for (I, 0, 2) {	
+					declare CMlQuad QuadInputIcon <=> (Page.GetFirstChild("MouseInput_NextTab_"^I) as CMlQuad);
+					QuadInputIcon.Opacity = 0.6;
+					QuadInputIcon.Scale = 0.95;
+				}
+			}
+			case "OptionInputInfo" : {
+				ToggleInputInfo("ChallengeOptions", InputId[2], True);
+				if (InputId[2] == "Action2")  {
+					declare CMlFrame FrameInput <=> (Page.GetFirstChild("frame_showauthorprofile") as CMlFrame);
+					declare CMlLabel LabelInputInfo <=> (FrameInput.GetFirstChild("Label_Name") as CMlLabel);
+					SetInputInfoTextSelected(LabelInputInfo, True);
+				}
+			}
+		}
+	""";
+	
+	return MouseOver;
+}
+			
+Text InjectInMouseOut() {
+	declare MouseOut = """
+		declare Text[] InputId = TL::Split("_", Event.ControlId);
+		if (InputId.count < 2 || InputId[0] != "MouseInput")
+			continue;
+		switch (InputId[1]) {
+			case "OptionInputInfo" : {
+				ToggleInputInfo("ChallengeOptions", InputId[2], False);
+				if (InputId[2] == "Action2")
+					SetInputInfoNotSelected_Black("frame_showauthorprofile");
+			}
+			case "PrevTab" : {
+				for (I, 0, 2) {	
+					declare CMlQuad QuadInputIcon <=> (Page.GetFirstChild("MouseInput_PrevTab_"^I) as CMlQuad);
+					QuadInputIcon.Opacity = 1.;
+					QuadInputIcon.Scale = 1.;
+				}
+			}
+			case "NextTab" : {
+				for (I, 0, 2) {	
+					declare CMlQuad QuadInputIcon <=> (Page.GetFirstChild("MouseInput_NextTab_"^I) as CMlQuad);
+					QuadInputIcon.Opacity = 1.;
+					QuadInputIcon.Scale = 1.;
+				}
+			}
+		}
+	""";
+	
+	return MouseOut;
+}
+
+
+Text InjectInMenuNavigation()
+{
+	declare MenuNav = """
+		if(Loading_GetIsLoading()) continue;
+		switch (Event.MenuNavAction) {
+			case CMlEvent::EMenuNavAction::Select : {
+				if (G_ChallengeOptions_OngletFocus != 0)
+					continue;
+				if (G_MustRefreshChallengeInfo || G_TrainRecords.count == 0)
+					continue;
+				ChallengeOptions_OnSelect();
+			}
+			case CMlEvent::EMenuNavAction::Cancel : {
+				ChallengeBrowserStatus_Switch(C_STATUS_BROWSER);
+			}
+			case CMlEvent::EMenuNavAction::AppMenu : {
+				ChallengeBrowserStatus_Switch(C_STATUS_BROWSER);
+			}
+			case CMlEvent::EMenuNavAction::Action1 : {
+				if (G_MustRefreshChallengeInfo || G_TrainRecords.count == 0)
+					continue;
+			}
+			case CMlEvent::EMenuNavAction::Action2 : {
+				
+				if (G_MustRefreshChallengeInfo || G_TrainRecords.count == 0)
+					continue;
+				
+				if (G_ChallengeOptions_OngletFocus == 0 || G_ChallengeOptions_FocusIndex == 0)
+				{
+					declare Text[Text] Challenge for Page;
+					if (Challenge["author"] != LocalUser.Login)
+						SendCustomEvent("ShowProfile", [Challenge["author"]]);
+				} else {
+					//selectedbuddy
+					declare Text[Text][] ChallengeResults for Page;
+					if (ChallengeResults[G_ChallengeOptions_ResultsPage * 7 + G_ChallengeOptions_FocusIndex - 1]["login"] != LocalUser.Login)
+						SendCustomEvent("ShowProfile", [ChallengeResults[G_ChallengeOptions_ResultsPage * 7 + G_ChallengeOptions_FocusIndex - 1]["login"]]);
+				}
+			}
+			case CMlEvent::EMenuNavAction::Up : {
+				if (G_MustRefreshChallengeInfo || G_TrainRecords.count == 0)
+					continue;
+				ChallengeOptions_OnUp();
+			}
+			case CMlEvent::EMenuNavAction::Down : {
+				if (G_MustRefreshChallengeInfo || G_TrainRecords.count == 0)
+					continue;
+				ChallengeOptions_OnDown();
+			}
+			case CMlEvent::EMenuNavAction::PageUp : {
+				Input_SwitchOnglet(G_ChallengeOptions_OngletFocus-1);
+			}
+			case CMlEvent::EMenuNavAction::PageDown : {
+				Input_SwitchOnglet(G_ChallengeOptions_OngletFocus+1);
+			}
+			case CMlEvent::EMenuNavAction::Right : {
+				declare Text[Text][] ChallengeResults for Page;
+				if ((G_ChallengeOptions_ResultsPage+1)*7 < ChallengeResults.count)
+				{
+					G_ChallengeOptions_ResultsPage += 1;
+					ChallengeOptions_UpdateResultsFromPage();
+				}	
+			}
+			case CMlEvent::EMenuNavAction::Left : {
+				if (G_ChallengeOptions_ResultsPage > 0)
+				{
+					G_ChallengeOptions_ResultsPage -= 1;
+					ChallengeOptions_UpdateResultsFromPage();
+				}
+			}
+		}
+	""";
+	
+	return MenuNav;
+}

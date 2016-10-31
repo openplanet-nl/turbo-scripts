@@ -1,0 +1,87 @@
+
+#Include "Libs/Openplanet/Manialink2.Script.txt"						as Manialink
+
+ 
+Text Build(Text _ShowAnim, Text _HideAnim) {
+
+
+	
+	declare Text MLText = """
+	
+	
+	<frame id="Frame_All">
+		
+		
+		<label halign="center" valign="center" style="TextButtonBig" posn="-135 82 2" id="Label_Title" textsize="4" text="-Smart Start-" textcolor="000" opacity="1."/>
+		
+	</frame>
+	
+	
+	<script><!--
+		#Const DebugName  "L_SmartStartInfo"
+		#Include "MathLib" as ML
+		
+		{{{Manialink::GetIncludes()}}}
+		{{{Manialink::Load()}}}
+		
+		declare Integer G_LockInput;
+
+		Void SetVisibility(Text _SmartStartActivate)
+		{
+			log("_SmartStartActivate: " ^ _SmartStartActivate);
+			declare CMlLabel Label_Title <=> (Page.GetFirstChild("Label_Title") as CMlLabel);
+
+			if(_SmartStartActivate == "True")
+			{
+				Label_Title.Visible = True;
+			}
+			else
+			{
+				Label_Title.Visible = False;
+			}
+		}
+
+		main() {
+			declare Boolean	Net_IsSmartStart  for Page;
+			declare CMlLabel Label_Title <=> (Page.GetFirstChild("Label_Title") as CMlLabel);
+
+			while(True) {
+				yield;
+				if(! PageIsVisible) continue;
+				LibManialink_AnimLoop();
+
+				if(Net_IsSmartStart)
+				{
+					declare Real LabelSelectedSinVar  = ML::Sin(Now * 0.007) * 0.5 + 0.5;
+					declare Real LabelSelectedOpacity = 0.0 + LabelSelectedSinVar * 1.;
+					Label_Title.Opacity   = LabelSelectedOpacity;
+				}
+
+				foreach(Event in PendingEvents) {
+					if(G_LockInput + 100 > Now) continue;
+					switch(Event.Type) {
+						case CMlEvent::Type::PluginCustomEvent: {
+							
+							switch(Event.PluginCustomEventType) {
+								case "Show" : {
+									SetVisibility(Net_IsSmartStart^"");
+								}
+								
+								case "Hide" : {
+								}
+								case "UpdateInfo" : {
+									log("1");
+									declare SmartStartActivate = Event.CustomEventData[0];
+									SetVisibility(SmartStartActivate);
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	--></script>
+	""";
+	
+	return MLText;
+}

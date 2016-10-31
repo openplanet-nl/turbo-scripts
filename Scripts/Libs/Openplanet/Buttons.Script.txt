@@ -1,0 +1,1113 @@
+/** 
+ * Get image for buttons
+ */
+
+#Const Version		"2016-03-16"
+#Const ScriptName	"Buttons.Script.txt"
+
+#Include "TextLib" as TL
+#Include "MathLib" as ML
+#Include "Libs/Openplanet/TMConsole/FontManager.Script.txt" as Font
+
+// ---------------------------------- //
+// Constants
+// ---------------------------------- //
+#Const C_ButtonsImgDir		"file://Media/Manialinks/Common/PadButtons/" ///< Path to the buttons images
+#Const C_DataActionName		"action-name"	///< Data parameters used to assign an action to the button
+#Const C_ButtonClass 		"lib-button"	///< Class used to detect the buttons
+#Const C_LibPrefix			"LibButtons_"	///< Prefix for the library functions
+#Const C_DefaultButtonSize	8.				///< Default size of the button image
+#Const C_ButtonDelay		100				///< Delay before update the button image
+/// System platforms
+#Const C_System_Null	-1
+#Const C_System_PC		0
+#Const C_System_XB1		1
+#Const C_System_PS4		2
+/// Controller devices
+#Const C_Device_Keyboard	0
+#Const C_Device_Mouse		1
+#Const C_Device_Pad			2
+/// Inputs
+#Const C_Menu_Select			"Menu_Select"
+#Const C_Menu_Cancel			"Menu_Cancel"
+#Const C_Menu_Action1			"Menu_Action1"
+#Const C_Menu_Action2			"Menu_Action2"
+#Const C_Menu_PageUp			"Menu_PageUp"
+#Const C_Menu_PageDown			"Menu_PageDown"
+#Const C_Menu_PageUp2			"Menu_PageUp2"
+#Const C_Menu_PageDown2			"Menu_PageDown2"
+#Const C_Menu_AppMenu			"Menu_AppMenu"
+#Const C_Menu_View				"Menu_View"
+#Const C_Editor_Menu			"Editor_Menu"
+#Const C_Editor_Valid			"Editor_Valid"
+#Const C_Editor_Cancel			"Editor_Cancel"
+#Const C_Editor_AddTerrain		"Editor_AddTerrain"
+#Const C_Editor_RemoveTerrain	"Editor_RemoveTerrain"
+#Const C_Editor_PlaceBlock		"Editor_PlaceBlock"
+#Const C_Editor_RemoveBlock		"Editor_RemoveBlock"
+#Const C_Editor_CutBlock		"Editor_CutBlock"
+#Const C_Editor_PasteBlock		"Editor_PasteBlock"
+#Const C_Editor_DiscardBlock	"Editor_DiscardBlock"
+#Const C_Editor_TurnBlock		"Editor_TurnBlock"
+#Const C_Editor_CopyBlock		"Editor_CopyBlock"
+#Const C_Editor_RaiseBlock		"Editor_RaiseBlock"
+#Const C_Editor_LowerBlock		"Editor_LowerBlock"
+#Const C_Editor_RaiseStart		"Editor_RaiseStart"
+#Const C_Editor_LowerStart		"Editor_LowerStart"
+#Const C_Editor_OpenTest		"Editor_OpenTest"
+#Const C_Editor_StartTest		"Editor_StartTest"
+#Const C_Editor_CancelTest		"Editor_CancelTest"
+#Const C_Editor_SelectConnector	"Editor_SelectConnector"
+#Const C_Editor_RandomLandscape	"Editor_RandomLandscape"
+#Const C_Editor_Redo			"Editor_Redo"
+#Const C_Editor_Undo			"Editor_Undo"
+#Const C_Editor_Disconnect		"Editor_Disconnect"
+#Const C_Editor_BuildMode		"Editor_BuildMode"
+#Const C_Editor_BrowseBlocks	"Editor_BrowseBlocks"
+#Const C_Editor_OpenRosaces		"Editor_OpenRosaces"
+#Const C_Editor_MoveBlock		"Editor_MoveBlock"
+#Const C_Editor_MoveBlock_Mouse		"Editor_MoveBlock_Mouse"
+#Const C_Editor_PlaceBlock_Mouse		"Editor_PlaceBlock_Mouse"
+#Const C_Editor_CameraMove		"Editor_CameraMove"
+#Const C_Editor_CameraZoom		"Editor_CameraZoom"
+#Const C_Editor_AutoConnect		"Editor_AutoConnect"
+#Const C_Editor_NextFamily		"Editor_NextFamily"
+#Const C_Editor_PrevFamily		"Editor_PrevFamily"
+#Const C_Editor_NextCategory	"Editor_NextCategory"
+#Const C_Editor_PrevCategory	"Editor_PrevCategory"
+#Const C_Editor_NextMacroblock	"Editor_NextMacroblock"
+#Const C_Editor_PrevMacroblock	"Editor_PrevMacroblock"
+#Const C_Editor_RandomPlay		"Editor_RandomPlay"
+#Const C_Editor_RandomGenerate	"Editor_RandomGenerate"
+#Const C_Editor_RandomValidate	"Editor_RandomValidate"
+#Const C_Editor_RandomSave		"Editor_RandomSave"
+#Const C_Editor_DecoGenerate	"Editor_DecoGenerate"
+#Const C_Editor_DecoValid		"Editor_DecoValid"
+#Const C_Editor_DecoCancel		"Editor_DecoCancel"
+#Const C_Editor_DecoDefault		"Editor_DecoDefault"
+#Const C_Editor_RosaceLeft		"Editor_RosaceLeft"
+#Const C_Editor_RosaceRight		"Editor_RosaceRight"
+#Const C_Editor_RosaceNextFamily		"Editor_RosaceNextFamily"
+#Const C_Editor_RosacePrevFamily		"Editor_RosacePrevFamily"
+#Const C_Editor_RosaceNextMacroblock	"Editor_RosaceNextMacroblock"
+#Const C_Editor_RosacePrevMacroblock	"Editor_RosacePrevMacroblock"
+#Const C_Editor_NextSpawn		"Editor_NextSpawn"
+#Const C_Editor_PrevSpawn		"Editor_PrevSpawn"
+#Const C_Editor_NextSkin		"Editor_NextSkin"
+#Const C_Editor_PrevSkin		"Editor_PrevSkin"
+#Const C_Editor_BrowseSkins		"Editor_BrowseSkins"
+#Const C_Editor_NextDeco		"Editor_NextDeco"
+#Const C_Editor_PrevDeco		"Editor_PrevDeco"
+#Const C_Editor_MoreDeco		"Editor_MoreDeco"
+#Const C_Editor_LessDeco		"Editor_LessDeco"
+#Const C_Editor_LeaveValidation	"Editor_LeaveValidation"
+#Const C_Editor_TakeThumbnail	"Editor_TakeThumbnail"
+
+// ---------------------------------- //
+// Globales
+// ---------------------------------- //
+declare Text[Integer][Text] G_Bindings; ///< Controls binding
+declare Text[Text][Integer] G_Buttons;	///< Paths to the button image
+
+// ---------------------------------- //
+// Functions
+// ---------------------------------- //
+/// Get the inputs constants
+Text Menu_Select() { return C_Menu_Select; }
+Text Menu_Cancel() { return C_Menu_Cancel; }
+Text Menu_Action1() { return C_Menu_Action1; }
+Text Menu_Action2() { return C_Menu_Action2; }
+Text Menu_PageUp() { return C_Menu_PageUp; }
+Text Menu_PageDown() { return C_Menu_PageDown; }
+Text Menu_PageUp2() { return C_Menu_PageUp2; }
+Text Menu_PageDown2() { return C_Menu_PageDown2; }
+Text Menu_AppMenu() { return C_Menu_AppMenu; }
+Text Menu_View() { return C_Menu_View; }
+Text Editor_Menu() { return C_Editor_Menu; }
+Text Editor_Valid() { return C_Editor_Valid; }
+Text Editor_Cancel() { return C_Editor_Cancel; }
+Text Editor_AddTerrain() { return C_Editor_AddTerrain; }
+Text Editor_RemoveTerrain() { return C_Editor_RemoveTerrain; }
+Text Editor_PlaceBlock() { return C_Editor_PlaceBlock; }
+Text Editor_RemoveBlock() { return C_Editor_RemoveBlock; }
+Text Editor_CutBlock() { return C_Editor_CutBlock; }
+Text Editor_PasteBlock() { return C_Editor_PasteBlock; }
+Text Editor_DiscardBlock() { return C_Editor_DiscardBlock; }
+Text Editor_TurnBlock() { return C_Editor_TurnBlock; }
+Text Editor_CopyBlock() { return C_Editor_CopyBlock; }
+Text Editor_RaiseBlock() { return C_Editor_RaiseBlock; }
+Text Editor_LowerBlock() { return C_Editor_LowerBlock; }
+Text Editor_RaiseStart() { return C_Editor_RaiseStart; }
+Text Editor_LowerStart() { return C_Editor_LowerStart; }
+Text Editor_OpenTest() { return C_Editor_OpenTest; }
+Text Editor_StartTest() { return C_Editor_StartTest; }
+Text Editor_CancelTest() { return C_Editor_CancelTest; }
+Text Editor_SelectConnector() { return C_Editor_SelectConnector; }
+Text Editor_RandomLandscape() { return C_Editor_RandomLandscape; }
+Text Editor_Redo() { return C_Editor_Redo; }
+Text Editor_Undo() { return C_Editor_Undo; }
+Text Editor_Disconnect() { return C_Editor_Disconnect; }
+Text Editor_BuildMode() { return C_Editor_BuildMode; }
+Text Editor_BrowseBlocks() { return C_Editor_BrowseBlocks; }
+Text Editor_OpenRosaces() { return C_Editor_OpenRosaces; }
+Text Editor_MoveBlock() { return C_Editor_MoveBlock; }
+Text Editor_MoveBlock_Mouse() { return C_Editor_MoveBlock_Mouse; }
+Text Editor_PlaceBlock_Mouse() { return C_Editor_PlaceBlock_Mouse; }
+Text Editor_CameraMove() { return C_Editor_CameraMove; }
+Text Editor_CameraZoom() { return C_Editor_CameraZoom; }
+Text Editor_AutoConnect() { return C_Editor_AutoConnect; }
+Text Editor_NextFamily() { return C_Editor_NextFamily; }
+Text Editor_PrevFamily() { return C_Editor_PrevFamily; }
+Text Editor_NextCategory() { return C_Editor_NextCategory; }
+Text Editor_PrevCategory() { return C_Editor_PrevCategory; }
+Text Editor_NextMacroblock() { return C_Editor_NextMacroblock; }
+Text Editor_PrevMacroblock() { return C_Editor_PrevMacroblock; }
+Text Editor_RandomPlay() { return C_Editor_RandomPlay; }
+Text Editor_RandomGenerate() { return C_Editor_RandomGenerate; }
+Text Editor_RandomValidate() { return C_Editor_RandomValidate; }
+Text Editor_RandomSave() { return C_Editor_RandomSave; }
+Text Editor_DecoGenerate() { return C_Editor_DecoGenerate; }
+Text Editor_DecoValid() { return C_Editor_DecoValid; }
+Text Editor_DecoCancel() { return C_Editor_DecoCancel; }
+Text Editor_DecoDefault() { return C_Editor_DecoDefault; }
+Text Editor_RosaceLeft() { return C_Editor_RosaceLeft; }
+Text Editor_RosaceRight() { return C_Editor_RosaceRight; }
+Text Editor_RosaceNextFamily() { return C_Editor_RosaceNextFamily; }
+Text Editor_RosacePrevFamily() { return C_Editor_RosacePrevFamily; }
+Text Editor_RosaceNextMacroblock() { return C_Editor_RosaceNextMacroblock; }
+Text Editor_RosacePrevMacroblock() { return C_Editor_RosacePrevMacroblock; }
+Text Editor_NextSpawn() { return C_Editor_NextSpawn; }
+Text Editor_PrevSpawn() { return C_Editor_PrevSpawn; }
+Text Editor_NextSkin() { return C_Editor_NextSkin; }
+Text Editor_PrevSkin() { return C_Editor_PrevSkin; }
+Text Editor_BrowseSkins() { return C_Editor_BrowseSkins; }
+Text Editor_NextDeco() { return C_Editor_NextDeco; }
+Text Editor_PrevDeco() { return C_Editor_PrevDeco; }
+Text Editor_MoreDeco() { return C_Editor_MoreDeco; }
+Text Editor_LessDeco() { return C_Editor_LessDeco; }
+Text Editor_LeaveValidation() { return C_Editor_LeaveValidation; }
+Text Editor_TakeThumbnail() { return C_Editor_TakeThumbnail; }
+
+// ---------------------------------- //
+/** Inject the manialink tags of a button
+ *
+ *	@param	_Button					The button to display
+ *	@param	_Params					The parameters of the button
+ *
+ *	@return							The button manialink tag
+ */
+Text ML_Button(Text _Button, Text[Text] _Params) {
+	declare FrameParams = "";
+	declare ButtonParams = "";
+	declare LabelParams = "";
+	declare QuadEvent = "";
+	declare Params = _Params;
+	
+	declare FontMainSmall = Font::GetFontName("MainSmall");
+	
+	// Default params
+	if (!Params.existskey("size")) Params["size"] = C_DefaultButtonSize^" "^C_DefaultButtonSize;
+	if (!Params.existskey("textsize")) Params["textsize"] = "2";
+	if (!Params.existskey("textfont")) Params["textfont"] = FontMainSmall;
+	//if (!Params.existskey("textemboss")) Params["textemboss"] = "1";
+	
+	// Align params
+	declare Pos = <0., 0.>;
+	declare Size = <0., 0.>;
+	declare ArraySize = TL::Split(" ", Params["size"]);
+	if (ArraySize.existskey(0)) Size.X = TL::ToReal(ArraySize[0]);
+	if (ArraySize.existskey(1)) Size.Y = TL::ToReal(ArraySize[1]);
+	if (Params.existskey("halign")) {
+		switch (Params["halign"]) {
+			case "left"		: Pos.X = 0.5 * Size.X;
+			case "center"	: Pos.X = 0.;
+			case "right"	: Pos.X = -0.5 * Size.X;
+		}
+	}
+	if (Params.existskey("valign")) {
+		switch (Params["valign"]) {
+			case "top"		: Pos.Y = -0.5 * Size.Y;
+			case "center"	: Pos.Y = 0.;
+			case "center2"	: Pos.Y = 0.;
+			case "bottom"	: Pos.Y = 0.5 * Size.Y;
+		}
+	}
+	declare PosAlign = Pos.X^" "^Pos.Y;
+	declare Removed = False;
+	Removed = Params.removekey("halign");
+	Removed = Params.removekey("valign");
+	
+	declare TextScale = ML::Min(Size.X, Size.Y) / C_DefaultButtonSize;
+	
+	foreach (ParamName => ParamValue in Params) {
+		if (ParamName == "scriptevents") {
+			declare QuadId = "";
+			if (Params.existskey("id")) QuadId = Params["id"];
+			QuadEvent = """<quad size="{{{Params["size"]}}}" halign="center" valign="center" scriptevents="1" id="{{{QuadId}}}" />""";
+		} else if (ParamName == "size" || ParamName == "colorize" || ParamName == "class") {
+			ButtonParams ^= TL::MLEncode(ParamName)^"=\""^TL::MLEncode(ParamValue)^"\" ";
+		} else if (ParamName == "textsize" || ParamName == "textfont" || ParamName == "textemboss" || ParamName == "autonewline" || ParamName == "maxline") {
+			LabelParams ^= TL::MLEncode(ParamName)^"=\""^TL::MLEncode(ParamValue)^"\" ";
+		} else {
+			FrameParams ^= TL::MLEncode(ParamName)^"=\""^TL::MLEncode(ParamValue)^"\" ";
+		}
+	}
+	
+	return """
+<frame {{{FrameParams}}} data-{{{C_DataActionName}}}="{{{TL::MLEncode(_Button)}}}" class="{{{C_ButtonClass}}}">
+	<frame pos="{{{PosAlign}}}" z-index="10">
+		{{{QuadEvent}}}
+	</frame>
+	<frame pos="{{{PosAlign}}}" z-index="0" id="Button_PC">
+		<quad z-index="0" {{{ButtonParams}}} halign="center" valign="center" image="{{{C_ButtonsImgDir}}}PC/BackgroundSmall.dds" keepratio="fit" id="Quad_ButtonBackground" />
+		<quad z-index="1" halign="center" valign="center" keepratio="fit" id="Quad_ButtonImage" />
+		<label z-index="2" scale="{{{TextScale}}}" {{{LabelParams}}} halign="center" valign="center2" id="Label_ButtonName" />
+	</frame>
+	<frame pos="{{{PosAlign}}}" z-index="1" id="Button_Console">
+		<quad {{{ButtonParams}}} halign="center" valign="center" keepratio="fit" id="Quad_ButtonImage" />
+	</frame>
+</frame>
+""";
+}
+
+// ---------------------------------- //
+/** Inject the code of the library in the manialink
+ *
+ *	@return							The code of the library
+ */
+Text ML_Functions(Text _LibPrefix) {
+	return """
+declare Text[Integer][Text] {{{_LibPrefix}}}G_Bindings;
+declare Text[Text][Integer] {{{_LibPrefix}}}G_Buttons;
+declare CMlControl[] {{{_LibPrefix}}}G_Controls_Button;
+declare Boolean {{{_LibPrefix}}}G_NeedUpdate;
+declare Integer {{{_LibPrefix}}}G_ButtonPlatform;
+declare Integer {{{_LibPrefix}}}G_ButtonTmpPlatform;
+declare Integer {{{_LibPrefix}}}G_ButtonDelay;
+declare Real {{{_LibPrefix}}}G_PrevMouseX;
+declare Real {{{_LibPrefix}}}G_PrevMouseY;
+
+Text {{{_LibPrefix}}}Private_GetButtonImgPath(Integer _PlatformIndex, Text _Button) {
+	if ({{{_LibPrefix}}}G_Buttons.existskey(_PlatformIndex) && {{{_LibPrefix}}}G_Buttons[_PlatformIndex].existskey(_Button)) {
+		return {{{_LibPrefix}}}G_Buttons[_PlatformIndex][_Button];
+	}
+	
+	return "";
+}
+
+Text {{{_LibPrefix}}}Private_GetBoundButton(Integer _PlatformIndex, Text _ActionName) {
+	if ({{{_LibPrefix}}}G_Bindings.existskey(_ActionName) && {{{_LibPrefix}}}G_Bindings[_ActionName].existskey(_PlatformIndex)) {
+		return {{{_LibPrefix}}}G_Bindings[_ActionName][_PlatformIndex];
+	}
+	
+	return "";
+}
+
+Integer {{{_LibPrefix}}}Private_GetPlatformIndex() {
+	if (SystemPlatform == ::ESystemPlatform::XBoxOne) return {{{C_System_XB1}}};
+	else if (SystemPlatform == ::ESystemPlatform::PS4) return {{{C_System_PS4}}};
+	
+	return {{{C_System_PC}}};
+}
+
+Void {{{_LibPrefix}}}Private_UpdateButton(CMlControl _Control, Text _ActionName) {
+	if (_Control == Null) return;
+	declare Frame_Button <=> (_Control as CMlFrame);
+	
+	declare PlatformIndex = {{{_LibPrefix}}}G_ButtonPlatform;
+	declare ButtonName = {{{_LibPrefix}}}Private_GetBoundButton(PlatformIndex, _ActionName);
+	declare ButtonImgPath = {{{_LibPrefix}}}Private_GetButtonImgPath(PlatformIndex, ButtonName);
+	
+	declare Button_PC <=> (Frame_Button.GetFirstChild("Button_PC") as CMlFrame);
+	declare Button_Console <=> (Frame_Button.GetFirstChild("Button_Console") as CMlFrame);
+	
+	if (ButtonName == "") {
+		Button_PC.Visible = False;
+		Button_Console.Visible = False;
+	} else if (PlatformIndex == {{{C_System_PC}}}) {
+		Button_PC.Visible = True;
+		Button_Console.Visible = False;
+		
+		declare Quad_ButtonImage <=> (Button_PC.GetFirstChild("Quad_ButtonImage") as CMlQuad);
+		declare Quad_ButtonBackground <=> (Button_PC.GetFirstChild("Quad_ButtonBackground") as CMlQuad);
+		declare Label_ButtonName <=> (Button_PC.GetFirstChild("Label_ButtonName") as CMlLabel);
+		
+		if (ButtonImgPath == "") {
+			Label_ButtonName.Value = _("")^ButtonName;
+			Label_ButtonName.Visible = True;
+			Label_ButtonName.Size = Quad_ButtonBackground.Size - <1., 1.>;
+			Quad_ButtonImage.Visible = False;
+		} else {
+			Label_ButtonName.Visible = False;
+			Quad_ButtonImage.ImageUrl = ButtonImgPath;
+			Quad_ButtonImage.Visible = True;
+			Quad_ButtonImage.Size = Quad_ButtonBackground.Size;
+			Quad_ButtonBackground.Visible = False;
+		}
+	} else {
+		Button_PC.Visible = False;
+		Button_Console.Visible = True;
+		
+		declare Quad_ButtonImage <=> (Button_Console.GetFirstChild("Quad_ButtonImage") as CMlQuad);
+		if (ButtonImgPath == "") {
+			Quad_ButtonImage.ImageUrl = "{{{C_ButtonsImgDir}}}Default/Default.dds";
+		} else {
+			Quad_ButtonImage.ImageUrl = ButtonImgPath;
+		}
+	}
+}
+
+Void {{{_LibPrefix}}}Private_UpdateButton(CMlControl _Control) {
+	if (_Control == Null) return;
+	{{{_LibPrefix}}}Private_UpdateButton(_Control, _Control.DataAttributeGet("{{{C_DataActionName}}}"));
+}
+
+Void {{{_LibPrefix}}}SetAction(CMlControl _Control, Text _ActionName) {
+	if (_Control == Null) return;
+	
+	_Control.DataAttributeSet("{{{C_DataActionName}}}", _ActionName);
+	{{{_LibPrefix}}}Private_UpdateButton(_Control, _ActionName);
+}
+
+Void {{{_LibPrefix}}}Init() {
+	Page.GetClassChildren("{{{C_ButtonClass}}}", Page.MainFrame, True);
+	foreach (Control in Page.GetClassChildren_Result) {
+		declare NotAReference = Control;
+		{{{_LibPrefix}}}G_Controls_Button.add(NotAReference);
+	}
+	
+	{{{_LibPrefix}}}G_Bindings = {{{dump(G_Bindings)}}};
+	{{{_LibPrefix}}}G_Buttons = {{{dump(G_Buttons)}}};
+	{{{_LibPrefix}}}G_ButtonPlatform = {{{_LibPrefix}}}Private_GetPlatformIndex();
+	
+	{{{_LibPrefix}}}G_NeedUpdate = True;
+}
+
+Void {{{_LibPrefix}}}Loop() {
+	if (SystemPlatform != ::ESystemPlatform::XBoxOne && SystemPlatform != ::ESystemPlatform::PS4) {
+		// Pad button or keyboard key
+		declare NewPlatform = {{{C_System_Null}}};
+		
+		foreach (Event in Input.PendingEvents) {
+			if (Event.Type == CInputEvent::EType::PadButtonPress) {
+				if (Event.Pad != Null && Event.Pad.Type != CInputPad::EPadType::Keyboard) {
+					{{{_LibPrefix}}}G_PrevMouseX = MouseX;
+					{{{_LibPrefix}}}G_PrevMouseY = MouseY;
+					if (Event.Pad != Null && Event.Pad.Type == CInputPad::EPadType::PlayStation) {
+						NewPlatform = {{{C_System_PS4}}};
+					} else {
+						NewPlatform = {{{C_System_XB1}}};
+					}
+				} else {
+					{{{_LibPrefix}}}G_PrevMouseX = MouseX;
+					{{{_LibPrefix}}}G_PrevMouseY = MouseY;
+					NewPlatform = {{{C_System_PC}}};
+				}
+			}
+		}
+		
+		// Mouse
+		if ({{{_LibPrefix}}}G_ButtonPlatform != {{{C_System_PC}}}) {
+			if ({{{_LibPrefix}}}G_PrevMouseX != MouseX || {{{_LibPrefix}}}G_PrevMouseY != MouseY) {
+				{{{_LibPrefix}}}G_PrevMouseX = MouseX;
+				{{{_LibPrefix}}}G_PrevMouseY = MouseY;
+				NewPlatform = {{{C_System_PC}}};
+			}
+		}
+		
+		if (NewPlatform != {{{C_System_Null}}} && NewPlatform != {{{_LibPrefix}}}G_ButtonTmpPlatform) {
+			{{{_LibPrefix}}}G_ButtonTmpPlatform = NewPlatform;
+			{{{_LibPrefix}}}G_ButtonDelay = Now + {{{C_ButtonDelay}}};
+		}
+	}
+	
+	if ({{{_LibPrefix}}}G_ButtonDelay > 0 && Now >= {{{_LibPrefix}}}G_ButtonDelay) {
+		{{{_LibPrefix}}}G_ButtonDelay = -1;
+		{{{_LibPrefix}}}G_ButtonPlatform = {{{_LibPrefix}}}G_ButtonTmpPlatform;
+		{{{_LibPrefix}}}G_NeedUpdate = True;
+	}
+	
+	if ({{{_LibPrefix}}}G_NeedUpdate) {
+		{{{_LibPrefix}}}G_NeedUpdate = False;
+		
+		foreach (Control_Button in {{{_LibPrefix}}}G_Controls_Button) {
+			{{{_LibPrefix}}}Private_UpdateButton(Control_Button);
+		}
+	}
+}
+
+Boolean {{{_LibPrefix}}}IsKeyboard(Integer _InputDevice) {
+	return ({{{_LibPrefix}}}G_ButtonPlatform == {{{C_System_PC}}});
+}
+
+Boolean {{{_LibPrefix}}}IsKeyboard() {
+	return ({{{_LibPrefix}}}G_ButtonPlatform == {{{C_System_PC}}});
+}
+
+Integer {{{_LibPrefix}}}GetInputDevice() {
+	return {{{_LibPrefix}}}G_ButtonPlatform;
+}
+""";
+}
+
+// ---------------------------------- //
+/** Inject the code of the library in the manialink
+ *
+ *	@return							The code of the library
+ */
+Text ML_Functions() {
+	return ML_Functions(C_LibPrefix);
+}
+
+// ---------------------------------- //
+/// Get the system constants
+Integer System_PC() { return C_System_PC; }
+Integer System_XB1() { return C_System_XB1; }
+Integer System_PS4() { return C_System_PS4; }
+
+// ---------------------------------- //
+/// Get the controller devices constants
+Integer Device_Keyboard() { return C_Device_Keyboard; }
+Integer Device_Mouse() { return C_Device_Mouse; }
+Integer Device_Pad() { return C_Device_Pad; }
+
+// ---------------------------------- //
+/** Check if we are using the keyboard/mouse on pc
+ *
+ *	@param	_Device					The device used to do the input
+ *
+ *	@return							True if the input was done on keyboard or mouse on the PC version
+ */
+Boolean IsKeyboardOnPC(Integer _Device) {
+	return (
+		SystemPlatform != CManiaApp::ESystemPlatform::PS4 &&
+		SystemPlatform != CManiaApp::ESystemPlatform::XBoxOne &&
+		_Device == C_Device_Keyboard
+	);
+}
+
+// ---------------------------------- //
+/** Device used to generate the latest input (approximation)
+ *
+ *	@param	_IsPad					Input generated by a pad
+ *	@param	_IsKeyboard				Input generated by a keyboard
+ *	@param	_IsMouse				Input generated by a mouse
+ *
+ *	@return							The device used to do the input
+ */
+Integer GetInputDevice(Boolean _IsPad, Boolean _IsKeyboard, Boolean _IsMouse) {
+	if (_IsPad) return C_Device_Pad;
+	if (_IsKeyboard) return C_Device_Keyboard;
+	if (_IsMouse) return C_Device_Mouse;
+	
+	foreach (Event in Input.PendingEvents) {
+		if (Event.Type == CInputEvent::EType::PadButtonPress) {
+			if (Event.Pad != Null) {
+				if (Event.Pad.Type == CInputPad::EPadType::Keyboard) return C_Device_Keyboard;
+				else return C_Device_Pad;
+			}
+		}
+	}
+	for (I, 0, 200) {
+		if (Input.IsKeyPressed(I)) return C_Device_Keyboard;
+	}
+	return C_Device_Pad;
+}
+
+// ---------------------------------- //
+/** Add custom bindings
+ *
+ *	@param	_Bindings				The bindings to add
+ */
+Void SetBindings(Text[Integer][Text] _Bindings) {
+	foreach (ButtonName => ButtonProperties in _Bindings) {
+		G_Bindings[ButtonName] = ButtonProperties;
+	}
+}
+
+// ---------------------------------- //
+/** Get the image of a button for a given system
+ *
+ *	@param	_Button					The button to get
+ *	@param	_System					The system used
+ *
+ *	@return							The path to the button image for the given system
+ */
+Text GetImage(Text _Button, Integer _System) {
+	if (G_Bindings.existskey(_Button) && G_Bindings[_Button].existskey(_System)) {
+		declare ButtonName = G_Bindings[_Button][_System];
+		if (G_Buttons.existskey(_System) && G_Buttons[_System].existskey(ButtonName)) {
+			return G_Buttons[_System][ButtonName];
+		}
+	}
+	
+	return "";
+}
+
+// ---------------------------------- //
+/** Get the path to the left stick image
+ *
+ *	@return							The path to the left stick image
+ */
+Text GetLeftStickImage() {
+	if (UserMgr != Null && UserMgr.MainUserPad != Null && UserMgr.MainUserPad.Type == CInputPad::EPadType::PlayStation)  {
+		return C_ButtonsImgDir^"PS4/LStick.dds";
+	}
+	return C_ButtonsImgDir^"XB1/LStick.dds";
+}
+
+// ---------------------------------- //
+/** Get the path to the right stick image
+ *
+ *	@return							The path to the right stick image
+ */
+Text GetRightStickImage() {
+	if (UserMgr != Null && UserMgr.MainUserPad != Null && UserMgr.MainUserPad.Type == CInputPad::EPadType::PlayStation)  {
+		return C_ButtonsImgDir^"PS4/RStick.dds";
+	}
+	return C_ButtonsImgDir^"XB1/RStick.dds";
+}
+
+// ---------------------------------- //
+/** Get the path to the mouse wheel image
+ *
+ *	@return							The path to the mouse wheel image
+ */
+Text GetMouseWheelImage() {
+	return C_ButtonsImgDir^"PC/Wheel.dds";
+}
+
+// ---------------------------------- //
+/** Get the thumbnail key code
+ *
+ *	@return							The thumbnail key code
+ */
+Integer GetThumbnailKeyCode() {
+	return 33;
+}
+
+// ---------------------------------- //
+/** Get the thumbnail key name
+ *
+ *	@return							The thumbnail key name
+ */
+Text GetThumbnailKeyName() {
+	return "End";
+}
+
+// ---------------------------------- //
+/** Get the cancel key code
+ *
+ *	@return							The cancel key code
+ */
+Integer GetSelectKeyCode() {
+	return 108;
+}
+
+// ---------------------------------- //
+/** Get the select key name
+ *
+ *	@return							The select key name
+ */
+Text GetSelectKeyName() {
+	return "Return";
+}
+
+// ---------------------------------- //
+/** Get the select key code
+ *
+ *	@return							The select key code
+ */
+Integer GetCancelKeyCode() {
+	return 19;
+}
+
+// ---------------------------------- //
+/** Get the cancel key name
+ *
+ *	@return							The cancel key name
+ */
+Text GetCancelKeyName() {
+	return "Back";
+}
+
+// ---------------------------------- //
+/// Unload the library
+Void Unload() {
+	G_Bindings.clear();
+}
+
+// ---------------------------------- //
+/// Load the library
+Void Load() {
+	Unload();
+	
+	G_Buttons = [
+		C_System_PC => [
+			"ArrowDown" => C_ButtonsImgDir^"PC/ArrowDown.dds",
+			"ArrowLeft" => C_ButtonsImgDir^"PC/ArrowLeft.dds",
+			"ArrowRight" => C_ButtonsImgDir^"PC/ArrowRight.dds",
+			"ArrowUp" => C_ButtonsImgDir^"PC/ArrowUp.dds",
+			"Down" => C_ButtonsImgDir^"PC/Down.dds",
+			"Left" => C_ButtonsImgDir^"PC/Left.dds",
+			"Right" => C_ButtonsImgDir^"PC/Right.dds",
+			"Up" => C_ButtonsImgDir^"PC/Up.dds",
+			"Shift" => C_ButtonsImgDir^"PC/Maj.dds",
+			"Enter" => C_ButtonsImgDir^"PC/Enter.dds",
+			"Backspace" => C_ButtonsImgDir^"PC/Backspace.dds",
+			"Space" => C_ButtonsImgDir^"PC/Space.dds",
+			"PgUp" => C_ButtonsImgDir^"PC/Pageup.dds",
+			"PgDn" => C_ButtonsImgDir^"PC/Pagedown.dds",
+			"Camera" => C_ButtonsImgDir^"PC/CameraMouse.dds",
+			"DirectionnalButtons" => C_ButtonsImgDir^"PC/DirectionnalButtons.dds",
+			"Mouse" => C_ButtonsImgDir^"PC/Mouse.dds",
+			"LeftClick" => C_ButtonsImgDir^"PC/LeftClick.dds",
+			"RightClick" => C_ButtonsImgDir^"PC/RightClick.dds",
+			"Wheel" => C_ButtonsImgDir^"PC/Wheel.dds"
+		],
+		C_System_XB1 => [
+			"A" => C_ButtonsImgDir^"XB1/A.dds",
+			"B" => C_ButtonsImgDir^"XB1/B.dds",
+			"X" => C_ButtonsImgDir^"XB1/X.dds",
+			"Y" => C_ButtonsImgDir^"XB1/Y.dds",
+			"RB" => C_ButtonsImgDir^"XB1/RB.dds",
+			"LB" => C_ButtonsImgDir^"XB1/LB.dds",
+			"RT" => C_ButtonsImgDir^"XB1/RT.dds",
+			"LT" => C_ButtonsImgDir^"XB1/LT.dds",
+			"DPad" => C_ButtonsImgDir^"XB1/DPad.dds",
+			"DPadDown" => C_ButtonsImgDir^"XB1/DPadDown.dds",
+			"DPadUp" => C_ButtonsImgDir^"XB1/DPadUp.dds",
+			"DPadUpDown" => C_ButtonsImgDir^"XB1/DPadUpDown.dds",
+			"DPadLeft" => C_ButtonsImgDir^"XB1/DPadLeft.dds",
+			"DPadRight" => C_ButtonsImgDir^"XB1/DPadRight.dds",
+			"DPadLeftRight" => C_ButtonsImgDir^"XB1/DPadLeftRight.dds",
+			"LStick" => C_ButtonsImgDir^"XB1/LStick.dds",
+			"LStickClick" => C_ButtonsImgDir^"XB1/LStickClick.dds",
+			"LStickDown" => C_ButtonsImgDir^"XB1/LStickDown.dds",
+			"LStickLeft" => C_ButtonsImgDir^"XB1/LStickLeft.dds",
+			"LStickRight" => C_ButtonsImgDir^"XB1/LStickRight.dds",
+			"LStickUp" => C_ButtonsImgDir^"XB1/LStickUp.dds",
+			"RStick" => C_ButtonsImgDir^"XB1/RStick.dds",
+			"RStickClick" => C_ButtonsImgDir^"XB1/RStickClick.dds",
+			"RStickDown" => C_ButtonsImgDir^"XB1/RStickDown.dds",
+			"RStickLeft" => C_ButtonsImgDir^"XB1/RStickLeft.dds",
+			"RStickRight" => C_ButtonsImgDir^"XB1/RStickRight.dds",
+			"RStickUp" => C_ButtonsImgDir^"XB1/RStickUp.dds",
+			"Menu" => C_ButtonsImgDir^"XB1/Menu.dds",
+			"View" => C_ButtonsImgDir^"XB1/View.dds",
+			"LStickMulti" => C_ButtonsImgDir^"XB1/Editor_LStickMulti.dds",
+			"RStickMulti" => C_ButtonsImgDir^"XB1/Editor_RStickMulti.dds"
+		],
+		C_System_PS4 => [
+			"Cross" => C_ButtonsImgDir^"PS4/Cross.dds",
+			"Circle" => C_ButtonsImgDir^"PS4/Circle.dds",
+			"Square" => C_ButtonsImgDir^"PS4/Square.dds",
+			"Triangle" => C_ButtonsImgDir^"PS4/Triangle.dds",
+			"R1" => C_ButtonsImgDir^"PS4/R1.dds",
+			"L1" => C_ButtonsImgDir^"PS4/L1.dds",
+			"R2" => C_ButtonsImgDir^"PS4/R2.dds",
+			"L2" => C_ButtonsImgDir^"PS4/L2.dds",
+			"DPad" => C_ButtonsImgDir^"PS4/DPad.dds",
+			"DPadDown" => C_ButtonsImgDir^"PS4/DPadDown.dds",
+			"DPadUp" => C_ButtonsImgDir^"PS4/DPadUp.dds",
+			"DPadUpDown" => C_ButtonsImgDir^"PS4/DPadUpDown.dds",
+			"DPadLeft" => C_ButtonsImgDir^"PS4/DPadLeft.dds",
+			"DPadRight" => C_ButtonsImgDir^"PS4/DPadRight.dds",
+			"DPadLeftRight" => C_ButtonsImgDir^"PS4/DPadLeftRight.dds",
+			"LStick" => C_ButtonsImgDir^"PS4/LStick.dds",
+			"LStickClick" => C_ButtonsImgDir^"PS4/LStickClick.dds",
+			"LStickDown" => C_ButtonsImgDir^"PS4/LStickDown.dds",
+			"LStickLeft" => C_ButtonsImgDir^"PS4/LStickLeft.dds",
+			"LStickRight" => C_ButtonsImgDir^"PS4/LStickRight.dds",
+			"LStickUp" => C_ButtonsImgDir^"PS4/LStickUp.dds",
+			"RStick" => C_ButtonsImgDir^"PS4/RStick.dds",
+			"RStickClick" => C_ButtonsImgDir^"PS4/RStickClick.dds",
+			"RStickDown" => C_ButtonsImgDir^"PS4/RStickDown.dds",
+			"RStickLeft" => C_ButtonsImgDir^"PS4/RStickLeft.dds",
+			"RStickRight" => C_ButtonsImgDir^"PS4/RStickRight.dds",
+			"RStickUp" => C_ButtonsImgDir^"PS4/RStickUp.dds",
+			"Options" => C_ButtonsImgDir^"PS4/Options.dds",
+			"Share" => C_ButtonsImgDir^"PS4/Share.dds",
+			"TouchPad" => C_ButtonsImgDir^"PS4/TouchPad.dds",
+			"LStickMulti" => C_ButtonsImgDir^"PS4/Editor_LStickMulti.dds",
+			"RStickMulti" => C_ButtonsImgDir^"PS4/Editor_RStickMulti.dds"
+		]
+	];
+	
+	G_Bindings = [
+// ---------------------------------- //
+// Menu
+		C_Menu_Select => [
+			C_System_PC => "Enter",
+			C_System_XB1 => "A",
+			C_System_PS4 => "Cross"
+		],
+		C_Menu_Cancel => [
+			C_System_PC => "Backspace",
+			C_System_XB1 => "B",
+			C_System_PS4 => "Circle"
+		],
+		C_Menu_Action1 => [
+			C_System_PC => "Ctrl",
+			C_System_XB1 => "X",
+			C_System_PS4 => "Square"
+		],
+		C_Menu_Action2 => [
+			C_System_PC => "Shift",
+			C_System_XB1 => "Y",
+			C_System_PS4 => "Triangle"
+		],
+		C_Menu_PageUp => [
+			C_System_PC => "PgUp",
+			C_System_XB1 => "RB",
+			C_System_PS4 => "R1"
+		],
+		C_Menu_PageDown => [
+			C_System_PC => "PgDn",
+			C_System_XB1 => "LB",
+			C_System_PS4 => "L1"
+		],
+		C_Menu_AppMenu => [
+			C_System_PC => "Esc",
+			C_System_XB1 => "Menu",
+			C_System_PS4 => "Options"
+		],
+		C_Menu_PageUp2 => [
+			C_System_PC => "PgUp",
+			C_System_XB1 => "RB_alt",
+			C_System_PS4 => "R1_alt"
+		],
+		C_Menu_PageDown2 => [
+			C_System_PC => "PgDn",
+			C_System_XB1 => "LB_alt",
+			C_System_PS4 => "L1_alt"
+		],
+		C_Menu_View => [
+			C_System_PC => "F1",
+			C_System_XB1 => "View",
+			C_System_PS4 => "TouchPad"
+		],
+// ---------------------------------- //
+// Trackbuilder
+		C_Editor_Menu => [
+			C_System_PC => "Esc",
+			C_System_XB1 => "Menu",
+			C_System_PS4 => "Options"
+		],
+		C_Editor_Valid => [
+			C_System_PC => "Enter",
+			C_System_XB1 => "A",
+			C_System_PS4 => "Cross"
+		],
+		C_Editor_Cancel => [
+			C_System_PC => "Del",
+			C_System_XB1 => "B",
+			C_System_PS4 => "Circle"
+		],
+		C_Editor_AddTerrain => [
+			C_System_PC => "Enter",
+			C_System_XB1 => "A",
+			C_System_PS4 => "Cross"
+		],
+		C_Editor_RemoveTerrain => [
+			C_System_PC => "Del",
+			C_System_XB1 => "B",
+			C_System_PS4 => "Circle"
+		],
+		C_Editor_PlaceBlock => [
+			C_System_PC => "Enter",
+			C_System_XB1 => "A",
+			C_System_PS4 => "Cross"
+		],
+		C_Editor_PlaceBlock_Mouse => [
+			C_System_PC => "LeftClick",
+			C_System_XB1 => "LeftClick",
+			C_System_PS4 => "LeftClick"
+		],
+		C_Editor_RemoveBlock => [
+			C_System_PC => "Del",
+			C_System_XB1 => "B",
+			C_System_PS4 => "Circle"
+		],
+		C_Editor_CutBlock => [
+			C_System_PC => "Del",
+			C_System_XB1 => "B",
+			C_System_PS4 => "Circle"
+		],
+		C_Editor_PasteBlock => [
+			C_System_PC => "Up",
+			C_System_XB1 => "LStickUp",
+			C_System_PS4 => "LStickUp"
+		],
+		C_Editor_DiscardBlock => [
+			C_System_PC => "Down",
+			C_System_XB1 => "LStickDown",
+			C_System_PS4 => "LStickDown"
+		],
+		C_Editor_TurnBlock => [
+			C_System_PC => "Ctrl",
+			C_System_XB1 => "Y",
+			C_System_PS4 => "Triangle"
+		],
+		C_Editor_CopyBlock => [
+			C_System_PC => "Ctrl",
+			C_System_XB1 => "Y",
+			C_System_PS4 => "Triangle"
+		],
+		C_Editor_RaiseBlock => [
+			C_System_PC => "PgUp",
+			C_System_XB1 => "RB",
+			C_System_PS4 => "R1"
+		],
+		C_Editor_LowerBlock => [
+			C_System_PC => "PgDn",
+			C_System_XB1 => "LB",
+			C_System_PS4 => "L1"
+		],
+		C_Editor_RaiseStart => [
+			C_System_PC => "PgUp",
+			C_System_XB1 => "LStickUp",
+			C_System_PS4 => "LStickUp"
+		],
+		C_Editor_LowerStart => [
+			C_System_PC => "PgDn",
+			C_System_XB1 => "LStickDown",
+			C_System_PS4 => "LStickDown"
+		],
+		C_Editor_OpenTest => [
+			C_System_PC => "Space",
+			C_System_XB1 => "X",
+			C_System_PS4 => "Square"
+		],
+		C_Editor_StartTest => [
+			C_System_PC => "Enter",
+			C_System_XB1 => "A",
+			C_System_PS4 => "Cross"
+		],
+		C_Editor_CancelTest => [
+			C_System_PC => "Backspace",
+			C_System_XB1 => "B",
+			C_System_PS4 => "Circle"
+		],
+		C_Editor_SelectConnector => [
+			C_System_PC => "Ctrl",
+			C_System_XB1 => "Y",
+			C_System_PS4 => "Triangle"
+		],
+		C_Editor_RandomLandscape => [
+			C_System_PC => "Ctrl",
+			C_System_XB1 => "Y",
+			C_System_PS4 => "Triangle"
+		],
+		C_Editor_Redo => [
+			C_System_PC => "End",
+			C_System_XB1 => "RT",
+			C_System_PS4 => "R2"
+		],
+		C_Editor_Undo => [
+			C_System_PC => "Home",
+			C_System_XB1 => "LT",
+			C_System_PS4 => "L2"
+		],
+		C_Editor_Disconnect => [
+			C_System_PC => "Shift",
+			C_System_XB1 => "LStickClick",
+			C_System_PS4 => "LStickClick"
+		],
+		C_Editor_BuildMode => [
+			C_System_PC => "Shift",
+			C_System_XB1 => "LStickClick",
+			C_System_PS4 => "LStickClick"
+		],
+		C_Editor_BrowseBlocks => [
+			C_System_PC => "RightClick",
+			C_System_XB1 => "LStick",
+			C_System_PS4 => "LStick"
+		],
+		C_Editor_OpenRosaces => [
+			C_System_PC => "RightClick",
+			C_System_XB1 => "LStick",
+			C_System_PS4 => "LStick"
+		],
+		C_Editor_MoveBlock => [
+			C_System_PC => "DirectionnalButtons",
+			C_System_XB1 => "DPad",
+			C_System_PS4 => "DPad"
+		],
+		C_Editor_MoveBlock_Mouse => [
+			C_System_PC => "LeftClick",
+			C_System_XB1 => "LeftClick",
+			C_System_PS4 => "LeftClick"
+		],
+		C_Editor_CameraMove => [
+			C_System_PC => "Camera",
+			C_System_XB1 => "RStick",
+			C_System_PS4 => "RStick"
+		],
+		C_Editor_CameraZoom => [
+			C_System_PC => "Wheel",
+			C_System_XB1 => "RStickClick",
+			C_System_PS4 => "RStickClick"
+		],
+		C_Editor_AutoConnect => [
+			C_System_PC => "Enter",
+			C_System_XB1 => "A",
+			C_System_PS4 => "Cross"
+		],
+		C_Editor_NextFamily => [
+			C_System_PC => "ArrowRight",
+			C_System_XB1 => "RB",
+			C_System_PS4 => "R1"
+		],
+		C_Editor_PrevFamily => [
+			C_System_PC => "ArrowLeft",
+			C_System_XB1 => "LB",
+			C_System_PS4 => "L1"
+		],
+		C_Editor_NextCategory => [
+			C_System_PC => "ArrowRight",
+			C_System_XB1 => "RT",
+			C_System_PS4 => "R2"
+		],
+		C_Editor_PrevCategory => [
+			C_System_PC => "ArrowLeft",
+			C_System_XB1 => "LT",
+			C_System_PS4 => "L2"
+		],
+		C_Editor_NextMacroblock => [
+			C_System_PC => "ArrowRight",
+			C_System_XB1 => "LStickRight",
+			C_System_PS4 => "LStickRight"
+		],
+		C_Editor_PrevMacroblock => [
+			C_System_PC => "ArrowLeft",
+			C_System_XB1 => "LStickLeft",
+			C_System_PS4 => "LStickLeft"
+		],
+		C_Editor_RandomPlay => [
+			C_System_PC => "Enter",
+			C_System_XB1 => "A",
+			C_System_PS4 => "Cross"
+		],
+		C_Editor_RandomGenerate => [
+			C_System_PC => "Space",
+			C_System_XB1 => "X",
+			C_System_PS4 => "Square"
+		],
+		C_Editor_RandomValidate => [
+			C_System_PC => "Enter",
+			C_System_XB1 => "A",
+			C_System_PS4 => "Cross"
+		],
+		C_Editor_RandomSave => [
+			C_System_PC => "Ctrl",
+			C_System_XB1 => "Y",
+			C_System_PS4 => "Triangle"
+		],
+		C_Editor_DecoGenerate => [
+			C_System_PC => "Enter",
+			C_System_XB1 => "A",
+			C_System_PS4 => "Cross"
+		],
+		C_Editor_DecoValid => [
+			C_System_PC => "Space",
+			C_System_XB1 => "X",
+			C_System_PS4 => "Square"
+		],
+		C_Editor_DecoCancel => [
+			C_System_PC => "Del",
+			C_System_XB1 => "B",
+			C_System_PS4 => "Circle"
+		],
+		C_Editor_DecoDefault => [
+			C_System_PC => "Ctrl",
+			C_System_XB1 => "Y",
+			C_System_PS4 => "Triangle"
+		],
+		C_Editor_RosaceLeft => [
+			C_System_PC => "",
+			C_System_XB1 => "LStickMulti",
+			C_System_PS4 => "LStickMulti"
+		],
+		C_Editor_RosaceRight => [
+			C_System_PC => "",
+			C_System_XB1 => "RStickMulti",
+			C_System_PS4 => "RStickMulti"
+		],
+		C_Editor_RosaceNextFamily => [
+			C_System_PC => "End",
+			C_System_XB1 => "RT",
+			C_System_PS4 => "R2"
+		],
+		C_Editor_RosacePrevFamily => [
+			C_System_PC => "Home",
+			C_System_XB1 => "LT",
+			C_System_PS4 => "L2"
+		],
+		C_Editor_RosaceNextMacroblock => [
+			C_System_PC => "PgDn",
+			C_System_XB1 => "RB",
+			C_System_PS4 => "R1"
+		],
+		C_Editor_RosacePrevMacroblock => [
+			C_System_PC => "PgUp",
+			C_System_XB1 => "LB",
+			C_System_PS4 => "L1"
+		],
+		C_Editor_NextSpawn => [
+			C_System_PC => "ArrowRight",
+			C_System_XB1 => "LStickRight",
+			C_System_PS4 => "LStickRight"
+		],
+		C_Editor_PrevSpawn => [
+			C_System_PC => "ArrowLeft",
+			C_System_XB1 => "LStickLeft",
+			C_System_PS4 => "LStickLeft"
+		],
+		C_Editor_NextSkin => [
+			C_System_PC => "ArrowRight",
+			C_System_XB1 => "LStickRight",
+			C_System_PS4 => "LStickRight"
+		],
+		C_Editor_PrevSkin => [
+			C_System_PC => "ArrowLeft",
+			C_System_XB1 => "LStickLeft",
+			C_System_PS4 => "LStickLeft"
+		],
+		C_Editor_BrowseSkins => [
+			C_System_PC => "Mouse",
+			C_System_XB1 => "LStick",
+			C_System_PS4 => "LStick"
+		],
+		C_Editor_NextDeco => [
+			C_System_PC => "ArrowRight",
+			C_System_XB1 => "RT",
+			C_System_PS4 => "R2"
+		],
+		C_Editor_PrevDeco => [
+			C_System_PC => "ArrowLeft",
+			C_System_XB1 => "LT",
+			C_System_PS4 => "L2"
+		],
+		C_Editor_MoreDeco => [
+			C_System_PC => "PgUp",
+			C_System_XB1 => "RB",
+			C_System_PS4 => "R1"
+		],
+		C_Editor_LessDeco => [
+			C_System_PC => "PgDn",
+			C_System_XB1 => "LB",
+			C_System_PS4 => "L1"
+		],
+		C_Editor_LeaveValidation => [
+			C_System_PC => "Esc",
+			C_System_XB1 => "Menu",
+			C_System_PS4 => "Options"
+		],
+		C_Editor_TakeThumbnail => [
+			C_System_PC => "End",
+			C_System_XB1 => "DPadUp",
+			C_System_PS4 => "DPadUp"
+		]
+	];
+}

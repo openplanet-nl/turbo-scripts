@@ -1,0 +1,479 @@
+/** 
+ * History library for terraforming, track and decoration modes.
+ */
+
+#Const Version		"2015-01-12"
+#Const ScriptName	"History2.Script.txt"
+
+// ---------------------------------- //
+// Constants
+// ---------------------------------- //
+#Const C_LibHistory2_MaxSteps		-1 //75	///< Maximum number of steps saved in the history
+// Actions
+#Const C_LibHistory2_Action_Null	-1
+#Const C_LibHistory2_Action_Add		0
+#Const C_LibHistory2_Action_Remove	1
+
+// ---------------------------------- //
+// Globales
+// ---------------------------------- //
+declare Integer G_LibHistory2_Cursor;				///< Cursor position in the history
+declare Integer[] G_LibHistory2_Action; 			///< Action used
+declare Integer[] G_LibHistory2_Mode;				///< Mode used
+declare Integer[] G_LibHistory2_Bind;				///< Mode used
+declare Ident[][] G_LibHistory2_MacroblockModelsIds;///< Ids of the macroblocks
+declare Int3[][] G_LibHistory2_MacroblocksCoords;	///< Coordinates of the macroblocks
+declare CEditorPlugin::CardinalDirections[][] G_LibHistory2_MacroblocksDirs; ///< Directions of the macroblocks
+// Binded macroblocks
+declare Integer[][Integer] G_LibHistory2_BindActions;	///< Special actions for the macroblocks
+declare Integer[][Integer] G_LibHistory2_BindModes;	///< Special modes for the macroblocks
+declare Ident[][Integer] G_LibHistory2_BindIds;///< Ids of the macroblocks
+declare Int3[][Integer] G_LibHistory2_BindCoords;	///< Coordinates of the macroblocks
+declare CEditorPlugin::CardinalDirections[][Integer] G_LibHistory2_BindDirs; ///< Directions of the macroblocks
+
+// ---------------------------------- //
+// Functions
+// ---------------------------------- //
+// ---------------------------------- // 
+// Private
+// ---------------------------------- //
+// ---------------------------------- //
+/** Remove a bind
+ *
+ *	@param	_Bind					The bind to remove
+ */
+Void Private_RemoveBind(Integer _Bind) {
+	declare Boolean Removed;
+	Removed = G_LibHistory2_BindActions.removekey(_Bind);
+	Removed = G_LibHistory2_BindModes.removekey(_Bind);
+	Removed = G_LibHistory2_BindIds.removekey(_Bind);
+	Removed = G_LibHistory2_BindCoords.removekey(_Bind);
+	Removed = G_LibHistory2_BindDirs.removekey(_Bind);
+}
+
+// ---------------------------------- //
+/// Remove the content of the history after the cursor position
+Void Private_HistorySplice() {
+	if (G_LibHistory2_Cursor >= G_LibHistory2_Action.count - 1) return;
+	
+	declare Target = G_LibHistory2_Cursor + 1;
+	
+	while (G_LibHistory2_Action.count > Target) {
+		declare KeyToRemove = G_LibHistory2_Action.count - 1;
+		declare Boolean Removed;
+		Removed = G_LibHistory2_Action.removekey(KeyToRemove);
+		Removed = G_LibHistory2_Mode.removekey(KeyToRemove);
+		Removed = G_LibHistory2_MacroblockModelsIds.removekey(KeyToRemove);
+		Removed = G_LibHistory2_MacroblocksCoords.removekey(KeyToRemove);
+		Removed = G_LibHistory2_MacroblocksDirs.removekey(KeyToRemove);
+		
+		declare Bind = G_LibHistory2_Bind[KeyToRemove];
+		Removed = G_LibHistory2_Bind.removekey(KeyToRemove);
+		Private_RemoveBind(Bind);
+	}
+	
+	G_LibHistory2_Cursor = G_LibHistory2_Action.count - 1;
+}
+
+// ---------------------------------- //
+/// Remove steps that are over the maximum steps limit
+Void Private_RemoveExcess() {
+	if (C_LibHistory2_MaxSteps < 0) return; //< No limit
+	
+	// Remove first step if we hit the maximum save step
+	while (G_LibHistory2_Action.count > C_LibHistory2_MaxSteps) {
+		declare Boolean Removed;
+		Removed = G_LibHistory2_Action.removekey(0);
+		Removed = G_LibHistory2_Mode.removekey(0);
+		Removed = G_LibHistory2_MacroblockModelsIds.removekey(0);
+		Removed = G_LibHistory2_MacroblocksCoords.removekey(0);
+		Removed = G_LibHistory2_MacroblocksDirs.removekey(0);
+		
+		declare Bind = G_LibHistory2_Bind[0];
+		Removed = G_LibHistory2_Bind.removekey(0);
+		Private_RemoveBind(Bind);
+	}
+}
+
+// ---------------------------------- //
+// Public
+// ---------------------------------- //
+// ---------------------------------- //
+/** Return the version number of the script
+ *
+ *	@return							The version number of the script
+ */
+Text GetScriptVersion() {
+	return Version;
+}
+
+// ---------------------------------- //
+/** Return the name of the script
+ *
+ *	@return							The name of the script
+ */
+Text GetScriptName() {
+	return ScriptName;
+}
+
+// ---------------------------------- //
+/** Return the actions constants
+ *
+ *	@return							The action constant
+ */
+Integer Action_Null() { return C_LibHistory2_Action_Null; }
+Integer Action_Add() { return C_LibHistory2_Action_Add; }
+Integer Action_Remove() { return C_LibHistory2_Action_Remove; }
+
+// ---------------------------------- //
+/** Save a new state in the history
+ *
+ *	@param	_Action					The action to save
+ *	@param	_Mode					The mode to save
+ *	@param	_MacroblockModelsIds	The ids of the macroblock models
+ *	@param	_MacroblocksCoords		The coordinates of the macroblocks
+ *	@param	_MacroblocksDirs		The directions of the macroblocks
+ */
+Void Save(Integer _Action, Integer _Mode, Ident[] _MacroblockModelsIds, Int3[] _MacroblocksCoords, CEditorPlugin::CardinalDirections[] _MacroblocksDirs) {
+	if (_Action != C_LibHistory2_Action_Add && _Action != C_LibHistory2_Action_Remove) return;
+		
+	// Overwrite the history after the cursor
+	Private_HistorySplice();
+	
+	G_LibHistory2_Action.add(_Action);
+	G_LibHistory2_Mode.add(_Mode);
+	G_LibHistory2_Bind.add(-1);
+	G_LibHistory2_MacroblockModelsIds.add(_MacroblockModelsIds);
+	G_LibHistory2_MacroblocksCoords.add(_MacroblocksCoords);
+	G_LibHistory2_MacroblocksDirs.add(_MacroblocksDirs);
+	
+	Private_RemoveExcess();
+	
+	G_LibHistory2_Cursor = G_LibHistory2_Action.count - 1;
+}
+
+// ---------------------------------- //
+/** Save a new state in the history
+ *
+ *	@param	_Action					The action to save
+ *	@param	_Mode					The mode to save
+ *	@param	_MacroblockModelId		The id of the macroblock
+ *	@param	_MacroblockCoord		The coordinates of the macroblock
+ *	@param	_MacroblockDir			The direction of the macroblock
+ */
+Void Save(Integer _Action, Integer _Mode, Ident _MacroblockModelId, Int3 _MacroblockCoord, CEditorPlugin::CardinalDirections _MacroblockDir) {
+	Save(_Action, _Mode, [_MacroblockModelId], [_MacroblockCoord], [_MacroblockDir]);
+}
+
+// ---------------------------------- //
+/** Bind macroblocks to the current history step
+ *
+ *	@param	_Actions				The actions to save
+ *	@param	_Modes					The modes to save
+ *	@param	_MacroblockModelsIds	The ids of the macroblock models
+ *	@param	_MacroblocksCoords		The coordinates of the macroblocks
+ *	@param	_MacroblocksDirs		The directions of the macroblocks
+ */
+Void Bind(
+	Integer[] _Actions,
+	Integer[] _Modes,
+	Ident[] _MacroblockModelsIds,
+	Int3[] _MacroblocksCoords,
+	CEditorPlugin::CardinalDirections[] _MacroblocksDirs
+) {
+	if (_Actions.count <= 0) return;
+	if (!G_LibHistory2_Bind.existskey(G_LibHistory2_Cursor)) return;
+	
+	declare BindKey = 0;
+	for (I, 0, G_LibHistory2_BindActions.count) {
+		if (!G_LibHistory2_BindActions.existskey(I)) {
+			BindKey = I;
+			break;
+		}
+	}
+	G_LibHistory2_BindActions[BindKey] = _Actions;
+	G_LibHistory2_BindModes[BindKey] = _Modes;
+	G_LibHistory2_BindIds[BindKey] = _MacroblockModelsIds;
+	G_LibHistory2_BindCoords[BindKey] = _MacroblocksCoords;
+	G_LibHistory2_BindDirs[BindKey] = _MacroblocksDirs;
+
+	G_LibHistory2_Bind[G_LibHistory2_Cursor] = BindKey;
+}
+
+// ---------------------------------- //
+/// Clear all states from the history
+Void Clear() {
+	G_LibHistory2_Cursor = -1;
+	G_LibHistory2_Action.clear();
+	G_LibHistory2_Mode.clear();
+	G_LibHistory2_Bind.clear();
+	G_LibHistory2_MacroblockModelsIds.clear();
+	G_LibHistory2_MacroblocksCoords.clear();
+	G_LibHistory2_MacroblocksDirs.clear();
+	
+	G_LibHistory2_BindActions.clear();
+	G_LibHistory2_BindModes.clear();
+	G_LibHistory2_BindIds.clear();
+	G_LibHistory2_BindCoords.clear();
+	G_LibHistory2_BindDirs.clear();
+}
+
+// ---------------------------------- //
+/** Get the number of steps saved in the history
+ *
+ *	@return							The number of steps saved in the history
+ */
+Integer Count() {
+	return G_LibHistory2_Action.count;
+}
+
+// ---------------------------------- //
+/** Get the position of the cursor in the history
+ *
+ *	@return							The position of the cursor
+ */
+Integer GetCursor() {
+	return G_LibHistory2_Cursor;
+}
+
+// ---------------------------------- //
+/** Get the action at the given cursor
+ *
+ *	@param	_Cursor					The cursor position
+ *
+ *	@return							The action
+ */
+Integer GetAction(Integer _Cursor) {
+	if (!G_LibHistory2_Action.existskey(_Cursor)) return C_LibHistory2_Action_Null;
+	
+	return G_LibHistory2_Action[_Cursor];
+}
+
+// ---------------------------------- //
+/** Get the action at the current cursor
+ *
+ *	@return							The action
+ */
+Integer GetAction() {
+	if (G_LibHistory2_Cursor < 0) return C_LibHistory2_Action_Null;
+	
+	return G_LibHistory2_Action[G_LibHistory2_Cursor];
+}
+
+// ---------------------------------- //
+/** Get the mode at the given cursor
+ *
+ *	@param	_Cursor					The cursor position
+ *
+ *	@return							The mode
+ */
+Integer GetMode(Integer _Cursor) {
+	if (!G_LibHistory2_Mode.existskey(_Cursor)) return -1;
+	
+	return G_LibHistory2_Mode[_Cursor];
+}
+
+// ---------------------------------- //
+/** Get the mode at the current cursor
+ *
+ *	@return							The mode
+ */
+Integer GetMode() {
+	if (G_LibHistory2_Cursor < 0) return -1;
+	
+	return G_LibHistory2_Mode[G_LibHistory2_Cursor];
+}
+
+// ---------------------------------- //
+/** Get the macroblocks models ids at the given cursor
+ *
+ *	@param	_Cursor					The cursor position
+ *
+ *	@return							The macroblocks models ids
+ */
+Ident[] GetMacroblockModelsIds(Integer _Cursor) {
+	if (!G_LibHistory2_MacroblockModelsIds.existskey(_Cursor)) return Ident[];
+	
+	return G_LibHistory2_MacroblockModelsIds[_Cursor];
+}
+
+// ---------------------------------- //
+/** Get the macroblocks models ids at the current cursor
+ *
+ *	@return							The macroblocks models ids
+ */
+Ident[] GetMacroblockModelsIds() {
+	if (G_LibHistory2_Cursor < 0) return Ident[];
+	
+	return G_LibHistory2_MacroblockModelsIds[G_LibHistory2_Cursor];
+}
+
+// ---------------------------------- //
+/** Get the macroblocks coordinates at the given cursor
+ *
+ *	@param	_Cursor					The cursor position
+ *
+ *	@return							The macroblocks coordinates
+ */
+Int3[] GetMacroblocksCoords(Integer _Cursor) {
+	if (!G_LibHistory2_MacroblocksCoords.existskey(_Cursor)) return Int3[];
+	
+	return G_LibHistory2_MacroblocksCoords[_Cursor];
+}
+
+// ---------------------------------- //
+/** Get the macroblocks coordinates at the current cursor
+ *
+ *	@return							The macroblocks coordinates
+ */
+Int3[] GetMacroblocksCoords() {
+	if (G_LibHistory2_Cursor < 0) return Int3[];
+	
+	return G_LibHistory2_MacroblocksCoords[G_LibHistory2_Cursor];
+}
+
+// ---------------------------------- //
+/** Get the macroblocks directions at the given cursor
+ *
+ *	@param	_Cursor					The cursor position
+ *
+ *	@return							The macroblocks directions
+ */
+CEditorPlugin::CardinalDirections[] GetMacroblocksDirs(Integer _Cursor) {
+	if (!G_LibHistory2_MacroblocksDirs.existskey(_Cursor)) return CEditorPlugin::CardinalDirections[];
+	
+	return G_LibHistory2_MacroblocksDirs[_Cursor];
+}
+
+// ---------------------------------- //
+/** Get the macroblocks directions at the current cursor
+ *
+ *	@return							The macroblocks directions
+ */
+CEditorPlugin::CardinalDirections[] GetMacroblocksDirs() {
+	if (G_LibHistory2_Cursor < 0) return CEditorPlugin::CardinalDirections[];
+	
+	return G_LibHistory2_MacroblocksDirs[G_LibHistory2_Cursor];
+}
+
+// ---------------------------------- //
+/** Get the bind at the given cursor
+ *
+ *	@param	_Cursor					The cursor position
+ *
+ *	@return							The mode
+ */
+Integer GetBind(Integer _Cursor) {
+	if (!G_LibHistory2_Mode.existskey(_Cursor)) return -1;
+	
+	return G_LibHistory2_Bind[_Cursor];
+}
+
+// ---------------------------------- //
+/** Get the bind at the current cursor
+ *
+ *	@return							The mode
+ */
+Integer GetBind() {
+	if (G_LibHistory2_Cursor < 0) return -1;
+	
+	return G_LibHistory2_Bind[G_LibHistory2_Cursor];
+}
+
+// ---------------------------------- //
+/** Get the binded actions at the current cursor
+ *
+ *	@return							The actions
+ */
+Integer[] GetBindActions() {
+	declare BindKey = GetBind(G_LibHistory2_Cursor);
+	if (!G_LibHistory2_BindActions.existskey(BindKey)) return Integer[];
+	
+	return G_LibHistory2_BindActions[BindKey];
+}
+
+// ---------------------------------- //
+/** Get the binded modes at the current cursor
+ *
+ *	@return							The modes
+ */
+Integer[] GetBindModes() {
+	declare BindKey = GetBind(G_LibHistory2_Cursor);
+	if (!G_LibHistory2_BindModes.existskey(BindKey)) return Integer[];
+	
+	return G_LibHistory2_BindModes[BindKey];
+}
+
+// ---------------------------------- //
+/** Get the binded macroblocks models ids at the current cursor
+ *
+ *	@return							The macroblocks models ids
+ */
+Ident[] GetBindIds() {
+	declare BindKey = GetBind(G_LibHistory2_Cursor);
+	if (!G_LibHistory2_BindIds.existskey(BindKey)) return Ident[];
+	
+	return G_LibHistory2_BindIds[BindKey];
+}
+
+// ---------------------------------- //
+/** Get the binded macroblocks coordinates at the current cursor
+ *
+ *	@return							The macroblocks coordinates
+ */
+Int3[] GetBindCoords() {
+	declare BindKey = GetBind(G_LibHistory2_Cursor);
+	if (!G_LibHistory2_BindCoords.existskey(BindKey)) return Int3[];
+	
+	return G_LibHistory2_BindCoords[BindKey];
+}
+
+// ---------------------------------- //
+/** Get the binded macroblocks directions at the current cursor
+ *
+ *	@return							The macroblocks directions
+ */
+CEditorPlugin::CardinalDirections[] GetBindDirs() {
+	declare BindKey = GetBind(G_LibHistory2_Cursor);
+	if (!G_LibHistory2_BindDirs.existskey(BindKey)) return CEditorPlugin::CardinalDirections[];
+	
+	return G_LibHistory2_BindDirs[BindKey];
+}
+
+// ---------------------------------- //
+/** Move the cursor backward in the history
+ *
+ *	@return							True if undo succeed, False otherwise
+ */
+Boolean Undo() {
+	if (G_LibHistory2_Cursor < 0) return False;
+	
+	G_LibHistory2_Cursor -= 1;
+	
+	return True;
+}
+
+// ---------------------------------- //
+/** Move the cursor forward in the history
+ *
+ *	@return							True if redo succeed, False otherwise
+ */
+Boolean Redo() {
+	if (G_LibHistory2_Cursor >= G_LibHistory2_Action.count - 1) return False;
+	
+	G_LibHistory2_Cursor += 1;
+	
+	return True;
+}
+
+// ---------------------------------- //
+/// Unload the library
+Void Unload() {
+	Clear();
+}
+
+// ---------------------------------- //
+/// Load the library
+Void Load() {
+	Unload();
+}

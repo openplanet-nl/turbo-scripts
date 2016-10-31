@@ -1,0 +1,246 @@
+/** 
+ * Terrain preview UI
+ */
+
+#Const Version		"2016-01-18"
+#Const ScriptName	"TerrainPreview.Script.txt"
+
+#Include "Libs/Openplanet/Manialink3.Script.txt" as Manialink
+#Include "Libs/Openplanet/TMConsole/MapEditor/Layers.Script.txt" as Layers
+#Include "Libs/Openplanet/TMConsole/MapEditor/UI/Stylesheet.Script.txt" as Styles
+
+// ---------------------------------- //
+// Constants
+// ---------------------------------- //
+#Const C_ImagesFolder	"file://Media/Images/TMConsole/MapEditor/Terrains/"
+
+// ---------------------------------- //
+// Functions
+// ---------------------------------- //
+// ---------------------------------- //
+// Private
+// ---------------------------------- //
+// ---------------------------------- //
+/** Get the terrain preview manialink
+ *
+ *	@return						The manialink
+ */
+Text Private_GetTerrainPreviewML() {
+	declare LoadingPosY = Styles::Margin_Bottom() + Styles::GetSize2(<0., 3.>, Styles::CircleSize_Bottom()).Y;
+	
+	return """
+<manialink version="3" name="MapEditor:Terrain-preview">
+<stylesheet>
+	{{{Styles::Get()}}}
+</stylesheet>
+<frame z-index="-100" id="Frame_Global">
+	<frame z-index="0" id="Frame_Terrains">
+		<quad z-index="0" size="320 180" halign="center" valign="center" keepratio="fit" id="Quad_Current" />
+		<quad z-index="1" size="320 180" halign="center" valign="center" keepratio="fit" id="Quad_Next" />
+	</frame>
+	<frame pos="0 {{{LoadingPosY}}}" z-index="1" id="Frame_Loading">
+		<label halign="center" valign="bottom" text="{{{_("Loading")}}}" hidden="1" class="turbo2-text-title-big" id="Label_Loading" />
+	</frame>
+</frame>
+<script><!--
+{{{Manialink::DefaultIncludes()}}}
+
+{{{Manialink::Animations(["EaseOutQuad"])}}}
+{{{Manialink::Function("AnimRepeat")}}}
+
+Void SetTerrains(Text[] _Terrains, Integer _Shift) {
+	declare Frame_Terrains <=> (Page.GetFirstChild("Frame_Terrains") as CMlFrame);
+	declare Quad_Current <=> (Frame_Terrains.GetFirstChild("Quad_Current") as CMlQuad);
+	declare Quad_Next <=> (Frame_Terrains.GetFirstChild("Quad_Next") as CMlQuad);
+	
+	if (_Terrains[0] != "") Quad_Current.ImageUrl = "{{{C_ImagesFolder}}}"^Editor.Map.CollectionName^"/"^_Terrains[0]^".dds";
+	else Quad_Current.ImageUrl = "";
+	if (_Terrains[1] != "") Quad_Next.ImageUrl = "{{{C_ImagesFolder}}}"^Editor.Map.CollectionName^"/"^_Terrains[1]^".dds";
+	else Quad_Next.ImageUrl = "";
+	
+	if (_Shift < 0) {
+		Quad_Current.RelativePosition_V3.X = 0.;
+		Quad_Next.RelativePosition_V3.X = -320.;
+		Quad_Current.Opacity = 1.;
+		Quad_Next.Opacity = 1.;
+		LibManialink_Anim({{{Manialink::Inject("""<frame pos="320 0" id="Quad_Current" />""")}}}, 250, "EaseOutQuad");
+		LibManialink_Anim({{{Manialink::Inject("""<frame pos="0 0" id="Quad_Next" />""")}}}, 250, "EaseOutQuad");
+	} else if (_Shift > 0) {
+		Quad_Current.RelativePosition_V3.X = 0.;
+		Quad_Next.RelativePosition_V3.X = 320.;
+		Quad_Current.Opacity = 1.;
+		Quad_Next.Opacity = 1.;
+		LibManialink_Anim({{{Manialink::Inject("""<frame pos="-320 0" id="Quad_Current" />""")}}}, 250, "EaseOutQuad");
+		LibManialink_Anim({{{Manialink::Inject("""<frame pos="0 0" id="Quad_Next" />""")}}}, 250, "EaseOutQuad");
+	} else {
+		Quad_Current.RelativePosition_V3.X = 0.;
+		Quad_Next.RelativePosition_V3.X = 0.;
+		Quad_Current.Opacity = 1.;
+		Quad_Next.Opacity = 0.;
+		LibManialink_Anim({{{Manialink::Inject("""<frame opacity="0" id="Quad_Current" />""")}}}, 500, "EaseOutQuad");
+		LibManialink_Anim({{{Manialink::Inject("""<frame opacity="1" id="Quad_Next" />""")}}}, 500, "EaseOutQuad");
+	}
+}
+
+Void SetVisibility(Boolean _Visible) {
+	declare Frame_Terrains <=> (Page.GetFirstChild("Frame_Terrains") as CMlFrame);
+	Frame_Terrains.Visible = _Visible;
+}
+
+Void SetLoading(Boolean _IsLoading) {
+	declare Frame_Loading <=> (Page.GetFirstChild("Frame_Loading") as CMlFrame);
+	declare Label_Loading <=> (Frame_Loading.GetFirstChild("Label_Loading") as CMlLabel);
+	
+	if (_IsLoading) {
+		Label_Loading.Visible = True;
+		Label_Loading.Opacity = 0.;
+		LibManialink_AnimRepeatStart(500);
+		LibManialink_Anim(Label_Loading, {{{Manialink::Inject("""<label opacity="1" />""")}}}, 200, "EaseOutBack");
+		LibManialink_AnimChain(Label_Loading, {{{Manialink::Inject("""<label opacity="0.3" />""")}}}, 200, "EaseOutBack");
+		LibManialink_AnimRepeatEnd();
+	} else {
+		LibManialink_AnimStop(Label_Loading);
+		LibManialink_Anim(Label_Loading, {{{Manialink::Inject("""<label opacity="0" hidden="1" />""")}}}, 500, "");
+	}
+}
+
+main() {
+	declare L_TerrainsUpdate for Page = -1;
+	declare L_Terrains for Page = Text[];
+	declare L_Shift for Page = 0;
+	declare L_Visibility for Page = False;
+	declare L_IsLoading for Page = False;
+	
+	declare PrevTerrainsUpdate = -1;
+	declare PrevVisibility = False;
+	declare PrevIsLoading = False;
+	
+	while (True) {
+		yield;
+		
+		LibManialink_AnimLoop();
+		
+		if (PrevTerrainsUpdate != L_TerrainsUpdate) {
+			PrevTerrainsUpdate = L_TerrainsUpdate;
+			
+			SetTerrains(L_Terrains, L_Shift);
+		}
+		
+		if (PrevVisibility != L_Visibility) {
+			PrevVisibility = L_Visibility;
+			
+			SetVisibility(L_Visibility);
+		}
+		
+		if (PrevIsLoading != L_IsLoading) {
+			PrevIsLoading = L_IsLoading;
+			
+			SetLoading(L_IsLoading);
+		}
+	}
+}
+--></script>
+</manialink>	
+""";
+}
+
+// ---------------------------------- //
+// Public
+// ---------------------------------- //
+// ---------------------------------- //
+/** Return the version number of the script
+ *
+ *	@return						The version number of the script
+ */
+Text GetScriptVersion() {
+	return Version;
+}
+
+// ---------------------------------- //
+/** Return the name of the script
+ *
+ *	@return						The name of the script
+ */
+Text GetScriptName() {
+	return ScriptName;
+}
+
+// ---------------------------------- //
+/** Set the terrain to display
+ *
+ *	@param	_Current				The terrain that was displayed
+ *	@param	_Next					The terrain to display
+ *	@param	_Shift					Direction of the move (-1 left, 0 down, 1 right)
+ */
+Void SetTerrains(Text _Current, Text _Next, Integer _Shift) {
+	declare Page <=> Layers::GetPage("TerrainPreview");
+	declare L_TerrainsUpdate for Page = -1;
+	declare L_Terrains for Page = Text[];
+	declare L_Shift for Page = 0;
+	L_Terrains = [_Current, _Next];
+	L_Shift = _Shift;
+	L_TerrainsUpdate = Now;
+}
+
+// ---------------------------------- //
+/** Enable or disable the loading UI
+ *
+ *	@param	_IsLoading				True to display the UI, False to hide it
+ */
+Void Loading(Boolean _IsLoading) {
+	declare Page <=> Layers::GetPage("TerrainPreview");
+	declare L_IsLoading for Page = False;
+	L_IsLoading = _IsLoading;
+}
+
+// ---------------------------------- //
+/** Set the terrain preview visibility
+ *
+ *	@param	_Visible			Show the terrain preview if True
+ */
+Void SetVisibility(Boolean _Visible) {
+	declare Page <=> Layers::GetPage("TerrainPreview");
+	declare L_Visibility for Page = False;
+	L_Visibility = _Visible;
+}
+
+// ---------------------------------- //
+/// Show the terrain preview
+Void Show() {
+	SetVisibility(True);
+}
+
+// ---------------------------------- //
+/// Hide the terrain preview
+Void Hide() {
+	SetVisibility(False);
+}
+
+// ---------------------------------- //
+/// Unload the library
+Void Unload() {
+	Layers::Destroy("TerrainPreview");
+	//Layers::Unload();
+}
+
+// ---------------------------------- //
+/// Load the library
+Void Load() {
+	Unload();
+	
+	//Layers::Load();
+	declare LayerTerrainPreview <=> Layers::Create("TerrainPreview");
+	LayerTerrainPreview.ManialinkPage = Private_GetTerrainPreviewML();
+	
+	declare Page <=> LayerTerrainPreview.LocalPage;
+	declare L_TerrainsUpdate for Page = -1;
+	declare L_Terrains for Page = Text[];
+	declare L_Shift for Page = 0;
+	declare L_Visibility for Page = False;
+	declare L_IsLoading for Page = False;
+	L_Terrains.clear();
+	L_Shift = 0;
+	L_TerrainsUpdate = -1;
+	L_Visibility = False;
+	L_IsLoading = False;
+}

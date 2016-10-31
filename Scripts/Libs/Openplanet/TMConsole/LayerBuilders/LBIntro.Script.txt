@@ -1,0 +1,142 @@
+
+#Include "Libs/Openplanet/TMConsole/BuilderHelper.Script.txt"	as BuilderHelper
+#Include "Libs/Openplanet/TMConsole/Volumes.Script.txt"			as Volumes
+
+#Const C_ImgBase	"file://Media/Manialinks/Nadeo/TMConsole/Images/"
+
+#Const C_IntroMusic  "file://Media/Sounds/TMConsole/tm2h_cine_preview07.ogg"
+ 
+Text Build(Text _ShowAnim, Text _HideAnim) {
+
+
+	declare Text PathVideoIntro = "file://Media/Manialinks/Nadeo/TMConsole/Video/tmce_cine_preview07.webm";
+	
+	declare Text MLText = """
+	
+	
+	<frame id="Frame_All">
+		
+		
+		<quad id="Quad_Black" halign="center" valign="center"
+		sizen="320 180"  posn="0 0 1" opacity="1." bgcolor="000"
+		/>
+		<label halign="center" valign="center" style="TextButtonBig" posn="0 0 2" id="Label_Intro" textsize="43" text="Nadeo" textcolor="fff" opacity="0."/>
+		
+		<quad id="VideoIntro" halign="center" valign="center"
+		sizen="320 180" scale="1." image="{{{C_ImgBase^"SystemStartBg2.dds"}}}" posn="0 0 50"
+		/>
+	</frame>
+	
+	
+	<script><!--
+		#Const DebugName  "L_Intro"
+		
+		declare Integer G_LockInput;
+		declare CVideo 		 G_IntroVideo;
+		declare CAudioSource G_IntroMusic;
+
+		Void Start()
+		{
+			if(! PageIsVisible) return;
+			
+			G_IntroMusic.Stop();
+			G_IntroVideo.Stop();
+			
+			G_IntroMusic.Play();
+			G_IntroVideo.Play();
+
+			SendCustomEvent("MuteSFX", [""]);
+
+			Audio.LimitMusicVolumedB = -100.;
+		}
+
+		Void Stop()
+		{
+			G_IntroVideo.Stop();
+			G_IntroMusic.Stop();
+			Audio.LimitMusicVolumedB = 0.;
+		}
+		
+		main() {
+			yield;	// delay the loading to the next frame, displying an image similar to the first frame of the video while loading.
+			
+			// init intro video
+			declare Looping = False;
+			G_IntroMusic 				= Audio.CreateSound("{{{C_IntroMusic}}}", {{{Volumes::GetVolumedB("MenuMusicVideoIntro")}}}, False, Looping, False);
+			G_IntroMusic.PanRadiusLfe 	= {{{Volumes::GetPanRadiusLfe("MenuUISpreadLarge")}}};
+			G_IntroVideo = Video.CreateVideo("{{{PathVideoIntro}}}", Looping, True);
+			//G_IntroVideo.TextureFilter = CVideo::ETextureFilter::Point;
+			
+			yield;	// finish loading pour bien synchro audio/video
+			
+			declare CMlQuad VideoTransition <=> (Page.GetFirstChild("VideoIntro") as CMlQuad);
+			VideoTransition.Image = G_IntroVideo.Image;
+			
+			{{{BuilderHelper::MLEnableMenuNavigationInputs()}}}
+			EnableMenuNavigation(True,False,Null,1);
+			declare Boolean IntroVideoAlreadyLaunch = False;
+
+			while(True) {
+				if (PageIsVisible && G_IntroVideo != Null && !G_IntroVideo.IsPlaying) {
+					if(IntroVideoAlreadyLaunch)
+					{
+						declare Boolean	Net_SkipIntro		for Page;
+						Net_SkipIntro = True;
+					}
+					else
+					{
+						IntroVideoAlreadyLaunch = True;
+						Start();
+					}
+				}
+
+				if(G_IntroVideo.PlayCursor> 6.0)
+				{
+					declare Boolean	Net_CanSkipIntro		for Page;
+					Net_CanSkipIntro = True;
+				}
+				yield;
+				/*
+				if(! PageIsVisible) continue;
+				
+				foreach(Event in PendingEvents) {
+					if(G_LockInput + 100 > Now) continue;
+					switch(Event.Type) {
+
+						case CMlEvent::Type::MenuNavigation: {
+							switch(Event.MenuNavAction) {
+								case CMlEvent::EMenuNavAction::Select : {
+									Stop();
+									SendCustomEvent("GotoPage", ["StartDemo"]);
+								}
+							}
+						}
+						
+						case CMlEvent::Type::PluginCustomEvent: {
+							
+							switch(Event.PluginCustomEventType) {
+								case "Show" : {
+									EnableMenuNavigation(True,False,Null,1);
+									Start();
+									G_LockInput              = Now;
+									{{{_ShowAnim}}}
+								}
+								
+								case "Hide" : {
+									Stop();
+									{{{_HideAnim}}}
+									Video.DestroyVideo(G_IntroVideo);
+									SendCustomEvent("DetachPage", ["Intro"]);
+								}
+							}
+						}
+					}
+				}
+				*/
+			}
+		}
+	--></script>
+	""";
+	
+	return MLText;
+}

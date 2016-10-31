@@ -1,0 +1,156 @@
+/** 
+ *	MapType synchronization library
+ */
+#Const Version		"2015-10-30"
+#Const ScriptName	"MapTypeSynchro.Script.txt"
+
+#Include "Libs/Openplanet/TMConsole/MapEditor/Layers.Script.txt" 	as Layers
+#Include "Libs/Openplanet/TMConsole/UbisoftClubPopup.Script.txt"		as UbisoftClubPopup
+#Include "Libs/Openplanet/TMConsole/Logger.Script.txt" 				as Logger
+
+// ---------------------------------- //
+// Constants
+// ---------------------------------- //
+/// Achievements
+#Const C_MnemoTrackValidated	"OnTrackValidated"
+/// UPlay actions
+#Const C_UPLAYTrackValidated		"2"
+#Const C_UPLAYTrackValidatedLabel	_("A whole new world")
+
+/// Environments
+#Const C_Enviro_Null	-1
+#Const C_Enviro_Canyon	0
+#Const C_Enviro_Valley	1
+#Const C_Enviro_Lagoon	2
+#Const C_Enviro_Stadium	3
+
+/// Editor modes
+#Const C_Editor_Simple	0
+#Const C_Editor_Normal	1
+#Const C_Editor_Expert	2
+#Const C_Editor_Random	3
+
+// ---------------------------------- //
+// Functions
+// ---------------------------------- //
+// ---------------------------------- //
+// Private
+// ---------------------------------- //
+Void Private_SendAchievementEvent(Text _EventMnemo, Integer[] _Values) {
+	ManiaPlanet.AchievementsManager.SendEvent(DataMgr.MenuUserId, _EventMnemo, _Values);
+	// log(Now^"> [SendAchievementEvent]"^_EventMnemo^": "^_Values);
+}
+
+Void Private_SendNewMapTrackingEvent(Text _TextEnviro, Boolean _IsRandomlyGenerated) {
+	ManiaPlanet.MasterServer_Tracking_NewMapCreated(DataMgr.MenuUserId, _TextEnviro, _IsRandomlyGenerated);
+	// log(Now^"> [MasterServer_Tracking_NewMapCreated] Enviro "^_TextEnviro^", isRandom? "^_IsRandomlyGenerated);
+}
+
+
+Void Private_SendUplayActionEvent(Text _ActionID, Text _ActionLabel, Boolean _ShowPopup) {
+	if(!ManiaPlanet.AchievementsManager.MasterServer_IsUplayActionCompleted(DataMgr.MenuUserId, _ActionID)) {
+		ManiaPlanet.AchievementsManager.MasterServer_UplayCompleteAction(DataMgr.MenuUserId, _ActionID);
+		
+		declare Integer PopupContext = 2;  // 2 = editor
+		
+		declare CGameAchievementScriptUplayAction TheAction = ManiaPlanet.AchievementsManager.MasterServer_GetUplayAction(DataMgr.MenuUserId, _ActionID);
+		
+		declare Text ActionName 		= _ActionLabel;
+		declare Text ActionDesc 		= "";
+		declare Integer ActionValue 	= 0;
+		
+		if(TheAction != Null) {
+			ActionName = TheAction.Name;
+			ActionDesc = TheAction.Description;
+			ActionValue = TheAction.Value;
+		} else {
+			Logger::Warn("Unknown UplayAction: "^_ActionID^", "^_ActionLabel);
+		}
+		
+		UbisoftClubPopup::ShowUplayPopup(_ActionID, ActionName, ActionDesc, ActionValue, LocalUser, PopupContext, _ShowPopup);
+		Logger::Log("[SendUplayActionEvent]"^_ActionID^" new!");
+	} else {
+		Logger::Log("[SendUplayActionEvent]"^_ActionID^" already completed.");
+	}
+}
+
+// ---------------------------------- //
+/** Create the Ubi pop-up manialink
+ *
+ *	@return					The manialink text
+ */
+Void Private_CreateUbiClubPopupLayer() {
+	// ça c'est défini à la création de la layer, et utilisé dans UbisoftClubPopup
+	// pour différencier les contextes d'apparition de la popup.
+	declare Text MLText = UbisoftClubPopup::CreateLayer(2);   // 2 = trackbuilder
+	
+	Layers::Destroy("UbiClubPopup");
+	declare UbiClubPopupLayer <=> Layers::Create("UbiClubPopup");
+	UbiClubPopupLayer.ManialinkPage = MLText;
+	//Layers::Attach("UbiClubPopup");
+}
+
+// ---------------------------------- //
+// Public
+// ---------------------------------- //
+// ---------------------------------- //
+/// Get the environement constants
+Integer Enviro_Canyon() { return C_Enviro_Canyon; }
+Integer Enviro_Valley() { return C_Enviro_Valley; }
+Integer Enviro_Lagoon() { return C_Enviro_Lagoon; }
+Integer Enviro_Stadium() { return C_Enviro_Stadium; }
+
+// ---------------------------------- //
+/// Get the editor mode constants
+Integer Editor_Simple() { return C_Editor_Simple; }
+Integer Editor_Normal() { return C_Editor_Normal; }
+Integer Editor_Expert() { return C_Editor_Expert; }
+Integer Editor_Random() { return C_Editor_Random; }
+
+// ---------------------------------- //
+/**	Trigger the "TrackValidated" event
+ *
+ *	@param	_Mode					Editor mode ->0 = Simple, 1 = Normal, 2 = Expert, 3 = RandomGen
+ */
+Void TrackValidated(Integer _Mode) {
+	if (
+		_Mode != C_Editor_Simple &&
+		_Mode != C_Editor_Normal &&
+		_Mode != C_Editor_Expert &&
+		_Mode != C_Editor_Random
+	) {
+		return;
+	}
+	
+	declare Integer Enviro 		= C_Enviro_Null;
+	declare Text 	TextEnviro 	= Map.CollectionName;
+	
+	switch (TextEnviro) {
+		case "Canyon"	: Enviro = C_Enviro_Canyon;
+		case "Valley"	: Enviro = C_Enviro_Valley;
+		case "Lagoon"	: Enviro = C_Enviro_Lagoon;
+		case "Stadium"	: Enviro = C_Enviro_Stadium;
+	}
+	if (Enviro == C_Enviro_Null) return;
+	
+	Private_SendUplayActionEvent(C_UPLAYTrackValidated, C_UPLAYTrackValidatedLabel, True);
+	
+	declare Boolean IsRandomGen = (_Mode == C_Editor_Random);
+	Private_SendNewMapTrackingEvent(TextEnviro, IsRandomGen);
+	
+	if(IsRandomGen) {
+		// Le troisième param est "isRandom"
+		// (contrainte liée au XDP microsoft)
+		Private_SendAchievementEvent(C_MnemoTrackValidated, [_Mode, Enviro, 1]);
+		// Logger::Log("Private_SendAchievementEvent C_MnemoTrackValidated, [_Mode, Enviro, 1] :  "^C_MnemoTrackValidated^"  "^[_Mode, Enviro, 1]);
+	} else {
+		Private_SendAchievementEvent(C_MnemoTrackValidated, [_Mode, Enviro, 0]);
+		// Logger::Log("Private_SendAchievementEvent C_MnemoTrackValidated, [_Mode, Enviro, 0] :  "^C_MnemoTrackValidated^"  "^[_Mode, Enviro, 0]);
+	}
+}
+
+// ---------------------------------- //
+/// Load the library
+Void Load() {
+	Private_CreateUbiClubPopupLayer();
+}

@@ -1,0 +1,443 @@
+/**
+ *	Placement library
+ *
+ *	Save possible placement for macroblocks
+ */
+#Const Version		"2016-01-11"
+#Const ScriptName	"Collection.Script.txt"
+
+#Include "Libs/Openplanet/TMConsole/MapEditor/Utils.Script.txt" as Utils
+
+// ---------------------------------- //
+// Globales
+// ---------------------------------- //
+//declare CMacroblockModel[] G_Placements; ///< List of macroblock with a placement
+
+// ---------------------------------- //
+// Functions
+// ---------------------------------- //
+// ---------------------------------- //
+/** Add a new placement possibility
+ *
+ *	@param	_MacroblockModel		The macroblock model to update
+ *	@param	_Coord					The new coordinates
+ *	@param	_Dir					The new direction
+ *	@param	_ConnectedBy			The clip from the macroblock connected to another one
+ *	@param	_ConnectedTo			The clip from the other macroblock connected to this one
+ */
+Void Add(CMacroblockModel _MacroblockModel, Int3 _Coord, CEditorPlugin::CardinalDirections _Dir, Integer _ConnectedBy, Integer _ConnectedTo) {
+	if (_MacroblockModel == Null) return;
+	
+	declare Int3[] LibPlacement_BlockCoords for _MacroblockModel;
+	declare CEditorPlugin::CardinalDirections[] LibPlacement_BlockDirs for _MacroblockModel;
+	declare Integer[] LibPlacement_BlockConnectedBy for _MacroblockModel;
+	declare Integer[] LibPlacement_BlockConnectedTo for _MacroblockModel;
+	LibPlacement_BlockCoords.add(_Coord);
+	LibPlacement_BlockDirs.add(_Dir);
+	LibPlacement_BlockConnectedBy.add(_ConnectedBy);
+	LibPlacement_BlockConnectedTo.add(_ConnectedTo);
+	
+	//if (!G_Placements.exists(_MacroblockModel)) G_Placements.add(_MacroblockModel);
+}
+
+// ---------------------------------- //
+/** Remove a placement possibility
+ *
+ *	@param	_MacroblockModel		The macroblock model to update
+ *	@param	_Placement				The placement to remove
+ */
+Void Remove(CMacroblockModel _MacroblockModel, Integer _Placement) {
+	if (_MacroblockModel == Null) return;
+	
+	declare Int3[] LibPlacement_BlockCoords for _MacroblockModel;
+	declare CEditorPlugin::CardinalDirections[] LibPlacement_BlockDirs for _MacroblockModel;
+	declare Integer[] LibPlacement_BlockConnectedBy for _MacroblockModel;
+	declare Integer[] LibPlacement_BlockConnectedTo for _MacroblockModel;
+	declare Removed = LibPlacement_BlockCoords.removekey(_Placement);
+	Removed = LibPlacement_BlockDirs.removekey(_Placement);
+	Removed = LibPlacement_BlockConnectedBy.removekey(_Placement);
+	Removed = LibPlacement_BlockConnectedTo.removekey(_Placement);
+	
+	// Keep the right placement selection after a remove
+	if (Removed) {
+		declare Integer LibPlacement_PlacementSelected for _MacroblockModel;
+		if (_Placement <= LibPlacement_PlacementSelected) LibPlacement_PlacementSelected -= 1;
+		else if (_Placement == LibPlacement_PlacementSelected) LibPlacement_PlacementSelected = -1;
+	}
+}
+
+// ---------------------------------- //
+/** Select a placement among the available ones
+ *
+ *	@param	_MacroblockModel		The macroblock model to update
+ *	@param	_Placement				The placement to select
+ */
+Void Select(CMacroblockModel _MacroblockModel, Integer _Placement) {
+	if (_MacroblockModel == Null) return;
+	
+	declare Integer LibPlacement_PlacementSelected for _MacroblockModel;
+	LibPlacement_PlacementSelected = _Placement;
+}
+
+// ---------------------------------- //
+/** Select the next placement available with a different connected by clip
+ *
+ *	@param	_MacroblockModel		The macroblock model to update
+ *	@param	_SwitchOnlyConnectedBy	Only switch the connected by clip of the macroblock and not the rotation
+ */
+Void Next(CMacroblockModel _MacroblockModel, Boolean _SwitchOnlyConnectedBy) {
+	if (_MacroblockModel == Null) return;
+	
+	declare Integer LibPlacement_PlacementSelected for _MacroblockModel;
+	declare Integer[] LibPlacement_BlockConnectedBy for _MacroblockModel;
+	
+	if (_SwitchOnlyConnectedBy) {
+		if (LibPlacement_BlockConnectedBy.count <= 0) return;
+		
+		if (!LibPlacement_BlockConnectedBy.existskey(LibPlacement_PlacementSelected)) {
+			LibPlacement_PlacementSelected = 0;
+		}
+		
+		declare CurrentConnectedBy = LibPlacement_BlockConnectedBy[LibPlacement_PlacementSelected];
+		for (I, 1, LibPlacement_BlockConnectedBy.count) {
+			declare NewPlacement = (LibPlacement_PlacementSelected + I) % LibPlacement_BlockConnectedBy.count;
+			if (LibPlacement_BlockConnectedBy[NewPlacement] == CurrentConnectedBy) {
+				LibPlacement_PlacementSelected = NewPlacement;
+				return;
+			}
+		}
+	} else {
+		LibPlacement_PlacementSelected += 1;
+		if (!LibPlacement_BlockConnectedBy.existskey(LibPlacement_PlacementSelected)) {
+			LibPlacement_PlacementSelected = 0;
+		}
+	}
+}
+
+// ---------------------------------- //
+/** Get the placement selected for the given macroblock
+ *
+ *	@param	_MacroblockModel		The macroblock model to check
+ *
+ *	@return							The selected placement
+ */
+Integer GetPlacement(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return -1;
+	
+	declare Integer LibPlacement_PlacementSelected for _MacroblockModel;
+	return LibPlacement_PlacementSelected;
+}
+
+// ---------------------------------- //
+/** Get the coordinates available for the given macroblock
+ *
+ *	@param	_MacroblockModel		The macroblock model to check
+ *
+ *	@return							The available coordinates
+ */
+Int3[] GetCoords(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return Int3[];
+	
+	declare Int3[] LibPlacement_BlockCoords for _MacroblockModel;
+	return LibPlacement_BlockCoords;
+}
+
+// ---------------------------------- //
+/** Get the coordinates of the given placement
+ *
+ *	@param	_MacroblockModel		The macroblock model to check
+ *	@param	_Placement				The placement to check
+ *
+ *	@return							The coordinates if found, NullCoord otherwise
+ */
+Int3 GetCoord(CMacroblockModel _MacroblockModel, Integer _Placement) {
+	if (_MacroblockModel == Null) return Utils::NullCoord();
+	
+	declare Int3[] LibPlacement_BlockCoords for _MacroblockModel;
+	if (LibPlacement_BlockCoords.existskey(_Placement)) {
+		return LibPlacement_BlockCoords[_Placement];
+	}
+	
+	return Utils::NullCoord();
+}
+
+// ---------------------------------- //
+/** Get the coordinates of the selected placement
+ *
+ *	@param	_MacroblockModel		The macroblock model to check
+ *
+ *	@return							The coordinates if found, NullCoord otherwise
+ */
+Int3 GetCoord(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return Utils::NullCoord();
+	
+	declare Integer LibPlacement_PlacementSelected for _MacroblockModel;
+	declare Int3[] LibPlacement_BlockCoords for _MacroblockModel;
+	if (LibPlacement_BlockCoords.existskey(LibPlacement_PlacementSelected)) {
+		return LibPlacement_BlockCoords[LibPlacement_PlacementSelected];
+	}
+	
+	return Utils::NullCoord();
+}
+
+// ---------------------------------- //
+/** Get the directions available for the given macroblock
+ *
+ *	@param	_MacroblockModel		The macroblock model to check
+ *
+ *	@return							The available directions
+ */
+CEditorPlugin::CardinalDirections[] GetDirs(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return CEditorPlugin::CardinalDirections[];
+	
+	declare CEditorPlugin::CardinalDirections[] LibPlacement_BlockDirs for _MacroblockModel;
+	return LibPlacement_BlockDirs;
+}
+
+// ---------------------------------- //
+/** Get the direction of the given placement
+ *
+ *	@param	_MacroblockModel		The macroblock model to check
+ *	@param	_Placement				The placement to check
+ *
+ *	@return							The direction if found, North otherwise
+ */
+CEditorPlugin::CardinalDirections GetDir(CMacroblockModel _MacroblockModel, Integer _Placement) {
+	if (_MacroblockModel == Null) return CEditorPlugin::CardinalDirections::North;
+	
+	declare CEditorPlugin::CardinalDirections[] LibPlacement_BlockDirs for _MacroblockModel;
+	if (LibPlacement_BlockDirs.existskey(_Placement)) {
+		return LibPlacement_BlockDirs[_Placement];
+	}
+	
+	return CEditorPlugin::CardinalDirections::North;
+}
+
+// ---------------------------------- //
+/** Get the direction of the selected placement
+ *
+ *	@param	_MacroblockModel		The macroblock model to check
+ *
+ *	@return							The direction if found, North otherwise
+ */
+CEditorPlugin::CardinalDirections GetDir(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return CEditorPlugin::CardinalDirections::North;
+	
+	declare Integer LibPlacement_PlacementSelected for _MacroblockModel;
+	declare CEditorPlugin::CardinalDirections[] LibPlacement_BlockDirs for _MacroblockModel;
+	if (LibPlacement_BlockDirs.existskey(LibPlacement_PlacementSelected)) {
+		return LibPlacement_BlockDirs[LibPlacement_PlacementSelected];
+	}
+	
+	return CEditorPlugin::CardinalDirections::North;
+}
+
+// ---------------------------------- //
+/** Get the connected by clips available for the given macroblock
+ *
+ *	@param	_MacroblockModel		The macroblock model to check
+ *
+ *	@return							The available connected by clips
+ */
+Integer[] GetConnectedByClips(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return Integer[];
+	
+	declare Integer[] LibPlacement_BlockConnectedBy for _MacroblockModel;
+	return LibPlacement_BlockConnectedBy;
+}
+
+// ---------------------------------- //
+/** Get the connected by clip of the given placement
+ *
+ *	@param	_MacroblockModel		The macroblock model to check
+ *	@param	_Placement				The placement to check
+ *
+ *	@return							The connected by clip if found, -1 otherwise
+ */
+Integer GetConnectedByClip(CMacroblockModel _MacroblockModel, Integer _Placement) {
+	if (_MacroblockModel == Null) -1;
+	
+	declare Integer[] LibPlacement_BlockConnectedBy for _MacroblockModel;
+	if (LibPlacement_BlockConnectedBy.existskey(_Placement)) {
+		return LibPlacement_BlockConnectedBy[_Placement];
+	}
+	
+	return -1;
+}
+
+// ---------------------------------- //
+/** Get the connected by clip of the selected placement
+ *
+ *	@param	_MacroblockModel		The macroblock model to check
+ *
+ *	@return							The connected by clip if found, -1 otherwise
+ */
+Integer GetConnectedByClip(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return -1;
+	
+	declare Integer LibPlacement_PlacementSelected for _MacroblockModel;
+	declare Integer[] LibPlacement_BlockConnectedBy for _MacroblockModel;
+	if (LibPlacement_BlockConnectedBy.existskey(LibPlacement_PlacementSelected)) {
+		return LibPlacement_BlockConnectedBy[LibPlacement_PlacementSelected];
+	}
+	
+	return -1;
+}
+
+// ---------------------------------- //
+/** Get the connected to clips available for the given macroblock
+ *
+ *	@param	_MacroblockModel		The macroblock model to check
+ *
+ *	@return							The available connected to clips
+ */
+Integer[] GetConnectedToClips(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return Integer[];
+	
+	declare Integer[] LibPlacement_BlockConnectedTo for _MacroblockModel;
+	return LibPlacement_BlockConnectedTo;
+}
+
+// ---------------------------------- //
+/** Get the connected to clip of the given placement
+ *
+ *	@param	_MacroblockModel		The macroblock model to check
+ *	@param	_Placement				The placement to check
+ *
+ *	@return							The connected to clip if found, -1 otherwise
+ */
+Integer GetConnectedToClip(CMacroblockModel _MacroblockModel, Integer _Placement) {
+	if (_MacroblockModel == Null) return -1;
+	
+	declare Integer[] LibPlacement_BlockConnectedTo for _MacroblockModel;
+	if (LibPlacement_BlockConnectedTo.existskey(_Placement)) {
+		return LibPlacement_BlockConnectedTo[_Placement];
+	}
+	
+	return -1;
+}
+
+// ---------------------------------- //
+/** Get the connected to clip of the selected placement
+ *
+ *	@param	_MacroblockModel		The macroblock model to check
+ *
+ *	@return							The connected To clip if found, -1 otherwise
+ */
+Integer GetConnectedToClip(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return -1;
+	
+	declare Integer LibPlacement_PlacementSelected for _MacroblockModel;
+	declare Integer[] LibPlacement_BlockConnectedTo for _MacroblockModel;
+	if (LibPlacement_BlockConnectedTo.existskey(LibPlacement_PlacementSelected)) {
+		return LibPlacement_BlockConnectedTo[LibPlacement_PlacementSelected];
+	}
+	
+	return -1;
+}
+
+// ---------------------------------- //
+/** Get the number of possible placements for a given macroblock model
+ *
+ *	@return							The number of placements
+ */
+Integer Count(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return 0;
+	
+	declare Int3[] LibPlacement_BlockCoords for _MacroblockModel;
+	return LibPlacement_BlockCoords.count;
+}
+
+// ---------------------------------- //
+/** Check if the given placement exists on the macroblock model
+ *
+ *	@param	_MacroblockModel		The macroblock model to check
+ *	@param	_Placement				The placement to check
+ *
+ *	@return							True if the given placement exists, False otherwise
+ */
+Boolean Exists(CMacroblockModel _MacroblockModel, Integer _Placement) {
+	if (_MacroblockModel == Null) return False;
+	
+	declare CEditorPlugin::CardinalDirections[] LibPlacement_BlockDirs for _MacroblockModel;
+	return LibPlacement_BlockDirs.existskey(_Placement);
+}
+
+// ---------------------------------- //
+/** Check if the given direction exists on the macroblock model
+ *
+ *	@param	_MacroblockModel		The macroblock model to check
+ *	@param	_Dir					The direction to check
+ *
+ *	@return							True if the given direction exists, False otherwise
+ */
+Boolean Exists(CMacroblockModel _MacroblockModel, CEditorPlugin::CardinalDirections _Dir) {
+	if (_MacroblockModel == Null) return False;
+	
+	declare CEditorPlugin::CardinalDirections[] LibPlacement_BlockDirs for _MacroblockModel;
+	return LibPlacement_BlockDirs.exists(_Dir);
+}
+
+// ---------------------------------- //
+/** Check if the selected placement exists on the macroblock model
+ *
+ *	@param	_MacroblockModel		The macroblock model to check
+ *
+ *	@return							True if the selected placement exists, False otherwise
+ */
+Boolean Exists(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return False;
+	
+	declare Integer LibPlacement_PlacementSelected for _MacroblockModel;
+	declare CEditorPlugin::CardinalDirections[] LibPlacement_BlockDirs for _MacroblockModel;
+	return LibPlacement_BlockDirs.existskey(LibPlacement_PlacementSelected);
+}
+
+// ---------------------------------- //
+/** Clear the placements of a given macroblock model
+ *
+ *	@param	_MacroblockModel		The macroblock model to clear
+ */
+Void Clear(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return;
+	
+	declare Integer LibPlacement_PlacementSelected for _MacroblockModel;
+	LibPlacement_PlacementSelected = -1;
+	
+	// Don't clear empty arrays
+	declare Int3[] LibPlacement_BlockCoords for _MacroblockModel;
+	if (LibPlacement_BlockCoords.count > 0) {
+		LibPlacement_BlockCoords.clear();
+		
+		declare CEditorPlugin::CardinalDirections[] LibPlacement_BlockDirs for _MacroblockModel;
+		declare Integer[] LibPlacement_BlockConnectedBy for _MacroblockModel;
+		declare Integer[] LibPlacement_BlockConnectedTo for _MacroblockModel;
+		LibPlacement_BlockDirs.clear();
+		LibPlacement_BlockConnectedBy.clear();
+		LibPlacement_BlockConnectedTo.clear();
+	}
+	
+	//declare Removed = G_Placements.remove(_MacroblockModel);
+}
+// ---------------------------------- //
+/// Clear the placements of all macroblocks
+/*Void ClearAll() {
+	if (G_Placements.count <= 0) return;
+	
+	foreach (MacroblockModel in G_Placements) {
+		Clear(MacroblockModel);
+	}
+}*/
+
+// ---------------------------------- //
+/// Unload the library
+Void Unload() {
+	
+}
+
+// ---------------------------------- //
+/// Load the library
+Void Load() {
+	Unload();
+	
+}

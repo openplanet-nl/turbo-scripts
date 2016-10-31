@@ -1,0 +1,287 @@
+/** 
+ * Weighted list of macroblocks
+ */
+
+#Const Version		"2015-05-11"
+#Const ScriptName	"WeightedList.Script.txt"
+
+#Include "Libs/Openplanet/TMConsole/MapEditor/Random.Script.txt" as Random
+
+// ---------------------------------- //
+// Globales
+// ---------------------------------- //
+declare Integer[Ident][Text] G_LibWeightedList_ListUnsorted;
+declare Integer[Ident][Text] G_LibWeightedList_ListSorted;
+declare Integer[Text] G_LibWeightedList_ListMax;
+declare Boolean[Text] G_LibWeightedList_ListModified;
+
+// ---------------------------------- //
+// Functions
+// ---------------------------------- //
+// ---------------------------------- // 
+// Private
+// ---------------------------------- //
+// ---------------------------------- //
+/** Get a unique list id
+ *
+ *	@return						The unique list id
+ */
+Text Private_GetUniqueListId() {
+	declare LibWeightedList_UniqueId_PrevNow for This = 0;
+	declare LibWeightedList_UniqueId_Count for This = 0;
+	
+	if (LibWeightedList_UniqueId_PrevNow != Now) {
+		LibWeightedList_UniqueId_Count = 0;
+	} else {
+		LibWeightedList_UniqueId_Count += 1;
+	}
+	LibWeightedList_UniqueId_PrevNow = Now;
+	
+	return LibWeightedList_UniqueId_PrevNow^"_"^LibWeightedList_UniqueId_Count;
+}
+
+// ---------------------------------- //
+/** Check if a list exists
+ *
+ *	@param	_Id 				Id of the list to check
+ *
+ *	@return						True if the list exists, False otherwise
+ */
+Boolean Private_ListExists(Text _Id) {
+	return G_LibWeightedList_ListModified.existskey(_Id);
+}
+
+// ---------------------------------- //
+/** Sort the macroblock list and compute
+ *	the info necessary to select a random block
+ *
+ *	@param	_Id 				Id of the list
+ */
+Void Private_SortMacroblocksList(Text _Id) {
+	if (!Private_ListExists(_Id)) return;
+	
+	G_LibWeightedList_ListSorted[_Id].clear();
+	G_LibWeightedList_ListMax[_Id] = 0;
+	declare MacroblockModelsList = G_LibWeightedList_ListUnsorted[_Id];
+	foreach (MacroblockModel => Weight in MacroblockModelsList) {
+		G_LibWeightedList_ListSorted[_Id][MacroblockModel] = G_LibWeightedList_ListMax[_Id];
+		G_LibWeightedList_ListMax[_Id] += Weight;
+	}
+	G_LibWeightedList_ListModified[_Id] = False;
+}
+
+// ---------------------------------- //
+// Public
+// ---------------------------------- //
+// ---------------------------------- //
+/** Return the version number of the script
+ *
+ *	@return						The version number of the script
+ */
+Text GetScriptVersion() {
+	return Version;
+}
+
+// ---------------------------------- //
+/** Return the name of the script
+ *
+ *	@return						The name of the script
+ */
+Text GetScriptName() {
+	return ScriptName;
+}
+
+// ---------------------------------- //
+/** Create a new list
+ *
+ *	@param	_NewId				The id of the new list
+ */
+Void New(Text _NewId) {
+	G_LibWeightedList_ListUnsorted[_NewId] = Integer[Ident];
+	G_LibWeightedList_ListSorted[_NewId] = Integer[Ident];
+	G_LibWeightedList_ListMax[_NewId] = 0;
+	G_LibWeightedList_ListModified[_NewId] = True;
+}
+
+// ---------------------------------- //
+/** Create a new list
+ *
+ *	@return						The id of the new list
+ */
+Text New() {
+	declare Id = Private_GetUniqueListId();
+	
+	New(Id);
+	
+	return Id;
+}
+
+// ---------------------------------- //
+/** Delete a list
+ *
+ *	@param	_Id					Id of the list to delete
+ */
+Void Delete(Text _Id) {
+	if (!Private_ListExists(_Id)) return;
+
+	declare Boolean Removed;
+	Removed = G_LibWeightedList_ListUnsorted.removekey(_Id);
+	Removed = G_LibWeightedList_ListSorted.removekey(_Id);
+	Removed = G_LibWeightedList_ListMax.removekey(_Id);
+	Removed = G_LibWeightedList_ListModified.removekey(_Id);
+}
+
+// ---------------------------------- //
+/// Delete all lists
+Void DeleteAll() {
+	G_LibWeightedList_ListUnsorted.clear();
+	G_LibWeightedList_ListSorted.clear();
+	G_LibWeightedList_ListMax.clear();
+	G_LibWeightedList_ListModified.clear();
+}
+
+// ---------------------------------- //
+/** Check if a list exists
+ *
+ *	@param	_Id 				Id of the list to check
+ *
+ *	@return						True if the list exists, False otherwise
+ */
+Boolean Exists(Text _Id) {
+	return G_LibWeightedList_ListModified.existskey(_Id);
+}
+
+// ---------------------------------- //
+/** Check of a macroblock exists in the list
+ *
+ *	@param	_Id 				Id of the list to check
+ *	@param	_MacroblockModel	The macroblock to check
+ *
+ *	@return						True if the macroblock exists, False otherwise
+ */
+Boolean Exists(Text _Id, CMacroblockModel _MacroblockModel) {
+	if (!Private_ListExists(_Id)) return False;
+	if (_MacroblockModel == Null) return False;
+	
+	return G_LibWeightedList_ListUnsorted[_Id].existskey(_MacroblockModel.Id);
+}
+
+// ---------------------------------- //
+/** Add a macroblock to the list
+ *
+ *	@param	_Id 				Id of the list to update
+ *	@param	_MacroblockModel	The macroblock to add
+ *	@param	_Weight				The weight of the macroblock
+ */
+Void Add(Text _Id, CMacroblockModel _MacroblockModel, Integer _Weight) {
+	if (!Private_ListExists(_Id)) return;
+	if (_MacroblockModel == Null) return;
+	
+	G_LibWeightedList_ListUnsorted[_Id][_MacroblockModel.Id] = _Weight;
+	G_LibWeightedList_ListModified[_Id] = True;
+}
+
+// ---------------------------------- //
+/** Remove a macroblock from the list
+ *
+ *	@param	_Id 				Id of the list to update
+ *	@param	_MacroblockModel	The macroblock to remove
+ *
+ *	@return						True if the macroblock was removed, False otherwise
+ */
+Boolean Remove(Text _Id, CMacroblockModel _MacroblockModel) {
+	if (!Private_ListExists(_Id)) return False;
+	if (_MacroblockModel == Null) return False;
+	
+	declare Removed = G_LibWeightedList_ListUnsorted[_Id].removekey(_MacroblockModel.Id);
+	G_LibWeightedList_ListModified[_Id] = True;
+	return Removed;
+}
+
+// ---------------------------------- //
+/** Get all macroblock in the list
+ *
+ *	@param	_Id 				Id of the list to get
+ *
+ *	@return						All macroblocks in the list
+ */
+CMacroblockModel[] GetAll(Text _Id) {
+	if (!Private_ListExists(_Id)) return CMacroblockModel[];
+	
+	declare CMacroblockModel[] MacroblocksList;
+	declare List = G_LibWeightedList_ListUnsorted[_Id];
+	foreach (MacroblockId => Weight in List) {
+		if (!MacroblockModels.existskey(MacroblockId)) continue;
+		MacroblocksList.add(MacroblockModels[MacroblockId]);
+	}
+	
+	return MacroblocksList;
+}
+
+// ---------------------------------- //
+/** Select a random macroblock in the list
+ *
+ *	@param	_Id 				Id of the list to check
+ *
+ *	@return						A random macroblock if found, Null otherwise
+ */
+CMacroblockModel GetRandom(Text _Id) {
+	if (!Private_ListExists(_Id)) return Null;
+	
+	if (G_LibWeightedList_ListModified[_Id]) {
+		Private_SortMacroblocksList(_Id);
+	}
+	
+	declare CMacroblockModel SelectedMacroblockModel;
+	declare TargetWeight = Random::Rand(0, G_LibWeightedList_ListMax[_Id]-1);
+	declare MacroblockModelsList = G_LibWeightedList_ListSorted[_Id];
+	foreach (MacroblockModelId => Weight in MacroblockModelsList) {
+		if (Weight > TargetWeight) break;
+		if (MacroblockModels.existskey(MacroblockModelId)) {
+			SelectedMacroblockModel <=> MacroblockModels[MacroblockModelId];
+		} else {
+			SelectedMacroblockModel <=> Null;
+		}
+	}
+	
+	return SelectedMacroblockModel;
+}
+
+// ---------------------------------- //
+/** Clear the list
+ *
+ *	@param	_Id 				Id of the list to clear
+ */
+Void Clear(Text _Id) {
+	if (!Private_ListExists(_Id)) return;
+	
+	G_LibWeightedList_ListUnsorted[_Id].clear();
+	G_LibWeightedList_ListSorted[_Id].clear();
+	G_LibWeightedList_ListMax[_Id] = 0;
+	G_LibWeightedList_ListModified[_Id] = True;
+}
+
+// ---------------------------------- //
+/** Get the number of elements in the list
+ *
+ *	@param	_Id 				Id of the list to check
+ *
+ *	@return						The number of elements in the list
+ */
+Integer Count(Text _Id) {
+	if (!Private_ListExists(_Id)) return 0;
+	
+	return G_LibWeightedList_ListUnsorted[_Id].count;
+}
+
+// ---------------------------------- //
+/// Unload the library
+Void Unload() {
+	DeleteAll();
+}
+
+// ---------------------------------- //
+/// Load the library
+Void Load() {
+	Unload();
+}

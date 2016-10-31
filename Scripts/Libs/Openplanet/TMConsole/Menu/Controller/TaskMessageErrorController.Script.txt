@@ -1,0 +1,124 @@
+#Include "TextLib"																				as TextLib
+#Include "Libs/Openplanet/TMConsole/PopUpManager.Script.txt"											as PopUpManager
+
+#Const C_SoloCampaign		0
+#Const C_SuperSoloCampaign	1
+
+#Const C_None                   0
+#Const C_NetworkNotAvailable    1
+#Const C_FirstPartySignedOut    2
+#Const C_NoUbiServicesSession   3
+#Const C_MasterServerDisabled   4
+#Const C_MasterServerInSafeMode 5
+#Const C_KillSwitchEnabled		6
+#Const C_NoUplayPC				9
+
+#Const C_OnlineDemoTimeExpired   4
+
+declare Integer 					G_PopUp_Time;
+declare Text    					G_PopUp_Text;
+ 
+
+Void TaskErrorMessage(Text _TaskErrorType, Integer _ErrorCode)
+{
+
+	declare Text AddToTrad1 = _("Uplay PC has stopped running.  You should close and restart your game to prevent any loss of functionality.");
+	declare Text AddToTrad2 = _("Uplay PC is temporarily unavailable.  We’ll reconnect you as soon as possible.");
+	declare Text AddToTrad3 = _("You have been signed out of Uplay. This title requires access to some Uplay services. Please quit the game and sign-in to Uplay.");
+	declare Text AddToTrad4 = _("Your Uplay log in details are not correct. You have been signed out of Uplay. This title requires access to some Uplay services. Please quit the game and sign-in to Uplay.");
+	declare Text AddToTrad5 = _("Ubisoft Club is temporarily unavailable.  We’ll reconnect you as soon as possible. [The action you are currently attempting] could not be completed.");
+	declare Text AddToTrad6 = _("Uplay PC is not currently installed. Your game needs access to some Uplay services. You can download the Uplay PC installer from Uplay.com ");
+
+	G_PopUp_Text = "";
+
+	if(_TaskErrorType == "Internal")
+	{
+		switch(_ErrorCode)
+		{
+			case C_NetworkNotAvailable    :
+			{
+				if(SystemPlatform == CManiaApp::ESystemPlatform::XBoxOne)  G_PopUp_Text = _("A network error has occurred. Online features are not available. Please check your network connection.");
+				else if(SystemPlatform == CManiaApp::ESystemPlatform::PS4) G_PopUp_Text = _("A network error has occurred. Online features are not available. Please check your network connection.");
+				else                                                       G_PopUp_Text = _("A network error has occurred. Online features are not available. Please check your network connection.");
+			}
+			case C_FirstPartySignedOut    : 
+			{
+				switch(SystemPlatform)
+				{
+					case CManiaApp::ESystemPlatform::Steam   : G_PopUp_Text = _("The connection to the Ubisoft Servers has been lost. Online features will become available once the connection has been re-established.");
+					case CManiaApp::ESystemPlatform::UPlay   : G_PopUp_Text = _("The connection to the Ubisoft Servers has been lost. Online features will become available once the connection has been re-established.");
+					case CManiaApp::ESystemPlatform::PS4     : G_PopUp_Text = _("You have been signed out from PlayStation™Network. Online features will not be available until you sign in again.");
+					case CManiaApp::ESystemPlatform::XBoxOne : G_PopUp_Text = _("You are now returning to the Title Screen because you have signed out your profile.");
+					default                                  : G_PopUp_Text = _("The connection to the Ubisoft Servers has been lost. Online features will become available once the connection has been re-established.");
+				}
+			}
+			case C_NoUbiServicesSession   : G_PopUp_Text = _("The connection to the Ubisoft Servers has been lost. Online features will become available once the connection has been re-established.");
+			case C_MasterServerDisabled   : G_PopUp_Text = _("The connection to the Trackmania Servers has been lost. Online features will become available once the connection has been re-established.");
+			case C_MasterServerInSafeMode : G_PopUp_Text = _("The connection to the Trackmania Servers has been lost. Online features will become available once the connection has been re-established.");
+			case C_KillSwitchEnabled      : G_PopUp_Text = _("The connection to the Trackmania Servers has been lost. Online features will become available once the connection has been re-established.");
+			case C_NoUplayPC              : G_PopUp_Text = _("Uplay PC has stopped running. You should close and restart your game to prevent any loss of functionality.");
+		}
+
+	}
+	else if(_TaskErrorType == "DataManager") //[Damien] C'est des erreurs de sauvegarde/chargement généralement
+	{
+		G_PopUp_Text = _("We are unable to retrieve your progress from our servers, please try again.");
+	}
+	else if(_TaskErrorType == "MasterServer") //C'est un problème avec les TMTurbo servers
+	{
+		G_PopUp_Text = _("The connection to the Trackmania Servers has been lost. Online features will become available once the connection has been re-established.");
+	}
+	else if(_TaskErrorType == "UbiServices") //C'est un problème avec les Ubisoft servers
+	{
+		G_PopUp_Text = _("The connection to the Ubisoft Servers has been lost. Online features will become available once the connection has been re-established.");
+	}
+	else if(_TaskErrorType == "PS4")
+	{
+		ManiaPlanet.ShowSystemError(DataMgr.MenuUserId, _ErrorCode);
+	}
+	else if(_TaskErrorType == "XboxOne")
+	{
+		ManiaPlanet.ShowSystemError(DataMgr.MenuUserId, _ErrorCode);
+	}
+	else if(_TaskErrorType == "PrivilegeManager")
+	{
+		switch(_ErrorCode)
+		{
+			case C_OnlineDemoTimeExpired    : 
+			{
+				PopUpManager::AddAskYesNo2(_("Your free one-hour online trial is now expired, but the rest of the game is still yours to enjoy! Do you want to unlock the full version?"), _("Trial Version"), "BuyFullVersion");
+			}
+		}
+	}
+	else if(_TaskErrorType == "Unexpected")
+	{
+		if(SystemPlatform == CManiaApp::ESystemPlatform::XBoxOne) G_PopUp_Text = _("A network error has occurred. Online features are not available. Please check your network connection.");
+		else if(SystemPlatform == CManiaApp::ESystemPlatform::PS4)  G_PopUp_Text = _("A network error has occurred. Online features are not available. Please check your network connection.");
+		else G_PopUp_Text = _("A network error has occurred. Online features are not available. Please check your network connection.");
+	}
+	
+	//log("["^Now^"] G_PopUp_Text: " ^ G_PopUp_Text);
+	if(G_PopUp_Text != "" && G_PopUp_Time == -1) G_PopUp_Time = Now + 450;
+}
+
+Void TaskErrorMessage(CNetMasterServerUserInfo::ETaskErrorType _TaskErrorType, Integer _ErrorCode)
+{
+	//log("["^Now^"] _TaskErrorType: " ^ _TaskErrorType);
+	//log("["^Now^"] _ErrorCode    : " ^ _ErrorCode);
+	declare Text ErrorType = TextLib::Split("::", _TaskErrorType^"")[2];
+	TaskErrorMessage(ErrorType,  _ErrorCode);
+}
+
+Void TaskErrorMessage(CWebServicesTaskResult::ETaskErrorType _TaskErrorType, Integer _ErrorCode)
+{
+	declare Text ErrorType = TextLib::Split("::", _TaskErrorType^"")[2];
+	TaskErrorMessage(ErrorType,  _ErrorCode);
+}
+
+Void Loop() {
+	if(G_PopUp_Time < Now && G_PopUp_Time != -1 && G_PopUp_Text != "")
+	{
+		PopUpManager::AddPopUp2(0, G_PopUp_Text, "", False);
+		G_PopUp_Time = -1;
+	}
+}

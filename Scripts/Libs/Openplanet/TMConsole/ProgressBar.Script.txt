@@ -1,0 +1,289 @@
+#Include "Libs/Openplanet/TMConsole/FontManager.Script.txt"	as Font
+#Include "TextLib"										as TL	
+
+declare Text[]			G_Tags;
+declare Real[]			G_TagsWeights;
+declare Real 			G_PassiveProgression;
+declare Real 			G_MaxProgressionPerSecond;
+declare Vec3			G_GaugeColor;
+declare Vec2			G_BarSize;
+declare Integer 		G_TTL;
+
+Void Init(Real _PassiveProgressionPerSecond, Real _MaxProgressionPerSecond, Vec3 _GaugeColor, Integer _TTL)
+{
+	G_Tags.clear();
+	G_TagsWeights.clear();
+	G_PassiveProgression = _PassiveProgressionPerSecond;
+	G_MaxProgressionPerSecond = _MaxProgressionPerSecond;
+	G_GaugeColor = _GaugeColor;
+	G_TTL = _TTL;
+}
+
+Void SetBarSize(Vec2 _Size)
+{
+	G_BarSize = _Size;
+}
+
+Void AddTag(Text _Id, Real _Weight)
+{
+	G_Tags.add(_Id);
+	G_TagsWeights.add(_Weight);
+}
+
+Text InjectInManialink()
+{
+	declare Text Manialink = """
+		<gauge id="progressbar_gauge" posn="0 0 3" drawbg="0" color="{{{TL::ColorToText(G_GaugeColor)}}}" ratio="0" sizen="{{{G_BarSize.X + 1.}}} {{{G_BarSize.Y}}}" valign="center" drawblockbg="0" />
+		<label id="progressbar_label" posn="{{{G_BarSize.X / 2}}} 0 3.1" halign="center" valign="center" textprefix="$t" textfont="{{{Font::GetFontName("Main")}}}" />
+	""";
+	
+	return Manialink;
+}
+
+Text InjectInConst()
+{
+	declare Const = """
+	#Const C_ProgressBar_PassiveProgression {{{G_PassiveProgression}}}
+	#Const C_ProgressBar_MaxProgressionPerSecond {{{G_MaxProgressionPerSecond}}}
+	#Const C_ProgressBar_TTL {{{G_TTL}}}
+	""";
+	
+	return Const;
+}
+
+Text InjectInGlobals()
+{
+	declare Globals = """
+		declare Text[] 			G_ProgressBar_Tags;
+		declare Real[] 			G_ProgressBar_TagsRatios;
+		declare Real[]			G_ProgressBar_TagsWeights;
+		
+		declare Real 			G_ProgressBar_CurrentProgression;
+		declare Integer 		G_ProgressBar_CurrentTagIndex;
+		
+		declare Real 			G_ProgressBar_TargetProgression;
+		
+		declare Integer			G_ProgressBar_StartTagIndex;
+		declare Real			G_ProgressBar_SpeedFactor;
+		declare Boolean			G_ProgressBar_IsActive;
+		declare Integer 		G_ProgressBar_LastUpdateTime;
+		declare Integer 		G_ProgressBar_LastTagCompletionTime;
+	""";
+	
+	return Globals;
+}
+
+Text InjectInInit()
+{
+	declare Init = """
+		G_ProgressBar_Tags = {{{dump(G_Tags)}}};
+		G_ProgressBar_TagsWeights = {{{dump(G_TagsWeights)}}};
+		G_ProgressBar_CurrentProgression = 0.;
+		G_ProgressBar_CurrentTagIndex = 0;
+		G_ProgressBar_StartTagIndex = 0;
+		G_ProgressBar_TargetProgression = 0.;
+		G_ProgressBar_LastTagCompletionTime = -1;
+		
+		G_ProgressBar_LastUpdateTime = -1;
+		G_ProgressBar_IsActive = False;
+	""";
+	
+	return Init;
+}
+
+Text InjectInFunctions()
+{
+	declare Functions = """
+	
+		Void ProgressBar_Hide()
+		{
+			declare CMlGauge Gauge = (Page.GetFirstChild("progressbar_gauge") as CMlGauge);
+			declare CMlLabel Label = (Page.GetFirstChild("progressbar_label") as CMlLabel);
+			Gauge.Hide();
+			Label.Hide();
+		}
+		
+		Void ProgressBar_Show()
+		{
+			declare CMlGauge Gauge = (Page.GetFirstChild("progressbar_gauge") as CMlGauge);
+			declare CMlLabel Label = (Page.GetFirstChild("progressbar_label") as CMlLabel);
+			Gauge.Show();
+			Label.Show();
+		}
+		
+		Void ProgressBar_Update()
+		{
+			if (G_ProgressBar_IsActive)
+			{
+				G_ProgressBar_TargetProgression += ML::ToReal(Now - G_ProgressBar_LastUpdateTime) / 1000. * C_ProgressBar_PassiveProgression * G_ProgressBar_SpeedFactor;
+				if (G_ProgressBar_TargetProgression >= G_ProgressBar_TagsRatios[G_ProgressBar_CurrentTagIndex - G_ProgressBar_StartTagIndex])
+				{
+					G_ProgressBar_TargetProgression = G_ProgressBar_TagsRatios[G_ProgressBar_CurrentTagIndex - G_ProgressBar_StartTagIndex];
+					if (G_ProgressBar_LastTagCompletionTime == -1)
+						G_ProgressBar_LastTagCompletionTime = Now;
+				}
+			}
+			declare Real FrameProgression = G_ProgressBar_TargetProgression - G_ProgressBar_CurrentProgression;
+			if (C_ProgressBar_MaxProgressionPerSecond != 0.)
+				FrameProgression = ML::Min(FrameProgression, ML::ToReal(Now - G_ProgressBar_LastUpdateTime) / 1000. * C_ProgressBar_MaxProgressionPerSecond);
+			
+			G_ProgressBar_CurrentProgression += FrameProgression;
+			G_ProgressBar_LastUpdateTime = Now;
+			
+			declare CMlGauge Gauge <=> (Page.GetFirstChild("progressbar_gauge") as CMlGauge);
+			Gauge.Ratio = ML::Min(0.05 + G_ProgressBar_CurrentProgression*0.95, 0.985); //afin de ne pas avoir la surbrillance dégueu de complétion de gauge
+			declare CMlLabel Label <=> (Page.GetFirstChild("progressbar_label") as CMlLabel);
+			Label.Value = ML::FloorInteger(G_ProgressBar_CurrentProgression * 100)^" %";
+		}
+		
+		Boolean ProgressBar_IsTimeout()
+		{
+			if (G_ProgressBar_LastTagCompletionTime == -1)
+				return False;
+			return G_ProgressBar_LastTagCompletionTime + C_ProgressBar_TTL < Now;
+		}
+		
+		Void ProgressBar_Reset()
+		{
+			G_ProgressBar_CurrentProgression = 0.;
+			G_ProgressBar_CurrentTagIndex = 0;
+			G_ProgressBar_TargetProgression = 0.;
+			G_ProgressBar_LastUpdateTime = -1;
+			G_ProgressBar_LastTagCompletionTime = -1;
+			G_ProgressBar_IsActive = False;
+		}
+		
+		Void ProgressBar_SetProgression(Real _GlobalProgression)
+		{	//force la progression sans changer le tag. Plutôt utiliser la version locale !
+			if (_GlobalProgression > G_ProgressBar_TargetProgression)
+				G_ProgressBar_TargetProgression = _GlobalProgression;
+		}
+		
+		Void ProgressBar_SetProgression(Text _TagId, Real _LocalProgression)
+		{
+			declare Integer TagIndex;
+			for (I, 0, G_ProgressBar_Tags.count - 1)
+			{
+				if (G_ProgressBar_Tags[I] == _TagId)
+				{
+					TagIndex = I;
+					break;
+				}
+			}
+			
+			if (TagIndex < G_ProgressBar_CurrentTagIndex)
+				return;
+			
+			declare Real GlobalTargetProgression;
+			declare Real TagSpan;
+			if (TagIndex == G_ProgressBar_StartTagIndex)
+			{
+				TagSpan = G_ProgressBar_TagsRatios[TagIndex - G_ProgressBar_StartTagIndex];
+				GlobalTargetProgression = _LocalProgression * TagSpan;
+			} else {
+				TagSpan = G_ProgressBar_TagsRatios[TagIndex - G_ProgressBar_StartTagIndex] - G_ProgressBar_TagsRatios[TagIndex-G_ProgressBar_StartTagIndex-1];
+				GlobalTargetProgression = G_ProgressBar_TagsRatios[TagIndex-1] + _LocalProgression * TagSpan;
+			}
+			
+			if (GlobalTargetProgression >= G_ProgressBar_TargetProgression)
+			{
+				if (_LocalProgression == 1. && GlobalTargetProgression != G_ProgressBar_TargetProgression)
+				{
+					G_ProgressBar_LastTagCompletionTime = Now;
+				} else
+					G_ProgressBar_LastTagCompletionTime = -1;
+				G_ProgressBar_CurrentTagIndex = TagIndex;
+				
+				ProgressBar_SetProgression(GlobalTargetProgression);
+			}
+		}
+		
+		Void ProgressBar_SetTagFinished(Text _TagId)
+		{
+			ProgressBar_SetProgression(_TagId, 1.);
+		}
+		
+		Void ProgressBar_SetTagBeginning(Text _TagId)
+		{
+			ProgressBar_SetProgression(_TagId, 0.);
+		}
+		
+		Void ProgressBar_ComputeTagsSpans(Integer _StartTagIndex)
+		{
+			declare Real MaxTotalWeight = 0.;
+			declare Real TotalWeight = 0.;
+			for (I, 0, G_ProgressBar_TagsWeights.count - 1)
+			{
+				if ( I >= _StartTagIndex)
+					TotalWeight += G_ProgressBar_TagsWeights[I];
+				MaxTotalWeight += G_ProgressBar_TagsWeights[I];
+			}
+			
+			G_ProgressBar_TagsRatios.clear();
+			
+			if (TotalWeight == 0)
+			{
+				for (I, _StartTagIndex, G_ProgressBar_TagsWeights.count - 1)
+					G_ProgressBar_TagsRatios.add(ML::ToReal(I - _StartTagIndex + 1) / ML::ToReal(G_ProgressBar_TagsWeights.count - _StartTagIndex));
+				G_ProgressBar_SpeedFactor = 999.;
+			} else {
+				for (I, _StartTagIndex, G_ProgressBar_TagsWeights.count - 1)
+				{
+					if (G_ProgressBar_TagsRatios.count == 0)
+						G_ProgressBar_TagsRatios.add(G_ProgressBar_TagsWeights[I] / TotalWeight);
+					else if (I != G_ProgressBar_TagsWeights.count - 1)
+						G_ProgressBar_TagsRatios.add(G_ProgressBar_TagsRatios[I-1] + G_ProgressBar_TagsWeights[I] / TotalWeight);
+					else
+						G_ProgressBar_TagsRatios.add(1.);
+				}
+				G_ProgressBar_SpeedFactor = MaxTotalWeight / TotalWeight;
+			}	
+		}
+		
+		Void ProgressBar_StartAt(Text _StartTagId)
+		{
+			G_ProgressBar_IsActive = True;
+			G_ProgressBar_LastUpdateTime = Now;
+			
+			for (I, 0, G_ProgressBar_Tags.count - 1)
+			{
+				if (G_ProgressBar_Tags[I] == _StartTagId)
+				{
+					G_ProgressBar_StartTagIndex = I;
+					break;
+				}
+			}
+			G_ProgressBar_CurrentTagIndex = G_ProgressBar_StartTagIndex;
+			ProgressBar_ComputeTagsSpans(G_ProgressBar_StartTagIndex);
+		}
+		
+		Void ProgressBar_Start()
+		{
+			G_ProgressBar_IsActive = True;
+			G_ProgressBar_LastUpdateTime = Now;
+			
+			G_ProgressBar_StartTagIndex = 0;
+			G_ProgressBar_CurrentTagIndex = G_ProgressBar_StartTagIndex;
+			ProgressBar_ComputeTagsSpans(G_ProgressBar_StartTagIndex);
+		}
+		
+		Void ProgressBar_Stop()
+		{
+			G_ProgressBar_IsActive = False;
+		}
+	""";
+	
+	return Functions;
+}
+
+Text InjectInLoop()
+{
+	declare Text Loop = """
+		if (G_ProgressBar_LastUpdateTime != -1)
+		{
+			ProgressBar_Update();
+		}
+	""";
+	
+	return Loop;
+}

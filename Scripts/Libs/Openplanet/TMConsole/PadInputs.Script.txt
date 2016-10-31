@@ -1,0 +1,102 @@
+#Const C_MaxPads	4
+#Const C_FreezeTime 500
+		
+Text MLPadInputs() {
+	declare Text MLText = """
+	// <script><!-- // pour la colo syntaxique :)
+	
+	
+	Integer Input_GetTimePressed(Integer _PadIndex, CInputScriptPad::EButton _InputButton) {
+		if(! Input.Pads.existskey(_PadIndex)) return 0;
+		
+		declare CInputScriptPad Pad <=> Input.Pads[_PadIndex];
+		switch(_InputButton) {
+			case CInputScriptPad::EButton::Left : return Pad.Left;
+			case CInputScriptPad::EButton::Right : return Pad.Right;
+			case CInputScriptPad::EButton::Up : return Pad.Up;
+			case CInputScriptPad::EButton::Down : return Pad.Down;
+			case CInputScriptPad::EButton::A : return Pad.A;
+			case CInputScriptPad::EButton::B : return Pad.B;
+			case CInputScriptPad::EButton::X : return Pad.X;
+			case CInputScriptPad::EButton::Y : return Pad.Y;
+			case CInputScriptPad::EButton::L1 : return Pad.L1;
+			case CInputScriptPad::EButton::R1 : return Pad.R1;
+			//case CInputScriptPad::EButton::LeftStick : return Pad.LeftStick;
+			//case CInputScriptPad::EButton::RightStick : return Pad.RightStick;
+			case CInputScriptPad::EButton::Menu : return Pad.Menu;
+			//case CInputScriptPad::EButton::None  : return Pad.None ;
+		}
+		
+		return 0;
+	}
+	
+	Boolean Input_IsPressed(Integer _PadIndex, CInputScriptPad::EButton _InputButton) {
+		return Input_GetTimePressed(_PadIndex, _InputButton) > 0;
+	}
+	
+	// deprecated
+	Boolean Input_IsPressed(Integer _PadIndex, Text _InputId) {
+		declare CInputScriptPad::EButton InputButton;
+		
+		switch(_InputId) {
+			case "Left" : InputButton = CInputScriptPad::EButton::Left;
+			case "Right" : InputButton = CInputScriptPad::EButton::Right;
+			case "Up" : InputButton = CInputScriptPad::EButton::Up;
+			case "Down" : InputButton = CInputScriptPad::EButton::Down;
+			case "A" : InputButton = CInputScriptPad::EButton::A;
+			case "B" : InputButton = CInputScriptPad::EButton::B;
+			case "X" : InputButton = CInputScriptPad::EButton::X;
+			case "Y" : InputButton = CInputScriptPad::EButton::Y;
+			case "L1" : InputButton = CInputScriptPad::EButton::L1;
+			case "R1" : InputButton = CInputScriptPad::EButton::R1;
+			case "LeftStick" : InputButton = CInputScriptPad::EButton::LeftStick;
+			case "RightStick" : InputButton = CInputScriptPad::EButton::RightStick;
+			case "Menu" : InputButton = CInputScriptPad::EButton::Menu;
+			case "None " : InputButton = CInputScriptPad::EButton::None ;
+		}
+		
+		return Input_IsPressed(_PadIndex, InputButton);
+	}
+
+	// deprecated
+	Text[] Input_GetButtonsPressed(Integer _PadIndex) {
+		declare Text[] Result;
+		if(! Input.Pads.existskey(_PadIndex)) {
+			return Result;
+		}
+		
+		foreach(Button in Input.Pads[_PadIndex].ButtonEvents) {
+			switch(Button) {
+				case CInputScriptPad::EButton::Left : Result.add("Left");
+				case CInputScriptPad::EButton::Right : Result.add("Right");
+				case CInputScriptPad::EButton::Up : Result.add("Up");
+				case CInputScriptPad::EButton::Down : Result.add("Down");
+				case CInputScriptPad::EButton::A : Result.add("A");
+				case CInputScriptPad::EButton::B : Result.add("B");
+				case CInputScriptPad::EButton::X : Result.add("X");
+				case CInputScriptPad::EButton::Y : Result.add("Y");
+				case CInputScriptPad::EButton::L1 : Result.add("L1");
+				case CInputScriptPad::EButton::R1 : Result.add("R1");
+				//case CInputScriptPad::EButton::LeftStick : Result.add("LeftStick");
+				//case CInputScriptPad::EButton::RightStick : Result.add("RightStick");
+				case CInputScriptPad::EButton::Menu : Result.add("Menu");
+				//case CInputScriptPad::EButton::None  : Result.add("None ");
+			}
+		}
+		
+		return Result;
+	}
+
+	
+	Void Input_Freeze() {
+		assert(False, "");
+	}
+	""";
+	
+	return MLText;
+}
+
+// deprecated
+Text BuildPadInputsLayer() {
+	return "";
+}

@@ -1,0 +1,463 @@
+
+// file://Media/Manialinks/Nadeo/TMConsole/MainMenuArnaud.Script.txt
+#Include "Libs/Openplanet/Manialink2.Script.txt"					as Manialink
+#Include "Libs/Openplanet/TMConsole/BuilderHelper.Script.txt"	as BuilderHelper
+#Include "Libs/Openplanet/UIPadButtons.Script.txt"				as LibUIButtons
+#Include "Libs/Openplanet/TMConsole/MenuColor.Script.txt"		as Color
+#Include "Libs/Openplanet/TMConsole/Menu/ClipTransitions.Script.txt"	as ClipTransitions
+#Include "Libs/Openplanet/TMConsole/PanelParameter.Script.txt"	as PanelParameter
+#Include "Libs/Openplanet/TMConsole/MapsManager.Script.txt"		as MapsManager
+#Include "Libs/Openplanet/TMConsole/LibAudio.Script.txt"			as LibAudio
+#Include "Libs/Openplanet/TMConsole/Volumes.Script.txt"			as Volumes
+
+#Const C_ImgBase 	"file://Media/Manialinks/Nadeo/TMConsole/Images/"
+#Const C_SizePanelX           6.
+#Const C_SizePanelY           5.
+#Const C_NbDifficulty         5
+#Const C_NbEnviro     		  4
+ 
+Text Build(Text _ShowAnim, Text _HideAnim) {
+	
+	declare Text 	IMGBackground        = C_ImgBase^"bg.jpg";
+	declare Text 	IMGSelectorOn        = C_ImgBase^"popup-selector4-on.png";
+	declare Text 	IMGPopupBg           = C_ImgBase^"popup-bg.png";
+	declare Text 	IMGBoardFull         = C_ImgBase^"board-full.png";
+	declare Text 	IMGBoard             = C_ImgBase^"Board-Difficulty2.jpg";
+	
+	declare Text 	IMGLvlNumbersWhite   = C_ImgBase^"LvlNumbersWhite.png";
+	declare Text 	IMGLvlNumbersGreen   = C_ImgBase^"LvlNumbersGreen.png";
+	declare Text 	IMGLvlNumbersBlue    = C_ImgBase^"LvlNumbersBlue.png";
+	declare Text 	IMGLvlNumbersRed     = C_ImgBase^"LvlNumbersRed.png";
+	declare Text 	IMGLvlNumbersBlack   = C_ImgBase^"LvlNumbersBlack.png";
+	declare Text 	IMGArrow             = C_ImgBase^"Arrow.png";
+
+	declare Text 	IMGSelect         = LibUIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Select);
+	declare Text 	IMGCancel         = LibUIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Cancel);
+	declare Text 	SoundSelect       = LibAudio::GetSoundSelect();
+	declare Text 	SoundBack         = LibAudio::GetSoundBack();
+
+	//declare Real	SizeX_Total       = 265.31 - MarginX_Button;
+	//declare Real	SizeY_Total       = 149.4 - MarginY_Button;
+	declare Real 	SizeX_Total       = PanelParameter::GetSizePanelX(C_SizePanelX);
+	declare Real 	SizeY_Total       = PanelParameter::GetSizePanelY(C_SizePanelY);
+	//declare Real	PosXFirstQuad     = -SizeXQuad/2.+0.3;
+	//declare Real	PosYFirstQuad     = 77.95;
+	declare Real 	PosXFirstQuad     = PanelParameter::GetPosPanelX(C_SizePanelX);
+	declare Real 	PosYFirstQuad     = PanelParameter::GetPosPanelY(C_SizePanelY) + (PanelParameter::GetOneScreenSizeY()*5.);
+	declare Integer NumberOfQuadCreateY	= 4;
+	
+	declare Text MLText = """
+	
+	<framemodel id="Frame_Model">
+		<label id="label_1"         halign="center" valign="center" style="TextButtonNav" posn="0 45 1" textsize="6." text="Welcome to trackmania" textcolor="000"/>
+		<label id="Label_Title"     halign="center" valign="center" style="TextButtonNav" posn="0 20 1" textsize="25." sizen="185" text="White Serie" textcolor="000"/>
+		<quad  id="G_Quad_1"        halign="center" valign="center" sizen="192 3" bgcolor="000" posn="0 37 0"/>
+		<quad  id="G_Quad_2"        halign="center" valign="center" sizen="192 3" bgcolor="000" posn="0 3 0"/>
+		<label id="Label_SubTitle"  halign="center" valign="center" style="TextButtonNav" posn="0 -5 1" textsize="6." text="For Expert pilote only" textcolor="000"/>
+		<quad                       halign="center" valign="center" sizen="100 7" bgcolor="ff0" posn="0 -18 1"/>
+		<quad                       halign="center" valign="center" sizen="101.5 8.5" bgcolor="fff" posn="0 -18 0"/>
+		<label id="Label_4"         halign="center" valign="center" style="TextButtonNav" posn="0 -18 2" textsize="3." text="White tracks medals hits list" textcolor="000"/>
+
+		<label id="Label_Medal0"       halign="right"  valign="center" style="TextButtonNav"       posn="-2.5 -30 1" textsize="4." text="Bronze" textcolor="222" hidden="1"/>
+		<label id="Label_Medal1"       halign="right"  valign="center" style="TextButtonNav"       posn="-2.5 -38 1" textsize="4." text="Silver" textcolor="222" hidden="1"/>
+		<label id="Label_Medal2"       halign="right"  valign="center" style="TextButtonNav"       posn="-2.5 -46 1" textsize="4." text="Gold"   textcolor="222" hidden="1"/>
+		<label id="Label_Medal3"       halign="right"  valign="center" style="TextButtonNav"       posn="-2.5 -54 1" textsize="4." text="Legend" textcolor="222" hidden="1"/>
+		<label id="Label_MedalScore_0" halign="left"   valign="center" style="TextButtonNav"       posn="2.5 -30 1"  textsize="4." text="--/--"   textcolor="222" hidden="1"/>
+		<label id="Label_MedalScore_1" halign="left"   valign="center" style="TextButtonNav"       posn="2.5 -38 1"  textsize="4." text="--/--"   textcolor="222" hidden="1"/>
+		<label id="Label_MedalScore_2" halign="left"   valign="center" style="TextButtonNav"       posn="2.5 -46 1"  textsize="4." text="--/--"   textcolor="222" hidden="1"/>
+		<label id="Label_MedalScore_3" halign="left"   valign="center" style="TextButtonNav"       posn="2.5 -54 1"  textsize="4." text="--/--"   textcolor="222" hidden="1"/>
+		<quad  id="Quad_Number1"       halign="left" valign="center" sizen="75 40" posn="-105 -50 1"  opacity="1." keepratio="Fit" />
+		<quad  id="Quad_Number2"       halign="left" valign="center" sizen="75 40" posn="-105 -50 1" bgcolor="2225" opacity="0." keepratio="Fit" />
+		
+	</framemodel>
+	
+	<frame id="Frame_All" posn="0 0 4" hidden="0">
+		<label halign="left" valign="center" style="TextButtonNav" posn="-155 81.5 5" id="Title" textsize="15" text="" textcolor="fff"/>
+		<label halign="left" valign="center" style="TextButtonNav" posn="-155 69.0 5" id="SubTitle" textsize="9" text="" textcolor="fff"/>
+		
+		<quad id="Background" halign="center" valign="center" opacity="0."
+		sizen="320 180" image="{{{IMGBackground}}}" posn="0 0 0" />
+		
+		<quad id="Button_Select" halign="center" valign="bottom" keepratio="Fit"
+		sizen="8.0 8.0" image="{{{IMGSelect}}}" posn="151.4 -88.1 11" opacity="1."
+		/>
+		<quad id="Button_Select" halign="center" valign="bottom" keepratio="Fit"
+		sizen="8.0 8.0" image="{{{IMGCancel}}}" posn="-131.7 -88.1 11" opacity="1."
+		/>
+		
+		<frame scale="0.9" posn="0.1 3 0" hidden="1">
+			<quad id="BoardFul" halign="center" valign="center" keepratio="Fit"
+			sizen="320 180"  image="{{{IMGBoardFull}}}" opacity="1." posn="0.3 -2.8 2" scale="1.166"
+			/>
+		</frame>
+			
+		<frame id="Frame_Clip" clip="true" clipsizen="{{{SizeX_Total-0.5}}} {{{SizeY_Total+2.}}}" clipposn="0.2 -8">
+				<quad id="Arrow_Right" halign="center" valign="center" keepratio="Fit"
+				sizen="12.0 12.0" image="{{{IMGArrow}}}" posn="117.4 0. 11" opacity="0."
+				/>
+			<frame id="Frame_Content" posn="-217.2 -1 0" scale="1.">
+				
+				<quad id="BoardDifficulty" halign="left" valign="center" opacity="1."
+				sizen="{{{SizeX_Total*5.57}}} {{{SizeY_Total}}}" image="{{{IMGBoard}}}" posn="{{{PosXFirstQuad-120}}} {{{PosYFirstQuad-108}}} 4"
+				/>
+			
+
+""";
+	//declare Integer count = 0;
+	for(I,0,C_NbDifficulty)
+	{
+		declare Real PosnY = 1 + I*216.2;
+		MLText^="""
+				<frameinstance modelid="Frame_Model" posn="{{{PosnY}}} 0 5." id="Frame_Instance{{{I}}}" />
+				""";
+	}
+	
+	MLText^="""
+
+
+
+			</frame>
+		</frame>
+	</frame>
+
+	<script><!--
+		#Const DebugName  "L_DifficultySelect"
+		
+		#Const C_NbDifficulty {{{C_NbDifficulty}}}
+		#Const C_NbEnviro {{{C_NbEnviro - 1}}}
+		#Const C_NumberOfQuadCreateY {{{NumberOfQuadCreateY}}}
+		#Const C_TimeTransitionPage {{{PanelParameter::GetTimeTransitionPage()}}}
+		#Const C_TimeStartClip      {{{PanelParameter::GetTimeStartClip()}}}
+		#Const C_TimeAnimClip       {{{PanelParameter::GetTimeAnimClip()}}}
+		#Const C_TimeStartClip2      {{{PanelParameter::GetTimeStartClip2()}}}
+		#Const C_TimeAnimClip2       {{{PanelParameter::GetTimeAnimClip2()}}}
+
+		{{{Manialink::GetIncludes()}}}
+		{{{Manialink::Load()}}}
+		{{{BuilderHelper::MLCommonFunctions()}}}
+		{{{ClipTransitions::Functions(["Frame_Content", "Frame_Clip"])}}}
+		{{{MapsManager::MLMapsManager(C_NbEnviro)}}}
+	
+		declare Text[Integer]		G_Difficulty;
+		declare Text[Integer]		G_SubTitle;
+		declare Integer 			G_ActualLevel;
+		declare Integer 			G_IndexSelectY;
+		declare Integer 			G_IndexSelectX;
+		declare Integer 			G_IndexUpdateMedals;
+		declare Boolean 			G_UpdateMedals;
+		declare Integer[Integer]	G_MedalsUnlock;
+		declare Boolean[Integer]	G_MedalsSet; //Indique si l'update de medals à déjà été pour une difficulté
+		declare Integer 			G_HideTime;
+		declare Integer 			G_LockInput;
+
+		Void Preload()
+		{
+			PreloadImage("{{{IMGBackground}}}");
+			PreloadImage("{{{IMGSelectorOn}}}");
+			PreloadImage("{{{IMGPopupBg}}}");
+			PreloadImage("{{{IMGBoardFull}}}");
+			PreloadImage("{{{IMGBoard}}}");
+			PreloadImage("{{{IMGLvlNumbersWhite}}}");
+			PreloadImage("{{{IMGLvlNumbersGreen}}}");
+			PreloadImage("{{{IMGLvlNumbersBlue}}}");
+			PreloadImage("{{{IMGLvlNumbersRed}}}");
+			PreloadImage("{{{IMGLvlNumbersBlack}}}");
+			PreloadImage("{{{IMGArrow}}}");
+			PreloadImage("{{{IMGSelect}}}");
+			PreloadImage("{{{IMGCancel}}}");
+		}
+
+		Integer SelectDifficulty(Integer _IndexSelectX, Integer _IndexSelectY)
+		{
+			declare Integer DifficultySelect for This;
+			DifficultySelect = _IndexSelectX;
+
+			return DifficultySelect;
+		}
+
+		Void ChangeLvl(Integer _IndexLvl)
+		{
+			//SendCustomEvent("BlinkScreen", [""]);
+			declare CMlFrame Frame_Content       <=> (Page.GetFirstChild("Frame_Content")                 as CMlFrame);
+			declare CMlQuad Quad_BoardDifficulty <=> (Frame_Content.GetFirstChild("BoardDifficulty")      as CMlQuad);
+			declare CMlFrame Frame_Instance      <=> (Page.GetFirstChild("Frame_Instance"^G_IndexSelectX) as CMlFrame);
+			declare Text GameSelect for This;
+			
+			declare Text Difficulty     = GetDifficulty(_IndexLvl);
+
+			declare Real NewPosnX = _IndexLvl * Quad_BoardDifficulty.Size.X/6.;
+						 NewPosnX = _IndexLvl * 216.2 + 1;
+			declare Vec3 NewFramePosition = <-NewPosnX, Frame_Content.RelativePosition.Y, Frame_Content.RelativePosition.Z>;
+			LibManialink_SetTargetPosition(Frame_Content, NewFramePosition);
+			LibManialink_PresetAnim(Frame_Content, 450, "QuintOut");
+
+			
+
+			if(!G_MedalsSet[_IndexLvl])
+			{
+				if(_IndexLvl != 0)
+				{
+					//declare Text FilterPath = CreateFilterPath("Solo", Difficulty, "");
+					declare Text FilterPath;
+					switch(GameSelect)
+					{
+						case "Coop" : FilterPath = CreateFilterPath(Difficulty, "");
+						default     : FilterPath = CreateFilterPath(Difficulty, "");
+					}
+					LoadCampaignMaps(FilterPath);
+				}
+				else
+				{
+					LoadUserMaps();
+				}
+				wait(DataMgr.Ready);
+
+				declare Integer  NumberOfmap        = DataMgr.Maps.count;
+				for(I, 0, 3) //Le 3 représente les 4 Medailes à débloquer
+				{
+					G_MedalsUnlock[I] = 0;
+					//Label_MedalScore.SetText("0 / " ^ NumberOfmap);
+				}
+				G_IndexUpdateMedals = 0;
+				G_UpdateMedals = True;
+			}
+		}
+
+		Void UpdateMedals()
+		{
+			declare CMlFrame Frame_Instance     <=> (Page.GetFirstChild("Frame_Instance"^G_IndexSelectX) as CMlFrame);
+			declare Integer  NumberOfmap        = DataMgr.Maps.count;
+
+			//HACK
+			//declare Integer MyMedal = GetMyMedal(DataMgr.Maps[G_IndexUpdateMedals]);
+			declare Integer MyMedal = -1;
+			//HACKEND
+
+			for(I, 0, MyMedal)
+			{
+				G_MedalsUnlock[I] += 1;
+				//Label_MedalScore.SetText(G_MedalsUnlock[I] ^ " / " ^ NumberOfmap);
+			}
+
+			G_IndexUpdateMedals +=1;
+			if(G_IndexUpdateMedals >= NumberOfmap)
+			{
+				G_UpdateMedals = False;
+				G_MedalsSet[G_IndexSelectX] = True;
+			}
+		}
+
+		Void Init(Integer _IndexLvl)
+		{
+			G_ActualLevel = _IndexLvl;
+			for(I, 0, C_NbDifficulty)
+			{
+				declare CMlFrame Frame_Instance <=> (Page.GetFirstChild("Frame_Instance"^I)         as CMlFrame);
+				declare CMlLabel label_1        <=> (Frame_Instance.GetFirstChild("label_1")        as CMlLabel);
+				declare CMlLabel Label_4        <=> (Frame_Instance.GetFirstChild("Label_4")        as CMlLabel);
+				declare CMlLabel Label_Title    <=> (Frame_Instance.GetFirstChild("Label_Title")    as CMlLabel);
+				declare CMlQuad G_Quad_1        <=> (Frame_Instance.GetFirstChild("G_Quad_1")       as CMlQuad);
+				declare CMlQuad G_Quad_2        <=> (Frame_Instance.GetFirstChild("G_Quad_2")       as CMlQuad);
+				declare CMlLabel Label_SubTitle <=> (Frame_Instance.GetFirstChild("Label_SubTitle") as CMlLabel);
+				declare CMlQuad Quad_Number1    <=> (Frame_Instance.GetFirstChild("Quad_Number1")   as CMlQuad);
+
+				declare Vec3 Color;
+				if(G_Difficulty[I] != "White")
+				{
+					Color = <1., 1., 1.>;
+				}
+				else
+				{
+					Color = <0., 0., 0.>;
+				}
+
+				label_1.TextColor        = Color;
+				Label_Title.TextColor    = Color;
+				G_Quad_1.BgColor         = Color;
+				G_Quad_2.BgColor         = Color;
+				Label_SubTitle.TextColor = Color;
+				//G_Quad_3.BgColor       = Color;
+				//Label_4.TextColor      = Color;
+				Label_Title.SetText(G_Difficulty[I] ^" series");
+				Label_4.SetText(G_Difficulty[I] ^" tracks medals hits list");
+				Label_SubTitle.SetText(G_SubTitle[I]);
+
+				G_MedalsSet[I] = False;
+
+				//Quad_Number1.RelativePosition = PositionNumber1;
+				//Quad_Number2.RelativePosition = PositionNumber2;
+
+				switch(I)
+				{
+					case 1 : Quad_Number1.ChangeImageUrl("{{{IMGLvlNumbersWhite}}}");
+					case 2 : Quad_Number1.ChangeImageUrl("{{{IMGLvlNumbersGreen}}}");
+					case 3 : Quad_Number1.ChangeImageUrl("{{{IMGLvlNumbersBlue}}}");
+					case 4 : Quad_Number1.ChangeImageUrl("{{{IMGLvlNumbersRed}}}");
+					case 5 : Quad_Number1.ChangeImageUrl("{{{IMGLvlNumbersBlack}}}");
+				}
+			}
+		}
+
+		Void HidePage()
+		{
+			//StartSetClipPosition_Frame_Content(<320., 0.>, <0., 0.>, C_TimeStartClip2, C_TimeAnimClip2);
+			//StartSetClipPosition_Frame_Content(<0., 0.>, <320., 0.>, C_TimeStartClip2, C_TimeAnimClip2);
+
+			declare CMlFrame  Frame_Content      <=> (Page.GetFirstChild("Frame_Content") as CMlFrame);
+			//Frame_Content.RelativePosition =  <0., 320., 0.>;
+			declare Real NewPosnX = 320.;
+			declare Vec3 NewFramePosition = <NewPosnX, 0., 0.>;
+			LibManialink_SetTargetPosition(Frame_Content, NewFramePosition);
+			LibManialink_PresetAnimInsert(Frame_Content, C_TimeStartClip2, C_TimeAnimClip2, "EaseLinear");
+			G_HideTime  = Now + C_TimeStartClip2 + C_TimeAnimClip2;
+			G_LockInput = Now + C_TimeStartClip2 + C_TimeAnimClip2;
+		}
+
+		Void ShowPage(Text _PreviousPage)
+		{
+			declare CMlFrame  Frame_Content      <=> (Page.GetFirstChild("Frame_Content") as CMlFrame);
+
+			if(_PreviousPage == "Main")
+			{
+				declare Real NewPosnX = 1. * 216.2 + 1.;
+				declare Vec3 NewFramePosition = <-NewPosnX, Frame_Content.RelativePosition.Y, Frame_Content.RelativePosition.Z>;
+				Frame_Content.RelativePosition =  <320., 0., 0.>;
+				LibManialink_SetTargetPosition(Frame_Content, NewFramePosition);
+				LibManialink_PresetAnimInsert(Frame_Content, C_TimeStartClip, C_TimeAnimClip, "EaseLinear");
+
+				G_LockInput = Now + C_TimeStartClip + C_TimeAnimClip;
+			}
+			else
+			{
+				declare Real NewPosnX = G_IndexSelectX * 216.2 + 1.;
+				declare Vec3 NewFramePosition = <-NewPosnX, Frame_Content.RelativePosition.Y, Frame_Content.RelativePosition.Z>;
+				Frame_Content.RelativePosition = NewFramePosition;
+			}
+			
+			//StartSetClipPosition_Frame_Clip( <0., 0.>, <360., 0.>, C_TimeStartClip, C_TimeAnimClip);
+		}
+
+
+		main() {
+			Preload();
+			{{{BuilderHelper::MLEnableMenuNavigationInputs()}}}
+			declare Integer DifficultySelect for This;
+			DifficultySelect = 1;
+			
+
+
+
+			G_IndexSelectY      = 0;
+			G_IndexSelectX      = 0;
+			G_Difficulty[0]     = "Custom";
+			G_Difficulty[1]     = "White";
+			G_Difficulty[2]     = "Green";
+			G_Difficulty[3]     = "Blue";
+			G_Difficulty[4]     = "Red";
+			G_Difficulty[5]     = "Black";
+			G_SubTitle[0]       = "You choose, you play!";
+			G_SubTitle[1]       = "An Unexpected Journey";
+			G_SubTitle[2]       = "Easy to pick up, hard to master";
+			G_SubTitle[3]       = "No Pain, No Gain";
+			G_SubTitle[4]       = "はい、おかげさまで。";
+			G_SubTitle[5]       = "For Expert pilot only";
+			G_IndexUpdateMedals = 0;
+			G_UpdateMedals      = False;
+			G_HideTime = -1;
+
+			Init(G_IndexSelectX);
+
+			while(True) {
+				yield;
+				if(! PageIsVisible) continue;
+				LibManialink_AnimLoop();
+
+				if(G_UpdateMedals)
+				{
+					UpdateMedals();
+				}
+
+				if(G_HideTime <= Now && G_HideTime != -1)
+				{
+					G_HideTime = -1;
+					SendCustomEvent("DetachPage", ["DifficultySelector","BackgroundMenu", "Board", "Screen6x6"]);
+				}
+
+				{{{ClipTransitions::InjectInWhile(["Frame_Content"])}}}
+
+				foreach(Event in PendingEvents) {
+					switch(Event.Type) {
+						case CMlEvent::Type::MenuNavigation: {
+							if(G_LockInput > Now) continue;
+							switch(Event.MenuNavAction) {
+								case CMlEvent::EMenuNavAction::Left : {
+									if(G_IndexSelectX <= 0 || G_UpdateMedals) continue;
+									G_IndexSelectX -= 1;
+									ChangeLvl(G_IndexSelectX);
+								}
+								case CMlEvent::EMenuNavAction::Right : {
+									if(G_IndexSelectX >= 5 || G_UpdateMedals) continue;
+									G_IndexSelectX += 1;
+									ChangeLvl(G_IndexSelectX);
+
+								}
+								case CMlEvent::EMenuNavAction::Select : {
+									Audio.PlaySoundEvent("{{{SoundSelect}}}", {{{Volumes::GetVolumedB("MenuValidate")}}});
+									SelectDifficulty(G_IndexSelectX, G_IndexSelectY);
+									for(I, 0, C_NbDifficulty)
+									{
+										G_MedalsSet[I] = False;
+									}
+									SendCustomEvent("DetachPage", ["DifficultySelector"]);
+									SendCustomEvent("GotoPage", ["BrowseTracks"]);
+								}
+								case CMlEvent::EMenuNavAction::Cancel : {
+									DifficultySelect  = 1;
+									Audio.PlaySoundEvent("{{{SoundBack}}}", {{{Volumes::GetVolumedB("MenuPageBack")}}});
+									HidePage();
+									SendCustomEvent("GotoPrevious", [""]);
+								}
+								case CMlEvent::EMenuNavAction::AppMenu : {
+									DifficultySelect  = 1;
+									Audio.PlaySoundEvent("{{{SoundBack}}}", {{{Volumes::GetVolumedB("MenuPageBack")}}});
+									HidePage();
+									SendCustomEvent("GotoPrevious", [""]);
+								}
+							}
+						}
+
+						
+						case CMlEvent::Type::PluginCustomEvent: {
+							declare PreviousPage = Event.CustomEventData[0];
+							switch(Event.PluginCustomEventType) {
+								case "Show" : {
+									ShowPage(PreviousPage);
+									{{{_ShowAnim}}}
+									
+									declare Vec3 HeaderInfo_LabelTitleColor for This;
+									HeaderInfo_LabelTitleColor = <1.0, 0.9, 0.0>;
+									declare Text HeaderInfo_LabelSubTitle for This;
+									HeaderInfo_LabelSubTitle = "Championship";
+									declare Vec3 NextColorHeaderInfo for This;
+									NextColorHeaderInfo = <0.1 ,0.1, 0.1>;
+									SendCustomEvent("UpdateHeaderTitle", [""]);
+									
+									declare Integer DifficultySelect for This;
+									G_IndexSelectX = DifficultySelect;
+									//ChangeLvl(G_IndexSelectX);
+									EnableMenuNavigation(True,False,Null,1);
+								}
+								case "Hide" : {
+									{{{_HideAnim}}}
+									//SendCustomEvent("DetachPage", ["DifficultySelector"]);
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	--></script>
+	""";
+	return MLText;
+}

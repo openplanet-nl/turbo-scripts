@@ -1,0 +1,506 @@
+
+#Include "TextLib" 													as TL
+#Include "Libs/Openplanet/Manialink2.Script.txt"							as Manialink
+#Include "Libs/Openplanet/UIPadButtons.Script.txt"						as LibUIButtons
+#Include "Libs/Openplanet/TMConsole/FontManager.Script.txt"				as Font
+#Include "Libs/Openplanet/TMConsole/UIXmlBuilder.Script.txt"				as UIXmlBuilder
+#Include "Libs/Openplanet/TMConsole/Volumes.Script.txt" 					as Volumes
+#Include "Libs/Openplanet/TMConsole/Colors.Script.txt" 					as Colors
+
+#Const C_ImgBase 			"file://Media/Manialinks/Nadeo/TMConsole/Images/"
+#Const C_ImgPlugin			"file://Media/PluginNadeoCE/Images/"
+
+#Const SoundPath				"file://Media/Sounds/TMConsole/"
+#Const SoundMove	   	 		"event-focus.wav"
+#Const SoundValidate 			"event-validate.wav"
+#Const SoundShowPauseMenu		"event-menupause.wav"
+
+ 
+Text Build(Text _ShowAnim, Text _HideAnim) {
+
+	declare Text IMGPopupBg     = C_ImgPlugin^"popup-bg-small.dds";
+	declare Text IMGPopupTitle  = C_ImgPlugin^"popup-title.dds";
+	declare Text IMGStartBg 	= "file://Media/_ERR_.dds";	//C_ImgPlugin^"SystemStartBg.png";
+	//LibUIButtons::Load();
+	declare Integer Platform     = LibUIButtons::GetPlatform();
+	declare Text 	IMGSelect    = LibUIButtons::GetImage(Platform, CManiaAppEvent::EMenuNavAction::Select);
+	declare Text 	IMGCancel    = LibUIButtons::GetImage(Platform, CManiaAppEvent::EMenuNavAction::Cancel);
+	declare Text 	TXTSelect    = _("SELECT");
+	declare Text 	TXTCancel    = _("Cancel");
+	declare Text	ImgFadeBlack = C_ImgBase^"rewards_1-02_low.dds";
+	declare Text 	IMGTrame     = C_ImgBase^"SystemStartBg2.dds";
+
+
+	declare Vec3 LayerPos = <0., 0., 15.>;
+	declare Text[][] LayersContent;
+	LayersContent.add(["Title", 	"Title", 		"",		"2",	"", "", ""]);
+	//LayersContent.add(["Space", 	"", 		  	"", 				"1",	"", "", ""]);
+	LayersContent.add(["Label", 	"Content", 		"",		"1",	"", "Bg Roll", ""]);
+	LayersContent.add(["Space", 	"", 		  	"", 				"1",	"", "", ""]);
+	// TODO HACK : ajouter "Dualshock 4 (r) wireless controller, ou XB1
+	LayersContent.add(["Button", 	"No", 			_("No"), 			"1",	"", "", ""]);
+	LayersContent.add(["Button", 	"Yes", 			_("Yes"), 			"1",	"", "", ""]);
+	LayersContent.add(["Space", 	"", 		  	"", 				"1",	"", "", ""]);
+	LayersContent.add(["Input", 	"Input", 		"", 				"1",	"", "", ""]);
+	
+	declare MLShowAnim = UIXmlBuilder::GetShowAnim(LayersContent, LayerPos);
+
+	declare Text MLText = """
+	<frame id="Frame_PopUp" posn="0 0 90" hidden="1">
+		<quad posn="0 0 1" sizen="200 160" bgcolor="000" halign="center" valign="center" opacity="0." keepratio="Fit" image="{{{IMGPopupBg}}}" scale="0.8" />
+		<quad posn="-92.5 61.0 1"  sizen="168 90" bgcolor="000" halign="top" valign="left" opacity="1." keepratio="Fit" image="{{{IMGPopupTitle}}}" hidden="1" />
+		<quad posn="0 0 0" sizen="320 180" bgcolor="000" halign="center" opacity="0.5" valign="center"/>
+
+		<quad  id="Quad_RemoveFocus" opacity="0." scriptevents="1" />
+		
+		<frame scale="0.8" posn="70 -35 0" hidden="0">
+			<frame id="Frame_ButtonOk" hidden="0">
+				<quad id="Quad_Select" halign="center" valign="center" keepratio="Fit"
+					 	posn="62 -52.8 5" sizen="13.0 13.0" image="{{{IMGSelect}}}" opacity="1."/>
+				<label  posn="71.1 -51.8 2" sizen="120 9" text="OK" id="Button_OK" textsize="10." style="TextValueSmallSm" halign="left" valign="center"/>
+				<quad id="ButtonClick_OK" halign="center" valign="center" keepratio="Fit" posn="74 -52.8 7" sizen="38.0 13.0" bgcolor="900" opacity="0." scriptevents="1"/>
+
+			</frame>
+			<frame id="Frame_ButtonCancel" hidden="1">
+				<quad halign="center" valign="center" keepratio="Fit"
+					sizen="13.0 13.0" image="{{{IMGCancel}}}" posn="27.3 -52.8 3" opacity="1."/>
+				<label posn="36.4 -51.8 2" sizen="120 9" text="Cancel" id="Button_Cancel" textsize="9." style="TextValueSmallSm" halign="left" valign="center"/>
+				<quad id="ButtonClick_Cancel" halign="center" valign="center" keepratio="Fit" posn="74 -52.8 7" sizen="38.0 13.0" bgcolor="900" opacity="0." scriptevents="1"/>
+			</frame>
+		</frame>
+
+		<label 
+		posn="0 4.0 1" 
+		sizen="120 9" 
+		textfont="{{{Font::GetFontName("Main")}}}" 
+		textsize="11" 
+		textcolor="fff" 
+		halign="center" 
+		valign="bottom"
+		autonewline="1" 
+		maxline="4"
+		textprefix="$t"
+		text="Trackmania"
+		/>
+
+		<label id="Message" 
+		posn="0 6.0 1" 
+		sizen="175" 
+		textfont="{{{Font::GetFontName("Main")}}}" 
+		textsize="5.0" 
+		halign="center" 
+		valign="top"
+		autonewline="1" 
+		maxline="8"
+		textcolor="{{{Colors::GetColorHexa("Yellow")}}}"
+		textprefix="$t"
+		linespacing="0.85"
+		text=""
+		/>
+
+		<label posn="-67.4 19 2" sizen="142 9" id="Message" style="TextValueSmallSm"
+		 halign="left" valign="top" textsize="5." autonewline="1" maxline="4" hidden="1"/>
+
+
+		<label posn="-88.4 53.5 2" sizen="120 9" text="Pop Up Title" id="Title" textsize="22." style="TextValueSmallSm" halign="left" valign="center" hidden="1" />
+		<quad posn="-160 90 -5" sizen="320 180" bgcolor="FFFA" image="{{{IMGStartBg}}}" opacity="0."/>
+		
+		<quad id="Quad_Image" 
+		posn="0 0 0" 
+		sizen="320 180" 
+		valign="center" 
+		halign="center" 
+		bgcolor="fff" 
+		image="{{{IMGTrame}}}"
+		opacity="0."
+		/>	
+		<quad id="Quad_Transition" halign="center" valign="center" hidden="0" sizen="1500 180" bgcolor="090" image="{{{ImgFadeBlack}}}" posn="640 0 -1" keepratio="Fit"/>
+		
+	</frame>
+
+	<frame id="Frame_PopUpYesNo" posn="0 0 60" hidden="1">
+		{{{UIXmlBuilder::GetXml("PopUpYesNo", LayersContent, 1., LayerPos, 36.)}}}
+		<quad 	id="ButtonInput_Cancel"		posn="-54. -27 30.2"  	sizen="50 6" 	 bgcolor="090" opacity="0." scriptevents="1" />
+		
+		<quad id="BG" sizen="320. 180." posn="0. 0. 3" bgcolor="000" halign="center" valign="center" opacity="0." />
+
+		<quad id="Quad_Image" 
+		posn="0 0 1" 
+		sizen="320 180" 
+		valign="center" 
+		halign="center" 
+		bgcolor="fff" 
+		image="{{{IMGTrame}}}"
+		opacity="1."
+		/>	
+		<quad id="Quad_Transition" halign="center" valign="center" hidden="0" sizen="1500 180" bgcolor="090" image="{{{ImgFadeBlack}}}" posn="640 0 0" keepratio="Fit"/>
+		
+	</frame>
+	<script><!--
+		#Include "TextLib" as TL
+		#Include "MathLib" as MathLib
+	
+		#Const DebugName  "L_PopUp"
+			
+		{{{Manialink::GetIncludes()}}}
+		{{{Manialink::Load()}}}
+
+		declare Text 	G_AskYesNoFeedback;
+		declare Boolean G_IsPopUp;
+		declare Text 	G_PopUpShow;
+		declare Boolean G_CanCancel;
+		declare Integer G_LockInput;
+
+		{{{LibUIButtons::Inject_SetInputInfoTextSelected()}}}
+
+		Void LaunchAnimBG(Text _FrameSelect)
+		{
+			declare CMlFrame FrameSelect     =  (Page.GetFirstChild(_FrameSelect)             as CMlFrame);
+			declare CMlQuad Quad_Transition <=> (FrameSelect.GetFirstChild("Quad_Transition") as CMlQuad);
+			declare CMlQuad Quad_Image      <=> (FrameSelect.GetFirstChild("Quad_Image")      as CMlQuad);
+			declare CMlQuad Quad_Select      <=> (Page.GetFirstChild("Quad_Select")      as CMlQuad);
+		    declare Real QuadSizeY = Quad_Transition.Size.Y;
+		    Quad_Transition.RelativePosition.X = QuadSizeY*3.;
+		    Quad_Image.Opacity = 0.;
+			//declare Real NewQuadPosX = -QuadSizeY*6.;
+			declare Vec3 NewQuadPos  = <0., Quad_Transition.RelativePosition.Y, Quad_Transition.RelativePosition.Z>;
+			LibManialink_SetTargetPosition(Quad_Transition, NewQuadPos);
+			LibManialink_PresetAnim(Quad_Transition, 400, "EaseLinear");
+			LibManialink_SetTargetOpacity(Quad_Image, 1.0);
+			LibManialink_PresetAnimInsert(Quad_Image, 150, 250, "EaseLinear");
+			Quad_Select.RelativePosition.Z = 5.;
+		}
+				
+		Void LaunchPopUp(Integer _Update, Text _LabelText, Text _ButtonText, Boolean _FocusOnButton)
+		{
+			// log("PopUp");
+			declare CMlFrame Frame_PopUp = (Page.GetFirstChild("Frame_PopUp") as CMlFrame);
+			declare CMlLabel Message_Label = (Page.GetFirstChild("Message") as CMlLabel);
+			Message_Label.Value = _LabelText;
+			
+			declare CMlLabel Button_Ok = (Frame_PopUp.GetFirstChild("Button_OK") as CMlLabel);
+			Button_Ok.Value = "OK";
+			declare CMlFrame Frame_ButtonCancel = (Frame_PopUp.GetFirstChild("Frame_ButtonCancel") as CMlFrame);
+			Frame_ButtonCancel.Hide();
+			declare CMlLabel Button_Cancel = (Frame_PopUp.GetFirstChild("Button_Cancel") as CMlLabel);
+			Button_Cancel.Value = "Cancel";
+			
+			LaunchAnimBG("Frame_PopUp");
+			Frame_PopUp.Show();
+			EnableMenuNavigation(True,False,Null,998);
+			//log("LaunchPopUp ["^_Update^"], LabelText ["^_LabelText^"], ButtonText ["^_ButtonText^"], FocusOnButton ["^_FocusOnButton^"]");
+			G_PopUpShow = "PopUp";
+			//G_CanCancel = False;
+			
+			//utilise pour retirer le focus de l'entry qui trigger le virtual keyboard, si elle est focused.
+			declare CMlQuad Quad_RemoveFocus <=> (Page.GetFirstChild("Quad_RemoveFocus") as CMlQuad);
+			Quad_RemoveFocus.Focus();
+			G_IsPopUp = True;
+		}
+
+
+
+		Void LaunchAskYesNo(Text _LabelText, Text _TitleText, Text _TitleColor, Text _Choix1, Text _Choix2, Boolean _CanCancel)
+		{
+			declare CMlLabel LabelContent = (Page.GetFirstChild("Label_Content") as CMlLabel);
+			declare CMlLabel LabelTitle = (Page.GetFirstChild("Label_TitleTitle") as CMlLabel);
+			declare Frame_LeftInput 		<=> (Page.MainFrame.GetFirstChild("Frame_LeftInput") 	as CMlLabel);
+			declare ButtonInput_Cancel 		<=> (Page.MainFrame.GetFirstChild("ButtonInput_Cancel") as CMlQuad);
+			declare Vec3 TitleColor = TL::ToColor(_TitleColor);
+			LabelContent.Value   = _LabelText;
+			LabelTitle.Value     = _TitleText;
+			LabelTitle.TextColor = TitleColor;
+
+			G_PopUpShow = "PopUpAsk";
+			G_CanCancel = _CanCancel;
+			if(_CanCancel)
+			{
+				Frame_LeftInput.Show();
+				ButtonInput_Cancel.Show();
+			}
+			else
+			{
+				Frame_LeftInput.Hide();
+				ButtonInput_Cancel.Hide();
+			}
+			declare CMlFrame Frame_PopUpYesNo = (Page.GetFirstChild("Frame_PopUpYesNo") as CMlFrame);
+			Frame_PopUpYesNo.Show();
+
+			if(_Choix1 != ""){
+				declare Label_No	<=> (Page.MainFrame.GetFirstChild("Label_No") 	as CMlLabel);
+				Label_No.Value  = _Choix1;
+			}
+			
+			if(_Choix2 != ""){
+				declare Label_Yes	<=> (Page.MainFrame.GetFirstChild("Label_Yes") 	as CMlLabel);
+				Label_Yes.Value = _Choix2;
+			}
+
+
+			LaunchAnimBG("Frame_PopUpYesNo");
+			Audio.PlaySoundEvent("{{{SoundPath^SoundShowPauseMenu}}}", {{{Volumes::GetVolumedB("MenuPauseShow")}}});
+			
+
+			//utilise pour retirer le focus de l'entry qui trigger le virtual keyboard, si elle est focused.
+			//declare CMlQuad Quad_RemoveFocus <=> (Page.GetFirstChild("Quad_RemoveFocus") as CMlQuad);
+			//Quad_RemoveFocus.Focus();
+			
+			declare CMlQuad Button_No <=> (Frame_PopUpYesNo.GetFirstChild("Button_No") as CMlQuad);
+			Button_No.Focus();
+			
+			EnableMenuNavigation(True, True, Null, 50);
+		}
+		
+
+		Void HidePopUp()
+		{
+			declare CMlFrame Frame_PopUp = (Page.GetFirstChild("Frame_PopUp") as CMlFrame);
+			declare CMlFrame Frame_PopUpYesNo = (Page.GetFirstChild("Frame_PopUpYesNo") as CMlFrame);
+			//declare CMlFrame Frame_PopUpYesNo = (Page.GetFirstChild("Frame_PopUpYesNo") as CMlFrame);
+			Frame_PopUp.Hide();
+			//Frame_PopUpYesNo.Hide();
+			if(!Frame_PopUpYesNo.Visible)
+			{
+				EnableMenuNavigation(False,False,Null,0);
+				G_PopUpShow = "";
+			}
+			else
+			{
+				G_PopUpShow = "PopUpAsk";
+				EnableMenuNavigation(True, True, Null, 50);
+			}
+			G_IsPopUp = False;
+		}
+		
+		Void HidePopUpAsk()
+		{
+			//declare CMlFrame Frame_PopUp = (Page.GetFirstChild("Frame_PopUp") as CMlFrame);
+			declare CMlFrame Frame_PopUpYesNo = (Page.GetFirstChild("Frame_PopUpYesNo") as CMlFrame);
+			//Frame_PopUp.Hide();
+			Frame_PopUpYesNo.Hide();
+			EnableMenuNavigation(False,False,Null,0);
+			
+			if (G_CanCancel)
+			{
+				SendCustomEvent(G_AskYesNoFeedback^"_AskYesNo", ["Cancel"]);
+			}
+		}
+
+		Void Input_Select()
+		{
+			if (G_IsPopUp)
+			{
+				EnableMenuNavigation(True, True, Null, 50);
+				HidePopUp();
+			}
+		}
+		Void Input_Cancel()
+		{
+			if(G_CanCancel && G_PopUpShow == "PopUpAsk") HidePopUpAsk();
+		}
+
+		main() {
+		
+			{{{MLShowAnim[0]}}}
+
+			//declare Label_SubtitleTitle	 	<=> (Page.MainFrame.GetFirstChild("Label_SubtitleTitle")  as CMlLabel);
+			declare Quad_RightInput 		<=> (Page.MainFrame.GetFirstChild("Quad_RightInputInput") 	  as CMlQuad);
+			declare Quad_LeftInput 			<=> (Page.MainFrame.GetFirstChild("Quad_LeftInputInput") 	  as CMlQuad);
+			declare Label_RightInput 		<=> (Page.MainFrame.GetFirstChild("Label_RightInputInput") 	  as CMlLabel);
+			declare Label_LeftInput 		<=> (Page.MainFrame.GetFirstChild("Label_LeftInputInput") 	  as CMlLabel);
+			declare Frame_LeftInput 		<=> (Page.MainFrame.GetFirstChild("Frame_LeftInput") 	      as CMlLabel);
+			declare Frame_RightInput 		<=> (Page.MainFrame.GetFirstChild("Frame_RightInput") 	      as CMlLabel);
+
+			declare CMlQuad[] 	Buttons;
+
+			Buttons.add((Page.MainFrame.GetFirstChild("Button_No") as CMlQuad));
+			Buttons.add((Page.MainFrame.GetFirstChild("Button_Yes")  as CMlQuad));
+			//Buttons.add((Page.MainFrame.GetFirstChild("ButtonInput_Cancel")  as CMlQuad));
+			
+			declare CMlQuad  ButtonSelected <=> Buttons[0];
+
+
+			Quad_RightInput		.ImageUrl 	= "{{{IMGSelect}}}";
+			Quad_LeftInput		.ImageUrl 	= "{{{IMGCancel}}}";
+			Label_RightInput	.Value 		= "{{{TXTSelect}}}";
+			Label_LeftInput		.Value 		= "{{{TXTCancel}}}";
+			Frame_LeftInput.Hide();
+			Frame_RightInput.Show();
+
+			declare Integer Net_Message_Update			for This;
+			declare Text    Net_Message_LabelText		for This;
+			declare Text    Net_Message_ButtonText		for This;
+			declare Boolean Net_Message_FocusOnButton	for This;
+			declare CMlLabel Message_Label = (Page.GetFirstChild("Message") as CMlLabel);
+			HidePopUp();
+			
+			while(True) 
+			{
+				yield;
+				LibManialink_AnimLoop();
+
+				{{{MLShowAnim[1]}}}
+
+				if(G_PopUpShow == "PopUp")
+				{
+					declare Real ButtonSelectedSinVar  = MathLib::Sin(Now * 0.007) * 0.5 + 0.5;
+					declare CMlLabel Message_Label = (Page.GetFirstChild("Message") as CMlLabel);
+					Message_Label.Opacity = ButtonSelectedSinVar;
+				}
+
+				foreach(Event in PendingEvents)
+				{
+					switch(Event.Type) 
+					{
+						case CMlEvent::Type::MenuNavigation: {
+							if(G_LockInput + 150 > Now) continue;
+							G_LockInput = Now;
+							//log("Event.MenuNavAction: " ^ Event.MenuNavAction);
+							switch(Event.MenuNavAction) {
+								case CMlEvent::EMenuNavAction::Select : {
+
+									Input_Select();
+
+								}
+								case CMlEvent::EMenuNavAction::Cancel : {
+									Input_Cancel();
+								}
+								case CMlEvent::EMenuNavAction::AppMenu : {
+									Input_Cancel();
+								}
+								case CMlEvent::EMenuNavAction::Action1 : {
+									//HidePopUp(); ?
+									//SendCustomEvent("Hack_JoinFriend", [""]);
+								}
+							}						
+						}
+						case CMlEvent::Type::MouseClick: {
+							if(G_LockInput + 150 > Now) continue;
+							G_LockInput = Now;
+							Audio.PlaySoundEvent("{{{SoundPath^SoundValidate}}}", {{{Volumes::GetVolumedB("MenuClick")}}});
+							declare CMlFrame Frame_PopUp = (Page.GetFirstChild("Frame_PopUp") as CMlFrame);
+							if(Frame_PopUp.Visible) HidePopUp();
+							else
+							{
+								if(Event.Control.ControlId == "Button_No")
+								{
+									HidePopUpAsk();
+									SendCustomEvent(G_AskYesNoFeedback^"_AskYesNo", ["False"]);
+									G_AskYesNoFeedback = "";
+								}
+								else if(Event.Control.ControlId == "Button_Yes")
+								{
+									HidePopUpAsk();
+									SendCustomEvent(G_AskYesNoFeedback^"_AskYesNo", ["True"]);
+									G_AskYesNoFeedback = "";
+								}
+								else if(Event.Control.ControlId == "MouseInput_Left")
+								{
+									if(G_CanCancel && G_PopUpShow == "PopUpAsk") HidePopUpAsk();
+								}
+								else if(Event.Control.ControlId == "ButtonClick_OK")
+								{
+									Input_Select();
+								}
+								else if(Event.Control.ControlId == "ButtonClick_Cancel")
+								{
+									Input_Cancel();
+								}
+								else if(Event.Control.ControlId == "ButtonInput_Cancel")
+								{
+									Input_Cancel();
+								}
+
+							}
+						}
+						case CMlEvent::Type::MouseOver: {
+							Audio.PlaySoundEvent("{{{SoundPath^SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+							declare CMlControl ControlFocus = Event.Control;
+
+							ButtonSelected = Null;
+							foreach(I => Button in Buttons)
+							{
+								if (ControlFocus == Button)
+								{
+									ButtonSelected = Button;
+								}
+							}
+							declare Label_LeftInput <=> (Page.MainFrame.GetFirstChild("Label_LeftInputInput") 	  as CMlLabel);
+							declare Boolean IsFocus  = ButtonSelected == Null;
+
+							SetInputInfoTextSelected(Label_LeftInput, IsFocus);
+						}
+
+
+						case CMlEvent::Type::PluginCustomEvent: 
+						{
+							switch(Event.PluginCustomEventType)
+							{
+								case "UpdatePopUp" : {
+									G_LockInput = Now + 300;
+									if(Event.CustomEventData.count < 4) continue;
+									declare Integer Update     = TL::ToInteger(Event.CustomEventData[0]);
+									declare Text LabelText     = Event.CustomEventData[1];
+									declare Text ButtonText    = Event.CustomEventData[2];
+									declare Boolean FocusOnButton = False;
+									if(Event.CustomEventData[3] == "True") FocusOnButton = True;
+
+									//G_AskYesNoFeedback = "";
+									LaunchPopUp(Update, LabelText, ButtonText, FocusOnButton);
+								}
+								case "UpdateAskYesNo" : {
+									G_LockInput = Now + 300;
+									if(Event.CustomEventData.count < 4 ) continue;
+									M_LaunchShowAnim = True;
+									declare Text LabelText = Event.CustomEventData[0];
+									declare Text TitleText = Event.CustomEventData[1];
+									declare Text TitleColor = Event.CustomEventData[2];
+									G_AskYesNoFeedback = Event.CustomEventData[3]; //on envoie un event <ManagerName>_AskYesNo pour feedback
+									declare Text Choix1 = "";
+									declare Text Choix2 = "";
+									declare Boolean CanCancel = False;
+									if(Event.CustomEventData.count >= 7)
+									{
+										Choix1	  = Event.CustomEventData[4];
+										Choix2	  = Event.CustomEventData[5];
+										CanCancel = (Event.CustomEventData[6] == "True");
+
+									}
+									LaunchAskYesNo(LabelText, TitleText, TitleColor, Choix1, Choix2, CanCancel);
+									ButtonSelected <=> Buttons[0];
+								}
+								case "Show" : {
+									HidePopUp();
+								}
+
+								case "HidePopUp" : {
+									HidePopUp();
+								}
+								case "HidePopUpAsk" : {
+									HidePopUpAsk();
+								}
+								case "HideAll" : {
+									HidePopUp();
+									HidePopUpAsk();
+								}
+							}
+						}
+					}
+				}
+
+				declare ButtonSelectedSinVar 	= ML::Sin(Now * 0.01) * 0.5 + 0.5;
+				declare ButtonSelectedOpacity 	= 0.0 + ButtonSelectedSinVar * 1.;
+
+				foreach(Button in Buttons)
+				{
+					Button.Opacity = 0.;
+				}
+
+				if(ButtonSelected != Null) ButtonSelected.Opacity = ButtonSelectedOpacity;
+			}
+		}
+	--></script>
+	""";
+	
+	return MLText;
+}

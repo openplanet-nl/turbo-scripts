@@ -1,0 +1,825 @@
+#Include "Libs/Openplanet/TMConsole/MenuColor.Script.txt"					as MenuColor
+#Include "Libs/Openplanet/TMConsole/FontManager.Script.txt"					as Font
+#Include "Libs/Openplanet/TMConsole/Menu/2DSelectArray.Script.txt"			as SelectArray2D
+#Include "Libs/Openplanet/TMConsole/Prompter2.Script.txt"					as Prompter
+#Include "Libs/Openplanet/SystemText.Script.txt"								as SystemText
+#Include "Libs/Openplanet/TMConsole/Menu/LibInputInfos.Script.txt"			as InputInfos
+#Include "Libs/Openplanet/TMConsole/Colors.Script.txt"						as Colors
+#Include "Libs/Openplanet/UIPadButtons.Script.txt"							as LibUIButtons
+#Include "Libs/Openplanet/TMConsole/LibAudio.Script.txt"						as LibAudio
+#Include "Libs/Openplanet/TMConsole/Volumes.Script.txt"						as Volumes
+#Include "TextLib" as TextLib
+
+#Const Count_InstancesY				11
+
+#Const C_ImgBase 	"file://Media/Manialinks/Nadeo/TMConsole/Images/"
+#Const C_ImgBase2	"file://Media/Images/TMConsole/Ingame/"
+#Const C_ImgBaseFlags	"file://Media/Manialinks/Nadeo/TMConsole/Images/Helmets/Drapeaux/NewFlag/"
+
+
+Text InjectInManialink() {
+	//IMAGES
+	declare Text 	IMGSlotSmallBg           = C_ImgBase2^"slot-medium-bg.dds";
+	declare Text 	IMGSlotSmallFg           = C_ImgBase2^"slot-medium-fg.dds";
+	declare Text 	IMGSlotMediumBg          = C_ImgBase2^"slot-medium-bg.dds";
+	declare Text 	IMGSlotMediumFg          = C_ImgBase^"slot-medium-fg2.dds";
+	declare Text 	IMGSlotBigBg             = C_ImgBase^"slot-big-bg2.dds";
+	declare Text 	IMGSlotBigFg             = C_ImgBase^"slot-big-fg2.dds";
+	declare Text 	IMGMenuBg                = C_ImgBase2^"menu-bg-1.dds";
+	
+	declare Integer Platform = LibUIButtons::GetPlatform();
+	
+	declare Text 	IMGArrow				= C_ImgBase^"Arrow.tga";
+	
+	declare Text 	TitleColor    = TextLib::ColorToText(MenuColor::GetMenuColor(0));
+	
+	//SIZES
+	declare Real	Browser_SizeTotalX          = 259.0;
+	declare Real	Browser_SizeY               = 8.27;
+	declare Real	Browser_Separator           = Browser_SizeY * 0.095;
+	declare Real	Browser_SizeYElement        = Browser_SizeY - Browser_Separator;	
+	
+                                                
+	//POSITIONS                                 
+	declare Real	Browser_PosY                = 60.;
+	//declare Real	PositionFirstQuadX       	= 20.8;
+	declare Real	PositionFirstQuadX       	= 0.;
+	declare Real	PositionFirstQuadY       	= 36.3;
+
+	declare Real    LabelPosX_Base			 	= - Browser_SizeTotalX / 2.;
+	declare Real	LabelPosX_Echelon		 	= LabelPosX_Base + Browser_SizeTotalX * 0.79;
+	declare Real	LabelPosX_Players		 	= LabelPosX_Base + Browser_SizeTotalX * 0.25;
+	declare Real	LabelPosX_Buddy				= LabelPosX_Base + Browser_SizeTotalX * 0.02;
+	declare Real	LabelPosX_Adequacy		 	= LabelPosX_Base + Browser_SizeTotalX * 0.95;
+	declare Real	LabelPosX_Environment	 	= LabelPosX_Base + Browser_SizeTotalX * 0.38;
+	declare Real	LabelPosX_GameMode		 	= LabelPosX_Base + Browser_SizeTotalX * 0.87;
+	declare Real	LabelPosX_Flag				= LabelPosX_Base + Browser_SizeTotalX * 0.48;
+	declare Real	LabelPosX_Hostname		 	= LabelPosX_Base + Browser_SizeTotalX * 0.50;
+	
+	SelectArray2D::Init(Browser_SizeTotalX, Browser_SizeYElement, 1, Count_InstancesY);
+	SelectArray2D::SetPosFirstQuad(PositionFirstQuadX, PositionFirstQuadY);
+	SelectArray2D::SetQuadMarge(0., Browser_Separator);
+	SelectArray2D::SetSelectorColor(MenuColor::GetMenuColor(0));
+	
+	SelectArray2D::AddLabel		("Players",  				<LabelPosX_Players, 0.>, 			13, Font::GetFontName("Main"), "", "center", "center");
+	SelectArray2D::AddLabel		("Buddy",  					<LabelPosX_Buddy, 0.>, 				48, Font::GetFontName("Main"), "", "left", "center", """textprefix="$t" """);
+	SelectArray2D::AddQuad		("GameMode", 				<LabelPosX_GameMode, 0.>, 			<7., 7.>);
+	SelectArray2D::AddQuad		("Environment_Stadium", 	<LabelPosX_Environment+12., 0.>,	<7., 7.>);
+	SelectArray2D::AddQuad		("Environment_Lagoon", 		<LabelPosX_Environment+4., 0.>,		<7., 7.>);
+	SelectArray2D::AddQuad		("Environment_Canyon", 		<LabelPosX_Environment-12., 0.>,	<7., 7.>);
+	SelectArray2D::AddQuad		("Environment_Valley", 		<LabelPosX_Environment-4., 0.>,		<7., 7.>);
+	SelectArray2D::AddQuad		("Flag", 					<LabelPosX_Flag, 0.>,				<7., 7.>);
+	SelectArray2D::AddLabel		("Hostname",  				<LabelPosX_Hostname, 0.>, 			67, Font::GetFontName("Main"), "fff", "left", "center", """textprefix="$t" """);
+	SelectArray2D::AddQuad		("Adequacy", 				<LabelPosX_Adequacy, 0.>, 			<7., 7.>);
+	SelectArray2D::AddQuad		("Echelon", 				<LabelPosX_Echelon, 0.>, 			<7., 7.>);
+	SelectArray2D::AddQuad		("Private", 				<LabelPosX_Adequacy, 0., 1.>, 			<7., 7.>);
+	SelectArray2D::AddLabel		("Info",  			<0., 0.>, 	200,Font::GetFontName("Main"), "", "center", "center"); //Label que l'on set lorsque tous les autres sont vides (erreur chargement, empty room slot, etc...)
+	
+	InputInfos::Init("Browser", Browser_SizeTotalX / 36., Browser_SizeY, 1.);
+	InputInfos::AddInput(6., "Select");
+	InputInfos::AddInput(5., "Cancel");
+	InputInfos::AddInput(7., "Action1");
+	InputInfos::AddInput(8., "Action2");
+	InputInfos::AddInput(6., "LStickPress");
+	
+	declare MLText = """
+		<framemodel id="Frame_SubMenu">
+			<quad halign="center" valign="center" sizen="{{{Browser_SizeTotalX}}} {{{Browser_SizeYElement}}}" image="{{{IMGSlotMediumBg}}}" 	posn="0 0 2" />
+			<quad halign="center" valign="center" sizen="{{{Browser_SizeTotalX}}} {{{Browser_SizeYElement}}}" image="{{{IMGSlotMediumFg}}}" 	posn="0 0 4" />
+			<quad halign="center" valign="center" sizen="{{{Browser_SizeTotalX}}} {{{Browser_SizeY}}}" 		image="{{{IMGMenuBg}}}"		 	posn="0 0 1" />
+		</framemodel>
+		<framemodel id="FrameModel_InputInfo">
+			<quad 	halign="center" valign="bottom" posn="0 0 6" 	sizen="50 {{{Browser_SizeYElement}}}" image="{{{IMGSlotSmallBg}}}"   />
+			<quad 	halign="center" valign="bottom" posn="0 0 8" 	sizen="50 {{{Browser_SizeYElement}}}" image="{{{IMGSlotSmallFg}}}"   />
+			<quad 	halign="center" valign="center" posn="18.5 4 7" sizen="6 6" id="Quad_Icon" />
+			<label 	halign="right" 	valign="center" posn="12 4.5 7" sizen="34" 	id="Label_Name" textcolor="ddd"  textsize="3." />
+		</framemodel>
+		{{{SelectArray2D::InjectInFrameModel()}}}
+	""";
+	
+	////////////////
+	//FRAME TITLE
+	////////////////
+	MLText ^= """
+		<frame id="Frame_Title" posn="0 1.0 0">
+			<quad 	halign="center" valign="bottom" sizen="{{{Browser_SizeTotalX}}} {{{Browser_SizeY*2.}}}" image="{{{IMGSlotBigFg}}}" posn="0 {{{Browser_PosY-2.8}}} 7" />
+			<quad  	halign="center" valign="bottom" sizen="{{{Browser_SizeTotalX}}} {{{Browser_SizeY*2.}}}" image="{{{IMGSlotBigBg}}}" posn="0 {{{Browser_PosY-2.8}}} 5" />
+			<label 	halign="left" valign="center" textprefix="$t" textfont="{{{Font::GetFontName("Main")}}}" posn="{{{-(Browser_SizeTotalX-2)/2.}}}  {{{Browser_PosY + Browser_SizeY - 1.}}} 6" textcolor="{{{TitleColor}}}" textsize="13." text="{{{_("Join a friend")}}}" sizen="{{{Browser_SizeTotalX-2.}}}" />
+		</frame>
+	""";
+	
+	////////////////
+	//INPUT
+	////////////////
+	MLText ^= """<frame id="Frame_InputInfos" posn="{{{Browser_SizeTotalX * 0.5}}} {{{-9*Browser_SizeY}}} 7">
+		{{{InputInfos::InjectInManialink()}}}
+	</frame>""";
+	
+	////////////////
+	//SERVERLIST
+	////////////////
+	MLText ^= """
+		<frame id="Frame_ServerList" posn="0 -8.27">
+			<frame id="Frame_Legends" posn="{{{PositionFirstQuadX}}} {{{PositionFirstQuadY + Browser_SizeY}}} 7" hidden="1">
+				<label id="Label_Buddy"  		textprefix="$t" halign="left" 	valign="center2" bgcolor="fff" text="{{{_("Buddy")}}}"   		posn="{{{LabelPosX_Buddy}}} 0 0" 			opacity="1.0" sizen="17"  textfont="{{{Font::GetFontName("Main")}}}"/>
+				<label id="Label_Players"  		textprefix="$t" halign="center" valign="center2" bgcolor="fff" text="{{{_("Players")}}}"   		posn="{{{LabelPosX_Players}}} 0 0" 			opacity="1.0" sizen="17"  textfont="{{{Font::GetFontName("Main")}}}"/>
+				<label id="Label_GameMode"  	textprefix="$t" halign="center" valign="center2" bgcolor="fff" text="{{{_("Mode")}}}"    		posn="{{{LabelPosX_GameMode}}} 0 0" 		opacity="1.0" sizen="15"  textfont="{{{Font::GetFontName("Main")}}}"/>
+				<label id="Label_Environment"  	textprefix="$t" halign="center" valign="center2" bgcolor="fff" text="{{{_("Environments")}}}"  	posn="{{{LabelPosX_Environment}}} 0 0" 		opacity="1.0" sizen="40"  textfont="{{{Font::GetFontName("Main")}}}"/>
+				<label id="Label_Hostname"  	textprefix="$t" halign="left"  	valign="center2" bgcolor="fff" text="{{{_("Room Name")}}}"		posn="{{{LabelPosX_Hostname}}} 0 0" 		opacity="1.0" sizen="100"  textfont="{{{Font::GetFontName("Main")}}}"/>
+				<label id="Label_Adequacy"  	textprefix="$t" halign="center" valign="center2" bgcolor="fff" text="{{{_("Level")}}}"			posn="{{{LabelPosX_Adequacy}}} 0 0" 		opacity="1.0" sizen="15"  textfont="{{{Font::GetFontName("Main")}}}"/>
+				<label id="Label_Echelon"  		textprefix="$t" halign="center" valign="center2" bgcolor="fff" text="{{{_("Ech.")}}}"			posn="{{{LabelPosX_Echelon}}} 0 0" 			opacity="1.0" sizen="15"  textfont="{{{Font::GetFontName("Main")}}}"/>				
+			</frame>
+			<quad scriptevents="1" id="MouseInput_NextPage" 	halign="center" valign="center" keepratio="Fit" 			sizen="12.0 12.0" image="{{{IMGArrow}}}" posn="{{{Browser_SizeTotalX * 0.5 + 15.}}} 0. 11" 		colorize="{{{TextLib::ColorToText(Colors::GetColor("White"))}}}" hidden="1"/>
+			<quad scriptevents="1" id="MouseInput_PrevPage" 	halign="center" valign="center" keepratio="Fit" rot="180" 	sizen="12.0 12.0" image="{{{IMGArrow}}}" posn="{{{- Browser_SizeTotalX * 0.5 - 15.}}} 0. 11"  	colorize="{{{TextLib::ColorToText(Colors::GetColor("White"))}}}" hidden="1"/>
+	""";
+	
+	for(K, 0, Count_InstancesY)
+	{
+		declare Real FramePosnX = PositionFirstQuadX;
+		declare Real FramePosnY = PositionFirstQuadY + 0.2 - (K-1) * Browser_SizeY; //on fait une ligne au dessus pour les légendes
+
+		MLText^="""<frameinstance modelid="Frame_SubMenu" posn="{{{FramePosnX}}} {{{FramePosnY}}} 4." id="Frame_InstanceSubMenu{{{K-1}}}" hidden="0"/>""";
+		
+		if (K >= 1) {
+			MLText ^= """<quad halign="center" valign="center" sizen="{{{Browser_SizeTotalX}}} {{{Browser_SizeYElement}}}" posn="{{{FramePosnX}}} {{{FramePosnY}}} 8" opacity="0." scriptevents="1" hidden="1" id="MouseInput_BrowserLine_{{{K-1}}}" />""";
+		}
+	}
+	
+	MLText ^= """
+			{{{SelectArray2D::InjectInManialink()}}}	
+		</frame>
+	""";
+	
+	return MLText;
+}
+
+Text InjectInGlobals() {
+	declare Globals = """
+		declare Integer						G_IndexFocusX;
+		declare Integer						G_IndexFocusY;
+		declare Boolean 					G_RequestError;		
+		declare Integer 					G_CurrentSelectedRoomIndex;
+		declare Integer						G_Prev_PageIndex;
+		declare Integer 					G_ServerBrowser_LastRefreshTime;
+		
+		{{{SelectArray2D::InjectInGlobalDeclaration()}}}
+		{{{Prompter::InjectInGlobals()}}}
+	""";
+	
+	return Globals;
+}
+
+Text InjectInInit() {
+	declare Init = """	
+		G_RequestError = False;
+		G_CurrentSelectedRoomIndex = 0;
+		
+		{{{Prompter::InjectInInit()}}}
+		{{{SelectArray2D::InjectInInit()}}}
+		
+		G_Prev_PageIndex = G_PageIndex;
+		
+		InitInputsInfo();
+	""";
+		
+	return Init;
+}
+
+Text InjectInFunctions() {
+
+	declare Text	IMGEnvironment_Canyon      = "file://Media/Manialinks/Nadeo/TMConsole/Images/Online/BrowseServers/logos_enviro/canyon_s.tga";
+	declare Text	IMGEnvironment_Stadium     = "file://Media/Manialinks/Nadeo/TMConsole/Images/Online/BrowseServers/logos_enviro/stadium_s.tga";
+	declare Text	IMGEnvironment_Lagoon      = "file://Media/Manialinks/Nadeo/TMConsole/Images/Online/BrowseServers/logos_enviro/lagoon_s.tga";
+	declare Text	IMGEnvironment_Valley      = "file://Media/Manialinks/Nadeo/TMConsole/Images/Online/BrowseServers/logos_enviro/valley_s.tga";
+	
+	declare Real	Browser_SizeTotalX          = 259.0;
+	
+	declare Functions = """
+		{{{SelectArray2D::InjectInFunction()}}}
+		{{{Prompter::InjectInFunctions()}}}
+		
+		//////////////////
+		// INPUT INFO
+		//////////////////
+		Void InitInputsInfo() {
+			declare CMlLabel Label_InputName;
+		
+			//SELECT
+			declare CMlFrame FrameInputSelect <=> (Page.GetFirstChild("Frame_InputInfo_Browser_Select") as CMlFrame);
+			Label_InputName <=> (FrameInputSelect.GetFirstChild("Label_Name") as CMlLabel);
+			//L16N Displayed next to a button icon to explain what it does
+			Label_InputName.Value = _("|16 chars max|JOIN");
+			FrameInputSelect.Show();
+			//CANCEL
+			declare CMlFrame FrameInputCancel <=> (Page.GetFirstChild("Frame_InputInfo_Browser_Cancel") as CMlFrame);
+			Label_InputName <=> (FrameInputCancel.GetFirstChild("Label_Name") as CMlLabel);
+			//L16N Displayed next to a button icon to explain what it does
+			Label_InputName.Value = _("|16 chars max|BACK");
+			FrameInputCancel.Show();
+			//ACTION1
+			declare CMlFrame FrameInputAction1 <=> (Page.GetFirstChild("Frame_InputInfo_Browser_Action1") as CMlFrame);
+			FrameInputAction1.Hide();
+			//ACTION2
+			declare CMlFrame FrameInputAction2 <=> (Page.GetFirstChild("Frame_InputInfo_Browser_Action2") as CMlFrame);
+			Label_InputName <=> (FrameInputAction2.GetFirstChild("Label_Name") as CMlLabel);
+			Label_InputName.Value = "{{{SystemText::GetShowProfileTextForInputCard()}}}";
+			FrameInputAction2.Show();
+			//LSTICK
+			declare CMlFrame FrameInputLStick <=> (Page.GetFirstChild("Frame_InputInfo_Browser_LStickPress") as CMlFrame);
+			Label_InputName <=> (FrameInputLStick.GetFirstChild("Label_Name") as CMlLabel);
+			//L16N Displayed next to a button icon to explain what it does
+			Label_InputName.Value = _("|16 chars max|REFRESH");
+			FrameInputLStick.Show();
+		}
+		
+		Void UpdateInputsInfo() {	
+			declare Text[Text][] RequestedRooms for Page;
+			
+			//SELECT = JOIN (serverinfo / serverstart)
+			declare CMlFrame FrameInputSelect <=> (Page.GetFirstChild("Frame_InputInfo_Browser_Select") as CMlFrame);
+			declare CMlFrame FrameInputAction2 <=> (Page.GetFirstChild("Frame_InputInfo_Browser_Action2") as CMlFrame);
+			if (!G_RequestError && RequestedRooms.count != 0) {
+				FrameInputSelect.Show();
+				FrameInputAction2.Show();
+			} else {
+				FrameInputSelect.Hide();
+				FrameInputAction2.Hide();
+			}
+		}
+		
+		//////////////////
+		// ARRAY 2D
+		//////////////////
+		Void UpdateServerFocus()
+		{   //replace le sélecteur dans la range des servers affichés si besoin est
+			declare Text[Text][] RequestedRooms for Page;	
+			if (RequestedRooms.count != 0)
+			{
+				SetNearestIndex(RequestedRooms.count);		
+			} else {
+				SetNearestIndex(1);			
+			}
+			G_CurrentSelectedRoomIndex = G_PageIndex * {{{Count_InstancesY}}} + G_IndexSelectY;
+		}
+		
+		Void UpdateServerFocusAndInfo()
+		{
+			//ajoute les messages "no server available" / "empty room slot" / "no favorite server" etc...
+			
+			declare Text[Text][] RequestedRooms for Page;
+			declare CMlQuad  Quad_Selector <=> (Page.GetFirstChild("Quad_Selector") as CMlQuad);
+			declare CMlFrame Frame_Legends <=> (Page.GetFirstChild("Frame_Legends") as CMlFrame);
+
+			if (RequestedRooms.count == 0)
+			{
+				ActivateLine(0, True);
+				if(G_RequestError)
+					SetColumnTextData("Info", 0, 	_("The connection to the Trackmania Servers has been lost. Online features will become available once the connection has been re-established."));
+				else {
+					//L16N Displayed in the "join a friend" tab when no friend is playing online
+					SetColumnTextData("Info", 0, 	_("No friends are playing in online rooms."));
+				}
+				Quad_Selector.Hide();				
+				Frame_Legends.Hide();
+			} else {
+				Frame_Legends.Show();
+				Quad_Selector.Show();
+			}
+			UpdateServerFocus();
+		}
+		
+		Vec3 GetEnvironmentColorize(Text _Environments, Text _Environment)
+		{
+			
+			if (TL::Find(_Environment, _Environments, True, False))
+			{
+				return <1., 1., 0.>;
+			} else {
+				return <.5, .5, .5>;
+			}
+			return <1., 1., 1.>;
+		}
+		
+		Void UpdateArrows()
+		{
+			declare CMlQuad  	MouseInput_PrevPage  <=> (Page.GetFirstChild("MouseInput_PrevPage") as CMlQuad);
+			declare CMlQuad  	MouseInput_NextPage <=> (Page.GetFirstChild("MouseInput_NextPage") as CMlQuad);
+			declare Text[Text][] RequestedRooms for Page;
+			if (G_PageIndex > 0)
+				MouseInput_PrevPage.Show();
+			else
+				MouseInput_PrevPage.Hide();
+			
+			if ((G_PageIndex+1)*{{{Count_InstancesY}}} < RequestedRooms.count)
+				MouseInput_NextPage.Show();
+			else
+				MouseInput_NextPage.Hide();
+		}
+		
+				
+		Void Update2DArray(Boolean _UpdateInfoMessage) {
+			//Affiche la liste des serveurs reçus dans le tableau
+			declare Text[Text][] RequestedRooms for Page;
+			
+			declare Integer NbServers = RequestedRooms.count;
+			declare Text[Text] FocusedRoom;
+			
+			declare Integer StartIndexPosition 	=  {{{Count_InstancesY}}}*(G_PageIndex);
+			
+			for(I, 0, {{{Count_InstancesY - 1}}}) {
+				declare Integer ServerIndex = StartIndexPosition + I;
+				
+				declare Text Label_Players;
+				declare Boolean IsFull;
+				declare Text Label_Name;
+					declare Text Author;
+					declare Text Style;
+					declare Text Duration;
+				declare Text Label_Buddy;
+				declare Text Label_Info;
+				declare Boolean AreEnvVisible;
+				declare Vec3 Colorize_Stadium;
+				declare Vec3 Colorize_Lagoon;
+				declare Vec3 Colorize_Canyon;
+				declare Vec3 Colorize_Valley;
+				declare Vec3 Colorize_Name;
+				
+				declare Text Quad_Flag;
+				declare Text Quad_Mode = "";
+				declare Text Quad_Adequacy ="{{{C_ImgBase}}}/Online/BrowseServers/Adequacy_";
+				declare Text Quad_Echelon;
+				declare Text Quad_Lock;
+
+				declare CMlQuad MouseInput_BrowserLine = (Page.GetFirstChild("MouseInput_BrowserLine_"^I) as CMlQuad);
+				
+				if(ServerIndex < NbServers)
+				{
+					FocusedRoom = RequestedRooms[ServerIndex];
+					MouseInput_BrowserLine.Show();
+					ActivateLine(I, True);
+					
+					//INFO
+					Label_Info = "";
+					
+					//BUDDY
+					if (FocusedRoom.existskey("buddy_name"))
+						Label_Buddy = FocusedRoom["buddy_name"];
+					
+					// HACK EG TAG
+					
+					//FLAG
+					if (FocusedRoom.existskey("country") && FocusedRoom["country"] != "")
+						Quad_Flag = "{{{C_ImgBaseFlags}}}"^GetCountryFlag(FocusedRoom["country"]);
+					
+					//PLAYERS
+					Label_Players      	= FocusedRoom["player_count"];
+					IsFull = (TL::ToInteger(FocusedRoom["player_count"]) >= TL::ToInteger(FocusedRoom["player_max"]));
+					
+					//NAME
+					if (FocusedRoom.existskey("displayname"))
+						Author = FocusedRoom["displayname"]; //hostName
+					else
+						Author = "";
+					
+					if (FocusedRoom.existskey("is_online") && FocusedRoom["is_online"] == "true")
+						Colorize_Name = <1., 1., 1.>;
+					else
+						Colorize_Name = <.5, .5, .5>;
+					
+					//DURATION
+					if (FocusedRoom.existskey("duration"))
+					{
+						declare Integer DurationId = TL::ToInteger(FocusedRoom["duration"]);
+						if (DurationId != 0)
+							Duration = " - "^TL::GetTranslatedText(G_RoomsDurations[DurationId]);
+					}	
+					
+					//STYLE
+					if (FocusedRoom.existskey("style"))
+					{
+						Style = " - "^TL::GetTranslatedText(FocusedRoom["style"]);
+					}	
+					
+					Label_Name = TL::Compose("%1%2%3", Author, Duration, Style);
+					
+					//GAMEMODE
+					declare ModeIndex = TL::ToInteger(FocusedRoom["mode"]);
+					if (ModeIndex == -1 || ModeIndex >= G_RoomsGameModesDisplayNames.count)
+						Quad_Mode = "";
+					else {
+						Quad_Mode = "{{{C_ImgBase}}}/Online/BrowseServers/";
+						switch (ModeIndex)
+						{
+							case 0 : Quad_Mode ^= "Time Attack";
+							case 1 : Quad_Mode ^= "Rounds";
+							case 2 : Quad_Mode ^= "Laps";
+							case 3 : Quad_Mode ^= "Stunts";
+							case 4 : Quad_Mode ^= "Rounds_Stunt";
+							case 5 : Quad_Mode ^= "Laps_Stunt";
+						}
+						Quad_Mode ^= ".png";
+					}
+					
+					//ADEQUACY
+					if (FocusedRoom["player_count"] != "0" && FocusedRoom["player_count"] != "")
+					{
+						declare Integer[] Classes;
+						Classes.add(TL::ToInteger(FocusedRoom["level_class5"]));
+						Classes.add(TL::ToInteger(FocusedRoom["level_class4"]));
+						Classes.add(TL::ToInteger(FocusedRoom["level_class3"]));
+						Classes.add(TL::ToInteger(FocusedRoom["level_class2"]));
+						Classes.add(TL::ToInteger(FocusedRoom["level_class1"]));
+						declare Integer MaxLadderPoints for Page;
+						if (MaxLadderPoints == -1)
+							MaxLadderPoints = 100000;
+						Quad_Adequacy ^= GetAdequacy(ML::FloorInteger(LocalUser.LadderPoints), Classes, MaxLadderPoints); 	
+						Quad_Adequacy ^= ".png";
+					} else {
+						Quad_Adequacy = "";
+					}	
+
+					//PRIVACY
+					if (FocusedRoom["is_private"] == "true")
+						Quad_Lock = "{{{C_ImgBase}}}/Online/BrowseServers/LevelLock.png";
+						
+					//ECHELON
+					declare Integer Echelon = TL::ToInteger(FocusedRoom["ladder_limit_min"])/10000;
+					if (Echelon != 0 && G_Images_Echelon.existskey(Echelon))
+						Quad_Echelon = G_Images_Echelon[Echelon];
+					
+					//ENVIRONMENTS
+					AreEnvVisible = True;
+					declare Text Environments = FocusedRoom["environments"];
+					Colorize_Stadium	= GetEnvironmentColorize(Environments, "Stadium");
+					Colorize_Lagoon		= GetEnvironmentColorize(Environments, "Lagoon");
+					Colorize_Canyon		= GetEnvironmentColorize(Environments, "Canyon");
+					Colorize_Valley		= GetEnvironmentColorize(Environments, "Valley");	
+				} else {
+					MouseInput_BrowserLine.Hide();
+					ActivateLine(I, False);
+					Label_Info = "";
+					Label_Players   = "";
+					Label_Name  	= "";
+					Quad_Mode 		= "";
+					Quad_Adequacy	= "";
+					Quad_Echelon	= "";
+					AreEnvVisible = False;
+				}
+		
+				declare Vec3 PlayersColor;
+				if (IsFull)
+					PlayersColor = <1., 0., 0.>;
+				else
+					PlayersColor = <1., 1., 1.>;
+		
+				SetColumnTextData   ("Players",		I,	Label_Players, PlayersColor);
+				SetColumnTextData	("Hostname",	I,	Label_Name,	   Colorize_Name);
+				SetColumnTextData	("Buddy",		I,	Label_Buddy);
+				
+				if (AreEnvVisible)
+				{
+					SetColumnImageData	("Environment_Stadium", I, 	"{{{IMGEnvironment_Stadium}}}", Colorize_Stadium);
+					SetColumnImageData	("Environment_Lagoon", I, 	"{{{IMGEnvironment_Lagoon}}}", 	Colorize_Lagoon);
+					SetColumnImageData	("Environment_Canyon", I, 	"{{{IMGEnvironment_Canyon}}}", 	Colorize_Canyon);
+					SetColumnImageData	("Environment_Valley", I, 	"{{{IMGEnvironment_Valley}}}", 	Colorize_Valley);
+				} else {
+					SetColumnImageData	("Environment_Stadium", I, 	"");
+					SetColumnImageData	("Environment_Lagoon", I, 	"");
+					SetColumnImageData	("Environment_Canyon", I, 	"");
+					SetColumnImageData	("Environment_Valley", I, 	"");
+				}
+				
+				SetColumnImageData	("GameMode", 	I, 		Quad_Mode);
+				SetColumnImageData	("Adequacy", 	I, 		Quad_Adequacy);
+				
+				SetColumnImageData	("Flag",		I,		Quad_Flag);
+				SetColumnImageData	("Echelon",  	I, 		Quad_Echelon);
+				SetColumnTextData	("Info",		I,		Label_Info);
+				SetColumnImageData	("Private", 	I,		Quad_Lock);
+			}
+			
+			if (_UpdateInfoMessage)
+				UpdateServerFocusAndInfo();
+			UpdateArrows();
+		}
+		
+		//////////////////
+		// REQUESTS
+		//////////////////
+		Void SendRequestBuddiesOnlinePresence()
+		{
+			Loading_SetIsLoading(True);
+			SendCustomEvent("RequestBuddiesOnlinePresence", Text[]);
+		}
+		
+		Void SendRequestBuddiesServerInfo()
+		{
+			declare Text[Text][] RequestedOnlinePresences for Page;
+			declare Text[Text][] RequestedRooms for Page;
+			
+			if (RequestedOnlinePresences.count == 0)
+			{
+				RequestedRooms.clear();
+				Update2DArray(True);
+				G_CurrentSelectedRoomIndex = G_PageIndex * {{{Count_InstancesY}}} + G_IndexFocusY;
+				UpdateInputsInfo();
+				Loading_SetIsLoading(False);
+				return;
+			}
+			declare Integer Offset = G_PageIndex*{{{Count_InstancesY}}};
+			declare Integer Length = ML::Min({{{3*Count_InstancesY}}}, RequestedOnlinePresences.count-Offset);
+			
+			declare Text BuddiesInformation;
+			for (I, Offset, Offset+Length-1)
+			{
+				if (RequestedOnlinePresences[I]["displayname"] == "" || RequestedOnlinePresences[I]["login"] == "" || RequestedOnlinePresences[I]["dedicated_login"] == "")
+					continue;
+				if (BuddiesInformation != "")
+					BuddiesInformation ^= ",";
+				BuddiesInformation ^= RequestedOnlinePresences[I]["displayname"]^":"^RequestedOnlinePresences[I]["login"]^":"^RequestedOnlinePresences[I]["dedicated_login"];
+			}
+			
+			if (BuddiesInformation != "")
+			{
+				Loading_SetIsLoading(True);
+				SendCustomEvent("RequestBuddiesServerInfo", [TL::ToText(Offset), TL::ToText(Length), BuddiesInformation, TL::ToText(G_IsLimitedToCanyon)]);
+			} else {
+				RequestedRooms.clear();
+				Update2DArray(True);
+				G_CurrentSelectedRoomIndex = G_PageIndex * {{{Count_InstancesY}}} + G_IndexFocusY;
+				UpdateInputsInfo();
+				Loading_SetIsLoading(False);
+			}
+		}
+		
+		Void SendRequestServers()
+		{
+			SendRequestBuddiesOnlinePresence(); //compat serverinfo
+		}
+
+		Void Browser_Show() {
+			ToggleInputInfo("Frame_InputInfo_Browser_Cancel", False);
+			ToggleInputInfo("Frame_InputInfo_Browser_Select", False);
+			ToggleInputInfo("Frame_InputInfo_Browser_Action1", False);
+			ToggleInputInfo("Frame_InputInfo_Browser_Action2", False);
+			ToggleInputInfo("Frame_InputInfo_Browser_LStickPress", False);
+			SendRequestBuddiesOnlinePresence();
+		}
+		
+		Void ServerBrowser_UpdateHelpersForPlatform(Integer _Platform) {
+			declare Text[] InputIds = ["Select", "Cancel", "Action1", "Action2", "LStickPress"];
+			
+			declare CMlQuad  QuadInputIcon;
+			for (I, 0, 2) {
+				for (J, 0, InputIds.count - 1) {
+					declare CMlFrame FrameInput <=> (Page.GetFirstChild("Frame_InputInfo_Browser_"^InputIds[J]) as CMlFrame);
+					QuadInputIcon <=> (FrameInput.GetFirstChild("Quad_InputIcon_"^I) as CMlQuad);
+					if (I == _Platform)
+						QuadInputIcon.Show();
+					else
+						QuadInputIcon.Hide();
+				}
+			}
+		}
+		
+	""";
+	
+	return Functions;
+}
+
+Text InjectBeforeLoop() {
+	declare BeforeLoop = """
+		declare CMlQuad  	Quad_Selector <=> (Page.GetFirstChild("Quad_Selector") as CMlQuad);
+		declare CMlQuad  	MouseInput_PrevPage  <=> (Page.GetFirstChild("MouseInput_PrevPage") as CMlQuad);
+		declare CMlQuad  	MouseInput_NextPage <=> (Page.GetFirstChild("MouseInput_NextPage") as CMlQuad);
+		
+		declare Integer     Update2DArray    for Page;
+		declare Integer     Prev_Update2DArray;
+		
+		declare Integer MaxLadderPoints for Page;
+		MaxLadderPoints = -1;
+		
+		Prev_Update2DArray = Update2DArray; //force refresh à l'ouverture pour test
+		G_IndexFocusX = GetIndexFocusX();
+		G_IndexFocusY = GetIndexFocusY();
+		
+		declare Integer Selection;	
+		G_Prev_PageIndex = G_PageIndex;
+	""";
+	
+	return BeforeLoop;
+}
+
+Text InjectInLoop() {
+	declare Browser_SizeTotalX = 259.;
+	declare ArrowPos = Browser_SizeTotalX * 0.5 + 10.;
+	
+	declare Loop = """
+		G_CurrentSelectedRoomIndex = G_PageIndex * {{{Count_InstancesY}}} + G_IndexFocusY;
+		
+		//Blink du quad de sélection
+		declare Real ButtonSelectedSinVar  = ML::Sin(Now * 0.01) * 0.5 + 0.5;
+		declare Real ButtonSelectedOpacity = 0.0 + ButtonSelectedSinVar * 1.;
+		Quad_Selector.Opacity = ButtonSelectedOpacity;
+		MouseInput_PrevPage.RelativePosition.X  = 	{{{-ArrowPos}}} + ButtonSelectedSinVar;
+		MouseInput_NextPage.RelativePosition.X =  	{{{ArrowPos}}} - ButtonSelectedSinVar;
+		
+		if(G_Prev_PageIndex != G_PageIndex)
+		{
+			G_Prev_PageIndex = G_PageIndex;
+			SendRequestBuddiesOnlinePresence();
+		}
+
+		if(Prev_Update2DArray != Update2DArray)
+		{
+			Prev_Update2DArray = Update2DArray;
+			Update2DArray(True);
+		}
+
+		Selection = GetSelection();
+		if(Selection >= 0)
+		{
+			if (!G_RequestError && G_IndexFocusY < RequestedRooms.count)
+				ServerBrowserStatus_Switch(C_STATUS_INFORMATION);
+		}
+
+		declare IndexFocusX = GetIndexFocusX();
+		if(G_IndexFocusX != IndexFocusX)
+		{
+			G_IndexFocusX = IndexFocusX;
+			UpdateServerFocus();
+		}
+
+		declare IndexFocusY = GetIndexFocusY();
+		if(G_IndexFocusY != IndexFocusY)
+		{
+			G_IndexFocusY = IndexFocusY;
+			G_CurrentSelectedRoomIndex = G_PageIndex * {{{Count_InstancesY}}} + G_IndexFocusY;
+			UpdateServerFocus();
+			UpdateInputsInfo();
+		}
+		{{{Prompter::InjectInLoop()}}}
+		
+		foreach (Event in Input.PendingEvents)
+		{
+			if (Event.Type == CInputEvent::EType::PadButtonPress && Event.Button == CInputEvent::EButton::LeftStick && G_ServerBrowserStatus == C_STATUS_BROWSER && G_ServerBrowser_LastRefreshTime + 5000 <= Now)
+			{
+				//LSTICKPRESS
+				G_ServerBrowser_LastRefreshTime = Now;
+				SendRequestBuddiesOnlinePresence(); 
+			}
+		}	
+	""";
+	
+	return Loop;
+}
+
+Text InjectInKeyPress() {
+	declare Text KeyPress = """
+		if (Event.KeyName == "F5" && G_ServerBrowser_LastRefreshTime + 5000 <= Now) {
+			if (ActiveButtonPlatform !=  {{{LibUIButtons::GetPlatform("PC")}}})
+				SendCustomEvent("SetActiveButtonPlaform", ["JoinAFriend", TL::ToText({{{LibUIButtons::GetPlatform("PC")}}})]);
+			G_ServerBrowser_LastRefreshTime = Now;
+			SendRequestBuddiesOnlinePresence(); 
+		}
+	""";
+	
+	return KeyPress;
+}
+
+Text InjectInMouseClick() {
+	declare Text 	SoundPageForward 		 = LibAudio::GetSound("PageForward");
+	declare Text 	SoundMove                = LibAudio::GetSoundMove();
+	
+	declare MouseClick = """	
+		declare Text[] InputId = TL::Split("_", Event.ControlId);
+		if (InputId.count < 2 || InputId[0] != "MouseInput")
+			continue;
+		switch (InputId[1]) {
+			case "PrevPage" : {
+				if (Loading_GetIsLoading())
+					continue;
+				if(G_PageIndex > 0) {
+					Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+					declare Integer Update2DArray    for Page;
+					G_PageIndex -= 1;
+					Update2DArray = Now;
+				}
+			}
+			case "NextPage" : {
+				log(G_PageIndex);
+				if (Loading_GetIsLoading())
+					continue;
+				if(G_PageIndex < G_PageMax - 1)
+				{
+					Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+					declare Integer Update2DArray    for Page;
+					G_PageIndex += 1;
+					Update2DArray = Now;
+				}
+			}
+			case "BrowserLine" : {
+				if (Loading_GetIsLoading())
+					continue;
+				declare Integer NewIndex = TL::ToInteger(InputId[2]);
+				if(!G_IsActivate.existskey(NewIndex)) return;
+				if(NewIndex >= 0 && NewIndex <= {{{Count_InstancesY - 1}}} && G_IsActivate[NewIndex])
+				{
+					G_IndexSelectY = NewIndex;
+					UpdateSelection();
+				}
+				Audio.PlaySoundEvent("{{{SoundPageForward}}}", {{{Volumes::GetVolumedB("MenuPageForward")}}});
+				G_Selection = G_IndexSelectY;
+			}
+			case "BrowserInputInfo" : {
+				switch (InputId[2]) {
+					case "Select": {
+						if (Loading_GetIsLoading())
+							continue;
+						Audio.PlaySoundEvent("{{{SoundPageForward}}}", {{{Volumes::GetVolumedB("MenuPageForward")}}});
+						G_Selection = G_IndexSelectY;
+					}
+					case "Cancel": Quit();
+					case "AppMenu": Quit();
+					case "Action2" : {
+						if (RequestedRooms.count != 0)
+							SendCustomEvent("ShowProfile", [RequestedRooms[G_CurrentSelectedRoomIndex]["buddy_login"]]);
+					}
+					case "LStickPress": {
+						if (G_ServerBrowser_LastRefreshTime + 5000 <= Now) {
+							G_ServerBrowser_LastRefreshTime = Now;
+							SendRequestServers(); 
+						}
+					}
+				}
+			}
+		}
+	""";
+	
+	return MouseClick;
+}
+
+Text InjectInMouseOver() {
+	declare Text 	SoundPageForward 		 = LibAudio::GetSound("PageForward");
+	declare Text 	SoundMove                = LibAudio::GetSoundMove();
+	
+	declare MouseOver = """
+		declare Text[] InputId = TL::Split("_", Event.ControlId);
+		if (InputId.count < 2 || InputId[0] != "MouseInput")
+			continue;
+		switch (InputId[1]) {
+			case "BrowserLine" : {
+				if (Loading_GetIsLoading())
+					continue;
+				declare Integer NewIndex = TL::ToInteger(InputId[2]);
+				if(!G_IsActivate.existskey(NewIndex)) return;
+				if(NewIndex >= 0 && NewIndex <= {{{Count_InstancesY - 1}}} && G_IsActivate[NewIndex])
+				{
+					Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+					G_IndexSelectY = NewIndex;
+					UpdateSelection();
+				}
+			}
+			case "BrowserInputInfo" : ToggleInputInfo("Frame_InputInfo_Browser_"^InputId[2], True);
+		
+		}
+	""";
+	
+	return MouseOver;
+}
+
+Text InjectInMouseOut() {
+	declare MouseOut = """
+		declare Text[] InputId = TL::Split("_", Event.ControlId);
+		if (InputId.count < 2 || InputId[0] != "MouseInput")
+			continue;
+		switch (InputId[1]) {
+			case "BrowserInputInfo" : ToggleInputInfo("Frame_InputInfo_Browser_"^InputId[2], False);
+		}
+	""";
+	
+	return MouseOut;
+}
+
+Text InjectInMenuNavigation() {
+	declare MenuNav = """
+		switch(Event.MenuNavAction) {
+			case CMlEvent::EMenuNavAction::Cancel : {
+				Quit();
+			}
+			case CMlEvent::EMenuNavAction::AppMenu : {
+				Quit();
+			}
+			case CMlEvent::EMenuNavAction::Action2 : {
+				//Y : GAMERCARD
+				if (RequestedRooms.count != 0)
+					SendCustomEvent("ShowProfile", [RequestedRooms[G_CurrentSelectedRoomIndex]["buddy_login"]]);
+			}
+		}
+		if (Loading_GetIsLoading())
+			continue;
+		{{{SelectArray2D::InjectInMenuNavigation()}}}
+	""";
+	
+	return MenuNav;
+}

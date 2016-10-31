@@ -1,0 +1,402 @@
+/*
+*/
+#Include "Libs/Openplanet/TMConsole/Colors.Script.txt"			    as Colors
+#Include "Libs/Openplanet/TMConsole/Menu/MenuVersion.Script.txt"		as MenuVersion
+
+#Const C_ImgBase		"file://Media/Manialinks/Nadeo/TMConsole/Images/"
+
+
+Text MLLockMapsManager() {
+	declare Integer ActualVersion = MenuVersion::GetVersion();
+
+
+	declare Text IMGLockedBronze     = C_ImgBase^"MapsOverview/lock_medals/lock_bronze.dds";
+	declare Text IMGLockedSilver     = C_ImgBase^"MapsOverview/lock_medals/lock_argent.dds";
+	declare Text IMGLockedGold       = C_ImgBase^"MapsOverview/lock_medals/lock_or.dds";
+
+	declare Text MLText = """
+	// <script><!-- // pour la colo syntaxique :)
+
+	/*
+	- BlocksLocked - Integer[Integer][Integer]
+	//Un block représente un paquet de 5 maps la positions
+	BlocksLocked[Enviro][Difficulté] = Etat du Lock 
+	0 - Tout Locké
+	1 - 5 premières maps d'unlock
+	2 - Toutes les maps unlock
+
+	- NumberOfMedal - Integer[Integer]
+	// 0 = Bronze | 1 = Argent | 2 = Or | 3 = Trackmaster
+	
+	- G_NumberOfMedalByBlock - Integer[Integer]
+	// 0 = Bronze | 1 = Argent | 2 = Or | 3 = Trackmaster
+	
+	*/
+	Void Private_CreatePosX(Integer _PosnX)
+	{
+		declare Integer[Integer][Integer] BlocksLocked for This;
+		BlocksLocked[_PosnX] = Integer [Integer];
+		for(Difficulty, 0, 4)
+		{
+			BlocksLocked[_PosnX][Difficulty] = 0;
+		}
+	}
+
+
+	Integer GetLockState(Integer _PosX, Integer _PosY) {
+		declare Integer[Integer][Integer] BlocksLocked for This;
+		if(!BlocksLocked.existskey(_PosX)) return -1;
+		if(!BlocksLocked[_PosX].existskey(_PosY)) return -1;
+
+		return BlocksLocked[_PosX][_PosY];
+	}
+
+	Void SetLockState(Integer _PosX, Integer _PosY, Integer _Lock)
+	{
+		declare Integer[Integer][Integer] BlocksLocked for This;
+		if(!BlocksLocked.existskey(_PosX)) Private_CreatePosX(_PosX);
+		BlocksLocked[_PosX][_PosY] = _Lock;
+	}
+
+	Void AddLockState(Integer _PosX, Integer _PosY)
+	{
+		declare Integer[Integer][Integer] BlocksLocked for This;
+		if(!BlocksLocked.existskey(_PosX)) Private_CreatePosX(_PosX);
+		if(BlocksLocked[_PosX][_PosY]<2) BlocksLocked[_PosX][_PosY] += 1;
+	}
+
+	Void SetNumberOfMedal(Integer _MedalType, Integer _Number)
+	{
+		declare Integer[Integer] NumberOfMedal for This;
+		NumberOfMedal[_MedalType] = _Number;
+	}
+
+	Void SetAddOneMedal(Integer _MedalType)
+	{
+		declare Integer[Integer] NumberOfMedal for This;
+		for(Medal,0, _MedalType)
+		{
+			if(!NumberOfMedal.existskey(Medal)) NumberOfMedal[Medal] = 0;
+			NumberOfMedal[Medal] += 1;
+		}
+	}
+
+	Void SetRemoveOneMedal(Integer _MedalType)
+	{
+		declare Integer[Integer] NumberOfMedal for This;
+		for(Medal,0, _MedalType)
+		{
+			NumberOfMedal[Medal] -= 1;
+		}
+	}
+
+	Integer[Integer] GetNumberOfMedal()
+	{
+		declare Integer[Integer] NumberOfMedal for This;
+		return NumberOfMedal;
+	}
+
+	Integer GetMedalsToHave(Integer _Difficulty)
+	{
+		switch(_Difficulty)
+		{
+			case 0: return 3;
+			case 1: return 3;
+			case 2: return 2;
+			case 3: return 2;
+			case 4: return 1;
+		}
+		return 0;
+	}
+
+
+	Boolean CheckNbOfMedals(Integer[] _Medals, Integer _MedalToHave) 
+	{
+		foreach(Medal in _Medals)
+		{
+			if(Medal > _MedalToHave) return False;
+		}
+		
+		return True;
+	}
+
+	
+	/*
+	Boolean IsBlockUnLock(Integer _Enviro, Integer _Difficulty, Integer _Line)
+	{
+		if(_Enviro == 0 && _Difficulty == 0 && _Line == 0) return True;
+		
+		declare Integer MedalToHave = GetMedalsToHave(_Difficulty);
+		declare Integer[] Medals;
+		
+		if(_Line == 0) {
+			
+			// vérifie d'abord si on a débloqué les médailles de la précédente difficulté
+			if(_Difficulty >= 1) {
+				Medals = GetBlockMedal(_Enviro, _Difficulty -1,0);
+				if(! CheckNbOfMedals(Medals, MedalToHave)) return False;
+				
+				Medals = GetBlockMedal(_Enviro, _Difficulty -1,1);
+				if(CheckNbOfMedals(Medals, MedalToHave)) return True;
+			}
+			
+			// vérifie ensuite si on a débloqué les médailles du précédent enviro
+			if(_Enviro >= 0) {
+				Medals = GetBlockMedal(_Enviro -1, _Difficulty,0);
+				if(! CheckNbOfMedals(Medals, MedalToHave)) return False;
+				
+				Medals = GetBlockMedal(_Enviro -1, _Difficulty,1);
+				if(CheckNbOfMedals(Medals, MedalToHave)) return True;
+			}
+			
+		} else {
+			Medals = GetBlockMedal(_Enviro, _Difficulty,0);
+			return CheckNbOfMedals(Medals, MedalToHave);
+		}
+		
+		return False;
+	}
+	
+	Void UpdateMedalsInfo()
+	{
+		declare Integer[Integer][] MedalsByEnviro for This;
+
+
+	}
+	*/
+
+	
+	Boolean IsBlockUnLockByEnviro(Integer _Enviro, Integer _Difficulty, Integer _Line)
+	{
+		if(_Enviro == 0 && _Difficulty == 0 && _Line == 0)
+		{
+			AddLockState(_Enviro, _Difficulty);
+			return True;
+		}
+		//declare Integer[Integer][Integer] MedalsByEnviro for This;
+		declare Integer[Integer][Integer] Net_MedalsByEnviro for Page;
+		
+		declare Integer MedalToHave = GetMedalsToHave(_Difficulty);
+		declare Integer[] Medals;
+		
+		if(_Line == 0) {
+			if(_Enviro <= 3) {
+				if(Net_MedalsByEnviro[_Enviro][MedalToHave] >= _Difficulty * 10 && _Difficulty != 0)
+				{
+					//AddLockState(_Enviro, _Difficulty);
+					return True;
+				}
+			}
+		} else {
+			Medals = GetBlockMedal(_Enviro, _Difficulty,0);
+			declare IsUnlock = CheckNbOfMedals(Medals, MedalToHave);
+			if(IsUnlock) SetLockState(_Enviro, _Difficulty, 2);
+			return IsUnlock;
+		}
+		return False;
+	}
+	
+	Boolean IsBlockUnLockByDifficulty(Integer _Enviro, Integer _Difficulty, Integer _Line)
+	{
+		if(_Enviro == 0) return False;
+		//declare Integer[Integer][Integer] MedalsByDifficulty for This;
+		declare Integer[Integer][Integer] Net_MedalsByDifficulty for Page;
+		
+		declare Integer MedalToHave = GetMedalsToHave(_Difficulty);
+		
+		if(_Line == 0) {
+			if(_Difficulty >= 0) {
+				if(Net_MedalsByDifficulty[_Difficulty][MedalToHave] >= _Enviro * 10)
+				{
+					AddLockState(_Enviro, _Difficulty);
+					return True;
+				}
+			}
+		}
+		return False;
+	}
+	
+
+	Vec3 GetLockedColor(Integer _Difficulty)
+	{
+		switch(_Difficulty)
+		{
+			case 0: return {{{Colors::GetColor("Bronze")}}};
+			case 1: return {{{Colors::GetColor("Bronze")}}};
+			case 2: return {{{Colors::GetColor("Silver")}}};
+			case 3: return {{{Colors::GetColor("Silver")}}};
+			case 4: return {{{Colors::GetColor("Gold")}}};
+		}
+		return <0., 0., 0.>;
+	}
+
+
+
+
+	Text GetMedalImgPath(Integer _Difficulty)
+	{
+		switch(_Difficulty)
+		{
+			case 0: return "{{{IMGLockedBronze}}}";
+			case 1: return "{{{IMGLockedBronze}}}";
+			case 2: return "{{{IMGLockedSilver}}}";
+			case 3: return "{{{IMGLockedSilver}}}";
+			case 4: return "{{{IMGLockedGold}}}";
+		}
+		return "";
+	}
+	
+	Text GetMedalName(Integer _Difficulty)
+	{
+		declare Integer MedalToHave = GetMedalsToHave(_Difficulty);
+		switch(MedalToHave)
+		{
+			case 3: return _("Bronze Medal");
+			case 2: return _("Silver Medal");
+			case 1: return _("Gold Medal");
+		}
+		return "";
+	}
+	
+	Void UpdateLockState(Integer _Enviro, Integer _Difficulty, Integer _Line, Integer[Integer] _JokerByType)
+	{
+		declare Integer[Integer][Integer] Net_BlocksLocked for Page;
+		declare Integer[Integer][Integer] Net_BlocksMedalTypeNeed for Page;
+		declare Boolean IsEnviroUnLock;
+		declare Boolean IsDifficultyUnLock;
+		for(I, 0, _Enviro - 1)
+		{
+			IsEnviroUnLock = True;
+			for(J, 0, _Difficulty - 1)
+			{
+				SetLockState(I, J, 0);
+
+				IsDifficultyUnLock = True;
+				for(K, 0, _Line)
+				{
+					declare CMlFrame Frame_Locked <=> (Page.MainFrame.GetFirstChild("Frame_Locked["^(I+1)^"]["^(J+1)^"]"^K) as CMlFrame);
+					declare CMlLabel Label_Locked <=> (Frame_Locked.GetFirstChild("Label_Locked") 	as CMlLabel);
+					
+					declare CMlFrame Frame_Locked2    <=> (Page.MainFrame.GetFirstChild("Frame_Instance"^(J+1)^""^(I+1)^"") as CMlFrame);
+					declare CMlQuad Quad_Locked10Tracks   <=> (Frame_Locked2.GetFirstChild("Quad_Locked10Tracks") 	as CMlQuad);
+					Quad_Locked10Tracks.ChangeImageUrl(GetMedalImgPath(J));
+
+					declare CMlLabel Label_Locked2    <=> (Frame_Locked2.GetFirstChild("Label_Locked") 	as CMlLabel);
+					declare CMlLabel Label_Locked22   <=> (Frame_Locked2.GetFirstChild("Label_Locked2") 	as CMlLabel);
+					declare CMlQuad  Quad_LockedMedal <=> (Frame_Locked2.GetFirstChild("Quad_LockedMedal") 	as CMlQuad);
+
+					if(IsEnviroUnLock == False && IsDifficultyUnLock == False)
+					{
+						Frame_Locked.Show();
+
+								declare Integer[Integer][Integer] Net_BlocksMedalsToHave for Page;
+						Frame_Locked2.Show();
+						if({{{ActualVersion}}} == 0) Label_Locked22.Value = "x"^Net_BlocksMedalsToHave[J+1][I+1];
+						else Label_Locked22.Value = "";
+						continue;
+					}
+
+					if(Net_BlocksLocked.existskey(J))
+					{
+						if(Net_BlocksLocked[J].existskey(I))
+						{
+
+							if(Net_BlocksLocked[J][I] < K + 1)
+							{
+								Frame_Locked.Show();
+								declare Vec3 LockedColor = GetLockedColor(J);
+								Label_Locked.Show();
+
+								if(K == 0)
+								{
+									declare Integer[Integer]          Net_NumberOfMedalsByType for Page;
+									declare Integer[Integer][Integer] Net_BlocksMedalsToHave   for Page;
+									Frame_Locked2.Show();
+									if({{{ActualVersion}}} == 0) 
+									{
+										declare Text LockedText = GetMedalName(J);
+										Label_Locked2.Value = LockedText;
+										declare Integer MedalToHave = GetMedalsToHave(J);
+										Label_Locked22.Value        = (G_MedalsNeededByBlocks[J][I] + _JokerByType[MedalToHave])^"/"^Net_BlocksMedalsToHave[J][I];
+										
+										declare Text Net_ModeSelect for Page;
+										if(Net_ModeSelect == "TMC_CampaignSolo" || Net_ModeSelect == "TMC_CampaignDuo")
+										{
+											Label_Locked2.Show();
+											Label_Locked22.Show();
+										}
+										else
+										{
+											Label_Locked2.Hide();
+											Label_Locked22.Hide();
+										}
+
+										Quad_LockedMedal.Hide();
+										Quad_LockedMedal.Colorize = LockedColor;
+									}
+									else
+									{
+										Label_Locked2.Value = "";
+										Label_Locked22.Value = "";
+										Quad_LockedMedal.Hide();
+										Label_Locked2.RelativePosition.Y= 22.5/2.-22.5;
+									}
+								}
+								else if(K == 1)
+								{
+									Label_Locked.Hide();
+
+								}
+								continue;
+							}
+						}
+					}
+					Frame_Locked.Hide();
+					Frame_Locked2.Hide();
+				}
+
+			}
+		}
+	}
+
+	Boolean IsDifficultyUnLocked(Integer _Difficulty, Integer _NbOfEnviro, Integer _NbOfLine)
+	{
+		//declare Integer[Integer][Integer] BlocksLocked for This;
+		declare Integer[Integer][Integer] Net_BlocksLocked for Page;
+		for(J, 0, _NbOfEnviro - 1) //Enviro
+		{
+			for(K, 0, _NbOfLine) //Line
+			{
+				if(!Net_BlocksLocked.existskey(_Difficulty)) return False;
+				if(!Net_BlocksLocked[_Difficulty].existskey(J)) return False;
+				if(Net_BlocksLocked[_Difficulty][J] >= 1)
+				{
+					return True;
+				}
+			}
+		}
+		return False;
+	}
+
+	Boolean IsEnviroUnLocked(Integer _NbOfDifficulty, Integer _Enviro, Integer _NbOfLine)
+	{
+		declare Integer[Integer][Integer] Net_BlocksLocked for Page;
+		for(I, 0, _NbOfDifficulty - 1) //Difficulty
+		{
+			for(K, 0, _NbOfLine) //Line
+			{
+				if(!Net_BlocksLocked.existskey(I)) return False;
+				if(!Net_BlocksLocked[I].existskey(_Enviro)) return False;
+				if(Net_BlocksLocked[I][_Enviro] >= 1)
+				{
+					return True;
+				}
+			}
+		}
+		return False;
+	}
+
+	""";
+
+	return MLText;
+}

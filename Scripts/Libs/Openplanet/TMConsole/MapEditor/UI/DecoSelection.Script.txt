@@ -1,0 +1,626 @@
+/** 
+ * Deco selection UI
+ */
+
+#Const Version		"2016-03-21"
+#Const ScriptName	"DecoSelection.Script.txt"
+
+#Include "Libs/Openplanet/Buttons.Script.txt" as Buttons
+#Include "Libs/Openplanet/MLEffects.Script.txt" as MLE
+#Include "Libs/Openplanet/Manialink3.Script.txt" as Manialink
+#Include "Libs/Openplanet/TMConsole/MapEditor/Layers.Script.txt" as Layers
+#Include "Libs/Openplanet/TMConsole/MapEditor/Sound.Script.txt" as Sound
+#Include "Libs/Openplanet/TMConsole/MapEditor/UI/Colors.Script.txt" as Colors
+#Include "Libs/Openplanet/TMConsole/MapEditor/UI/Stylesheet.Script.txt" as Styles
+
+// ---------------------------------- //
+// Constants
+// ---------------------------------- //
+#Const C_DefaultRatio	0.5		///< Default ratio for the deco families
+#Const C_RatioStep		0.05	///< Increase/Decrease step of the ratio
+/// Events
+#Const C_Event_DecoClick	"LibDecoSelection_DecoClick"
+#Const C_Event_DecoNext		"LibDecoSelection_DecoNext"
+#Const C_Event_DecoPrev		"LibDecoSelection_DecoPrev"
+#Const C_Event_DecoMore		"LibDecoSelection_DecoMore"
+#Const C_Event_DecoLess		"LibDecoSelection_DecoLess"
+#Const C_Event_GaugeClick	"LibDecoSelection_GaugeClick"
+
+// ---------------------------------- //
+// Globales
+// ---------------------------------- //
+declare Text[] G_Families;	///< Available families
+declare Text G_Family;		///< Selected families
+declare Real[Text] G_Ratios;///< Ratio for each family
+
+// ---------------------------------- //
+// Functions
+// ---------------------------------- //
+// ---------------------------------- //
+// Private
+// ---------------------------------- //
+// ---------------------------------- //
+/** Get the deco selection manialink
+ *
+ *	@param	_DecosNb				The number of decoration categories
+ *
+ *	@return							The manialink
+ */
+Text Private_GetDecoSelection(Integer _DecosNb) {
+	declare Decos = "";
+	declare DecosNb = _DecosNb;
+	if (DecosNb < 1) DecosNb = 1;
+	declare DecosSizeX = Styles::GetHeaderSize2();
+	declare DecoSizeX = DecosSizeX / DecosNb;
+	declare ButtonSize = 2.;
+	declare FullHeaderSizeX = DecosSizeX + (2 * ButtonSize);
+	for (I, 0, DecosNb-1) {
+		declare PosX = I * Styles::GetSize2(<DecoSizeX, 0.>, Styles::CircleSize_Bottom()).X;
+		Decos ^= """<frameinstance pos="{{{PosX}}} 0" modelid="Framemodel_Deco" class="{{{MLE::ML_Class()}}}" {{{MLE::Data_Group()}}}="D{{{I}}}" />""";
+	}
+	
+	declare DecosPosY = Styles::Margin_Bottom() + Styles::GetSize2(<0., 3.>, Styles::CircleSize_Bottom()).Y;
+	
+	declare NextStyle = Buttons::Editor_NextDeco();
+	declare PrevStyle = Buttons::Editor_PrevDeco();
+	declare MoreDeco = Buttons::Editor_MoreDeco();
+	declare LessDeco = Buttons::Editor_LessDeco();
+	
+	return """
+<manialink version="3" name="MapEditor:Deco-selection">
+<stylesheet>
+	{{{Styles::Get()}}}
+</stylesheet>
+<framemodel id="Framemodel_Deco">
+	<frame z-index="0">
+		{{{Styles::BuildLine(<0., 0., 0.>, <DecoSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), Colors::Color_Grey(), False, False, ["scriptevents" => "1", MLE::Data_Triggers() => "T1", "class" => MLE::ML_Class(), "id" => "Quad_Category"])}}}
+		{{{Styles::BuildLabel(<DecoSizeX*0.5, -0.45, 2.>, <DecoSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_CenterCenter2(), [MLE::Data_Effects() => """T1:{{{MLE::Effect_LabelHover()}}}""", "class" => """turbo2-text-category {{{MLE::ML_Class()}}}""", "id" => "Label_Category"])}}}
+	</frame>
+	<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<0., -1., 1.>, Styles::CircleSize_Bottom()))}}}>
+		{{{Styles::BuildLine(<0., 0., 0.>, <DecoSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), Colors::Color_Black(), False, False, Text[Text])}}}
+		{{{Styles::BuildLine(<0., 0., 1.>, <DecoSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), Colors::Color_Grey(), True, False, ["scriptevents" => "1", "opacity" => "0.6", "id" => "Quad_GaugeBg"])}}}
+		{{{Styles::BuildLine(<0., 0., 2.>, <DecoSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), Colors::Color_Grey(), True, False, ["id" => "Quad_Gauge"])}}}
+		{{{Styles::BuildLabel(<DecoSizeX*0.5, -0.45, 3.>, <DecoSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_CenterCenter2(), ["class" => "turbo2-text-gauge", "id" => "Label_Gauge"])}}}
+	</frame>
+</framemodel>
+<frame z-index="1" id="Frame_Global">
+	<frame pos="0 -92" hidden="1" id="Frame_DecoSelection">
+		<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<-FullHeaderSizeX*0.5, 0., 0.>, Styles::CircleSize_Bottom()))}}}>
+			{{{Styles::BuildBackground(<0., 0., 0.>, <FullHeaderSizeX, 2.>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop())}}}
+			<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<ButtonSize, 0., 2.>, Styles::CircleSize_Bottom()))}}} id="Frame_Decos">
+				{{{Decos}}}
+			</frame>
+			<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<ButtonSize, -1., 3.>, Styles::CircleSize_Bottom()))}}}>
+				<frame id="Frame_Selector">
+					{{{Styles::BuildButton(LessDeco, <0.1, -0.45, 1.>, <0.9, 0.9>, Styles::CircleSize_Bottom(), Styles::Align_LeftCenter(), ["scriptevents" => "1", "id" => "Button_LessDeco"])}}}
+					{{{Styles::BuildButton(MoreDeco, <DecoSizeX-0.1, -0.45, 1.>, <0.9, 0.9>, Styles::CircleSize_Bottom(), Styles::Align_RightCenter(), ["scriptevents" => "1", "id" => "Button_MoreDeco"])}}}
+				</frame>
+			</frame>
+			<frame z-index="1">
+				{{{Styles::BuildQuad(<0., 0., 0.>, <ButtonSize, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), ["bgcolor" => Colors::GetColorML(Colors::Color_Black())])}}}
+				{{{Styles::BuildQuad(<0., -1., 0.>, <ButtonSize, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), ["bgcolor" => Colors::GetColorML(Colors::Color_Black())])}}}
+				{{{Styles::BuildButton(PrevStyle, <ButtonSize*0.5, -0.5, 1.>, <ButtonSize-0.2, (ButtonSize*0.5)-0.2>, Styles::CircleSize_Bottom(), Styles::Align_CenterCenter(), ["scriptevents" => "1", "id" => "Button_PrevDeco"])}}}
+			</frame>
+			<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<ButtonSize+DecosSizeX, 0., 4.>, Styles::CircleSize_Bottom()))}}}>
+				{{{Styles::BuildQuad(<0., 0., 0.>, <ButtonSize, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), ["bgcolor" => Colors::GetColorML(Colors::Color_Black())])}}}
+				{{{Styles::BuildQuad(<0., -1., 0.>, <ButtonSize, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), ["bgcolor" => Colors::GetColorML(Colors::Color_Black())])}}}
+				{{{Styles::BuildButton(NextStyle, <ButtonSize*0.5, -0.5, 1.>, <ButtonSize-0.2, (ButtonSize*0.5)-0.2>, Styles::CircleSize_Bottom(), Styles::Align_CenterCenter(), ["scriptevents" => "1", "id" => "Button_NextDeco"])}}}
+			</frame>
+			{{{Styles::BuildLine(<0., -1., 5.>, <FullHeaderSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), Colors::Color_Black(), False, True, ["hidden" => "1"])}}}
+		</frame>
+	</frame>
+</frame>
+<script><!--
+#Include "TextLib" as TL
+#Include "MathLib" as ML
+{{{Manialink::DefaultIncludes()}}}
+{{{MLE::ML_Includes()}}}
+
+#Const C_DefaultColor	<0.5, 0.5, 0.5>
+#Const C_ClickTick		100
+#Const C_InitTick		500
+
+declare Boolean G_UsingMouse;
+
+{{{Manialink::Animations(["EaseOutQuad"])}}}
+{{{Buttons::ML_Functions()}}}
+{{{MLE::ML_Functions()}}}
+
+Void SetDecos(Text[] _Decos, Vec3[Text] _Colors) {
+	declare Frame_Decos <=> (Page.GetFirstChild("Frame_Decos") as CMlFrame);
+	foreach (Key => Control in Frame_Decos.Controls) {
+		declare Frame_Deco <=> (Control as CMlFrame);
+		declare Label_Category <=> (Frame_Deco.GetFirstChild("Label_Category") as CMlLabel);
+		declare Quad_Category <=> (Frame_Deco.GetFirstChild("Quad_Category") as CMlQuad);
+		declare Quad_GaugeBg <=> (Frame_Deco.GetFirstChild("Quad_GaugeBg") as CMlQuad);
+		declare Quad_Gauge <=> (Frame_Deco.GetFirstChild("Quad_Gauge") as CMlQuad);
+		
+		declare DecoFamily for Frame_Deco = "";
+		declare SelectDeco for Quad_Category = "";
+		declare SelectDeco as SelectDeco2 for Quad_GaugeBg = "";
+		
+		if (_Decos.existskey(Key)) {
+			DecoFamily = _Decos[Key];
+			SelectDeco = _Decos[Key];
+			SelectDeco2 = _Decos[Key];
+			Label_Category.Value = DecoFamily;
+		}
+		
+		declare Color = C_DefaultColor;
+		if (_Colors.existskey(DecoFamily)) Color = _Colors[DecoFamily];
+		
+		Quad_GaugeBg.Colorize = Color;
+		Quad_Gauge.Colorize = Color;
+	}
+}
+
+Void SelectDeco(Integer _Key) {
+	declare Frame_Decos <=> (Page.GetFirstChild("Frame_Decos") as CMlFrame);
+	foreach (Key => Control in Frame_Decos.Controls) {
+		declare Frame_Deco <=> (Control as CMlFrame);
+		declare Quad_Category <=> (Frame_Deco.GetFirstChild("Quad_Category") as CMlQuad);
+		
+		if (_Key == Key) {
+			LibManialink_Anim(
+				Quad_Category, {{{Manialink::Inject("""<quad bgcolor="{{{Colors::GetColorML(Colors::Color_White())}}}" />""")}}}, 250, "EaseOutQuad"
+			);
+			LibManialink_Anim("<frame pos=\""^Frame_Deco.RelativePosition_V3.X^"\" id=\"Frame_Selector\" />", 250, "EaseOutQuad");
+		} else {
+			LibManialink_Anim(
+				Quad_Category, {{{Manialink::Inject("""<quad bgcolor="{{{Colors::GetColorML(Colors::Color_Grey())}}}" />""")}}}, 250, "EaseOutQuad"
+			);
+		}
+	}
+}
+
+Void SetRatios(Real[Text] _Ratios) {
+	declare Frame_Decos <=> (Page.GetFirstChild("Frame_Decos") as CMlFrame);
+	foreach (Key => Control in Frame_Decos.Controls) {
+		declare Frame_Deco <=> (Control as CMlFrame);
+		declare Quad_Gauge <=> (Frame_Deco.GetFirstChild("Quad_Gauge") as CMlQuad);
+		declare Label_Gauge <=> (Frame_Deco.GetFirstChild("Label_Gauge") as CMlLabel);
+		
+		declare DecoFamily for Frame_Deco = "";
+		declare Ratio = {{{C_DefaultRatio}}};
+		if (_Ratios.existskey(DecoFamily)) Ratio = _Ratios[DecoFamily];
+		
+		declare Size = Ratio * {{{Styles::GetSize2(<DecoSizeX, 0.>, Styles::CircleSize_Bottom()).X}}};
+		
+		Label_Gauge.Value = ML::NearestInteger(100 * Ratio)^"%";
+		
+		declare AnimDuration = 500;
+		if (G_UsingMouse) AnimDuration = 100;
+		LibManialink_Anim(Quad_Gauge, "<frame size=\""^Size^" "^Quad_Gauge.Size.Y^"\" />", AnimDuration, "EaseOutQuad");
+	}
+}
+
+Void SetVisibility(Boolean _Visible) {
+	if (_Visible) {
+		LibManialink_Anim({{{Manialink::Inject("""<frame pos="0 {{{DecosPosY}}}" hidden="0" id="Frame_DecoSelection" />""")}}}, 250, "EaseOutQuad");
+	} else {
+		LibManialink_Anim({{{Manialink::Inject("""<frame pos="0 -92" hidden="1" id="Frame_DecoSelection" />""")}}}, 250, "EaseOutQuad");
+	}
+}
+
+Void UpdateGauge(CMlControl _Gauge, Text _Deco) {
+	if (_Gauge == Null) return;
+	
+	declare PosX = MouseX - _Gauge.AbsolutePosition_V3.X;
+	if (PosX < 0) PosX = 0.;
+	declare Ratio = PosX / _Gauge.Size.X;
+	Ratio = ML::NearestInteger(Ratio / 0.05) * 0.05;
+	if (Ratio < 0.) Ratio = 0.;
+	else if (Ratio > 1.) Ratio = 1.;
+	SendCustomEvent("{{{C_Event_GaugeClick}}}", [_Deco, TL::ToText(Ratio)]);
+}
+
+main() {
+	declare L_DecosUpdate for Page = -1;
+	declare L_Decos for Page = Text[];
+	declare L_DecosSelectedUpdate for Page = -1;
+	declare L_DecosSelected for Page = "";
+	declare L_RatiosUpdate for Page = -1;
+	declare L_Ratios for Page = Real[Text];
+	declare L_Visibility for Page = False;
+	declare L_Colors for Page = Vec3[Text];
+	declare L_ColorsUpdate for Page = -1;
+	
+	declare CMlControl SelectedGauge;
+	declare SelectedDeco = "";
+	G_UsingMouse = False;
+	
+	declare ClickPage = 0;
+	declare ClickGauge = 0;
+	declare NextClickUpdate = -1;
+	
+	declare PrevDecosUpdate = -1;
+	declare PrevDecosSelectedUpdate = -1;
+	declare PrevRatiosUpdate = -1;
+	declare PrevVisibility = False;
+	declare PrevColorsUpdate = -1;
+	
+	LibButtons_Init();
+  LibMLEffects_Init();
+	
+	while (True) {
+		yield;
+		
+		LibManialink_AnimLoop();
+		LibButtons_Loop();
+    LibMLEffects_Loop();
+		
+		if (PrevDecosUpdate != L_DecosUpdate || PrevColorsUpdate != L_ColorsUpdate) {
+			PrevDecosUpdate = L_DecosUpdate;
+			PrevColorsUpdate = L_ColorsUpdate;
+			SetDecos(L_Decos, L_Colors);
+		}
+		
+		if (PrevDecosSelectedUpdate != L_DecosSelectedUpdate) {
+			PrevDecosSelectedUpdate = L_DecosSelectedUpdate;
+			SelectDeco(L_Decos.keyof(L_DecosSelected));
+		}
+		
+		if (PrevRatiosUpdate != L_RatiosUpdate) {
+			PrevRatiosUpdate = L_RatiosUpdate;
+			SetRatios(L_Ratios);
+		}
+		
+		if (PrevVisibility != L_Visibility) {
+			PrevVisibility = L_Visibility;
+			SetVisibility(L_Visibility);
+		}
+		
+		if (SelectedGauge != Null) {
+			if (MouseLeftButton) {
+				UpdateGauge(SelectedGauge, SelectedDeco);
+			} else {
+				SelectedGauge = Null;
+				SelectedDeco = "";
+				G_UsingMouse = False;
+			}
+		}
+		
+		if (ClickPage != 0 || ClickGauge != 0) {
+			if (!MouseLeftButton) {
+				ClickPage = 0;
+				ClickGauge = 0;
+				NextClickUpdate = -1;
+			}
+			
+			if (NextClickUpdate > 0 && Now >= NextClickUpdate) {
+				if (ClickPage > 0) {
+					SendCustomEvent("{{{C_Event_DecoNext}}}", Text[]);
+					NextClickUpdate = Now + C_ClickTick;
+				} else if (ClickPage < 0) {
+					SendCustomEvent("{{{C_Event_DecoPrev}}}", Text[]);
+					NextClickUpdate = Now + C_ClickTick;
+				}
+				
+				if (ClickGauge > 0) {
+					SendCustomEvent("{{{C_Event_DecoMore}}}", Text[]);
+					NextClickUpdate = Now + C_ClickTick;
+				} else if (ClickGauge < 0) {
+					SendCustomEvent("{{{C_Event_DecoLess}}}", Text[]);
+					NextClickUpdate = Now + C_ClickTick;
+				}
+			}
+		}
+		
+		foreach (Event in PendingEvents) {
+			if (Event.Type == CMlEvent::Type::MouseClick) {
+				if (Event.Control != Null && (Event.ControlId == "Quad_Category" || Event.ControlId == "Quad_GaugeBg")) {
+					declare SelectDeco for Event.Control = "";
+					SendCustomEvent("{{{C_Event_DecoClick}}}", [SelectDeco]);
+					if (Event.ControlId == "Quad_GaugeBg") {
+						UpdateGauge(Event.Control, SelectDeco);
+						SelectedGauge = Event.Control;
+						SelectedDeco = SelectDeco;
+						G_UsingMouse = True;
+					}
+				} else if (Event.ControlId == "Button_PrevDeco") {
+					SendCustomEvent("{{{C_Event_DecoPrev}}}", Text[]);
+					ClickPage = -1;
+					NextClickUpdate = Now + C_InitTick;
+				} else if (Event.ControlId == "Button_NextDeco") {
+					SendCustomEvent("{{{C_Event_DecoNext}}}", Text[]);
+					ClickPage = 1;
+					NextClickUpdate = Now + C_InitTick;
+				} else if (Event.ControlId == "Button_MoreDeco") {
+					SendCustomEvent("{{{C_Event_DecoMore}}}", Text[]);
+					ClickGauge = 1;
+					NextClickUpdate = Now + C_InitTick;
+				} else if (Event.ControlId == "Button_LessDeco") {
+					SendCustomEvent("{{{C_Event_DecoLess}}}", Text[]);
+					ClickGauge = -1;
+					NextClickUpdate = Now + C_InitTick;
+				}
+			}
+		}
+	}
+}
+--></script>
+</manialink>
+""";
+}
+
+// ---------------------------------- //
+// Public
+// ---------------------------------- //
+// ---------------------------------- //
+/** Return the version number of the script
+ *
+ *	@return							The version number of the script
+ */
+Text GetScriptVersion() {
+	return Version;
+}
+
+// ---------------------------------- //
+/** Return the name of the script
+ *
+ *	@return							The name of the script
+ */
+Text GetScriptName() {
+	return ScriptName;
+}
+
+// ---------------------------------- //
+/// Get the events constants
+Text Event_DecoClick() { return C_Event_DecoClick; }
+Text Event_DecoNext() { return C_Event_DecoNext; }
+Text Event_DecoPrev() { return C_Event_DecoPrev; }
+Text Event_DecoMore() { return C_Event_DecoMore; }
+Text Event_DecoLess() { return C_Event_DecoLess; }
+Text Event_GaugeClick() { return C_Event_GaugeClick; }
+
+// ---------------------------------- //
+/** Set the colors of the gauges
+ *
+ *	@param	_Colors					The colors of the gauges
+ */
+Void SetColors(Vec3[Text] _Colors) {
+	declare Page <=> Layers::GetPage("DecoSelection");
+	declare L_Colors for Page = Vec3[Text];
+	declare L_ColorsUpdate for Page = -1;
+	L_Colors = _Colors;
+	L_ColorsUpdate = Now;
+}
+
+// ---------------------------------- //
+/** Set the ratios for each deco family
+ *
+ *	@param	_Ratios					The ratios
+ */
+Void SetRatios(Real[Text] _Ratios) {
+	declare Page <=> Layers::GetPage("DecoSelection");
+	declare L_RatiosUpdate for Page = -1;
+	declare L_Ratios for Page = Real[Text];
+	L_Ratios = _Ratios;
+	L_RatiosUpdate = Now;
+	
+	foreach (Category => Ratio in _Ratios) {
+		G_Ratios[Category] = Ratio;
+	}
+}
+
+// ---------------------------------- //
+/** Set the ratio of one family
+ *
+ *	@param	_Family					The family to update
+ *	@param	_Ratios					The ratio to apply
+ */
+Void SetRatio(Text _Family, Real _Ratio) {
+	declare Page <=> Layers::GetPage("DecoSelection");
+	declare L_RatiosUpdate for Page = -1;
+	declare L_Ratios for Page = Real[Text];
+	L_Ratios[_Family] = _Ratio;
+	L_RatiosUpdate = Now;
+	
+	G_Ratios[_Family] = _Ratio;
+}
+
+// ---------------------------------- //
+/** Get the ratios of the deco families
+ *
+ *	@return							The ratio of each deco family
+ */
+Real[Text] GetRatios() {
+	return G_Ratios;
+}
+
+// ---------------------------------- //
+/** Increase the ratio of the given family
+ *
+ *	@param	_Family					The family to update
+ */
+Void More(Text _Family) {
+	if (!G_Ratios.existskey(_Family)) return;
+	
+	G_Ratios[_Family] += C_RatioStep;
+	if (G_Ratios[_Family] > 1.) G_Ratios[_Family] = 1.;
+	else Sound::Play("EditorBlockSelection");
+	
+	SetRatios(G_Ratios);
+}
+
+// ---------------------------------- //
+/// Overload More()
+Void More() {
+	More(G_Family);
+}
+
+// ---------------------------------- //
+/** Decrease the ratio of the given family
+ *
+ *	@param	_Family					The family to update
+ */
+Void Less(Text _Family) {
+	if (!G_Ratios.existskey(_Family)) return;
+	
+	G_Ratios[_Family] -= C_RatioStep;
+	if (G_Ratios[_Family] < 0.) G_Ratios[_Family] = 0.;
+	else Sound::Play("EditorBlockSelection");
+	
+	SetRatios(G_Ratios);
+}
+
+// ---------------------------------- //
+/// Overload Less()
+Void Less() {
+	Less(G_Family);
+}
+
+// ---------------------------------- //
+/** Select a deco family
+ *
+ *	@param	_Family					The deco family to select
+ *	@param	_PlaySound				Play a sound
+ */
+Void SelectFamily(Text _Family, Boolean _PlaySound) {
+	declare Page <=> Layers::GetPage("DecoSelection");
+	declare L_DecosSelectedUpdate for Page = -1;
+	declare L_DecosSelected for Page = "";
+	L_DecosSelected = _Family;
+	L_DecosSelectedUpdate = Now;
+	
+	G_Family = _Family;
+	
+	if (_PlaySound) Sound::Play("EditorSimpleSelectMacroblock");
+}
+
+// ---------------------------------- //
+/// Overload SelectFamily()
+Void SelectFamily(Text _Family) {
+	SelectFamily(_Family, False);
+}
+
+// ---------------------------------- //
+/** Set the deco families
+ * 
+ *	@param	_Families					The deco families
+ */
+Void SetFamilies(Text[] _Families) {
+	Buttons::Load();
+	declare LayerDecoSelection <=> Layers::Get("DecoSelection");
+	LayerDecoSelection.ManialinkPage = Private_GetDecoSelection(_Families.count);
+	Buttons::Unload();
+	
+	declare Page <=> LayerDecoSelection.LocalPage;
+	declare L_DecosUpdate for Page = -1;
+	declare L_Decos for Page = Text[];
+	L_Decos = _Families;
+	L_DecosUpdate = Now;
+	
+	G_Families = _Families;
+	if (!G_Families.exists(G_Family)) {
+		G_Family = "";
+		if (G_Families.count > 0) {
+			G_Family = G_Families[0];
+		}
+	}
+	
+	declare Ratios = Real[Text];
+	foreach (Family in G_Families) {
+		if (G_Ratios.existskey(Family)) Ratios[Family] = G_Ratios[Family];
+		else Ratios[Family] = C_DefaultRatio;
+	}
+	G_Ratios = Ratios;
+	
+	SelectFamily(G_Family);
+	SetRatios(Ratios);
+}
+
+// ---------------------------------- //
+/** Set the deco selection visibility
+ *
+ *	@param	_Visible				Show the deco selection if True
+ */
+Void SetVisibility(Boolean _Visible) {
+	declare Page <=> Layers::GetPage("DecoSelection");
+	declare L_Visibility for Page = False;
+	L_Visibility = _Visible;
+}
+
+// ---------------------------------- //
+/// Select the next family
+Void NextFamily() {
+	if (G_Families.count <= 0) return;
+	declare Key = G_Families.keyof(G_Family);
+	Key += 1;
+	if (G_Families.existskey(Key)) {
+		G_Family = G_Families[Key];
+	} else {
+		G_Family = G_Families[0];
+	}
+	
+	SelectFamily(G_Family);
+	Sound::Play("EditorSimpleSelectMacroblock");
+}
+
+// ---------------------------------- //
+/// Select the previous family
+Void PrevFamily() {
+	if (G_Families.count <= 0) return;
+	declare Key = G_Families.keyof(G_Family);
+	Key -= 1;
+	if (G_Families.existskey(Key)) {
+		G_Family = G_Families[Key];
+	} else {
+		G_Family = G_Families[G_Families.count-1];
+	}
+	
+	SelectFamily(G_Family);
+	Sound::Play("EditorSimpleSelectMacroblock");
+}
+
+// ---------------------------------- //
+/// Show the deco selection
+Void Show() {
+	SetVisibility(True);
+}
+
+// ---------------------------------- //
+/// Hide the deco selection
+Void Hide() {
+	SetVisibility(False);
+}
+
+// ---------------------------------- //
+/// Unload the library
+Void Unload() {
+	Layers::Destroy("DecoSelection");
+	//Layers::Unload();
+}
+
+// ---------------------------------- //
+/// Load the library
+Void Load() {
+	Unload();
+	
+	//Layers::Load();
+	declare LayerDecoSelection <=> Layers::Create("DecoSelection");
+	
+	declare Page <=> LayerDecoSelection.LocalPage;
+	declare L_DecosUpdate for Page = -1;
+	declare L_Decos for Page = Text[];
+	declare L_DecosSelectedUpdate for Page = -1;
+	declare L_DecosSelected for Page = "";
+	declare L_RatiosUpdate for Page = -1;
+	declare L_Ratios for Page = Real[Text];
+	declare L_Visibility for Page = False;
+	declare L_Colors for Page = Vec3[Text];
+	declare L_ColorsUpdate for Page = -1;
+	L_Decos.clear();
+	L_DecosSelected = "";
+	L_Ratios.clear();
+	L_DecosSelectedUpdate = -1;
+	L_DecosUpdate = -1;
+	L_RatiosUpdate - 1;
+	L_Visibility = False;
+	L_Colors.clear();
+	L_ColorsUpdate = -1;
+	
+	G_Families.clear();
+	G_Family = "";
+	G_Ratios.clear();
+}

@@ -1,0 +1,537 @@
+/**
+ *	Collection library
+ *
+ *	Save collection (enviro) specific settings
+ */
+#Const Version		"2016-01-18"
+#Const ScriptName	"Collection.Script.txt"
+
+#Include "TextLib" as TL
+
+// ---------------------------------- //
+// Constants
+// ---------------------------------- //
+/// Names of the crossable blocks
+#Const C_Crossables_Canyon ["Dirt", "DirtCliff8", "WaterCliff12", "DirtCliff12"]
+#Const C_Crossables_Valley ["Grass", "GrassCliff2", "GrassCliff8"]
+#Const C_Crossables_Stadium ["StadiumGrass", "StadiumDirt"]
+#Const C_Crossables_Lagoon ["Land", "LandHill", "LandHill6", "LandCliff12", "SeaCliff13"]
+
+/// Inflatables block models names
+#Const C_Inflatables ["StadiumInflatableSupport", "StadiumInflatableTube", "StadiumInflatablePillar"]
+
+/// Skin types
+#Const C_SkinType_NoSkin		0
+#Const C_SkinType_Billboard		1
+#Const C_SkinType_RoadPaint		2
+#Const C_SkinType_Blimp			3
+#Const C_SkinType_CircuitScreen	4
+#Const C_SkinType_TowerScreen	5
+#Const C_SkinType_Light			6
+#Const C_SkinType_Inflatable	7
+
+/// Skin types samples
+#Const C_SkinType_Billboards 		["AD_builder_01", "FLAG_CHN", "WELCOME_lagoon02"]
+#Const C_SkinType_RoadPaints 		["rd_BEAR_black", "rd_livefast", "rd_Wallride_EN_CN_Bk"]
+#Const C_SkinType_Blimps			["AIE", "HOTSEAT", "WELCOME_TM"]
+#Const C_SkinType_CircuitScreens	["BallLeft", "LaserTMRight", "WaveLeft"]
+#Const C_SkinType_TowerScreens		["China", "Tower_Flags_B", "Trackmaster"]
+#Const C_SkinType_Lights			["DarkBlue", "DarkRed", "LightBlue"]
+#Const C_SkinType_Inflatables		["Black", "Blue", "Purple"]
+
+#Const C_SkinsDisabled [
+	"CAUTION_",
+	"Series_",
+	"SIGN_",
+	"VID_"
+]
+#Const C_RoadPaintsEnabled [
+	"Canyon" => [
+		"rd_Canyon",
+		"rd_Canyon_Bk",
+		"rd_livefast",
+		"rd_livefast_Bk",
+		"rd_Canyon_skull",
+		"rd_Canyon_skull_Bk",
+		"rd_Double_1",
+		"rd_Double_1_Bk",
+		"rd_Double_2",
+		"rd_Double_2_Bk"
+	],
+	"Valley" => [
+		"rd_BEAR_black",
+		"rd_BEAR_white",
+		"rd_livefast",
+		"rd_livefast_Bk",
+		"rd_Double_1",
+		"rd_Double_1_Bk",
+		"rd_Double_2",
+		"rd_Double_2_Bk"
+	],
+	"Stadium" => [
+		"rd_livefast",
+		"rd_livefast_Bk",
+		"rd_TM_CN",
+		"rd_TM_CN_Bk",
+		"rd_Double_1",
+		"rd_Double_1_Bk",
+		"rd_Double_2",
+		"rd_Double_2_Bk"
+	],
+	"Lagoon" => [
+		"rd_Lagoon",
+		"rd_Lagoon_Bk",
+		"rd_livefast",
+		"rd_livefast_Bk",
+		"rd_TM_CN",
+		"rd_TM_CN_Bk"
+	]
+]
+#Const C_BillboardsEnabled [
+	"Canyon" => [
+		"AD_builder_01",
+		"AD_die_tryin_12",
+		"AD_double_01",
+		"AD_double_05",
+		"AD_EasyHard_01",
+		"AD_go_west",
+		"AD_honk_fun",
+		"AD_if_you_can_01",
+		"AD_if_you_can_02",
+		"AD_never_05",
+		"AD_one_moren_04",
+		"AD_physics_11",
+		"AD_PreserveNature_01",
+		"AD_PreserveNature_02",
+		"AD_try_again_02",
+		"AD_try_hard_09",
+		"AD_try_hard_14",
+		"AD_try_hard_17",
+		"AD_VID_Gravity",
+		"AD_VID_LiveFast",
+		"AD_VID_NoPain",
+		"AD_VID_Physics",
+		"AD_VID_PreserveNature",
+		"AD_Winners_01",
+		"FLAG_USA",
+		"PROMO_ranking_02",
+		"PROMO_VID_DoubleDriver"
+	],
+	"Valley" => [
+		"AD_builder_01",
+		"AD_die_tryin_12",
+		"AD_double_01",
+		"AD_double_02",
+		"AD_double_05",
+		"AD_EasyHard_01",
+		"AD_grass_tread",
+		"AD_honk_fun",
+		"AD_if_you_can_01",
+		"AD_if_you_can_02",
+		"AD_keepin_08",
+		"AD_la_peur_13",
+		"AD_le_mieux_07",
+		"AD_LiveFast_01",
+		"AD_never_05",
+		"AD_one_moren_04",
+		"AD_physics_11",
+		"AD_PreserveNature_01",
+		"AD_PreserveNature_02",
+		"AD_try_again_02",
+		"AD_try_hard_09",
+		"AD_try_hard_14",
+		"AD_try_hard_17",
+		"AD_VID_Gravity",
+		"AD_VID_LiveFast",
+		"AD_VID_NoPain",
+		"AD_VID_Physics",
+		"AD_VID_PreserveNature",
+		"AD_Winners_01",
+		"AD_Wolf_1",
+		"FLAG_FRA",
+		"FLAG_UK",
+		"FLAG_WAL",
+		"PROMO_ranking_02",
+		"PROMO_VID_DoubleDriver"
+	],
+	"Stadium" => [
+		"AD_builder_01",
+		"AD_die_tryin_12",
+		"AD_double_01",
+		"AD_double_02",
+		"AD_double_03",
+		"AD_double_05",
+		"AD_EasyHard_01",
+		"AD_go_west",
+		"AD_grass_tread",
+		"AD_honk_fun",
+		"AD_if_you_can_01",
+		"AD_if_you_can_02",
+		"AD_keepin_08",
+		"AD_la_peur_13",
+		"AD_le_mieux_07",
+		"AD_LiveFast_01",
+		"AD_never_05",
+		"AD_one_moren_04",
+		"AD_physics_11",
+		"AD_physics_12",
+		"AD_PreserveNature_01",
+		"AD_PreserveNature_02",
+		"AD_try_again_02",
+		"AD_try_hard_09",
+		"AD_try_hard_14",
+		"AD_try_hard_17",
+		"AD_VID_Gravity",
+		"AD_VID_Gravity_CHN",
+		"AD_VID_if_you_can_CHN",
+		"AD_VID_LiveFast",
+		"AD_VID_NoPain",
+		"AD_VID_Physics",
+		"AD_VID_PreserveNature",
+		"AD_Winners_01",
+		"AD_Wolf_1",
+		"FLAG_CHN",
+		"FLAG_FRA",
+		"FLAG_GER",
+		"FLAG_ITA",
+		"FLAG_JAM",
+		"FLAG_KOR",
+		"FLAG_SEY",
+		"FLAG_SWE",
+		"FLAG_UK",
+		"FLAG_USA",
+		"FLAG_WAL",
+		"PROMO_double_01",
+		"PROMO_ranking_02",
+		"PROMO_TM_CN_01",
+		"PROMO_VID_DoubleDriver",
+		"VID_Flags",
+		"VID_Flags2"
+	],
+	"Lagoon" => [
+		"AD_double_03",
+		"AD_honk_fun",
+		"AD_physics_12",
+		"AD_PreserveNature_01",
+		"AD_PreserveNature_02",
+		"AD_VID_Gravity_CHN",
+		"AD_VID_if_you_can_CHN",
+		"AD_VID_PreserveNature",
+		"CAUTION_VID_Stay_CHN",
+		"FLAG_CHN",
+		"FLAG_JAM",
+		"FLAG_KOR",
+		"FLAG_SEY",
+		"PROMO_double_01",
+		"PROMO_TM_CN_01",
+		"WELCOME_lagoon01",
+		"WELCOME_lagoon02"
+	]
+]
+
+// ---------------------------------- //
+// Globales
+// ---------------------------------- //
+declare Integer[Ident] G_BlocksSkinTypes; ///< Save the skin type for each block
+
+// ---------------------------------- //
+// Functions
+// ---------------------------------- //
+// ---------------------------------- //
+/** Get the heights at which a block can be crossed 
+ *
+ *	@param	_BlockModel				The block model to check
+ *
+ *	@return							The heights that can be crossed
+ */
+Integer[] GetCrossableHeights(CBlockModel _BlockModel) {
+	if (_BlockModel == Null) return Integer[];
+	
+	switch (Map.CollectionName) {
+		case "Canyon": {
+			switch (_BlockModel.Name) {
+				case "Dirt"			: return [-5];
+				case "DirtCliff8"	: return [-1, 3];
+				case "WaterCliff12"	: return [0, 4, 8];
+				case "DirtCliff12"	: return [0, 4, 8];
+			}
+		}
+		case "Valley": {
+			switch (_BlockModel.Name) {
+				case "Grass": return [-2];
+				case "GrassCliff2": return [0, 2, 4, 6];
+				case "GrassCliff8": return [0, 2, 4, 6];
+			}
+		}
+		case "Stadium": {
+			switch (_BlockModel.Name) {
+				case "StadiumGrass": return [-1];
+				case "StadiumDirt": return [-1];
+			}
+		}
+		case "Lagoon": {
+			switch (_BlockModel.Name) {
+				case "Land"			: return [-2];
+				case "LandHill"		: return [-1];
+				case "LandHill6"	: return [0, 2, 4];
+				case "LandCliff12"	: return [0, 2, 4, 6, 8, 10];
+				case "SeaCliff13"	: return [1, 3, 5, 7, 9, 11];
+			}
+		}
+	}
+	
+	return Integer[];
+}
+
+// ---------------------------------- //
+/** Check if a block model is a crossable obstacle
+ *
+ *	@param	_BlockModel			The block model to check
+ *
+ *	@return						True if the block model is a crossable obstacle, False otherwise
+ */
+Boolean CrossableExists(CBlockModel _BlockModel) {
+	switch (Map.CollectionName) {
+		case "Canyon": return C_Crossables_Canyon.exists(_BlockModel.Name);
+		case "Valley": return C_Crossables_Valley.exists(_BlockModel.Name);
+		case "Stadium": return C_Crossables_Stadium.exists(_BlockModel.Name);
+		case "Lagoon": return C_Crossables_Lagoon.exists(_BlockModel.Name);
+	}
+	
+	return False;
+}
+
+// ---------------------------------- //
+/** Check if a block is an obstacle
+ *
+ *	@param	_Coord				The coordinates to check
+ *	@param	_NullIsCrossable	Are the empty blocks considered as obstacle
+ *
+ *	@return						True if the block is an obstacle, False otherwise
+ */
+Boolean IsObstacle(Int3 _Coord, Boolean _NullIsCrossable) {
+	if (
+		_Coord.X < 0 || 
+		_Coord.X >= Map.Size.X || 
+		_Coord.Y < 0 || 
+		_Coord.Y >= Map.Size.Y || 
+		_Coord.Z < 0 || 
+		_Coord.Z >= Map.Size.Z
+	) {
+		return True;
+	}
+	
+	declare Block <=> GetBlock(_Coord);
+	if (Block != Null) {
+		if (CrossableExists(Block.BlockModel)) {
+			switch (Map.CollectionName) {
+				case "Canyon": {
+					switch (Block.BlockModel.Name) {
+						case "DirtCliff8": {
+							declare BlockY = _Coord.Y - Block.Coord.Y;
+							return (BlockY != 1 && BlockY != 5);
+						}
+						case "WaterCliff12": {
+							declare BlockY = _Coord.Y - Block.Coord.Y;
+							return (BlockY != 2 && BlockY != 6 && BlockY != 10);
+						}
+						case "DirtCliff12": {
+							declare BlockY = _Coord.Y - Block.Coord.Y;
+							return (BlockY != 2 && BlockY != 6 && BlockY != 10);
+						}
+						default: {
+							return False;
+						}
+					}
+				}
+				case "Valley": {
+					switch (Block.BlockModel.Name) {
+						case "GrassCliff2": {
+							declare BlockY = _Coord.Y - Block.Coord.Y;
+							return (BlockY != 0);
+						}
+						case "GrassCliff8": {
+							declare BlockY = _Coord.Y - Block.Coord.Y;
+							return (BlockY != 0 && BlockY != 2 && BlockY != 4 && BlockY != 6);
+						}
+						default: {
+							return False;
+						}
+					}
+				}
+				case "Stadium": {
+					return False;
+				}
+				case "Lagoon": {
+					switch (Block.BlockModel.Name) {
+						case "LandHill": {
+							declare BlockY = _Coord.Y - Block.Coord.Y;
+							return (BlockY != 0);
+						}
+						case "LandHill6": {
+							declare BlockY = _Coord.Y - Block.Coord.Y;
+							return (BlockY != 2 && BlockY != 4 && BlockY != 6);
+						}
+						case "LandCliff12": {
+							declare BlockY = _Coord.Y - Block.Coord.Y;
+							return (BlockY != 0 && BlockY != 2 && BlockY != 4 && BlockY != 6 && BlockY != 8 && BlockY != 10);
+						}
+						case "SeaCliff13": {
+							declare BlockY = _Coord.Y - Block.Coord.Y;
+							return (BlockY != 1 && BlockY != 3 && BlockY != 5 && BlockY != 7 && BlockY != 9 && BlockY != 11);
+						}
+						default: {
+							return False;
+						}
+					}
+				}
+			}
+		} else {
+			return True;
+		}
+	}
+	
+	return _NullIsCrossable;
+}
+
+// ---------------------------------- //
+/** Check if a block is an obstacle
+ *
+ *	@param	_Coord				The coordinates to check
+ *
+ *	@return						True if the block is not an obstacle, False otherwise
+ */
+Boolean IsObstacle(Int3 _Coord) {
+	return IsObstacle(_Coord, False);
+}
+
+// ---------------------------------- //
+/** Check if a block is a crossable obstacle
+ *
+ *	@param	_Coord				The coordinates to check
+ *
+ *	@return						True if the block is a crossable obstacle, False otherwise
+ */
+Boolean IsCrossable(Int3 _Coord) {
+	return !IsObstacle(_Coord, True);
+}
+
+// ---------------------------------- //
+/** Check if a skin is disabled in random generation
+ *
+ *	@param	_SkinName				The name of the skin to check
+ *
+ *	@return							True if the skin is disabled, False otherwise
+ */
+Boolean RandomDisabled(Text _SkinName) {
+	if (_SkinName == "") return False;
+	
+	foreach (SkinDisabled in C_SkinsDisabled) {
+		if (TL::Find(SkinDisabled, _SkinName, False, False)) return True;
+	}
+	
+	return False;
+}
+
+// ---------------------------------- //
+/** Get the skins available in the given enviro
+ *
+ *	@param	_Enviro					The environment
+ *	@param	_Billboards				Get billboards skins
+ *	@param	_RoadPaints				Get road paints skins
+ *
+ *	@return							An array of available skins
+ */
+Text[] GetEnviroSkins(Text _Enviro, Boolean _Billboards, Boolean _RoadPaints) {
+	declare Skins = Text[];
+	
+	if (_Billboards && C_BillboardsEnabled.existskey(_Enviro)) {
+		Skins = C_BillboardsEnabled[_Enviro];
+	}
+	
+	if (_RoadPaints && C_RoadPaintsEnabled.existskey(_Enviro)) {
+		declare TmpSkins = C_RoadPaintsEnabled[_Enviro];
+		foreach (Skin in TmpSkins) Skins.add(Skin);
+	}
+	
+	return Skins;
+}
+
+// ---------------------------------- //
+/** Check if the block model is a Stadium inflatable
+ *
+ *	@param	_BlockModelName			The name of the block model to check
+ *
+ *	@retun							True if the block model is an inflatable, False otherwise
+ */
+Boolean IsInflatable(Text _BlockModelName) {
+	return C_Inflatables.exists(_BlockModelName);
+}
+
+// ---------------------------------- //
+/// Get the skin types constants
+Integer SkinType_NoSkin() { return C_SkinType_NoSkin; }
+Integer SkinType_Billboard() { return C_SkinType_Billboard; }
+Integer SkinType_RoadPaint() { return C_SkinType_RoadPaint; }
+Integer SkinType_Blimp() { return C_SkinType_Blimp; }
+Integer SkinType_CircuitScreen() { return C_SkinType_CircuitScreen; }
+Integer SkinType_TowerScreen() { return C_SkinType_TowerScreen; }
+Integer SkinType_Light() { return C_SkinType_Light; }
+Integer SkinType_Inflatable() { return C_SkinType_Inflatable; }
+
+// ---------------------------------- //
+/** Get the skin type of the block
+ *
+ *	@param	_Block					The name of the block to check
+ *
+ *	@retun							The skin type of the block
+ */
+Integer GetSkinType(CBlock _Block) {
+	if (_Block == Null || _Block.BlockModel == Null) return C_SkinType_NoSkin;
+	if (G_BlocksSkinTypes.existskey(_Block.BlockModel.Id)) return G_BlocksSkinTypes[_Block.BlockModel.Id];
+	
+	declare SkinType = C_SkinType_NoSkin;
+	if (IsBlockModelSkinnable(_Block.BlockModel)) {
+		declare SkinsNb = GetNbBlockModelSkins(_Block.BlockModel);
+		for (I, 0, SkinsNb-1) {
+			declare SkinName = GetBlockModelSkinName(_Block.BlockModel, I);
+			if (C_SkinType_Billboards.exists(SkinName)) {
+				SkinType = C_SkinType_Billboard;
+				break;
+			} else if (C_SkinType_RoadPaints.exists(SkinName)) {
+				SkinType = C_SkinType_RoadPaint;
+				break;
+			} else if (C_SkinType_Blimps.exists(SkinName)) {
+				SkinType = C_SkinType_Blimp;
+				break;
+			} else if (C_SkinType_CircuitScreens.exists(SkinName)) {
+				SkinType = C_SkinType_CircuitScreen;
+				break;
+			} else if (C_SkinType_TowerScreens.exists(SkinName)) {
+				SkinType = C_SkinType_TowerScreen;
+				break;
+			} else if (C_SkinType_Lights.exists(SkinName)) {
+				SkinType = C_SkinType_Light;
+				break;
+			} else if (C_SkinType_Inflatables.exists(SkinName)) {
+				SkinType = C_SkinType_Inflatable;
+				break;
+			}
+		}
+	}
+	G_BlocksSkinTypes[_Block.BlockModel.Id] = SkinType;
+	
+	return SkinType;
+}
+
+// ---------------------------------- //
+/// Unload the library
+Void Unload() {
+	G_BlocksSkinTypes.clear();
+}
+
+// ---------------------------------- //
+/// Load the library
+Void Load() {
+	Unload();
+}

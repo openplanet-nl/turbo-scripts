@@ -1,0 +1,488 @@
+/** 
+ *	UILabel
+ */
+
+#Include "Libs/Openplanet/Anim.Script.txt" 					as Anim
+#Include "Libs/Openplanet/Layers2.Script.txt" 				as Layers
+
+#Const STATUS_INIT				1
+#Const STATUS_SHOWN				2	
+
+#Const C_LEFT					0
+#Const C_HCENTER				1
+#Const C_RIGHT					2
+#Const C_NONE					3
+
+#Const C_DURATION_LABELFADEOUT	500
+#Const C_DURATION_LABELFADEIN	100
+
+#Const C_MAX_LABELFRAMES		25
+
+
+
+Text GetMLLabel(Real _Scale) 
+{
+
+	declare Text ML;
+
+	ML ^= """<frame scale="{{{_Scale}}}">""";
+	
+	for(I, 1, C_MAX_LABELFRAMES)
+	{
+		ML ^= """
+		
+		<frame id="Frame_Label{{{I}}}" 	posn="0 0 1" hidden="1">  
+			<label 	id="Label_Text" 	posn="0 0 1" sizen="160 10" 	halign="center" valign="center" text="TEST TEST TEST TEST TEST" style="TextButtonBig" textsize="3" />
+		</frame>
+		""";
+	}
+	
+	ML ^= """	
+	</frame>
+	<script><!--
+		
+		#Include "MathLib" as ML
+		#Include "AnimLib" as AL
+		#Const DebugName  "L_Label"
+		{{{Anim::Inject()}}}
+		
+		CMlControl::AlignHorizontal GetHalignFromInteger(Integer _Halign)
+		{
+			switch(_Halign)
+			{
+				case {{{C_LEFT}}} 	 : return CMlControl::AlignHorizontal::Left;
+				case {{{C_HCENTER}}} : return CMlControl::AlignHorizontal::HCenter;
+				case {{{C_RIGHT}}} 	 : return CMlControl::AlignHorizontal::Right;
+			}
+			return CMlControl::AlignHorizontal::None;
+		}
+		
+		
+		main() {
+			
+			
+		
+		declare netwrite 	Integer 	Net_LabelTriggerHideBack 		for UI;	
+		declare netwrite 	Integer 	Net_LabelTriggerBack 			for UI;
+		
+		declare netread 	Integer 	Net_LabelTriggerHide			for UI;
+		declare netread 	Text[] 		Net_LabelsTypeToHide			for UI;
+		
+		declare netread 	Integer 	Net_LabelTrigger 				for UI;
+		declare netread 	Text[] 		Net_LabelsType 					for UI;
+		declare netread 	Vec3[] 		Net_LabelsPos 					for UI;
+		declare netread 	Integer[]	Net_LabelsTextSize				for UI;
+		declare netread 	Real[]	 	Net_LabelsScale					for UI;
+		declare netread 	Real[]	 	Net_LabelsOpacity				for UI;
+		declare netread 	Vec3[]	 	Net_LabelsColor					for UI;
+		declare netread 	Text[]	 	Net_LabelsStyle					for UI;
+		declare netread 	Text[]	 	Net_LabelsFont					for UI;
+		declare netread 	Integer[]	Net_LabelsHalign				for UI;
+		declare netread 	Text[] 		Net_LabelsValue					for UI;
+		declare netread 	Integer[] 	Net_LabelsDelay 				for UI;
+		declare netread 	Integer[] 	Net_LabelsDuration 				for UI;
+		declare netread 	Real[]	 	Net_LabelsAnimOffsetX			for UI;
+		declare netread 	Real[]	 	Net_LabelsAnimOffsetY			for UI;
+		declare netread 	Integer[]	Net_LabelsFadeDuration			for UI;
+		declare netread 	Boolean[]	Net_LabelsWithScale				for UI;
+		
+		declare 			Text[] 		LabelsType;
+		declare 			Vec3[] 		LabelsPos;
+		declare 			Integer[] 	LabelsTextSize;
+		declare 			Real[]	 	LabelsScale;
+		declare 			Real[]	 	LabelsOpacity;
+		declare 			Vec3[]	 	LabelsColor;
+		declare 			Text[] 		LabelsStyle;
+		declare 			Text[] 		LabelsFont;
+		declare 			Integer[]	LabelsHalign;
+		declare 			Text[] 		LabelsValue;
+		declare 			Integer[]	Durations;
+		declare 			Real[]		AnimOffsetX;
+		declare 			Real[]		AnimOffsetY;
+		declare 			Integer[]	FadeDuration;
+		declare 			Boolean[]	WithScale;
+		declare 			Integer[]	Triggers;
+		declare 			Integer[]	TriggersHide;
+		declare 			Integer[]	TriggersStatus;
+		declare 			Integer[]	KeyToRemove;
+		
+		declare 			Integer 	Previous_LabelTriggerHide 	= Net_LabelTriggerHide;
+		declare 			Integer 	Previous_LabelTrigger 		= Net_LabelTrigger;
+
+
+
+
+		declare CMlFrame[] 	Frames_Label;
+		declare CMlLabel[]	Labels_Text;
+		
+		for(I, 1, {{{C_MAX_LABELFRAMES}}}) {
+			Frames_Label	.add((Page.MainFrame		.GetFirstChild("Frame_Label"^I) 	as CMlFrame));
+			Labels_Text		.add((Frames_Label[I-1]		.GetFirstChild("Label_Text") 		as CMlLabel));
+		}
+			
+		foreach(Label in Labels_Text) Label.Blend = CMlLabel::EBlendMode::Add;
+		
+		while(True) 
+		{
+			yield;
+			
+			if(Previous_LabelTriggerHide != Net_LabelTriggerHide) 
+			{
+				Previous_LabelTriggerHide = Net_LabelTriggerHide;
+				foreach(Net_Type in Net_LabelsTypeToHide) 
+				{
+					for(I, 0, LabelsType.count-1) 
+					{
+						if(Net_Type == LabelsType[I] && TriggersHide[I] > Now) 
+						{
+							TriggersHide[I] = Now;
+						}
+					}
+				}
+				Net_LabelTriggerHideBack = Now;
+			}
+			
+			if (Previous_LabelTrigger != Net_LabelTrigger) 
+			{
+				Previous_LabelTrigger  = Net_LabelTrigger;
+				declare Integer	NetCount = Net_LabelsType.count;
+				declare Integer Imax 	 = NetCount;
+				if (NetCount > {{{C_MAX_LABELFRAMES}}}) Imax = {{{C_MAX_LABELFRAMES}}};
+					
+				for(I, 0, Imax-1) {
+					LabelsType			.add(Net_LabelsType  		[I]);
+					LabelsPos			.add(Net_LabelsPos  		[I]);
+					LabelsTextSize		.add(Net_LabelsTextSize		[I]);
+					LabelsScale			.add(Net_LabelsScale		[I]);
+					LabelsOpacity		.add(Net_LabelsOpacity		[I]);
+					LabelsColor			.add(Net_LabelsColor		[I]);
+					LabelsStyle			.add(Net_LabelsStyle		[I]);
+					LabelsFont			.add(Net_LabelsFont			[I]);
+					LabelsHalign		.add(Net_LabelsHalign		[I]);
+					LabelsValue			.add(Net_LabelsValue		[I]);
+					Durations			.add(Net_LabelsDuration		[I]);
+					AnimOffsetX			.add(Net_LabelsAnimOffsetX	[I]);
+					AnimOffsetY			.add(Net_LabelsAnimOffsetY	[I]);
+					FadeDuration		.add(Net_LabelsFadeDuration	[I]);
+					WithScale			.add(Net_LabelsWithScale	[I]);
+					Triggers			.add(Now + Net_LabelsDelay	[I]);
+					TriggersHide		.add(Now + Net_LabelsDelay	[I] + Net_LabelsDuration[I]);
+					TriggersStatus		.add({{{STATUS_INIT}}});
+				}
+				
+				Net_LabelTriggerBack = Now;
+			}
+			
+			
+			
+			
+			
+			if(Triggers.count == 0) continue;
+			
+			
+			
+			
+			
+			// CLEANING ARRAYS TO LIMIT TO "ItemMaxCount"
+			
+			while (Triggers.count > {{{C_MAX_LABELFRAMES}}}) 
+			{
+				LabelsType				.removekey(0);
+				LabelsPos				.removekey(0);
+				LabelsTextSize			.removekey(0);
+				LabelsScale				.removekey(0);
+				LabelsOpacity			.removekey(0);
+				LabelsColor				.removekey(0);
+				LabelsStyle				.removekey(0);
+				LabelsFont				.removekey(0);
+				LabelsHalign			.removekey(0);
+				LabelsValue				.removekey(0);
+				Durations				.removekey(0);
+				AnimOffsetX				.removekey(0);
+				AnimOffsetY				.removekey(0);
+				FadeDuration			.removekey(0);
+				WithScale				.removekey(0);
+				Triggers				.removekey(0);
+				TriggersHide			.removekey(0);
+				TriggersStatus			.removekey(0);
+			}
+			
+			
+			
+			// CLEANING ARRAYS FROM TOO OLD EVENTS
+			
+			for(I, 0, Triggers.count-1) 
+			{
+				if(Now > Triggers[I] + Durations[I] + FadeDuration[I])
+					KeyToRemove.add(I);
+			}
+			
+			// if((KeyToRemove.count > 0)) 
+				// foreach(I => Element in TriggersStatus) 
+					// TriggersStatus[I] = {{{STATUS_INIT}}};
+			
+			foreach(I => Key in KeyToRemove)
+			{
+				declare Last = KeyToRemove.count - 1;
+				declare TheKeyToRemove = KeyToRemove[Last - I];
+				LabelsType				.removekey(TheKeyToRemove);
+				LabelsPos				.removekey(TheKeyToRemove);
+				LabelsTextSize			.removekey(TheKeyToRemove);
+				LabelsScale				.removekey(TheKeyToRemove);
+				LabelsOpacity			.removekey(TheKeyToRemove);
+				LabelsColor				.removekey(TheKeyToRemove);
+				LabelsStyle				.removekey(TheKeyToRemove);
+				LabelsFont				.removekey(TheKeyToRemove);
+				LabelsHalign			.removekey(TheKeyToRemove);
+				LabelsValue				.removekey(TheKeyToRemove);
+				Durations				.removekey(TheKeyToRemove);
+				AnimOffsetX				.removekey(TheKeyToRemove);
+				AnimOffsetY				.removekey(TheKeyToRemove);
+				FadeDuration			.removekey(TheKeyToRemove);
+				WithScale				.removekey(TheKeyToRemove);
+				Triggers				.removekey(TheKeyToRemove);
+				TriggersHide			.removekey(TheKeyToRemove);
+				TriggersStatus			.removekey(TheKeyToRemove);
+			}
+			KeyToRemove.clear();
+			
+			
+			
+			
+			/////////////////////////////////////
+			// DATAS -> MANIALINK 
+			
+			
+			for (I, 0, {{{C_MAX_LABELFRAMES-1}}}) 
+			{
+				if(I > Triggers.count-1 || Triggers[I] > Now) 
+				{
+					Frames_Label	[I]	.Visible 			= False;
+				} 
+				else 
+				{
+					Frames_Label	[I]	.Visible 			= True;
+					Labels_Text		[I]	.RelativePosition 	= LabelsPos[I];
+					Labels_Text		[I]	.Size 				= <160., 0.>;
+					Labels_Text		[I]	.TextSize 			= LabelsTextSize[I];
+					Labels_Text		[I]	.Scale 				= LabelsScale[I];
+					Labels_Text		[I]	.TextColor 			= LabelsColor[I];
+					Labels_Text		[I]	.Style 				= LabelsStyle[I];
+					Labels_Text		[I]	.TextFont 			= LabelsFont[I];
+					Labels_Text		[I]	.HorizontalAlign	= GetHalignFromInteger(LabelsHalign[I]);
+					Labels_Text		[I]	.Value 				= LabelsValue[I];
+				}	
+			}
+				
+			
+			/////////////////////////////////////
+			// UI ANIMATION
+			
+			for	(I, 0, Triggers.count-1) 
+			{
+			
+				// LABEL HIDE
+				
+				declare LabelPos 		=  LabelsPos[I];
+				declare LabelHidePos	= <LabelPos.X - AnimOffsetX[I], LabelPos.Y - AnimOffsetY[I], LabelPos.Z>;
+				declare Trigger 		=  Triggers[I];
+				declare Frame 	   	   <=> Frames_Label[I];
+				declare Label 	   	   <=> Labels_Text[I];
+				
+				if(Now >= TriggersHide[I]) 
+				{
+				// Label.Opacity = 0.;
+				declare TriggerHide = TriggersHide[I];
+				
+				CheckToPlayMoveTo("CubicIn", 	
+					Frame, 
+					TriggerHide, 
+					LabelPos, LabelHidePos, FadeDuration[I]);
+				
+				CheckToPlayAnimFadeTo("Linear",
+					Label,  
+					TriggerHide, 	
+					0., LabelsOpacity[I], FadeDuration[I]);
+				
+					
+				}
+				else
+				{
+					// LABEL SHOW
+					
+					Label	.Opacity 			= LabelsOpacity[I];
+					Frame	.Scale 				= 1.;
+					Frame	.RelativePosition 	= LabelPos;
+				
+					
+					if(TriggersStatus[I] == {{{STATUS_INIT}}}) 
+					{
+						declare AnimDone = True;
+						
+						if(!CheckToPlayAnimFadeTo("Linear",
+							Label, 
+							Trigger, 	
+							LabelsOpacity[I], 0.25, {{{C_DURATION_LABELFADEIN}}})) AnimDone = False;
+						
+						if(WithScale[I] && !CheckToPlayAnimScaleCustom("ElasticOut", 	
+							Frame,
+							Trigger, 	
+							1., 2., 300)) 	AnimDone = False;
+							
+						if(!CheckToPlayAnimSlideTo("ElasticOut", 	
+							Frame, 
+							Trigger, 
+							LabelPos, AnimOffsetX[I], AnimOffsetY[I], 500)) AnimDone = False;
+							
+						if(AnimDone) TriggersStatus[I] = {{{STATUS_SHOWN}}};
+					}
+				}
+			}
+		}
+	}
+	--></script>	
+
+	""";
+
+	return ML;
+}
+
+Text GetMLLabel() 
+{
+	return GetMLLabel(1.);
+}
+
+Void Show(Text _Type, Vec3 _Pos, Integer _TextSize, Real _Scale, Real _Opacity, Vec3 _Color, Text _Style, Text _Font, Integer _Halign, Text _Value, Real _AnimOffsetX, Real _AnimOffsetY, Integer _Delay, Integer _Duration, Integer _FadeDuration, Boolean _WithScale, CTmPlayer _Player) 
+{
+	declare UI <=> UIManager.GetUI(_Player);
+	if(UI == Null) return;
+	
+	declare netread 	Integer 	Net_LabelTriggerBack 			for UI;
+	
+	declare  		 	Integer 	Net_PreviousLabelTriggerBack 	for UI;
+	
+	declare netwrite 	Integer 	Net_LabelTrigger 				for UI;
+	declare netwrite 	Text[] 		Net_LabelsType 					for UI;
+	declare netwrite 	Vec3[] 		Net_LabelsPos 					for UI;
+	declare netwrite 	Integer[] 	Net_LabelsTextSize				for UI;
+	declare netwrite 	Real[]	 	Net_LabelsScale					for UI;
+	declare netwrite 	Real[]	 	Net_LabelsOpacity				for UI;
+	declare netwrite 	Vec3[]	 	Net_LabelsColor					for UI;
+	declare netwrite 	Text[]	 	Net_LabelsStyle					for UI;
+	declare netwrite 	Text[]	 	Net_LabelsFont					for UI;
+	declare netwrite 	Integer[]	Net_LabelsHalign				for UI;
+	declare netwrite 	Text[] 		Net_LabelsValue					for UI;
+	declare netwrite 	Integer[] 	Net_LabelsDelay 				for UI;
+	declare netwrite 	Integer[] 	Net_LabelsDuration 				for UI;
+	declare netwrite 	Real[]	 	Net_LabelsAnimOffsetX			for UI;
+	declare netwrite 	Real[]	 	Net_LabelsAnimOffsetY			for UI;
+	declare netwrite 	Integer[] 	Net_LabelsFadeDuration			for UI;
+	declare netwrite 	Boolean[]	Net_LabelsWithScale				for UI;
+	
+	
+	if(Net_PreviousLabelTriggerBack != Net_LabelTriggerBack) {
+		Net_PreviousLabelTriggerBack = Net_LabelTriggerBack;
+		Net_LabelsType			.clear();
+		Net_LabelsPos			.clear();
+		Net_LabelsTextSize		.clear();
+		Net_LabelsScale			.clear();
+		Net_LabelsOpacity		.clear();
+		Net_LabelsColor			.clear();
+		Net_LabelsStyle			.clear();
+		Net_LabelsFont			.clear();
+		Net_LabelsHalign		.clear();
+		Net_LabelsValue			.clear();
+		Net_LabelsDelay			.clear();
+		Net_LabelsDuration		.clear();
+		Net_LabelsAnimOffsetX	.clear();
+		Net_LabelsAnimOffsetY	.clear();
+		Net_LabelsFadeDuration	.clear();
+		Net_LabelsWithScale		.clear();
+	}
+	
+	Net_LabelsType				.add(_Type);
+	Net_LabelsPos				.add(_Pos);
+	Net_LabelsTextSize			.add(_TextSize);
+	Net_LabelsScale				.add(_Scale);
+	Net_LabelsOpacity			.add(_Opacity);
+	Net_LabelsColor				.add(_Color);
+	Net_LabelsStyle				.add(_Style);
+	Net_LabelsFont				.add(_Font);
+	Net_LabelsHalign			.add(_Halign);
+	Net_LabelsValue				.add(_Value);
+	Net_LabelsDelay				.add(_Delay);
+	Net_LabelsDuration			.add(_Duration);
+	Net_LabelsAnimOffsetX		.add(_AnimOffsetX);
+	Net_LabelsAnimOffsetY		.add(_AnimOffsetY);
+	Net_LabelsFadeDuration		.add(_FadeDuration);
+	Net_LabelsWithScale			.add(_WithScale);
+	Net_LabelTrigger = Now;
+}
+
+Void Show(Text _Type, Vec3 _Pos, Integer _TextSize, Real _Scale, Real _Opacity, Vec3 _Color, Text _Style, Text _Font,  Integer _Halign, Text _Value, Real _AnimOffsetX, Real _AnimOffsetY, Integer _Delay, Integer _Duration, Boolean _WithScale) 
+{
+	foreach(Player in AllPlayers)
+		Show(_Type, _Pos, _TextSize, _Scale, _Opacity, _Color, _Style, _Font, _Halign, _Value, _AnimOffsetX, _AnimOffsetY, _Delay, _Duration, C_DURATION_LABELFADEOUT, _WithScale, Player);
+}
+
+Void Show(Text _Type, Vec3 _Pos, Integer _TextSize, Real _Scale, Real _Opacity, Vec3 _Color, Text _Style, Text _Font,  Integer _Halign, Text _Value, Real _AnimOffsetX, Real _AnimOffsetY, Integer _Delay, Integer _Duration, CTmPlayer _Player) 
+{
+	foreach(Player in AllPlayers)
+		Show(_Type, _Pos, _TextSize, _Scale, _Opacity, _Color, _Style, _Font, _Halign, _Value, _AnimOffsetX, _AnimOffsetY, _Delay, _Duration, C_DURATION_LABELFADEOUT,  False, _Player);
+}
+
+Void Show(Text _Type, Vec3 _Pos, Integer _TextSize, Real _Scale, Real _Opacity, Vec3 _Color, Text _Style, Text _Font,  Integer _Halign, Text _Value, Real _AnimOffsetX, Real _AnimOffsetY, Integer _Delay, Integer _Duration) 
+{
+	foreach(Player in AllPlayers)
+		Show(_Type, _Pos, _TextSize, _Scale, _Opacity, _Color, _Style, _Font, _Halign, _Value, _AnimOffsetX, _AnimOffsetY, _Delay, _Duration, C_DURATION_LABELFADEOUT,  False, Player);
+}
+
+Void Hide(Text _Type, CTmPlayer _Player)
+{
+	declare UI <=> UIManager.GetUI(_Player);
+	if(UI == Null) return;
+	
+	
+	declare netread 	Integer 	Net_LabelTriggerHideBack 			for UI;	
+	
+	declare  		 	Integer 	Net_PreviousLabelTriggerHideBack 	for UI;
+	
+	declare netwrite 	Integer 	Net_LabelTriggerHide				for UI;
+	declare netwrite 	Text[] 		Net_LabelsTypeToHide				for UI;
+	
+	if(Net_PreviousLabelTriggerHideBack != Net_LabelTriggerHideBack) {
+		Net_PreviousLabelTriggerHideBack = Net_LabelTriggerHideBack;
+		Net_LabelsTypeToHide	.clear();
+	}
+	
+	Net_LabelsTypeToHide		.add(_Type);
+	Net_LabelTriggerHide = Now;
+}
+
+Void UnLoad()
+{
+	Layers::Destroy("Label");
+}
+
+Void Load(Boolean _ByPlayer) 
+{
+	UnLoad();
+	
+	// ---------------------------------- //
+	// Create layers
+	if(!_ByPlayer) 
+	{
+		Layers::Create("Label", 	GetMLLabel());
+		Layers::Attach("Label");
+	} 
+	else 
+	{
+		foreach(Player in Players) 
+		{
+			declare UI <=> UIManager.GetUI(Player);
+			declare LayerLabel <=> UIManager.UILayerCreate();
+			LayerLabel.ManialinkPage = GetMLLabel(0.5);
+			UI.UILayers.add(LayerLabel);
+		}
+	}
+}

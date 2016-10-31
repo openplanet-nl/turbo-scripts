@@ -1,0 +1,461 @@
+/** 
+ * Style selection UI
+ */
+
+#Const Version		"2016-03-11"
+#Const ScriptName	"StyleSelection.Script.txt"
+
+#Include "Libs/Openplanet/Buttons.Script.txt" as Buttons
+#Include "Libs/Openplanet/MLEffects.Script.txt" as MLE
+#Include "Libs/Openplanet/Manialink3.Script.txt" as Manialink
+#Include "Libs/Openplanet/TMConsole/MapEditor/Layers.Script.txt" as Layers
+#Include "Libs/Openplanet/TMConsole/MapEditor/UI/Colors.Script.txt" as Colors
+#Include "Libs/Openplanet/TMConsole/MapEditor/UI/Stylesheet.Script.txt" as Styles
+
+// ---------------------------------- //
+// Constants
+// ---------------------------------- //
+#Const C_MaxStyles	5
+#Const C_MinStyles	4
+/// Events
+#Const C_Event_StyleHover	"LibStyleSelection_StyleHover"
+#Const C_Event_StyleClick	"LibStyleSelection_StyleClick"
+#Const C_Event_StyleNext	"LibStyleSelection_StyleNext"
+#Const C_Event_StylePrev	"LibStyleSelection_StylePrev"
+
+// ---------------------------------- //
+// Functions
+// ---------------------------------- //
+// ---------------------------------- //
+// Private
+// ---------------------------------- //
+// ---------------------------------- //
+/** Get the style selection manialink
+ *
+ *	@param	_StylesNb				The number of styles to display in the UI
+ *
+ *	@return						The manialink
+ */
+Text Private_GetStyleSelection() {
+	declare Styles = "";
+	declare StylesSizeX = Styles::GetHeaderSize2();
+	declare StyleSizeX = StylesSizeX / C_MaxStyles;
+	declare ButtonSize = 2.;
+	declare FullHeaderSizeX = StylesSizeX + (2 * ButtonSize);
+	for (I, 0, C_MaxStyles-1) {
+		declare PosX = I * Styles::GetSize2(<StyleSizeX, 0.>, Styles::CircleSize_Bottom()).X;
+		Styles ^= """<frameinstance pos="{{{PosX}}} 0" modelid="Framemodel_Style" class="{{{MLE::ML_Class()}}}" {{{MLE::Data_Group()}}}="S{{{I}}}" />""";
+	}
+	
+	declare MinStyles = "";
+	declare MinStyleSizeX = StylesSizeX / C_MinStyles;
+	for (I, 0, C_MinStyles-1) {
+		declare PosX = I * Styles::GetSize2(<MinStyleSizeX, 0.>, Styles::CircleSize_Bottom()).X;
+		MinStyles ^= """<frameinstance pos="{{{PosX}}} 0" modelid="Framemodel_MinStyle" class="{{{MLE::ML_Class()}}}" {{{MLE::Data_Group()}}}="MS{{{I}}}" />""";
+	}
+	
+	
+	declare PrevStyle = Buttons::Editor_PrevCategory();
+	declare NextStyle = Buttons::Editor_NextCategory();
+	
+	return """
+<manialink version="3" name="MapEditor:Style-selection">
+<stylesheet>
+	{{{Styles::Get()}}}
+</stylesheet>
+<framemodel id="Framemodel_Style">
+	{{{Styles::BuildLine(<0., 0., 0.>, <StyleSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), Colors::Color_White(), False, False, ["scriptevents" => "1", MLE::Data_Triggers() => "T1", "class" => MLE::ML_Class(), "id" => "Quad_Style"])}}}
+	{{{Styles::BuildLabel(<StyleSizeX*0.5, -0.45, 2.>, <StyleSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_CenterCenter2(), [MLE::Data_Effects() => """T1:{{{MLE::Effect_LabelHover()}}}""", "class" => """turbo2-text-category {{{MLE::ML_Class()}}}""", "id" => "Label_Style"])}}}
+</framemodel>
+<framemodel id="Framemodel_MinStyle">
+	{{{Styles::BuildLine(<0., 0., 0.>, <MinStyleSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), Colors::Color_White(), False, False, ["scriptevents" => "1", MLE::Data_Triggers() => "T1", "class" => MLE::ML_Class(), "id" => "Quad_Style"])}}}
+	{{{Styles::BuildLabel(<MinStyleSizeX*0.5, -0.45, 2.>, <MinStyleSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_CenterCenter2(), [MLE::Data_Effects() => """T1:{{{MLE::Effect_LabelHover()}}}""", "class" => """turbo2-text-category {{{MLE::ML_Class()}}}""", "id" => "Label_Style"])}}}
+</framemodel>
+<frame z-index="1" id="Frame_Global">
+	<frame pos="0 -90" hidden="1" id="Frame_StyleSelection">
+		<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<-FullHeaderSizeX*0.5, 0., 0.>, Styles::CircleSize_Bottom()))}}}>
+			{{{Styles::BuildBackground(<0., 0., 0.>, <FullHeaderSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop())}}}
+			<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<ButtonSize, 0., 1.>, Styles::CircleSize_Bottom()))}}} id="Frame_Styles">
+				{{{Styles}}}
+			</frame>
+			<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<ButtonSize, 0., 1.>, Styles::CircleSize_Bottom()))}}} id="Frame_MinStyles">
+				{{{MinStyles}}}
+			</frame>
+			<frame z-index="2">
+				{{{Styles::BuildQuad(<0., 0., 0.>, <ButtonSize, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), ["bgcolor" => Colors::GetColorML(Colors::Color_Black())])}}}
+				{{{Styles::BuildButton(PrevStyle, <ButtonSize*0.5, -0.5, 1.>, <ButtonSize-0.2, (ButtonSize*0.5)-0.2>, Styles::CircleSize_Bottom(), Styles::Align_CenterCenter(), ["scriptevents" => "1", "id" => "Button_Prev"])}}}
+			</frame>
+			<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<ButtonSize+StylesSizeX, 0., 3.>, Styles::CircleSize_Bottom()))}}}>
+				{{{Styles::BuildQuad(<0., 0., 0.>, <ButtonSize, 1.>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), ["bgcolor" => Colors::GetColorML(Colors::Color_Black())])}}}
+				{{{Styles::BuildButton(NextStyle, <ButtonSize*0.5, -0.5, 1.>, <ButtonSize-0.2, (ButtonSize*0.5)-0.2>, Styles::CircleSize_Bottom(), Styles::Align_CenterCenter(), ["scriptevents" => "1", "id" => "Button_Next"])}}}
+			</frame>
+		</frame>
+	</frame>
+</frame>
+<script><!--
+{{{Manialink::DefaultIncludes()}}}
+{{{MLE::ML_Includes()}}}
+
+#Const C_ClickTick	100
+#Const C_InitTick	500
+
+declare CMlFrame G_FrameStyles;
+
+{{{Manialink::Animations(["EaseOutQuad"])}}}
+{{{Buttons::ML_Functions()}}}
+{{{MLE::ML_Functions()}}}
+
+Void SetStyles(Text[] _Styles, Text[] _StylesDisabled) {
+	if (_Styles.count > 0) {
+		foreach (Key => Control in G_FrameStyles.Controls) {
+			declare Frame_Style <=> (Control as CMlFrame);
+			declare Label_Style <=> (Frame_Style.GetFirstChild("Label_Style") as CMlLabel);
+			declare Control_Style <=> (Frame_Style.GetFirstChild("Quad_Style"));
+			declare Quad_Style <=> (Control_Style as CMlQuad);
+			declare Disabled for Frame_Style = False;
+			declare SelectStyle for Quad_Style = "";
+			SelectStyle = "";
+			
+			if (_Styles.existskey(Key)) {
+				SelectStyle = _Styles[Key];
+				Disabled = _StylesDisabled.exists(SelectStyle);
+				LibMLEffects_EnableTriggers(Control_Style, !Disabled);
+				if (Disabled) Label_Style.Opacity = 0.5;
+				else Label_Style.Opacity = 1.;
+				Label_Style.Value = SelectStyle;
+				Label_Style.Visible = True;
+			} else {
+				Label_Style.Visible = False;
+			}
+		}
+		
+		G_FrameStyles.Visible = True;
+	} else {
+		G_FrameStyles.Visible = False;
+	}
+}
+
+Void SelectStyle(Text _Style) {
+	declare Side = 0;
+	foreach (Key => Control in G_FrameStyles.Controls) {
+		declare Frame_Style <=> (Control as CMlFrame);
+		declare Label_Style <=> (Frame_Style.GetFirstChild("Label_Style") as CMlLabel);
+		declare Quad_Style <=> (Frame_Style.GetFirstChild("Quad_Style") as CMlQuad);
+		declare Disabled for Frame_Style = False;
+		declare Selected for Frame_Style = False;
+		
+		if (Side == 0 && Selected) {
+			Side = 1;
+		} else if (Side == 0 && Label_Style.Value == _Style) {
+			Side = -1;
+		}
+		
+		if (Label_Style.Value == _Style) {
+			Selected = True;
+			LibManialink_Anim(
+				Quad_Style, {{{Manialink::Inject("""<quad bgcolor="{{{Colors::GetColorML(Colors::Color_White())}}}" />""")}}}, 250, "EaseOutQuad"
+			);
+		} else {
+			Selected = False;
+			LibManialink_Anim(
+				Quad_Style, {{{Manialink::Inject("""<quad bgcolor="{{{Colors::GetColorML(Colors::Color_Grey())}}}" />""")}}}, 250, "EaseOutQuad"
+			);
+		}
+	}
+}
+
+Void SetVisibility(Boolean _Visible) {
+	if (_Visible) {
+		declare L_PositionY for Page = 0.;
+		LibManialink_Anim("<frame pos=\"0 "^L_PositionY^"\" hidden=\"0\" id=\"Frame_StyleSelection\" />", 250, "EaseOutQuad");
+	} else {
+		LibManialink_Anim({{{Manialink::Inject("""<frame pos="0 -90" hidden="1" id="Frame_StyleSelection" />""")}}}, 250, "EaseOutQuad");
+	}
+}
+
+main() {
+	declare Frame_StylesMax <=> (Page.GetFirstChild("Frame_Styles") as CMlFrame);
+	declare Frame_StylesMin <=> (Page.GetFirstChild("Frame_MinStyles") as CMlFrame);
+	G_FrameStyles <=> Frame_StylesMax;
+	
+	declare L_StylesUpdate for Page = -1;
+	declare L_Styles for Page = Text[];
+	declare L_StylesDisabled for Page = Text[];
+	declare L_StylesSelectedUpdate for Page = -1;
+	declare L_StylesSelected for Page = "";
+	declare L_Visibility for Page = False;
+	declare L_PositionY for Page = 0.;
+	declare L_StylesNb for Page = {{{C_MaxStyles}}};
+	
+	declare ClickPage = 0;
+	declare NextClickUpdate = -1;
+	
+	declare PrevStylesUpdate = -1;
+	declare PrevStylesSelectedUpdate = -1;
+	declare PrevVisibility = False;
+	declare PrevPositionY = -1.;
+	declare PrevStylesNb = -1;
+	
+	LibButtons_Init();
+  LibMLEffects_Init();
+	
+	while (True) {
+		yield;
+		
+		LibManialink_AnimLoop();
+		LibButtons_Loop();
+    LibMLEffects_Loop();
+		
+		if (PrevStylesNb != L_StylesNb) {
+			PrevStylesNb = L_StylesNb;
+			
+			if (L_StylesNb >= {{{C_MaxStyles}}}) {
+				G_FrameStyles <=> Frame_StylesMax;
+				Frame_StylesMin.Visible = False;
+			} else if (L_StylesNb <= {{{C_MinStyles}}}) {
+				G_FrameStyles <=> Frame_StylesMin;
+				Frame_StylesMax.Visible = False;
+			} else {
+				G_FrameStyles <=> Frame_StylesMax;
+				Frame_StylesMin.Visible = False;
+			}
+			
+			SetStyles(L_Styles, L_StylesDisabled);
+			SelectStyle(L_StylesSelected);
+		}
+		
+		if (PrevStylesUpdate != L_StylesUpdate) {
+			PrevStylesUpdate = L_StylesUpdate;
+			SetStyles(L_Styles, L_StylesDisabled);
+		}
+		
+		if (PrevStylesSelectedUpdate != L_StylesSelectedUpdate) {
+			PrevStylesSelectedUpdate = L_StylesSelectedUpdate;
+			SelectStyle(L_StylesSelected);
+		}
+		
+		if (PrevVisibility != L_Visibility || PrevPositionY != L_PositionY) {
+			PrevVisibility = L_Visibility;
+			PrevPositionY = L_PositionY;
+			SetVisibility(L_Visibility);
+			if (L_Visibility) SelectStyle(L_StylesSelected);
+		}
+		
+		if (ClickPage != 0) {
+			if (!MouseLeftButton) {
+				ClickPage = 0;
+				NextClickUpdate = -1;
+			}
+			
+			if (NextClickUpdate > 0 && Now >= NextClickUpdate) {
+				if (ClickPage > 0) {
+					SendCustomEvent("{{{C_Event_StyleNext}}}", Text[]);
+					NextClickUpdate = Now + C_ClickTick;
+				} else if (ClickPage < 0) {
+					SendCustomEvent("{{{C_Event_StylePrev}}}", Text[]);
+					NextClickUpdate = Now + C_ClickTick;
+				}
+			}
+		}
+		
+		foreach (Event in PendingEvents) {
+			if (Event.Type == CMlEvent::Type::MouseClick) {
+				if (Event.Control != Null && Event.ControlId == "Quad_Style") {
+					declare SelectStyle for Event.Control = "";
+					SendCustomEvent("{{{C_Event_StyleClick}}}", [SelectStyle]);
+				} else if (Event.ControlId == "Button_Prev") {
+					SendCustomEvent("{{{C_Event_StylePrev}}}", Text[]);
+					ClickPage = -1;
+					NextClickUpdate = Now + C_InitTick;
+				} else if (Event.ControlId == "Button_Next") {
+					SendCustomEvent("{{{C_Event_StyleNext}}}", Text[]);
+					ClickPage = 1;
+					NextClickUpdate = Now + C_InitTick;
+				}
+			}
+		}
+	}
+}
+--></script>
+</manialink>
+""";
+}
+
+// ---------------------------------- //
+/** Set the number of styles visible in the UI
+ *
+ *	@param	_Nb						The number of styles
+ */
+Void Private_SetStylesNb(Integer _Nb) {
+	declare Page <=> Layers::Get("StyleSelection").LocalPage;
+	declare L_StylesNb for Page = C_MaxStyles;
+	
+	if (L_StylesNb == _Nb) return;
+	
+	if (_Nb <= C_MinStyles) L_StylesNb = C_MinStyles;
+	else if (_Nb >= C_MaxStyles) L_StylesNb = C_MaxStyles;
+}
+
+// ---------------------------------- //
+// Public
+// ---------------------------------- //
+// ---------------------------------- //
+/** Return the version number of the script
+ *
+ *	@return						The version number of the script
+ */
+Text GetScriptVersion() {
+	return Version;
+}
+
+// ---------------------------------- //
+/** Return the name of the script
+ *
+ *	@return						The name of the script
+ */
+Text GetScriptName() {
+	return ScriptName;
+}
+
+// ---------------------------------- //
+/// Get the events constants
+Text Event_StyleHover() { return C_Event_StyleHover; }
+Text Event_StyleClick() { return C_Event_StyleClick; }
+Text Event_StyleNext() { return C_Event_StyleNext; }
+Text Event_StylePrev() { return C_Event_StylePrev; }
+
+// ---------------------------------- //
+/** Enable a style
+ *
+ *	@param	_Style					The style to enable
+ */
+Void Enable(Text _Style) {
+	declare Page <=> Layers::Get("StyleSelection").LocalPage;
+	declare L_StylesUpdate for Page = -1;
+	declare L_StylesDisabled for Page = Text[];
+	declare Removed = L_StylesDisabled.remove(_Style);
+	L_StylesUpdate = Now;
+}
+
+// ---------------------------------- //
+/** Disable a style
+ *
+ *	@param	_Style					The style to disable
+ */
+Void Disable(Text _Style) {
+	declare Page <=> Layers::Get("StyleSelection").LocalPage;
+	declare L_StylesUpdate for Page = -1;
+	declare L_StylesDisabled for Page = Text[];
+	if (!L_StylesDisabled.exists(_Style)) L_StylesDisabled.add(_Style);
+	L_StylesUpdate = Now;
+}
+
+// ---------------------------------- //
+/** Check if a style is disabled
+ *
+ *	@return							True if the style is disabled, False otherwise
+ */
+Boolean IsDisabled(Text _Style) {
+	declare Page <=> Layers::Get("StyleSelection").LocalPage;
+	declare L_StylesDisabled for Page = Text[];
+	return L_StylesDisabled.exists(_Style);
+}
+
+// ---------------------------------- //
+/** Set the styles
+ * 
+ *	@param	_Styles				The styles
+ */
+Void SetStyles(Text[] _Styles) {
+	Private_SetStylesNb(_Styles.count);
+	
+	declare Page <=> Layers::Get("StyleSelection").LocalPage;
+	declare L_StylesUpdate for Page = -1;
+	declare L_Styles for Page = Text[];
+	L_Styles = _Styles;
+	L_StylesUpdate = Now;
+}
+
+// ---------------------------------- //
+/** Select a style
+ *
+ *	@param	_Style				The style to select
+ */
+Void SelectStyle(Text _Style) {
+	declare Page <=> Layers::Get("StyleSelection").LocalPage;
+	declare L_StylesSelectedUpdate for Page = -1;
+	declare L_StylesSelected for Page = "";
+	L_StylesSelected = _Style;
+	L_StylesSelectedUpdate = Now;
+}
+
+// ---------------------------------- //
+/** Set the position of the UI
+ *
+ *	@param	_PositionY				The position
+ */
+Void SetPositionY(Real _PositionY) {
+	declare Page <=> Layers::Get("StyleSelection").LocalPage;
+	declare L_PositionY for Page = 0.;
+	L_PositionY = _PositionY;
+}
+
+// ---------------------------------- //
+/** Set the style selection visibility
+ *
+ *	@param	_Visible			Show the style selection if True
+ */
+Void SetVisibility(Boolean _Visible) {
+	declare Page <=> Layers::Get("StyleSelection").LocalPage;
+	declare L_Visibility for Page = False;
+	L_Visibility = _Visible;
+}
+
+// ---------------------------------- //
+/// Show the style selection
+Void Show() {
+	SetVisibility(True);
+}
+
+// ---------------------------------- //
+/// Hide the style selection
+Void Hide() {
+	SetVisibility(False);
+}
+
+// ---------------------------------- //
+/// Unload the library
+Void Unload() {
+	Layers::Destroy("StyleSelection");
+	//Layers::Unload();
+}
+
+// ---------------------------------- //
+/// Load the library
+Void Load() {
+	Unload();
+	
+	//Layers::Load();
+	Buttons::Load();
+	declare LayerStyleSelection <=> Layers::Create("StyleSelection");
+	LayerStyleSelection.ManialinkPage = Private_GetStyleSelection();
+	Buttons::Unload();
+	
+	declare Page <=> LayerStyleSelection.LocalPage;
+	declare L_StylesUpdate for Page = -1;
+	declare L_Styles for Page = Text[];
+	declare L_StylesDisabled for Page = Text[];
+	declare L_StylesSelectedUpdate for Page = -1;
+	declare L_StylesSelected for Page = "";
+	declare L_Visibility for Page = False;
+	declare L_PositionY for Page = 0.;
+	declare L_StylesNb for Page = C_MaxStyles;
+	L_Styles.clear();
+	L_StylesDisabled.clear();
+	L_StylesSelected = "";
+	L_StylesSelectedUpdate = -1;
+	L_StylesUpdate = -1;
+	L_Visibility = False;
+	L_PositionY = Styles::GetSize2(<0., 9.>, Styles::CircleSize_Bottom()).Y - 90.;
+	L_StylesNb = C_MaxStyles;
+}

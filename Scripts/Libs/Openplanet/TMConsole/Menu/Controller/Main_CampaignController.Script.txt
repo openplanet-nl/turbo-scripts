@@ -1,0 +1,1304 @@
+#Include "TextLib"																	as TextLib
+#Include "MathLib"																	as MathLib
+#Include "Libs/Openplanet/TMConsole/Logger.Script.txt"									as Logger
+#Include "Libs/Openplanet/TMConsole/Menu/MenuVersion.Script.txt"							as MenuVersion
+#Include "Libs/Openplanet/TMConsole/Menu/MenuHackE3.Script.txt"							as HackE3
+//#Include "Libs/Openplanet/TMConsole/Menu/Controller/All_CampaignController.Script.txt"	as All_CampaignController
+
+#Const C_REQUESTTYPE_LAUNCHUNLOCKANIM	0
+#Const C_REQUESTTYPE_ALLINFOS			1
+
+// for xml parsing
+#Const C_ReqTimeout					10000
+#Const C_XMLSuperSoloFilePath		"file://Media/Config/TMConsole/Campaign/SuperSoloCampaign.xml"
+
+#Const C_NbEnviro					4
+#Const C_NbDifficulty				5
+#Const C_NumberOfLvlByBlockY		2
+#Const C_NumberOfLvlByBlockX		5
+
+#Const TMC_MEDAL_AUTHOR   0
+#Const TMC_MEDAL_GOLD     1
+#Const TMC_MEDAL_SILVER   2
+#Const TMC_MEDAL_BRONZE   3
+#Const TMC_MEDAL_NONE     4
+
+#Const C_CampaignPathFilter			"""Campaigns\"""
+#Const C_E3PathFilter				"""E3_Hands_On\"""
+
+
+declare Text				G_GameMode;
+
+declare Text				G_LayerToSend;
+declare Integer				G_RequestType;
+declare Text[]				G_ParamToSend;
+
+//Sert à savoir quelle médaile doit être recalculée
+declare Integer				G_PrevDifficulty;
+declare Integer				G_PrevEnviro;
+declare Integer				G_ActualDifficulty;
+declare Integer				G_LastMedal;
+declare Integer				G_ActualEnviro;
+declare Integer				G_ActualLine;
+declare Integer				G_ActualIndex;
+declare Integer				G_ActualInDiffIndex;
+
+
+declare Integer[Integer][Integer][Integer]	G_MapInfoIndex;       //Tableau d'Index déterminant l'ordre d'apparition des des tracks - G_MapInfoIndex[Difficulty][POSY][POSX]
+declare Real[Integer][Integer]				G_CampaignMapIndex;   //Tableau qui permet de donner un ordre d'index pour les CampaignMaps
+
+declare Integer[Integer][Integer]			G_BlocksMedalsToHave;
+declare Integer[Integer][Integer]			G_BlocksMedalTypeNeed;
+
+//Solo
+declare Integer[Integer][Integer]			G_InternalLaunchAnim; //0 - No Anim | 1 - Anim ligne du haut | 2 - Anim ligne du bas
+declare Integer[Integer][Integer]			G_BlocksLocked;       //0 - Lock | 1 - ligne du haut Unlock | 2 - 2 ligne Unlock
+declare Integer[Integer][Integer]			G_MedalsByEnviro;     //MedalsByEnviro[Enviro][MedalToHave]     = NumberOfMedal
+declare Integer[Integer][Integer]			G_MedalsByDifficulty; //MedalsByEnviro[Difficulty][MedalToHave] = NumberOfMedal
+declare Integer[Integer]					G_Medals;
+declare Integer								G_NumberOfMedals;
+declare Integer[Integer]					G_NumberOfMedalsByType;
+declare Integer[Integer]					G_Jokers;
+
+declare Integer[Integer][Integer]			G_All_BlocksLocked;       //0 - Lock | 1 - ligne du haut Unlock | 2 - 2 ligne Unlock
+declare Integer[Integer][Integer]			G_Trial_BlocksLocked;       //0 - Lock | 1 - ligne du haut Unlock | 2 - 2 ligne Unlock
+declare Boolean[Integer]					G_IsEnviroUnlock;
+
+
+// SuperMedalsTimes[MedalIndex][MapIndex]
+// of size [4][200]
+declare Integer[Integer][Integer] 	G_SuperMedalsTimes;
+declare Integer[Integer] 			G_SuperTrackmasterTimes;
+declare Text[Integer] 				G_SuperTrackmasterNames;
+
+//Set Functions
+Void Set_MapInfoIndex        (Integer[Integer][Integer][Integer] _MapInfoIndex)
+{
+	G_MapInfoIndex = _MapInfoIndex;
+}
+Void Set_Medals              (Integer[Integer]                   _Medals)
+{
+	G_Medals = _Medals;
+}
+Void Set_MedalsByEnviro      (Integer[Integer][Integer]          _MedalsByEnviro)
+{
+	G_MedalsByEnviro = _MedalsByEnviro;
+}
+Void Set_MedalsByDifficulty  (Integer[Integer][Integer]          _MedalsByDifficulty)
+{
+	G_MedalsByDifficulty = _MedalsByDifficulty;
+}
+Void Set_NumberOfMedalsByType(Integer[Integer]                   _NumberOfMedalsByType)
+{
+	G_NumberOfMedalsByType = _NumberOfMedalsByType;
+}
+Void Set_ActualInDiffIndex(Integer _ActualInDiffIndex)
+{
+	G_ActualInDiffIndex = _ActualInDiffIndex;
+}
+Void Set_LastMedal(Integer _LastMedal)
+{
+	G_LastMedal = _LastMedal;
+}
+Void Set_NumberOfMedals(Integer _NumberOfMedals)
+{
+	G_NumberOfMedals = _NumberOfMedals;
+}
+Void Set_Jokers(Integer[Integer] _Jokers)
+{
+	G_Jokers = _Jokers;
+}
+
+//Get Functions
+Integer[Integer][Integer][Integer]	Get_MapInfoIndex(){
+	return G_MapInfoIndex;
+}
+
+Real[Integer][Integer]				Get_CampaignMapIndex(){
+	return G_CampaignMapIndex;
+}
+
+Integer[Integer][Integer]			Get_BlocksMedalsToHave(){
+	return G_BlocksMedalsToHave;
+}
+
+Integer[Integer][Integer]			Get_BlocksMedalTypeNeed(){
+	return G_BlocksMedalTypeNeed;
+}
+
+Integer[Integer][Integer]			Get_InternalLaunchAnim(){
+	return G_InternalLaunchAnim;
+}
+
+Integer[Integer][Integer]			Get_BlocksLocked(){
+	return G_BlocksLocked;
+}
+
+Integer[Integer][Integer]			Get_All_BlocksLocked(){
+	return G_All_BlocksLocked;
+}
+
+Integer[Integer][Integer]			Get_Trial_BlocksLocked(){
+	return G_Trial_BlocksLocked;
+}
+
+
+Integer[Integer][Integer]			Get_MedalsByEnviro(){
+	return G_MedalsByEnviro;
+}
+
+Integer[Integer][Integer]			Get_MedalsByDifficulty(){
+	return G_MedalsByDifficulty;
+}
+
+Integer[Integer]					Get_Medals(){
+	return G_Medals;
+}
+
+Integer								Get_NumberOfMedals(){
+	return G_NumberOfMedals;
+}
+
+Integer[Integer]					Get_NumberOfMedalsByType(){
+	return G_NumberOfMedalsByType;
+}
+
+Text Get_GameMode()
+{
+	return G_GameMode;
+}
+
+Boolean IsEnviroUnlock(Integer _Enviro)
+{
+	return G_IsEnviroUnlock[_Enviro];
+}
+
+Integer GetMedalsToHave(Integer _Difficulty)
+{
+	switch(_Difficulty)
+	{
+		case 0: return TMC_MEDAL_BRONZE;
+		case 1: return TMC_MEDAL_BRONZE;
+		case 2: return TMC_MEDAL_SILVER;
+		case 3: return TMC_MEDAL_SILVER;
+		case 4: return TMC_MEDAL_GOLD;
+	}
+	return 0;
+}
+
+
+Void Private_SetLoadFilter(Text _PathFilter)
+{
+	DataMgr.MapFilterStartWithPath = _PathFilter;
+	wait(DataMgr.Ready);
+}
+
+Void HACK_LoadUnlockAnimationInfos()
+{
+	G_InternalLaunchAnim[0]    = Integer[Integer];
+	G_InternalLaunchAnim[1]    = Integer[Integer];
+	//G_InternalLaunchAnim[1][0] = 1;
+	//G_BlocksLocked[0][1]       = 1;
+	
+	//G_InternalLaunchAnim[0][0] = 2;
+	declare Integer ActualVersion = MenuVersion::GetVersion();
+	if(ActualVersion == 1 || ActualVersion == 4)
+	{
+		G_BlocksLocked[0][2]       = 1;
+		G_BlocksLocked[0][3]       = 1;
+	}
+}
+
+
+CMapInfo GetMapInfo(Integer _DifficultySelect, Integer _Enviro, Integer _MapIndex)
+{
+	declare CMapInfo Map;
+	declare Integer Index;
+	Index = G_MapInfoIndex[_DifficultySelect][_Enviro][_MapIndex];
+	
+	Map <=> DataMgr.Maps[Index];
+	return Map;
+}
+
+Void Private_CreateBlocksLockedPosX(Integer _Diff)
+{
+	G_BlocksLocked[_Diff] = Integer [Integer];
+	for(Enviro, 0, C_NbEnviro - 1)
+	{
+		G_BlocksLocked[_Diff][Enviro] = 0;
+	}
+}
+
+Void Private_CreateAll_BlocksLockedPosX(Integer _Diff)
+{
+	G_All_BlocksLocked[_Diff] = Integer [Integer];
+	for(Enviro, 0, C_NbEnviro - 1)
+	{
+		G_All_BlocksLocked[_Diff][Enviro] = 0;
+	}
+}
+
+Void Private_CreateTrial_BlocksLockedPosX(Integer _Diff)
+{
+	G_Trial_BlocksLocked[_Diff] = Integer [Integer];
+	for(Enviro, 0, C_NbEnviro - 1)
+	{
+		G_Trial_BlocksLocked[_Diff][Enviro] = 0;
+	}
+}
+
+Void SetLockState(Integer _Diff, Integer _Env, Integer _Lock)
+{
+	if(!G_BlocksLocked.existskey(_Diff))       Private_CreateBlocksLockedPosX(_Diff);
+	if(!G_All_BlocksLocked.existskey(_Diff))   Private_CreateAll_BlocksLockedPosX(_Diff);
+	if(!G_Trial_BlocksLocked.existskey(_Diff)) Private_CreateTrial_BlocksLockedPosX(_Diff);
+	/*
+	//HACK TODELETE
+	if(_Diff == 0 && _Env == 1)
+	{
+		return;
+	}
+	//HACKEND
+	*/
+	if(_Diff == 0 && _Env == 0) G_Trial_BlocksLocked[_Diff][_Env] = 1;
+	else G_Trial_BlocksLocked[_Diff][_Env] = 0;
+
+	if(G_BlocksLocked[_Diff][_Env] != 2 || _Lock == 0)
+	{
+		G_BlocksLocked[_Diff][_Env] = _Lock;
+		//if(G_All_BlocksLocked[_Diff][_Env]< G_BlocksLocked[_Diff][_Env]) G_All_BlocksLocked[_Diff][_Env] = G_BlocksLocked[_Diff][_Env];
+
+		//HACK pour Unlock toutes les maps en HOME ARCADE (à part les Black)
+		if(_Diff != 4) G_All_BlocksLocked[_Diff][_Env] = 2;
+		if(_Diff == 4 && G_All_BlocksLocked[_Diff][_Env] < _Lock) G_All_BlocksLocked[_Diff][_Env] = _Lock;
+	}
+}
+
+Void AddLockState(Integer _Diff, Integer _Env)
+{
+	if(!G_BlocksLocked.existskey(_Diff)) Private_CreateBlocksLockedPosX(_Diff);
+	if(G_BlocksLocked[_Diff][_Env]<2) G_BlocksLocked[_Diff][_Env] += 1;
+	if(G_All_BlocksLocked[_Diff][_Env]<2) G_All_BlocksLocked[_Diff][_Env] += 1;
+}
+
+
+Integer[] GetBlockMedal(Integer _Enviro, Integer _Difficulty, Integer _Line)
+{
+	//declare Integer[Integer] Medals for This;
+	declare Integer[] BlockMedal;
+
+	declare Integer MapNumber = (_Difficulty)*40 + (_Enviro)*10 + _Line*5 - 1;
+	
+	for(I, 1, 5) //Représente les 5 maps d'un Block
+	{
+		declare Integer IndexMap = MapNumber + I;
+		if(G_Medals.existskey(IndexMap))
+		{
+			BlockMedal.add(G_Medals[IndexMap]);
+		}
+	}
+	
+	return BlockMedal;
+}
+
+Integer[] GetCurrentDoubleBlockMedals(Integer _Enviro, Integer _Difficulty) {
+	declare Integer[] FirstLine		= GetBlockMedal(_Enviro, _Difficulty-1, 0);
+	declare Integer[] SecondLine	= GetBlockMedal(_Enviro, _Difficulty-1, 1);
+	
+	declare Integer[] Total = [0, 0, 0, 0];
+	
+	for(MapIndex, 0, FirstLine.count-1) {
+		declare Integer MedalsToAdd = 3 - FirstLine[MapIndex];
+		for(I, 0, MedalsToAdd) {
+			declare Integer RevIndex = 3 - I;
+			Total[RevIndex] = Total[RevIndex] + 1;
+		}
+		
+		MedalsToAdd = 3 - SecondLine[MapIndex];
+		for(I, 0, MedalsToAdd) {
+			declare Integer RevIndex = 3 - I;
+			Total[RevIndex] = Total[RevIndex] + 1;
+		}
+	}
+	
+	// log(Total);
+	
+	return Total;
+}
+
+/*
+Void SendAllAnimationToStart(){
+	SendFeedbackToUI(True);
+}
+*/
+
+Boolean MapIsValid(CMapInfo _Map)
+{
+	// HACK : les dossiers apparaissent dans le DataMgr,
+	// et renvoient ce genre de choses : on les filtre.
+	if(_Map.CollectionName == "_Unassigned") return False;
+	if(_Map.AuthorLogin == "") return False;
+	return True;
+}
+
+
+Vec3 CreateMapIndice(CMapInfo _Map){
+	declare Vec3 Indice = <0., 0., 0.>; //X: Difficulty | Y: Enviro | Z: MapIndex
+	declare Text Enviro = _Map.CollectionName;
+
+	switch(Enviro) {
+		case "Canyon" 	: Indice.Y = 0.;
+		case "Valley" 	: Indice.Y = 1.;
+		case "Lagoon" 	: Indice.Y = 2.;
+		case "Stadium" 	: Indice.Y = 3.;
+	}
+
+	declare Text[] PathInfo = TextLib::Split("\\", _Map.Path);
+	declare Real Difficulty;
+	if(PathInfo.existskey(1))
+	{
+		switch(PathInfo[1]) {
+			case "01_White" 	: Difficulty = 1.;
+			case "02_Green" 	: Difficulty = 2.;
+			case "03_Blue" 		: Difficulty = 3.;
+			case "04_Red" 		: Difficulty = 4.;
+			case "05_Black" 	: Difficulty = 5.;
+		}
+	}
+	Indice.X = Difficulty;
+
+	//declare Text[] NameInfo = TL::Split("0", _Map.Name);
+	declare Integer EnviroIndex   = MathLib::NearestInteger(Indice.Y);
+	declare Integer IntDifficulty = MathLib::NearestInteger(Difficulty);
+	
+	Indice.Z = G_CampaignMapIndex[IntDifficulty][EnviroIndex];
+	G_CampaignMapIndex[IntDifficulty][EnviroIndex] +=1.;
+
+	return Indice;
+}
+
+Integer[Integer] GetSuperSoloTimes(Integer _MapIndex) {
+	if(G_SuperMedalsTimes.existskey(_MapIndex)) {
+		Logger::Log("Super Medals for map of index "^_MapIndex^" : "^G_SuperMedalsTimes[_MapIndex]);
+		return G_SuperMedalsTimes[_MapIndex];
+	}
+	
+	Logger::Warn("No Super Medal for map of index "^_MapIndex);
+	
+	declare Integer[Integer] NoTimes;
+	
+	NoTimes[TMC_MEDAL_AUTHOR] 	= -1;
+	NoTimes[TMC_MEDAL_GOLD] 	= -1;
+	NoTimes[TMC_MEDAL_SILVER] 	= -1;
+	NoTimes[TMC_MEDAL_BRONZE] 	= -1;
+	
+	return NoTimes;
+}
+
+/// 0, 1, 2, 3 pour Author, Gold, ...
+Integer Private_GetMyMedal(CMapInfo _MapInfo, Text _GameMode, Integer _MapAbsoluteIndex)
+{
+	declare Integer MyMedal = 4;
+	
+	wait(DataMgr.Ready);
+	DataMgr.RetrieveRecords(_MapInfo, DataMgr.MenuUserId);
+	wait(DataMgr.Ready);
+
+	// peu probable
+	if(UserMgr.MainUser == Null) return MyMedal;
+
+	declare Integer MyTime  = -1;
+	declare Text BestGhost;
+	switch(_GameMode)
+	{
+		case "Duo"       : BestGhost = "Duo_BestGhost";
+		case "Solo"      : BestGhost = "Solo_BestGhost";
+		case "SuperSolo" : BestGhost = "Solo_BestGhost";
+		default          : BestGhost = "Solo_BestGhost";
+	}
+    
+    if(BestGhost == "Solo_BestGhost")
+    {
+		MyTime = ScoreMgr.Campaign_GetMapRecord(UserMgr.MainUser.Id, _MapInfo.MapUid);
+		if(MyTime != -1)
+		{
+			//log("> Record.Time["^_MapInfo.Name^"]: " ^ MyTime);
+		}
+    }
+    else
+    {
+		foreach(Record in DataMgr.Records)
+		{
+			if(Record.GhostName == BestGhost)
+			{
+				MyTime = Record.Time;
+				if(_GameMode == "Solo")
+				{
+					//log("Record.Time["^_MapInfo.Name^"]: " ^ Record.Time);
+				}
+				break;
+			}
+
+		}
+    }
+
+	if(MyTime < 0) return TMC_MEDAL_NONE; // pas de medaille
+	
+	declare Integer CurrentBestMedal = TMC_MEDAL_NONE;
+	
+	{
+		if(G_GameMode == "SuperSolo") {
+			
+			declare Integer[Integer] SuperMedalTimes = [0 => -1, 1 => -1, 2 => -1, 3 => -1];
+			declare Integer BaseAuthTime = -1;
+			
+			foreach(Record in DataMgr.Records) {
+				declare Integer MedalValue = -1;
+				
+				if(Record.Medal == CHighScore::EMedal::Author) {
+					BaseAuthTime = Record.Time;
+					break;
+				}
+			}
+			
+			if(BaseAuthTime < 0) {
+				Logger::Warn("No author time for track "^_MapAbsoluteIndex^" : cannot load super solo.");
+				return -1;
+			}
+			
+			if(! G_SuperTrackmasterTimes.existskey(_MapAbsoluteIndex)) {
+				Logger::Warn("No super author time for track "^_MapAbsoluteIndex^" : cannot load super solo.");
+				return -1;
+			}
+			declare Integer SuperAuthorTime = G_SuperTrackmasterTimes[_MapAbsoluteIndex];
+			declare Integer AuthTimeDiff = BaseAuthTime - SuperAuthorTime;
+			
+			SuperMedalTimes[TMC_MEDAL_AUTHOR] 	= SuperAuthorTime;
+			SuperMedalTimes[TMC_MEDAL_GOLD] 	= MathLib::NearestInteger(SuperAuthorTime + (AuthTimeDiff / 8.));
+			SuperMedalTimes[TMC_MEDAL_SILVER] 	= MathLib::NearestInteger(SuperAuthorTime + (AuthTimeDiff / 4.));
+			SuperMedalTimes[TMC_MEDAL_BRONZE] 	= MathLib::NearestInteger(SuperAuthorTime + (AuthTimeDiff / 2.));
+			
+			G_SuperMedalsTimes[_MapAbsoluteIndex] = SuperMedalTimes;
+			
+			if(MyTime <= SuperMedalTimes[TMC_MEDAL_AUTHOR]) CurrentBestMedal = TMC_MEDAL_AUTHOR;
+			else if(MyTime <= SuperMedalTimes[TMC_MEDAL_GOLD]) CurrentBestMedal = TMC_MEDAL_GOLD;
+			else if(MyTime <= SuperMedalTimes[TMC_MEDAL_SILVER]) CurrentBestMedal = TMC_MEDAL_SILVER;
+			else if(MyTime <= SuperMedalTimes[TMC_MEDAL_BRONZE]) CurrentBestMedal = TMC_MEDAL_BRONZE;
+			else CurrentBestMedal = TMC_MEDAL_NONE;
+			
+		}
+		else {
+			foreach(Record in DataMgr.Records) {
+				// declare Real RecordTime = 1. * Record.Time;
+				/*
+				if(_MapAbsoluteIndex == 44) {
+				 Logger::Log(" MAP 45 "^Record.Medal^" "^Record.Time);
+				}
+				*/
+				if(Record.Medal != CHighScore::EMedal::None && Record.Time >= MyTime && MyTime > 0) {
+					
+					declare Integer MedalValue = -1;
+					
+					switch(Record.Medal) {
+						case CHighScore::EMedal::Author : MedalValue = TMC_MEDAL_AUTHOR;
+						case CHighScore::EMedal::Gold	: MedalValue = TMC_MEDAL_GOLD;
+						case CHighScore::EMedal::Silver : MedalValue = TMC_MEDAL_SILVER;
+						case CHighScore::EMedal::Bronze : MedalValue = TMC_MEDAL_BRONZE;
+					}
+					
+					if(MedalValue < CurrentBestMedal) CurrentBestMedal = MedalValue;
+				}
+			}
+		}
+	}
+
+	if(G_Jokers.existskey(_MapAbsoluteIndex))
+	{
+		//if(_MapAbsoluteIndex == 0) log("G_Jokers[_MapAbsoluteIndex]"^G_Jokers[_MapAbsoluteIndex]^" CurrentBestMedal"^CurrentBestMedal^"");
+		
+		if(G_Jokers[_MapAbsoluteIndex] < CurrentBestMedal)
+		{
+			//CurrentBestMedal = G_Jokers[_MapAbsoluteIndex];
+		}
+	}
+
+	return CurrentBestMedal;
+}
+
+Text Private_LoadXml(Text _Path) {
+	declare XmlFile = "";
+	
+	// @Debug
+	//return XmlTmp::Get(_Path);
+	
+	declare Req <=> Http.CreateGet(_Path);
+	declare ReqEndTime = Now + C_ReqTimeout;
+	declare Success = False;
+	
+	while (Now < ReqEndTime) {
+		if (Req.IsCompleted) {
+			XmlFile = Req.Result;
+			Success = True;
+			break;
+		}
+		yield; //HACK - virer Yield
+	}
+	if (!Success) 	Logger::Warn("[Main_CampaignController] Private_LoadXml(): Failed to load: "^_Path);
+	else 		 	Logger::Log("[Main_CampaignController] Private_LoadXml(): XML successfully loaded: "^_Path);
+
+	Http.Destroy(Req);
+	
+	return XmlFile;
+}
+
+Void ParseSuperSoloXML() {
+	Logger::Log("ParseSuperSoloXML");
+	declare Text XMLContent = Private_LoadXml(C_XMLSuperSoloFilePath);
+	assert(XMLContent != "", "Empty Xml content for super solo");
+	
+	declare XmlStruct	= Xml.Create(XMLContent);
+	assert(XmlStruct != Null, "Null XmlStruct for super solo");
+	
+	
+	foreach(MapNode in XmlStruct.Root.Children) {
+		declare Integer MapIndex = MapNode.GetAttributeInteger("id", -1);
+		if(MapIndex < 0) {
+			Logger::Warn("[ParseSuperSoloXML] unknown mapindex for "^MapNode.Name);
+			continue;
+		}
+		if(G_SuperTrackmasterTimes.existskey(MapIndex)) {
+			Logger::Warn("[ParseSuperSoloXML] duplicate mapindex for "^MapNode.Name);
+			continue;
+		}
+		
+		declare Integer SuperTime = MapNode.GetAttributeInteger("superauthortime", -1);
+		declare Text 	SuperName = MapNode.GetAttributeText("superplayer", "");
+		
+		G_SuperTrackmasterTimes[MapIndex] = SuperTime;
+		G_SuperTrackmasterNames[MapIndex] = SuperName;
+	}
+		
+	// log(Now^"G_SuperMedalsTimes: "^G_SuperMedalsTimes);
+}
+
+
+Integer GetMyMedal(Integer _Difficulty, Integer _Enviro, Integer _MapIndex)
+{
+	declare Integer 	MapAbsoluteIndex 	= (40 * (_Difficulty-1)) + (10 * _Enviro) + _MapIndex;
+	declare CMapInfo 	Map 				= GetMapInfo(_Difficulty, _Enviro, _MapIndex);
+	return Private_GetMyMedal(Map, G_GameMode, MapAbsoluteIndex);
+}
+
+Integer GetBlocksMedalTypeNeed(Integer _Difficulty, Integer _Enviro)
+{
+	return G_BlocksMedalTypeNeed[_Difficulty][_Enviro];
+}
+
+Void SetMedalTypeNeed()
+{
+	G_BlocksMedalTypeNeed[0][0] = 3;
+	G_BlocksMedalTypeNeed[0][1] = 3;
+	G_BlocksMedalTypeNeed[0][2] = 3;
+	G_BlocksMedalTypeNeed[0][3] = 3;
+	G_BlocksMedalTypeNeed[1][0] = 3;
+	G_BlocksMedalTypeNeed[1][1] = 3;
+	G_BlocksMedalTypeNeed[1][2] = 3;
+	G_BlocksMedalTypeNeed[1][3] = 3;
+	G_BlocksMedalTypeNeed[2][0] = 2;
+	G_BlocksMedalTypeNeed[2][1] = 2;
+	G_BlocksMedalTypeNeed[2][2] = 2;
+	G_BlocksMedalTypeNeed[2][3] = 2;
+	G_BlocksMedalTypeNeed[3][0] = 2;
+	G_BlocksMedalTypeNeed[3][1] = 2;
+	G_BlocksMedalTypeNeed[3][2] = 2;
+	G_BlocksMedalTypeNeed[3][3] = 2;
+	G_BlocksMedalTypeNeed[4][0] = 1;
+	G_BlocksMedalTypeNeed[4][1] = 1;
+	G_BlocksMedalTypeNeed[4][2] = 1;
+	G_BlocksMedalTypeNeed[4][3] = 1;
+}
+
+Boolean CheckNbOfMedals(Integer[] _Medals, Integer _MedalToHave)
+{
+	foreach(Medal in _Medals)
+	{
+		if(Medal > _MedalToHave) return False;
+	}
+	return True;
+}
+
+Void IsBlockUnLockByEnviro(Integer _Enviro, Integer _Difficulty, Integer _Line)
+{
+
+	declare Integer ActualVersion = MenuVersion::GetVersion();
+
+	//HACK - E3
+	if(ActualVersion == 1 || ActualVersion == 4)
+	{
+		if(_Enviro >= 2 &&  _Difficulty == 0)
+		{
+			SetLockState(_Difficulty, _Enviro, 1);
+		}
+		else
+		{
+			SetLockState(_Difficulty, _Enviro, 0);
+		}
+		return;
+	}
+
+	if(_Enviro == 0 && _Difficulty == 0 && _Line == 0)
+	{
+		SetLockState(_Difficulty, _Enviro, 1);
+		return;
+	}
+	
+	declare Integer MedalToHave = GetMedalsToHave(_Difficulty);
+	declare Integer[] Medals;
+	
+	if(_Line == 0) {
+		if(_Enviro <= 3) {
+			if(G_MedalsByEnviro[_Enviro][MedalToHave] >= _Difficulty * 10 && _Difficulty != 0)
+			{
+				SetLockState(_Difficulty, _Enviro, 1);
+			}
+		}
+	} else {
+		Medals = GetBlockMedal(_Enviro, _Difficulty,0);
+		declare IsUnlock = CheckNbOfMedals(Medals, MedalToHave);
+		if(IsUnlock) SetLockState(_Difficulty, _Enviro, 2);
+	}
+}
+
+
+Void IsBlockUnLockByDifficulty(Integer _Enviro, Integer _Difficulty, Integer _Line)
+{
+	if(_Enviro == 0) return;
+	declare Integer[Integer][Integer] MedalsByDifficulty for This;
+	
+	declare Integer MedalToHave = GetMedalsToHave(_Difficulty);
+	//Medals = GetBlockMedal(_Enviro, _Difficulty, 0);
+	//declare Integer[] Medals;
+	if(_Line == 0) {
+		if(G_MedalsByDifficulty[_Difficulty][MedalToHave] >= _Enviro * 10){
+			//AddLockState(_Enviro, _Difficulty);
+			SetLockState(_Difficulty, _Enviro, 1);
+		}
+	}
+}
+
+Void IsBlockUnlockOld(Integer _Enviro, Integer _Difficulty)
+{
+	declare Integer MedalTypeNeed =  GetBlocksMedalTypeNeed(_Difficulty, _Enviro);
+
+	if(!G_BlocksMedalsToHave.existskey(_Difficulty))
+	{
+		SetLockState(_Difficulty, _Enviro, 0);
+		return;
+	}
+
+	if(!G_BlocksMedalsToHave[_Difficulty].existskey(_Enviro))
+	{
+		SetLockState(_Difficulty, _Enviro, 0);
+		return;
+	}
+	
+	declare Integer NumberOfMedal = G_NumberOfMedalsByType[MedalTypeNeed];
+	declare Integer ActualVersion = MenuVersion::GetVersion();
+
+	//DEMO
+	if(ActualVersion == 0 && ManiaPlanet.TmTurbo_IsDemo)
+	{
+		if(_Enviro == 0 &&  _Difficulty == 0)
+		{
+			SetLockState(_Difficulty, _Enviro, 1);
+		}
+		else
+		{
+			SetLockState(_Difficulty, _Enviro, 0);
+		}
+		return;
+	}
+	
+	if(ActualVersion == 2)
+	{
+		if(G_NumberOfMedals >= G_BlocksMedalsToHave[_Difficulty][_Enviro]) SetLockState(_Difficulty, _Enviro, 2);
+		else SetLockState(_Difficulty, _Enviro, 0);
+	}
+	else
+	{
+		if(NumberOfMedal >= G_BlocksMedalsToHave[_Difficulty][_Enviro]) SetLockState(_Difficulty, _Enviro, 2);
+		else SetLockState(_Difficulty, _Enviro, 0);
+	}
+}
+
+Void IsBlockUnlock(Integer _Enviro, Integer _Difficulty)
+{
+	declare Integer MedalTypeNeed =  GetBlocksMedalTypeNeed(_Difficulty, _Enviro);
+	if(!G_BlocksMedalsToHave.existskey(_Difficulty))
+	{
+		SetLockState(_Difficulty, _Enviro, 0);
+		return;
+	}
+
+	if(!G_BlocksMedalsToHave[_Difficulty].existskey(_Enviro))
+	{
+		SetLockState(_Difficulty, _Enviro, 0);
+		return;
+	}
+	
+	declare Integer NumberOfMedal = G_NumberOfMedalsByType[MedalTypeNeed];
+
+	foreach(Index => Joker in G_Jokers)
+	{
+		if(G_Medals[Index] <= MedalTypeNeed) continue;
+
+		if(Joker <= MedalTypeNeed) NumberOfMedal += 1;
+	}
+
+	declare Integer ActualVersion = MenuVersion::GetVersion();
+
+	//DEMO
+	if(ActualVersion == 0 && ManiaPlanet.TmTurbo_IsDemo)
+	{
+		if(_Enviro == 0 &&  _Difficulty == 0)
+		{
+			SetLockState(_Difficulty, _Enviro, 1);
+		}
+		else
+		{
+			SetLockState(_Difficulty, _Enviro, 0);
+		}
+		return;
+	}
+	
+	if(ActualVersion == 2)
+	{
+		if(G_NumberOfMedals >= G_BlocksMedalsToHave[_Difficulty][_Enviro]) SetLockState(_Difficulty, _Enviro, 2);
+		else SetLockState(_Difficulty, _Enviro, 0);
+	}
+	else
+	{
+
+		if(_Enviro == 0 && _Difficulty == 0)
+		{
+			SetLockState(_Difficulty, _Enviro, 2);
+		}
+		else
+		{
+
+
+			if(NumberOfMedal >= G_BlocksMedalsToHave[_Difficulty][_Enviro])
+			{
+				SetLockState(_Difficulty, _Enviro, 2);
+			}
+			else
+			{
+				SetLockState(_Difficulty, _Enviro, 0);
+			}
+
+			return;
+
+			declare Integer Prev_Dif = _Difficulty;
+			declare Integer Prev_Env = _Enviro-1;
+			if(_Enviro == 0)
+			{
+				Prev_Dif -= 1;
+				Prev_Env  = 3;
+			}
+			/*
+			for(Dif, 0, Prev_Dif)
+			{
+				for(Env, 0, Prev_Env)
+				{
+
+				}
+			}
+			*/
+			for(Line, 0, 1)
+			{
+				declare Integer[] Medals = GetBlockMedal(Prev_Env, Prev_Dif, Line);
+				foreach(Medal in Medals)
+				{
+					if(Medal > G_BlocksMedalTypeNeed[_Difficulty][_Enviro] || G_BlocksLocked[Prev_Dif][Prev_Env] == 0)
+					{
+						SetLockState(_Difficulty, _Enviro, 0);
+						return;
+					}
+				}
+
+			}
+			SetLockState(_Difficulty, _Enviro, 2);
+
+		}
+	}
+
+}
+Void CheckAllBlockUnlock()
+{
+	for(IndDiff, 0, C_NbDifficulty-1)
+	{
+		for(IndEnv, 0, C_NbEnviro-1)
+		{
+			IsBlockUnlock(IndEnv, IndDiff);
+		}
+	}
+}
+
+Void ActualTrackInfo(Integer _Difficulty, Integer _Enviro, Integer _Line, Integer _Index)
+{
+	G_ActualDifficulty  = _Difficulty;
+	G_ActualEnviro      = _Enviro;
+	G_PrevDifficulty    = _Difficulty;
+	G_PrevEnviro        = _Enviro;
+	G_ActualLine        = _Line;
+	G_ActualIndex       = _Index % C_NumberOfLvlByBlockX + (G_ActualEnviro*C_NumberOfLvlByBlockX*C_NumberOfLvlByBlockY) + G_ActualLine*C_NumberOfLvlByBlockX + (G_ActualDifficulty-1)*40;
+	G_ActualInDiffIndex = _Index % C_NumberOfLvlByBlockX + G_ActualEnviro*C_NumberOfLvlByBlockX;
+
+	//CheckAllBlockUnlock();
+}
+
+Void UpdateEnviroUnlock()
+{
+	declare Integer NbEnviro = 0;
+	if     (G_NumberOfMedalsByType[3] >= 30) NbEnviro = 3;
+	else if(G_NumberOfMedalsByType[3] >= 20) NbEnviro = 2;
+	else if(G_NumberOfMedalsByType[3] >= 10) NbEnviro = 1;
+	
+	for(I, 0, 3)
+	{
+		if(!G_IsEnviroUnlock.existskey(I)) G_IsEnviroUnlock[I] = False;
+		if(NbEnviro >= I) G_IsEnviroUnlock[I] = True;
+	}
+}
+
+Void RetrieveCampaignMaps() {
+	G_MapInfoIndex.clear();
+	
+	//Init le tableau
+	G_MedalsByEnviro.clear();
+	G_MedalsByDifficulty.clear();
+	for(IndexEnv, 0, C_NbEnviro - 1) //Enviro
+	{
+		G_MedalsByEnviro[IndexEnv] = Integer[Integer];
+		G_MedalsByEnviro[IndexEnv][0] = 0; //MedalNadeo
+		G_MedalsByEnviro[IndexEnv][1] = 0; //Gold
+		G_MedalsByEnviro[IndexEnv][2] = 0; //Silver
+		G_MedalsByEnviro[IndexEnv][3] = 0; //Bronze
+	}
+	
+	for(IndexDiff, 0, C_NbDifficulty) { 	// C_NbDifficulty : le nombre de diff, i.e. custom:0 + white:1 + green:2 + blue:3 + red:4 + black:5
+		G_MapInfoIndex[IndexDiff]     = Integer[Integer][Integer];
+		G_CampaignMapIndex[IndexDiff] = Real[Integer];
+		G_BlocksMedalTypeNeed[IndexDiff]  = Integer[Integer];
+		for(IndexEnviro, 0, C_NbEnviro - 1) { 	// NbEnviro :  le nombre d'enviro, i.e. Stadium:0 + Canyon:1 + Valley:2 + Lagoon:3
+			G_MapInfoIndex[IndexDiff][IndexEnviro] = Integer[Integer];
+			G_CampaignMapIndex[IndexDiff][IndexEnviro] = 0.;
+			G_BlocksMedalTypeNeed[IndexDiff][IndexEnviro] = 0;
+		}
+		
+		G_MedalsByDifficulty[IndexDiff] = Integer[Integer];
+		G_MedalsByDifficulty[IndexDiff][0] = 0; //MedalNadeo
+		G_MedalsByDifficulty[IndexDiff][1] = 0; //Gold
+		G_MedalsByDifficulty[IndexDiff][2] = 0; //Silver
+		G_MedalsByDifficulty[IndexDiff][3] = 0; //Bronze
+	}
+	
+	SetMedalTypeNeed();
+
+	G_NumberOfMedalsByType[0] = 0; //MedalNadeo
+	G_NumberOfMedalsByType[1] = 0; //Gold
+	G_NumberOfMedalsByType[2] = 0; //Silver
+	G_NumberOfMedalsByType[3] = 0; //Bronze
+
+	declare Integer ActualVersion = MenuVersion::GetVersion();
+
+	foreach(Index => Map in DataMgr.Maps) {
+		if(!MapIsValid(Map) || Index >= 200) continue;
+
+		declare Vec3 MapIndice     = CreateMapIndice(Map);
+		declare Integer Difficulty = MathLib::NearestInteger(MapIndice.X);
+		declare Integer Enviro     = MathLib::NearestInteger(MapIndice.Y);
+		declare Integer MapIndex   = MathLib::NearestInteger(MapIndice.Z);
+		declare Integer Line       = MapIndex/5;
+
+		G_MapInfoIndex[Difficulty][Enviro][MapIndex] = Index;
+		declare Integer MyMedal;
+
+		
+		//HACK E3
+		if(ActualVersion == 2)
+		{
+			MyMedal = HackE3::GetMyMedal(Difficulty, Enviro, MapIndex);
+			//MyMedal = 1;
+		}
+		else if(ActualVersion == 1 || ActualVersion == 4)
+		{
+			//MyMedal = HackE3::GetMyMedal(Difficulty, Enviro, MapIndex);
+			MyMedal = 1;
+		}
+		else
+		{
+			MyMedal = GetMyMedal(Difficulty, Enviro, MapIndex);
+		}
+		
+		if(MyMedal <= 3)
+		{
+			for(MedalToAdd, MyMedal, 3)
+			{
+				G_MedalsByEnviro[Enviro][MedalToAdd]           += 1;
+				G_MedalsByDifficulty[Difficulty-1][MedalToAdd] += 1;
+				G_NumberOfMedalsByType[MedalToAdd]             += 1;
+			}
+		}
+		declare Integer PreviousMedal = 4;
+		if(G_Medals.existskey(Index))
+		{
+			PreviousMedal = G_Medals[Index];
+		}
+		G_Medals[Index] = MyMedal;
+
+		G_NumberOfMedals += (4 - MyMedal) - (4 - PreviousMedal);
+
+		/* HACK - Premier systeme d'unlock.
+		if(Line != PrevLineFocus)
+		{
+			if(Line == 0) SetLockState(Difficulty-1, Enviro, 0);
+			IsBlockUnLockByEnviro(Enviro, Difficulty-1, Line);
+			IsBlockUnLockByDifficulty(Enviro, Difficulty-1, Line);
+			PrevLineFocus = Line;
+		}
+		*/
+	}
+	CheckAllBlockUnlock();
+	UpdateEnviroUnlock();
+}
+
+
+//Fonction qui réageance le tableau de map Campaign. Format 10 Maps par enviro
+Void SortCampaignMaps() {
+	declare Integer[Integer][Integer][Integer] NewDisposition;
+
+	
+	declare Integer NewPosX;
+	declare Integer NewPosY;
+	foreach(Difficulty => EnviroArray in G_MapInfoIndex) {
+		NewDisposition[Difficulty] = Integer[Integer][Integer];
+		for(I,0,1) // On crée pour chaque difficulté les deux lignes sur Y où se trouveront les maps
+		{
+			NewDisposition[Difficulty][I] = Integer[Integer];
+		}
+		foreach(Enviro => IndexMaps in EnviroArray)
+		{
+			NewPosY = 0;
+			NewPosX = 0 + Enviro*5;
+			foreach(Index in IndexMaps) //Il y a 5 niveaux de difficulté
+			{
+				NewDisposition[Difficulty][NewPosY][NewPosX] = Index;
+				
+				NewPosX += 1;
+				if(NewPosX >= (Enviro+1)*5)
+				{
+					NewPosX = 0 + Enviro*5;
+					NewPosY = 1;
+				}
+			}
+		}
+	}
+	G_MapInfoIndex.clear();
+
+	for(Difficulty, 0, NewDisposition.count -1) {
+		G_MapInfoIndex[Difficulty] = Integer[Integer][Integer];
+		for(PosY,0,1) // On crée pour chaque difficulté les deux lignes sur Y où se trouveront les maps
+		{
+			G_MapInfoIndex[Difficulty][PosY] = Integer[Integer];
+		}
+	}
+	G_MapInfoIndex = NewDisposition;
+}
+
+Void SetBlocksMedalsToHave()
+{
+	//
+	declare Integer ActualVersion = MenuVersion::GetVersion();
+	if(ActualVersion == 0)
+	{
+		for(Difficulty, 0, C_NbDifficulty-1)
+		{
+			G_BlocksMedalsToHave[Difficulty] = Integer[Integer];
+			for(Enviro, 0, C_NbEnviro-1)
+			{
+				G_BlocksMedalsToHave[Difficulty][Enviro] = 0;
+			}
+		}
+
+		//SET TEST Version 1
+		G_BlocksMedalsToHave[0][0] = 0;
+		G_BlocksMedalsToHave[0][1] = 10;
+		G_BlocksMedalsToHave[0][2] = 20;
+		G_BlocksMedalsToHave[0][3] = 30;
+		
+		G_BlocksMedalsToHave[1][0] = 40;
+		G_BlocksMedalsToHave[1][1] = 50;
+		G_BlocksMedalsToHave[1][2] = 60;
+		G_BlocksMedalsToHave[1][3] = 70;
+		
+		G_BlocksMedalsToHave[2][0] = 80;
+		G_BlocksMedalsToHave[2][1] = 90;
+		G_BlocksMedalsToHave[2][2] = 100;
+		G_BlocksMedalsToHave[2][3] = 110;
+		
+		G_BlocksMedalsToHave[3][0] = 120;
+		G_BlocksMedalsToHave[3][1] = 130;
+		G_BlocksMedalsToHave[3][2] = 140;
+		G_BlocksMedalsToHave[3][3] = 150;
+
+		G_BlocksMedalsToHave[4][0] = 160;
+		G_BlocksMedalsToHave[4][1] = 170;
+		G_BlocksMedalsToHave[4][2] = 180;
+		G_BlocksMedalsToHave[4][3] = 190;
+
+
+
+
+		//SET Emilien
+		/*
+		G_BlocksMedalsToHave[0][0] = 0;
+		G_BlocksMedalsToHave[1][0] = 20;
+		G_BlocksMedalsToHave[2][0] = 70;
+		G_BlocksMedalsToHave[3][0] = 200;
+		G_BlocksMedalsToHave[4][0] = 480;
+
+		G_BlocksMedalsToHave[0][1] = 10;
+		G_BlocksMedalsToHave[1][1] = 50;
+		G_BlocksMedalsToHave[2][1] = 150;
+		G_BlocksMedalsToHave[3][1] = 300;
+		G_BlocksMedalsToHave[4][1] = 480;
+
+		G_BlocksMedalsToHave[0][2] = 30;
+		G_BlocksMedalsToHave[1][2] = 120;
+		G_BlocksMedalsToHave[2][2] = 260;
+		G_BlocksMedalsToHave[3][2] = 400;
+		G_BlocksMedalsToHave[4][2] = 480;
+
+		G_BlocksMedalsToHave[0][3] = 90;
+		G_BlocksMedalsToHave[1][3] = 220;
+		G_BlocksMedalsToHave[2][3] = 350;
+		G_BlocksMedalsToHave[3][3] = 450;
+		G_BlocksMedalsToHave[4][3] = 480;
+		*/
+	}
+	else
+	{
+		for(Difficulty, 0, C_NbDifficulty-1)
+		{
+			G_BlocksMedalsToHave[Difficulty] = Integer[Integer];
+			for(Enviro, 0, C_NbEnviro-1)
+			{
+				G_BlocksMedalsToHave[Difficulty][Enviro] = 271+ Difficulty*C_NbEnviro + Enviro;
+				//log(G_BlocksMedalsToHave[Difficulty][Enviro]);
+			}
+		}
+	}
+}
+
+
+Void LoadCampaignMaps(Text _PathFilter)
+{	
+	//G_MapInfoIndex.clear();
+	SetBlocksMedalsToHave();
+	Private_SetLoadFilter(_PathFilter);
+	DataMgr.RetrieveGameFiles(CDataMgr::EFileType::Map);
+	wait(DataMgr.Ready);
+	RetrieveCampaignMaps();
+	
+	/*
+	for(I,0,3)
+	{
+		G_PositionEnviro[I] = I;
+	}
+	*/
+	SortCampaignMaps();
+}
+
+Void UnLoad()
+{
+	G_GameMode             = "";
+	G_LayerToSend          = "";
+	G_RequestType          = 0;
+	G_ParamToSend.clear();
+	G_PrevDifficulty       = 0;
+	G_PrevEnviro           = 0;
+	G_ActualDifficulty     = 0;
+	G_LastMedal            = 0;
+	G_ActualEnviro         = 0;
+	G_ActualLine           = 0;
+	G_ActualIndex          = 0;
+	G_ActualInDiffIndex    = 0;
+	G_MapInfoIndex.clear();
+	G_CampaignMapIndex.clear();
+	G_BlocksMedalsToHave.clear();
+	G_BlocksMedalTypeNeed.clear();
+	G_InternalLaunchAnim.clear();
+	G_BlocksLocked.clear();
+	G_MedalsByEnviro.clear();
+	G_MedalsByDifficulty.clear();
+	G_Medals.clear();
+	G_NumberOfMedals = 0;
+	G_NumberOfMedalsByType.clear();
+	G_SuperMedalsTimes.clear();
+}
+
+Void Load(Text _GameMode)
+{
+	UnLoad();
+	G_GameMode = _GameMode;
+	G_LastMedal = 4;
+	declare Text Filter;
+	declare Integer ActualVersion = MenuVersion::GetVersion();
+	switch(ActualVersion)
+	{
+		case 1 : Filter = C_E3PathFilter;
+		case 4 : Filter = C_E3PathFilter;
+		default: Filter = C_CampaignPathFilter;
+	}	
+
+	
+	if(_GameMode == "SuperSolo") 
+	{
+		ParseSuperSoloXML();
+	}
+	
+	LoadCampaignMaps(Filter);
+	HACK_LoadUnlockAnimationInfos();
+}
+
+
+
+Void VeridNbOfTracks()
+{	
+	if(DataMgr.Maps.count < 200)
+	{
+		Load(G_GameMode);
+	}
+}
+
+Void CheckNewMedal(Text _GameMode, Integer _ActualEnviro, Integer _ActualDifficulty)
+{
+
+	G_GameMode = _GameMode;
+	VeridNbOfTracks();
+	for(Line ,0, 1)
+	{
+		for(IndexInLine, 0, 4)
+		{
+			declare Integer Index         = _ActualEnviro * 5 + IndexInLine;
+			declare Integer IndexInBlock  = Line * 5 + IndexInLine;
+			declare Integer TrackIndex    = G_MapInfoIndex[_ActualDifficulty][Line][Index];
+			declare Integer PreviousMedal = G_Medals[TrackIndex];
+			declare Integer NewMedal;
+			declare Integer ActualVersion = MenuVersion::GetVersion();
+
+			if(G_ActualInDiffIndex == IndexInBlock) G_LastMedal = 4;
+
+			if(ActualVersion == 2)
+			{
+				NewMedal = HackE3::GetMyMedal(_ActualDifficulty, _ActualEnviro, IndexInBlock);
+			}
+			else
+			{
+				NewMedal = GetMyMedal(_ActualDifficulty, Line, Index);
+			}
+
+			if(PreviousMedal == NewMedal) continue;
+
+			if(G_ActualInDiffIndex == IndexInBlock) G_LastMedal = NewMedal;
+			G_Medals[TrackIndex] = NewMedal;
+			G_NumberOfMedals += (4 - NewMedal) - (4 - PreviousMedal);
+			for(MedalToAdd, NewMedal, 3){
+				if(MedalToAdd>=PreviousMedal) continue; // TODO - Vérifier cette fonction permettante de ne pas rajouter trop de médailes
+
+				G_MedalsByEnviro[_ActualEnviro][MedalToAdd]           += 1;
+				G_MedalsByDifficulty[_ActualDifficulty-1][MedalToAdd] += 1;
+				G_NumberOfMedalsByType[MedalToAdd]                     += 1;
+			}
+		}
+	}
+	CheckAllBlockUnlock();
+	UpdateEnviroUnlock();
+}
+
+Void CheckNewMedal_Old()
+{
+	VeridNbOfTracks();
+	for(Line ,0, 1)
+	{
+		for(IndexInLine, 0, 4)
+		{
+			declare Integer Index         = G_ActualEnviro * 5 + IndexInLine;
+			declare Integer IndexInBlock  = Line * 5 + IndexInLine;
+			declare Integer TrackIndex    = G_MapInfoIndex[G_ActualDifficulty][Line][Index];
+			declare Integer PreviousMedal = G_Medals[TrackIndex];
+			declare Integer NewMedal;
+			declare Integer ActualVersion = MenuVersion::GetVersion();
+
+			if(G_ActualInDiffIndex == IndexInBlock) G_LastMedal = 4;
+
+			if(ActualVersion == 2)
+			{
+				NewMedal = HackE3::GetMyMedal(G_ActualDifficulty, G_ActualEnviro, IndexInBlock);
+			}
+			else
+			{
+				NewMedal = GetMyMedal(G_ActualDifficulty, Line, Index);
+			}
+
+			if(PreviousMedal == NewMedal) continue;
+
+			if(G_ActualInDiffIndex == IndexInBlock) G_LastMedal = NewMedal;
+			G_Medals[TrackIndex] = NewMedal;
+			G_NumberOfMedals += (4 - NewMedal) - (4 - PreviousMedal);
+			for(MedalToAdd, NewMedal, 3){
+				if(MedalToAdd>=PreviousMedal) continue; // TODO - Vérifier cette fonction permettante de ne pas rajouter trop de médailes
+
+				G_MedalsByEnviro[G_ActualEnviro][MedalToAdd]           += 1;
+				G_MedalsByDifficulty[G_ActualDifficulty-1][MedalToAdd] += 1;
+				G_NumberOfMedalsByType[MedalToAdd]                     += 1;
+			}
+		}
+	}
+	CheckAllBlockUnlock();
+}
+
+Void SetMedalMap( Integer _IndexMaps, Integer _Medal)
+{
+	G_Medals[_IndexMaps] = _Medal;
+}
+
+
+Void Hack_UnlockAllTracks2(Text _GameMode){
+
+	Load(_GameMode);
+	for(Difficulty, 0, C_NbDifficulty-1)
+	{
+		G_BlocksMedalsToHave[Difficulty] = Integer[Integer];
+		for(Enviro, 0, C_NbEnviro-1)
+		{
+			G_BlocksMedalsToHave[Difficulty][Enviro] = 0;
+		}
+	}
+	CheckAllBlockUnlock();
+
+	for(IndDiff, 0, C_NbDifficulty-1)
+	{
+		for(IndEnv, 0, C_NbEnviro-1)
+		{
+			//IsBlockUnlock(IndEnv, IndDiff);
+			G_BlocksLocked[IndDiff][IndEnv] = 2;
+		}
+	}
+	
+	for(I, 0, 3)
+	{
+		G_IsEnviroUnlock[I] = True;
+	}
+}

@@ -1,0 +1,235 @@
+
+
+#Const C_Medal_Author	0
+#Const C_Medal_Gold	    1
+#Const C_Medal_Silver	2
+#Const C_Medal_Bronze	3
+#Const C_Medal_None	    4
+
+#Const C_Dif_White		1
+#Const C_Dif_Green		2
+#Const C_Dif_Blue		3
+#Const C_Dif_Red		4
+#Const C_Dif_Black		5
+
+#Const C_Env_Canyon		0
+#Const C_Env_Valley		1
+#Const C_Env_Lagoon		2
+#Const C_Env_Stadium	3
+
+Integer GetMyMedal(Integer _Difficulty, Integer _Enviro, Integer _MapIndex) {
+	
+	//log("B["^_Difficulty^"]|["^_Enviro^"]|["^_MapIndex^"]");
+	if(_Difficulty == C_Dif_White)
+	{
+		if(_Enviro == C_Env_Canyon)
+		{
+			switch(_MapIndex)
+			{
+				case 0: return C_Medal_Gold;
+				case 1: return C_Medal_Silver;
+				case 2: return C_Medal_Gold;
+				case 3: return C_Medal_Silver;
+				case 4: return C_Medal_Gold;
+				case 5: return C_Medal_Silver;
+				case 6: return C_Medal_Silver;
+				case 7: return C_Medal_Gold;
+				case 8: return C_Medal_Silver;
+				case 9: return C_Medal_Gold;
+			}
+		}
+		else if(_Enviro == C_Env_Valley)
+		{
+			switch(_MapIndex)
+			{
+				case 0: return C_Medal_Gold;
+				case 1: return C_Medal_Gold;
+				case 2: return C_Medal_Gold;
+				case 3: return C_Medal_Silver;
+				case 4: return C_Medal_Gold;
+				case 5: return C_Medal_Silver;
+				case 6: return C_Medal_Gold;
+				case 7: return C_Medal_Silver;
+				case 8: return C_Medal_Silver;
+				case 9: return C_Medal_Gold;
+			}
+		}
+		else if(_Enviro == C_Env_Lagoon)
+		{
+			switch(_MapIndex)
+			{
+				case 0: return C_Medal_Gold;
+				case 1: return C_Medal_Gold;
+				case 2: return C_Medal_Silver;
+				case 3: return C_Medal_Silver;
+				case 4: return C_Medal_Gold;
+				case 5: return C_Medal_Silver;
+				case 6: return C_Medal_Gold;
+				case 7: return C_Medal_Gold;
+				case 8: return C_Medal_Silver;
+				case 9: return C_Medal_Gold;
+			}
+		}
+		else if(_Enviro == C_Env_Stadium)
+		{
+			switch(_MapIndex)
+			{
+				case 0: return C_Medal_Silver;
+				case 1: return C_Medal_Silver;
+				case 2: return C_Medal_Gold;
+				case 3: return C_Medal_Gold;
+				case 4: return C_Medal_Silver;
+				case 5: return C_Medal_Gold;
+				case 6: return C_Medal_Gold;
+				case 7: return C_Medal_Silver;
+				case 8: return C_Medal_Gold;
+				case 9: return C_Medal_Gold;
+			}
+		}
+	}
+	else if(_Difficulty == C_Dif_Green)
+	{
+		if(_Enviro == C_Env_Canyon)
+		{
+			switch(_MapIndex)
+			{
+				case 0: return C_Medal_Gold;
+				case 1: return C_Medal_Silver;
+				case 2: return C_Medal_Silver;
+				case 3: return C_Medal_Gold;
+				case 4: return C_Medal_Gold;
+				case 5: return C_Medal_Silver;
+				case 6: return C_Medal_Gold;
+				case 7: return C_Medal_Gold;
+				case 8: return C_Medal_Silver;
+				case 9: return C_Medal_Gold;
+			}
+		}
+		else if(_Enviro == C_Env_Valley)
+		{
+			switch(_MapIndex)
+			{
+				case 0: return C_Medal_Gold;
+				case 1: return C_Medal_Silver;
+				case 2: return C_Medal_Gold;
+				case 3: return C_Medal_Bronze;
+				case 4: return C_Medal_Silver;
+				case 5: return C_Medal_Silver;
+				case 6: return C_Medal_Gold;
+				case 7: return C_Medal_Bronze;
+				case 8: return C_Medal_Silver;
+				case 9: return C_Medal_Gold;
+			}
+		}
+		else if(_Enviro == C_Env_Lagoon)
+		{
+			switch(_MapIndex)
+			{
+				case 0: return C_Medal_Gold;
+				case 1: return C_Medal_Silver;
+				case 2: return C_Medal_Silver;
+				case 3: return C_Medal_Silver;
+				case 4: return C_Medal_Gold;
+				case 5: return C_Medal_Silver;
+				case 6: return C_Medal_Gold;
+				case 7: return C_Medal_Silver;
+				case 8: return C_Medal_Gold;
+				case 9: return C_Medal_Gold;
+			}
+		}
+		else if(_Enviro == C_Env_Stadium)
+		{
+			switch(_MapIndex)
+			{
+				case 0: return C_Medal_Silver;
+				case 1: return C_Medal_Silver;
+				case 2: return C_Medal_Gold;
+				case 3: return C_Medal_Silver;
+				case 4: return C_Medal_Silver;
+				case 5: return C_Medal_Gold;
+				case 6: return C_Medal_Silver;
+				case 7: return C_Medal_Silver;
+				case 8: return C_Medal_Silver;
+				case 9: return C_Medal_Silver;
+			}
+		}
+	}
+	else if(_Difficulty == C_Dif_Blue)
+	{
+		if(_Enviro == C_Env_Canyon)
+		{
+			switch(_MapIndex)
+			{
+				case 0: return C_Medal_Silver;
+				case 1: return C_Medal_Gold;
+				case 2: return C_Medal_Gold;
+				case 3: return C_Medal_Gold;
+				case 4: return C_Medal_Silver;
+				case 5: return C_Medal_Gold;
+				case 6: return C_Medal_Gold;
+				case 7: return C_Medal_Silver;
+				case 8: return C_Medal_Silver;
+				case 9: return C_Medal_Silver;
+			}
+		}
+		else if(_Enviro == C_Env_Valley)
+		{
+			switch(_MapIndex)
+			{
+				case 0: return C_Medal_Gold;
+				case 1: return C_Medal_Gold;
+				case 2: return C_Medal_Silver;
+				case 3: return C_Medal_Gold;
+				case 4: return C_Medal_Gold;
+				case 5: return C_Medal_Bronze;
+				case 6: return C_Medal_Silver;
+				case 7: return C_Medal_Gold;
+				case 8: return C_Medal_Gold;
+				case 9: return C_Medal_None;
+			}
+		}
+		else if(_Enviro == C_Env_Lagoon)
+		{
+			switch(_MapIndex)
+			{
+				case 0: return C_Medal_Gold;
+				case 1: return C_Medal_Gold;
+				case 2: return C_Medal_Silver;
+				case 3: return C_Medal_Silver;
+				case 4: return C_Medal_Gold;
+				case 5: return C_Medal_Gold;
+				case 6: return C_Medal_None;
+				case 7: return C_Medal_Bronze;
+				case 8: return C_Medal_Bronze;
+				case 9: return C_Medal_None;
+			}
+		}
+		else if(_Enviro == C_Env_Stadium)
+		{
+			switch(_MapIndex)
+			{
+				case 0: return C_Medal_Silver;
+				case 1: return C_Medal_Gold;
+				case 2: return C_Medal_Silver;
+				case 3: return C_Medal_None;
+				case 4: return C_Medal_Gold;
+				case 5: return C_Medal_None;
+				case 6: return C_Medal_Silver;
+				case 7: return C_Medal_Bronze;
+				case 8: return C_Medal_Gold;
+				case 9: return C_Medal_None;
+			}
+		}
+	}
+	else if(_Difficulty == C_Dif_Red)
+	{
+		if(_Enviro == C_Env_Canyon)
+		{
+			switch(_MapIndex)
+			{
+				case 2: return C_Medal_Gold;
+			}
+		}
+	}
+	return C_Medal_None;
+}

@@ -1,0 +1,16 @@
+/** 
+ *	In-Game UI library
+ */
+	
+
+#Const Version		"2015-03-02"
+#Const ScriptName	"UIOnlineLaps.Script.txt"
+
+
+#Const C_MAXCOUNT_SCORESTABLE 			10
+#Const MODE_COLORID_MULTIPLAYER			1
+
+Void Load()
+{
+	//TO DO
+}

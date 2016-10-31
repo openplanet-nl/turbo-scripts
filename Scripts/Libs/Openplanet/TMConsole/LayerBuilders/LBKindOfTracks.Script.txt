@@ -1,0 +1,2265 @@
+
+// file://Media/Manialinks/Nadeo/TMConsole/MainMenuArnaud.Script.txt
+#Include "Libs/Openplanet/Manialink2.Script.txt"					                    as Manialink
+#Include "Libs/Openplanet/TMConsole/PanelParameter.Script.txt"	                    as PanelParameter
+#Include "Libs/Openplanet/TMConsole/FontManager.Script.txt"							as Font
+#Include "Libs/Openplanet/TMConsole/Menu/2DSelectArray.Script.txt"					as SelectArray2D
+#Include "Libs/Openplanet/TMConsole/Colors.Script.txt"								as Colors
+#Include "Libs/Openplanet/TMConsole/MenuColor.Script.txt"							as MenuColor
+#Include "Libs/Openplanet/TMConsole/Selector.Script.txt"			   					as Selector
+#Include "TextLib" 																as TextLib
+#Include "Libs/Openplanet/TMConsole/LibAudio.Script.txt"								as LibAudio
+#Include "Libs/Openplanet/TMConsole/Volumes.Script.txt"								as Volumes
+#Include "Libs/Openplanet/UIPadButtons.Script.txt"				 					as LibUIButtons
+#Include "Libs/Openplanet/TMConsole/Menu/MenuVersion.Script.txt"						as MenuVersion
+#Include "Libs/Openplanet/TMConsole/Menu/Controller/PrivilegeController.Script.txt"	as PrivilegeController
+
+#Const C_ImgBase 	       "file://Media/Manialinks/Nadeo/TMConsole/Images/"
+#Const C_RATIO             12.962
+#Const C_SizePanelX        6.
+#Const C_SizePanelY        5.
+#Const Color_Yellow        <1.0, 0.96, 0.>
+#Const Color_Grey          <0.25, 0.25, 0.25>
+#Const Color_LightGrey     <0.50, 0.50, 0.50>
+
+#Const C_MenuSelect_First  "MenuPrincipal"
+#Const C_MenuSelect_Enviro "Enviro"
+#Const C_MenuSelect_Param  "Parameters"
+
+#Const C_Enviro_Canyon				"Canyon"
+#Const C_Enviro_Valley				"Valley"
+#Const C_Enviro_Lagoon				"Lagoon"
+#Const C_Enviro_Stadium				"Stadium"
+
+declare Text[][Text]	G_SwitchInfo;
+declare Text[][Text]	G_SwitchInfo_C;
+declare Text[][Text]	G_SwitchInfo_V;
+declare Text[][Text]	G_SwitchInfo_L;
+declare Text[][Text]	G_SwitchInfo_S;
+declare Text[][Text]	G_SwitchInfoNewTrack_C;
+declare Text[][Text]	G_SwitchInfoNewTrack_V;
+declare Text[][Text]	G_SwitchInfoNewTrack_L;
+declare Text[][Text]	G_SwitchInfoNewTrack_S;
+
+declare Text[]			G_MenuSetting;
+declare Text[]			G_MenuSettingName;
+declare Text[]			G_MenuSettingNameNewTrack;
+declare Text[Text]		G_LayerInfo;
+declare Integer[Text]	G_SettingsIndex;
+
+Void AddSwitch(Text _Id, Text[] _Name, Text[] _Contains_C, Text[] _Contains_V, Text[] _Contains_L, Text[] _Contains_S, Integer _Index)
+{
+	G_MenuSetting.add("Switch_"^_Id);
+	G_MenuSettingName.add(_Name[0]);
+	if(_Name.existskey(1)) G_MenuSettingNameNewTrack.add(_Name[1]);
+	G_SwitchInfo[_Id] = Text[];
+	G_SwitchInfo[_Id] = _Contains_C;
+
+	G_SwitchInfo_C[_Id] = Text[];
+	G_SwitchInfo_C[_Id] = _Contains_C;
+	G_SwitchInfo_V[_Id] = Text[];
+	G_SwitchInfo_V[_Id] = _Contains_V;
+	G_SwitchInfo_L[_Id] = Text[];
+	G_SwitchInfo_L[_Id] = _Contains_L;
+	G_SwitchInfo_S[_Id] = Text[];
+	G_SwitchInfo_S[_Id] = _Contains_S;
+
+	
+	G_SettingsIndex[_Id] = _Index;
+}
+
+Void AddSwitch(Text _Id, Text[] _Name, Text[] _Contains, Integer _Index)
+{
+	AddSwitch(_Id, _Name, _Contains, _Contains, _Contains, _Contains, _Index);
+}
+
+Void SetSwitchNewTrack(Text _Id, Text[] _Contains_C, Text[] _Contains_V, Text[] _Contains_L, Text[] _Contains_S, Integer _Index)
+{
+	//G_MenuSetting.add("Switch_"^_Id);
+	G_SwitchInfo[_Id] = Text[];
+	G_SwitchInfo[_Id] = _Contains_C;
+
+	G_SwitchInfoNewTrack_C[_Id] = Text[];
+	G_SwitchInfoNewTrack_C[_Id] = _Contains_C;
+	G_SwitchInfoNewTrack_V[_Id] = Text[];
+	G_SwitchInfoNewTrack_V[_Id] = _Contains_V;
+	G_SwitchInfoNewTrack_L[_Id] = Text[];
+	G_SwitchInfoNewTrack_L[_Id] = _Contains_L;
+	G_SwitchInfoNewTrack_S[_Id] = Text[];
+	G_SwitchInfoNewTrack_S[_Id] = _Contains_S;
+
+	
+	G_SettingsIndex[_Id] = _Index;
+}
+
+Void SetSwitchNewTrack(Text _Id, Text[] _Contains, Integer _Index)
+{
+	SetSwitchNewTrack(_Id, _Contains, _Contains, _Contains, _Contains, _Index);
+}
+
+Void AddSlider(Text _Id, Text _Name, Integer _Index)
+{
+	G_MenuSetting.add("Slider_"^_Id);
+	G_MenuSettingName.add(_Name);
+	G_SettingsIndex[_Id] = _Index;
+}
+
+Void AddLayerBouton(Text _Id, Text _Name, Text _Layer)
+{
+	G_MenuSetting.add("LayerBouton_"^_Id);
+	G_MenuSettingName.add(_Name);
+	G_LayerInfo[_Id] = _Layer;
+
+	//G_SettingsIndex[_Name] = 0; //TODELETE - Ne sert à rien mais il faut clean avant d'enlever
+}
+
+Text Build(Text _ShowAnim, Text _HideAnim) {
+
+	
+	declare Integer Count_InstancesY            = 1;
+	declare Integer Count_InstancesX            = 1;
+	
+	declare Text 	SoundMove                   = LibAudio::GetSoundMove();
+	declare Text 	SoundBack                   = LibAudio::GetSound("PageBack");
+	declare Text 	SoundBack2                  = LibAudio::GetSoundBack();
+	declare Text 	SoundSelect                 = LibAudio::GetSound("Select");
+	declare Text 	SoundPageForward            = LibAudio::GetSound("PageForward");
+	declare Text 	SoundClicInterfaceLeftRight = LibAudio::GetSound("ClicInterfaceLeftRight");
+
+	declare Text 	IMGSelect                   = LibUIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Select);
+	declare Text 	IMGAction2                  = LibUIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Action2);
+	declare Text 	IMGAction1                  = LibUIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Action1);
+
+	declare Text 	IMG_PC_Select               = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"), CManiaAppEvent::EMenuNavAction::Select);
+	declare Text 	IMG_PS_Select               = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::Select);
+	declare Text 	IMG_XB_Select               = LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::Select);
+	
+	declare Text 	IMGBackground1              = C_ImgBase^"KindOfTracks/grille_menu_x3.dds";
+	declare Text 	IMGBackground2              = C_ImgBase^"KindOfTracks/grille_menu_randomtrack.dds";
+	declare Text 	IMGBGEnviro                 = C_ImgBase^"KOT_BGEnviro.dds";
+	
+	declare Text	ImgLogoCanyon               = C_ImgBase ^ "KindOfTracks/canyon_v.dds";
+	declare Text	ImgLogoValley               = C_ImgBase ^ "KindOfTracks/valley_v.dds";
+	declare Text	ImgLogoLagoon               = C_ImgBase ^ "KindOfTracks/lagoon_v.dds";
+	declare Text	ImgLogoStadium              = C_ImgBase ^ "KindOfTracks/stadium_v.dds";
+	
+	declare Text	ImgOfficialCampaign         = C_ImgBase ^ "KindOfTracks/arcade_banner_official_campaign.dds";
+	declare Text	ImgTrackBuilder             = C_ImgBase ^ "KindOfTracks/arcade_banner_trackbuilder.dds";
+	declare Text	ImgRandomTrackGen           = C_ImgBase ^ "KindOfTracks/arcade_banner_random.dds";
+	declare Text	IMGEnviroLock               = C_ImgBase ^ "KindOfTracks/lock_Enviro.dds";
+	
+	declare Text	ImgLogoHotSeat              = C_ImgBase ^ "Logos/Logo_HotSeat.png";
+	declare Text	ImgLogoArcade               = C_ImgBase ^ "Logos/Logo_Arcade.png";
+	declare Text	ImgLogoSplitScreen          = C_ImgBase ^ "Logos/Logo_SplitScreen.png";
+	
+	
+	declare Real	SizeX_Screen                = PanelParameter::GetSizePanelX();
+	declare Real	SizeY_Screen                = PanelParameter::GetSizePanelY();
+	
+	declare Integer NumberOfSubMenu             = 3;
+	declare Real	SM_SizeX                    = SizeX_Screen;
+	declare Real	SM_SizeY                    = SizeY_Screen/(NumberOfSubMenu*1.);
+	declare Real	SM_SizeEnviroX              = SizeX_Screen/4.;
+	declare Real	SM_SizeEnviroY              = (SizeY_Screen-SM_SizeY)/1.;
+	declare Real	Hack_ReglageX               = 5.;
+	declare Real	Hack_ReglageY               = 10.;
+	declare Real	SM_PosX                     = 80. + Hack_ReglageX;
+	declare Real	SM_PosY                     = 50. + Hack_ReglageY;
+	declare Real	SM_Separator                = SM_SizeY * 0.095;
+	declare Real	SM_SizeYElement             = SM_SizeY - SM_Separator;
+	declare Integer	SM_NumberOfLegendX          = 4;
+	declare Integer	SM_NumberOfLegendY          = 1;
+	//declare Real	PosXFirstQuad               = -PanelParameter::GetPosPanelX(C_SizePanelX);
+	declare Real	PosXFirstQuad               = 85.2;
+	declare Real	PosYFirstQuad               = PanelParameter::GetPosPanelY(C_SizePanelY)-2.0;
+	declare Real	PosnXLabel                  = 200.1;
+	declare Real	PosnYLabel                  = 23.4;
+	declare Real	SizeX_Total                 = 0.*Count_InstancesX*1.;
+	declare Real	MarginX_Button              = 57.70;
+	declare Real	SizeXQuad                   = (SizeX_Total - MarginX_Button) / Count_InstancesX + (MarginX_Button/Count_InstancesX);
+
+	
+	
+	declare Text 	SoundTransitionC = LibAudio::GetSound("SFX_UI_SelectTrack_Canyon");
+	declare Text 	SoundTransitionV = LibAudio::GetSound("SFX_UI_SelectTrack_Valley");
+	declare Text 	SoundTransitionL = LibAudio::GetSound("SFX_UI_SelectTrack_Lagoon");
+	declare Text 	SoundTransitionS = LibAudio::GetSound("SFX_UI_SelectTrack_Stadium");
+
+	declare Boolean IsTrial = PrivilegeController::IsTrial(False);
+
+	declare Integer  ActualVersion              = MenuVersion::GetVersion();
+
+	SelectArray2D::Init(SM_SizeX, SM_SizeY, Count_InstancesX, NumberOfSubMenu);
+	SelectArray2D::SetPosFirstQuad(0., -PosYFirstQuad+37.4);
+	SelectArray2D::SetQuadMarge(0., 0.);
+	
+	declare Real SizeOfSliders = 50.;
+	AddSwitch("Switch3", [_("Mood"),_("Mood")], 
+		[_("|Relative to the Mood|Random"), _("Sunrise"), _("Day"), _("Sunset"), _("Night")], 0);
+	AddSwitch("Switch1", [_("Length"),_("Length")], 
+		[_("|Relative to the length of a racing track|Random"), _("|Relative to the length of a racing track|Mini"), _("|Relative to the length of a racing track|Small"), _("|Relative to the length of a racing track|Medium"), _("|Relative to the length of a racing track|Large")], 0);
+		
+	SetSwitchNewTrack("Switch1",
+		[_("|Relative to the length of a racing track|Random"), _("|Relative to the length of a racing track|Mini"), _("|Relative to the length of a racing track|Small"), _("|Relative to the length of a racing track|Medium"), _("|Relative to the length of a racing track|Large")],
+		[_("|Relative to the length of a racing track|Random"), _("|Relative to the length of a racing track|Mini"), _("|Relative to the length of a racing track|Small"), _("|Relative to the length of a racing track|Medium"), _("|Relative to the length of a racing track|Large")],
+		[_("|Relative to the length of a racing track|Random"), _("|Relative to the length of a racing track|Mini"), _("|Relative to the length of a racing track|Small"), _("|Relative to the length of a racing track|Medium"), _("|Relative to the length of a racing track|Large")],
+		[_("|Relative to the length of a racing track|Random"), _("|Relative to the length of a racing track|Mini"), _("|Relative to the length of a racing track|Small"), _("|Relative to the length of a racing track|Medium"), _("|Relative to the length of a racing track|Large")], 0);
+	SetSwitchNewTrack("Switch3", 
+		[_("|Relative to the Mood|Random"), _("Sunrise"), _("Day"),   _("Sunset"),  _("Night")], 0);
+	
+	declare Real Selector1PosnX = 0.;
+	declare Real Selector1PosnY = 0.;
+
+	declare Text MLText = """
+	{{{SelectArray2D::InjectInFrameModel()}}}
+
+	/* -SubMenu-
+		Le SubMenu est fait en 3 parties
+		Frame_SubMenu       - Les boutons de sélection
+		Frame_SubMenuLegend - Les 3 lignes de legendes
+		Frame_SubMenuEnd    - Les 2 dernières lignes du menu
+	*/
+
+	<framemodel id="Frame_SubMenu">
+		<label halign="right" valign="center" style="TextButtonNav" posn="{{{PosnXLabel}}} {{{PosnYLabel}}} 2" opacity="0.93" id="Label_SubMenu"  textsize="9." sizen="{{{SM_SizeX-2}}}" text="" textcolor="fff" textfont="{{{Font::GetFontName("Main")}}}" />
+		<label halign="right" valign="center" style="TextButtonNav" posn="{{{PosnXLabel-1.0}}} {{{PosnYLabel+30.5}}} 2" opacity="0.93" id="Label_SubMenu2" textsize="2." sizen="{{{SM_SizeX-5}}}" textcolor="fff" textfont="{{{Font::GetFontName("Main")}}}"  />
+		<quad id="Quad_SubMenu" halign="center" valign="top" sizen="{{{SM_SizeX}}} {{{SM_SizeY}}}" bgcolor="{{{TextLib::ColorToText(Color_Grey)}}}" opacity="1." posn="{{{SM_PosX}}} {{{SM_PosY}}} 1" />
+		<quad id="Quad_Mode" halign="right" valign="center" sizen="63 35" bgcolor="{{{TextLib::ColorToText(Color_Grey)}}}" opacity="1." posn="{{{SM_PosX+195.}}} {{{SM_PosY-20.4}}} 2" keepratio="Fit"/>
+	</framemodel>
+	
+	<framemodel id="Frame_SubMenuLegend">
+		<quad halign="center" valign="top" sizen="{{{SM_SizeEnviroX}}} {{{SM_SizeEnviroY}}}" image="{{{IMGBGEnviro}}}" opacity="1." colorize="090" modulizecolor="090"
+		 posn="{{{SM_PosX}}} {{{SM_PosY}}} 1" hidden="1"/>
+		<quad halign="center" valign="top" sizen="60 60" bgcolor="090" colorize="{{{TextLib::ColorToText(Color_Grey)}}}" id="Quad_Enviro" posn="{{{SM_PosX}}} {{{SM_PosY-15}}} 2" />
+		<frame id="Frame_Lock">
+			<quad halign="center" valign="center" sizen="30 30" bgcolor="090" colorize="{{{TextLib::ColorToText(MenuColor::GetMenuColor(3))}}}" id="Quad_EnviroLock" image="{{{IMGEnviroLock}}}" opacity="0.3" posn="{{{SM_PosX}}} {{{SM_PosY-77.7}}} 1" />
+			<label halign="center" valign="center" textcolor="{{{TextLib::ColorToText(Color_LightGrey)}}}" text="{{{_("Unlock the full game")}}}"  textprefix="$t" textfont="{{{Font::GetFontName("Main")}}}" posn="{{{SM_PosX}}} {{{SM_PosY-77.7}}} 2" opacity="0.9" sizen="54" autonewline="1"/>
+		</frame>
+	</framemodel>
+	
+	
+	<framemodel id="Frame_Button">
+		<quad  halign="center" valign="center" bgcolor="ff0"
+			sizen="12.0 12.0"  posn="0 0. 1" opacity="0." />
+	</framemodel>
+
+	<framemodel id="Frame_Slider">
+		<quad  halign="center" valign="center" bgcolor="fff"
+			sizen="{{{SizeOfSliders}}} 2.0"  posn="0 0. 1" opacity="1." />
+		<quad id="Quad_Selector" halign="center" valign="center" bgcolor="fff"
+			sizen="2.0 6.0"  posn="0 0. 2" opacity="1." />
+		<label id="Label_Name" halign="center" valign="center" bgcolor="fff" text="Mon Slider"  textprefix="$t" textfont="{{{Font::GetFontName("Main")}}}"
+			posn="0 5.5 1" opacity="1." />
+	</framemodel>
+	
+	<framemodel id="Frame_Switch">
+		<quad halign="center" valign="center" style="UIConstruction_Buttons" posn="25 0. 1" rot="180" 	substyle="Quit" sizen="5.0 5.0"/>
+		<quad halign="center" valign="center" style="UIConstruction_Buttons" posn="-25 0. 1"  			substyle="Quit" sizen="5.0 5.0"/>
+		
+		<label id="Label_Contain" halign="center" valign="center" posn="0. 0.5 1" sizen="40"/>
+		<label id="Label_Name" halign="center" valign="center"textprefix="$t" textfont="{{{Font::GetFontName("Main")}}}" posn="0 5.4 1" />
+	</framemodel>
+	
+
+
+	<frame id="Frame_All" posn="0 0 11">
+			<quad id="Quad_BackGround" posn="0 2.5 9" halign="center" valign="center" sizen="{{{SizeX_Screen+2.0}}} {{{SizeY_Screen}}}" bgcolor="fff" opacity="0.0" />
+		<quad 	
+			id="Quad_Black"
+			posn="0 0 120"
+			halign="center" 
+			valign="center" 
+			sizen="320 180"
+			bgcolor="000"
+			hidden="1"
+		/>
+
+		""";
+		declare Real PosnX = 0.;
+		declare Real PosnY = 0.;
+		
+
+		MLText^="""
+		<frame id="Frame_Menu" posn="0 0 -2" >
+			<frame posn="0 0 0" id="Frame_Selector1">
+				<frame posn="0 0 0" id="Frame_Selector11">
+					{{{Selector::InsertFrameworkInManialink(10, SM_SizeX, SM_SizeYElement, Selector1PosnX, Selector1PosnY, 0., 0., "Selector_SubMzenu", 1.30)}}}
+				</frame>
+			</frame>
+			<frame id="Frame_Clip" clip="True" clipsizen="{{{SizeX_Screen}}} {{{SizeY_Screen}}}" clipposn="0 3">
+				<frame id="Frame_Content">
+					<quad id="Quad_Grillex3" posn="0. 2.5 10" halign="center" valign="center" sizen="{{{SizeX_Screen+5.0}}} {{{SizeY_Screen+1.5}}}" image="{{{IMGBackground1}}}" keepratio="Fit" />
+
+		""";
+		for(K, 0, NumberOfSubMenu-1)
+		{
+			declare Real FramePosnX = PosnX - PosXFirstQuad;
+			declare Real FramePosnY = PosnY - PosYFirstQuad + K * - SM_SizeY;
+			
+			MLText^="""
+				<frame posn="{{{FramePosnX}}} {{{FramePosnY}}} {{{10-(K*2)}}}" id="Frame_InstanceSubMenu{{{0}}}{{{K}}}">
+					<frameinstance modelid="Frame_SubMenu" />
+					<quad halign="center" valign="top" sizen="{{{SM_SizeX}}} {{{SM_SizeY}}}" posn="{{{SM_PosX}}} {{{SM_PosY}}} 3" opacity="0." scriptevents="1" id="MouseInput_SubMenu_{{{K}}}" />
+				</frame>
+			""";
+			
+		}
+
+		declare Real LabelLegendPosnX = PosnX + PosnXLabel - SizeXQuad + 5.;
+		declare Real LabelLegendPosnY = PosnY + PosnYLabel + 2.;
+
+		MLText^="""
+
+					<frame posn="0 0 0" id="SelectArray2D" hidden="1">
+						{{{SelectArray2D::InjectInManialink()}}}
+					</frame>
+				</frame>
+			</frame>
+
+			<frame id="Frame_SubMenuEnd0">
+				<label halign="left" valign="top" id="Label_SubMenuLegend" posn="{{{LabelLegendPosnX}}} {{{LabelLegendPosnY}}} 10" opacity="0.8" textcolor="fff200"
+				textsize="3." sizen="{{{SM_SizeX-8}}}" textfont="{{{Font::GetFontName("MainSmall2")}}}" linespacing="1.55" autonewline="1" maxline="3"/>
+			
+				""";
+		
+		for(K, 0, SM_NumberOfLegendY - 1)
+		{
+			//declare Real FramePosnY = PosnY - PosYFirstQuad + K * - SM_SizeEnviroY + SM_SizeY/2. - SM_SizeY*3.+0.2;
+			declare Real FramePosnY = PosnY - PosYFirstQuad + K * - SM_SizeEnviroY + SM_SizeY/2. - SM_SizeY*1.+0.2;
+			for(L,0,SM_NumberOfLegendX - 1)
+			{
+				//SM_SizeEnviroX
+				//SM_SizeEnviroY
+				declare Real FramePosnX = PosnX - PosXFirstQuad - SM_SizeEnviroX*1.5+ SM_SizeEnviroX*L;
+
+				MLText^="""
+					<frame posn="{{{FramePosnX}}} {{{FramePosnY}}} 2." id="Frame_SubMenuLegend{{{K}}}{{{L}}}">
+						<frameinstance modelid="Frame_SubMenuLegend" />
+						<quad halign="center" valign="top" sizen="{{{SM_SizeEnviroX}}} {{{SM_SizeEnviroY}}}" opacity="0." scriptevents="1" id="MouseInput_Environment_{{{L}}}" posn="{{{SM_PosX}}} {{{SM_PosY}}} 3" />
+					</frame>
+				""";
+			}
+		}
+
+		declare Real Selector2PosnX = -5. - PosXFirstQuad;
+		declare Real Selector2PosnY = -7.5 - PosYFirstQuad;
+		MLText^="""
+
+				<frame posn="0 0 0" id="Frame_Selector2" hidden="1">
+					{{{Selector::InsertFrameworkInManialink(11, SM_SizeEnviroX, SM_SizeEnviroY, Selector2PosnX, Selector2PosnY, 0., 0., "Selector_SubMenuLegend", 1.13)}}}
+					<frame posn="0 4 2" id="Frame_NewTrack" >
+						<label halign="center" valign="center" id="Label_NewTrack1" textprefix="$t" posn="{{{-SM_SizeEnviroX}}} -68 2" textsize="2." sizen="{{{SM_SizeEnviroX-11}}}" textfont="{{{Font::GetFontName("Main")}}}"/>
+						<quad halign="center" valign="center" id="MouseInput_NewTrack_1" opacity="0." scriptevents="1" posn="{{{-SM_SizeEnviroX}}} -68 5" sizen="{{{SM_SizeEnviroX-11}}} 5" />
+						
+						<label halign="center" valign="center" id="Label_NewTrack2" textprefix="$t" posn="{{{-SM_SizeEnviroX}}} -73 2" textsize="2." sizen="{{{SM_SizeEnviroX-11}}}" textfont="{{{Font::GetFontName("Main")}}}"/>
+						<quad halign="center" valign="center" id="MouseInput_NewTrack_2" opacity="0." scriptevents="1" posn="{{{-SM_SizeEnviroX}}} -73 5" sizen="{{{SM_SizeEnviroX-11}}} 5" />
+
+						<label halign="center" valign="center" id="Label_NewTrack3" textprefix="$t" posn="{{{-SM_SizeEnviroX}}} -79 2" textsize="2." sizen="{{{SM_SizeEnviroX-16}}}" textfont="{{{Font::GetFontName("Main")}}}"/>
+						<quad halign="center" valign="center" id="MouseInput_NewTrack_3" opacity="0." scriptevents="1" posn="{{{-SM_SizeEnviroX}}} -79 5" sizen="{{{SM_SizeEnviroX-11}}} 5" />
+						
+						<label halign="center" valign="center" id="Label_NewTrack4" textprefix="$t" posn="{{{-SM_SizeEnviroX}}} -85 2" textsize="2." sizen="{{{SM_SizeEnviroX-16}}}" textfont="{{{Font::GetFontName("Main")}}}"/>
+						<quad halign="center" valign="center" id="MouseInput_NewTrack_4" opacity="0." scriptevents="1" posn="{{{-SM_SizeEnviroX}}} -85 5" sizen="{{{SM_SizeEnviroX-11}}} 5" />
+					</frame>
+				</frame>
+				<quad id="Quad_BackGround" posn="0. 25.16 2" halign="center" valign="center" sizen="{{{SizeX_Screen+5.0}}} {{{SizeY_Screen+1.5}}}" image="{{{IMGBackground2}}}" keepratio="Fit" />
+			</frame>
+
+			<frame id="Frame_Param" clip="True" clipsizen="{{{SM_SizeEnviroX}}} {{{SM_SizeEnviroY}}}" clipposn="0 3">
+				<frame id="Frame_ParamContent" posn="0 0 20" hidden="1" >
+					<quad posn="0 0 0" halign="left" valign="center" sizen="{{{SM_SizeEnviroX}}} {{{SM_SizeEnviroY}}}" bgcolor="222"/>
+					<frame id="Frame_Params" posn="{{{SM_SizeEnviroX/2.}}} 27 0" hidden="0">
+						<quad halign="center" valign="top" sizen="30 30" bgcolor="090" keepratio="1."id="Quad_EnviroParam" posn="0 18 2" />
+						<frame id="Frame_ParamsGO">
+						""";
+		for (I, 0, 2) {
+			declare Text Image;
+			switch (I) {
+				case LibUIButtons::GetPlatform("PC") 	: Image = IMG_PC_Select;
+				case LibUIButtons::GetPlatform("PS4") 	: Image = IMG_PS_Select;
+				case LibUIButtons::GetPlatform("XB1") 	: Image = IMG_XB_Select;
+			}
+		
+			MLText ^= """	<quad halign="left" valign="center" sizen="11 11" bgcolor="090" image="{{{Image}}}" keepratio="1." posn="5 -62 2" id="Quad_InputGo{{{I}}}"/>""";
+		
+		}
+		MLText ^= """
+							<label halign="right" valign="center" id="Label_SubMenuLegend" opacity="1.0" textprefix="$t" posn="4 -61.0 2"
+							textsize="8." sizen="40." textfont="{{{Font::GetFontName("Main")}}}" text="{{{_("|Launch the Trackbuilder|Go!")}}}"/>
+							<quad halign="right" valign="center" id="MouseInput_Launch" opacity="0." scriptevents="1" posn="17 -62.0 2" sizen="60 12" />
+						</frame>
+		""";
+
+		for(I,0,G_MenuSetting.count-1)
+		{
+			declare Real IndexY = I*1.;
+			declare Real PosnY = PosYFirstQuad - IndexY*13. -8.;
+			declare Text[] SplitMenuSetting = TextLib::Split("_", G_MenuSetting[I]);
+			
+			MLText^="""
+				<frame posn="0 {{{PosnY}}} 5." id="Frame_Instance{{{I}}}" >
+					<frameinstance modelid="Frame_{{{SplitMenuSetting[0]}}}" />
+			""";
+			if (SplitMenuSetting[0] == "Switch") {
+				MLText ^= """
+					<quad halign="center" valign="center" posn="25 0. 2"  sizen="7.5 7.5" scriptevents="1" opacity="0." id="MouseInput_SwitchNext_{{{I}}}" />
+					<quad halign="center" valign="center" posn="-25 0. 2" sizen="7.5 7.5" scriptevents="1" opacity="0." id="MouseInput_SwitchPrev_{{{I}}}" />
+					<quad halign="center" valign="bottom" posn="0. -2.5 2" sizen="40 10" scriptevents="1" opacity="0." id="MouseInput_Switch_{{{I}}}" />
+				""";
+			}
+			
+			MLText ^= "</frame>";
+		}
+		
+		MLText^="""
+					</frame>
+				</frame>
+			</frame>
+
+		""";
+
+		MLText^="""
+		</frame>
+
+
+	
+
+	""";
+	
+	MLText^="""
+	</frame>
+
+	<script><!--
+		#Include "MathLib" as ML
+		
+		#Const C_TimeTransitionPage2 {{{PanelParameter::GetTimeTransitionPage2()}}}
+		#Const C_TimeStartClip2      {{{PanelParameter::GetTimeStartClip2()}}}
+		#Const C_TimeAnimClip2       {{{PanelParameter::GetTimeAnimClip2()}}}
+		#Const C_TimeTransitionMaps  {{{PanelParameter::GetTimeTransitionMaps()}}}
+
+
+		#Const C_EditorBeginner	0
+		#Const C_EditorNormal	1
+		#Const C_EditorAdvanced	2
+		#Const C_EditorRandom	3
+
+		{{{Manialink::GetIncludes()}}}
+		{{{Manialink::Load()}}}
+		
+		declare Integer						G_LockInput;
+		declare Integer						G_SubMenuFocusY;
+		declare Integer						G_SubMenuFocusX;
+		declare Integer 					G_HideTime;
+		declare Integer 					G_ShowTime;
+		declare Text[Integer][Integer]		G_TextSubMenu;
+		declare Text[Integer][Integer]		G_TextSubMenuTrad;
+		declare Text[Integer][Integer]		G_ImgSubMenu;
+		declare Text 						G_MenuSelect;
+		declare Integer 					G_HideTimeSubMenu;
+		declare Integer 					G_BlinkDecaleVariation;
+		declare Text						G_ActualSelector;
+		declare Integer						G_DeclareVarationSelector;
+		declare Text[]						G_InfoType;
+		declare Text[]						G_InfoName;
+		declare Text[]						G_InfoNameNewTrack;
+		declare Text[]						G_InfoId;
+		declare Integer[Text]				G_IndexSettings;
+		declare Text[][Text]				G_InfoSwitch;
+		declare Boolean						G_AdvancedParam;
+		declare Text						G_NextPage;
+		declare Integer						G_EditorLevel;
+
+		declare Text[][Text]				G_InfoSwitch_C;
+		declare Text[][Text]				G_InfoSwitch_V;
+		declare Text[][Text]				G_InfoSwitch_L;
+		declare Text[][Text]				G_InfoSwitch_S;
+		declare Text[][Text]				G_InfoSwitchNewTrack_C;
+		declare Text[][Text]				G_InfoSwitchNewTrack_V;
+		declare Text[][Text]				G_InfoSwitchNewTrack_L;
+		declare Text[][Text]				G_InfoSwitchNewTrack_S;
+
+		declare Text						G_CurrentType;
+		declare Text						G_CurrentName;
+		declare Text						G_CurrentId;
+		declare Integer						G_ParamPrevIndexSelectY;
+		declare Integer						G_ParamIndexSelectY;
+		declare CMlQuad[] 					QuadButtons;
+		declare CMlLabel[]					LabelButtons;
+
+
+
+		{{{SelectArray2D::InjectInGlobalDeclaration()}}}
+		{{{SelectArray2D::InjectInFunction()}}}
+		{{{LibUIButtons::Inject_SetInputInfoTextSelected()}}}
+		
+
+		Void UpdateLabelLight(CMlControl _Control)
+		{
+			foreach(I => Button in QuadButtons)
+			{
+				declare Label_LeftInput <=> LabelButtons[I];
+				declare Boolean IsFocus  = False;
+				if (_Control == Button)
+				{
+					IsFocus = True;
+				}
+				else
+				{
+					IsFocus = False;
+				}
+				//log("Button["^Button^"]: " ^ IsFocus);
+				SetInputInfoTextSelected(Label_LeftInput, IsFocus);
+			}
+		}
+
+		Void UnlightSubMenuLegendFocus(Integer _IndexY, Integer _IndexX)
+		{
+			declare CMlFrame Frame_SubMenuLegend     <=> (Page.GetFirstChild("Frame_SubMenuLegend0"^_IndexX) as CMlFrame);
+			declare CMlQuad  Quad_Enviro             <=> (Frame_SubMenuLegend.GetFirstChild("Quad_Enviro") as CMlQuad);
+
+			LibManialink_SetTargetColorize(Quad_Enviro, {{{Color_Grey}}});
+			declare Vec3 NewPosition = <{{{SM_PosX*1.}}}, {{{(SM_PosY-15)*1.}}}, 2.>;
+			LibManialink_SetTargetPosition(Quad_Enviro, NewPosition);
+			LibManialink_PresetAnim(Quad_Enviro, 500, "EaseOutQuint");
+		}
+
+		Void UpdateQuadsSubMenuLegend()
+		{
+			declare CMlFrame	Frame_Selector2    <=> (Page.GetFirstChild("Frame_Selector2") as CMlFrame);
+			declare Real PosnX = {{{0.}}} + G_SubMenuFocusX*{{{SM_SizeEnviroX}}} - {{{SM_SizeEnviroX/2}}};
+			declare Real PosnY = {{{0.}}} - 0*{{{SM_SizeEnviroY}}} + {{{SM_SizeEnviroY/2.}}};
+			Frame_Selector2.RelativePosition.X = PosnX;
+			Frame_Selector2.RelativePosition.Y = PosnY;
+			G_DeclareVarationSelector = Now - 157;
+			declare CMlFrame	Frame_NewTrack <=> (Page.GetFirstChild("Frame_NewTrack") as CMlFrame);
+			//declare CMlFrame	Frame_Lock     <=> (Page.GetFirstChild("Frame_Lock") as CMlFrame);
+			declare Text KindOfTracksMenuSelect for This;
+			if(KindOfTracksMenuSelect == "NewTrack")
+			{
+				if({{{IsTrial}}} && G_SubMenuFocusX == 0 || {{{!IsTrial}}})
+				{
+					Frame_NewTrack.Show();
+					//Frame_Lock.Hide();
+				}
+				else if({{{IsTrial}}})
+				{
+					Frame_NewTrack.Hide();
+				}
+			}
+			else
+			{
+				Frame_NewTrack.Hide();
+			}
+		}
+
+		Void SetSubMenuLegendFocus()
+		{
+			declare CMlFrame Frame_SubMenuLegend     <=> (Page.GetFirstChild("Frame_SubMenuLegend0"^G_SubMenuFocusX) as CMlFrame);
+			declare CMlQuad  Quad_Enviro             <=> (Frame_SubMenuLegend.GetFirstChild("Quad_Enviro") as CMlQuad);
+
+			declare Vec3 QuadColor;
+			declare Text KindOfTracksMenuSelect for This;
+			if({{{IsTrial}}} && G_SubMenuFocusX == 0)
+			{
+
+			}
+			if(KindOfTracksMenuSelect == "NewTrack") QuadColor = {{{MenuColor::GetMenuColor(3)}}};
+			else QuadColor = {{{MenuColor::GetMenuColor(1)}}};
+			LibManialink_SetTargetColorize(Quad_Enviro, QuadColor);
+			declare Vec3 NewPosition = <{{{SM_PosX*1.}}}, {{{(SM_PosY-7)*1.}}}, 2.>;
+			LibManialink_SetTargetPosition(Quad_Enviro, NewPosition);
+			LibManialink_PresetAnim(Quad_Enviro, 500, "EaseOutQuint");
+			UpdateQuadsSubMenuLegend();
+		}
+
+
+		Text GetSoundEnviroSelect()
+		{
+			switch(G_SubMenuFocusX)
+			{
+				case 0 : return "{{{SoundTransitionC}}}";
+				case 1 : return "{{{SoundTransitionV}}}";
+				case 2 : return "{{{SoundTransitionL}}}";
+				case 3 : return "{{{SoundTransitionS}}}";
+			}
+			return "{{{SoundTransitionC}}}";
+		}
+
+		Real GetSoundAmbianceVolume()
+		{
+			switch(G_SubMenuFocusX)
+			{
+				case 0: return {{{Volumes::GetVolumedB("SFX_UI_SelectTrack_Canyon")}}};
+				case 1: return {{{Volumes::GetVolumedB("SFX_UI_SelectTrack_Lagoon")}}};
+				case 2: return {{{Volumes::GetVolumedB("SFX_UI_SelectTrack_Stadium")}}};
+				case 3: return {{{Volumes::GetVolumedB("SFX_UI_SelectTrack_Valley")}}};
+			}
+			return 0.;
+		}
+
+		Void PlaySoundEnviro()
+		{
+			declare Text SoundEnviro = GetSoundEnviroSelect();
+			declare Real SoundVolume = GetSoundAmbianceVolume();
+			Audio.PlaySoundEvent(SoundEnviro, SoundVolume);
+		}
+
+		Void SubMenuFocus()
+		{
+			/*
+			for(I, 0, {{{SM_NumberOfLegendY-1}}})
+			{
+				for(J, 0, {{{SM_NumberOfLegendX-1}}})
+				{
+					declare CMlFrame Frame_SubMenuLegend     <=> (Page.GetFirstChild("Frame_SubMenuLegend"^I^J) as CMlFrame); //La frame à cacher
+					declare CMlLabel Label_SubMenuTitleFocus <=> (Frame_SubMenuLegend.GetFirstChild("Label_SubMenuTitleFocus") as CMlLabel);
+					if(I == G_SubMenuFocusY && J == G_SubMenuFocusX)
+					{
+						Label_SubMenuTitleFocus.Opacity = 0.7;
+					}
+					else
+					{
+						Label_SubMenuTitleFocus.Opacity = 0.0;
+					}
+				}
+			}
+			*/
+			SetSubMenuLegendFocus();
+			G_DeclareVarationSelector = Now - 157;
+		}
+
+
+		Text GetEnviroFocus()
+		{
+			switch(G_SubMenuFocusX)
+			{
+				case 0  : return "{{{C_Enviro_Canyon}}}";
+				case 1  : return "{{{C_Enviro_Valley}}}";
+				case 2  : return "{{{C_Enviro_Lagoon}}}";
+				case 3  : return "{{{C_Enviro_Stadium}}}";
+			}
+			return "";
+		}
+
+		Text GetModeTransition(Text _Mode)
+		{
+			switch(_Mode)
+			{
+				case "TMC_HotSeat"    : return "VideoBillHotSeat";
+				case "TMC_LocalArcade": return "VideoBillArcade";
+				case "TMC_LocalRounds": return "VideoBillSplitScreen";
+				default               : return "VideoBillSplitScreen";
+			}
+			return "";
+		}
+
+		Text GetEnviroLogoImg(Integer _Enviro)
+		{
+			switch(_Enviro)
+			{
+				case 0: return "{{{ImgLogoCanyon}}}";
+				case 1: return "{{{ImgLogoValley}}}";
+				case 2: return "{{{ImgLogoLagoon}}}";
+				case 3: return "{{{ImgLogoStadium}}}";
+			}
+			return "";
+		}
+
+
+		Void SetEnviroSwitch(Integer _Enviro, Text _Id)
+		{
+			switch(_Enviro)
+			{
+				case 0: G_InfoSwitch[_Id] = G_InfoSwitch_C[_Id];
+				case 1: G_InfoSwitch[_Id] = G_InfoSwitch_V[_Id];
+				case 2: G_InfoSwitch[_Id] = G_InfoSwitch_L[_Id];
+				case 3: G_InfoSwitch[_Id] = G_InfoSwitch_S[_Id];
+			}
+		}
+
+		Void SetEnviroSwitchNewTrack(Integer _Enviro, Text _Id)
+		{
+			switch(_Enviro)
+			{
+				case 0: G_InfoSwitch[_Id] = G_InfoSwitchNewTrack_C[_Id];
+				case 1: G_InfoSwitch[_Id] = G_InfoSwitchNewTrack_V[_Id];
+				case 2: G_InfoSwitch[_Id] = G_InfoSwitchNewTrack_L[_Id];
+				case 3: G_InfoSwitch[_Id] = G_InfoSwitchNewTrack_S[_Id];
+			}
+		}
+
+		Text GetImgMode(Text _ModeName)
+		{
+			switch(_ModeName)
+			{
+				case "TMC_HotSeat":     return "{{{ImgLogoHotSeat}}}";
+				case "TMC_LocalArcade": return "{{{ImgLogoArcade}}}";
+				case "TMC_LocalRounds": return "{{{ImgLogoSplitScreen}}}";
+			}
+			return "";
+		}
+
+		Text GetTrackLenght(Integer _Index)
+		{
+			switch(_Index)
+			{
+				case 0: return "";
+				case 1: return "veryshort";
+				case 2: return "short";
+				case 3: return "medium";
+				case 4: return "long";
+			}
+			return "medium";
+		}
+
+		Void SetQuadMode()
+		{
+			declare Text Net_ModeSelect		for Page;
+
+			declare Text PathImg = GetImgMode(Net_ModeSelect);
+			for(I, 0, {{{NumberOfSubMenu-1}}})
+			{
+				declare CMlFrame Frame_InstanceSubMenu <=> (Page.GetFirstChild("Frame_InstanceSubMenu0"^I) as CMlFrame);
+				declare CMlQuad Quad_Mode <=> (Frame_InstanceSubMenu.GetFirstChild("Quad_Mode") as CMlQuad);
+				Quad_Mode.ChangeImageUrl(PathImg);
+				declare Text KindOfTracksMenuSelect for This;
+				if(KindOfTracksMenuSelect == "NewTrack") Quad_Mode.Colorize = {{{MenuColor::GetMenuColor(3)}}};
+				else Quad_Mode.Colorize = {{{MenuColor::GetMenuColor(1)}}};
+			}
+		}
+
+		Void UpdateQuadModePosition()
+		{
+			//G_IndexSelectY
+			for(I, 0, {{{NumberOfSubMenu-1}}})
+			{
+				declare CMlFrame Frame_InstanceSubMenu <=> (Page.GetFirstChild("Frame_InstanceSubMenu0"^I) as CMlFrame);
+				declare CMlQuad Quad_Mode <=> (Frame_InstanceSubMenu.GetFirstChild("Quad_Mode") as CMlQuad);
+				declare Vec3 NextPosition;
+				if(I == G_IndexSelectY)
+				{
+					Quad_Mode.Show();
+					NextPosition = <{{{SM_PosX+115.6}}}, Quad_Mode.RelativePosition.Y, Quad_Mode.RelativePosition.Z>;
+				}
+				else
+				{
+					//Quad_Mode.Hide();
+					Quad_Mode.Show();
+					NextPosition = <{{{SM_PosX+195.}}}, Quad_Mode.RelativePosition.Y, Quad_Mode.RelativePosition.Z>;
+					//Quad_Mode.RelativePosition.X = {{{SM_PosX+140.}}};
+				}
+				LibManialink_SetTargetPosition(Quad_Mode, NextPosition);
+				LibManialink_PresetAnim(Quad_Mode, 500, "EaseOutBack");
+			}
+
+		}
+			
+		Void UpdateAllLabelsParam()
+		{
+			declare Text KindOfTracksMenuSelect for This;
+			for(I, 0, {{{G_MenuSetting.count-1}}})
+			{
+				declare CMlFrame Frame_Instance <=> (Page.GetFirstChild("Frame_Instance"^I)     as CMlFrame);
+				declare CMlLabel Label_Name     <=> (Frame_Instance.GetFirstChild("Label_Name") as CMlLabel);
+
+				declare Text MyType = G_InfoType[I];
+				declare Text MyName;
+				if(KindOfTracksMenuSelect == "NewTrack") MyName = G_InfoNameNewTrack[I];
+				else MyName = G_InfoName[I];
+				declare Text MyId   = G_InfoId[I];
+				Label_Name.Value    = MyName;
+
+				if(G_InfoType[I] == "Slider")
+				{
+					declare CMlQuad Quad_Selector <=> (Frame_Instance.GetFirstChild("Quad_Selector") as CMlQuad);
+					Quad_Selector.PosnX = (G_IndexSettings[MyId] - {{{SizeOfSliders}}}) /2.2;
+
+				}
+				else if(G_InfoType[I] == "Switch")
+				{
+					declare CMlLabel Label_Contain <=> (Frame_Instance.GetFirstChild("Label_Contain") as CMlLabel);
+					G_IndexSettings[MyId] = 0;
+					declare Integer MyIndex = 0;
+					
+					if(KindOfTracksMenuSelect == "NewTrack") SetEnviroSwitchNewTrack(G_SubMenuFocusX, MyId);
+					else SetEnviroSwitch(G_SubMenuFocusX, MyId);
+
+					Label_Contain.Value = G_InfoSwitch[MyId][MyIndex];
+				}
+			}
+		}
+
+		Void UpdateSelectionParam()
+		{
+			if(G_ParamPrevIndexSelectY != G_ParamIndexSelectY)
+			{
+				declare CMlFrame NewFrame_Instance  <=> (Page.GetFirstChild("Frame_Instance"^G_ParamIndexSelectY)     as CMlFrame);
+				declare CMlFrame PrevFrame_Instance <=> (Page.GetFirstChild("Frame_Instance"^G_ParamPrevIndexSelectY) as CMlFrame);
+				declare CMlLabel NewLabel_Name       <=> (NewFrame_Instance.GetFirstChild("Label_Name")          as CMlLabel);
+				declare Text KindOfTracksMenuSelect for This;
+
+				G_CurrentType = G_InfoType[G_ParamIndexSelectY];
+				//G_CurrentName = G_InfoName[G_ParamIndexSelectY];
+				if(KindOfTracksMenuSelect == "NewTrack")
+				{
+					G_CurrentName = G_InfoNameNewTrack[G_ParamIndexSelectY];
+					NewLabel_Name.TextColor = {{{MenuColor::GetMenuColor(3)}}};
+				}
+				else
+				{
+					NewLabel_Name.TextColor = {{{MenuColor::GetMenuColor(1)}}};
+					G_CurrentName = G_InfoName[G_ParamIndexSelectY];
+				}
+				G_CurrentId   = G_InfoId[G_ParamIndexSelectY];
+				
+
+				if(PrevFrame_Instance != Null)
+				{
+					declare CMlLabel PrevLabel_Name       <=> (PrevFrame_Instance.GetFirstChild("Label_Name")          as CMlLabel);
+					declare CMlLabel PrevLabel_Contain    <=> (PrevFrame_Instance.GetFirstChild("Label_Contain")          as CMlLabel);
+					PrevLabel_Name.TextColor = {{{Colors::GetColor("White")}}};
+					PrevLabel_Contain.Opacity   = 1.;
+				}
+
+				G_ParamPrevIndexSelectY = G_ParamIndexSelectY;
+			}
+		}
+
+		Void AdvancedParam()
+		{
+			G_AdvancedParam = True;
+			declare CMlFrame Frame_Instance0 <=> (Page.GetFirstChild("Frame_Instance0")     as CMlFrame);
+			declare CMlFrame Frame_Instance1 <=> (Page.GetFirstChild("Frame_Instance1")     as CMlFrame);
+			//declare CMlFrame Frame_Instance2 <=> (Page.GetFirstChild("Frame_Instance2")     as CMlFrame);
+			Frame_Instance0.Show();
+			Frame_Instance1.Hide();
+			//Frame_Instance2.Hide();
+			G_ParamIndexSelectY = 0;
+			UpdateSelectionParam();
+
+		}
+
+		Void NormalParam()
+		{
+			G_AdvancedParam = False;
+			declare CMlFrame Frame_Instance0 <=> (Page.GetFirstChild("Frame_Instance0")     as CMlFrame);
+			declare CMlFrame Frame_Instance1 <=> (Page.GetFirstChild("Frame_Instance1")     as CMlFrame);
+			//declare CMlFrame Frame_Instance2 <=> (Page.GetFirstChild("Frame_Instance2")     as CMlFrame);
+			Frame_Instance0.Show();
+			Frame_Instance1.Show();
+			//Frame_Instance2.Hide();
+			G_ParamIndexSelectY = 0;
+			UpdateSelectionParam();
+		}
+
+		Void SwitchParam(Boolean _IsAnimTransition, Boolean _NormalMode)
+		{
+			declare CMlFrame  Frame_ParamContent <=> (Page.GetFirstChild("Frame_ParamContent") as CMlFrame);
+			//declare CMlFrame  Frame_Param        <=> (Page.GetFirstChild("Frame_Param")        as CMlFrame);
+			declare CMlFrame Frame_Param      <=> (Page.GetFirstChild("Frame_Param") as CMlFrame); //La frame à cacher
+			declare CMlQuad  Quad_EnviroParam <=> (Frame_Param.GetFirstChild("Quad_EnviroParam") as CMlQuad);
+
+			declare CMlFrame Frame_ParamsGO      <=> (Page.GetFirstChild("Frame_ParamsGO")                as CMlFrame);
+			declare CMlQuad  Quad_InputGo        <=> (Frame_ParamsGO.GetFirstChild("Quad_InputGo0")        as CMlQuad);
+			declare CMlLabel  Label_SubMenuLegend <=> (Frame_ParamsGO.GetFirstChild("Label_SubMenuLegend") as CMlLabel);
+			
+			declare Real QuadSizeX  = Quad_InputGo.Size.X;
+			declare Real LabelSizeX = Label_SubMenuLegend.ComputeWidth(Label_SubMenuLegend.Value, True);
+			declare Real BothSize   = QuadSizeX + LabelSizeX;
+			declare Real Base       = 30.6484;
+			Frame_ParamsGO.RelativePosition.X = (BothSize - Base) * 0.5;
+			if(Frame_ParamsGO.RelativePosition.X >13.) Frame_ParamsGO.RelativePosition.X = 13.;
+			//log("Frame_ParamsGO.RelativePosition.X: " ^Frame_ParamsGO.RelativePosition.X);
+			
+
+			Frame_Param.Show();
+
+
+			if(G_MenuSelect == "{{{C_MenuSelect_Enviro}}}")
+			{
+				//Frame_Param.ClipWindowSize
+
+				declare Integer Index = G_SubMenuFocusX;
+				declare Text IMGLogo = GetEnviroLogoImg(Index);
+				Quad_EnviroParam.ChangeImageUrl(IMGLogo);
+				declare Text KindOfTracksMenuSelect for This;
+
+				if(KindOfTracksMenuSelect == "NewTrack")
+				{
+					Quad_EnviroParam.Colorize = {{{MenuColor::GetMenuColor(3)}}};
+				}
+				else
+				{
+					Quad_EnviroParam.Colorize = {{{MenuColor::GetMenuColor(1)}}};
+				}
+
+				UpdateAllLabelsParam();
+				//UpdateSelectionParam();
+
+				declare Real FramePosnY                = 0. - {{{PosYFirstQuad}}} + 0 * {{{-SM_SizeEnviroY}}}-30.2;
+				declare Real FramePosnX                = 0. - {{{PosXFirstQuad}}}+ G_SubMenuFocusX*{{{SM_SizeEnviroX}}}-5.5;
+				declare Vec2 NewClipPosition           = <FramePosnX, FramePosnY>;
+				Frame_Param.ClipWindowRelativePosition = NewClipPosition;
+
+				declare Real FrameContentPosnX      = FramePosnX + {{{SM_SizeEnviroX/2.}}};
+				declare Vec3 StartFramePosition       = <FrameContentPosnX, FramePosnY, Frame_ParamContent.RelativePosition.Z>;
+				Frame_ParamContent.RelativePosition = StartFramePosition;
+				
+				declare Vec3 NewFramePosition       = <FrameContentPosnX - {{{SM_SizeEnviroX}}}, FramePosnY, Frame_ParamContent.RelativePosition.Z>;
+				LibManialink_SetTargetPosition(Frame_ParamContent, NewFramePosition);
+				LibManialink_PresetAnim(Frame_ParamContent, 500, "EaseOutQuint");
+				G_MenuSelect = "{{{C_MenuSelect_Param}}}";
+			}
+			else
+			{
+				if(_IsAnimTransition)
+				{
+					declare Real FramePosnY         = 0. - {{{PosYFirstQuad}}} + G_SubMenuFocusY * {{{-SM_SizeEnviroY}}}-30.2;
+					declare Real FramePosnX         = 0. - {{{PosXFirstQuad}}}+ G_SubMenuFocusX*{{{SM_SizeEnviroX}}}-5.5;
+					declare Real FrameContentPosnX  = FramePosnX + {{{SM_SizeEnviroX/2.}}};
+					declare Vec3 StartFramePosition = <FrameContentPosnX, FramePosnY, Frame_ParamContent.RelativePosition.Z>;
+					
+					LibManialink_SetTargetPosition(Frame_ParamContent, StartFramePosition);
+					LibManialink_PresetAnim(Frame_ParamContent, 300, "EaseOutQuint");
+				}
+				else
+				{
+					Frame_Param.Hide();
+				}
+				
+
+				G_MenuSelect = "{{{C_MenuSelect_Enviro}}}";
+				
+			}
+
+			
+			if(_NormalMode)
+			{
+				NormalParam();
+			}
+			else if(!_NormalMode && G_EditorLevel == 3)
+			{
+				NormalParam();
+			}
+			else
+			{
+				AdvancedParam();
+			}
+		}
+
+		Void SwitchParam()
+		{
+			SwitchParam(False, True);
+		}
+		Void SwitchSubMenu(Boolean _IsAnimTransition)
+		{
+			declare CMlFrame  Frame_SubMenuEnd      <=> (Page.GetFirstChild("Frame_SubMenuEnd0") as CMlFrame);
+			declare CMlFrame  Frame_SubMenuLegend   <=> (Page.GetFirstChild("Frame_SubMenuLegend0") as CMlFrame); //La frame à cacher
+			declare CMlFrame  Frame_InstanceSubMenu <=> (Page.GetFirstChild("Frame_InstanceSubMenu02") as CMlFrame);
+
+
+			declare CMlFrame  Frame_Content         <=> (Page.GetFirstChild("Frame_Content") as CMlFrame);
+
+			declare CMlFrame  Frame_Selector1       <=> (Page.GetFirstChild("Frame_Selector1") as CMlFrame);
+			declare CMlFrame  Frame_Selector11       <=> (Frame_Selector1.GetFirstChild("Frame_Selector11") as CMlFrame);
+			declare CMlFrame  Frame_Selector2       <=> (Page.GetFirstChild("Frame_Selector2") as CMlFrame);
+			declare Real NewFramePosY;
+			
+			if(G_MenuSelect == "{{{C_MenuSelect_First}}}")
+			{
+				//Frame_Selector1.Hide();
+				Frame_Selector11.Hide();
+				Frame_Selector2.Show();
+				NewFramePosY = {{{SM_SizeY*2.}}};
+				NewFramePosY = {{{SM_SizeY*2.}}};
+				//SetSubMenuLegendFocus();
+				SubMenuFocus();
+				G_ActualSelector = "Frame_Selector2";
+				G_MenuSelect = "{{{C_MenuSelect_Enviro}}}";
+
+
+				declare CMlFrame Frames_InstanceTarget <=> (Page.GetFirstChild("Frame_InstanceSubMenu00") as CMlFrame);
+				for(I, 1, 2)
+				{
+					declare CMlFrame Frames_InstanceNext <=> (Page.GetFirstChild("Frame_InstanceSubMenu0"^I) as CMlFrame);
+
+					declare Vec3 TargetPos = <Frames_InstanceTarget.RelativePosition.X, Frames_InstanceTarget.RelativePosition.Y, Frames_InstanceNext.RelativePosition.Z>;
+					if(_IsAnimTransition)
+					{
+						LibManialink_SetTargetPosition(Frames_InstanceNext, TargetPos);
+						LibManialink_PresetAnim(Frames_InstanceNext, 500, "EaseOutQuint");
+					}
+					else
+					{
+						Frames_InstanceNext.RelativePosition = TargetPos;
+					}
+				}	
+				//SendCustomEvent("LaunchTransition", ["BillBoardTransition"]);
+			}
+			else
+			{
+				UnlightSubMenuLegendFocus(G_SubMenuFocusY,G_SubMenuFocusX);
+				G_ActualSelector = "Frame_Selector1";
+				//Frame_Selector1.Show();
+				Frame_Selector11.Show();
+				Frame_Selector2.Hide();
+				G_SubMenuFocusY = 0;
+				G_SubMenuFocusX = 0;
+				NewFramePosY = 0.;
+				G_MenuSelect = "{{{C_MenuSelect_First}}}";
+				for(I, 1, 2)
+				{
+					declare Real FramePosY = {{{PosnY - PosYFirstQuad}}} + (I * - {{{SM_SizeY}}});
+					declare CMlFrame Frames_InstanceNext <=> (Page.GetFirstChild("Frame_InstanceSubMenu0"^I) as CMlFrame);
+					//declare CMlQuad  Quad_SubMenu        <=> (Frames_InstanceNext.GetFirstChild("Quad_SubMenu") as CMlQuad);
+
+					declare Vec3 TargetPos = <Frames_InstanceNext.RelativePosition.X, FramePosY, Frames_InstanceNext.RelativePosition.Z>;
+					if(_IsAnimTransition)
+					{
+						LibManialink_SetTargetPosition(Frames_InstanceNext, TargetPos);
+						LibManialink_PresetAnim(Frames_InstanceNext, 500, "EaseOutQuint");
+					}
+					else
+					{
+						Frames_InstanceNext.RelativePosition = TargetPos;
+					}
+				}
+				//SendCustomEvent("LaunchTransition", ["BillBoardTransition"]);
+			}
+
+			G_HideTimeSubMenu = Now + 100;
+			declare Vec3 NewFrame_Selector1Pos = <Frame_Selector1.RelativePosition.X, NewFramePosY, Frame_Selector1.RelativePosition.Z>;
+			
+
+			declare CMlQuad  Quad_Grillex3        <=> (Page.GetFirstChild("Quad_Grillex3") as CMlQuad);
+			declare Vec3 NewQuad_Grillex3Pos = <Quad_Grillex3.RelativePosition.X, NewFramePosY+2.5, 10.>;
+			
+			if(_IsAnimTransition)
+			{
+				LibManialink_SetTargetPosition(Quad_Grillex3, NewQuad_Grillex3Pos);
+				LibManialink_PresetAnim(Quad_Grillex3, 450, "EaseOutQuint");
+			}
+			else
+			{
+				Quad_Grillex3.RelativePosition = NewQuad_Grillex3Pos;
+			}
+
+		}
+
+		Void UpdateLightTrackbuilder(Boolean _Anim)
+		{
+			declare CMlFrame  Frame_NewTrack <=> (Page.GetFirstChild("Frame_NewTrack") as CMlFrame);
+			declare Real NextScale;
+			declare Text Ease;
+			for(I, 0, 3)
+			{
+				declare CMlLabel Label_NewTrack <=> (Frame_NewTrack.GetFirstChild("Label_NewTrack"^(4-I)) as CMlLabel);
+				//log("Label_NewTrack"^(4-I));
+				if(G_SubMenuFocusY == I)
+				{
+					NextScale = 1.3;
+					Ease = "EaseOutBack";
+
+					declare Text KindOfTracksMenuSelect for This;
+					if({{{IsTrial}}} && G_SubMenuFocusX == 0)
+					{
+						if(KindOfTracksMenuSelect == "NewTrack") Label_NewTrack.TextColor = {{{MenuColor::GetMenuColor(3)}}};
+						else Label_NewTrack.TextColor = {{{MenuColor::GetMenuColor(1)}}};
+					}
+					else if({{{IsTrial}}})
+					{
+						Label_NewTrack.TextColor = {{{Color_Grey}}};
+					}
+					else
+					{
+						if(KindOfTracksMenuSelect == "NewTrack") Label_NewTrack.TextColor = {{{MenuColor::GetMenuColor(3)}}};
+						else Label_NewTrack.TextColor = {{{MenuColor::GetMenuColor(1)}}};
+					}
+					
+				}
+				else
+				{
+					NextScale = 1.;
+					Ease = "EaseOutQuint";
+					if({{{IsTrial}}})
+					{
+						Label_NewTrack.TextColor = <0.3, 0.3, 0.3>;
+					}
+					else
+					{
+						Label_NewTrack.TextColor = {{{Colors::GetColor("White")}}};
+					}
+				}
+
+				if(_Anim)
+				{
+					LibManialink_SetTargetScale(Label_NewTrack, NextScale);
+					LibManialink_PresetAnim(Label_NewTrack, 250, Ease);
+				}
+				else
+				{
+					LibManialink_AnimStop(Label_NewTrack);
+					Label_NewTrack.RelativeScale = NextScale;
+				}
+			}
+		}
+
+		Void SwitchSubMenu()
+		{
+			SwitchSubMenu(True);
+		}
+
+		Void SetSubMenu()
+		{
+			declare CMlFrame  Frame_SubMenuEnd      <=> (Page.GetFirstChild("Frame_SubMenuEnd0") as CMlFrame);
+			//declare CMlFrame  Frame_SubMenuLegend <=> (Page.GetFirstChild("Frame_SubMenuLegend0") as CMlFrame); //La frame à cacher
+			declare CMlFrame  Frame_InstanceSubMenu <=> (Page.GetFirstChild("Frame_InstanceSubMenu00") as CMlFrame);
+			declare CMlFrame  Frame_Selector1       <=> (Page.GetFirstChild("Frame_Selector1") as CMlFrame);
+			declare CMlFrame  Frame_Selector2       <=> (Page.GetFirstChild("Frame_Selector2") as CMlFrame);
+			declare CMlFrame  Frame_NewTrack        <=> (Page.GetFirstChild("Frame_NewTrack") as CMlFrame);
+			declare CMlFrame  Frame_Selector11      <=> (Frame_Selector1.GetFirstChild("Frame_Selector11") as CMlFrame);
+			declare CMlFrame  Frame_Content         <=> (Page.GetFirstChild("Frame_Content") as CMlFrame);
+			
+			declare CMlLabel Label_Next          <=> (Frame_InstanceSubMenu.GetFirstChild("Label_SubMenu") as CMlLabel);
+			
+			declare Vec3 NewFrame_Selector1Pos;
+			declare Real NewFrameContentPosY;
+			//declare Vec3 NewFramePos;
+			declare Text KindOfTracksMenuSelect for This;
+
+			declare Real NewFramePosY;
+			//if(G_MenuSelect == "{{{C_MenuSelect_Enviro}}}")
+			if(KindOfTracksMenuSelect == "NewTrack")
+			{
+				declare CMlLabel Label_NewTrack1 <=> (Frame_NewTrack.GetFirstChild("Label_NewTrack1") as CMlLabel);
+				declare CMlLabel Label_NewTrack2 <=> (Frame_NewTrack.GetFirstChild("Label_NewTrack2") as CMlLabel);
+				declare CMlLabel Label_NewTrack3 <=> (Frame_NewTrack.GetFirstChild("Label_NewTrack3") as CMlLabel);
+				declare CMlLabel Label_NewTrack4 <=> (Frame_NewTrack.GetFirstChild("Label_NewTrack4") as CMlLabel);
+
+				Label_Next.Value = _("New Track");
+				
+				Frame_Selector11.Hide();
+				Frame_Selector2.Show();
+				Frame_NewTrack.Show();
+				Label_NewTrack1.Value = _("Advanced Mode");
+				Label_NewTrack2.Value = _("Normal Mode");
+				Label_NewTrack3.Value = _("Beginner Mode");
+				Label_NewTrack4.Value = "Random Generator";
+				G_SubMenuFocusX = 0;
+				G_SubMenuFocusY = 1;
+				NewFrameContentPosY = {{{SM_SizeY*2.}}};
+				NewFramePosY = -22.66;
+				//SetSubMenuLegendFocus();
+				SubMenuFocus();
+				G_ActualSelector = "Frame_Selector2";
+				G_MenuSelect = "{{{C_MenuSelect_Enviro}}}";
+				NewFrame_Selector1Pos = <Frame_Selector1.RelativePosition.X, NewFramePosY, Frame_Selector1.RelativePosition.Z>;
+				//NewFramePos 		  = <Frame_Content.RelativePosition.X, NewFramePosY, Frame_Content.RelativePosition.Z>;
+				UpdateLightTrackbuilder(True);
+				
+				for(J, 0, 3)
+				{
+					declare CMlFrame Frame_SubMenuLegend       <=> (Page.GetFirstChild("Frame_SubMenuLegend0"^J) as CMlFrame); //La frame à cacher
+					declare CMlFrame  Frame_Lock                <=> (Frame_SubMenuLegend.GetFirstChild("Frame_Lock") as CMlFrame);
+					declare CMlQuad  Quad_EnviroLock                <=> (Frame_Lock.GetFirstChild("Quad_EnviroLock") as CMlQuad);
+					Quad_EnviroLock.Colorize  = {{{MenuColor::GetMenuColor(3)}}};
+					
+				}
+			}
+			else
+			{
+				Label_Next.Value = "Random track generator";
+				Frame_Selector11.Show();
+				Frame_Selector2.Hide();
+				Frame_NewTrack.Hide();
+				G_ActualSelector = "Frame_Selector1";
+				G_SubMenuFocusY = 0;
+				G_SubMenuFocusX = 0;
+				//Frame_SubMenuLegend.Hide();
+				NewFramePosY = -22.66;
+				NewFrameContentPosY = 0.;
+				NewFrame_Selector1Pos = <Frame_Selector1.RelativePosition.X, 0., Frame_Selector1.RelativePosition.Z>;
+				G_MenuSelect = "{{{C_MenuSelect_First}}}";
+				
+				for(J, 0, 3)
+				{
+					declare CMlFrame Frame_SubMenuLegend       <=> (Page.GetFirstChild("Frame_SubMenuLegend0"^J) as CMlFrame); //La frame à cacher
+					declare CMlFrame  Frame_Lock                <=> (Frame_SubMenuLegend.GetFirstChild("Frame_Lock") as CMlFrame);
+					declare CMlQuad  Quad_EnviroLock                <=> (Frame_Lock.GetFirstChild("Quad_EnviroLock") as CMlQuad);
+					Quad_EnviroLock.Colorize = {{{MenuColor::GetMenuColor(1)}}};
+				}
+
+				UpdateSelection();
+			}
+			G_HideTimeSubMenu = Now;
+			declare Vec3 NewFramePos = <Frame_SubMenuEnd.RelativePosition.X, NewFramePosY, Frame_SubMenuEnd.RelativePosition.Z>;
+			declare Vec3 NewFrameContentPos = <Frame_Content.RelativePosition.X, NewFrameContentPosY, Frame_Content.RelativePosition.Z>;
+			Frame_SubMenuEnd.RelativePosition = NewFramePos;
+			Frame_Content.RelativePosition    = NewFrameContentPos;
+			Frame_Selector1.RelativePosition  = NewFrame_Selector1Pos;
+		}
+
+		Void ModifParam(Text _Direction)
+		{
+			Audio.PlaySoundEvent("{{{SoundClicInterfaceLeftRight}}}", {{{Volumes::GetVolumedB("MenuClicInterfaceLeftRight")}}});
+			//declare Integer Index = G_IndexSettings[G_CurrentName];
+			declare Integer Index = G_IndexSettings[G_CurrentId];
+			declare CMlFrame Frame_Instance <=> (Page.GetFirstChild("Frame_Instance"^G_ParamIndexSelectY) as CMlFrame);
+			
+			switch(G_CurrentType)
+			{
+				case "Slider":
+				{
+					declare CMlQuad Quad_Selector <=> (Frame_Instance.GetFirstChild("Quad_Selector") as CMlQuad);
+					if(_Direction == "Left" && Index > 0)
+					{
+						Index -= 5;
+					}
+					else if(_Direction == "Right" && Index < 100)
+					{
+						Index += 5;
+					}
+					//Todo - Update
+					Quad_Selector.PosnX = (Index - {{{SizeOfSliders}}}) /2.2;
+					G_IndexSettings[G_CurrentId] = Index;
+					
+				}
+				case "Switch":
+				{
+					declare CMlLabel Label_Contain     <=> (Frame_Instance.GetFirstChild("Label_Contain")          as CMlLabel);
+					declare Integer IndexMax = G_InfoSwitch[G_CurrentId].count-1;
+					if(_Direction == "Left" && Index > 0)
+					{
+						Index -= 1;
+					}
+					else if(_Direction == "Right" && Index < IndexMax)
+					{
+						Index += 1;
+					}
+					else if(_Direction == "Left" && Index >= 0)
+					{
+						Index = IndexMax;
+					}
+					else if(_Direction == "Right" && Index >= IndexMax)
+					{
+						Index = 0;
+					}
+					//Todo - Update
+					Label_Contain.Value = G_InfoSwitch[G_CurrentId][Index];
+					G_IndexSettings[G_CurrentId] = Index;
+				}
+
+			}
+		}
+
+
+
+		Void Init() {
+			{{{SelectArray2D::InjectInInit()}}}
+			""";
+
+		for(I, 0, G_MenuSetting.count-1)
+		{
+			declare Text[] SplitMenuSetting = TextLib::Split("_", G_MenuSetting[I]);
+			declare Text MyType = SplitMenuSetting[0];
+			declare Text MyName = SplitMenuSetting[1];
+			if(SplitMenuSetting.existskey(2)) MyName ^= "_"^SplitMenuSetting[2];
+
+			declare Text NameNewTrack = "";
+			if(G_MenuSettingNameNewTrack.existskey(I)) NameNewTrack = G_MenuSettingNameNewTrack[I];
+			MLText^="""
+			G_InfoType.add("{{{MyType}}}");
+			G_InfoId.add("{{{MyName}}}");
+			G_InfoName.add("{{{G_MenuSettingName[I]}}}");
+			G_InfoNameNewTrack.add("{{{NameNewTrack}}}");
+			""";
+
+			switch(MyType)
+			{
+				case "Switch":
+				{
+					if(G_SwitchInfo_C.existskey(MyName))
+					{
+						MLText^=""" G_InfoSwitch["{{{MyName}}}"]           = Text[];
+									G_InfoSwitch_C["{{{MyName}}}"]         = Text[];
+									G_InfoSwitch_V["{{{MyName}}}"]         = Text[];
+									G_InfoSwitch_L["{{{MyName}}}"]         = Text[];
+									G_InfoSwitch_S["{{{MyName}}}"]         = Text[];
+						""";
+						MLText^="""G_IndexSettings["{{{MyName}}}"] = {{{G_SettingsIndex[MyName]}}};""";
+						for(J, 0, G_SwitchInfo[MyName].count-1)
+						{
+							MLText^="""G_InfoSwitch["{{{MyName}}}"].add("{{{G_SwitchInfo[MyName][J]}}}");""";
+						}
+
+						for(J, 0, G_SwitchInfo_C[MyName].count-1)
+						{
+							MLText^="""G_InfoSwitch_C["{{{MyName}}}"].add("{{{G_SwitchInfo_C[MyName][J]}}}");""";
+						}
+						for(J, 0, G_SwitchInfo_V[MyName].count-1)
+						{
+							MLText^="""G_InfoSwitch_V["{{{MyName}}}"].add("{{{G_SwitchInfo_V[MyName][J]}}}");""";
+						}
+						for(J, 0, G_SwitchInfo_L[MyName].count-1)
+						{
+							MLText^="""G_InfoSwitch_L["{{{MyName}}}"].add("{{{G_SwitchInfo_L[MyName][J]}}}");""";
+						}
+						for(J, 0, G_SwitchInfo_S[MyName].count-1)
+						{
+							MLText^="""G_InfoSwitch_S["{{{MyName}}}"].add("{{{G_SwitchInfo_S[MyName][J]}}}");""";
+						}
+					}
+
+					if(G_SwitchInfoNewTrack_C.existskey(MyName))
+					{
+						MLText^="""	
+									G_InfoSwitchNewTrack_C["{{{MyName}}}"] = Text[];
+									G_InfoSwitchNewTrack_V["{{{MyName}}}"] = Text[];
+									G_InfoSwitchNewTrack_L["{{{MyName}}}"] = Text[];
+									G_InfoSwitchNewTrack_S["{{{MyName}}}"] = Text[];
+						""";
+						for(J, 0, G_SwitchInfoNewTrack_C[MyName].count-1)
+						{
+							MLText^="""G_InfoSwitchNewTrack_C["{{{MyName}}}"].add("{{{G_SwitchInfoNewTrack_C[MyName][J]}}}");""";
+						}
+						for(J, 0, G_SwitchInfoNewTrack_V[MyName].count-1)
+						{
+							MLText^="""G_InfoSwitchNewTrack_V["{{{MyName}}}"].add("{{{G_SwitchInfoNewTrack_V[MyName][J]}}}");""";
+						}
+						for(J, 0, G_SwitchInfoNewTrack_L[MyName].count-1)
+						{
+							MLText^="""G_InfoSwitchNewTrack_L["{{{MyName}}}"].add("{{{G_SwitchInfoNewTrack_L[MyName][J]}}}");""";
+						}
+						for(J, 0, G_SwitchInfoNewTrack_S[MyName].count-1)
+						{
+							MLText^="""G_InfoSwitchNewTrack_S["{{{MyName}}}"].add("{{{G_SwitchInfoNewTrack_S[MyName][J]}}}");""";
+						}
+					}
+				}
+				case "Slider": 
+				{
+					MLText^="""G_IndexSettings["{{{MyName}}}"] = {{{G_SettingsIndex[MyName]}}};""";
+				}
+				case "LayerBouton": 
+				{
+					MLText^="""G_InfoLayer["{{{MyName}}}"] = "{{{G_LayerInfo[MyName]}}}";""";
+
+				}
+
+			}
+		}
+
+		MLText^="""
+
+			for(I, 0, {{{Count_InstancesY-1}}})
+			{
+				declare CMlFrame[][Integer]	Frames_Instance;
+
+				//Quad_Button
+
+
+				for(J,0,{{{Count_InstancesX-1}}})
+				{
+					G_TextSubMenu[J]       = Text[Integer];
+					G_TextSubMenuTrad[J]       = Text[Integer];
+					G_ImgSubMenu[J]        = Text[Integer];
+					//G_TextSubMenuLegend[J] = Text[Integer];
+				}
+
+				declare Text[Integer] MenuTitle;
+				MenuTitle[0]             = _("Multiplayer");
+
+				G_TextSubMenu[0][0]      = "Random Track Generator";
+				G_TextSubMenu[0][1]      = "Official Campaign Tracks";
+				G_TextSubMenu[0][2]      = "Trackbuilder Workshop";
+				G_ImgSubMenu[0][0]       = "{{{ImgRandomTrackGen}}}";
+				G_ImgSubMenu[0][1]       = "{{{ImgOfficialCampaign}}}";
+				G_ImgSubMenu[0][2]       = "{{{ImgTrackBuilder}}}";
+				G_TextSubMenuTrad[0][0]      = _("Experience an infinity of new tracks");
+				G_TextSubMenuTrad[0][1]      = _("Enjoy all 200 official tracks");
+				G_TextSubMenuTrad[0][2]      = _("Try out your own creations");
+
+
+				Frames_Instance[I]	= CMlFrame[];
+				for(J,0,{{{Count_InstancesX-1}}})
+				{
+					Frames_Instance[I]	.add( (Page.MainFrame.GetFirstChild("Frame_Instance")	as CMlFrame) );
+					//declare CMlFrame Frame_SubMenuEnd <=> (Page.GetFirstChild("Frame_SubMenuEnd"^J) as CMlFrame);
+					
+					//declare CMlLabel Label_Title          <=> (Frames_Instance[I][J].GetFirstChild("Label_Title") as CMlLabel);
+					//if(!MenuTitle.existskey(J)) continue;
+					//Label_Title.Value = TL::ToUpperCase(MenuTitle[J]);
+					declare Integer NumberOfSubMenu = G_TextSubMenu[J].count;
+
+
+					for(K, 0, NumberOfSubMenu-1)
+					{
+						ActivateLine(K, True);
+						
+						declare CMlFrame Frames_InstanceNext <=> (Page.GetFirstChild("Frame_InstanceSubMenu"^J^""^K) as CMlFrame);
+						declare CMlLabel Label_Next          <=> (Frames_InstanceNext.GetFirstChild("Label_SubMenu") as CMlLabel);
+						declare CMlLabel Label_Next2         <=> (Frames_InstanceNext.GetFirstChild("Label_SubMenu2") as CMlLabel);
+						declare CMlQuad  Quad_SubMenu        <=> (Frames_InstanceNext.GetFirstChild("Quad_SubMenu") as CMlQuad);
+
+						Frames_InstanceNext.Show();
+						if(G_TextSubMenu[J].existskey(K))
+						{
+							Label_Next.Show();
+							Label_Next.Value  = G_TextSubMenu[J][K];
+							Label_Next2.Value = G_TextSubMenuTrad[J][K];
+						}
+						else
+						{
+							Label_Next.Hide();
+						}
+
+						if(G_ImgSubMenu[J].existskey(K))
+						{
+							Quad_SubMenu.ChangeImageUrl(G_ImgSubMenu[J][K]);
+						}
+
+					}
+					//declare Real FramePosnY = {{{PosYFirstQuad}}} + NumberOfSubMenu * - {{{SM_SizeY}}} + {{{SM_Separator}}};
+					//Frame_SubMenuEnd.RelativePosition.Y = FramePosnY;
+				}
+			}
+
+			for(I, 0, {{{SM_NumberOfLegendY-1}}})
+			{
+				for(J, 0, {{{SM_NumberOfLegendX-1}}})
+				{
+					declare CMlFrame Frame_SubMenuLegend       <=> (Page.GetFirstChild("Frame_SubMenuLegend"^I^J) as CMlFrame); //La frame à cacher
+					declare CMlQuad  Quad_Enviro               <=> (Frame_SubMenuLegend.GetFirstChild("Quad_Enviro") as CMlQuad);
+					
+					declare Integer Index = I*2 + J;
+					declare Text IMGLogo = GetEnviroLogoImg(Index);
+					Quad_Enviro.ChangeImageUrl(IMGLogo);
+
+					declare CMlFrame  Frame_Lock                <=> (Frame_SubMenuLegend.GetFirstChild("Frame_Lock") as CMlFrame);
+					if({{{IsTrial}}} && J != 0) Frame_Lock.Show();
+					else Frame_Lock.Hide();
+				}
+			}
+			G_ParamPrevIndexSelectY = -1;
+			UpdateSelectionParam();
+			UpdateAllLabelsParam();
+		}
+
+
+		Void HidePage(Text _NextPage) {
+			if(_NextPage == "Main") {
+				G_HideTime  = Now + C_TimeTransitionPage2;
+				G_LockInput = Now + C_TimeTransitionPage2;
+				G_NextPage = "Main";
+			}
+			else if(_NextPage == "MapsOverview") {
+				declare Text Net_ModeSelect		for Page;
+				declare Text Transition = GetModeTransition(Net_ModeSelect);
+				SendCustomEvent("LaunchTransition", [Transition]);
+
+				G_HideTime  = Now + C_TimeTransitionMaps/2-300;
+				G_LockInput = Now + C_TimeTransitionMaps;
+				G_NextPage = "MapsOverview";
+			} 
+			else if(_NextPage == "MyTracks") {
+				SendCustomEvent("DetachPage", ["KindOfTracks", "Board"]);
+			} else {
+				SendCustomEvent("DetachPage", ["KindOfTracks", "Board"]);
+			}
+		}
+
+		Void ShowPage(Text _PreviousPage) {
+			G_LockInput = Now + 200;
+
+			if(_PreviousPage == "Main")
+			{
+				
+				G_IndexSelectY = 1;
+				if(G_MenuSelect == "{{{C_MenuSelect_Enviro}}}"){
+					SwitchSubMenu(False);
+				}
+				else if(G_MenuSelect == "{{{C_MenuSelect_Param}}}")
+				{
+					SwitchSubMenu(False);
+					SwitchParam(False, True);
+				}
+				//Init();
+				G_LockInput        = Now +200;
+			}
+			else if(_PreviousPage == "MapsOverview")
+			{
+				declare CMlFrame  Frame_All     <=> (Page.GetFirstChild("Frame_All") as CMlFrame);
+				Frame_All.Hide();
+				SendCustomEvent("LaunchTransition", ["BillBoardTransition"]);
+				
+				G_ShowTime         = Now + C_TimeTransitionMaps/7;
+				G_LockInput        = Now + C_TimeTransitionMaps/7+200;
+			}
+
+			G_ParamPrevIndexSelectY = -1;
+
+			declare CMlFrame Frame_Selector11 <=> (Page.GetFirstChild("Frame_Selector11")    as CMlFrame);
+			declare CMlFrame Frame_Selector2 <=> (Page.GetFirstChild("Frame_Selector2")    as CMlFrame);
+			declare CMlQuad  Quad_Selector  <=> (Frame_Selector11.GetFirstChild("Quad_Selector") as CMlQuad);
+			declare CMlQuad  Quad_Selector2 <=> (Frame_Selector2.GetFirstChild("Quad_Selector") as CMlQuad);
+			
+			declare Text KindOfTracksMenuSelect for This;
+			if(KindOfTracksMenuSelect == "NewTrack")
+			{
+				G_MenuSelect = "{{{C_MenuSelect_Enviro}}}";
+				Quad_Selector.Colorize  = {{{MenuColor::GetMenuColor(3)}}};
+				Quad_Selector2.Colorize = {{{MenuColor::GetMenuColor(3)}}};
+
+
+				SendCustomEvent("GetTitleReachable", ["KindOfTracks"]);
+			}
+			else
+			{
+				G_MenuSelect = "{{{C_MenuSelect_First}}}";
+				Quad_Selector.Colorize  = {{{MenuColor::GetMenuColor(1)}}};
+				Quad_Selector2.Colorize = {{{MenuColor::GetMenuColor(1)}}};
+			}
+
+			SetSubMenu();
+
+		}
+		
+		Void UnlightSubMenuSelection(Integer _PrevIndexSelectX, Integer _PrevIndexLabelSelectY)
+		{
+			declare CMlFrame Frames_InstancePrev <=> (Page.GetFirstChild("Frame_InstanceSubMenu"^_PrevIndexSelectX^""^_PrevIndexLabelSelectY) as CMlFrame);
+			declare CMlLabel Label_Prev          <=> (Frames_InstancePrev.GetFirstChild("Label_SubMenu") as CMlLabel);
+			Label_Prev.TextColor = <1., 1., 1.>;
+		}
+
+		Void UpdateSubMenuSelection(Integer _NextIndexLabelSelectY, Integer _PrevIndexLabelSelectY)
+		{
+			
+			UnlightSubMenuSelection(G_IndexSelectX, _PrevIndexLabelSelectY);
+
+			
+			declare CMlFrame Frame_Instance <=> (Page.GetFirstChild("Frame_Instance"^G_IndexSelectY^""^G_IndexSelectX) as CMlFrame);
+
+
+		}
+
+		Void QuadSelectorBlink()
+		{
+			declare CMlQuad  Quad_Selector <=> (Page.GetFirstChild("Quad_Selector") as CMlQuad);
+			declare Real ButtonSelectedSinVar  = ML::Sin(Now * 0.01) * 0.5 + 0.5;
+			declare Real ButtonSelectedOpacity = 0.0 + ButtonSelectedSinVar * 1.;
+			Quad_Selector.Opacity = ButtonSelectedOpacity;
+		}
+		
+		Void UpdateQuad_BlackVisibility(Boolean _Visible)
+		{
+			declare CMlQuad Quad_Black <=> (Page.GetFirstChild("Quad_Black") as CMlQuad);
+			Quad_Black.Visible = _Visible;
+		}
+
+		/////////////
+		// INPUT
+		/////////////
+		
+		Void Input_Select_Environment() {
+			Audio.PlaySoundEvent("{{{SoundSelect}}}", {{{Volumes::GetVolumedB("MenuValidate")}}});
+			if({{{IsTrial}}} && G_SubMenuFocusX != 0)
+			{
+				declare Text Enviro = GetEnviroFocus();
+				SendCustomEvent("EditNewTrack", [Enviro, "0", "", "", ""]);
+				return;
+			}
+			declare Text KindOfTracksMenuSelect for This;
+			if(KindOfTracksMenuSelect == "NewTrack")
+			{
+				switch(G_SubMenuFocusY)
+				{
+					case 0: G_EditorLevel = C_EditorRandom;
+					case 1: G_EditorLevel = C_EditorBeginner;
+					case 2: G_EditorLevel = C_EditorNormal;
+					case 3: G_EditorLevel = C_EditorAdvanced;
+				}
+				SwitchParam(False, False);
+			}
+			else
+				SwitchParam(True, True);
+		}
+		
+		Void UpdateHelpersForPlatform(Integer _Platform) {
+			declare Text[] InputIds = [""];
+			declare Text[] AdditionnalInputIds = ["Quad_InputGo"];
+	
+			declare CMlQuad  QuadInputIcon;
+			for (I, 0, 2) {
+				/*
+				for (J, 0, InputIds.count - 1) {
+					declare CMlFrame FrameInput <=> (Page.GetFirstChild("Frame_InputInfo_Main_"^InputIds[J]) as CMlFrame);
+					QuadInputIcon <=> (Page.GetFirstChild("Quad_InputIcon_"^I) as CMlQuad);
+					if (I == _Platform)
+						QuadInputIcon.Show();
+					else
+						QuadInputIcon.Hide();
+				}
+				*/
+				for (J, 0, AdditionnalInputIds.count-1) {
+					QuadInputIcon <=> (Page.GetFirstChild(AdditionnalInputIds[J]^I) as CMlQuad);
+					if (I == _Platform)
+						QuadInputIcon.Show();
+					else
+						QuadInputIcon.Hide();
+				}
+			}
+		}
+		/////////////
+		// MAIN
+		/////////////
+		
+		main() {
+			
+			declare Text[] Net_MyPlaylistsId for Page;
+			Init();
+			declare Integer ActiveButtonPlatform = 2;
+
+			G_ShowTime = -1;
+			G_HideTime = -1;
+			declare Integer Selection;
+			G_ActualSelector="Frame_Selector1";
+
+			declare Integer PrevIndexSelectY;
+			PrevIndexSelectY = G_IndexSelectY;
+
+			declare CMlFrame Frame_ParamsGO       <=> (Page.GetFirstChild("Frame_ParamsGO")                as CMlFrame);
+			declare CMlLabel  Label_SubMenuLegend <=> (Frame_ParamsGO.GetFirstChild("Label_SubMenuLegend") as CMlLabel);
+			QuadButtons.add((Page.GetFirstChild("MouseInput_Launch") as CMlQuad));
+			LabelButtons.add(Label_SubMenuLegend);
+
+
+
+			declare Boolean	Page_SetQuadBlack		for Page;
+			declare Boolean	PrevQuadBlack;
+
+			while(True) {
+				yield;
+				if(! PageIsVisible) continue;
+				LibManialink_AnimLoop();
+				
+				{{{Selector::InsertInLoop("G_ActualSelector", "G_DeclareVarationSelector")}}}
+
+
+				if(PrevQuadBlack != Page_SetQuadBlack)
+				{
+					UpdateQuad_BlackVisibility(Page_SetQuadBlack);
+					PrevQuadBlack = Page_SetQuadBlack;
+				}
+				
+				//QuadSelectorBlink();
+
+
+					if(PrevIndexSelectY != G_IndexSelectY)
+					{
+						PrevIndexSelectY = G_IndexSelectY;
+						UpdateQuadModePosition();
+					}
+
+
+				if(G_MenuSelect == "{{{C_MenuSelect_Param}}}") 
+				{
+					declare CMlFrame CurrentFrame_Instance <=> (Page.GetFirstChild("Frame_Instance"^G_ParamIndexSelectY)    as CMlFrame);
+					declare CMlLabel Label_Contain         <=> (CurrentFrame_Instance.GetFirstChild("Label_Contain")        as CMlLabel);
+					declare Real ButtonSelectedSinVar = ML::Sin(Now * 0.01) * 0.5 + 0.5;
+					Label_Contain.Opacity             = ButtonSelectedSinVar;
+				}
+
+				if(G_HideTime <= Now && G_HideTime != -1)
+				{
+					G_HideTime = -1;
+					if(G_NextPage == "Main")
+					{
+						SendCustomEvent("DetachPage", ["KindOfTracks", "Board"]);
+					}
+					else
+					{
+						SendCustomEvent("DetachPage", ["KindOfTracks"]);
+					}
+				}
+
+
+				if(G_ShowTime <= Now && G_ShowTime != -1)
+				{
+					declare CMlFrame  Frame_All <=> (Page.GetFirstChild("Frame_All") as CMlFrame);
+					Frame_All.Show();
+					G_ShowTime = -1;
+				}
+
+				Selection = GetSelection();
+				if(Selection >= 0) {
+					sleep(100);
+					//SendCustomEvent("GotoPage", ["RoomManager"]);
+					switch(Selection)
+					{
+						case 0: 
+						{
+							declare Text KindOfTracksMenuSelect for This;
+							if (KindOfTracksMenuSelect == "ArcadeMode") {
+								SendCustomEvent("IsMonoscreenActivated", Text[]);
+							} else {
+								if({{{ActualVersion}}} == 4)
+								{
+									PlaySoundEnviro();
+												
+									SendCustomEvent("LaunchRandomGenerator", ["2", "0", "0"]);
+								}
+								else
+								{
+									SwitchSubMenu();
+								}
+							}
+						}
+						case 1: SendCustomEvent("GotoPage", ["MapsOverview"]);
+						case 2: 
+						{
+							if({{{ActualVersion}}} == 4)
+							{
+							}
+							else
+							{
+								SendCustomEvent("GotoPage", ["TrackbuilderWorkshop"]);
+							}
+						}
+					}
+				}
+
+				if (Input.PendingEvents.count != 0) {
+					declare Integer LastInputPlatform;
+					switch (Input.PendingEvents[Input.PendingEvents.count-1].Pad.Type) {
+						case CInputPad::EPadType::Keyboard 		: LastInputPlatform = {{{LibUIButtons::GetPlatform("PC")}}};
+						case CInputPad::EPadType::PlayStation 	: LastInputPlatform = {{{LibUIButtons::GetPlatform("PS4")}}};
+						case CInputPad::EPadType::XBox 			: LastInputPlatform = {{{LibUIButtons::GetPlatform("XB1")}}};
+						default 								: LastInputPlatform = {{{LibUIButtons::GetPlatform("PC")}}};
+					}
+					if (LastInputPlatform != ActiveButtonPlatform)
+					{
+						SendCustomEvent("SetActiveButtonPlaform", ["KindOfTracks", TL::ToText(LastInputPlatform)]);
+					}
+				}
+
+				foreach(Event in PendingEvents) {
+					switch(Event.Type) {
+
+						case CMlEvent::Type::PluginCustomEvent: {
+							switch(Event.PluginCustomEventType) {
+								case "Show" : {
+									EnableMenuNavigation(True,False,Null,1);
+									declare Page = Event.CustomEventData[0];
+									SendCustomEvent("GetModeName", [""]);
+
+									ShowPage(Page);
+									PrevIndexSelectY = G_IndexSelectY;
+									SubMenuFocus();
+									SendCustomEvent("GetActiveButtonPlatform", ["MyTracks"]);
+									{{{_ShowAnim}}}
+								}
+								case "SetActiveButtonPlatform" : {
+									ActiveButtonPlatform = TL::ToInteger(Event.CustomEventData[0]);
+									UpdateHelpersForPlatform(ActiveButtonPlatform);
+								}
+								case "Hide" : {
+									declare Page = Event.CustomEventData[0];
+									{{{_HideAnim}}}
+									HidePage(Page);
+								}
+								case "ModeName" : {
+									SetQuadMode();
+									UpdateQuadModePosition();
+								}
+								case "HideBlackQuad" : {
+									//Quad_Black.Hide();
+								}
+								//case "SendTitleReachable" : {
+									//Quad_Black.Hide();
+									//declare Boolean[Integer] TitleReachable for Layer.LocalPage;
+
+								//}
+								case "IsMonoscreenActivated" : {
+									if (Event.CustomEventData[0] == "True")
+										SendCustomEvent("PopUpMonoscreenForbidden", Text[]);
+									else {
+										if({{{ActualVersion}}} == 4)
+										{
+											PlaySoundEnviro();
+														
+											SendCustomEvent("LaunchRandomGenerator", ["2", "0", "0"]);
+										}
+										else
+										{
+											SwitchSubMenu();
+										}
+									}
+								}
+							}
+						}
+						case CMlEvent::Type::MenuNavigation: {
+							if(G_LockInput + 150 > Now) continue;
+							G_LockInput = Now; // Sécurité pour éviter le double input
+							
+							if(G_MenuSelect == "{{{C_MenuSelect_Enviro}}}")
+							{
+								switch(Event.MenuNavAction) {
+									case CMlEvent::EMenuNavAction::Cancel : {
+										declare Text KindOfTracksMenuSelect for This;
+										if(KindOfTracksMenuSelect == "ArcadeMode")
+										{
+											Audio.PlaySoundEvent("{{{SoundBack2}}}", {{{Volumes::GetVolumedB("MenuPageBack")}}});
+											SwitchSubMenu();
+										}
+										else if(KindOfTracksMenuSelect == "NewTrack")
+										{
+											Audio.PlaySoundEvent("{{{SoundBack}}}", {{{Volumes::GetVolumedB("MenuPageBack")}}});
+											UnlightSubMenuLegendFocus(G_SubMenuFocusY, G_SubMenuFocusX);
+											SendCustomEvent("GotoPrevious", [""]);
+										}
+									}
+									case CMlEvent::EMenuNavAction::AppMenu : {
+										declare Text KindOfTracksMenuSelect for This;
+										if(KindOfTracksMenuSelect == "ArcadeMode")
+										{
+											Audio.PlaySoundEvent("{{{SoundBack2}}}", {{{Volumes::GetVolumedB("MenuPageBack")}}});
+											SwitchSubMenu();
+										}
+										else if(KindOfTracksMenuSelect == "NewTrack")
+										{
+											Audio.PlaySoundEvent("{{{SoundBack}}}", {{{Volumes::GetVolumedB("MenuPageBack")}}});
+											UnlightSubMenuLegendFocus(G_SubMenuFocusY, G_SubMenuFocusX);
+											SendCustomEvent("GotoPrevious", [""]);
+										}
+									}
+									case CMlEvent::EMenuNavAction::Up : {
+										declare Text KindOfTracksMenuSelect for This;
+										if(KindOfTracksMenuSelect == "NewTrack")
+										{
+											if(G_SubMenuFocusY < 3 && !{{{IsTrial}}})
+											{
+												G_SubMenuFocusY +=1;
+												UpdateLightTrackbuilder(True);
+											}
+										}
+										else
+										{
+											if(G_SubMenuFocusY > 0)
+											{
+												Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+												UnlightSubMenuLegendFocus(G_SubMenuFocusY, G_SubMenuFocusX);
+												G_SubMenuFocusY -= 1;
+												G_BlinkDecaleVariation = Now -157;
+												SubMenuFocus();
+											}
+											
+										}
+									}
+									case CMlEvent::EMenuNavAction::Down : {
+										declare Text KindOfTracksMenuSelect for This;
+										if(KindOfTracksMenuSelect == "NewTrack")
+										{
+											if(G_SubMenuFocusY > 0 && !{{{IsTrial}}})
+											{
+												G_SubMenuFocusY -=1;
+												UpdateLightTrackbuilder(True);
+											}
+										}
+										else
+										{
+											if(G_SubMenuFocusY < {{{SM_NumberOfLegendY-1}}})
+											{
+												Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+												UnlightSubMenuLegendFocus(G_SubMenuFocusY, G_SubMenuFocusX);
+												G_BlinkDecaleVariation = Now -157;
+												G_SubMenuFocusY += 1;
+												SubMenuFocus();
+											}
+										}
+									}
+									case CMlEvent::EMenuNavAction::Left : {
+										declare Text KindOfTracksMenuSelect for This;
+										if(G_SubMenuFocusX > 0)
+										{
+											Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+											UnlightSubMenuLegendFocus(G_SubMenuFocusY, G_SubMenuFocusX);
+											G_SubMenuFocusX -= 1;
+											G_BlinkDecaleVariation = Now -157;
+											SubMenuFocus();
+										}
+										if(KindOfTracksMenuSelect == "NewTrack")
+										{
+											//G_SubMenuFocusY = 0;
+											UpdateLightTrackbuilder(False);
+										}
+									}
+									case CMlEvent::EMenuNavAction::Right : {
+										declare Text KindOfTracksMenuSelect for This;
+										if(G_SubMenuFocusX < {{{SM_NumberOfLegendX-1}}})
+										{
+											Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+											UnlightSubMenuLegendFocus(G_SubMenuFocusY, G_SubMenuFocusX);
+											G_BlinkDecaleVariation = Now -157;
+											G_SubMenuFocusX += 1;
+											SubMenuFocus();
+										}
+										if(KindOfTracksMenuSelect == "NewTrack")
+										{
+											//G_SubMenuFocusY = 0;
+											UpdateLightTrackbuilder(False);
+										}
+									}
+									case CMlEvent::EMenuNavAction::Select : Input_Select_Environment();
+									case CMlEvent::EMenuNavAction::Action1 : {
+										//rien
+									}
+									case CMlEvent::EMenuNavAction::Action2 : {
+										//rien
+									}
+								}
+								continue;
+							}
+							else if(G_MenuSelect == "{{{C_MenuSelect_Param}}}") 
+							{
+								switch(Event.MenuNavAction) {
+									case CMlEvent::EMenuNavAction::Up : {
+										if(G_AdvancedParam) continue;
+										if(G_ParamIndexSelectY > 0)
+										{
+											G_ParamIndexSelectY -= 1;
+											Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+											UpdateSelectionParam();
+										}
+									}
+									case CMlEvent::EMenuNavAction::Down : {
+										if(G_AdvancedParam) continue;
+										if(G_ParamIndexSelectY < {{{G_MenuSetting.count - 1}}})
+										{
+											G_ParamIndexSelectY += 1;
+											Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+											UpdateSelectionParam();
+										}
+									}
+									case CMlEvent::EMenuNavAction::Left : {
+										if(G_InfoType[G_ParamIndexSelectY] == "LayerBouton") continue;
+										ModifParam("Left");
+									}
+									case CMlEvent::EMenuNavAction::Right : {
+										if(G_InfoType[G_ParamIndexSelectY] == "LayerBouton") continue;
+										ModifParam("Right");
+									}
+									case CMlEvent::EMenuNavAction::Cancel : {
+										Audio.PlaySoundEvent("{{{SoundBack2}}}", {{{Volumes::GetVolumedB("MenuPageBack")}}});
+										SwitchParam();
+									}
+									case CMlEvent::EMenuNavAction::AppMenu : {
+										Audio.PlaySoundEvent("{{{SoundBack2}}}", {{{Volumes::GetVolumedB("MenuPageBack")}}});
+										SwitchParam();
+									}
+									case CMlEvent::EMenuNavAction::Action1 : {
+										//SendCustomEvent("Hack_JoinFriend", [""]);
+										//SwitchSubMenu(False);
+									}
+									case CMlEvent::EMenuNavAction::Select : {
+										declare Text KindOfTracksMenuSelect for This;
+										if(KindOfTracksMenuSelect == "ArcadeMode")
+										{
+											Audio.PlaySoundEvent("{{{SoundPageForward}}}", {{{Volumes::GetVolumedB("MenuPageForward")}}});
+											declare Integer Enviro =  G_SubMenuFocusX;
+											PlaySoundEnviro();
+											
+											SwitchSubMenu();
+											SwitchParam();
+
+											declare Text[] Params;
+											for(I,0,1)
+											{
+												declare Text MyId   = G_InfoId[I];
+												declare Integer MyIndex = G_IndexSettings[MyId];
+												if(I == 0) Params.add(MyIndex^"");
+												else if(I == 1) Params.add(GetTrackLenght(MyIndex));
+											}
+											Page_SetQuadBlack = True;
+											PrevQuadBlack = Page_SetQuadBlack;
+											UpdateQuad_BlackVisibility(Page_SetQuadBlack);
+											SendCustomEvent("LaunchRandomGenerator", [Enviro^"", Params[0], Params[1]]);
+										} else if(KindOfTracksMenuSelect == "NewTrack") {
+											Page_SetQuadBlack = True;
+											PrevQuadBlack = Page_SetQuadBlack;
+											UpdateQuad_BlackVisibility(Page_SetQuadBlack);
+
+											declare Text Enviro           = GetEnviroFocus();
+											declare Text MyId3            = G_InfoId[0];
+											declare Integer IndexSetting3 = G_IndexSettings[MyId3] - 1;
+											
+											if(IndexSetting3 == -1)
+												IndexSetting3 = ML::Rand(0, 2);
+											if(G_AdvancedParam) {
+												PlaySoundEnviro();
+												SendCustomEvent("EditNewTrack", [Enviro, G_EditorLevel^"", "", "",IndexSetting3^""]);
+											} else {
+												declare Text    MyId1         = G_InfoId[0];
+												declare Text    MyId2         = G_InfoId[1];
+												declare Integer IndexSetting1 = G_IndexSettings[MyId1] - 1;
+												declare Integer IndexSetting2 = G_IndexSettings[MyId2] - 1;
+
+												//SetRandom
+												if(IndexSetting1 == -1) 
+													IndexSetting1 = ML::Rand(0, 3); 
+												if(IndexSetting2 == -1) 
+													IndexSetting2 = ML::Rand(0, 3); 
+
+												PlaySoundEnviro();
+												declare Param2 = IndexSetting1^"";
+												if(G_EditorLevel == 3) {
+													declare Text MyId   = G_InfoId[1];
+													declare Integer MyIndex = G_IndexSettings[MyId];
+													Param2 = GetTrackLenght(MyIndex);
+												}
+												SendCustomEvent("EditNewTrack", [Enviro, G_EditorLevel^"", Param2, IndexSetting2^"", IndexSetting3^""]);
+											} 
+											SwitchParam();
+											if(G_SubMenuFocusX != 0) 
+												UnlightSubMenuLegendFocus(G_SubMenuFocusY, G_SubMenuFocusX); 
+										}
+										SetSubMenu();
+										UpdateSelection();
+									}
+								}
+								continue;
+							}
+							else
+							{
+								switch(Event.MenuNavAction) {
+									case CMlEvent::EMenuNavAction::Cancel : {
+										Audio.PlaySoundEvent("{{{SoundBack}}}", {{{Volumes::GetVolumedB("MenuPageBack")}}});
+										for(I, 0, {{{NumberOfSubMenu-1}}})
+										{
+											declare CMlFrame Frame_InstanceSubMenu <=> (Page.GetFirstChild("Frame_InstanceSubMenu0"^I) as CMlFrame);
+											declare CMlQuad Quad_Mode <=> (Frame_InstanceSubMenu.GetFirstChild("Quad_Mode") as CMlQuad);
+											//Quad_Mode.RelativePosition.X = {{{SM_PosX+195.}}};
+											declare Vec3 NextPosition = <{{{SM_PosX+195.}}}, Quad_Mode.RelativePosition.Y, Quad_Mode.RelativePosition.Z>;
+											LibManialink_SetTargetPosition(Quad_Mode, NextPosition);
+											LibManialink_PresetAnim(Quad_Mode, 500, "EaseOutBack");
+										}
+										SendCustomEvent("GotoPrevious", [""]);
+									}
+									case CMlEvent::EMenuNavAction::AppMenu : {
+										Audio.PlaySoundEvent("{{{SoundBack}}}", {{{Volumes::GetVolumedB("MenuPageBack")}}});
+										for(I, 0, {{{NumberOfSubMenu-1}}})
+										{
+											declare CMlFrame Frame_InstanceSubMenu <=> (Page.GetFirstChild("Frame_InstanceSubMenu0"^I) as CMlFrame);
+											declare CMlQuad Quad_Mode <=> (Frame_InstanceSubMenu.GetFirstChild("Quad_Mode") as CMlQuad);
+											//Quad_Mode.RelativePosition.X = {{{SM_PosX+195.}}};
+											declare Vec3 NextPosition = <{{{SM_PosX+195.}}}, Quad_Mode.RelativePosition.Y, Quad_Mode.RelativePosition.Z>;
+											LibManialink_SetTargetPosition(Quad_Mode, NextPosition);
+											LibManialink_PresetAnim(Quad_Mode, 500, "EaseOutBack");
+										}
+										SendCustomEvent("GotoPrevious", [""]);
+									}
+								}
+							}
+							{{{SelectArray2D::InjectInMenuNavigation()}}}
+						}
+						case CMlEvent::Type::MouseClick: {
+							declare Text[] InputId = TL::Split("_", Event.ControlId);
+							if (InputId.count < 2 || InputId[0] != "MouseInput")
+							{
+								continue;
+							}
+							if (G_MenuSelect == "{{{C_MenuSelect_Enviro}}}") {
+								switch (InputId[1]) {
+									case "Environment" : {
+										declare Integer EnvironmentIndex = TL::ToInteger(InputId[2]);
+										if (EnvironmentIndex >= 0 && EnvironmentIndex <= {{{SM_NumberOfLegendX-1}}} && EnvironmentIndex != G_SubMenuFocusX)
+										{
+											declare Text KindOfTracksMenuSelect for This;
+											UnlightSubMenuLegendFocus(G_SubMenuFocusY, G_SubMenuFocusX);
+											G_SubMenuFocusX = EnvironmentIndex;
+											G_BlinkDecaleVariation = Now -157;
+											SubMenuFocus();
+											if(KindOfTracksMenuSelect == "NewTrack")
+												UpdateLightTrackbuilder(False);
+										}
+										Input_Select_Environment();
+									}
+									case "NewTrack" : {
+										if (!{{{IsTrial}}}) {
+											declare Integer Index = 4 - TL::ToInteger(InputId[2]);
+											if (Index >= 0 && Index <= 3 && Index != G_SubMenuFocusY) {
+												G_SubMenuFocusY = Index;
+												UpdateLightTrackbuilder(True);
+											}
+										}
+										Input_Select_Environment();
+									}
+								}
+							} else if(G_MenuSelect == "{{{C_MenuSelect_Param}}}") {
+								if (InputId[1] == "Environment") {
+									if(InputId[2] != G_SubMenuFocusX^"")
+									{
+										Audio.PlaySoundEvent("{{{SoundBack2}}}", {{{Volumes::GetVolumedB("MenuPageBack")}}});
+										SwitchParam();
+										continue;
+									}
+								}
+								if (InputId[1] == "Launch") {
+									declare Text KindOfTracksMenuSelect for This;
+									if(KindOfTracksMenuSelect == "ArcadeMode")
+									{
+										Audio.PlaySoundEvent("{{{SoundPageForward}}}", {{{Volumes::GetVolumedB("MenuPageForward")}}});
+										declare Integer Enviro =  G_SubMenuFocusX;
+										PlaySoundEnviro();
+										
+										SwitchSubMenu();
+										SwitchParam();
+
+										declare Text[] Params;
+										for(I,0,1)
+										{
+											declare Text MyId   = G_InfoId[I];
+											declare Integer MyIndex = G_IndexSettings[MyId];
+											if(I == 0) Params.add(MyIndex^"");
+											else if(I == 1) Params.add(GetTrackLenght(MyIndex));
+										}
+										Page_SetQuadBlack = True;
+										PrevQuadBlack = Page_SetQuadBlack;
+										UpdateQuad_BlackVisibility(Page_SetQuadBlack);
+										SendCustomEvent("LaunchRandomGenerator", [Enviro^"", Params[0], Params[1]]);
+									} else if(KindOfTracksMenuSelect == "NewTrack") {
+										Page_SetQuadBlack = True;
+										PrevQuadBlack = Page_SetQuadBlack;
+										UpdateQuad_BlackVisibility(Page_SetQuadBlack);
+
+										declare Text Enviro           = GetEnviroFocus();
+										declare Text MyId3            = G_InfoId[0];
+										declare Integer IndexSetting3 = G_IndexSettings[MyId3] - 1;
+										
+										if(IndexSetting3 == -1)
+											IndexSetting3 = ML::Rand(0, 2);
+										if(G_AdvancedParam) {
+											PlaySoundEnviro();
+											SendCustomEvent("EditNewTrack", [Enviro, G_EditorLevel^"", "", "",IndexSetting3^""]);
+										} else {
+											declare Text    MyId1         = G_InfoId[0];
+											declare Text    MyId2         = G_InfoId[1];
+											declare Integer IndexSetting1 = G_IndexSettings[MyId1] - 1;
+											declare Integer IndexSetting2 = G_IndexSettings[MyId2] - 1;
+
+											//SetRandom
+											if(IndexSetting1 == -1) 
+												IndexSetting1 = ML::Rand(0, 3); 
+											if(IndexSetting2 == -1) 
+												IndexSetting2 = ML::Rand(0, 3); 
+
+											PlaySoundEnviro();
+											declare Param2 = IndexSetting1^"";
+											if(G_EditorLevel == 3) {
+												declare Text MyId   = G_InfoId[1];
+												declare Integer MyIndex = G_IndexSettings[MyId];
+												Param2 = GetTrackLenght(MyIndex);
+											}
+											SendCustomEvent("EditNewTrack", [Enviro, G_EditorLevel^"", Param2, IndexSetting2^"", IndexSetting3^""]);
+										} 
+										SwitchParam();
+										if(G_SubMenuFocusX != 0) 
+											UnlightSubMenuLegendFocus(G_SubMenuFocusY, G_SubMenuFocusX); 
+									}
+									SetSubMenu();
+									UpdateSelection();
+									continue;
+								}
+								if (InputId[1] != "Switch" && InputId[1] != "SwitchNext" && InputId[1] != "SwitchPrev")
+									continue;
+								declare SwitchIndex = TL::ToInteger(InputId[2]);
+								if(!G_AdvancedParam && SwitchIndex >= 0 && SwitchIndex <= {{{G_MenuSetting.count - 1}}} && SwitchIndex != G_ParamIndexSelectY) {
+									G_ParamIndexSelectY = SwitchIndex;
+									Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+									UpdateSelectionParam();
+								}
+								if (InputId[1] == "SwitchPrev")
+									ModifParam("Left");
+								else if (InputId[1] == "SwitchNext")
+									ModifParam("Right");
+							} else {
+								switch (InputId[1]) {
+									case "SubMenu" : {
+										declare Integer SubMenuIndex = TL::ToInteger(InputId[2]);
+										if(!G_IsActivate.existskey(SubMenuIndex)) return;
+										if(SubMenuIndex >= 0 && SubMenuIndex <= {{{NumberOfSubMenu - 1}}} && G_IsActivate[SubMenuIndex])
+										{
+											G_IndexSelectY = SubMenuIndex;
+											UpdateSelection();
+										}
+										Audio.PlaySoundEvent("{{{SoundPageForward}}}", {{{Volumes::GetVolumedB("MenuPageForward")}}});
+										G_Selection = G_IndexSelectY;
+									}
+								}
+							}
+						}
+						case CMlEvent::Type::MouseOver: {
+							UpdateLabelLight(Event.Control);
+							declare Text[] InputId = TL::Split("_", Event.ControlId);
+							if (InputId.count < 2 || InputId[0] != "MouseInput")
+								continue;
+							if (G_MenuSelect == "{{{C_MenuSelect_Enviro}}}") {
+								switch (InputId[1]) {
+									case "Environment" : {
+										declare Integer EnvironmentIndex = TL::ToInteger(InputId[2]);
+										if (EnvironmentIndex < 0 || EnvironmentIndex > {{{SM_NumberOfLegendX-1}}} || EnvironmentIndex == G_SubMenuFocusX)
+											continue;
+										
+										declare Text KindOfTracksMenuSelect for This;
+										Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+										UnlightSubMenuLegendFocus(G_SubMenuFocusY, G_SubMenuFocusX);
+										G_SubMenuFocusX = EnvironmentIndex;
+										G_BlinkDecaleVariation = Now -157;
+										SubMenuFocus();
+										if(KindOfTracksMenuSelect == "NewTrack")
+											UpdateLightTrackbuilder(False);
+									}
+									case "NewTrack" : {
+										if ({{{IsTrial}}})
+											continue;
+										declare Integer Index = 4 - TL::ToInteger(InputId[2]);
+										if (Index < 0 || Index > 3 || Index == G_SubMenuFocusY)
+											continue;
+										G_SubMenuFocusY = Index;
+										UpdateLightTrackbuilder(True);
+									}
+								}
+							} else if(G_MenuSelect == "{{{C_MenuSelect_Param}}}") {
+								if (InputId[1] != "Switch" && InputId[1] != "SwitchNext" && InputId[1] != "SwitchPrev")
+									continue;
+								if(G_AdvancedParam) 
+									continue;
+								declare SwitchIndex = TL::ToInteger(InputId[2]);
+								if (SwitchIndex >= 0 && SwitchIndex <= {{{G_MenuSetting.count - 1}}} && SwitchIndex != G_ParamIndexSelectY) {
+									G_ParamIndexSelectY = SwitchIndex;
+									Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+									UpdateSelectionParam();
+								}
+							} else {
+								switch (InputId[1]) {
+									case "SubMenu" : {
+										declare Integer SubMenuIndex = TL::ToInteger(InputId[2]);
+										if(!G_IsActivate.existskey(SubMenuIndex)) return;
+										if(SubMenuIndex >= 0 && SubMenuIndex <= {{{NumberOfSubMenu - 1}}} && G_IsActivate[SubMenuIndex])
+										{
+											Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+											G_IndexSelectY = SubMenuIndex;
+											UpdateSelection();
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}	
+		}
+	--></script>
+	""";
+
+
+	return MLText;
+}

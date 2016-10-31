@@ -1,0 +1,405 @@
+
+// file://Media/Manialinks/Nadeo/TMConsole/MainMenuArnaud.Script.txt
+#Include "Libs/Openplanet/Manialink2.Script.txt"					                    as Manialink
+#Include "Libs/Openplanet/TMConsole/PanelParameter.Script.txt"	                    as PanelParameter
+#Include "Libs/Openplanet/TMConsole/FontManager.Script.txt"							as Font
+#Include "Libs/Openplanet/TMConsole/Menu/2DSelectArray.Script.txt"					as SelectArray2D
+#Include "Libs/Openplanet/TMConsole/Colors.Script.txt"								as Colors
+
+#Const C_ImgBase 	"file://Media/Manialinks/Nadeo/TMConsole/Images/"
+#Const C_ImgBase2	"file://Media/Images/TMConsole/Ingame/"
+#Const C_RATIO               12.962
+#Const C_SizePanelX          6.
+#Const C_SizePanelY          5.
+ 
+Text Build(Text _ShowAnim, Text _HideAnim) {
+
+	
+	declare Integer Count_InstancesY         = 1;
+	declare Integer Count_InstancesX         = 1;
+	
+	declare Text 	IMGSlotMediumBg          = C_ImgBase2^"slot-medium-bg.dds";
+	declare Text 	IMGSlotMediumFg          = C_ImgBase2^"slot-medium-fg.dds";
+	declare Text 	IMGSlotBigBg             = C_ImgBase2^"slot-big-bg.dds";
+	declare Text 	IMGSlotBigFg             = C_ImgBase2^"slot-big-fg.dds";
+	declare Text 	IMGMenuBg                = C_ImgBase2^"menu-bg-1.dds";
+	declare Text 	IMGIcon                  = "file://Media/_ERR_.dds";	//C_ImgBase^"board-3x3-selected.png";
+	declare Text 	IMGBackground            = C_ImgBase^"PlaceHolder/Main_Menu.jpg";
+
+	declare Integer NumberOfSubMenu          = 3;
+	declare Real	SM_SizeX                 = 100.;
+	declare Real	SM_SizeY                 = SM_SizeX / C_RATIO;
+	declare Real	Hack_ReglageX            = 5.;
+	declare Real	Hack_ReglageY            = 10.;
+	declare Real	SM_PosX                  = 80. + Hack_ReglageX;
+	declare Real	SM_PosY                  = 50. + Hack_ReglageY;
+	declare Real	SM_Separator             = SM_SizeY * 0.095;
+	declare Real	SM_PosYElementAlignTop   = SM_PosY - SM_Separator;
+	declare Real	SM_SizeYElement          = SM_SizeY - SM_Separator;
+	declare Integer	SM_NumberOfLegend        = 3;
+	declare Real	PosnXLabel               = 33.5;
+	declare Real	PosnYLabel               = 48.5;
+	declare Real	PosYFirstQuad            = PanelParameter::GetPosPanelY(C_SizePanelY)+8.;
+	declare Real	SizeX_Total              = 0.*Count_InstancesX*1.;
+	declare Real	SizeY_Total              = 180.;
+	declare Real	MarginY_Button           = 0.0;
+	declare Real	MarginX_Button           = 57.70;
+	declare Real	SizeXQuad                = (SizeX_Total - MarginX_Button) / Count_InstancesX + (MarginX_Button/Count_InstancesX);
+	declare Real	SizeYQuad                = (SizeY_Total - MarginY_Button) / Count_InstancesY;
+
+	declare Real    SlotFirstPosX          = -10.;
+	declare Real    SlotFirstPosY          = 35.;
+
+	SelectArray2D::Init(SM_SizeX, SM_SizeYElement, Count_InstancesX, NumberOfSubMenu);
+	SelectArray2D::SetPosFirstQuad(85., 48.);
+	SelectArray2D::SetQuadMarge(0., SM_Separator);
+	
+	SelectArray2D::AddLabel("RoomName",  	<-95., 0.>, 25);
+	SelectArray2D::AddLabel("Mode", 		<-50., 0.>, 35);
+	SelectArray2D::AddLabel("Style",  		<-5., 0.>, 25);
+	SelectArray2D::AddLabel("Enviro",    	<25., 0.>,   20);
+	SelectArray2D::AddQuad("Players", 		<73., 0.0>, <8., 8.>);
+	
+	declare Text MLText = """
+	{{{SelectArray2D::InjectInFrameModel()}}}
+
+	/* -SubMenu-
+		Le SubMenu est fait en 3 parties
+		Frame_SubMenu       - Les boutons de sélection
+		Frame_SubMenuLegend - Les 3 lignes de legendes
+		Frame_SubMenuEnd    - Les 2 dernières lignes du menu
+	*/
+
+	<framemodel id="Frame_Button">
+		<label halign="left" valign="center"  textfont="{{{Font::GetFontName("Title")}}}" posn="{{{SM_PosX - SizeXQuad - SM_SizeX/2. + 3.2}}}  {{{SM_PosY + SM_SizeY + 0.5}}} 6" textcolor="fff"
+		 id="Label_Title" textsize="12." text="" sizen="{{{SM_SizeX-2.}}}"  opacity="0.85"/>
+		<quad halign="center" valign="bottom" sizen="{{{SM_SizeX}}} {{{SM_SizeY*2.}}}"
+		 image="{{{IMGSlotBigFg}}}"                  posn="{{{SM_PosX - SizeXQuad}}} {{{SM_PosY}}} 7" opacity="1."/>
+		<quad  halign="center" valign="bottom" sizen="{{{SM_SizeX}}} {{{SM_SizeY*2.}}}"
+		 image="{{{IMGSlotBigBg}}}"                  posn="{{{SM_PosX - SizeXQuad}}} {{{SM_PosY}}} 5" opacity="1."/>
+		
+		<quad halign="center" valign="top" sizen="{{{SM_SizeX}}} {{{SM_SizeY}}}" image="{{{IMGMenuBg}}}" opacity="1."
+		 posn="{{{SM_PosX - SizeXQuad}}} {{{SM_PosY}}} 1" />
+
+		<quad halign="center" valign="center" sizen="{{{SizeXQuad}}} {{{SizeYQuad}}}" posn="{{{-SizeXQuad-20.}}} {{{0}}} 30"
+		 id="Quad_Icon" opacity="0." image="{{{IMGIcon}}}" scale="1.0" keepratio="Fit"/>
+	</framemodel>
+
+	<framemodel id="Frame_SubMenu">
+		<quad halign="center" valign="top" sizen="{{{SM_SizeX}}} {{{SM_SizeYElement}}}" image="{{{IMGSlotMediumFg}}}" opacity="1.0"
+		 posn="{{{SM_PosX}}} {{{SM_PosYElementAlignTop}}} 4" />
+
+		<label halign="left" valign="top" style="TextButtonNav" posn="{{{PosnXLabel+Hack_ReglageX}}} {{{PosnYLabel+Hack_ReglageY}}} 3" opacity="0.85"
+		 id="Label_SubMenu" textsize="4." sizen="{{{SM_SizeX-2}}}" text="" textcolor="fff" textfont="{{{Font::GetFontName("Main")}}}"
+		 />
+		<quad halign="center" valign="top" sizen="{{{SM_SizeX}}} {{{SM_SizeYElement}}}" image="{{{IMGSlotMediumBg}}}" opacity="1.0"
+		 posn="{{{SM_PosX}}} {{{SM_PosYElementAlignTop}}} 2" />
+
+		<quad halign="center" valign="top" sizen="{{{SM_SizeX}}} {{{SM_SizeY}}}" image="{{{IMGMenuBg}}}" opacity="1."
+		 posn="{{{SM_PosX}}} {{{SM_PosY}}} 1" />
+	</framemodel>
+	
+	<framemodel id="Frame_SubMenuLegend">
+		<quad halign="center" valign="top" sizen="{{{SM_SizeX}}} {{{SM_SizeYElement}}}"  bgcolor="{{{Colors::GetColorHexa("Black")}}}" opacity="1."
+		 posn="{{{SM_PosX}}} {{{SM_PosYElementAlignTop}}} 2" />
+		<quad halign="center" valign="top" sizen="{{{SM_SizeX}}} {{{SM_SizeY}}}" image="{{{IMGMenuBg}}}" opacity="1."
+		 posn="{{{SM_PosX}}} {{{SM_PosY}}} 1" />
+	</framemodel>
+	
+	<framemodel id="Frame_SubMenuEnd">
+		<quad halign="center" valign="top" sizen="{{{SM_SizeX}}} {{{SM_SizeYElement}}}"  bgcolor="000" opacity="0."
+		 posn="{{{SM_PosX}}} {{{SM_PosYElementAlignTop}}} 2" />
+		<quad halign="center" valign="top" sizen="{{{SM_SizeX}}} {{{SM_SizeY}}}" image="{{{IMGMenuBg}}}" opacity="1."
+		 posn="{{{SM_PosX}}} {{{SM_PosY}}} 1" />
+		<quad halign="center" valign="top" sizen="{{{SM_SizeX}}} {{{SM_SizeY}}}" image="{{{IMGMenuBg}}}" opacity="0."
+		 posn="{{{SM_PosX}}} {{{SM_PosY - SM_SizeY}}} 1" />
+	</framemodel>
+	
+	//898  - 900
+	//1554 - 1556
+	<frame id="Frame_All" posn="0 0 0" hidden="0">
+		<quad id="Quad_BackGround" posn="0 0 -5" halign="center" valign="center" sizen="320 180" image="{{{IMGBackground}}}" hidden="0" />
+		
+		""";
+		//declare Real PosnX = PosXFirstQuad + IndexX*SizeXQuad + IndexX*MarginX_Button*1. - MarginX_Button;
+		declare Real PosnX = 0.;
+		declare Real PosnY = 0.;
+		
+
+		MLText^="""
+		<frame id="Frame_Menu" posn="0 0 -2" >
+			<frameinstance modelid="Frame_Button" posn="{{{PosnX}}} {{{PosnY}}} 5." id="Frame_Instance" />
+		""";
+		for(K, 0, NumberOfSubMenu-1)
+		{
+			declare Real FramePosnX = PosnX - SizeXQuad;
+			declare Real FramePosnY = PosnY - SM_SizeY + K * - SM_SizeY;
+
+			MLText^="""
+			<frameinstance modelid="Frame_SubMenu" posn="{{{FramePosnX}}} {{{FramePosnY}}} 5." id="Frame_InstanceSubMenu{{{0}}}{{{K}}}" hidden="0"/>
+			""";
+		}
+
+		declare Real LabelLegendPosnX = PosnX + PosnXLabel - SizeXQuad + 5.;
+		declare Real LabelLegendPosnY = PosnY + PosnYLabel + 2.;
+
+		//declare Real LabelLegendPosnX = PosnX + PosnXLabel - SizeXQuad;
+		//declare Real LabelLegendPosnY = PosnY + PosnYLabel - SM_SizeY;
+		//{{{PosnXLabel+Hack_ReglageX}}} {{{PosnYLabel-0.5 + Hack_ReglageY}}}
+		MLText^="""
+			
+
+			//Frame_SubMenuEnd - Contient le label des 3 lignes de legend + 1 ligne de ronds + 1 ligne d'info sur les inputs dispos
+			<frame id="Frame_SubMenuEnd0">
+				<label halign="left" valign="top" id="Label_SubMenuLegend" posn="{{{LabelLegendPosnX}}} {{{LabelLegendPosnY}}} 10" opacity="0.8" textcolor="fff200"
+				textsize="3." sizen="{{{SM_SizeX-8}}}" textfont="{{{Font::GetFontName("MainSmall2")}}}" linespacing="1.55" autonewline="1" maxline="3"/>
+			
+				""";
+		
+		for(K, 0, SM_NumberOfLegend - 1)
+		{
+			declare Real FramePosnX = PosnX - SizeXQuad;
+			declare Real FramePosnY = PosnY - SM_SizeY + K * - SM_SizeY;
+
+			MLText^="""
+
+				<frameinstance modelid="Frame_SubMenuLegend" posn="{{{FramePosnX}}} {{{FramePosnY}}} 6." id="Frame_SubMenuLegend{{{K}}}" />
+			""";
+		}
+
+		declare Real FramePosnX = PosnX - SizeXQuad;
+		declare Real FramePosnY = PosnY - SM_SizeY + SM_NumberOfLegend * - SM_SizeY;
+		MLText^="""
+				<frameinstance modelid="Frame_SubMenuEnd" posn="{{{FramePosnX}}} {{{FramePosnY}}} 4." id="Frame_SubMenuEnd" />
+			</frame>
+
+		""";
+
+		MLText^="""
+		</frame>
+
+
+
+		<frame id="Frame_Info" posn="{{{SlotFirstPosX}}} {{{SlotFirstPosY+10}}} 4" hidden="1">
+			<label id="Label_RoomName"  	halign="left" valign="center" bgcolor="fff" text="Room Name"     	posn="-95. 0 0" opacity="1.0" sizen="20"                textfont="{{{Font::GetFontName("Main")}}}"/>
+			<label id="Label_Mode"  		halign="left" valign="center" bgcolor="fff" text="Mode"          	posn="-50. 0 0" opacity="1.0" sizen="20"                textfont="{{{Font::GetFontName("Main")}}}"/>
+			<label id="Label_Enviro"    	halign="left" valign="center" bgcolor="fff" text="Enviro"        	posn="-5.   0 0" opacity="1.0" sizen="20"              	textfont="{{{Font::GetFontName("Main")}}}"/>
+			<label id="Label_Style"    		halign="left" valign="center" bgcolor="fff" text="Style"         	posn="25.   0 0" opacity="1.0" sizen="20"               textfont="{{{Font::GetFontName("Main")}}}"/>
+			<label id="Label_Players"   	halign="left" valign="center" bgcolor="fff" text="Players"      	posn="73 0 0" opacity="1.0" sizen="20"                 	textfont="{{{Font::GetFontName("Main")}}}"/>
+		</frame>
+		
+		{{{SelectArray2D::InjectInManialink()}}}
+	""";
+	
+	MLText^="""
+	</frame>
+
+	<script><!--
+		#Include "TextLib" as TL
+		#Include "MathLib" as ML
+		
+		#Const C_TimeTransitionPage2 {{{PanelParameter::GetTimeTransitionPage2()}}}
+		#Const C_TimeStartClip2      {{{PanelParameter::GetTimeStartClip2()}}}
+		#Const C_TimeAnimClip2       {{{PanelParameter::GetTimeAnimClip2()}}}
+
+		{{{Manialink::GetIncludes()}}}
+		{{{Manialink::Load()}}}
+		
+		declare Integer						G_LockInput;
+		declare Integer 					G_HideTime;
+		declare Text[Integer][Integer]		G_TextSubMenu;
+
+		{{{SelectArray2D::InjectInGlobalDeclaration()}}}
+		{{{SelectArray2D::InjectInFunction()}}}
+		
+		Void Init() {
+			{{{SelectArray2D::InjectInInit()}}}
+
+
+
+			for(I, 0, {{{Count_InstancesY-1}}})
+			{
+				declare CMlFrame[][Integer]	Frames_Instance;
+
+
+				for(J,0,{{{Count_InstancesX-1}}})
+				{
+					G_TextSubMenu[J]       = Text[Integer];
+					//G_TextSubMenuLegend[J] = Text[Integer];
+				}
+
+				declare Text[Integer] MenuTitle;
+				MenuTitle[0]             = _("My Rooms");
+
+				G_TextSubMenu[0][0]      = "Room 1";
+				G_TextSubMenu[0][1]      = "Room 2";
+				G_TextSubMenu[0][2]      = "Room 3";
+
+
+				Frames_Instance[I]	= CMlFrame[];
+				for(J,0,{{{Count_InstancesX-1}}})
+				{
+					Frames_Instance[I]	.add( (Page.MainFrame.GetFirstChild("Frame_Instance")	as CMlFrame) );
+					declare CMlFrame Frame_SubMenuEnd <=> (Page.GetFirstChild("Frame_SubMenuEnd"^J) as CMlFrame);
+					
+					declare CMlLabel Label_Title          <=> (Frames_Instance[I][J].GetFirstChild("Label_Title") as CMlLabel);
+					if(!MenuTitle.existskey(J)) continue;
+					Label_Title.Value = TL::ToUpperCase(MenuTitle[J]);
+					declare Integer NumberOfSubMenu = G_TextSubMenu[J].count;
+
+
+					for(K, 0, NumberOfSubMenu-1)
+					{
+						ActivateLine(K, True);
+
+						declare CMlFrame Frames_InstanceNext <=> (Page.GetFirstChild("Frame_InstanceSubMenu"^J^""^K) as CMlFrame);
+						declare CMlLabel Label_Next          <=> (Frames_InstanceNext.GetFirstChild("Label_SubMenu") as CMlLabel);
+						Frames_InstanceNext.Show();
+						if(G_TextSubMenu[J].existskey(K))
+						{
+							Label_Next.Show();
+							Label_Next.Value = G_TextSubMenu[J][K];
+						}
+						else
+						{
+							Label_Next.Hide();
+						}
+					}
+					declare Real FramePosnY = {{{PosYFirstQuad}}} + NumberOfSubMenu * - {{{SM_SizeY}}} + {{{SM_Separator}}};
+					Frame_SubMenuEnd.RelativePosition.Y = FramePosnY;
+				}
+			}
+
+			
+		}
+
+		Void HidePage(Text _NextPage) {
+			if(_NextPage == "Main") {
+				G_HideTime  = Now + C_TimeTransitionPage2;
+				G_LockInput = Now + C_TimeTransitionPage2;
+			} else {
+				SendCustomEvent("DetachPage", ["MyRooms"]);
+			}
+		}
+
+		Void ShowPage(Text _PreviousPage) {
+			Init();
+		}
+		
+
+		Void UnlightSubMenuSelection(Integer _PrevIndexSelectX, Integer _PrevIndexLabelSelectY)
+		{
+			declare CMlFrame Frames_InstancePrev <=> (Page.GetFirstChild("Frame_InstanceSubMenu"^_PrevIndexSelectX^""^_PrevIndexLabelSelectY) as CMlFrame);
+			declare CMlLabel Label_Prev          <=> (Frames_InstancePrev.GetFirstChild("Label_SubMenu") as CMlLabel);
+			Label_Prev.TextColor = <1., 1., 1.>;
+		}
+
+		Void UpdateSubMenuSelection(Integer _NextIndexLabelSelectY, Integer _PrevIndexLabelSelectY)
+		{
+			
+			UnlightSubMenuSelection(G_IndexSelectX, _PrevIndexLabelSelectY);
+
+			
+			declare CMlFrame Frame_Instance <=> (Page.GetFirstChild("Frame_Instance"^G_IndexSelectY^""^G_IndexSelectX) as CMlFrame);
+			declare CMlQuad  Quad_Selector <=> (Frame_Instance.GetFirstChild("Quad_Selector") as CMlQuad);
+			Quad_Selector.RelativePosition.Y = {{{SM_PosYElementAlignTop}}} - {{{SM_SizeY}}}*(_NextIndexLabelSelectY+1);
+
+			//if(!G_TextSubMenuLegend.existskey(G_IndexSelectX)) return;
+			//if(!G_TextSubMenuLegend[G_IndexSelectX].existskey(_NextIndexLabelSelectY)) return;
+			//Label_SubMenuLegend.Value = TL::ToUpperCase(G_TextSubMenuLegend[G_IndexSelectX][_NextIndexLabelSelectY]);
+
+		}
+
+		Void QuadSelectorBlink()
+		{
+			declare CMlQuad  Quad_Selector <=> (Page.GetFirstChild("Quad_Selector") as CMlQuad);
+			declare Real ButtonSelectedSinVar  = ML::Sin(Now * 0.01) * 0.5 + 0.5;
+			declare Real ButtonSelectedOpacity = 0.0 + ButtonSelectedSinVar * 1.;
+			Quad_Selector.Opacity = ButtonSelectedOpacity;
+		}
+
+		
+
+		main() {
+			
+			declare Text[] Net_MyPlaylistsId for Page;
+			Init();
+			//HACK - A enlever
+			EnableMenuNavigation(True,False,Null,1);
+			//EnableMenuNavigation(True,True,Null,1);
+			//HACKEND
+			
+			G_HideTime = -1;
+			declare Integer Selection;
+			
+			while(True) {
+				yield;
+				if(! PageIsVisible) continue;
+				LibManialink_AnimLoop();
+				
+				QuadSelectorBlink();
+
+				if(G_HideTime <= Now && G_HideTime != -1)
+				{
+					G_HideTime = -1;
+					SendCustomEvent("DetachPage", ["MyRooms"]);
+				}
+
+				Selection = GetSelection();
+				if(Selection >= 0) {
+					if(Net_MyPlaylistsId.existskey(Selection))
+					{
+						SendCustomEvent("SetEditedPlaylist", [ Net_MyPlaylistsId[Selection] ]);
+					}
+					else
+					{
+						SendCustomEvent("CreatePlaylist", [""]);
+					}
+					sleep(100);
+					SendCustomEvent("GotoPage", ["RoomManager"]);
+				}
+
+				foreach(Event in PendingEvents) {
+					switch(Event.Type) {
+
+						case CMlEvent::Type::PluginCustomEvent: {
+							log("[1] Event.PluginCustomEventType: " ^ Event.PluginCustomEventType);
+							declare Page = Event.CustomEventData[0];
+							switch(Event.PluginCustomEventType) {
+								case "Show" : {
+									SendCustomEvent("GetMyPlaylists", [""]);
+									ShowPage(Page);
+									{{{_ShowAnim}}}
+								}
+								case "Hide" : {
+									{{{_HideAnim}}}
+									HidePage(Page);
+								}
+								case "MyPlaylistsSent" : {
+									log("[1] Net_MyPlaylistsId: " ^ Net_MyPlaylistsId);
+								}
+							}
+						}
+						case CMlEvent::Type::MenuNavigation: {
+							if(G_LockInput + 50 > Now) continue;
+							G_LockInput = Now; // Sécurité pour éviter le double input
+							switch(Event.MenuNavAction) {
+								case CMlEvent::EMenuNavAction::Cancel : {
+									SendCustomEvent("GotoPrevious", [""]);
+								}
+								case CMlEvent::EMenuNavAction::AppMenu : {
+									SendCustomEvent("GotoPrevious", [""]);
+								}
+							}
+							{{{SelectArray2D::InjectInMenuNavigation()}}}
+						}
+					}
+				}
+			}	
+		}
+	--></script>
+	""";
+
+
+	return MLText;
+}

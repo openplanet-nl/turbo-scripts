@@ -1,0 +1,789 @@
+/** 
+ * Pop-up UI
+ */
+
+#Const Version		"2016-03-14"
+#Const ScriptName	"PopUp.Script.txt"
+
+#Include "TextLib" as TL
+#Include "Libs/Openplanet/Buttons.Script.txt" as Buttons
+#Include "Libs/Openplanet/MLEffects.Script.txt" as MLE
+#Include "Libs/Openplanet/UIPadButtons.Script.txt" as Buttons2
+#Include "Libs/Openplanet/Manialink3.Script.txt" as Manialink
+#Include "Libs/Openplanet/TMConsole/MapEditor/Layers.Script.txt" as Layers
+#Include "Libs/Openplanet/TMConsole/MapEditor/UI/Colors.Script.txt" as Colors
+#Include "Libs/Openplanet/TMConsole/MapEditor/UI/Stylesheet.Script.txt" as Styles
+
+// ---------------------------------- //
+// Constants
+// ---------------------------------- //
+#Const C_Mode_Null		0	///< No mode
+#Const C_Mode_Confirm	1	///< Confirm mode
+#Const C_Mode_Alert		2	///< Alert mode
+#Const C_Mode_PopUp		3	///< Pop up mode
+#Const C_Mode_Loading	4	///< Loading mode
+
+#Const C_BgAnim							False	///< Anim button background on mouse over/out
+#Const C_DefaultVisibility	False	///< Default visibility
+/// Events
+#Const C_Event_Confirm	"LibPopUp_Confirm"
+#Const C_Event_Cancel	"LibPopUp_Cancel"
+
+// ---------------------------------- //
+// Globales
+// ---------------------------------- //
+declare Boolean G_Answer;		///< Answer to the pop up
+declare Integer G_Mode;			///< Confirm or alert mode
+declare Integer G_SkipInput;	///< Skip inputs for this frame
+declare Boolean G_PadDisconnected; ///< Pad connection status
+
+// ---------------------------------- //
+// Functions
+// ---------------------------------- //
+// ---------------------------------- //
+// Private
+// ---------------------------------- //
+// ---------------------------------- //
+/** Get the confirm manialink
+ *
+ *	@return						The manialink
+ */
+Text Private_GetPopUpML() {
+	declare ButtonConfirm = Buttons::Menu_Select();
+	declare ButtonCancel = Buttons::Menu_Cancel();
+	declare ButtonSize = 0.9;
+	
+	declare PopUpSizeX = 25.;
+	declare PopUpSizeY = 5.;
+	declare OptionSize = 8.;
+	
+	declare TransitionImg = "file://Media/Manialinks/Nadeo/TMConsole/Images/rewards_1-02_low.dds";
+	
+	return """
+<manialink version="3" name="MapEditor:Pop-up">
+<stylesheet>
+	{{{Styles::Get()}}}
+</stylesheet>
+<frame z-index="100" id="Frame_Global">
+	<frame pos="0 {{{92. + Styles::GetSize2(<0., PopUpSizeY>, Styles::CircleSize_Bottom()).Y}}}" z-index="10" hidden="1" id="Frame_PopUp">
+		{{{Styles::BuildBackground(<0., 0., 0.>, <PopUpSizeX, PopUpSizeY>, Styles::CircleSize_Bottom(), Styles::Align_CenterTop())}}}
+		{{{Styles::BuildLine(<0., 0., 1.>, <PopUpSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_CenterTop(), Colors::Color_Purple(), True, True, Text[Text])}}}
+		{{{Styles::BuildLabel(<0., -0.45, 2.>, <PopUpSizeX, 1.>, Styles::CircleSize_Bottom(), Styles::Align_CenterCenter2(), ["class" => "turbo2-text-title", "id" => "Label_Title"])}}}
+		{{{Styles::BuildQuad(<0., -1., 3.>, <PopUpSizeX, PopUpSizeY-2.>, Styles::CircleSize_Bottom(), Styles::Align_CenterTop(), ["bgcolor" => Colors::GetColorML(Colors::Color_SoftBlack())])}}}
+		{{{Styles::BuildLabel(<-PopUpSizeX*0.5, -0.85, 4.>, <PopUpSizeX, PopUpSizeY-2.>, Styles::CircleSize_Bottom(), Styles::Align_LeftTop(), ["autonewline" => "1", "maxline" => "4", "linespacing" => "0.9", "class" => "turbo2-text-popup", "id" => "Label_Message"])}}}
+		<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<PopUpSizeX*0.5-OptionSize-1., -PopUpSizeY+1., 6.>, Styles::CircleSize_Bottom()))}}} id="Button_Cancel">
+			{{{Styles::BuildLine(<0., 0., 0.>, <OptionSize, 1.>, Styles::CircleSize_Bottom(), Styles::Align_RightTop(), Colors::Color_Black(), True, True, ["scriptevents" => "1", MLE::Data_Triggers() => "B1", "class" => MLE::ML_Class(), "id" => "Quad_Cancel"])}}}
+			{{{Styles::BuildButton(ButtonCancel, <-0.5, -0.5, 2.>, <ButtonSize, ButtonSize>, Styles::CircleSize_Bottom(), Styles::Align_CenterCenter(), Text[Text])}}}
+			{{{Styles::BuildLabel(<-1., -0.45, 1.>, <OptionSize-1., 1.>, Styles::CircleSize_Bottom(), Styles::Align_RightCenter2(), [
+				//L16N [MapEditor] Cancel an action
+				"text" => _("Cancel"), MLE::Data_Effects() => """B1:{{{MLE::Effect_LabelHover()}}}""", "class" => """turbo2-text-button {{{MLE::ML_Class()}}}""", "id" => "Label_Cancel"
+			])}}}
+		</frame>
+		<frame {{{Styles::BuildPosition2(Styles::GetPosition2(<PopUpSizeX*0.5, -PopUpSizeY+1., 5.>, Styles::CircleSize_Bottom()))}}} id="Button_Confirm">
+			{{{Styles::BuildLine(<0., 0., 0.>, <OptionSize, 1.>, Styles::CircleSize_Bottom(), Styles::Align_RightTop(), Colors::Color_Black(), True, True, ["scriptevents" => "1", MLE::Data_Triggers() => "B2", "class" => MLE::ML_Class(), "id" => "Quad_Confirm"])}}}
+			{{{Styles::BuildButton(ButtonConfirm, <-0.5, -0.5, 2.>, <ButtonSize, ButtonSize>, Styles::CircleSize_Bottom(), Styles::Align_CenterCenter(), Text[Text])}}}
+			{{{Styles::BuildLabel(<-1., -0.45, 1.>, <OptionSize-1., 1.>, Styles::CircleSize_Bottom(), Styles::Align_RightCenter2(), [
+				//L16N [MapEditor] Confirm an action
+				"text" => _("Confirm"), MLE::Data_Effects() => """B2:{{{MLE::Effect_LabelHover()}}}""", "class" => """turbo2-text-button {{{MLE::ML_Class()}}}""", "id" => "Label_Confirm"
+			])}}}
+		</frame>
+	</frame>
+	<frame z-index="11" id="Frame_Progress">
+		<label pos="150 -90" size="300 10" halign="right" class="turbo2-text-title-big" id="Label_Progress" />
+	</frame>
+	<frame z-index="12" id="Frame_Loading">
+		<frame pos="150 -90" z-index="2" hidden="1" id="Frame_Pulse">
+			<label size="300 10" halign="right" class="turbo2-text-title-big" id="Label_Loading" />
+		</frame>
+		<!--
+		<quad size="320 180" z-index="1" halign="center" valign="center" opacity="0" bgcolor="000" scriptevents="1" hidden="1" id="Quad_Loading" />
+		<quad size="320 180" z-index="0" halign="center" valign="center" style="Bgs1" substyle="BgDialogBlur" hidden="1" id="Quad_Loading2" />
+		-->
+		<quad z-index="2" opacity="0" hidden="1" class="turbo2-screen-overlay" id="Quad_Loading3" />
+	</frame>
+	<frame z-index="13" hidden="1" id="Frame_Pad">
+		<quad pos="160 0" z-index="0" size="1012.5 180" valign="center" keepratio="fit" image="{{{TransitionImg}}}" hidden="1" id="Quad_Transition" />
+		<quad z-index="1" opacity="0" hidden="1" class="turbo2-screen-overlay" id="Quad_Background" />
+		<frame z-index="2" hidden="1" id="Frame_Content">
+			<frame z-index="0">
+				<label pos="0 4" z-index="0" size="120 9" halign="center" valign="bottom" autonewline="1" maxline="4" text="Trackmania" class="turbo2-text-pad-title" />
+				<label pos="0 6" z-index="1" size="175 9" halign="center" autonewline="1" maxline="8" linespacing="0.85" class="turbo2-text-pad-message" id="Label_PadMessage" />
+			</frame>
+			<frame pos="70 -35" z-index="1" scale="0.8">
+				{{{Buttons::ML_Button(ButtonConfirm, ["pos" => "62 -52.8", "z-index" => "1", "size" => "13 13", "halign" => "center", "valign" => "center"])}}}
+				<label pos="71.1 -51.8" z-index="0" size="120 9" valign="center" textsize="10" style="TextValueSmallSm" text="OK" />
+			</frame>
+		</frame>
+	</frame>
+</frame>
+<script><!--
+#Include "TextLib" as TL
+#Include "MathLib" as ML
+#Include "AnimLib" as AL
+{{{Manialink::DefaultIncludes()}}}
+{{{MLE::ML_Includes()}}}
+
+declare Boolean G_LoadingAnim;
+declare Boolean G_PadAnim;
+
+{{{Manialink::Animations(["EaseOutQuad"])}}}
+{{{Manialink::Function("AnimRepeat")}}}
+{{{Buttons::ML_Functions()}}}
+{{{MLE::ML_Functions()}}}
+
+Void PadVisibility(Boolean _Visible) {
+	declare Frame_Pad <=> (Page.GetFirstChild("Frame_Pad") as CMlFrame);
+	declare Quad_Background <=> (Frame_Pad.GetFirstChild("Quad_Background") as CMlQuad);
+	declare Quad_Transition <=> (Frame_Pad.GetFirstChild("Quad_Transition") as CMlQuad);
+	declare Frame_Content <=> (Frame_Pad.GetFirstChild("Frame_Content") as CMlFrame);
+	declare Label_PadMessage <=> (Frame_Pad.GetFirstChild("Label_PadMessage") as CMlLabel);
+	
+	if (_Visible) {
+		Frame_Pad.Visible = True;
+		//L16N [MapEditor] Text of the pop-up displayed when all controllers are disconnected. The %1 will be replaced by the name of the controller, eg: Dualshock 4 (r) wireless controller or XB1 wireless controller.
+		Label_PadMessage.Value = TL::Compose(_("Please reconnect the %1"), "{{{Buttons2::GetPadName()}}}");
+		declare TargetPosX = 160 - (Quad_Transition.Size.X * (2./3.));
+		LibManialink_Anim(Quad_Transition, "<quad pos=\""^TargetPosX^" 0\" hidden=\"0\" />", 400, "EaseOutQuad");
+		LibManialink_AnimInsert(Quad_Background, "<quad opacity=\"1\" hidden=\"0\" />", 150, 250, "EaseOutQuad");
+		LibManialink_AnimInsert(Frame_Content, "<quad hidden=\"0\" />", 250, 150, "EaseOutQuad");
+	} else {
+		LibManialink_Anim(Frame_Pad, "<frame hidden=\"1\" />", 400, "EaseOutQuad");
+		LibManialink_Anim(Frame_Content, "<frame hidden=\"1\" />", 100, "EaseOutQuad");
+		LibManialink_Anim(Quad_Background, "<quad opacity=\"0\" hidden=\"1\" />", 250, "EaseOutQuad");
+		LibManialink_Anim(Quad_Transition, "<quad pos=\"160 0\" hidden=\"1\" />", 400, "EaseOutQuad");
+	}
+	
+	G_PadAnim = _Visible;
+}
+
+Void SetVisibility(Boolean _Visible) {
+	if (_Visible) {
+		declare Scale = 1.;
+		if (Editor.ManiaPlanet.HMD_IsActive) Scale = 1.8;
+		LibManialink_Anim("<frame pos=\"0 17\" scale=\""^Scale^"\"hidden=\"0\" id=\"Frame_PopUp\" />", 250, "EaseOutQuad");
+	} else {
+		LibManialink_Anim({{{Manialink::Inject("""<frame pos="0 {{{92. + Styles::GetSize2(<0., PopUpSizeY>, Styles::CircleSize_Bottom()).Y}}}" hidden="1" id="Frame_PopUp" />""")}}}, 250, "EaseOutQuad");
+	}
+}
+
+Void SetAnswers(Integer _Mode, Text _Yes, Text _No) {
+	declare Button_Confirm <=> (Page.GetFirstChild("Button_Confirm") as CMlFrame);
+	declare Label_Confirm <=> (Button_Confirm.GetFirstChild("Label_Confirm") as CMlLabel);
+	declare Button_Cancel <=> (Page.GetFirstChild("Button_Cancel") as CMlFrame);
+	declare Label_Cancel <=> (Button_Cancel.GetFirstChild("Label_Cancel") as CMlLabel);
+	
+	if (_Mode == {{{C_Mode_Confirm}}}) {
+		Label_Confirm.Value = _Yes;
+		Label_Cancel.Value = _No;
+		Button_Confirm.Visible = True;
+		Button_Cancel.Visible = True;
+	} else if (_Mode == {{{C_Mode_Alert}}}) {
+		Label_Confirm.Value = _Yes;
+		Button_Confirm.Visible = True;
+		Button_Cancel.Visible = False;
+	} else {
+		Button_Confirm.Visible = False;
+		Button_Cancel.Visible = False;
+	}
+}
+
+Void SetMessage(Text _Message) {
+	declare Label_Message <=> (Page.GetFirstChild("Label_Message") as CMlLabel);
+	Label_Message.Value = _Message;
+}
+
+Void SetTitle(Integer _Mode, Text _Title) {
+	declare Label_Title <=> (Page.GetFirstChild("Label_Title") as CMlLabel);
+	Label_Title.Value = _Title;
+}
+
+Void SetLoading(Boolean _IsLoading, Boolean _Animate, Text _Message) {
+	declare Frame_Loading <=> (Page.GetFirstChild("Frame_Loading") as CMlFrame);
+	declare Frame_Pulse <=> (Frame_Loading.GetFirstChild("Frame_Pulse") as CMlFrame);
+	declare Label_Loading <=> (Frame_Loading.GetFirstChild("Label_Loading") as CMlLabel);
+	//declare Quad_Loading <=> (Frame_Loading.GetFirstChild("Quad_Loading") as CMlQuad);
+	//declare Quad_Loading2 <=> (Frame_Loading.GetFirstChild("Quad_Loading2") as CMlQuad);
+	declare Quad_Loading3 <=> (Frame_Loading.GetFirstChild("Quad_Loading3") as CMlQuad);
+	
+	if (_IsLoading && !Editor.ManiaPlanet.HMD_IsActive) {
+		Label_Loading.Value = _Message;
+		Label_Loading.Opacity = 1.;
+		LibManialink_Anim(Frame_Pulse, {{{Manialink::Inject("""<frame pos="150 -72" hidden="0" />""")}}}, 250, "EaseOutQuad");
+		if (_Animate) {
+			//LibManialink_Anim(Quad_Loading, {{{Manialink::Inject("""<quad opacity="0.4" hidden="0" />""")}}}, 250, "EaseOutQuad");
+			//LibManialink_AnimInsert(Quad_Loading2, {{{Manialink::Inject("""<quad hidden="0" />""")}}}, 200, 50, "EaseOutQuad");
+			LibManialink_Anim(Quad_Loading3, {{{Manialink::Inject("""<quad opacity="1" hidden="0" />""")}}}, 250, "EaseOutQuad");
+		} else {
+			Quad_Loading3.Visible = True;
+			Quad_Loading3.Opacity = 1.;
+		}
+		
+		G_LoadingAnim = True;
+		/*LibManialink_AnimRepeatStart(1000);
+		LibManialink_Anim(Label_Loading, {{{Manialink::Inject("""<label opacity="0.3" />""")}}}, 500, "EaseOutBack");
+		LibManialink_AnimChain(Label_Loading, {{{Manialink::Inject("""<label opacity="1" />""")}}}, 500, "EaseOutBack");
+		LibManialink_AnimRepeatEnd();*/
+		
+	} else {
+		LibManialink_Anim(Frame_Pulse, {{{Manialink::Inject("""<frame pos="150 -90" hidden="1" />""")}}}, 250, "EaseOutQuad");
+		if (_Animate) {
+			//LibManialink_Anim(Quad_Loading, {{{Manialink::Inject("""<quad opacity="0" hidden="1" />""")}}}, 250, "EaseOutQuad");
+			//Quad_Loading2.Visible = False;
+			LibManialink_Anim(Quad_Loading3, {{{Manialink::Inject("""<quad opacity="0" hidden="1" />""")}}}, 250, "EaseOutQuad");
+		} else {
+			Quad_Loading3.Visible = False;
+			Quad_Loading3.Opacity = 0.;
+		}
+		
+		G_LoadingAnim = False;
+		//LibManialink_AnimStop(Label_Loading);
+	}
+}
+
+Void SetLoadingProgress(Text _Message, Integer _Progress) {
+	declare Frame_Loading <=> (Page.GetFirstChild("Frame_Loading") as CMlFrame);
+	declare Label_Loading <=> (Frame_Loading.GetFirstChild("Label_Loading") as CMlLabel);
+	
+	Label_Loading.Value = TL::Compose("%1 (%2%%)", _Message, TL::ToText(_Progress));
+}
+
+main() {
+	declare Frame_Loading <=> (Page.GetFirstChild("Frame_Loading") as CMlFrame);
+	declare Label_Loading <=> (Frame_Loading.GetFirstChild("Label_Loading") as CMlLabel);
+	declare Frame_Pad <=> (Page.GetFirstChild("Frame_Pad") as CMlFrame);
+	declare Label_PadMessage <=> (Frame_Pad.GetFirstChild("Label_PadMessage") as CMlLabel);
+	declare Frame_Progress <=> (Page.GetFirstChild("Frame_Progress") as CMlFrame);
+	declare Label_Progress <=> (Frame_Progress.GetFirstChild("Label_Progress") as CMlLabel);
+	
+	declare L_Visibility for Page = {{{C_DefaultVisibility}}};
+	declare L_PopUpUpdate for Page = -1;
+	declare L_Message for Page = "";
+	declare L_Title for Page = "";
+	declare L_Yes for Page = "";
+	declare L_No for Page = "";
+	declare L_Mode for Page = {{{C_Mode_Null}}};
+	declare L_IsLoading for Page = False;
+	declare L_Animate for Page = True;
+	declare L_LoadingProgress for Page = 0;
+	declare L_PadVisibility for Page = False;
+	declare L_ProgressMessage for Page = "";
+	declare L_ProgressPercentage for Page = -1;
+	
+	declare PrevVisibility = {{{C_DefaultVisibility}}};
+	declare PrevPopUpUpdate = -1;
+	declare PrevIsLoading = False;
+	declare PrevMessage = "";
+	declare PrevLoadingProgress = 0;
+	declare PrevPadVisibility = False;
+	declare PrevProgressMessage = "";
+	declare PrevProgressPercentage = -1;
+	
+	declare ProgressIsVisible = False;
+	
+	G_LoadingAnim = False;
+	declare AnimDir = 1;
+	declare AnimStartTime = Now;
+	declare AnimDuration = 500;
+	
+	G_PadAnim = False;
+	
+	LibButtons_Init();
+  LibMLEffects_Init();
+	
+	while (True) {
+		yield;
+		
+		LibManialink_AnimLoop();
+		LibButtons_Loop();
+    LibMLEffects_Loop();
+		
+		if (PrevVisibility != L_Visibility) {
+			PrevVisibility = L_Visibility;
+			SetVisibility(L_Visibility);
+		}
+		
+		if (PrevPadVisibility != L_PadVisibility) {
+			PrevPadVisibility = L_PadVisibility;
+			PadVisibility(L_PadVisibility);
+		}
+		
+		if (PrevPopUpUpdate != L_PopUpUpdate) {
+			PrevPopUpUpdate = L_PopUpUpdate;
+			SetAnswers(L_Mode, L_Yes, L_No);
+			SetMessage(L_Message);
+			SetTitle(L_Mode, L_Title);
+		}
+		
+		if (PrevIsLoading != L_IsLoading || PrevMessage != L_Message) {
+			PrevIsLoading = L_IsLoading;
+			PrevMessage = L_Message;
+			SetLoading(L_IsLoading, L_Animate, L_Message);
+		}
+		
+		if (PrevLoadingProgress != L_LoadingProgress) {
+			PrevLoadingProgress = L_LoadingProgress;
+			SetLoadingProgress(L_Message, L_LoadingProgress);
+		}
+		
+		foreach (Event in PendingEvents) {
+			if (Event.Type == CMlEvent::Type::MouseClick) {
+				if (Event.ControlId == "Quad_Confirm") {
+					SendCustomEvent("{{{C_Event_Confirm}}}", Text[]);
+				} else if (Event.ControlId == "Quad_Cancel") {
+					SendCustomEvent("{{{C_Event_Cancel}}}", Text[]);
+				}
+			} else if (Event.Type == CMlEvent::Type::MouseOut) {
+				if (Event.ControlId == "Quad_Confirm" || Event.ControlId == "Quad_Cancel") {
+					if ({{{C_BgAnim}}}) LibManialink_Anim(
+						(Event.Control as CMlQuad),
+						{{{Manialink::Inject("""<quad colorize="{{{Colors::GetColorML(Colors::Color_Black())}}}" />""")}}},
+						250,
+						"EaseOutQuad"
+					);
+				}
+			} else if (Event.Type == CMlEvent::Type::MouseOver) {
+				if (Event.ControlId == "Quad_Confirm" || Event.ControlId == "Quad_Cancel") {
+					if ({{{C_BgAnim}}}) LibManialink_Anim(
+						(Event.Control as CMlQuad),
+						{{{Manialink::Inject("""<quad colorize="{{{Colors::GetColorML(Colors::Color_Red())}}}" />""")}}},
+						250,
+						"EaseOutQuad"
+					);
+				}
+			}
+		}
+		
+		if (G_LoadingAnim) {
+			if (AnimDir > 0) {
+				Label_Loading.Opacity = AL::EaseLinear(Now - AnimStartTime, 0.3, 0.7, AnimDuration);
+				if (Now >= AnimStartTime + AnimDuration) {
+					AnimDir = -1;
+					AnimStartTime = Now;
+				}
+			} else if (AnimDir < 0) {
+				Label_Loading.Opacity = AL::EaseLinear(Now - AnimStartTime, 1., -0.7, AnimDuration);
+				if (Now >= AnimStartTime + AnimDuration) {
+					AnimDir = 1;
+					AnimStartTime = Now;
+				}
+			}
+		}
+		
+		if (G_PadAnim) {
+			Label_PadMessage.Opacity = ML::Sin(Now * 0.01) * 0.5 + 0.5;
+		}
+		
+		if (PrevProgressMessage != L_ProgressMessage || PrevProgressPercentage != L_ProgressPercentage) {
+			PrevProgressMessage = L_ProgressMessage;
+			PrevProgressPercentage = L_ProgressPercentage;
+			if (L_ProgressPercentage >= 0 && L_ProgressPercentage <= 100) {
+				Label_Progress.Value = TL::Compose("%1 (%2%%)", L_ProgressMessage, TL::ToText(L_ProgressPercentage));
+				if (!ProgressIsVisible) {
+					LibManialink_Anim(Label_Progress, {{{Manialink::Inject("""<label pos="150 -72" hidden="0" />""")}}}, 250, "EaseOutQuad");
+					ProgressIsVisible = True;
+				}
+			} else {
+				Label_Progress.Visible = False;
+				if (ProgressIsVisible) {
+					LibManialink_Anim(Label_Progress, {{{Manialink::Inject("""<label pos="150 -90" hidden="1" />""")}}}, 250, "EaseOutQuad");
+					ProgressIsVisible = False;
+				}
+			}
+		}
+	}
+}
+--></script>
+</manialink>	
+""";
+}
+
+// ---------------------------------- //
+/** Set the pop up visibility
+ *
+ *	@param	_Visible			Show the header if True
+ */
+Void Private_SetVisibility(Boolean _Visible) {
+	declare Page <=> Layers::GetPage("PopUp");
+	declare L_Visibility for Page = C_DefaultVisibility;
+	L_Visibility = _Visible;
+}
+
+// ---------------------------------- //
+/// Show the pop up
+Void Private_Show() {
+	Private_SetVisibility(True);
+}
+
+// ---------------------------------- //
+/// Hide the pop up
+Void Private_Hide() {
+	Private_SetVisibility(False);
+}
+
+// ---------------------------------- //
+// Public
+// ---------------------------------- //
+// ---------------------------------- //
+/** Return the version number of the script
+ *
+ *	@return						The version number of the script
+ */
+Text GetScriptVersion() {
+	return Version;
+}
+
+// ---------------------------------- //
+/** Return the name of the script
+ *
+ *	@return						The name of the script
+ */
+Text GetScriptName() {
+	return ScriptName;
+}
+
+// ---------------------------------- //
+/** Ask for a confirmation
+ *
+ *	@param	_Title				The title of the pop-up
+ *	@param	_Message			The question to ask
+ *	@param	_Yes				The "valid" answer
+ *	@param	_No					The "cancel" answer
+ */
+Void Confirm(Text _Title, Text _Message, Text _Yes, Text _No) {
+	declare Page <=> Layers::GetPage("PopUp");
+	declare L_PopUpUpdate for Page = -1;
+	declare L_Title for Page = "";
+	declare L_Message for Page = "";
+	declare L_Yes for Page = "";
+	declare L_No for Page = "";
+	declare L_Mode for Page = C_Mode_Null;
+	L_Title = _Title;
+	L_Message = _Message;
+	L_Yes = _Yes;
+	L_No = _No;
+	L_Mode = C_Mode_Confirm;
+	L_PopUpUpdate = Now;
+	
+	Private_Show();
+	G_Mode = C_Mode_Confirm;
+	G_SkipInput = Now;
+}
+
+// ---------------------------------- //
+/** Ask for a confirmation
+ *
+ *	@param	_Message			The question to ask
+ */
+Void Confirm(Text _Message) {
+	Confirm(
+		//L16N [MapEditor] Title of a pop-up asking a confirmation from the player
+		_("Confirmation"), 
+		_Message, 
+		//L16N [MapEditor] Confirm an action
+		_("|Infinitive|Confirm"), 
+		//L16N [MapEditor] Cancel an action
+		_("Cancel")
+	);
+}
+
+// ---------------------------------- //
+/** Open an alert pop up
+ *
+ *	@param	_Title				The title of the pop-up
+ *	@param	_Message			The message to display
+ *	@param	_Answer				The answer to display
+ */
+Void Alert(Text _Title, Text _Message, Text _Answer) {
+	declare Page <=> Layers::GetPage("PopUp");
+	declare L_PopUpUpdate for Page = -1;
+	declare L_Title for Page = "";
+	declare L_Message for Page = "";
+	declare L_Yes for Page = "";
+	declare L_Mode for Page = C_Mode_Null;
+	L_Title = _Title;
+	L_Message = _Message;
+	L_Yes = _Answer;
+	L_Mode = C_Mode_Alert;
+	L_PopUpUpdate = Now;
+	
+	Private_Show();
+	G_Mode = C_Mode_Alert;
+	G_SkipInput = Now;
+}
+
+// ---------------------------------- //
+/** Open an alert pop up
+ *
+ *	@param	_Message			The message to display
+ */
+Void Alert(Text _Message) {
+	Alert(
+		//L16N [MapEditor] Title of a pop-up displaying informations about the track editor
+		_("Information"), 
+		_Message, 
+		//L16N [MapEditor] Confirm an action
+		_("|Infinitive|Confirm"));
+}
+
+// ---------------------------------- //
+/** Waiting for an answer
+ *
+ *	@return						True if we're waiting for an answer, False otherwise
+ */
+Boolean Wait() {
+	if (G_Mode != C_Mode_Confirm && G_Mode != C_Mode_Alert) return False;
+	// If the pad is disconnected ignore its input to avoid closing a pop-up when reconnecting the pad
+	if (G_PadDisconnected) return True;
+	// If we pressed ::EInput::CursorPlace when we called Confirm() or Alert() we would directly skip the pop up
+	// To avoid that we skip the inputs of the first waiting frame
+	if (G_SkipInput == Now) return True; 
+	
+	foreach (Event in PendingEvents) {
+		if (Event.Type == CEditorPluginEvent::Type::EditorInput) {
+			if (Event.Input == CEditorPluginEvent::EInput::CursorPlace) {
+				G_Answer = True;
+				Private_Hide();
+				G_Mode = C_Mode_Null;
+				return False;
+			} else if (G_Mode == C_Mode_Confirm && Event.Input == CEditorPluginEvent::EInput::RemoveAll) {
+				if (Event.IsFromKeyboard) {
+					G_Answer = False;
+					Private_Hide();
+					G_Mode = C_Mode_Null;
+					return False;
+				}
+			} else if (G_Mode == C_Mode_Confirm && Event.Input == CEditorPluginEvent::EInput::CursorDelete) {
+				if (Event.IsFromPad) {
+					G_Answer = False;
+					Private_Hide();
+					G_Mode = C_Mode_Null;
+					return False;
+				}
+			}
+		} else if (Event.Type == CEditorPluginEvent::Type::LayerCustomEvent) {
+			switch (Event.CustomEventType) {
+				case C_Event_Confirm: {
+					G_Answer = True;
+					Private_Hide();
+					G_Mode = C_Mode_Null;
+					return False;
+				}
+				case C_Event_Cancel: {
+					if (G_Mode == C_Mode_Confirm) {
+						G_Answer = False;
+						Private_Hide();
+						G_Mode = C_Mode_Null;
+						return False;
+					}
+				}
+			}
+		}
+	}
+	
+	return True;
+}
+
+// ---------------------------------- //
+/** Open a simple pop up
+ *
+ *	@param	_Title				The title of the pop up
+ *	@param	_Message			The message to display
+ */
+Void Open(Text _Title, Text _Message) {
+	declare Page <=> Layers::GetPage("PopUp");
+	declare L_PopUpUpdate for Page = -1;
+	declare L_Message for Page = "";
+	declare L_Title for Page = "";
+	declare L_Mode for Page = C_Mode_Null;
+	L_Message = _Message;
+	L_Title = _Title;
+	L_Mode = C_Mode_PopUp;
+	L_PopUpUpdate = Now;
+	
+	Private_Show();
+	G_Mode = C_Mode_PopUp;
+}
+
+// ---------------------------------- //
+/// Close the currently open pop up
+Void Close() {
+	G_Answer = False;
+	Private_Hide();
+	G_Mode = C_Mode_Null;
+}
+
+// ---------------------------------- //
+/** Enable or disable the loading UI
+ *
+ *	@param	_IsLoading				True to display the UI, False to hide it
+ *	@param	_Message				The message to display
+ *	@param	_SetMode				Set loading mode
+ *	@param	_Animate				Play the animation
+ */
+Void Loading(Boolean _IsLoading, Text _Message, Boolean _SetMode, Boolean _Animate) {
+	declare Page <=> Layers::GetPage("PopUp");
+	declare L_IsLoading for Page = False;
+	declare L_Message for Page = "";
+	declare L_Animate for Page = True;
+	L_IsLoading = _IsLoading;
+	L_Message = _Message;
+	L_Animate = _Animate;
+	
+	if (_IsLoading && _SetMode) G_Mode = C_Mode_Loading;
+	else G_Mode = C_Mode_Null;
+}
+
+// ---------------------------------- //
+/// Overload Loading()
+Void Loading(Boolean _IsLoading, Text _Message, Boolean _SetMode) {
+	Loading(_IsLoading, _Message, _SetMode, True);
+}
+
+// ---------------------------------- //
+/** Set the loading progression percentage
+ *
+ *	@param	_Progress				The current percentage
+ */
+Void SetLoadingProgress(Integer _Progress) {
+	declare Page <=> Layers::GetPage("PopUp");
+	declare L_LoadingProgress for Page = 0;
+	if (_Progress < 0) L_LoadingProgress = 0;
+	else if (_Progress > 100) L_LoadingProgress = 100;
+	else L_LoadingProgress = _Progress;
+}
+
+// ---------------------------------- //
+/** Get the answer to the confirmation
+ *
+ *	@return						True if the player valids, False if he cancels
+ */
+Boolean Answer() {
+	return G_Answer;
+}
+
+// ---------------------------------- //
+/** Display or hide the disconnected pad window
+ *
+ *	@param	_Disconnected			True if the pad is disconnected, False otherwise
+ */
+Void PadDisconnected(Boolean _Disconnected) {
+	declare Page <=> Layers::GetPage("PopUp");
+	declare L_PadVisibility for Page = False;
+	L_PadVisibility = _Disconnected;
+	G_PadDisconnected = _Disconnected;
+	G_SkipInput = Now;
+}
+
+// ---------------------------------- //
+/** Display a progress message
+ *
+ *	@param	_Message				The message
+ *	@param	_Progress				The progress ([0, 100] -> show progress, anything else hide progress)
+ */
+Void SetProgress(Text _Message, Integer _Progress) {
+	declare Progress = _Progress;
+	if (Progress < 0 || Progress > 100) Progress = -1;
+	
+	declare Page <=> Layers::GetPage("PopUp");
+	declare L_ProgressMessage for Page = "";
+	declare L_ProgressPercentage for Page = -1;
+	L_ProgressMessage = _Message;
+	L_ProgressPercentage = _Progress;
+}
+
+// ---------------------------------- //
+/** Check if a confirm pop up is open
+ *
+ *	@return						True if a confirm pop up is open, False otherwise
+ */
+Boolean IsInConfirm() {
+	return (G_Mode == C_Mode_Confirm);
+}
+
+// ---------------------------------- //
+/** Check if an alert pop up is open
+ *
+ *	@return						True if an alert pop up is open, False otherwise
+ */
+Boolean IsInAlert() {
+	return (G_Mode == C_Mode_Alert);
+}
+
+// ---------------------------------- //
+/** Check if a pop up is open
+ *
+ *	@return						True if a pop up is open, False otherwise
+ */
+Boolean IsInPopUp() {
+	return (G_Mode == C_Mode_PopUp);
+}
+
+// ---------------------------------- //
+/** Check if the loading screen is displayed
+ *
+ *	@return						True if the loading screen is displayed, False otherwise
+ */
+Boolean IsInLoading() {
+	return (G_Mode == C_Mode_Loading);
+}
+
+
+// ---------------------------------- //
+/** Check if a pop up is open
+ *
+ *	@return						True if a pop up is open, False otherwise
+ */
+Boolean IsOpen() {
+	return (G_Mode != C_Mode_Null);
+}
+
+// ---------------------------------- //
+/// Unload the library
+Void Unload() {
+	Layers::Destroy("PopUp");
+	//Layers::Unload();
+}
+
+// ---------------------------------- //
+/// Load the library
+Void Load() {
+	Unload();
+	
+	//Layers::Load();
+	Buttons::Load();
+	declare LayerPopUp <=> Layers::Create("PopUp");
+	LayerPopUp.ManialinkPage = Private_GetPopUpML();
+	Buttons::Unload();
+	
+	declare Page <=> LayerPopUp.LocalPage;
+	declare L_Visibility for Page = C_DefaultVisibility;
+	declare L_PopUpUpdate for Page = -1;
+	declare L_Message for Page = "";
+	declare L_Title for Page = "";
+	declare L_Yes for Page = "";
+	declare L_No for Page = "";
+	declare L_Mode for Page = C_Mode_Null;
+	declare L_IsLoading for Page = False;
+	declare L_Animate for Page = True;
+	declare L_LoadingProgress for Page = 0;
+	declare L_ProgressMessage for Page = "";
+	declare L_ProgressPercentage for Page = -1;
+	L_Visibility = C_DefaultVisibility;
+	L_Message = "";
+	L_Title = "";
+	L_Yes = "";
+	L_No = "";
+	L_PopUpUpdate = -1;
+	L_Mode = C_Mode_Null;
+	L_IsLoading = False;
+	L_Animate = True;
+	L_LoadingProgress = 0;
+	L_ProgressMessage = "";
+	L_ProgressPercentage = -1;
+	
+	G_Answer = False;
+	G_Mode = C_Mode_Null;
+	G_SkipInput = -1;
+	
+	Private_Hide();
+}

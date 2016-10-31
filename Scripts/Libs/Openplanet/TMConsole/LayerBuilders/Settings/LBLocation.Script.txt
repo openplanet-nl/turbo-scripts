@@ -1,0 +1,1181 @@
+
+// file://Media/Manialinks/Nadeo/TMConsole/MainMenuArnaud.Script.txt
+#Include "Libs/Openplanet/Manialink2.Script.txt"					as Manialink
+#Include "Libs/Openplanet/TMConsole/LibAudio.Script.txt"			as LibAudio
+#Include "Libs/Openplanet/TMConsole/FontManager.Script.txt"		as Font
+#Include "Libs/Openplanet/TMConsole/Colors.Script.txt"			as Colors
+#Include "Libs/Openplanet/TMConsole/Volumes.Script.txt" 			as Volumes
+#Include "Libs/Openplanet/UIPadButtons.Script.txt" 				as LibUIButtons
+
+#Const C_ImgBase 	"file://Media/Manialinks/Nadeo/TMConsole/Images/"
+
+
+declare Text[]       G_Continents;
+declare Text[][Text] G_Countries;
+declare Text[][Text] G_Regions;
+declare Text[][Text] G_Districts;
+declare Text[][Text] G_Departments;
+
+Void SetContinents(Text[] _Continents)
+{
+	G_Continents = _Continents;
+}
+
+Void AddContinent(Text _Continent)
+{
+	G_Continents.add(_Continent);
+}
+
+Void AddCountries(Text _Continent, Text[] _Countries)
+{
+	G_Countries[_Continent] = _Countries;
+}
+
+
+Void AddRegions(Text _Country, Text[] _Regions)
+{
+	G_Regions[_Country] = _Regions;
+}
+
+Void AddDistricts(Text _Region, Text[] _Regions)
+{
+	G_Districts[_Region] = _Regions;
+}
+
+Void AddDepartments(Text _District, Text[] _Regions)
+{
+	G_Departments[_District] = _Regions;
+}
+
+Text Build(Text _ShowAnim, Text _HideAnim) {
+
+	declare Text 	SoundMove        = LibAudio::GetSoundMove();
+
+	declare Integer Count_InstancesY = 20;
+	declare Integer Count_InstancesX = 4;
+	declare Real	MarginY_Button   = 2.;
+	declare Real	MarginX_Button   = 2.;
+	//declare Real	SizeX_Total      = PanelParameter::GetSizePanelX();
+	//declare Real	SizeY_Total      = PanelParameter::GetSizePanelY();
+	declare Real	SizeX_Total      = 270.;
+	declare Real	SizeY_Total      = 100.;
+	declare Real	SizeXQuad        = (SizeX_Total - Count_InstancesX*MarginX_Button) / Count_InstancesX;
+	declare Real	SizeYQuad        = (SizeY_Total - Count_InstancesY*MarginY_Button) / Count_InstancesY;
+	declare Real	PosXFirstQuad    = -SizeXQuad*2.+0.3;
+	declare Real	PosYFirstQuad    = 40.;
+	
+
+	//declare Text 	IMGSelect          = LibUIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Select);
+	//declare Text 	IMGCancel          = LibUIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Cancel);
+	declare Text 	IMG_PC_Select  = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"), CManiaAppEvent::EMenuNavAction::Select);
+	declare Text 	IMG_PS_Select  = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::Select);
+	declare Text 	IMG_XB_Select  = LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::Select);
+	declare Text 	IMG_PC_Cancel  = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"), CManiaAppEvent::EMenuNavAction::Cancel);
+	declare Text 	IMG_PS_Cancel  = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::Cancel);
+	declare Text 	IMG_XB_Cancel  = LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::Cancel);
+	
+	declare Text 	TXTCancel       = _("Back");
+	declare Text 	TXTSelect       = _("Select");
+	
+	declare Text    IMGBackground    = C_ImgBase^"MERCATOR.png";
+	
+	/*-- Builder --*/
+	SetContinents(["Afrique", "Asie", "Europe", "Moyen-Orient", "Amérique du Nord", "Océanie", "Amérique du Sud"]);
+	
+	AddCountries("Afrique",          ["Algeria","Angola","Cameroon","Congo","Ivory Coast","Libya","Morocco","Nigeria","Other Countries (AF)","Senegal","South Africa","Tunisia"]);
+	AddCountries("Asie",             ["Bangladesh","China","India","Indonesia","Japan","Kazakhstan","Kora","Loas","Malaysia","Mongolia","Other Countries (AF)","Pakistan","Philippines","Singapore","Thailand","Uzbekistan","Vietnam"]);
+	AddCountries("Europe",           ["Austria","Belarus","Belgium","Bosnia&Herzegovina","Bulgaria","Croatia","Cyprus","Czech Republic","Denmark","Estonia","Finland","France","Germany","Greece","Hungary","Ireland","Italy","Latvia","Lithuania","Luxembourg","Macedonia","Netherlands","Norway","Other Countries","Poland","Portugal","Romania","Russia","Serbia","Slovakia","Slovenia","Spain","Sweden","Switzerland","Ukrain","United Kingdom"]);
+	AddCountries("Moyen-Orient",     ["Bahrain","Egypt","Iran","Iraq","Israel","Kuwait","Lebanon","Oman","Other Countries (ME)","Qatar","Saudi Arabia","Syria","Turkey","United Arab Emirates"]);
+	AddCountries("Amérique du Nord", ["Canada","Mexico","Other Countries (NA)","United States of America"]);
+	AddCountries("Océanie",          ["Australia","New Zealand","Other Countries (OC)"]);
+	AddCountries("Amérique du Sud",  ["Argentina","Bolivia","Brazil","Chile","Colombia","Escuador","Guatemala","Other Countries (SA)","Panama","Peru","Uruguay","Venezuela"]);
+	AddRegions("France",             ["Alsace","Aquitaine","Auvergne","Basse-Normandie","Bourgogne","Bretagne","Centre","Champagne-Ardenne","Corsica","France-Comté","Haute-Normandie","Iles-de-France","Languedoc-Rousillon","Limousin","Lorraine","Midi-Pyrénées","Nord-Pas de Calais","Outre-mer","Pays-de-la-Loire","Picardie","Poitou-Charentes","Provence-Alpes-Côte d'Azur","Rhône-Alpes"]);
+	
+	AddDistricts("Alsace",           ["Bas-Rhin","Haut-Rhin"]);
+	AddDistricts("Aquitaine",        ["Dordogne","Gironde","Landes","Lot-et-Garonne","Pyrénées-Atlantiques"]);
+	AddDistricts("Auvergne",         ["Allier","Cantal","Haute-Loire","Puy-de-Dôme"]);
+	AddDistricts("Iles-de-France",   ["Essone","Hauts-de-Seine","Paris","Seine-et-Marne","Val-d'Oise","Val-de-Marne","Yvelines"]);
+	
+	declare Text MLText = """
+	
+	<framemodel id="Frame_Bouton">
+		<label id="Label_Name" halign="left" valign="center" bgcolor="fff" text="" posn="0. 0.5 2" opacity="1." sizen="{{{SizeXQuad-2}}}"
+		textfont="{{{Font::GetFontName("Main")}}}" textprefix="$t" textcolor="{{{Colors::GetColorHexa("Yellow")}}}"/>
+	</framemodel>
+	
+
+
+
+	<frame id="Frame_All" posn="0 0 10" hidden="1">
+		<frame id="Frame_Title">
+			<label id="Label_Title0" halign="left" valign="center" text="" posn="{{{PosXFirstQuad}}} 70.5 2" opacity="1." textsize="6."
+			textfont="{{{Font::GetFontName("Main")}}}" textprefix="$t" textcolor="{{{Colors::GetColorHexa("Grey")}}}"/>
+			<label id="Label_Title1" halign="left" valign="center" text="" posn="{{{PosXFirstQuad}}} 63.5 2" opacity="1." textsize="6."
+			textfont="{{{Font::GetFontName("Main")}}}" textprefix="$t" textcolor="{{{Colors::GetColorHexa("White")}}}"/>
+			<label id="Label_Title2" halign="left" valign="center" text="" posn="{{{PosXFirstQuad}}} 56.5 2" opacity="1." textsize="6."
+			textfont="{{{Font::GetFontName("Main")}}}" textprefix="$t" textcolor="{{{Colors::GetColorHexa("White")}}}"/>
+			<label id="Label_Title3" halign="left" valign="center" text="" posn="{{{PosXFirstQuad}}} 49.5 2" opacity="1." textsize="6."
+			textfont="{{{Font::GetFontName("Main")}}}" textprefix="$t" textcolor="{{{Colors::GetColorHexa("White")}}}"/>
+			<label id="Label_Title4" halign="left" valign="center" text="" posn="{{{PosXFirstQuad}}} 42.5 2" opacity="1." textsize="6."
+			textfont="{{{Font::GetFontName("Main")}}}" textprefix="$t" textcolor="{{{Colors::GetColorHexa("White")}}}"/>
+		</frame>
+		<quad halign="center" valign="center" image="{{{IMGBackground}}}" posn="0 0 0" sizen="320 180"/>
+		<quad halign="center" valign="center" sizen="{{{SizeXQuad}}} {{{SizeYQuad}}}" bgcolor="099" id="Quad_Selector" posn="0 0 6" hidden="1"/>
+
+	""";
+
+	for(I,0,Count_InstancesY-1)
+	{
+		declare Real IndexY = I*1.;
+		declare Real PosnY = PosYFirstQuad - IndexY*SizeYQuad - IndexY*MarginY_Button*1. - MarginY_Button/2.;
+		
+		for(J,0,Count_InstancesX-1)
+		{
+			declare Real IndexJ = J*1.;
+			declare Real PosnX = PosXFirstQuad + IndexJ*SizeXQuad + IndexJ*MarginX_Button*1. + MarginX_Button/2.;
+			MLText^="""
+				<frame posn="{{{PosnX}}} {{{PosnY}}} 5." id="Frame_Instance{{{I}}}{{{J}}}" >
+					<frameinstance modelid="Frame_Bouton" />
+					<quad  halign="left" valign="center" sizen="{{{SizeXQuad-2}}} 5" posn="0 0 3" opacity="0." scriptevents="1" id="MouseInput_Region_{{{I}}}:{{{J}}}" />
+				</frame>
+			""";
+		}
+	}
+	MLText^="""
+
+		<frame id="Frame_Arrow" posn="2.3 -70 3" hidden="1">
+			<label id="Label_Arrow" halign="center" valign="center" bgcolor="fff" text="" posn="0. -4.0 2" opacity="1." sizen="{{{SizeXQuad-2}}}"/>
+			<quad id="MouseInput_NextPage" halign="center" valign="center" style="Icons64x64_1" substyle="ArrowNext" posn="2.5 0" sizen="7 7" scriptevents="1" />
+			<quad id="MouseInput_PrevPage" halign="center" valign="center" style="Icons64x64_1" substyle="ArrowPrev" posn="-2.5 0"  sizen="7 7" scriptevents="1" />
+
+		</frame>
+		<frame id="Frame_Button" posn="140 5 2" hidden="0">
+		""";
+		for (I, 0, 2) {
+			declare Text Image;
+			switch (I) {
+				case LibUIButtons::GetPlatform("PC") 	: Image = IMG_PC_Cancel;
+				case LibUIButtons::GetPlatform("PS4") 	: Image = IMG_PS_Cancel;
+				case LibUIButtons::GetPlatform("XB1") 	: Image = IMG_XB_Cancel;
+			}
+		
+			MLText ^= """
+			<quad id="Quad_Cancel{{{I}}}" halign="center" valign="bottom" keepratio="Fit" sizen="8 8" image="{{{Image}}}" posn="0 -88.5 6" />""";
+		
+		}
+	MLText ^= """
+			<quad  halign="right" valign="center" sizen="80 7.5"  posn="8 -84.3 7" opacity="0." scriptevents="1" id="MouseInput_Cancel" />
+			<label halign="right" valign="center" style="TextButtonNav" posn="-5 -84.3 6" sizen="70" textfont="{{{Font::GetFontName("Main")}}}"
+			id="Label_Cancel" textsize="4" text="{{{TXTCancel}}}" textcolor="fff"/>
+		</frame>
+		<frame id="Frame_Button2" posn="140 12 2" hidden="0">
+		""";
+		for (I, 0, 2) {
+			declare Text Image;
+			switch (I) {
+				case LibUIButtons::GetPlatform("PC") 	: Image = IMG_PC_Select;
+				case LibUIButtons::GetPlatform("PS4") 	: Image = IMG_PS_Select;
+				case LibUIButtons::GetPlatform("XB1") 	: Image = IMG_XB_Select;
+			}
+		
+			MLText ^= """
+			<quad id="Quad_Select{{{I}}}" halign="center" valign="bottom" keepratio="Fit" sizen="8 8" image="{{{Image}}}" posn="0 -88.5 6" />""";
+		
+		}
+	MLText ^= """
+			<quad  halign="right" valign="center" sizen="80 7.5"  posn="8 -84.3 7" opacity="0." scriptevents="1" id="MouseInput_Select" />
+			<label halign="right" valign="center" style="TextButtonNav" posn="-5 -84.3 6" sizen="70" textfont="{{{Font::GetFontName("Main")}}}"
+			id="Label_Select" textsize="4" text="{{{TXTSelect}}}" textcolor="fff"/>
+		</frame>
+	</frame>
+
+	<script><!--
+		
+		#Const C_Parameters ["Zone0", "Zone1", "Zone2", "Zone3", "Zone4"]
+
+		{{{Manialink::GetIncludes()}}}
+		{{{Manialink::Load()}}}
+		
+
+
+		declare Integer						G_LockInput;
+		declare Integer						G_IndexSubMenu;
+		declare Integer						G_IndexSelectY;
+		declare Integer						G_FrameX;
+		declare Integer						G_FrameXMax;
+		declare Integer						G_IndexSelectX;
+		declare Integer						G_IndexMax;
+		declare Boolean[Integer][Integer]	G_IsActive;
+		declare Text[Integer][Integer]		G_QuadInfo; //Contient les infos à afficher dans les Quads
+		declare Text[]						G_Zone0Info;
+		declare Text[][Text]				G_Zone1Info;
+		declare Text[][Text]				G_Zone2Info;
+		declare Text[][Text]				G_Zone4Info;
+		declare Text[][Text]				G_Zone3Info;
+		declare Text[Text]					G_ParamChoose;
+		declare Boolean						G_InfoGet;
+		declare Boolean						G_WaitingInfo;
+		declare Boolean						G_BlockPreviousPage;
+		declare Text						G_NextPage;
+		declare Integer						G_ShowTime;
+		declare Integer						G_ActiveButtonPlatform;
+		declare CMlQuad[] 					QuadButtons;
+		declare CMlLabel[]					LabelButtons;
+
+
+		{{{LibUIButtons::Inject_SetInputInfoTextSelected()}}}
+
+		Void UpdateLabelLight(CMlControl _Control)
+		{
+			foreach(I => Button in QuadButtons)
+			{
+				declare LabelButton <=> LabelButtons[I];
+				declare Boolean IsFocus  = False;
+				if (_Control == Button)
+				{
+					IsFocus = True;
+				}
+				else
+				{
+					IsFocus = False;
+				}
+				SetInputInfoTextSelected(LabelButton, IsFocus);
+			}
+		}
+
+		Void SetInfosGet()
+		{
+			//declare Text	Net_ZoneParent	for Page;
+			declare Text[]	Net_Zones			for Page;
+			
+			//declare Text ParamChoose = G_ParamChoose["Zone"^(G_IndexSubMenu)];
+			switch(G_IndexSubMenu) {
+				case 0: {
+					G_Zone0Info = Net_Zones;
+				}
+				case 1: {
+					declare Text ParamChoose = G_ParamChoose["Zone"^(G_IndexSubMenu-1)];
+					G_Zone1Info[ParamChoose] = Net_Zones;
+				}
+				case 2: {
+					declare Text ParamChoose = G_ParamChoose["Zone"^(G_IndexSubMenu-1)];
+					G_Zone2Info[ParamChoose] = Net_Zones;
+				}
+				case 3: {
+					declare Text ParamChoose = G_ParamChoose["Zone"^(G_IndexSubMenu-1)];
+					G_Zone3Info[ParamChoose] = Net_Zones;
+				}
+				case 4: {
+					declare Text ParamChoose = G_ParamChoose["Zone"^(G_IndexSubMenu-1)];
+					G_Zone4Info[ParamChoose] = Net_Zones;
+				}
+			}
+		}
+
+		Void UpdateSubMenu()
+		{
+			declare CMlFrame Frame_Arrow <=> (Page.GetFirstChild("Frame_Arrow") as CMlFrame);
+
+			declare Integer NumberOfButton;
+
+			G_QuadInfo.clear();
+			switch(G_IndexSubMenu)
+			{
+				case 0: //Continent
+				{
+					NumberOfButton = G_Zone0Info.count;
+					G_IndexMax     = G_Zone0Info.count;
+					for(I, 0, G_Zone0Info.count/{{{Count_InstancesX}}})
+					{
+						//declare Integer IndexQuadLeft  = I * {{{Count_InstancesX}}};
+						//declare Integer IndexQuadRight = I * {{{Count_InstancesX}}} + 1;
+						//declare Integer IndexQuadRigh3 = I * {{{Count_InstancesX}}} + 2;
+
+						""";
+
+						for(J, 0, Count_InstancesX - 1)
+						{
+							MLText ^= """
+						declare Integer IndexQuad{{{J}}}  = G_FrameX * {{{Count_InstancesY * Count_InstancesX}}} + I * {{{Count_InstancesX}}} + {{{J}}};
+
+						if(G_Zone0Info.existskey(IndexQuad{{{J}}}))
+						{
+							if(!G_QuadInfo.existskey(I)) G_QuadInfo[I] = Text[Integer];
+							G_QuadInfo[I][{{{J}}}] = G_Zone0Info[IndexQuad{{{J}}}];
+						}
+							""";
+						}
+
+						MLText ^= 
+						"""
+					}
+				}
+				case 1: //Country
+				{
+					declare Text Continent = G_ParamChoose["Zone0"];
+					NumberOfButton = G_Zone1Info[Continent].count;
+					G_IndexMax     = G_Zone1Info[Continent].count;
+					for(I, 0, G_Zone1Info[Continent].count/{{{Count_InstancesX}}})
+					{
+
+
+						""";
+
+						for(J, 0, Count_InstancesX - 1)
+						{
+							MLText ^= """
+						declare Integer IndexQuad{{{J}}}  = I * {{{Count_InstancesX}}} + {{{J}}};
+
+						if(G_Zone1Info[Continent].existskey(IndexQuad{{{J}}}))
+						{
+							if(!G_QuadInfo.existskey(I)) G_QuadInfo[I] = Text[Integer];
+							G_QuadInfo[I][{{{J}}}] = G_Zone1Info[Continent][IndexQuad{{{J}}}];
+						}
+							""";
+						}
+						
+						MLText ^= 
+						"""
+					}
+				}
+				case 2: //Region
+				{
+					declare Text Country = G_ParamChoose["Zone1"];
+					NumberOfButton = G_Zone2Info[Country].count;
+					G_IndexMax     = G_Zone2Info[Country].count;
+					for(I, 0, G_Zone2Info[Country].count/{{{Count_InstancesX}}})
+					{
+						""";
+
+						for(J, 0, Count_InstancesX - 1)
+						{
+							MLText ^= """
+						declare Integer IndexQuad{{{J}}}  = I * {{{Count_InstancesX}}} + {{{J}}};
+
+						if(G_Zone2Info[Country].existskey(IndexQuad{{{J}}}))
+						{
+							if(!G_QuadInfo.existskey(I)) G_QuadInfo[I] = Text[Integer];
+							G_QuadInfo[I][{{{J}}}] = G_Zone2Info[Country][IndexQuad{{{J}}}];
+						}
+							""";
+						}
+						
+						MLText ^= 
+						"""
+					}
+
+				}
+				case 3: //District
+				{
+					declare Text Region = G_ParamChoose["Zone2"];
+					NumberOfButton = G_Zone3Info[Region].count;
+					G_IndexMax     = G_Zone3Info[Region].count;
+					for(I, 0, G_Zone3Info[Region].count/{{{Count_InstancesX}}})
+					{
+						""";
+
+						for(J, 0, Count_InstancesX - 1)
+						{
+							MLText ^= """
+						declare Integer IndexQuad{{{J}}}  = I * {{{Count_InstancesX}}} + {{{J}}};
+
+						if(G_Zone3Info[Region].existskey(IndexQuad{{{J}}}))
+						{
+							if(!G_QuadInfo.existskey(I)) G_QuadInfo[I] = Text[Integer];
+							G_QuadInfo[I][{{{J}}}] = G_Zone3Info[Region][IndexQuad{{{J}}}];
+						}
+							""";
+						}
+						
+						MLText ^= 
+						"""
+					}
+				}
+				case 4: //Department
+				{
+					declare Text District = G_ParamChoose["Zone3"];
+					NumberOfButton = G_Zone4Info[District].count;
+					G_IndexMax     = G_Zone4Info[District].count;
+					for(I, 0, G_Zone4Info[District].count/{{{Count_InstancesX}}})
+					{
+						""";
+
+						for(J, 0, Count_InstancesX - 1)
+						{
+							MLText ^= """
+						declare Integer IndexQuad{{{J}}}  = I * {{{Count_InstancesX}}} + {{{J}}};
+
+						if(G_Zone4Info[District].existskey(IndexQuad{{{J}}}))
+						{
+							if(!G_QuadInfo.existskey(I)) G_QuadInfo[I] = Text[Integer];
+							G_QuadInfo[I][{{{J}}}] = G_Zone4Info[District][IndexQuad{{{J}}}];
+						}
+							""";
+						}
+						
+						MLText ^= 
+						"""
+					}
+				}
+			}
+			
+			if(NumberOfButton/{{{Count_InstancesX* Count_InstancesY}}} > 0)
+			{
+				if(NumberOfButton%{{{Count_InstancesX* Count_InstancesY}}} == 0)G_FrameXMax = NumberOfButton/{{{Count_InstancesX* Count_InstancesY}}} -1;
+				else G_FrameXMax = NumberOfButton/{{{Count_InstancesX* Count_InstancesY}}};
+				Frame_Arrow.Show();
+				declare CMlLabel Label_Arrow    <=> (Page.GetFirstChild("Label_Arrow")     as CMlLabel);
+				declare CMlQuad MouseInput_NextPage <=> (Page.GetFirstChild("MouseInput_NextPage") as CMlQuad);
+				declare CMlQuad MouseInput_PrevPage  <=> (Page.GetFirstChild("MouseInput_PrevPage")  as CMlQuad);
+				Label_Arrow.Value = G_FrameX + 1 ^ "/" ^ G_FrameXMax + 1;
+				
+				if(G_FrameX == 0)
+				{
+					MouseInput_PrevPage.Opacity = 0.3;
+				}
+				else
+				{
+					MouseInput_PrevPage.Opacity = 1.0;
+				}
+
+				if(G_FrameX == G_FrameXMax)
+				{
+					MouseInput_NextPage.Opacity = 0.3;
+				}
+				else
+				{
+					MouseInput_NextPage.Opacity = 1.0;
+				}
+			}
+			else
+			{
+				G_FrameXMax = NumberOfButton/{{{Count_InstancesX* Count_InstancesY}}} - 1;
+				Frame_Arrow.Hide();
+			}
+		}
+
+		Void UnSelectFocus()
+		{
+			declare CMlFrame Frame_Instance <=> (Page.GetFirstChild("Frame_Instance"^G_IndexSelectY^G_IndexSelectX) as CMlFrame);
+
+			if(Frame_Instance == Null) return;
+			declare CMlLabel Label_Name       <=> (Frame_Instance.GetFirstChild("Label_Name")          as CMlLabel);
+			//Label_Name.TextColor = <1., 1., 1.>;
+			Label_Name.Opacity = 1.;
+
+		}
+
+		Text GetZoneInfo(Integer _IndexSubMenu, Integer _Index)
+		{
+			declare Text ContinentChoosen;
+			if(_IndexSubMenu>0)
+			{
+				ContinentChoosen = G_ParamChoose["Zone"^(_IndexSubMenu-1)];
+			}
+
+			switch(_IndexSubMenu)
+			{
+				case 0: return G_Zone0Info[_Index];                     //Country
+				case 1: return G_Zone1Info[ContinentChoosen][_Index];     //Region
+				case 2: return G_Zone2Info[ContinentChoosen][_Index];      //District
+				case 3: return G_Zone3Info[ContinentChoosen][_Index];    //Department
+				case 4: return G_Zone4Info[ContinentChoosen][_Index];
+			}
+			return "";
+		}
+
+		Void SelectButton(Integer _Index)
+		{
+			declare Text ActualParameter = C_Parameters[G_IndexSubMenu];
+			
+			declare Text Contain;
+			declare Text ContinentChoosen;
+			
+			if(!G_Zone0Info.existskey(_Index)) return;
+			if(G_IndexSubMenu >=1)
+			{
+				declare PreviousParameter = C_Parameters[G_IndexSubMenu-1];
+				ContinentChoosen = G_ParamChoose[PreviousParameter];
+			}
+
+			switch(G_IndexSubMenu)
+			{
+				case 0: Contain = G_Zone0Info[_Index];
+				case 1: Contain = G_Zone1Info[ContinentChoosen][_Index];     //Region
+				case 2: Contain = G_Zone2Info[ContinentChoosen][_Index];      //District
+				case 3: Contain = G_Zone3Info[ContinentChoosen][_Index];    //Department
+				case 4: Contain = G_Zone4Info[ContinentChoosen][_Index];
+			}
+			
+			declare Text[Text]	Net_ZonesSorted	for Page;
+			if(Net_ZonesSorted.existskey(Contain)) Contain = Net_ZonesSorted[Contain];
+			
+			G_ParamChoose[ActualParameter] = Contain;
+		}
+
+		Void UpdateSelection()
+		{
+			/*
+			declare CMlQuad Quad_Selector      <=> (Page.GetFirstChild("Quad_Selector")                                as CMlQuad);
+			Quad_Selector.RelativePosition.X    = NewFrame_Instance.RelativePosition.X;
+			Quad_Selector.RelativePosition.Y    = NewFrame_Instance.RelativePosition.Y;
+			*/
+			//NewLabel_Name.TextColor = <0.4, 0.4, 1.0>;
+
+			//log("G_InfoGet: " ^ G_Zone1Info.count);
+			//return;
+			if(!G_InfoGet) return;
+
+			declare CMlLabel Label_Title <=> (Page.GetFirstChild("Label_Title"^(G_IndexSubMenu+1)) as CMlLabel);
+			declare Integer Index = G_FrameX * {{{Count_InstancesY * Count_InstancesX}}} + G_IndexSelectX + G_IndexSelectY * {{{Count_InstancesX}}};
+			Label_Title.Value = GetZoneInfo(G_IndexSubMenu, Index);
+
+		}
+
+		Text GetTitle(Integer _Index)
+		{
+			return "";
+			switch(_Index)
+			{
+				case 0: return _("Your ranking: ");
+				case 1: return _("Select your Continent");
+				case 2: return _("Select your Country");
+				case 3: return _("Select your Region");
+				case 4: return _("Select your City");
+			}
+			return "";
+		}
+
+		
+		Text GetZone(Integer _Index)
+		{
+			switch(_Index)
+			{
+				case 0: return "Zone0";
+				case 1: return "Zone1";
+				case 2: return "Zone2";
+				case 3: return "Zone3";
+				case 4: return "Zone4";
+			}
+			return "";
+		} 
+		
+
+		Void UpdateTitle()
+		{
+			for(I, 1, 4)
+			{
+				declare CMlLabel Label_Title <=> (Page.GetFirstChild("Label_Title"^I) as CMlLabel);
+				if(I <= G_IndexSubMenu + 1)
+				{
+					Label_Title.Show();
+					if(I == G_IndexSubMenu + 1)
+					{
+						Label_Title.TextColor = {{{Colors::GetColor("Yellow")}}};
+						Label_Title.Value = GetTitle(I);
+					}
+					else
+					{
+						Label_Title.TextColor = {{{Colors::GetColor("White")}}};
+						Label_Title.Value = TL::GetTranslatedText(G_ParamChoose[GetZone(I-1)]);
+					}
+				}
+				else
+				{
+					Label_Title.Hide();
+				}
+			}
+		}
+
+		Void UpdateAllLabels()
+		{
+			//G_IndexSelectY = 0;
+			//G_IndexSelectX = 0;
+			UpdateSubMenu();
+
+			for(I, 0, {{{Count_InstancesY - 1}}})
+			{
+				for(J, 0, {{{Count_InstancesX - 1}}})
+				{
+					declare CMlFrame Frame_Instance <=> (Page.GetFirstChild("Frame_Instance"^I^J)     as CMlFrame);
+					declare CMlLabel Label_Name     <=> (Frame_Instance.GetFirstChild("Label_Name") as CMlLabel);
+					declare Boolean SetActive = True;
+
+					if(!G_QuadInfo.existskey(I))    SetActive = False;
+					else if(!G_QuadInfo[I].existskey(J)) SetActive = False;
+					
+
+					if(SetActive)
+					{
+						G_IsActive[I][J] = True;
+						Label_Name.Value = TL::GetTranslatedText(G_QuadInfo[I][J]);
+						Label_Name.Value = G_QuadInfo[I][J];
+
+						Frame_Instance.Show();
+					}
+					else
+					{
+						G_IsActive[I][J] = False;
+						Frame_Instance.Hide();
+					}
+				}
+			}
+
+			UpdateTitle();
+			UpdateSelection();
+		}
+
+		Boolean IsActiveQuad(Integer _IndexSelectY, Integer _IndexSelectX)
+		{
+			if(!G_IsActive.existskey(_IndexSelectY)) return False;
+			if(!G_IsActive[_IndexSelectY].existskey(_IndexSelectX)) return False;
+			return G_IsActive[_IndexSelectY][_IndexSelectX];
+		}
+
+		Void Init()
+		{
+			declare CMlLabel Label_Title0 <=> (Page.GetFirstChild("Label_Title0") as CMlLabel);
+			declare CMlLabel Label_Title1 <=> (Page.GetFirstChild("Label_Title1") as CMlLabel);
+			declare CMlLabel Label_Title2 <=> (Page.GetFirstChild("Label_Title2") as CMlLabel);
+			declare CMlLabel Label_Title3 <=> (Page.GetFirstChild("Label_Title3") as CMlLabel);
+			declare CMlLabel Label_Title4 <=> (Page.GetFirstChild("Label_Title4") as CMlLabel);
+			
+			Label_Title0.Value = _("Ranking Zone");
+			Label_Title1.Hide();
+			Label_Title2.Hide();
+			Label_Title3.Hide();
+			Label_Title4.Hide();
+
+			G_IndexSubMenu     = 0;
+			//G_FrameX           = 0;
+			//G_FrameXMax        = 0;
+
+			G_ParamChoose["Zone0"]  = "";
+			G_ParamChoose["Zone1"]    = "";
+			G_ParamChoose["Zone2"]     = "";
+			G_ParamChoose["Zone3"]   = "";
+			G_ParamChoose["Zone4"] = "";
+
+
+			G_Zone0Info.clear();
+			G_Zone1Info.clear();
+			G_Zone2Info.clear();
+			G_Zone4Info.clear();
+			G_Zone3Info.clear();
+			""";
+/*
+			
+			foreach( Continent in G_Continents)
+			{
+				//MLText^="""G_Zone4Info["{{{District}}}"] = Text[];""";
+				MLText^="""G_Zone0Info.add("{{{Continent}}}");""";
+				
+			}
+
+
+			foreach(Continent => ListCountries in G_Countries)
+			{
+				MLText^="""G_Zone1Info["{{{Continent}}}"] = Text[];""";
+				foreach(Country in ListCountries)
+				{
+					MLText^="""G_Zone1Info["{{{Continent}}}"].add("{{{Country}}}");""";
+				}
+			}
+
+			foreach(Country => ListRegions in G_Regions)
+			{
+				MLText^="""G_Zone2Info["{{{Country}}}"] = Text[];""";
+				foreach(Region in ListRegions)
+				{
+					MLText^="""G_Zone2Info["{{{Country}}}"].add("{{{Region}}}");""";
+				}
+			}
+			
+			foreach(District => ListDepartments in G_Departments)
+			{
+				MLText^="""G_Zone4Info["{{{District}}}"] = Text[];""";
+				foreach(Department in ListDepartments)
+				{
+					MLText^="""G_Zone4Info["{{{District}}}"].add("{{{Department}}}");""";
+				}
+			}
+
+			foreach(Region => ListDistricts in G_Districts)
+			{
+				MLText^="""G_Zone3Info["{{{Region}}}"] = Text[];""";
+				foreach(District in ListDistricts)
+				{
+					MLText^="""G_Zone3Info["{{{Region}}}"].add("{{{District}}}");""";
+				}
+			}
+*/
+
+		MLText^="""
+			for(I, 0, {{{Count_InstancesY - 1}}})
+			{
+				G_IsActive[I] = Boolean[Integer];
+				//G_QuadInfo[I] = Text[Integer];
+			}
+
+		
+			//UpdateAllLabels();
+		}
+
+		Void HidePage(Text _NextPage)
+		{
+			declare CMlFrame  Frame_All     <=> (Page.GetFirstChild("Frame_All") as CMlFrame);
+			Frame_All.Hide();
+			UnSelectFocus();
+			SendCustomEvent("DetachPage", ["Location"]);
+		}
+
+		Void ShowPage()
+		{
+			declare CMlFrame  Frame_All     <=> (Page.GetFirstChild("Frame_All") as CMlFrame);
+			Frame_All.Show();
+
+			
+			G_IndexSelectX = 0;
+			G_IndexSelectY = 0;
+		}
+
+		Void Back()
+		{
+			declare Text ActualParameter = C_Parameters[G_IndexSubMenu];
+			G_ParamChoose[ActualParameter] = "";
+		}
+
+		Text GetZoneChooseFullPath()
+		{
+			declare Text FullPath = "World";
+			foreach(Zone in G_ParamChoose)
+			{
+				if(Zone != "")
+				{
+					FullPath ^= "|"^Zone;
+				}
+			}
+			return FullPath;
+		}
+
+		Void SaveParam()
+		{
+			
+			declare Text FullPath = GetZoneChooseFullPath();
+			SendCustomEvent("SaveZone", [FullPath]);
+
+			G_IndexSelectY = -1;
+			G_IndexSelectX = -1;
+
+		}
+
+		Boolean IsNextSubMenu()
+		{
+			declare Text ActualParameter = C_Parameters[G_IndexSubMenu];
+			declare Text ParamChoose     = G_ParamChoose[ActualParameter];
+
+			switch(G_IndexSubMenu)
+			{
+				case 0: return G_Zone1Info.existskey(ParamChoose);     //Region
+				case 1: return G_Zone2Info.existskey(ParamChoose);      //District
+				case 2: return G_Zone3Info.existskey(ParamChoose);    //Department
+				case 3: return G_Zone4Info.existskey(ParamChoose);
+			}
+			return False;
+		}
+
+		Void Input_Select() {
+			UnSelectFocus();
+			G_LockInput= -1;
+			G_InfoGet		= False;
+			declare Integer Index = G_FrameX * {{{Count_InstancesY * Count_InstancesX}}} + G_IndexSelectX + G_IndexSelectY * {{{Count_InstancesX}}};
+			SelectButton(Index);
+			if(G_IndexSubMenu < 4 && IsNextSubMenu() || True)
+			{
+				G_IndexSubMenu += 1;
+				G_FrameX        = 0;
+				G_FrameXMax     = 0;
+				declare Text FullPath = GetZoneChooseFullPath();
+				G_WaitingInfo	= True;
+				SendCustomEvent("GetZoneInfos", ["Location", FullPath]);
+				//UpdateAllLabels();
+			}
+			else if(!IsNextSubMenu())
+			{
+				SaveParam();
+				SendCustomEvent("GotoPrevious", [""]);
+			}
+		}
+		
+		Void UpdateHelpersForPlatform(Integer _Platform) {
+			declare Text[] InputIds = [""];
+			declare Text[] AdditionnalInputIds = ["Quad_Select", "Quad_Cancel"];
+	
+			declare CMlQuad  QuadInputIcon;
+			declare CMlFrame Frame_CheatInputs <=> (Page.GetFirstChild("Frame_CheatInputs") as CMlFrame);
+			for(F, 0, 2)
+			{
+				declare CMlFrame Frame_CheatInput <=> (Page.GetFirstChild("Frame_CheatInput"^F) as CMlFrame);
+				for (I, 0, 2) {
+					
+					for (J, 0, AdditionnalInputIds.count-1) {
+						QuadInputIcon <=> (Page.GetFirstChild(AdditionnalInputIds[J]^I) as CMlQuad);
+						if (I == _Platform)
+						{
+							QuadInputIcon.Show();
+						}
+						else
+						{
+							QuadInputIcon.Hide();
+						}
+					}
+				}
+			}
+		}
+
+		main() {
+			Init();
+			//HACK - A enlever
+			EnableMenuNavigation(True,False,Null,1);
+			//HACKEND
+			G_InfoGet = False;
+			
+			G_ShowTime = -1;
+
+			QuadButtons.add((Page.GetFirstChild("MouseInput_Select") as CMlQuad));
+			LabelButtons.add((Page.GetFirstChild("Label_Select") as CMlLabel));
+			QuadButtons.add((Page.GetFirstChild("MouseInput_Cancel") as CMlQuad));
+			LabelButtons.add((Page.GetFirstChild("Label_Cancel") as CMlLabel));
+
+			while(True) {
+				yield;
+				if(! PageIsVisible) continue;
+				LibManialink_AnimLoop();
+
+				//Blink Sélection
+				declare CMlFrame Frame_Instance <=> (Page.GetFirstChild("Frame_Instance"^G_IndexSelectY^G_IndexSelectX) as CMlFrame);
+				if(Frame_Instance != Null)
+				{
+					declare CMlLabel Label_Name       <=> (Frame_Instance.GetFirstChild("Label_Name")          as CMlLabel);
+					declare Real ButtonSelectedSinVar  = ML::Sin(Now * 0.01) * 0.5+0.5;
+					Label_Name.Opacity = ButtonSelectedSinVar;
+				}
+
+				if(G_ShowTime < Now && G_ShowTime != -1)
+				{
+					ShowPage();
+					G_ShowTime = -1;
+				}
+
+				if (Input.PendingEvents.count != 0) {
+					declare Integer LastInputPlatform;
+					switch (Input.PendingEvents[Input.PendingEvents.count-1].Pad.Type) {
+						case CInputPad::EPadType::Keyboard 		: LastInputPlatform = {{{LibUIButtons::GetPlatform("PC")}}};
+						case CInputPad::EPadType::PlayStation 	: LastInputPlatform = {{{LibUIButtons::GetPlatform("PS4")}}};
+						case CInputPad::EPadType::XBox 			: LastInputPlatform = {{{LibUIButtons::GetPlatform("XB1")}}};
+						default 								: LastInputPlatform = {{{LibUIButtons::GetPlatform("PC")}}};
+					}
+					if (LastInputPlatform != G_ActiveButtonPlatform)
+					{
+						SendCustomEvent("SetActiveButtonPlaform", ["Location", TL::ToText(LastInputPlatform)]);
+					}
+				}
+
+				foreach(Event in PendingEvents) {
+					switch(Event.Type) {
+						case CMlEvent::Type::MouseClick: {
+							declare Text[] InputId = TL::Split("_", Event.ControlId);
+							if (InputId.count < 2 || InputId[0] != "MouseInput")
+								continue;
+							switch (InputId[1]) {
+								case "PrevPage" : {
+									if(G_FrameX > 0) {
+										UnSelectFocus();
+										G_FrameX -=1;
+										G_IndexSelectX = {{{Count_InstancesX - 1}}};
+										UpdateAllLabels();
+									}
+								}
+								case "NextPage" : {
+									if(G_FrameX < G_FrameXMax) {
+										UnSelectFocus();
+										G_FrameX +=1;
+										G_IndexSelectX = 0;
+
+										declare Integer Index = G_FrameX * {{{Count_InstancesY * Count_InstancesX}}} + G_IndexSelectX + G_IndexSelectY * {{{Count_InstancesX}}};
+										if(Index > G_IndexMax) G_IndexSelectY = 0;
+
+										UpdateAllLabels();
+									}
+								}
+								case "Select" : Input_Select();
+								case "Cancel" :  {
+									UnSelectFocus();
+									if(G_IndexSubMenu > 0) {
+										Back();
+										G_IndexSubMenu -= 1;
+										G_FrameX        = 0;
+										G_FrameXMax     = 0;
+										UpdateAllLabels();
+									} else {
+										if(G_BlockPreviousPage) continue;
+										SendCustomEvent("GotoPrevious", [""]);
+									}
+								}
+								case "AppMenu" :  {
+									UnSelectFocus();
+									if(G_IndexSubMenu > 0) {
+										Back();
+										G_IndexSubMenu -= 1;
+										G_FrameX        = 0;
+										G_FrameXMax     = 0;
+										UpdateAllLabels();
+									} else {
+										if(G_BlockPreviousPage) continue;
+										SendCustomEvent("GotoPrevious", [""]);
+									}
+								}
+								case "Region" : {
+									declare Text[] Position = TL::Split(":", InputId[2]);
+									declare Integer IndexY = TL::ToInteger(Position[0]);
+									declare Integer IndexX = TL::ToInteger(Position[1]);
+									
+									if (IndexY != G_IndexSelectY || IndexX != G_IndexSelectX)
+									{
+										UnSelectFocus();
+										G_IndexSelectX = IndexX;
+										G_IndexSelectY = IndexY;
+										UpdateSelection();
+									}
+									Input_Select();
+								}
+							}
+						}
+						case CMlEvent::Type::MouseOver: {
+							UpdateLabelLight(Event.Control);
+							declare Text[] InputId = TL::Split("_", Event.ControlId);
+							if (InputId.count < 2 || InputId[0] != "MouseInput")
+								continue;
+							switch (InputId[1]) {
+								case "Region" : {
+									declare Text[] Position = TL::Split(":", InputId[2]);
+									declare Integer IndexY = TL::ToInteger(Position[0]);
+									declare Integer IndexX = TL::ToInteger(Position[1]);
+									
+									if (IndexY != G_IndexSelectY || IndexX != G_IndexSelectX)
+									{
+										UnSelectFocus();
+										G_IndexSelectX = IndexX;
+										G_IndexSelectY = IndexY;
+										UpdateSelection();
+										Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+									}
+								}
+							}
+						}
+						case CMlEvent::Type::PluginCustomEvent: {
+							declare PreviousPage = Event.CustomEventData[0];
+							switch(Event.PluginCustomEventType) {
+								case "Show" : {
+									EnableMenuNavigation(True,False,Null,2);
+									G_WaitingInfo	= True;
+									SendCustomEvent("GetZoneInfos", ["Location", "World"]);
+									if(PreviousPage == "StartDemo")
+									{
+										G_BlockPreviousPage = True;
+										G_NextPage = "Main";
+										G_ShowTime = Now + 300;
+									}
+									else if(PreviousPage == "Settings")
+									{
+										G_BlockPreviousPage = False;
+										G_NextPage = "";
+										G_ShowTime = Now;
+									}
+									else
+									{
+										G_NextPage = "";
+										G_BlockPreviousPage = True;
+										G_ShowTime = Now;
+									}
+									
+									declare CMlFrame Frame_Button <=> (Page.GetFirstChild("Frame_Button") as CMlFrame);
+									if(G_BlockPreviousPage)
+									{
+										Frame_Button.Hide();
+									}
+									else
+									{
+										Frame_Button.Show();
+									}
+
+									G_IndexSubMenu = 0;
+									Init();
+									SendCustomEvent("GetActiveButtonPlatform", ["Location"]);
+									{{{_ShowAnim}}}
+								}
+								case "Hide" : {
+									EnableMenuNavigation(True,False,Null,0);
+									{{{_HideAnim}}}
+									HidePage(PreviousPage);
+								}
+								case "SetActiveButtonPlatform" : {
+									G_ActiveButtonPlatform = TL::ToInteger(Event.CustomEventData[0]);
+									UpdateHelpersForPlatform(G_ActiveButtonPlatform);
+								}
+								case "ZoneInfosSent" : {
+									G_LockInput= Now;
+									//Init();
+									SetInfosGet();
+									UnSelectFocus();
+
+									G_IndexSelectY = 0;
+									G_IndexSelectX = 0;
+									G_InfoGet = True;
+									G_WaitingInfo = False;
+									UpdateSelection();
+									UpdateAllLabels();
+								}
+								case "ExitZone" : {
+									UnSelectFocus();
+									
+									SaveParam();
+									if(G_NextPage == "Main")
+									{
+										SendCustomEvent("GotoPage", ["Main"]);
+									}
+									else SendCustomEvent("GotoPrevious", [""]);
+								}
+							}
+						}
+
+						case CMlEvent::Type::MenuNavigation: {
+							if(G_LockInput > Now || G_LockInput == -1 || G_WaitingInfo) continue;
+							G_LockInput = Now; // Sécurité pour éviter le double input
+							switch(Event.MenuNavAction) {
+								case CMlEvent::EMenuNavAction::Up : {
+									if(G_IndexSelectY > 0 && IsActiveQuad(G_IndexSelectY - 1, G_IndexSelectX))
+									{
+										UnSelectFocus();
+										G_IndexSelectY -= 1;
+										Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+										UpdateSelection();
+									}
+								}
+								case CMlEvent::EMenuNavAction::Down : {
+									if(G_IndexSelectY < {{{Count_InstancesY - 1}}} && IsActiveQuad(G_IndexSelectY +1, G_IndexSelectX))
+									{
+										UnSelectFocus();
+										G_IndexSelectY += 1;
+										Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+										UpdateSelection();
+									}
+								}
+								case CMlEvent::EMenuNavAction::Left : {
+									if(G_IndexSelectX > 0 && IsActiveQuad(G_IndexSelectY, G_IndexSelectX - 1))
+									{
+										UnSelectFocus();
+										G_IndexSelectX -= 1;
+										Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+										UpdateSelection();
+									}
+									else if(G_FrameX > 0)
+									{
+										UnSelectFocus();
+										G_FrameX -=1;
+										G_IndexSelectX = {{{Count_InstancesX - 1}}};
+										UpdateAllLabels();
+									}
+								}
+								case CMlEvent::EMenuNavAction::Right : {
+									if(G_IndexSelectX < {{{Count_InstancesX - 1}}} && IsActiveQuad(G_IndexSelectY, G_IndexSelectX + 1))
+									{
+										UnSelectFocus();
+										G_IndexSelectX += 1;
+										Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+										UpdateSelection();
+									}
+									else if(G_FrameX < G_FrameXMax)
+									{
+										UnSelectFocus();
+										G_FrameX +=1;
+										G_IndexSelectX = 0;
+
+										declare Integer Index = G_FrameX * {{{Count_InstancesY * Count_InstancesX}}} + G_IndexSelectX + G_IndexSelectY * {{{Count_InstancesX}}};
+										if(Index > G_IndexMax) G_IndexSelectY = 0;
+
+										UpdateAllLabels();
+									}
+								}
+								case CMlEvent::EMenuNavAction::Select : {
+									UnSelectFocus();
+									G_LockInput= -1;
+									G_InfoGet		= False;
+									declare Integer Index = G_FrameX * {{{Count_InstancesY * Count_InstancesX}}} + G_IndexSelectX + G_IndexSelectY * {{{Count_InstancesX}}};
+									SelectButton(Index);
+									if(G_IndexSubMenu < 4 && IsNextSubMenu() || True)
+									{
+										G_IndexSubMenu += 1;
+										G_FrameX        = 0;
+										G_FrameXMax     = 0;
+										declare Text FullPath = GetZoneChooseFullPath();
+										G_WaitingInfo	= True;
+										SendCustomEvent("GetZoneInfos", ["Location", FullPath]);
+										//UpdateAllLabels();
+									}
+									else if(!IsNextSubMenu())
+									{
+										SaveParam();
+										SendCustomEvent("GotoPrevious", [""]);
+									}
+									
+								}
+								case CMlEvent::EMenuNavAction::Cancel : {
+									UnSelectFocus();
+									if(G_IndexSubMenu > 0)
+									{
+										Back();
+										G_IndexSubMenu -= 1;
+										G_FrameX        = 0;
+										G_FrameXMax     = 0;
+										UpdateAllLabels();
+									}
+									else
+									{
+										if(G_BlockPreviousPage) continue;
+										SendCustomEvent("GotoPrevious", [""]);
+									}
+								}
+								case CMlEvent::EMenuNavAction::AppMenu : {
+									UnSelectFocus();
+									if(G_IndexSubMenu > 0)
+									{
+										Back();
+										G_IndexSubMenu -= 1;
+										G_FrameX        = 0;
+										G_FrameXMax     = 0;
+										UpdateAllLabels();
+									}
+									else
+									{
+										if(G_BlockPreviousPage) continue;
+										SendCustomEvent("GotoPrevious", [""]);
+									}
+								}
+								case CMlEvent::EMenuNavAction::Action2 : {
+									//SendCustomEvent("ConnectOnline", [""]);
+								}
+							}
+							break;
+						}
+					}
+				}
+			}	
+		}
+		
+
+	--></script>
+	""";
+
+	return MLText;
+}

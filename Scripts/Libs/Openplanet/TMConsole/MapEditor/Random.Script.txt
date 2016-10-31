@@ -1,0 +1,134 @@
+/** 
+ * Random library
+ */
+
+#Const Version		"2015-11-24"
+#Const ScriptName	"Random.Script.txt"
+
+#Include "MathLib" as ML
+
+// ---------------------------------- //
+// Constants
+// ---------------------------------- //
+#Const C_SeedMax 1000000000	///< Maximum value of the seed
+
+// ---------------------------------- //
+// Globales
+// ---------------------------------- //
+declare Boolean G_SeedInitialized;	///< True when the seed is initialized
+declare Integer G_Seed;				///< The seed
+
+// ---------------------------------- //
+// Public
+// ---------------------------------- //
+// ---------------------------------- //
+/** Return the version number of the script
+ *
+ *	@return						The version number of the script
+ */
+Text GetScriptVersion() {
+	return Version;
+}
+
+// ---------------------------------- //
+/** Return the name of the script
+ *
+ *	@return						The name of the script
+ */
+Text GetScriptName() {
+	return ScriptName;
+}
+
+// ---------------------------------- //
+/** Get the current seed
+ *
+ *	@return							The seed currently used
+ */
+Integer GetSeed() {
+	return G_Seed;
+}
+
+// ---------------------------------- //
+/// Reset the random seed
+Void Reset() {
+	G_SeedInitialized = False;
+	G_Seed = 0;
+}
+
+// ---------------------------------- //
+/** Initialize the seed
+ *
+ *	@param	_Seed					The seed to use
+ */
+Void Init(Integer _Seed) {
+	G_SeedInitialized = True;
+	G_Seed = _Seed;
+}
+
+// ---------------------------------- //
+/// Randomly inialize the seed
+Void Init() {
+	Init(ML::Rand(0, C_SeedMax));
+}
+
+// ---------------------------------- //
+/** Get a random Integer between _Start and _End
+ *
+ *	@param	_Start					Minimum value
+ *	@param	_End					Maximum value
+ *
+ *	@return							The random value
+ */
+Integer Rand(Integer _Start, Integer _End) {
+	declare Result = _Start;
+	if (G_SeedInitialized) Result = ML::Rand(_Start, _End, G_Seed);
+	else Result = ML::Rand(_Start, _End);
+	
+	G_Seed = ML::Rand(0, C_SeedMax, G_Seed);
+	
+	return Result;
+}
+
+// ---------------------------------- //
+/** Get a random Real between _Start and _End
+ *
+ *	@param	_Start					Minimum value
+ *	@param	_End					Maximum value
+ *	@param	_Noise
+ *
+ *	@return							The random value
+ */
+Real Rand(Real _Start, Real _End, Real _Noise) {
+	declare Result = _Start;	
+	if (G_SeedInitialized) Result = ML::Rand(_Start, _End, G_Seed);
+	else Result = ML::Rand(_Start, _End);
+	
+	declare TmpSeed = ML::Rand(0., 1., G_Seed) * C_SeedMax;
+	if (_Noise != 1. && _Noise != 0.) {
+		if (_Noise >= 1. || _Noise <= -1.) TmpSeed /= _Noise;
+		else TmpSeed *= _Noise;
+	}
+	
+	G_Seed = ML::NearestInteger(TmpSeed);
+	
+	return Result;
+}
+
+
+// ---------------------------------- //
+// Overload the Rand() function
+Real Rand(Real _Start, Real _End) {
+	return Rand(_Start, _End, 1.);
+}
+
+// ---------------------------------- //
+/// Unload the library
+Void Unload() {
+	Reset();
+}
+
+// ---------------------------------- //
+/// Load the library
+Void Load() {
+	Unload();
+}

@@ -1,0 +1,76 @@
+/** 
+ * MapInfo library
+ */
+
+#Const Version		"2016-01-18"
+#Const ScriptName	"MapInfo.Script.txt"
+
+// ---------------------------------- //
+// Functions
+// ---------------------------------- //
+// ---------------------------------- //
+// Public
+// ---------------------------------- //
+// ---------------------------------- //
+/** Return the version number of the script
+ *
+ *	@return						The version number of the script
+ */
+Text GetScriptVersion() {
+	return Version;
+}
+
+// ---------------------------------- //
+/** Return the name of the script
+ *
+ *	@return						The name of the script
+ */
+Text GetScriptName() {
+	return ScriptName;
+}
+
+// ---------------------------------- //
+/** Save the map length in the map metadata
+ *
+ *	@param	_MapLength				The map length
+ */
+Void SetRandomMapLength(Text _MapLength) {
+	declare metadata Text PartyEditor_RandomMapLength for Map;
+	PartyEditor_RandomMapLength = _MapLength;
+}
+// ---------------------------------- //
+/** Get the map length from the metadata
+ *
+ *	@return							The map length
+ */
+Text GetRandomMapLength() {
+	declare metadata Text PartyEditor_RandomMapLength for Map;
+	return PartyEditor_RandomMapLength;
+}
+
+// ---------------------------------- //
+/** Save the checkpoints times done during the track validation
+ *
+ *	@param	_CheckpointsTimes		The checkpoints times to save
+ */
+Void SetAuthorCheckpointsTimes(Integer[] _CheckpointsTimes) {
+	declare metadata PartyEditor_AuthorCheckpointsTimes for Map = Integer[];
+	PartyEditor_AuthorCheckpointsTimes = _CheckpointsTimes;
+}
+
+// ---------------------------------- //
+/** Get the checkpoints times done during the track  validation
+ *
+ *	@return							The checkpoints times
+ */
+Integer[] GetAuthorCheckpointsTimes() {
+	declare metadata PartyEditor_AuthorCheckpointsTimes for Map = Integer[];
+	return  PartyEditor_AuthorCheckpointsTimes;
+}
+
+// ---------------------------------- //
+/// Reset the checkpoints times done during the track validation
+Void ResetAuthorCheckpointsTimes() {
+	declare metadata PartyEditor_AuthorCheckpointsTimes for Map = Integer[];
+	PartyEditor_AuthorCheckpointsTimes.clear();
+}

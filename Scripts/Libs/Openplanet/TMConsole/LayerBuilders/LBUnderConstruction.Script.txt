@@ -1,0 +1,96 @@
+
+// file://Media/Manialinks/Nadeo/TMConsole/MainMenuArnaud.Script.txt
+#Include "Libs/Openplanet/TMConsole/BuilderHelper.Script.txt"	as BuilderHelper
+
+#Const C_ImgBase "file://Media/Manialinks/Nadeo/TMConsole/Images/"
+ 
+Text Build(Text _ShowAnim, Text _HideAnim) {
+	declare Text IMGBoardFull         = C_ImgBase^"board-full.png";
+	declare Text IMGBoard             = C_ImgBase^"board-3x3.png";
+	declare Text IMGFontGroundValley1 = C_ImgBase^"travelling-valley-fg1.png";
+	declare Text IMGBackGroundValley1 = C_ImgBase^"travelling-valley-bg1.jpg";
+	
+	
+	declare Text MLText = """
+	
+	
+	<frame id="Frame_All">
+		<label halign="center" valign="center" style="TextButtonNav" posn="0 59.5 5" id="Label_Title"    textsize="15" text="Title" textcolor="fff"/>
+		<label halign="center" valign="center" style="TextButtonNav" posn="0 20.0 5" id="Label_SubTitle" textsize="9"	text="Under construction" textcolor="fff"/>
+		
+		<quad id="BackgroundPlaceHolder" halign="center" valign="center" keepratio="Fit"
+		sizen="320 180"  image="{{{IMGBoardFull}}}" posn="0 -2.5 2" opacity="1."
+		/>
+		
+		<quad id="Background" halign="center" valign="center" opacity="0." keepratio="Fit"
+		sizen="265 200" image="{{{IMGBoard}}}" posn="0 0 4"
+		/>
+		<frame id="Frame_Decord" posn="-160 0 0">
+			<quad id="BackGroundLvl1" halign="left" valign="bottom" opacity="1." keepratio="Fit"
+				sizen="1000 180" image="{{{IMGFontGroundValley1}}}" posn="0 -90 1"
+			/>
+			<quad id="BackGroundLvl2" halign="left" valign="center" opacity="1." keepratio="Fit"
+				sizen="1200 180" image="{{{IMGBackGroundValley1}}}" posn="0 0 0"
+			/>
+		</frame>
+	</frame>
+	
+	
+	<script><!--
+			#Const DebugName  "L_UnderConstruction"
+			
+		
+		{{{BuilderHelper::MLCommonFunctions()}}}
+		Void Init()
+		{
+			declare CMlLabel Label_Title <=> (Page.GetFirstChild("Label_Title") as CMlLabel);
+			declare Text GameSelect for This;
+			Label_Title.Value = GameSelect;
+		}
+
+		main() {
+			{{{BuilderHelper::MLEnableMenuNavigationInputs()}}}
+			
+			
+			while(True) {
+				yield;
+				if(! PageIsVisible) continue;
+
+				foreach(Event in PendingEvents) {
+					
+					switch(Event.Type) {
+
+						case CMlEvent::Type::MenuNavigation: {
+							switch(Event.MenuNavAction) {
+								case CMlEvent::EMenuNavAction::Cancel : {
+									SendCustomEvent("GotoPrevious", [""]);
+								}
+								case CMlEvent::EMenuNavAction::AppMenu : {
+									SendCustomEvent("GotoPrevious", [""]);
+								}
+							}
+						}
+
+						case CMlEvent::Type::PluginCustomEvent: {
+							
+							switch(Event.PluginCustomEventType) {
+								case "Show" : {
+									Init();
+									{{{_ShowAnim}}}
+									EnableMenuNavigation(True,False,Null,1);
+								}
+								
+								case "Hide" : {
+									{{{_HideAnim}}}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	--></script>
+	""";
+	
+	return MLText;
+}

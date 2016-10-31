@@ -1,0 +1,1664 @@
+/** 
+ * Map content library
+ */
+#Const Version		"2016-03-15"
+#Const ScriptName	"MapContent.Script.txt"
+
+#Include "TextLib" as TL
+#Include "MathLib" as ML
+#Include "MapUnits" as MU
+#Include "Libs/Openplanet/TMConsole/MapEditor/Macroblock.Script.txt" as Macroblock
+#Include "Libs/Openplanet/TMConsole/MapEditor/Utils.Script.txt" as Utils
+
+// ---------------------------------- //
+// Constants
+// ---------------------------------- //
+#Const C_Sequence_Browse	0
+#Const C_Sequence_Order		1
+/// Type of special macroblocks
+#Const C_Block_Start		0
+#Const C_Block_Checkpoint	1
+#Const C_Block_Finish		2
+#Const C_Block_StopEngine	3
+#Const C_Block_Multilap		4
+#Const C_Blocks [0, 1, 2, 3, 4]
+
+// ---------------------------------- //
+// Globales
+// ---------------------------------- //
+declare Int3 G_Retrieve_Coord; ///< The coordinates currently retrieved
+declare Boolean G_Retrieve_MacroblockExists; ///< The requested macroblock exists
+declare CMacroblockModel G_Retrieve_MacroblockModel; ///< The retrieved macroblock model
+declare Int3 G_Retrieve_MacroblockCoord; ///< The retrieved macroblock coordinates
+declare CEditorPlugin::CardinalDirections G_Retrieve_MacroblockDir; ///< The retrieved macroblock direction
+declare Integer G_Retrieve_MacroblockType; ///< The retrieved macroblock type
+declare Integer G_Retrieve_MacroblockKey; ///< The retrieved macroblock key
+declare Integer G_Retrieve_MacroblockOrder; ///< The retrieved macroblock order
+declare Boolean G_NeedComputePath; ///< Do we need to recompute path
+declare Integer[Integer] G_MacroblocksToSort; ///< Macroblocks to sort
+declare Integer[] G_MacroblocksNotTested; ///< Not tested macroblocks
+declare Integer[] G_MacroblocksToTest; ///< Macroblocks to test
+declare Integer G_ComputePathSequence; ///< Current sequence in path computation
+declare Boolean G_NeedComputeBarycentre; ///< Do we need to recompute the barycentre
+declare Int3 G_Barycentre_Barycentre; ///< Barycentre
+declare Integer G_Barycentre_Type; ///< Barycentre blocks type
+declare Int3 G_Barycentre_BoundingBoxMax; ///< Barycentre bouding box max
+declare Int3 G_Barycentre_BoundingBoxMin; ///< Barycentre bounding box min
+declare Real[Integer] G_DistanceTo;	///< Distance to the last occurence of a special block
+declare Integer[][CEditorPlugin::CardinalDirections][Int3][Ident] G_DisconnectedClips; ///< List of disconnected clips
+/// Clips stores
+declare Text[] G_MacroblocksClipsNames;
+declare Int3[] G_MacroblocksClipsCoords;
+declare CEditorPlugin::CardinalDirections[] G_MacroblocksClipsDirs;
+declare Integer[] G_MacroblocksClipsIds;
+declare Integer[] G_MacroblocksClipsKeys;
+/// Clips retrieve
+declare Boolean G_Retrieve_ClipExists;
+declare Text G_Retrieve_ClipName;
+declare Int3 G_Retrieve_ClipCoord;
+declare CEditorPlugin::CardinalDirections G_Retrieve_ClipDir;
+declare Integer G_Retrieve_ClipId;
+declare Integer G_Retrieve_ClipKey;
+/// Macroblocks info
+declare CMacroblockModel[Integer] G_MacroblockModels; ///< A list of macroblock models placed on the map
+declare Ident[Int3] G_MacroblocksBlocksIds; ///< A list of ids and coordinates of macroblocks placed on the map
+declare Integer[Int3] G_MacroblocksCoords; ///< A list coordinates occupied by a macroblock
+declare Integer[Int3] G_CollisionsCoords; ///< A list of collisions coordinates
+declare Integer[][Integer] G_SpecialKeys;
+declare CMacroblockModel[Integer] G_MacroblockModelsNumIds; ///< The macroblock models and their num ids
+declare Real[Integer] G_MacroblocksLengths; ///< The macroblocks lengths
+
+// ---------------------------------- //
+// Functions
+// ---------------------------------- //
+// ---------------------------------- //
+// Private
+// ---------------------------------- //
+// ---------------------------------- //
+/** Add the block units of a macroblock to the occupied coords
+ *
+ *	@param	_MacroblockModel	The macroblock model
+ *	@param	_Coord				The macroblock coordinates
+ *	@param	_Dir				The macroblock direction
+ */
+Boolean Private_AddMacroblock(CMacroblockModel _MacroblockModel, Int3 _Coord, CEditorPlugin::CardinalDirections _Dir, Integer _Key) {
+	if (_MacroblockModel == Null) {
+		// Something went wrong, the macroblock model we are trying to add is Null
+		return False;
+	}
+	
+	G_MacroblockModels[_Key] = _MacroblockModel;
+	G_MacroblocksLengths[_Key] = Macroblock::GetLength(_MacroblockModel);
+	
+	declare Coords = Macroblock::GetCoords(_MacroblockModel, _Coord, _Dir, False);
+	foreach (Coord in Coords) {
+		G_MacroblocksCoords[Coord] = _Key;
+		
+		declare Block = GetBlock(Coord);
+		if (Block != Null) G_MacroblocksBlocksIds[Coord] = Block.Id;
+		else G_MacroblocksBlocksIds[Coord] = NullId;
+	}
+	
+	declare CollisionsCoords = Macroblock::GetCollisionsCoords(_MacroblockModel, _Coord, _Dir);
+	foreach (Coord in CollisionsCoords) {
+		G_CollisionsCoords[Coord] = _Key;
+	}
+	
+	declare ClipsNames = Macroblock::GetClipNames(_MacroblockModel);
+	declare ClipsCoords = Macroblock::GetClipCoords(_MacroblockModel, _Coord, _Dir);
+	declare ClipsDirs = Macroblock::GetClipDirs(_MacroblockModel, _Dir);
+	
+	foreach (ClipId => ClipName in ClipsNames) {
+		G_MacroblocksClipsNames.add(ClipName);
+		G_MacroblocksClipsCoords.add(ClipsCoords[ClipId]);
+		G_MacroblocksClipsDirs.add(ClipsDirs[ClipId]);
+		G_MacroblocksClipsIds.add(ClipId);
+		G_MacroblocksClipsKeys.add(_Key);
+	}
+	
+	if (_MacroblockModel.HasStart || _MacroblockModel.HasMultilap) {
+		if (!G_SpecialKeys.existskey(C_Block_Start)) G_SpecialKeys[C_Block_Start] = Integer[];
+		G_SpecialKeys[C_Block_Start].add(_Key);
+	}
+	if (_MacroblockModel.HasMultilap) {
+		if (!G_SpecialKeys.existskey(C_Block_Multilap)) G_SpecialKeys[C_Block_Multilap] = Integer[];
+		G_SpecialKeys[C_Block_Multilap].add(_Key);
+	}
+	if (_MacroblockModel.HasCheckpoint) {
+		if (!G_SpecialKeys.existskey(C_Block_Checkpoint)) G_SpecialKeys[C_Block_Checkpoint] = Integer[];
+		G_SpecialKeys[C_Block_Checkpoint].add(_Key);
+	}
+	if (_MacroblockModel.HasFinish) {
+		if (!G_SpecialKeys.existskey(C_Block_Finish)) G_SpecialKeys[C_Block_Finish] = Integer[];
+		G_SpecialKeys[C_Block_Finish].add(_Key);
+	}
+	if (TL::Find("StopEngine", Macroblock::GetName(_MacroblockModel), False, False)) {
+		if (!G_SpecialKeys.existskey(C_Block_StopEngine)) G_SpecialKeys[C_Block_StopEngine] = Integer[];
+		G_SpecialKeys[C_Block_StopEngine].add(_Key);
+	}
+	
+	return True;
+}
+
+// ---------------------------------- //
+/** Remove the block units and the clips of a macroblock from the occupied coords
+ *
+ *	@param	_Key				The key of the macroblock
+ */
+Void Private_RemoveMacroblock(Integer _Key) {
+	declare Removed = G_MacroblockModels.removekey(_Key);
+	Removed = G_MacroblocksLengths.removekey(_Key);
+	
+	declare RemovedCoords = Int3[];
+	while (G_MacroblocksCoords.exists(_Key)) {
+		declare Coord = G_MacroblocksCoords.keyof(_Key);
+		declare Removed = G_MacroblocksCoords.remove(_Key);
+		if (!Removed) break;
+		Removed = G_MacroblocksBlocksIds.removekey(Coord);
+	}
+	
+	while (G_CollisionsCoords.remove(_Key)) {}
+	
+	while (G_MacroblocksClipsKeys.exists(_Key)) {
+		declare Key = G_MacroblocksClipsKeys.keyof(_Key);
+		Removed = G_MacroblocksClipsKeys.removekey(Key);
+		Removed = G_MacroblocksClipsNames.removekey(Key);
+		Removed = G_MacroblocksClipsCoords.removekey(Key);
+		Removed = G_MacroblocksClipsDirs.removekey(Key);
+		Removed = G_MacroblocksClipsIds.removekey(Key);
+	}
+	
+	declare Indexes = Integer[];
+	foreach (Index => SpecialKeys in G_SpecialKeys) {
+		Indexes.add(Index);
+	}
+	foreach (Index in Indexes) {
+		Removed = G_SpecialKeys[Index].remove(_Key);
+	}
+}
+
+// ---------------------------------- //
+/** Retrieve the info about the macroblock occupying a coordinate
+ *
+ *	@param	_Coord				The coordinates
+ */
+Void Private_Get(Int3 _Coord) {
+	if (G_Retrieve_Coord == _Coord) return;
+	
+	G_Retrieve_MacroblockExists = False;
+	G_Retrieve_MacroblockModel <=> Null;
+	G_Retrieve_MacroblockCoord = Int3;
+	G_Retrieve_MacroblockDir = CEditorPlugin::CardinalDirections::North;
+	G_Retrieve_MacroblockType = -1;
+	G_Retrieve_MacroblockKey = -1;
+	G_Retrieve_MacroblockOrder = -1;
+	G_Retrieve_Coord = _Coord;
+	
+	if (!G_MacroblocksCoords.existskey(_Coord)) return;
+	G_Retrieve_MacroblockKey = G_MacroblocksCoords[_Coord];
+	
+	if (!G_MacroblockModels.existskey(G_Retrieve_MacroblockKey)) return;
+	
+	declare metadata Int3[Integer] MapContent_MacroblockCoord for Map;
+	declare metadata Integer[Integer] MapContent_MacroblockDir for Map;
+	declare metadata Integer[Integer] MapContent_MacroblockType for Map;
+	declare metadata Integer[Integer] MapContent_MacroblockOrder for Map;
+	G_Retrieve_MacroblockExists = True;
+	G_Retrieve_MacroblockModel <=> G_MacroblockModels[G_Retrieve_MacroblockKey];
+	G_Retrieve_MacroblockCoord = MapContent_MacroblockCoord[G_Retrieve_MacroblockKey];
+	G_Retrieve_MacroblockDir = Utils::IntToDir(MapContent_MacroblockDir[G_Retrieve_MacroblockKey]);
+	G_Retrieve_MacroblockType = MapContent_MacroblockType[G_Retrieve_MacroblockKey];
+	G_Retrieve_MacroblockOrder = MapContent_MacroblockOrder[G_Retrieve_MacroblockKey];
+}
+
+// ---------------------------------- //
+/** Retrieve the info about the clip occupying a coordinate
+ *	/!\ We stop at the first clip found
+ *	/!\ but several clips can be at the same coordinates
+ *
+ *	@param	_Coord				The coordinates
+ */
+Void Private_GetClip(Int3 _Coord) {
+	if (G_Retrieve_ClipCoord == _Coord) return;
+	
+	G_Retrieve_ClipExists = False;
+	G_Retrieve_ClipName = "";
+	G_Retrieve_ClipCoord = _Coord;
+	G_Retrieve_ClipDir = CEditorPlugin::CardinalDirections::North;
+	G_Retrieve_ClipId = -1;
+	G_Retrieve_ClipKey = -1;
+	
+	if (!G_MacroblocksClipsCoords.exists(_Coord)) return;
+	declare Key = G_MacroblocksClipsCoords.keyof (_Coord);
+	
+	G_Retrieve_ClipExists = True;
+	G_Retrieve_ClipName = G_MacroblocksClipsNames[Key];
+	G_Retrieve_ClipDir = G_MacroblocksClipsDirs[Key];
+	G_Retrieve_ClipId = G_MacroblocksClipsIds[Key];
+	G_Retrieve_ClipKey = G_MacroblocksClipsKeys[Key];
+}
+
+// ---------------------------------- //
+/** Compute the map barycentre
+ *
+ *	@param	_Type				The macroblock type
+ */
+Void Private_ComputeBarycentre(Integer _Type) {
+	G_NeedComputeBarycentre = False;
+	G_Barycentre_Barycentre = Utils::NullCoord();
+	G_Barycentre_Type = _Type;
+	G_Barycentre_BoundingBoxMin = Utils::NullCoord();
+	G_Barycentre_BoundingBoxMax = Utils::NullCoord();
+	
+	declare metadata Integer[Integer] MapContent_MacroblockType for Map;
+	if (G_MacroblocksCoords.count <= 0) return;
+	
+	declare Int3 Total;
+	declare Integer Count;
+	foreach (Coord => Key in G_MacroblocksCoords) {
+		if (_Type < 0 || (_Type >= 0 && MapContent_MacroblockType[Key] == _Type)) {
+			Total += Coord;
+			Count += 1;
+			
+			if (G_Barycentre_BoundingBoxMin == Utils::NullCoord()) G_Barycentre_BoundingBoxMin = Coord;
+			if (G_Barycentre_BoundingBoxMax == Utils::NullCoord()) G_Barycentre_BoundingBoxMax = Coord;
+			
+			G_Barycentre_BoundingBoxMin.X = ML::Min(G_Barycentre_BoundingBoxMin.X, Coord.X);
+			G_Barycentre_BoundingBoxMin.Y = ML::Min(G_Barycentre_BoundingBoxMin.Y, Coord.Y);
+			G_Barycentre_BoundingBoxMin.Z = ML::Min(G_Barycentre_BoundingBoxMin.Z, Coord.Z);
+			G_Barycentre_BoundingBoxMax.X = ML::Max(G_Barycentre_BoundingBoxMax.X, Coord.X);
+			G_Barycentre_BoundingBoxMax.Y = ML::Max(G_Barycentre_BoundingBoxMax.Y, Coord.Y);
+			G_Barycentre_BoundingBoxMax.Z = ML::Max(G_Barycentre_BoundingBoxMax.Z, Coord.Z);
+		}
+	}
+	
+	if (Count <= 0) G_Barycentre_Barycentre = <Map.Size.X/2, CollectionGroundY, Map.Size.Z/2>;
+	else G_Barycentre_Barycentre = <Total.X / Count, Total.Y / Count, Total.Z / Count>;
+}
+
+// ---------------------------------- //
+/// Invalidate the retrieve cache
+Void Private_InvalidCache() {
+	G_Retrieve_Coord = Utils::NullCoord();
+	G_Retrieve_ClipCoord = Utils::NullCoord();
+	G_NeedComputePath = True;
+	G_NeedComputeBarycentre = True;
+	G_DistanceTo.clear();
+	G_DisconnectedClips.clear();
+}
+
+// ---------------------------------- //
+/// Clear the history
+Void Private_Clear() {
+	G_MacroblockModels.clear();
+	G_MacroblocksLengths.clear();
+	G_MacroblocksCoords.clear();
+	G_MacroblocksBlocksIds.clear();
+	G_CollisionsCoords.clear();
+	G_MacroblocksClipsNames.clear();
+	G_MacroblocksClipsCoords.clear();
+	G_MacroblocksClipsDirs.clear();
+	G_MacroblocksClipsIds.clear();
+	G_MacroblocksClipsKeys.clear();
+	G_SpecialKeys.clear();
+	G_Retrieve_MacroblockExists = False;
+	G_Retrieve_Coord = Utils::NullCoord();
+	G_Retrieve_MacroblockModel <=> Null;
+	G_Retrieve_MacroblockCoord = Int3;
+	G_Retrieve_MacroblockDir = CEditorPlugin::CardinalDirections::North;
+	G_Retrieve_MacroblockType = -1;
+	G_Retrieve_MacroblockKey = -1;
+	G_Retrieve_MacroblockOrder = -1;
+	G_Retrieve_ClipExists = False;
+	G_Retrieve_ClipName = "";
+	G_Retrieve_ClipCoord = Utils::NullCoord();
+	G_Retrieve_ClipDir = CEditorPlugin::CardinalDirections::North;
+	G_Retrieve_ClipId = -1;
+	G_Retrieve_ClipKey = -1;
+	G_NeedComputePath = True;
+	G_MacroblocksToSort.clear();
+	G_MacroblocksNotTested.clear();
+	G_MacroblocksToTest.clear();
+	G_ComputePathSequence = 0;
+	G_NeedComputeBarycentre = True;
+	G_Barycentre_Barycentre = Utils::NullCoord();
+	G_Barycentre_Type = -1;
+	G_Barycentre_BoundingBoxMax = Utils::NullCoord();
+	G_Barycentre_BoundingBoxMin = Utils::NullCoord();
+	G_DistanceTo.clear();
+	G_DisconnectedClips.clear();
+}
+
+// ---------------------------------- //
+/** Get a num id for a macroblock model
+ *
+ *	@param	_MacroblockModel		The macroblock model to check
+ * 
+ *	@return							The num id of the macroblock model
+ */
+Integer Private_GetNumId(CMacroblockModel _MacroblockModel) {
+	if (_MacroblockModel == Null) return -1;
+	
+	declare metadata Integer[Text] MapContent_MacroblockModelsNumIds for Map;
+	declare MacroblockId = Macroblock::GetId(_MacroblockModel);
+	declare MapContent_NumId for _MacroblockModel = -1;
+	
+	if (MapContent_NumId > 0) {
+		if (!MapContent_MacroblockModelsNumIds.existskey(MacroblockId)) {
+			MapContent_MacroblockModelsNumIds[MacroblockId] = MapContent_NumId;
+		}
+		return MapContent_NumId;
+	}
+	
+	if (MapContent_MacroblockModelsNumIds.existskey(MacroblockId)) {
+		MapContent_NumId = MapContent_MacroblockModelsNumIds[MacroblockId];
+	} else {
+		MapContent_MacroblockModelsNumIds = MapContent_MacroblockModelsNumIds.sort();
+		declare Count = 1;
+		foreach (NumId in MapContent_MacroblockModelsNumIds) {
+			if (Count != NumId) break;
+			Count += 1;
+		}
+		MapContent_MacroblockModelsNumIds[MacroblockId] = Count;
+		MapContent_NumId = Count;
+	}
+	
+	return MapContent_NumId;
+}
+
+// ---------------------------------- //
+/** Get a macroblock model from its num id
+ *
+ *	@param	_NumId					The num id of the macroblock model to get
+ *
+ *	@return							The macroblock model if found, Null otherwise
+ */
+CMacroblockModel Private_GetMacroblockModelFromNumId(Integer _NumId) {
+	// Get from cache
+	if (G_MacroblockModelsNumIds.existskey(_NumId)) return G_MacroblockModelsNumIds[_NumId];
+	
+	foreach (MacroblockModel in MacroblockModels) {
+		declare MapContent_NumId for MacroblockModel = -1;
+		if (MapContent_NumId == _NumId) {
+			// Save in cache
+			G_MacroblockModelsNumIds[_NumId] = MacroblockModel;
+			
+			return MacroblockModel;
+		}
+	}
+	return Null;
+}
+
+// ---------------------------------- //
+// Public
+// ---------------------------------- //
+// ---------------------------------- //
+/** Return the version number of the script
+ *
+ *	@return						The version number of the script
+ */
+Text GetScriptVersion() {
+	return Version;
+}
+
+// ---------------------------------- //
+/** Return the name of the script
+ *
+ *	@return						The name of the script
+ */
+Text GetScriptName() {
+	return ScriptName;
+}
+
+// ---------------------------------- //
+/// Get the block type constants
+Integer Block_Start() { return C_Block_Start; }
+Integer Block_Checkpoint() { return C_Block_Checkpoint; }
+Integer Block_Finish() { return C_Block_Finish; }
+Integer Block_StopEngine() { return C_Block_StopEngine; }
+Integer Block_Multilap() { return C_Block_Multilap; }
+
+// ---------------------------------- //
+/** Get the key of broken macroblocks that needs to be cleaned
+ *
+ *	@return							The keys of the broken macroblocks
+ */
+Integer[] Clean() {
+	declare Integer[] KeysToRemove;
+	foreach (BlockCoord => BlockId in G_MacroblocksBlocksIds) {
+		declare Block <=> GetBlock(BlockCoord);
+		if (
+			(Block != Null && BlockId != Block.Id) ||
+			(Block == Null && BlockId != NullId)
+		) {
+			if (G_MacroblocksCoords.existskey(BlockCoord)) {
+				declare Key = G_MacroblocksCoords[BlockCoord];
+				if (!KeysToRemove.exists(Key)) KeysToRemove.add(Key);
+			}
+		}
+	}
+	
+	return KeysToRemove;
+}
+
+// ---------------------------------- //
+/** Add a macroblock to the map
+ *
+ *	@param	_MacroblockModel	The macroblock model
+ *	@param	_Coord				The macroblock coordinates
+ *	@param	_Dir				The macroblock direction
+ *	@param	_Type				The macroblock type
+ */
+Void Add(CMacroblockModel _MacroblockModel, Int3 _Coord, CEditorPlugin::CardinalDirections _Dir, Integer _Type) {
+	if (_MacroblockModel == Null) return;
+	
+	declare metadata Integer[Integer] MapContent_MacroblockModelNumId for Map;
+	declare metadata Int3[Integer] MapContent_MacroblockCoord for Map;
+	declare metadata Integer[Integer] MapContent_MacroblockDir for Map;
+	declare metadata Integer[Integer] MapContent_MacroblockType for Map;
+	declare metadata Integer[Integer] MapContent_MacroblockOrder for Map;
+	declare metadata Integer MapContent_MaxOrder for Map;
+	
+	declare TmpMacroblockModelNumId = MapContent_MacroblockModelNumId.sortkey(); //< Don't loop on a declare for variable, it's slow
+	declare MacroblockKey = TmpMacroblockModelNumId.count;
+	while (TmpMacroblockModelNumId.existskey(MacroblockKey)) MacroblockKey -= 1;
+	
+	declare Added = Private_AddMacroblock(_MacroblockModel, _Coord, _Dir, MacroblockKey);
+	if (!Added) return;
+	
+	declare MBNumId = Private_GetNumId(_MacroblockModel);
+	
+	MapContent_MacroblockModelNumId[MacroblockKey] = MBNumId;
+	MapContent_MacroblockCoord[MacroblockKey] = _Coord;
+	MapContent_MacroblockDir[MacroblockKey] = Utils::DirToInt(_Dir);
+	MapContent_MacroblockType[MacroblockKey] = _Type;
+	MapContent_MacroblockOrder[MacroblockKey] = MapContent_MaxOrder;
+	MapContent_MaxOrder += 1;
+	
+	Private_InvalidCache();
+}
+
+// ---------------------------------- //
+/** Remove a macroblock from the map
+ *
+ *	@param	_MacroblockModel	The macroblock model
+ *	@param	_Coord				The macroblock coordinates
+ *	@param	_Dir				The macroblock direction
+ *	@param	_Type				The macroblock type
+ */
+Void Remove(CMacroblockModel _MacroblockModel, Int3 _Coord, CEditorPlugin::CardinalDirections _Dir, Integer _Type) {
+	if (_MacroblockModel == Null) return;
+	
+	declare metadata Integer[Integer] MapContent_MacroblockModelNumId for Map;
+	declare metadata Int3[Integer] MapContent_MacroblockCoord for Map;
+	declare metadata Integer[Integer] MapContent_MacroblockDir for Map;
+	declare metadata Integer[Integer] MapContent_MacroblockType for Map;
+	declare metadata Integer[Integer] MapContent_MacroblockOrder for Map;
+	
+	declare MBNumId = Private_GetNumId(_MacroblockModel);
+	
+	declare Integer[] ToRemove;
+	declare TmpMacroblockCoords = MapContent_MacroblockCoord;
+	while (TmpMacroblockCoords.exists(_Coord)) {
+		declare Key = TmpMacroblockCoords.keyof(_Coord);
+		declare Removed = TmpMacroblockCoords.removekey(Key);
+		if (!Removed) break;
+		
+		if (
+			MBNumId == MapContent_MacroblockModelNumId[Key] &&
+			Utils::DirToInt(_Dir) == MapContent_MacroblockDir[Key] &&
+			_Type == MapContent_MacroblockType[Key]
+		) {
+			if (!ToRemove.exists(Key)) ToRemove.add(Key);
+		}
+	}
+	
+	declare Removed = False;
+	foreach (Key in ToRemove) {
+		Removed = MapContent_MacroblockModelNumId.removekey(Key);
+		Removed = MapContent_MacroblockCoord.removekey(Key);
+		Removed = MapContent_MacroblockDir.removekey(Key);
+		Removed = MapContent_MacroblockType.removekey(Key);
+		Removed = MapContent_MacroblockOrder.removekey(Key);
+		Private_RemoveMacroblock(Key);
+	}
+	
+	Private_InvalidCache();
+}
+
+// ---------------------------------- //
+/** Remove a macroblock from the map
+ *
+ *	@param	_MacroblockKey			The key of the macroblock
+ */
+Void Remove(Integer _MacroblockKey) {
+	declare metadata Integer[Integer] MapContent_MacroblockModelNumId for Map;
+	if (!MapContent_MacroblockModelNumId.existskey(_MacroblockKey)) return;
+	
+	declare metadata Int3[Integer] MapContent_MacroblockCoord for Map;
+	declare metadata Integer[Integer] MapContent_MacroblockDir for Map;
+	declare metadata Integer[Integer] MapContent_MacroblockType for Map;
+	declare metadata Integer[Integer] MapContent_MacroblockOrder for Map;
+	
+	declare Removed = False;
+	Removed = MapContent_MacroblockModelNumId.removekey(_MacroblockKey);
+	Removed = MapContent_MacroblockCoord.removekey(_MacroblockKey);
+	Removed = MapContent_MacroblockDir.removekey(_MacroblockKey);
+	Removed = MapContent_MacroblockType.removekey(_MacroblockKey);
+	Removed = MapContent_MacroblockOrder.removekey(_MacroblockKey);
+	Private_RemoveMacroblock(_MacroblockKey);
+	
+	Private_InvalidCache();
+}
+
+// ---------------------------------- //
+/** Remove a macroblock occupying a given coordinate
+ *
+ *	@param	_Coord				The coordinates
+ */
+Void Remove(Int3 _Coord) {
+	if (!G_MacroblocksCoords.existskey(_Coord)) return;
+	declare Key = G_MacroblocksCoords[_Coord];
+	
+	Remove(Key);
+}
+
+// ---------------------------------- //
+/** Remove all macroblocks of the given type from the map
+ *
+ *	@param	_Type					The type to remove
+ */
+Void RemoveAllContent(Integer _Type) {
+	declare metadata Integer[Integer] MapContent_MacroblockModelNumId for Map;
+	declare metadata Int3[Integer] MapContent_MacroblockCoord for Map;
+	declare metadata Integer[Integer] MapContent_MacroblockDir for Map;
+	declare metadata Integer[Integer] MapContent_MacroblockType for Map;
+	declare metadata Integer[Integer] MapContent_MacroblockOrder for Map;
+	
+	declare CopyType = MapContent_MacroblockType;
+	foreach (Key => Type in CopyType) {
+		if (Type != _Type) continue;
+		
+		declare Removed = False;
+		Removed = MapContent_MacroblockModelNumId.removekey(Key);
+		Removed = MapContent_MacroblockCoord.removekey(Key);
+		Removed = MapContent_MacroblockDir.removekey(Key);
+		Removed = MapContent_MacroblockType.removekey(Key);
+		Removed = MapContent_MacroblockOrder.removekey(Key);
+		Private_RemoveMacroblock(Key);
+	}
+	
+	Private_InvalidCache();
+}
+
+// ---------------------------------- //
+/// Remove all macroblocks from the map
+Void RemoveAllContent() {
+	declare metadata Integer[Integer] MapContent_MacroblockModelNumId for Map;
+	declare metadata Int3[Integer] MapContent_MacroblockCoord for Map;
+	declare metadata Integer[Integer] MapContent_MacroblockDir for Map;
+	declare metadata Integer[Integer] MapContent_MacroblockType for Map;
+	declare metadata Integer[Integer] MapContent_MacroblockOrder for Map;
+	declare metadata Integer MapContent_MaxOrder for Map;
+	
+	MapContent_MacroblockModelNumId.clear();
+	MapContent_MacroblockCoord.clear();
+	MapContent_MacroblockDir.clear();
+	MapContent_MacroblockType.clear();
+	MapContent_MacroblockOrder.clear();
+	MapContent_MaxOrder = 0;
+	
+	Private_Clear();
+	Private_InvalidCache();
+}
+
+// ---------------------------------- //
+/** Check if there is a macroblock located at a given coordinate
+ *
+ *	@param	_Coord				The coordinates
+ *
+ *	@return						True if there is a macroblock, False otherwise
+ */
+Boolean Exists(Int3 _Coord) {
+	Private_Get(_Coord);
+	return G_Retrieve_MacroblockExists;
+}
+
+// ---------------------------------- //
+/** Get the number of macroblocks on the map
+ *
+ *	@return							The number of macroblocks on the map
+ */
+Integer Count() {
+	declare metadata Integer[Integer] MapContent_MacroblockType for Map;
+	return MapContent_MacroblockType.count;
+}
+
+// ---------------------------------- //
+/** Get the macroblock model located at a given coordinate
+ *
+ *	@param	_Coord				The coordinates
+ *
+ *	@return						The macroblock model if found, Null otherwise
+ */
+CMacroblockModel GetMacroblockModel(Int3 _Coord) {
+	Private_Get(_Coord);
+	return G_Retrieve_MacroblockModel;
+}
+
+// ---------------------------------- //
+/** Get the macroblock model located at a given key
+ *
+ *	@param	_Key				The key
+ *
+ *	@return						The macroblock model if found, Null otherwise
+ */
+CMacroblockModel GetMacroblockModel(Integer _Key) {
+	if (!G_MacroblockModels.existskey(_Key)) return Null;
+	return G_MacroblockModels[_Key];
+}
+
+// ---------------------------------- //
+/** Get the coordinates of a macroblock located at a given coordinate
+ *
+ *	@param	_Coord				The coordinates
+ *
+ *	@return						The macroblock coordinates
+ */
+Int3 GetMacroblockCoord(Int3 _Coord) {
+	Private_Get(_Coord);
+	return G_Retrieve_MacroblockCoord;
+}
+
+// ---------------------------------- //
+/** Get the coordinates of a macroblock located at a given key
+ *
+ *	@param	_Key				The key
+ *
+ *	@return						The macroblock coordinates
+ */
+Int3 GetMacroblockCoord(Integer _Key) {
+	declare metadata Int3[Integer] MapContent_MacroblockCoord for Map;
+	if (!MapContent_MacroblockCoord.existskey(_Key)) return Utils::NullCoord();
+	return MapContent_MacroblockCoord[_Key];
+}
+
+// ---------------------------------- //
+/** Get the direction of a macroblock located at a given coordinate
+ *
+ *	@param	_Coord				The coordinates
+ *
+ *	@return						The macroblock direction
+ */
+CEditorPlugin::CardinalDirections GetMacroblockDir(Int3 _Coord) {
+	Private_Get(_Coord);
+	return G_Retrieve_MacroblockDir;
+}
+
+// ---------------------------------- //
+/** Get the direction of a macroblock located at a given key
+ *
+ *	@param	_Key				The key
+ *
+ *	@return						The macroblock direction
+ */
+CEditorPlugin::CardinalDirections GetMacroblockDir(Integer _Key) {
+	declare metadata Integer[Integer] MapContent_MacroblockDir for Map;
+	if (!MapContent_MacroblockDir.existskey(_Key)) return CEditorPlugin::CardinalDirections::North;
+	return Utils::IntToDir(MapContent_MacroblockDir[_Key]);
+}
+
+// ---------------------------------- //
+/** Get the type of a macroblock located at a given coordinate
+ *
+ *	@param	_Coord				The coordinates
+ *
+ *	@return						The macroblock type
+ */
+Integer GetMacroblockType(Int3 _Coord) {
+	Private_Get(_Coord);
+	return G_Retrieve_MacroblockType;
+}
+
+// ---------------------------------- //
+/** Get the type of a macroblock located at a given key
+ *
+ *	@param	_Key				The key
+ *
+ *	@return						The macroblock type
+ */
+Integer GetMacroblockType(Integer _Key) {
+	declare metadata Integer[Integer] MapContent_MacroblockType for Map;
+	if (!MapContent_MacroblockType.existskey(_Key)) return -1;
+	return MapContent_MacroblockType[_Key];
+}
+
+// ---------------------------------- //
+/** Get the order of a macroblock located at a given coordinate
+ *
+ *	@param	_Coord				The coordinates
+ *
+ *	@return						The macroblock order
+ */
+Integer GetMacroblockOrder(Int3 _Coord) {
+	Private_Get(_Coord);
+	return G_Retrieve_MacroblockOrder;
+}
+
+// ---------------------------------- //
+/** Get the order of a macroblock located at a given key
+ *
+ *	@param	_Key				The key
+ *
+ *	@return						The macroblock order
+ */
+Integer GetMacroblockOrder(Integer _Key) {
+	declare metadata Integer[Integer] MapContent_MacroblockOrder for Map;
+	if (!MapContent_MacroblockOrder.existskey(_Key)) return -1;
+	return MapContent_MacroblockOrder[_Key];
+}
+
+// ---------------------------------- //
+/** Get the key of a macroblock located at a given coordinate
+ *
+ *	@param	_Coord				The coordinates
+ *
+ *	@return						The macroblock key
+ */
+Integer GetMacroblockKey(Int3 _Coord) {
+	Private_Get(_Coord);
+	return G_Retrieve_MacroblockKey;
+}
+
+// ---------------------------------- //
+/** Get the key of a macroblock from its model, coordinates and direction
+ *
+ *	@param	_MacroblockModel	The model
+ *	@param	_Coord				The coordinates
+ *	@param	_Dir				The direction
+ *
+ *	@return						The macroblock key
+ */
+Integer GetMacroblockKey(CMacroblockModel _MacroblockModel, Int3 _Coord, CEditorPlugin::CardinalDirections _Dir) {
+	if (_MacroblockModel == Null) return -1;
+	
+	declare metadata Int3[Integer] MapContent_MacroblockCoord for Map;
+	declare metadata Integer[Integer] MapContent_MacroblockDir for Map;
+	
+	declare Dir = Utils::DirToInt(_Dir);
+	declare TmpMacroblocksCoords = MapContent_MacroblockCoord;
+	while (TmpMacroblocksCoords.exists(_Coord)) {
+		declare Key = TmpMacroblocksCoords.keyof(_Coord);
+		declare Removed = TmpMacroblocksCoords.removekey(Key);
+		if (!Removed) break;
+		
+		if (
+			Dir == MapContent_MacroblockDir[Key] &&
+			_MacroblockModel == G_MacroblockModels[Key]
+		) {
+			return Key;
+		}
+	}
+	
+	return -1;
+}
+
+// ---------------------------------- //
+/** Get all macroblocks unit coordinates
+ *
+ *	@return							The coordinates of the macroblock units
+ */
+Integer[Int3] GetAllMacroblocksUnitsCoords() {
+	return G_MacroblocksCoords;
+}
+
+// ---------------------------------- //
+/** Check if a clip exists at the given coordinate
+ *
+ *	@param	_Coord			The coordinates to check
+ *
+ *	@return							True if the clip exists, False otherwise
+ */
+Boolean ClipExists(Int3 _Coord) {
+	Private_GetClip(_Coord);
+	return G_Retrieve_ClipExists;
+}
+
+// ---------------------------------- //
+/** Get the name of the clip at the given coordinate
+ *
+ *	@param	_Coord			The coordinates to check
+ *
+ *	@return							The name of the clip if found, an empty Text otherwise
+ */
+Text GetClipName(Int3 _Coord) {
+	Private_GetClip(_Coord);
+	return G_Retrieve_ClipName;
+}
+
+// ---------------------------------- //
+/** Get the coordinates of the clip at the given coordinate
+ *	Really useful ...
+ *
+ *	@param	_Coord			The coordinates to check
+ *
+ *	@return							The coordinates of the clip if found, an <-1, -1, -1> otherwise
+ */
+Int3 GetClipCoord(Int3 _Coord) {
+	Private_GetClip(_Coord);
+	return G_Retrieve_ClipCoord;
+}
+
+// ---------------------------------- //
+/** Get the direction of the clip at the given coordinate
+ *
+ *	@param	_Coord			The coordinates to check
+ *
+ *	@return							The direction of the clip if found, CEditorPlugin::CardinalDirections::North otherwise
+ */
+CEditorPlugin::CardinalDirections GetClipDir(Int3 _Coord) {
+	Private_GetClip(_Coord);
+	return G_Retrieve_ClipDir;
+}
+
+// ---------------------------------- //
+/** Get the id of the clip at the given coordinate
+ *
+ *	@param	_Coord			The coordinates to check
+ *
+ *	@return							The id of the clip if found, -1 otherwise
+ */
+Integer GetClipId(Int3 _Coord) {
+	Private_GetClip(_Coord);
+	return G_Retrieve_ClipId;
+}
+
+// ---------------------------------- //
+/** Get the key of the clip at the given coordinate
+ *
+ *	@param	_Coord			The coordinates to check
+ *
+ *	@return							The key of the clip if found, -1 otherwise
+ */
+Integer GetClipKey(Int3 _Coord) {
+	Private_GetClip(_Coord);
+	return G_Retrieve_ClipKey;
+}
+
+// ---------------------------------- //
+/** Check if the track contains custom collision
+ *
+ *	@return							True if there are custom collisions, False otherwise
+ */
+Boolean HasCollisions() {
+	return G_CollisionsCoords.count > 0;
+}
+
+// ---------------------------------- //
+/** Get the collisions coordinates
+ *
+ *	@return							The collision coordinates
+ */
+Integer[Int3] GetCollisions() {
+	return G_CollisionsCoords;
+}
+
+// ---------------------------------- //
+/** Get the ids of the connected clips of a macroblock
+ *
+ *	@param	_MacroblockModel		The macroblock model to check for connection
+ *	@param	_MacroblockCoord		The macroblock coordinates
+ *	@param	_MacroblockDir			The macroblock direction
+ */
+Integer[] GetConnectedClips(CMacroblockModel _MacroblockModel, Int3 _MacroblockCoord, CEditorPlugin::CardinalDirections _MacroblockDir) {
+	if (_MacroblockModel == Null) return Integer[];
+	
+	// The macroblock clips info
+	declare ClipsNames = Macroblock::GetClipNames(_MacroblockModel);
+	declare ClipsCoords = Macroblock::GetClipCoords(_MacroblockModel, _MacroblockCoord, _MacroblockDir);
+	declare ClipsDirs = Macroblock::GetClipDirs(_MacroblockModel, _MacroblockDir);
+	
+	declare ConnectedClips = Integer[];
+	foreach (ClipKey => ClipName in ClipsNames) {
+		declare ConnectableNames = Macroblock::GetConnectableClips(ClipName);
+		declare ConnectableDir = MU::GetOpposedDir(ClipsDirs[ClipKey]);
+		declare ConnectableCoord = MU::GetNeighbourCoord(ClipsCoords[ClipKey], ConnectableDir);
+		
+		// Find connectable clips
+		foreach (ConnectedKey => ConnectedName in G_MacroblocksClipsNames) {
+			if (
+				G_MacroblocksClipsDirs[ConnectedKey] == ConnectableDir &&
+				G_MacroblocksClipsCoords[ConnectedKey] == ConnectableCoord &&
+				ConnectableNames.exists(ConnectedName)
+			) {
+				ConnectedClips.add(ClipKey);
+				break;
+			}
+		}
+	}
+	
+	return ConnectedClips;
+}
+
+// ---------------------------------- //
+/** Get the ids of the disconnected clips of a macroblock
+ *
+ *	@param	_MacroblockModel		The macroblock model to check for disconnection
+ *	@param	_MacroblockCoord		The macroblock coordinates
+ *	@param	_MacroblockDir			The macroblock direction
+ */
+Integer[] GetDisconnectedClips(CMacroblockModel _MacroblockModel, Int3 _MacroblockCoord, CEditorPlugin::CardinalDirections _MacroblockDir) {
+	if (_MacroblockModel == Null) return Integer[];
+	
+	if (
+		G_DisconnectedClips.existskey(_MacroblockModel.Id) &&
+		G_DisconnectedClips[_MacroblockModel.Id].existskey(_MacroblockCoord) &&
+		G_DisconnectedClips[_MacroblockModel.Id][_MacroblockCoord].existskey(_MacroblockDir)
+	) {
+		return G_DisconnectedClips[_MacroblockModel.Id][_MacroblockCoord][_MacroblockDir];
+	}
+	
+	// The macroblock clips info
+	declare ClipsNames = Macroblock::GetClipNames(_MacroblockModel);
+	declare ClipsCoords = Macroblock::GetClipCoords(_MacroblockModel, _MacroblockCoord, _MacroblockDir);
+	declare ClipsDirs = Macroblock::GetClipDirs(_MacroblockModel, _MacroblockDir);
+	
+	declare DisconnectedClips = Integer[];
+	foreach (ClipKey => ClipName in ClipsNames) {
+		declare ConnectableNames = Macroblock::GetConnectableClips(ClipName);
+		declare ConnectableDir = MU::GetOpposedDir(ClipsDirs[ClipKey]);
+		declare ConnectableCoord = MU::GetNeighbourCoord(ClipsCoords[ClipKey], ConnectableDir);
+		
+		// Find connectable clips
+		declare Connected = False;
+		declare TmpClipsCoords = G_MacroblocksClipsCoords;
+		declare Shift = 0;
+		while (TmpClipsCoords.exists(ConnectableCoord)) {
+			declare Key = TmpClipsCoords.keyof(ConnectableCoord);
+			declare Removed = TmpClipsCoords.removekey(Key);
+			if (!Removed) break;
+			
+			if (
+				ConnectableDir == G_MacroblocksClipsDirs[Key+Shift] &&
+				ConnectableNames.exists(G_MacroblocksClipsNames[Key+Shift])
+			) {
+				Connected = True;
+				break;
+			}
+			Shift += 1;
+		}
+		
+		// If there's no connectable clips the clip is disconnected
+		if (!Connected) DisconnectedClips.add(ClipKey);
+	}
+	
+	if (!G_DisconnectedClips.existskey(_MacroblockModel.Id)) {
+		G_DisconnectedClips[_MacroblockModel.Id] = Integer[][CEditorPlugin::CardinalDirections][Int3];
+	}
+	if (!G_DisconnectedClips[_MacroblockModel.Id].existskey(_MacroblockCoord)) {
+		G_DisconnectedClips[_MacroblockModel.Id][_MacroblockCoord] = Integer[][CEditorPlugin::CardinalDirections];
+	}
+	G_DisconnectedClips[_MacroblockModel.Id][_MacroblockCoord][_MacroblockDir] = DisconnectedClips;
+	
+	return DisconnectedClips;
+}
+
+// ---------------------------------- //
+/** Find the latest macroblock block unit coordinates from a given type
+ *
+ *	@param	_Type				The type of macroblock
+ *	@param	_WithClips			With open clips
+ *
+ *	@return						The latest macroblock block unit coordinates
+ */
+Int3 GetLatestMacroblockUnitCoord(Integer _Type, Boolean _WithClips) {
+	declare metadata Int3[Integer] MapContent_MacroblockCoord for Map;
+	declare metadata Integer[Integer] MapContent_MacroblockDir for Map;
+	declare metadata Integer[Integer] MapContent_MacroblockType for Map;
+	declare metadata Integer[Integer] MapContent_MacroblockOrder for Map;
+	declare MaxOrder = -1;
+	declare LatestKey = -1;
+	
+	declare Integer[Integer] RevertMacroblockOrder;
+	foreach (Key => Order in MapContent_MacroblockOrder) {
+		RevertMacroblockOrder[Key] = -Order;
+	}
+	RevertMacroblockOrder = RevertMacroblockOrder.sort();
+	
+	//foreach (Key => Order in MapContent_MacroblockOrder) {
+	foreach (Key => RevertOrder in RevertMacroblockOrder) {
+		declare Order = RevertOrder * -1;
+		
+		if ((MaxOrder < 0 || Order > MaxOrder) && MapContent_MacroblockType[Key] == _Type) {
+			declare DisconnectedClips = Integer[];
+			if (_WithClips) {
+				DisconnectedClips = GetDisconnectedClips(
+					G_MacroblockModels[Key],
+					MapContent_MacroblockCoord[Key],
+					Utils::IntToDir(MapContent_MacroblockDir[Key])
+				);
+			}
+			
+			if (!_WithClips || DisconnectedClips.count > 0) {
+				LatestKey = Key;
+				MaxOrder = Order;
+			}
+		}
+	}
+	
+	if (LatestKey >= 0 && G_MacroblocksCoords.exists(LatestKey)) {
+		return G_MacroblocksCoords.keyof(LatestKey);
+	}
+	
+	return Utils::NullCoord();
+}
+
+// ---------------------------------- //
+/** Find the nearest macroblock block unit coordinates from a given coordinate excluding one macroblock
+ *
+ *	@param	_Coord				The starting coordinates
+ *	@param	_Type				The type of macroblock
+ *	@param	_WithClips			With open clips
+ *
+ *	@return						The nearest macroblock block unit coordinates
+ */
+Int3 GetNearestMacroblockUnitCoordExcluding(
+	Int3 _Coord, 
+	Integer _Type, 
+	Boolean _WithClips, 
+	CMacroblockModel _MacroblockModel, 
+	Int3 _MacroblockCoord,
+	CEditorPlugin::CardinalDirections _MacroblockDir
+) {
+	declare metadata Int3[Integer] MapContent_MacroblockCoord for Map;
+	declare metadata Integer[Integer] MapContent_MacroblockDir for Map;
+	declare metadata Integer[Integer] MapContent_MacroblockType for Map;
+	declare NearestCoord = Utils::NullCoord();
+	declare ShortestDistance = -1;
+	
+	foreach (Coord => Key in G_MacroblocksCoords) {
+		declare Distance = Utils::ManhattanDistance(Coord, _Coord);
+		if (ShortestDistance < 0 || Distance < ShortestDistance) {
+			if (MapContent_MacroblockType[Key] == _Type) {
+				declare MacroblockModel = G_MacroblockModels[Key];
+				declare MacroblockCoord = MapContent_MacroblockCoord[Key];
+				declare MacroblockDir = Utils::IntToDir(MapContent_MacroblockDir[Key]);
+				if (MacroblockModel == _MacroblockModel && MacroblockCoord == _MacroblockCoord && MacroblockDir == _MacroblockDir) continue;
+				
+				declare DisconnectedClips = Integer[];
+				if (_WithClips) {
+					DisconnectedClips = GetDisconnectedClips(MacroblockModel, MacroblockCoord, MacroblockDir);
+				}
+				
+				if (!_WithClips || DisconnectedClips.count > 0) {
+					NearestCoord = Coord;
+					ShortestDistance = Distance;
+					if (Distance <= 0) return Coord;
+				}
+			}
+		}
+	}
+	
+	return NearestCoord;
+}
+
+// ---------------------------------- //
+/** Find the nearest macroblock block unit coordinates from a given coordinate
+ *
+ *	@param	_Coord				The starting coordinates
+ *	@param	_Type				The type of macroblock
+ *	@param	_WithClips			With open clips
+ *
+ *	@return						The nearest macroblock block unit coordinates
+ */
+Int3 GetNearestMacroblockUnitCoord(Int3 _Coord, Integer _Type, Boolean _WithClips) {
+	declare metadata Int3[Integer] MapContent_MacroblockCoord for Map;
+	declare metadata Integer[Integer] MapContent_MacroblockDir for Map;
+	declare metadata Integer[Integer] MapContent_MacroblockType for Map;
+	declare NearestCoord = Utils::NullCoord();
+	declare ShortestDistance = -1;
+	
+	foreach (Coord => Key in G_MacroblocksCoords) {
+		declare Distance = Utils::ManhattanDistance(Coord, _Coord);
+		if (ShortestDistance < 0 || Distance < ShortestDistance) {
+			if (MapContent_MacroblockType[Key] == _Type) {
+				declare DisconnectedClips = Integer[];
+				if (_WithClips) {
+					DisconnectedClips = GetDisconnectedClips(
+						G_MacroblockModels[Key],
+						MapContent_MacroblockCoord[Key],
+						Utils::IntToDir(MapContent_MacroblockDir[Key])
+					);
+				}
+				
+				if (!_WithClips || DisconnectedClips.count > 0) {
+					NearestCoord = Coord;
+					ShortestDistance = Distance;
+					if (Distance <= 0) return Coord;
+				}
+			}
+		}
+	}
+	
+	return NearestCoord;
+}
+
+// ---------------------------------- //
+/** Get one block unit coord of the macroblocks connected to the given macroblock
+ *
+ *	@param	_MacroblockModel		The macroblock model to check for connection
+ *	@param	_MacroblockCoord		The macroblock coordinates
+ *	@param	_MacroblockDir			The macroblock direction
+ *
+ *	@return							The coordinates of one block unit of the connected macroblocks
+ */
+Int3[] GetConnectedMacroblockUnitCoords(CMacroblockModel _MacroblockModel, Int3 _MacroblockCoord, CEditorPlugin::CardinalDirections _MacroblockDir) {
+	// The macroblock clips info
+	declare ClipsNames = Macroblock::GetClipNames(_MacroblockModel);
+	declare ClipsCoords = Macroblock::GetClipCoords(_MacroblockModel, _MacroblockCoord, _MacroblockDir);
+	declare ClipsDirs = Macroblock::GetClipDirs(_MacroblockModel, _MacroblockDir);
+	
+	declare BlockUnitCoords = Int3[];
+	foreach (ClipKey => ClipName in ClipsNames) {
+		declare ConnectableNames = Macroblock::GetConnectableClips(ClipName);
+		declare ConnectableDir = MU::GetOpposedDir(ClipsDirs[ClipKey]);
+		declare ConnectableCoord = MU::GetNeighbourCoord(ClipsCoords[ClipKey], ConnectableDir);
+		
+		// Find connectable clips
+		declare TmpClipsCoords = G_MacroblocksClipsCoords;
+		declare Shift = 0;
+		while (TmpClipsCoords.exists(ConnectableCoord)) {
+			declare Key = TmpClipsCoords.keyof(ConnectableCoord);
+			declare Removed = TmpClipsCoords.removekey(Key);
+			if (!Removed) break;
+			
+			if (
+				ConnectableDir == G_MacroblocksClipsDirs[Key+Shift] &&
+				ConnectableNames.exists(G_MacroblocksClipsNames[Key+Shift])
+			) {
+				declare MacroblockKey = G_MacroblocksClipsKeys[Key+Shift];
+				if (G_MacroblocksCoords.exists(MacroblockKey)) {
+					BlockUnitCoords.add(G_MacroblocksCoords.keyof(MacroblockKey));
+					break;
+				}
+			}
+			Shift += 1;
+		}
+	}
+	
+	return BlockUnitCoords;
+}
+
+// ---------------------------------- //
+/** Get the id of the clips used to connect the given macroblock to the previous one
+ *
+ *	@param	_MacroblockModel		The macroblock model to check for connection
+ *	@param	_MacroblockCoord		The macroblock coordinates
+ *	@param	_MacroblockDir			The macroblock direction
+ *
+ *	@return							[The id of clip used on the previous macroblock, id of the clip used on the givent macroblock]
+ */
+Integer[] GetConnectionToPrevious(CMacroblockModel _MacroblockModel, Int3 _MacroblockCoord, CEditorPlugin::CardinalDirections _MacroblockDir) {
+	if (_MacroblockModel == Null) return [-1, -1];
+	
+	declare metadata Integer[Integer] MapContent_MacroblockOrder for Map;
+	
+	// The macroblock clips info
+	declare ClipsNames = Macroblock::GetClipNames(_MacroblockModel);
+	declare ClipsCoords = Macroblock::GetClipCoords(_MacroblockModel, _MacroblockCoord, _MacroblockDir);
+	declare ClipsDirs = Macroblock::GetClipDirs(_MacroblockModel, _MacroblockDir);
+	
+	declare MaxOrder = -1;
+	declare PrevClipId = -1;
+	declare NextClipId = -1;
+	
+	foreach (ClipKey => ClipName in ClipsNames) {
+		declare ConnectableNames = Macroblock::GetConnectableClips(ClipName);
+		declare ConnectableDir = MU::GetOpposedDir(ClipsDirs[ClipKey]);
+		declare ConnectableCoord = MU::GetNeighbourCoord(ClipsCoords[ClipKey], ConnectableDir);
+		
+		// Find connectable clips
+		declare TmpClipsCoords = G_MacroblocksClipsCoords;
+		declare Shift = 0;
+		while (TmpClipsCoords.exists(ConnectableCoord)) {
+			declare Key = TmpClipsCoords.keyof(ConnectableCoord);
+			declare Removed = TmpClipsCoords.removekey(Key);
+			if (!Removed) break;
+			
+			if (
+				ConnectableDir == G_MacroblocksClipsDirs[Key+Shift] &&
+				ConnectableNames.exists(G_MacroblocksClipsNames[Key+Shift])
+			) {
+				declare MacroblockKey = G_MacroblocksClipsKeys[Key+Shift];
+				if (MapContent_MacroblockOrder.existskey(MacroblockKey)) {
+					declare Order = MapContent_MacroblockOrder[MacroblockKey];
+					if (MaxOrder < 0 || Order > MaxOrder) {
+						MaxOrder = Order;
+						NextClipId = ClipKey;
+						PrevClipId = G_MacroblocksClipsIds[Key+Shift];
+					}
+					break;
+				}
+			}
+			Shift += 1;
+		}
+	}
+	
+	return [PrevClipId, NextClipId];
+}
+
+// ---------------------------------- //
+/** Check if the map contains a given special macroblock
+ *
+ *	@param	_Special				The special kind of macroblock to search
+ *
+ *	@return							True if the map contains this kind of macroblock, False otherwise
+ */
+Boolean Has(Integer _Special) {
+	return (G_SpecialKeys.existskey(_Special) && G_SpecialKeys[_Special].count > 0);
+}
+
+// ---------------------------------- //
+/** Check if the map contains a finish block
+ *
+ *	@return							True if the map contains a finish, False otherwise
+ */
+Boolean HasFinish() {
+	return Has(C_Block_Finish);
+}
+
+// ---------------------------------- //
+/** Check if the map contains a checkpoint block
+ *
+ *	@return							True if the map contains a checkpoint, False otherwise
+ */
+Boolean HasCheckpoint() {
+	return Has(C_Block_Checkpoint);
+}
+
+// ---------------------------------- //
+/** Check if the map contains a start block (start or multilap)
+ *
+ *	@return							True if the map contains a start, False otherwise
+ */
+Boolean HasStart() {
+	return Has(C_Block_Start);
+}
+
+// ---------------------------------- //
+/** Check if the map contains a multilap block
+ *
+ *	@return							True if the map contains a multilap, False otherwise
+ */
+Boolean HasMultilap() {
+	return Has(C_Block_Multilap);
+}
+
+// ---------------------------------- //
+/** Check if a macroblock of the given type is present in the map
+ *
+ *	@param	_Type					The type of macroblocks to check
+ *
+ *	@return							True if the macroblock is present, False otherwise
+ */
+Boolean HasMacroblocks(Integer _Type) {
+	declare metadata Integer[Integer] MapContent_MacroblockType for Map;
+	return MapContent_MacroblockType.exists(_Type);
+}
+
+// ---------------------------------- //
+/** Get the map barycentre for a given type of block
+ *
+ *	@param	_Type					The type of block to check
+ *
+ *	@return							The map barycentre
+ */
+Int3 GetMapBarycentre(Integer _Type) {
+	if (G_NeedComputeBarycentre || G_Barycentre_Type != _Type) {
+		Private_ComputeBarycentre(_Type);
+	}
+	
+	return G_Barycentre_Barycentre;
+}
+
+// ---------------------------------- //
+/** Get the map barycentre
+ *
+ *	@return							The map barycentre
+ */
+Int3 GetMapBarycentre() {
+	return GetMapBarycentre(-1);
+}
+
+// ---------------------------------- //
+/** Get the map bounding box minimum and maximum points
+ *
+ *	@param	_Type					The type of macroblocks to check
+ *
+ *	@return							The map bouding box mid/max points
+ */
+Int3[] GetMapBoundingBox(Integer _Type) {
+	if (G_NeedComputeBarycentre || G_Barycentre_Type != _Type) {
+		Private_ComputeBarycentre(_Type);
+	}
+	
+	return [G_Barycentre_BoundingBoxMin, G_Barycentre_BoundingBoxMax];
+}
+
+// ---------------------------------- //
+/** Get the map bounding box minimum and maximum points
+ *
+ *	@return							The map bouding box mid/max points
+ */
+Int3[] GetMapBoundingBox() {
+	return GetMapBoundingBox(-1);
+}
+
+// ---------------------------------- //
+/** Get the macroblocks coordinates
+ *
+ *	@param	_Type					The type of macroblocks to get
+ *
+ *	@return							The coordinates of the macroblocks
+ */
+Int3[] GetMacroblocksCoords(Integer _Type) {
+	declare metadata Int3[Integer] MapContent_MacroblockCoord for Map;
+	declare metadata Integer[Integer] MapContent_MacroblockType for Map;
+	
+	declare Int3[] Coords;
+	foreach (Key => Type in MapContent_MacroblockType) {
+		if (Type != _Type) continue;
+		Coords.add(MapContent_MacroblockCoord[Key]);
+	}
+	
+	return Coords;
+}
+
+// ---------------------------------- //
+/** Get one macroblock unit coordinates for each macroblock
+ *
+ *	@param	_Type					The type of macroblocks to get
+ *
+ *	@return							The coordinates of the macroblock units
+ */
+Int3[] GetMacroblockUnitsCoords(Integer _Type) {
+	declare metadata Integer[Integer] MapContent_MacroblockType for Map;
+	
+	declare Int3[] Coords;
+	foreach (Key => Type in MapContent_MacroblockType) {
+		if (Type != _Type) continue;
+		if (!G_MacroblocksCoords.exists(Key)) continue;
+		
+		declare Coord = G_MacroblocksCoords.keyof(Key);
+		
+		if (!Coords.exists(Coord)) Coords.add(Coord);
+	}
+	
+	return Coords;
+}
+
+// ---------------------------------- //
+/** Get the macroblocks keys
+ *
+ *	@param	_Type					The type of macroblocks to get
+ *
+ *	@return							The keys of the macroblocks
+ */
+Integer[] GetMacroblocksKeys(Integer _Type) {
+	declare metadata Integer[Integer] MapContent_MacroblockType for Map;
+	
+	declare Integer[] Keys;
+	foreach (Key => Type in MapContent_MacroblockType) {
+		if (Type != _Type) continue;
+		Keys.add(Key);
+	}
+	
+	return Keys;
+}
+
+// ---------------------------------- //
+/** Get the coordinates of one finish macroblock unit
+ *
+ *	@return							The finish block unit coordinates
+ */
+Int3 GetFinishUnitCoord() {
+	if (!G_SpecialKeys.existskey(C_Block_Finish)) return Utils::NullCoord();
+	if (G_SpecialKeys[C_Block_Finish].count <= 0) return Utils::NullCoord();
+	
+	return G_MacroblocksCoords.keyof(G_SpecialKeys[C_Block_Finish][0]);
+}
+
+// ---------------------------------- //
+/** Get the coordinates of one macroblock unit of all finishes
+ *
+ *	@param	_Type					The type of macroblocks to get
+ *
+ *	@return							The finish block unit coordinates
+ */
+Int3[] GetFinishesUnitCoord(Integer _Type) {
+	if (!G_SpecialKeys.existskey(C_Block_Finish)) return Int3[];
+	declare FinishesKeys = G_SpecialKeys[C_Block_Finish];
+	
+	declare metadata Integer[Integer] MapContent_MacroblockType for Map;
+	
+	declare Int3[] Coords;
+	foreach (FinishKey in FinishesKeys) {
+		if (MapContent_MacroblockType[FinishKey] != _Type) continue;
+		
+		declare FinishCoord = G_MacroblocksCoords.keyof(FinishKey);
+		if (!Coords.exists(FinishCoord)) Coords.add(FinishCoord);
+	}
+	
+	return Coords;
+}
+
+// ---------------------------------- //
+/** Get the distance since the last special macroblock
+ *
+ *	@param	_Special				The special macroblock to search
+ *
+ *	@return							The distance since the last special macroblock
+ */
+Real GetDistanceTo(Integer _Special) {
+	// Get distance from cache
+	if (G_DistanceTo.existskey(_Special)) {
+		return G_DistanceTo[_Special];
+	}
+	
+	declare metadata Integer[Integer] MapContent_MacroblockOrder for Map;
+	declare Local_MacroblockOrder = MapContent_MacroblockOrder.sort();
+	
+	declare Real[Integer] DistanceTo;
+	declare Integer[Integer] SpecialsLastKeys;
+	declare Integer[Integer] SpecialsLastOrders;
+	foreach (Special in C_Blocks) {
+		SpecialsLastKeys[Special] = -1;
+		SpecialsLastOrders[Special] = -1;
+		DistanceTo[Special] = 0.;
+	}
+	
+	// Search the latest occurence of each special block
+	foreach (Special => MacroblocksKeys in G_SpecialKeys) {
+		foreach (MacroblockKey in MacroblocksKeys) {
+			if (!Local_MacroblockOrder.existskey(MacroblockKey)) continue;
+			declare Order = Local_MacroblockOrder[MacroblockKey];
+			if (Order > SpecialsLastOrders[Special]) {
+				SpecialsLastKeys[Special] = MacroblockKey;
+				SpecialsLastOrders[Special] = Order;
+			}
+		}
+	}
+	
+	// Distance to each special block
+	declare TotalDistance = 0.;
+	foreach (MacroblockKey => MacroblockOrder in Local_MacroblockOrder) {
+		TotalDistance += G_MacroblocksLengths[MacroblockKey];
+		if (SpecialsLastKeys.exists(MacroblockKey)) {
+			foreach (Special => SpecialMacroblockKey in SpecialsLastKeys) {
+				if (MacroblockKey == SpecialMacroblockKey) DistanceTo[Special] = TotalDistance;
+			}
+		}
+	}
+	
+	// Distance from each special block
+	foreach (Special in C_Blocks) {
+		if (!DistanceTo.existskey(Special)) {
+			DistanceTo[Special] = TotalDistance;
+		} else {
+			DistanceTo[Special] = TotalDistance - DistanceTo[Special];
+		}
+	}
+	G_DistanceTo = DistanceTo;
+	
+	if (DistanceTo.existskey(_Special)) return DistanceTo[_Special];
+	
+	return TotalDistance;
+}
+
+// ---------------------------------- //
+/** Get the last macroblock model placed
+ *
+ *	@return							The macroblock model
+ */
+CMacroblockModel GetPreviousMacroblockModel() {
+	declare metadata Integer[Integer] MapContent_MacroblockOrder for Map;
+	declare MaxOrder = -1;
+	declare SelectedKey = -1;
+	foreach (MacroblockKey => MacroblockOrder in MapContent_MacroblockOrder) {
+		if (MacroblockOrder > MaxOrder) {
+			MaxOrder = MacroblockOrder;
+			SelectedKey = MacroblockKey;
+		}
+	}
+	
+	if (SelectedKey < 0) return Null;
+	
+	return G_MacroblockModels[SelectedKey];
+}
+
+// ---------------------------------- //
+/** Get the macroblocks models from the metadata
+ *
+ *	@return							The macroblocks models
+ */
+CMacroblockModel[Integer] GetMacroblockModels() {
+	declare metadata Integer[Integer] MapContent_MacroblockModelNumId for Map;
+	declare CMacroblockModel[Integer] Result;
+	
+	foreach (Key => NumId in MapContent_MacroblockModelNumId) {
+		Result[Key] = Private_GetMacroblockModelFromNumId(NumId);
+	}
+	
+	return Result;
+}
+
+// ---------------------------------- //
+/** Get the macroblocks coordinates from the metadata
+ *
+ *	@return							The macroblocks coordinates
+ */
+Int3[Integer] GetMacroblocksCoords() {
+	declare metadata Int3[Integer] MapContent_MacroblockCoord for Map;
+	return MapContent_MacroblockCoord;
+}
+
+// ---------------------------------- //
+/** Get the macroblocks directions from the metadata
+ *
+ *	@return							The macroblocks directions
+ */
+Integer[Integer] GetMacroblocksDirs() {
+	declare metadata Integer[Integer] MapContent_MacroblockDir for Map;
+	return MapContent_MacroblockDir;
+}
+
+// ---------------------------------- //
+/** Get the macroblocks types from the metadata
+ *
+ *	@return							The macroblocks types
+ */
+Integer[Integer] GetMacroblocksTypes() {
+	declare metadata Integer[Integer] MapContent_MacroblockType for Map;
+	return MapContent_MacroblockType;
+}
+
+// ---------------------------------- //
+/** Get the macroblocks orders from the metadata
+ *
+ *	@return							The macroblocks orders
+ */
+Integer[Integer] GetMacroblocksOrders() {
+	declare metadata Integer[Integer] MapContent_MacroblockOrder for Map;
+	return MapContent_MacroblockOrder;
+}
+
+// ---------------------------------- //
+/// Unload the library
+Void Unload() {
+	G_MacroblockModelsNumIds.clear();
+	
+	// Remove num ids to load them from the map metadata
+	foreach (MacroblockModel in MacroblockModels) {
+		declare MapContent_NumId for MacroblockModel = -1;
+		MapContent_NumId = -1;
+	}
+	
+	Private_Clear();
+}
+
+// ---------------------------------- //
+/// Load the library
+Void Load() {
+	Unload();
+	
+	declare metadata Integer[Text] MapContent_MacroblockModelsNumIds for Map;
+	declare Count = 0;
+	foreach (MacroblockModelId => NumId in MapContent_MacroblockModelsNumIds) {
+		declare MacroblockModel <=> Macroblock::GetMacroblockModelFromId(MacroblockModelId);
+		if (MacroblockModel != Null) {
+			declare MapContent_NumId for MacroblockModel = -1;
+			MapContent_NumId = NumId;
+			G_MacroblockModelsNumIds[NumId] = MacroblockModel;
+		}
+		
+		Count += 1;
+		if (Count%50 == 0) yield;
+	}
+	
+	// Backward compatibility
+	declare metadata Text[Integer] MapContent_MacroblockModelId for Map;
+	declare metadata Integer[Integer] MapContent_MacroblockModelNumId for Map;
+	if (MapContent_MacroblockModelId.count > 0 && MapContent_MacroblockModelNumId.count <= 0) {
+		Count = 0;
+		foreach (Key => Id in MapContent_MacroblockModelId) {
+			declare MacroblockModel <=> Macroblock::GetMacroblockModelFromId(Id);
+			if (MacroblockModel == Null) continue;
+			
+			declare MBNumId = Private_GetNumId(MacroblockModel);
+			
+			MapContent_MacroblockModelNumId[Key] = MBNumId;
+			G_MacroblockModelsNumIds[MBNumId] = MacroblockModel;
+			
+			Count += 1;
+			if (Count%50 == 0) yield;
+		}
+	}
+	
+	// Reload macroblocks coords
+	declare metadata Int3[Integer] MapContent_MacroblockCoord for Map;
+	declare metadata Integer[Integer] MapContent_MacroblockDir for Map;
+	Count = 0;
+	foreach (Key => NumId in MapContent_MacroblockModelNumId) {
+		declare Added = Private_AddMacroblock(
+			Private_GetMacroblockModelFromNumId(NumId), 
+			MapContent_MacroblockCoord[Key], 
+			Utils::IntToDir(MapContent_MacroblockDir[Key]), 
+			Key
+		);
+		// Something went wrong, maybe this macroblock model doesn't exists anymore?
+		if (!Added) Remove(Key);
+		
+		Count += 1;
+		if (Count%10 == 0) yield;
+	}
+}

@@ -1,0 +1,262 @@
+#Include "Libs/Openplanet/TMConsole/MenuColor.Script.txt"					as MenuColor
+#Include "Libs/Openplanet/TMConsole/FontManager.Script.txt"					as Font
+#Include "Libs/Openplanet/UIPadButtons.Script.txt"							as LibUIButtons
+
+#Include "TextLib" as TL
+
+#Const C_ImgBase 	"file://Media/Manialinks/Nadeo/TMConsole/Images/"
+#Const C_ImgBase2	"file://Media/Images/TMConsole/Ingame/"
+
+Text InjectInManialink () {
+
+	//IMAGES
+	declare Text 	IMGSlotSmallBg           = C_ImgBase2^"slot-medium-bg.dds";
+	declare Text 	IMGSlotSmallFg           = C_ImgBase2^"slot-medium-fg.dds";
+	declare Text 	IMGSlotMediumBg          = C_ImgBase2^"slot-medium-bg.dds";
+	declare Text 	IMGSlotMediumFg          = C_ImgBase^"slot-medium-fg2.dds";
+	declare Text 	IMGSlotBigBg             = C_ImgBase^"slot-big-bg2.dds";
+	declare Text 	IMGSlotBigFg             = C_ImgBase^"slot-big-fg2.dds";
+	declare Text 	IMGMenuBg                = C_ImgBase2^"menu-bg-1.dds";
+	declare Text 	IMGBackground            = C_ImgBase^"SystemStartBg2.dds";
+
+	declare Integer Platform   = LibUIButtons::GetPlatform();
+	declare Text 	IMGSelect  = LibUIButtons::GetImage(Platform, CManiaAppEvent::EMenuNavAction::Select);
+	declare Text 	IMGCancel  = LibUIButtons::GetImage(Platform, CManiaAppEvent::EMenuNavAction::Cancel);
+	declare Text 	IMGAction1 = LibUIButtons::GetImage(Platform, CManiaAppEvent::EMenuNavAction::Action1);
+	declare Text 	IMGAction2 = LibUIButtons::GetImage(Platform, CManiaAppEvent::EMenuNavAction::Action2);
+	
+	declare Text	TitleColor = TL::ColorToText(MenuColor::GetMenuColor(0));	
+	
+	//POS & SIZE
+	declare Real	Debug_PosY			= 73.43;
+	declare Real 	Debug_SizeX			= 215.0;
+	declare Real	Debug_SizeY			= 8.27;
+	declare Real 	Debug_SizeYElement 	= Debug_SizeY * 0.905;
+	
+	//////////////////////////////
+	// FRAME SERVER DEBUG
+	//////////////////////////////
+	declare MLText = """<frame id="Frame_ServerDebug" posn="0 {{{Debug_PosY}}} 25" hidden="1">""";
+	
+	/////////////////
+	// FRAME TITLE & BG
+	/////////////////
+	MLText ^= """
+		<frame id="Frame_Title" posn="0 0 0">
+			<quad halign="center" valign="bottom" sizen="{{{Debug_SizeX}}} {{{Debug_SizeY*2.}}}" image="{{{IMGSlotBigBg}}}" posn="0 0 5" />
+			<quad halign="center" valign="bottom" sizen="{{{Debug_SizeX}}} {{{Debug_SizeY*2.}}}" image="{{{IMGSlotBigFg}}}" posn="0 0 7" />
+			<label halign="left" valign="center" textprefix="$t" textfont="{{{Font::GetFontName("Main")}}}" posn="{{{-(Debug_SizeX-2)/2.}}}  {{{Debug_SizeY + 1.8}}} 6" textcolor="{{{TitleColor}}}" textsize="13." text="DEBUG WINDOW" sizen="{{{Debug_SizeX-2.}}}"  opacity="1.0"/>
+		</frame>
+	
+		<quad posn="0 {{{- 18 * Debug_SizeY}}} 0" image="{{{IMGMenuBg}}}" halign="right" sizen="{{{Debug_SizeX / 2.}}} {{{Debug_SizeY}}}"/>
+		<quad posn="0 {{{- 18 * Debug_SizeY}}} 0" image="{{{IMGMenuBg}}}" halign="left" sizen="{{{Debug_SizeX / 2.}}} {{{Debug_SizeY}}}"/>
+		<quad posn="0 {{{- Debug_SizeY * 2}}} 0.5" sizen="{{{Debug_SizeX}}} {{{Debug_SizeY*16}}}" bgcolor="000F" halign="center" />
+		<quad posn="0 {{{-Debug_PosY}}} -3"	halign="center" valign="center" sizen="320 180"	image="{{{IMGBackground}}}"	/>
+	""";
+	
+	/////////////////
+	// ROOM ID
+	/////////////////
+	MLText ^= """
+		<frameinstance modelid="Frame_ServerInfoCard" posn="{{{-Debug_SizeX / 2.}}} 0" />
+		<label posn="{{{-Debug_SizeX / 2. + 5.}}} {{{-Debug_SizeY /2.}}} 3" sizen="{{{Debug_SizeX / 3.}}}" text="ROOMID" style="TextValueSmallSm" halign="left" valign="center2" textsize="3."/>
+		<label posn="{{{-Debug_SizeX / 10. - 5.}}} {{{-Debug_SizeY / 2.}}} 3" sizen="{{{Debug_SizeX / 6.}}}" id="ServerId" text="41"	 style="TextValueSmallSm" halign="right" valign="center2" textsize="3."/>
+	""";
+	
+	/////////////////
+	// STATUS
+	/////////////////
+	MLText ^= """
+		<frame posn="{{{-Debug_SizeX / 10.}}}">
+			<quad posn="0 0 2" sizen="{{{Debug_SizeX * 9. / 30.}}} {{{Debug_SizeYElement}}}" image="{{{IMGSlotMediumBg}}}" opacity="1.0"/>
+			<quad posn="0 0 4" sizen="{{{Debug_SizeX * 9. / 30.}}} {{{Debug_SizeYElement}}}" image="{{{IMGSlotMediumFg}}}" opacity="1.0"/>
+			<quad posn="0 0 1" sizen="{{{Debug_SizeX * 9. / 30.}}} {{{Debug_SizeY}}}" image="{{{IMGMenuBg}}}" opacity="1."/>
+			<label posn="3 {{{-Debug_SizeY * 0.5}}} 3" sizen="{{{Debug_SizeX * 0.2}}}" textprefix="$t" text="Status" style="TextValueSmallSm" valign="center2" textsize="3."/>
+			<label posn="{{{Debug_SizeX * 9. / 30. - 3}}} {{{-Debug_SizeY * 0.5}}} 3" sizen="{{{Debug_SizeX * 0.2}}}" style="TextValueSmallSm" textprefix="$t" text="2(RUNNING)" id="ServerStatus" halign="right" valign="center2" textsize="3."/>
+		</frame>
+	""";
+	
+	/////////////////
+	// REQUIRED STATE
+	/////////////////
+	MLText ^= """
+		<frame posn="{{{Debug_SizeX * 6 / 30.}}}">
+			<quad posn="0 0 2" sizen="{{{Debug_SizeX * 9. / 30.}}} {{{Debug_SizeYElement}}}" image="{{{IMGSlotMediumBg}}}" opacity="1.0"/>
+			<quad posn="0 0 4" sizen="{{{Debug_SizeX * 9. / 30.}}} {{{Debug_SizeYElement}}}" image="{{{IMGSlotMediumFg}}}" opacity="1.0"/>
+			<quad posn="0 0 1" sizen="{{{Debug_SizeX * 9. / 30.}}} {{{Debug_SizeY}}}" image="{{{IMGMenuBg}}}" opacity="1."/>
+			<label posn="3 {{{-Debug_SizeY * 0.5}}} 3" sizen="{{{Debug_SizeX * 0.2}}}" textprefix="$t" text="RequiredState" style="TextValueSmallSm" valign="center2" textsize="3."/>
+			<label posn="{{{Debug_SizeX * 9. / 30. - 3}}} {{{-Debug_SizeY * 0.5}}} 3" sizen="{{{Debug_SizeX * 0.1}}}" style="TextValueSmallSm" textprefix="$t" text="2(OFF)" id="ServerRequiredState" halign="right" valign="center2" textsize="3."/>
+		</frame>	
+	""";
+	
+	/////////////////
+	// LOG
+	/////////////////
+	MLText ^= """
+		<frame posn="{{{-Debug_SizeX / 2.}}} {{{-Debug_SizeY}}}">
+			<quad posn="0 0 2" sizen="{{{Debug_SizeX}}} {{{Debug_SizeYElement}}}" image="{{{IMGSlotMediumBg}}}" opacity="1.0"/>
+			<quad posn="0 0 4" sizen="{{{Debug_SizeX}}} {{{Debug_SizeYElement}}}" image="{{{IMGSlotMediumFg}}}" opacity="1.0"/>
+			<quad posn="0 0 1" sizen="{{{Debug_SizeX}}} {{{Debug_SizeY}}}" image="{{{IMGMenuBg}}}" opacity="1."/>
+			<label posn="2 {{{-Debug_SizeY * 0.5}}} 3" sizen="{{{Debug_SizeX * 0.16}}}" textprefix="$t" text="Server Log" style="TextValueSmallSm" valign="center2" textsize="3."/>
+		</frame>
+		<textedit id="ServerLog" posn="{{{-Debug_SizeX / 2. + 2.}}} {{{- Debug_SizeY*2}}} 1" sizen="{{{Debug_SizeX - 4.}}} {{{Debug_SizeY * 16}}}" textcolor="FFFF" textsize="3." autonewline="1" maxline="26"/>
+	""";
+		
+	/////////////////
+	// INPUTS
+	/////////////////
+	MLText ^= """
+		<frame id="FrameInputCancel" posn="{{{Debug_SizeX * 0.5}}} {{{- 19 * Debug_SizeY}}}">
+			<label 	halign="right" valign="center" posn="-14 4.5 7" sizen="34" textcolor="ddd" 	text="{{{_("BACK")}}}" textsize="3."   	/>
+			<quad 	halign="right" valign="bottom" posn="0 0 8" 	sizen="50 {{{Debug_SizeYElement}}}" 	image="{{{IMGSlotSmallFg}}}"   	/>
+			<quad 	halign="right" valign="center" posn="-4.5 4 7" 	sizen="6 6"  						image="{{{IMGCancel}}}"   		/>
+			<quad 	halign="right" valign="bottom" posn="0 0 6"		sizen="50 {{{Debug_SizeYElement}}}"	image="{{{IMGSlotSmallBg}}}"   	/>
+		</frame>
+		
+		<frame id="FrameInputSelect" posn="{{{Debug_SizeX * 0.25}}} {{{- 19 * Debug_SizeY}}}">
+			<label 	halign="right" valign="center" posn="-14 4.5 7" sizen="34" textcolor="ddd" 	text="{{{_("START")}}}" textsize="3."   	/>
+			<quad 	halign="right" valign="bottom" posn="0 0 8" 	sizen="50 {{{Debug_SizeYElement}}}" 	image="{{{IMGSlotSmallFg}}}"   	/>
+			<quad 	halign="right" valign="center" posn="-4.5 4 7" 	sizen="6 6"  						image="{{{IMGSelect}}}"   		/>
+			<quad 	halign="right" valign="bottom" posn="0 0 6"		sizen="50 {{{Debug_SizeYElement}}}"	image="{{{IMGSlotSmallBg}}}"   	/>
+		</frame>
+		
+		<frame id="FrameInputAction1" posn="0 {{{- 19 * Debug_SizeY}}}">
+			<label 	halign="right" valign="center" posn="-14 4.5 7" sizen="34" textcolor="ddd" 	text="{{{_("STOP")}}}" textsize="3."   />
+			<quad 	halign="right" valign="bottom" posn="0 0 8" 	sizen="50 {{{Debug_SizeYElement}}}" 	image="{{{IMGSlotSmallFg}}}"   	/>
+			<quad 	halign="right" valign="center" posn="-4.5 4 7" 	sizen="6 6"  						image="{{{IMGAction1}}}"   		/>
+			<quad 	halign="right" valign="bottom" posn="0 0 6"		sizen="50 {{{Debug_SizeYElement}}}"	image="{{{IMGSlotSmallBg}}}"   	/>
+		</frame>
+		
+		<frame id="FrameInputAction2" posn="{{{- Debug_SizeX * 0.25}}} {{{- 19 * Debug_SizeY}}}">
+			<label 	halign="right" valign="center" posn="-14 4.5 7" sizen="34" textcolor="ddd" 	text="{{{_("REFRESH")}}}" textsize="3." />
+			<quad 	halign="right" valign="bottom" posn="0 0 8" 	sizen="50 {{{Debug_SizeYElement}}}" 	image="{{{IMGSlotSmallFg}}}"   	/>
+			<quad 	halign="right" valign="center" posn="-4.5 4 7" 	sizen="6 6"  						image="{{{IMGAction2}}}"   		/>
+			<quad 	halign="right" valign="bottom" posn="0 0 6"		sizen="50 {{{Debug_SizeYElement}}}"	image="{{{IMGSlotSmallBg}}}"   	/>
+		</frame>
+	""";		
+	
+	MLText ^= "</frame>";
+
+	return MLText;
+}
+
+Text InjectInGlobals() {
+	declare Globals = """
+		declare Text G_DebugServerId;
+	""";
+	
+	return Globals;
+}
+
+Text InjectInInit() {
+	declare Init = """
+		G_DebugServerId = "-1";
+	""";
+	
+	return Init;
+}
+
+Text InjectInFunctions() {
+	declare Functions = """
+		Void Debug_Show()
+		{
+			declare CMlFrame Frame_ServerDebug <=> (Page.GetFirstChild("Frame_ServerDebug") as CMlFrame);
+			Frame_ServerDebug.Show();
+			
+			declare Text[Text][] RequestedRooms for Page;
+			declare Text[Text] FocusedRoom = RequestedRooms[G_CurrentSelectedRoomIndex];
+			G_DebugServerId = FocusedRoom["id"];
+			
+			declare CMlLabel ServerId <=> (Frame_ServerDebug.GetFirstChild("ServerId") as CMlLabel);
+			declare CMlLabel ServerRequiredState 	<=> (Frame_ServerDebug.GetFirstChild("ServerRequiredState") as CMlLabel);
+			declare CMlLabel ServerStatus 			<=> (Frame_ServerDebug.GetFirstChild("ServerStatus") as CMlLabel);
+			declare CMlTextEdit ServerLog			<=> (Frame_ServerDebug.GetFirstChild("ServerLog") as CMlTextEdit);
+			
+			if (FocusedRoom.existskey("debug_logs"))
+				ServerLog.Value = FocusedRoom["debug_logs"];
+			else
+				ServerLog.Value = "";
+			
+			ServerId.Value = G_DebugServerId;
+			
+			declare Text RequiredState = FocusedRoom["required_state"];
+			if (RequiredState == "1")
+				ServerRequiredState.Value = "1(OFF)";
+			else if (RequiredState == "2")
+				ServerRequiredState.Value = "2(ON)";
+			else
+				ServerRequiredState.Value = RequiredState^"(?)";
+			
+			declare Text Status = FocusedRoom["status"];
+			ServerStatus.Value = Status^"("^GetStatus(Status)^")";
+			
+		}
+		
+		Void Debug_Hide()
+		{
+			declare CMlFrame Frame_ServerDebug <=> (Page.GetFirstChild("Frame_ServerDebug") as CMlFrame);
+			Frame_ServerDebug.Hide();	
+		}
+		
+		Void Debug_OnStart()
+		{
+			declare CMlFrame Frame_ServerDebug 		<=> (Page.GetFirstChild("Frame_ServerDebug") as CMlFrame);
+			declare CMlLabel ServerRequiredState 	<=> (Frame_ServerDebug.GetFirstChild("ServerRequiredState") as CMlLabel);
+			ServerRequiredState.Value = "2(ON)";
+		}
+		
+		Void Debug_OnStop()
+		{
+			declare CMlFrame Frame_ServerDebug 		<=> (Page.GetFirstChild("Frame_ServerDebug") as CMlFrame);
+			declare CMlLabel ServerRequiredState 	<=> (Frame_ServerDebug.GetFirstChild("ServerRequiredState") as CMlLabel);
+			ServerRequiredState.Value = "1(OFF)";
+		}
+		
+		Void Debug_Update(Text _RequiredState, Text _Status, Text _Logs)
+		{
+			declare CMlFrame Frame_ServerDebug 		<=> (Page.GetFirstChild("Frame_ServerDebug") as CMlFrame);
+			declare CMlLabel ServerRequiredState 	<=> (Frame_ServerDebug.GetFirstChild("ServerRequiredState") as CMlLabel);
+			declare CMlLabel ServerStatus 			<=> (Frame_ServerDebug.GetFirstChild("ServerStatus") as CMlLabel);
+			declare CMlTextEdit ServerLog			<=> (Frame_ServerDebug.GetFirstChild("ServerLog") as CMlTextEdit);
+			
+			ServerLog.Value = _Logs;
+			
+			if (_RequiredState == "1")
+				ServerRequiredState.Value = "1(OFF)";
+			else if (_RequiredState == "2")
+				ServerRequiredState.Value = "2(ON)";
+			else
+				ServerRequiredState.Value = _RequiredState^"(?)";
+				
+			ServerStatus.Value = _Status^"("^GetStatus(_Status)^")";
+		}
+		
+	""";
+	
+	return Functions;
+}
+
+Text InjectInMenuNavigation() {
+	declare MenuNav = """
+		//||WaitingForServerStart (désactivé pour l'instant)
+		switch (Event.MenuNavAction) {
+			case CMlEvent::EMenuNavAction::Cancel : {
+				ServerBrowserStatus_Switch(C_STATUS_INFORMATION);
+			}
+			case CMlEvent::EMenuNavAction::AppMenu : {
+				ServerBrowserStatus_Switch(C_STATUS_INFORMATION);
+			}
+			case CMlEvent::EMenuNavAction::Select : {
+				SendCustomEvent("RequestServerStart", [G_DebugServerId]);
+			}
+			case CMlEvent::EMenuNavAction::Action1 : {
+				SendCustomEvent("RequestServerStop", [G_DebugServerId]);
+			}
+			case CMlEvent::EMenuNavAction::Action2 : {
+				SendCustomEvent("RequestServerStatus", [G_DebugServerId]);		
+			}
+		}
+	""";
+	
+	return MenuNav;
+}

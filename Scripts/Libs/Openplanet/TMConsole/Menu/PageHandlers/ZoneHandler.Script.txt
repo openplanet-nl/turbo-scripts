@@ -1,0 +1,187 @@
+#Include "TextLib"										as TextLib
+#Include "Libs/Openplanet/TMConsole/Logger.Script.txt"										as Logger
+#Include "Libs/Openplanet/UIPadButtons.Script.txt"											as UIPadButtons
+#Include "Libs/Openplanet/TMConsole/Menu/Controller/ZoneController.Script.txt" 				as ZoneController
+#Include "Libs/Openplanet/TMConsole/Menu/Controller/TaskMessageErrorController.Script.txt"	as TaskMessageErrorController
+
+#Const GLOBALRANKING_WORLDR		0
+#Const GLOBALRANKING_WORLDP		1
+#Const GLOBALRANKING_COUNTRYR	2
+#Const GLOBALRANKING_COUNTRYP	3
+#Const GLOBALRANKING_REGIONR	4
+#Const GLOBALRANKING_REGIONP	5
+
+#Const C_TIMECHECKMAPRANKING	100
+#Const C_UNITEDNATIONS			"United Nations"
+
+//declare Integer							G_UpdateRankingTimer;
+declare Integer[]						G_GlobalRankingGet;
+declare Text[]							G_ZoneToSend;
+declare Text[Text]						G_ZoneSorted;
+declare Integer 						G_PreMyPeriod;
+declare Text 							G_ZoneCheck;
+declare Text 							G_LayerToSend;
+declare CWebServicesTaskResult_ZoneList G_TaskResultGetZone;
+declare CWebServicesTaskResult			G_TaskResultChangeZone;
+
+Void WarnNotEnoughParams(CMlAppEvent _Event) {
+	Logger::Warn("[Menucontroller] event "^_Event.CustomEventType^": not enough params ["^_Event.CustomEventData^"]");
+}
+
+
+Void GetNextMapRank()
+{
+	//G_UpdateRankingTimer = C_TIMECHECKMAPRANKING;
+	G_PreMyPeriod = 0;
+	G_GlobalRankingGet.clear();
+}
+
+Void GetZonesLoaded()
+{
+	G_ZoneToSend.clear();
+	G_ZoneSorted.clear();
+	
+	foreach(Zone in G_TaskResultGetZone.Zones)
+	{
+		if(Zone.Name == C_UNITEDNATIONS) {
+			G_ZoneToSend.add("1");
+			continue;
+		}
+		if(Zone.Name == "Taiwan" && UIPadButtons::IsJapan()) continue;
+		
+		declare Text TranslatedZone = TextLib::GetTranslatedText(Zone.Name);
+		if(G_ZoneCheck == "World") G_ZoneToSend.add(TranslatedZone);
+		else G_ZoneToSend.add(Zone.Name);
+		G_ZoneSorted[TranslatedZone] = Zone.Name;
+	}
+	
+	G_ZoneToSend = G_ZoneToSend.sort();
+	
+	// bon, en théorie c'est le premier, mais pour les alphabets exotiques... bref voilà quoi
+	declare Integer NbZones = G_ZoneToSend.count;
+	for(IZone, 0, NbZones-1) {
+		declare Text MyZone = G_ZoneToSend[IZone];
+		if(MyZone == "1") {
+			declare TranslatedNations = TextLib::GetTranslatedText(C_UNITEDNATIONS);
+			G_ZoneToSend[IZone] = TranslatedNations;
+			G_ZoneSorted[TranslatedNations] = C_UNITEDNATIONS;
+			break;
+		}
+	}
+}
+
+Void ChangeZone(Text _Zone)
+{
+	if(G_TaskResultChangeZone != Null)
+	{
+		G_TaskResultChangeZone.Cancel();	
+	}
+
+	G_TaskResultChangeZone = ManiaPlanet.MasterServer_Zone_ChangeZone(DataMgr.MenuUserId, _Zone);
+	//G_IsChangingZone = True;
+}
+
+Boolean NeedChangeZone() {
+	if(ManiaPlanet.MasterServer_MainMSUser == Null) return False;
+	return ManiaPlanet.MasterServer_MainMSUser.NeedToChangeZone;
+}
+
+Void Loop() {
+	foreach(Event in PendingEvents) {
+		if(Event.Type != CMlAppEvent::EType::LayerCustomEvent) continue;
+		switch(Event.CustomEventType) {
+			
+			case "GetZoneInfos" :
+			{
+				if(Event.CustomEventData.count <= 1) continue;
+				declare Text Layer = Event.CustomEventData[0];
+				declare Text Zone = Event.CustomEventData[1];
+				//log("Layer["^Layer^"]|Zone["^Zone^"]");
+				G_LayerToSend = Layer;
+				G_ZoneCheck = Zone;
+				//G_UpdateRankingTimer = C_TIMECHECKMAPRANKING;
+				//log("G_ZoneCheck: " ^ G_ZoneCheck);
+				G_TaskResultGetZone = ManiaPlanet.MasterServer_Zone_GetChilds(G_ZoneCheck);
+				/*
+				if(ManiaPlanet.MasterServer_MainMSUser != Null)
+				{
+					G_PlayerZones = TextLib::Split("|", ManiaPlanet.MasterServer_MainMSUser.GetZone(ManiaPlanet.MasterServer_MainMSUser.ZoneLevelCount-1));
+					ZoneController::SendInfoZone(G_LayerToSend,	G_PlayerZones, G_ZoneCheck);
+				}
+				*/
+			}
+			
+		}
+	}
+
+	if(G_TaskResultChangeZone != Null)
+	{
+		//log("["^Now^"]ChangingZone");
+		if(G_TaskResultChangeZone.HasSucceeded) {
+			//log("["^Now^"]HasSucceeded");
+			log("HasSucceeded");
+
+			G_TaskResultChangeZone = Null;
+			//G_IsChangingZone = False;
+		}
+		else if (G_TaskResultChangeZone.IsCanceled) {
+			//log("["^Now^"]IsCanceled");
+			G_TaskResultChangeZone = Null;
+			//G_IsChangingZone = False;
+		}
+		else if(G_TaskResultChangeZone.HasFailed) {
+			declare CWebServicesTaskResult::ETaskErrorType TaskErrorType = G_TaskResultChangeZone.ErrorType;
+			declare Integer                                ErrorCode     = G_TaskResultChangeZone.ErrorCode;
+			TaskMessageErrorController::TaskErrorMessage(TaskErrorType, ErrorCode);
+			G_TaskResultChangeZone = Null;
+			//G_IsChangingZone = False;
+		}
+	}
+
+	if(G_TaskResultGetZone != Null)
+	{
+		if(G_TaskResultGetZone.HasSucceeded){
+			if(G_TaskResultGetZone.Zones.count > 0)
+			{
+				GetZonesLoaded();
+				ZoneController::SendInfoZone(G_LayerToSend,	G_ZoneToSend, G_ZoneSorted, G_ZoneCheck);
+			}
+			else
+			{
+				ZoneController::ExitZone(G_LayerToSend);
+			}
+			G_TaskResultGetZone = Null;
+		}
+		else if (G_TaskResultGetZone.IsCanceled) {
+			ZoneController::ExitZone(G_LayerToSend);
+			G_TaskResultGetZone = Null;
+		}
+		else if (G_TaskResultGetZone.HasFailed) {
+			declare CWebServicesTaskResult::ETaskErrorType TaskErrorType = G_TaskResultChangeZone.ErrorType;
+			declare Integer                                ErrorCode     = G_TaskResultChangeZone.ErrorCode;
+			TaskMessageErrorController::TaskErrorMessage(TaskErrorType, ErrorCode);
+			ZoneController::ExitZone(G_LayerToSend);
+			G_TaskResultGetZone = Null;
+		}
+	}
+	/*
+	if(G_UpdateRankingTimer > 0) {
+		if(G_TaskResultGetZone.Zones.count > 0)
+		{
+			GetZonesLoaded();
+			ZoneController::SendInfoZone(G_LayerToSend,	G_ZoneToSend, G_ZoneCheck);
+			G_UpdateRankingTimer = -1;
+			return;
+		}
+
+		
+		declare Integer Period = Now - G_PreMyPeriod;
+		G_PreMyPeriod = Now;
+		G_UpdateRankingTimer -= 1;
+		if(G_UpdateRankingTimer <= 0)
+		{
+			ZoneController::ExitZone(G_LayerToSend);
+		}
+	}
+	*/
+}

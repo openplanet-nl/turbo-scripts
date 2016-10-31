@@ -1,0 +1,171 @@
+
+
+
+Text InsertInFunctions() {
+	declare Text MLText = """
+
+declare Integer[Text] StartDate;
+declare Text[Text]    G_BannerContent1;
+declare Text[Text]    G_BannerContent2;
+declare Integer[Text] G_Period;
+declare Real[Text]    G_MinSpace;
+
+Integer Banner_Update(CMlFrame _Frame, Text _FrameId)
+{
+    if(StartDate[_FrameId] == 0)
+    {
+        StartDate[_FrameId] = Now;
+        return 3;
+    }
+    else
+    {
+        declare Content1 <=> (_Frame.GetFirstChild("Content1") as CMlLabel);
+        declare Content2 <=> (_Frame.GetFirstChild("Content2") as CMlLabel);
+        declare Real Width as Content1Width for Content1;
+        declare Real Width as Content2Width for Content2;
+        if((Content1Width + Content2Width) <= 0. || G_Period[_FrameId] <= 0.) return 0;
+
+        declare Real Ratio = 1. * (Now - StartDate[_FrameId]) / ((G_Period[_FrameId]*1.) *(Content1Width + Content2Width)/189.);
+        if (Ratio >= 0.5 && Ratio < 1.)
+        {   
+            StartDate[_FrameId] -= ML::NearestInteger((G_Period[_FrameId]*(Content1Width + Content2Width)/189.) / 2);
+            return 1;
+        }
+        else if (Ratio >= 1.5)
+        {
+            StartDate[_FrameId] = Now;
+            return 2;
+        }
+    }
+    return 0;
+}
+
+Void Banner_SetPos(CMlFrame _Frame, Text _FrameId)
+{
+    declare Content1 <=> (_Frame.GetFirstChild("Content1") as CMlLabel);
+    declare Content2 <=> (_Frame.GetFirstChild("Content2") as CMlLabel);
+    declare Real BannerWidth = _Frame.ClipWindowSize.X;
+    declare Real Width as Content1Width for Content1;
+    declare Real Width as Content2Width for Content2;
+    declare Real Content1Filler = MathLib::Max(G_MinSpace[_FrameId], BannerWidth - Content1Width );
+    declare Real Content2Filler = MathLib::Max(G_MinSpace[_FrameId], BannerWidth - Content2Width );
+    declare Real TotalWidth = Content1Width + Content1Filler + Content2Width + Content2Filler;
+
+    //log("["^_FrameId^"]: " ^ (Content1Width + Content2Width));
+    //log("["^_FrameId^"]: " ^ G_Period[_FrameId]);$
+    if((Content1Width + Content2Width) <= 0. || G_Period[_FrameId] <= 0.) return;
+    declare Real Ratio = 1. * (Now - StartDate[_FrameId] ) / ((G_Period[_FrameId]*1.) *(Content1Width + Content2Width)/189.);
+    if(Ratio < 0.5)
+    {
+        Content1.RelativePosition_V3.X = (-1. * Ratio * TotalWidth );
+        Content2.RelativePosition_V3.X = (-1. * Ratio * TotalWidth ) + (Content1Width + Content1Filler);
+    }
+    else if (Ratio >= 1. && Ratio < 1.5)
+    {
+        declare Real Base = (-.5 * TotalWidth ) + (Content1Width + Content1Filler);
+        Content1.RelativePosition_V3.X = Base + (-1. * (Ratio - 1.) * TotalWidth ) + (Content2Width + Content2Filler);
+        Content2.RelativePosition_V3.X = Base + (-1. * (Ratio - 1.) * TotalWidth );
+    }
+}
+
+Void Banner_SetContent(Text _IdFrame, Text _Content, Vec3 _Color)
+{
+    declare FrameBanner <=> (Page.GetFirstChild(_IdFrame)    as CMlFrame);
+    declare Content1    <=> (FrameBanner.GetFirstChild("Content1") as CMlLabel);
+    declare Content2    <=> (FrameBanner.GetFirstChild("Content2") as CMlLabel);
+    declare Real Width as Content1Width for Content1;
+    declare Real Width as Content2Width for Content2;
+    
+    Content1.Value = _Content;
+    Content2.Value = _Content;
+    Content1.TextColor = _Color;
+    Content2.TextColor = _Color;
+    Content1Width  = Content1.ComputeWidth(Content1.Value);
+    Content2Width  = Content2.ComputeWidth(Content2.Value);
+   
+    G_BannerContent1[_IdFrame] = _Content;
+    G_BannerContent2[_IdFrame] = _Content;
+}
+
+Void Banner_SetContent(Text _IdFrame, Text _Content)
+{
+    Banner_SetContent(_IdFrame, _Content, <1., 1., 1.>);
+}
+""";
+	return MLText;
+}
+
+Text InsertFrameworkInManialink(Text _Id, Vec3 _Position, Real _Size, Text _Font, Vec2 _ClipSizen, Vec2 _ClipPosn) {
+
+	declare Text MLText = """
+	<frame posn="{{{_Position.X}}} {{{_Position.Y}}} {{{_Position.Z}}}" id="{{{_Id}}}" clip="1" clipsizen="{{{_ClipSizen.X}}} {{{_ClipSizen.Y}}}" clipposn="{{{_ClipPosn.X}}} {{{_ClipPosn.Y}}}">
+        <label id="Content1" textprefix="$t" textsize="{{{_Size}}}" textfont="{{{_Font}}}" sizen="200 10" halign="left" valign="center" posn="0 0 0"/>
+        <label id="Content2" textprefix="$t" textsize="{{{_Size}}}" textfont="{{{_Font}}}" sizen="200 10" halign="left" valign="center" posn="0 0 0"/>
+    </frame>
+	""";
+	return MLText;
+}
+
+Text InsertFrameworkInManialink(Text _Id, Vec3 _Position) {
+    return InsertFrameworkInManialink(_Id, _Position, 1., "", <50., 10.>, <20., 0.>);
+}
+
+Text InsertInMain(Text[] _MyBanners, Text[] _BannerContent, Integer[] _BannerPeriod, Real[] _BannerMinSpace) {
+
+    declare Text MLText;
+    for(I, 0, _MyBanners.count-1)
+    {
+        MLText ^= """
+        StartDate["{{{_MyBanners[I]}}}"]   = 0;
+        G_Period["{{{_MyBanners[I]}}}"]   = {{{_BannerPeriod[I]}}};
+        G_MinSpace["{{{_MyBanners[I]}}}"] = {{{_BannerMinSpace[I]}}};
+	    declare Banner_{{{_MyBanners[I]}}} <=> (Page.GetFirstChild("{{{_MyBanners[I]}}}") as CMlFrame);
+	    declare Content1_{{{_MyBanners[I]}}} <=> (Banner_{{{_MyBanners[I]}}}.GetFirstChild("Content1") as CMlLabel);
+	    declare Content2_{{{_MyBanners[I]}}} <=> (Banner_{{{_MyBanners[I]}}}.GetFirstChild("Content2") as CMlLabel);
+	    declare Real Width as Content1Width_{{{_MyBanners[I]}}} for Content1_{{{_MyBanners[I]}}};
+	    declare Real Width as Content2Width_{{{_MyBanners[I]}}} for Content2_{{{_MyBanners[I]}}};
+        """;
+        declare BannerContent = "";
+        if(_BannerContent.existskey(I))
+        {
+            BannerContent = _BannerContent[I];
+        }
+        MLText ^= """
+        G_BannerContent1["{{{_MyBanners[I]}}}"] = "{{{BannerContent}}}";
+        G_BannerContent2["{{{_MyBanners[I]}}}"] = "{{{BannerContent}}}";
+        """;
+	}
+	return MLText;
+}
+
+Text InsertInMain(Text[] _MyBanners) {
+    return InsertInMain(_MyBanners, [""], [6000], [0.5]);
+
+}
+Text InsertInLoop(Text[] _MyBanners) {
+
+	declare Text MLText = """
+    """;
+    //declare Integer I = 0;
+    for(I, 0, _MyBanners.count-1)
+    {
+        MLText ^= """
+	    declare MustUpdate{{{I}}} = Banner_Update(Banner_{{{_MyBanners[I]}}}, "{{{_MyBanners[I]}}}");
+	    if (MustUpdate{{{I}}} == 1 || MustUpdate{{{I}}} == 3) {
+			//Content1_{{{_MyBanners[I]}}}.Value = "Now's the fuuuuuuuucking Time1 = " ^ (Now/1000);
+            Content1_{{{_MyBanners[I]}}}.Value = G_BannerContent1["{{{_MyBanners[I]}}}"];
+			Content1Width_{{{_MyBanners[I]}}}  = Content1_{{{_MyBanners[I]}}}.ComputeWidth(Content1_{{{_MyBanners[I]}}}.Value);
+	    }
+	    
+	    if (MustUpdate{{{I}}} == 2 || MustUpdate{{{I}}} == 3) {
+            //Content2_{{{_MyBanners[I]}}}.Value = "Now = " ^ (Now/1000);
+			Content2_{{{_MyBanners[I]}}}.Value = G_BannerContent2["{{{_MyBanners[I]}}}"];
+			Content2Width_{{{_MyBanners[I]}}}  = Content2_{{{_MyBanners[I]}}}.ComputeWidth(Content2_{{{_MyBanners[I]}}}.Value);
+	    }
+
+	    Banner_SetPos(Banner_{{{_MyBanners[I]}}}, "{{{_MyBanners[I]}}}");
+		""";
+	}
+	return MLText;
+}
+

@@ -1,0 +1,63 @@
+#Include "Libs/Openplanet/TMConsole/Menu/Controller/MusicsController.Script.txt"	 			as MusicsController
+#Include "Libs/Openplanet/TMConsole/Menu/LibCheats.Script.txt"								as LibCheats
+
+#Const C_Canyon		0
+#Const C_Lagoon		1
+#Const C_Valley		2
+#Const C_Stadium	3
+
+Text GetXml_OnlyCheatSettings(Boolean _IsUGCTrack)
+{
+	declare Text XmlSettings ="""<mode_script_settings>""";
+	XmlSettings ^= LibCheats::GetSettings();
+	XmlSettings ^= """<setting name="S_IsUgcTrack"        value="{{{_IsUGCTrack}}}"                      type="boolean"/>""";
+	XmlSettings ^= """</mode_script_settings>""";
+	
+	return XmlSettings;
+}
+
+Text GetXml(
+	Integer _PlayerMedals, 
+	Integer _LastMedalWin, 
+	Integer _MedalsNeedsForNextUnlock, 
+	Integer _MedalTypeNeededForNextUnlock, 
+	Integer _Enviro, 
+	Integer _Difficulty, 
+	Boolean _SameEnv, 
+	Boolean _SameDif, 
+	Text _TrackGhostUrl, 
+	Integer _NumberOfBronze, 
+	Integer _NumberOfSilver, 
+	Integer _NumberOfGold, 
+	Integer _NumberOfAuthor, 
+	Integer _NbMedalsToUnlockPimp, 
+	Integer[] _MedalsByTypeByEnviroDiff, 
+	Integer[] _MedalsByTypeByDiff)
+	
+{
+	declare Text XmlSettings ="""
+	<mode_script_settings>
+		<setting name="S_Enviro"                       value="{{{_Enviro}}}"                             type="text"/>
+		<setting name="S_Difficulty"                   value="{{{_Difficulty}}}"                         type="text"/>
+		<setting name="S_SameEnv"                      value="{{{_SameEnv}}}"                            type="text"/>
+		<setting name="S_SameDif"                      value="{{{_SameDif}}}"                            type="text"/>
+		<setting name="S_LastMedalWin"                 value="{{{_LastMedalWin}}}"                       type="text"/>
+		<setting name="S_MedalsNumber"                 value="{{{_PlayerMedals}}}"                       type="text"/>
+		<setting name="S_NextUnlock"                   value="{{{_MedalsNeedsForNextUnlock}}}"           type="text"/>
+		<setting name="S_MedalTypeNeededForNextUnlock" value="{{{_MedalTypeNeededForNextUnlock}}}"       type="text"/>
+		<setting name="S_Opponent"                     value="{{{_TrackGhostUrl}}}"                      type="text"/>
+		<setting name="S_NumberOfBronze"               value="{{{_NumberOfBronze}}}"                     type="text"/>
+		<setting name="S_NumberOfSilver"               value="{{{_NumberOfSilver}}}"                     type="text"/>
+		<setting name="S_NumberOfGold"                 value="{{{_NumberOfGold}}}"                       type="text"/>
+		<setting name="S_NumberOfAuthor"               value="{{{_NumberOfAuthor}}}"                     type="text"/>
+		<setting name="S_NbMedalsToUnlockPimp"         value="{{{_NbMedalsToUnlockPimp}}}"               type="text"/>
+		<setting name="S_Musics"                       value="{{{MusicsController::GetMusicsXML()}}}" 	 type="text"/>
+		<setting name="S_MedalsByTypeByEnviroDiff"     value="{{{_MedalsByTypeByEnviroDiff}}}" 			 type="text"/>
+		<setting name="S_MedalsByTypeByDiff"           value="{{{_MedalsByTypeByDiff}}}" 				 type="text"/>
+	""";
+	XmlSettings ^= LibCheats::GetSettings();
+	XmlSettings ^= """</mode_script_settings>""";
+	
+	//log(XmlSettings);
+	return XmlSettings;
+}

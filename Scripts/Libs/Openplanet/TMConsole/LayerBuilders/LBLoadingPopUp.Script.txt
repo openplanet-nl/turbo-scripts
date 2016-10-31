@@ -1,0 +1,91 @@
+
+#Include "Libs/Openplanet/Manialink2.Script.txt"					as Manialink
+#Include "Libs/Openplanet/TMConsole/Menu/LibLoading.Script.txt"	as Loading
+
+#Const C_ImgBase 	"file://Media/Manialinks/Nadeo/TMConsole/Images/"
+ 
+Text Build(Text _ShowAnim, Text _HideAnim) {
+	
+	declare Text Loading   = C_ImgBase ^ "Load.tga";
+
+	//SIZES
+	//declare Real	SM_SizeY                 = 8.27;
+	//POSITIONS
+	Loading::Init(<320., 390.>, <0., 0.>, 0, _("Retrieving information. Please wait."));
+
+	declare Text MLText = """
+	
+	<frame id="Frame_All" posn="0 0 10" hidden="0">
+		
+		{{{Loading::InjectInManialink()}}}
+
+	</frame>
+
+	<script><!--
+		#Const DebugName  "L_OnlineInfo"
+		{{{Manialink::GetIncludes()}}}
+		
+		{{{Loading::InjectInGlobals()}}}
+		{{{Loading::InjectInFunctions()}}}
+		
+		{{{Manialink::Load()}}}
+		
+		
+		
+		Void Loading()
+		{
+		}
+
+
+		main() {
+			{{{Loading::InjectInInit()}}}
+
+			while(True) {
+				yield;
+				//if(! PageIsVisible) continue;
+				LibManialink_AnimLoop();
+				{{{Loading::InjectInLoop()}}}	
+
+				//log(Now);
+				foreach(Event in PendingEvents) {
+					switch(Event.Type) {
+						case CMlEvent::Type::PluginCustomEvent: {
+							switch(Event.PluginCustomEventType) {
+								case "Show" : {
+									EnableMenuNavigation(True,False,Null,8);
+									Loading_SetIsLoading(True);
+								}
+								case "Hide" : {
+									EnableMenuNavigation(True,False,Null,0);
+									Loading_SetIsLoading(False);
+								}
+								
+							}
+						}
+
+						case CMlEvent::Type::MenuNavigation: {
+							switch(Event.MenuNavAction) {
+								case CMlEvent::EMenuNavAction::Cancel : {
+									EnableMenuNavigation(True,False,Null,0);
+									Loading_SetIsLoading(False);
+									SendCustomEvent("CancelLoading", ["MainSelector"]);
+								}
+								case CMlEvent::EMenuNavAction::AppMenu : {
+									EnableMenuNavigation(True,False,Null,0);
+									Loading_SetIsLoading(False);
+									SendCustomEvent("CancelLoading", ["MainSelector"]);
+								}
+							}
+						}
+					}
+
+				}
+			}	
+		}
+		
+
+	--></script>
+	""";
+	
+	return MLText;
+}

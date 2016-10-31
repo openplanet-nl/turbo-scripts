@@ -1,0 +1,270 @@
+
+// file://Media/Manialinks/Nadeo/TMConsole/MainMenuArnaud.Script.txt
+#Include "Libs/Openplanet/Manialink2.Script.txt"					                    as Manialink
+#Include "Libs/Openplanet/TMConsole/PanelParameter.Script.txt"	                    as PanelParameter
+#Include "Libs/Openplanet/TMConsole/FontManager.Script.txt"							as Font
+#Include "Libs/Openplanet/TMConsole/Menu/2DSelectArray.Script.txt"					as SelectArray2D
+
+ 
+Text Build(Text _ShowAnim, Text _HideAnim) {
+	
+	declare Text	LabelTitle       = "Browse Rooms";
+	declare Integer Count_InstancesY = 6;
+	declare Integer Count_InstancesX = 1;
+	declare Real	MarginY_Button   = 2.0;
+	declare Real	MarginX_Button   = 0.0;
+	declare Real	SizeX_Total      = 201.;
+	declare Real	SizeY_Total      = 85.;
+	declare Real	PosXFirstQuad    = -37.0;
+	declare Real	PosYFirstQuad    = 35.;
+	declare Real	SizeXQuad        = (SizeX_Total - Count_InstancesX*MarginX_Button) / Count_InstancesX;
+	declare Real	SizeYQuad        = (SizeY_Total - Count_InstancesY*MarginY_Button) / Count_InstancesY;
+	
+	SelectArray2D::Init(SizeXQuad, SizeYQuad, Count_InstancesX, Count_InstancesY);
+	SelectArray2D::SetPosFirstQuad(PosXFirstQuad, PosYFirstQuad);
+	SelectArray2D::SetQuadMarge(MarginX_Button, MarginY_Button);
+
+	SelectArray2D::AddLabel("Enviro",  	<-95., 0.>, 25);
+	SelectArray2D::AddLabel("Owner", 	<-50., 0.>, 35);
+	SelectArray2D::AddLabel("Style",  	<-5., 0.>, 25);
+	SelectArray2D::AddLabel("Mode",    	<15., 0.>,   20);
+	SelectArray2D::AddQuad("Friends", 	<45., 0.0>, <8., 8.>);
+	SelectArray2D::AddQuad("Level", 	<65., 0.0>, <8., 8.>);
+	SelectArray2D::AddLabel("Players",  <85., 0.>, 25);
+
+	declare Text MLText = """
+	{{{SelectArray2D::InjectInFrameModel()}}}
+
+	<frame id="Frame_All" posn="0 0 0" hidden="0">
+		<label halign="left"   valign="center" text="{{{LabelTitle}}}" posn="-150 80 6" />
+		
+		<frame id="Frame_Info" posn="{{{PosXFirstQuad}}} {{{PosYFirstQuad+10}}} 4" hidden="0">
+			<label id="Label_Enviro"  	halign="left"   valign="center" bgcolor="fff" text="Enviro"          	posn="-95. 0 0" opacity="1.0" sizen="15"                textfont="{{{Font::GetFontName("Main")}}}"/>
+			<label id="Label_Owner"  	halign="left" valign="center" bgcolor="fff" text="Owner"          		posn="-50. 0 0" opacity="1.0" sizen="15"                textfont="{{{Font::GetFontName("Main")}}}"/>
+			<label id="Label_Style"    	halign="left" valign="center" bgcolor="fff" text="Style"           		posn="-5.   0 0" opacity="1.0" sizen="15"              	textfont="{{{Font::GetFontName("Main")}}}"/>
+			<label id="Label_Mode"    	halign="left" valign="center" bgcolor="fff" text="Mode"            		posn="15.   0 0" opacity="1.0" sizen="15"               textfont="{{{Font::GetFontName("Main")}}}"/>
+			<label id="Label_Friends" 	halign="left" valign="center" bgcolor="fff" text="Friends" 				posn="43 0 0" opacity="1.0" sizen="15" 					textfont="{{{Font::GetFontName("Main")}}}"/>
+			<label id="Label_Level"   	halign="left" valign="center" bgcolor="fff" text="Level"          		posn="63 0 0" opacity="1.0" sizen="15"                 	textfont="{{{Font::GetFontName("Main")}}}"/>
+			<label id="Label_Level"   	halign="left" valign="center" bgcolor="fff" text="Players"         		posn="83 0 0" opacity="1.0" sizen="15"                 	textfont="{{{Font::GetFontName("Main")}}}"/>
+		</frame>
+		
+		<frame id="Frame_InfoRoom" posn="104.5 0 4" hidden="0">
+			<quad  id="Quad_ImgBackground"    	halign="center" valign="center" sizen="71.7 35.5"    posn="0 23.7 0"  bgcolor="193"/>
+			<label id="Label_RoomOwner"         halign="left" valign="center" text="EmilienG's Room"  posn="-31. -3.0 0" opacity="1.0" sizen="55" textsize="6." textfont="{{{Font::GetFontName("Main")}}}"/>
+			<label id="Label_NumberOfPlayer"  	halign="left" valign="center" text="60/100"  posn="-29. -15.0 0" textcolor="3a3" opacity="1.0" sizen="55" textsize="3."/>
+			
+			<frame id="Frame_FriendsInfo" posn="-20.5 0 4" hidden="0">
+				<quad  id="Quad_FriendsInfo"      halign="center" valign="center" sizen="7 7"         posn="-4.0 -25.0 0"  bgcolor="193"/>
+				<label id="Label_FriendsInfo"     halign="left" valign="center" text="Amis présents"  posn="0 -24.0 0" opacity="1.0" sizen="55" textsize="5."/>
+				<label id="Label_Friendslist1"    halign="left" valign="center" text="EmilienG"       posn="1 -32.5 0" opacity="1.0" sizen="55" textsize="4."/>
+				<label id="Label_Friendslist2"    halign="left" valign="center" text="PapyChampy"       posn="1 -38.5 0" opacity="1.0" sizen="55" textsize="4."/>
+			</frame>
+		</frame>
+		
+		{{{SelectArray2D::InjectInManialink()}}}
+	""";
+	
+	MLText^="""
+	</frame>
+
+	<script><!--
+		
+		#Const C_TimeTransitionPage2 {{{PanelParameter::GetTimeTransitionPage2()}}}
+		#Const C_TimeStartClip2      {{{PanelParameter::GetTimeStartClip2()}}}
+		#Const C_TimeAnimClip2       {{{PanelParameter::GetTimeAnimClip2()}}}
+
+		{{{Manialink::GetIncludes()}}}
+		{{{Manialink::Load()}}}
+		
+		declare Integer						G_LockInput;
+		declare Integer 					G_HideTime;
+
+
+		{{{SelectArray2D::InjectInGlobalDeclaration()}}}
+		{{{SelectArray2D::InjectInFunction()}}}
+		
+		Void Init()
+		{
+			{{{SelectArray2D::InjectInInit()}}}
+		}
+
+		Void HidePage(Text _NextPage)
+		{
+			if(_NextPage == "Main")
+			{
+				G_HideTime  = Now + C_TimeTransitionPage2;
+				G_LockInput = Now + C_TimeTransitionPage2;
+			}
+			else
+			{
+				SendCustomEvent("DetachPage", ["MapFamily"]);
+			}
+		}
+
+		Void ShowPage(Text _PreviousPage)
+		{
+			Init();
+		}
+
+		Text[Text][] FilterRoomsList(Text[Text][] _OriginalRoomsList, Text _Status) {
+			declare Text[Text][] FilteredRoomsList;
+			foreach(Index => Tab in _OriginalRoomsList) {
+				if(Tab["status"] == _Status) {
+					FilteredRoomsList.add(Tab);
+				}
+			}		
+			return FilteredRoomsList;
+		}
+		
+		main() {
+			declare Text[Text][] ServerRoomsList for Page;
+			// declare CMlFrame FrameName <=> (Page.GetFirstChild("FRAMENAME") as CMlFrame);
+			
+			declare CMlLabel Label_RoomOwner <=> (Page.GetFirstChild("Label_RoomOwner") as CMlLabel);
+			
+			Init();
+			//HACK - A enlever
+			EnableMenuNavigation(True,False,Null,1);
+			//EnableMenuNavigation(True,True,Null,1);
+			//HACKEND
+			
+			G_HideTime = -1;
+			
+			//HACK - Info
+			// SetColumnTextData("Enviro", 0, "Canyon");
+			// SetColumnTextData("Enviro", 1, "Stadium");
+			// SetColumnTextData("Enviro", 2, "Various");
+			// SetColumnTextData("Enviro", 3, "Lagoon");
+			// SetColumnTextData("Enviro", 4, "Valley");
+			// SetColumnTextData("Enviro", 5, "Valley");
+			
+			// SetColumnTextData("Author", 0, "");
+			// SetColumnTextData("Author", 1, "Speed lol");
+			// SetColumnTextData("Author", 2, "lol");
+			// SetColumnTextData("Author", 3, "Ubi Official");
+			// SetColumnTextData("Author", 4, "Various");
+			// SetColumnTextData("Author", 5, "Various");
+			
+			// SetColumnTextData("Mode", 0, "Time Attack");
+			// SetColumnTextData("Mode", 1, "Time Attack");
+			// SetColumnTextData("Mode", 2, "Rounds");
+			// SetColumnTextData("Mode", 3, "Time Attack");
+			// SetColumnTextData("Mode", 4, "Time Attack");
+			// SetColumnTextData("Mode", 5, "Laps");
+
+
+			declare Integer Selection;
+			declare Boolean FirstInit = False;
+			declare Integer Prev_PageIndex;
+			declare Integer Prev_IndexSelectY;
+			Prev_IndexSelectY = G_IndexSelectY;
+			declare Integer NbCountInstanceDisplayed = {{{Count_InstancesY}}};
+			declare Text[Text][] CurRoomsList;
+			declare Integer StartIndex = (G_PageIndex * NbCountInstanceDisplayed);
+			
+			
+			
+			while(True) {
+				yield;
+				if(! PageIsVisible) continue;
+				LibManialink_AnimLoop();
+				
+				//FIRST INIT
+				if(!FirstInit) {
+					if(ServerRoomsList.count > 0) {
+						CurRoomsList = FilterRoomsList(ServerRoomsList, "running");
+						declare Integer IndexBrowse = 0;
+						foreach(Index => Tab in CurRoomsList) {
+							if(Index < {{{Count_InstancesY}}}) {
+								if(Index == 0) {
+									Label_RoomOwner.Value 				= CurRoomsList[0]["player_login"];
+								}
+								SetColumnTextData("Enviro", IndexBrowse, Tab["title_uid"]);
+								SetColumnTextData("Owner", IndexBrowse, Tab["player_login"]);
+								// SetColumnTextData("Mode", IndexBrowse, "Time Attack");
+								// SetColumnTextData("Style", IndexBrowse, "Lol");
+								IndexBrowse += 1;
+							}
+						}
+						
+						FirstInit = True;
+					}
+				}
+				
+				//PAGE CHANGE
+				if(Prev_PageIndex != G_PageIndex) {
+					StartIndex = (G_PageIndex * NbCountInstanceDisplayed);
+					if(StartIndex < CurRoomsList.count) {
+						declare Integer IndexTab = 0;
+						for(I, StartIndex, StartIndex + 5) {
+							declare Text[Text] CurServer = CurRoomsList[I];
+							SetColumnTextData("Enviro", IndexTab, CurServer["title_uid"]);
+							SetColumnTextData("Owner", IndexTab, CurServer["player_login"]);
+							IndexTab += 1;
+						}
+						Prev_PageIndex = G_PageIndex;
+					} else {
+						G_PageIndex -= 1;
+					}
+				}
+				
+				//DISPLAY PLAYER NAVIGATION
+				if(Prev_IndexSelectY != G_IndexSelectY) {
+					declare Integer 	CurIndex 		= StartIndex + G_IndexSelectY;
+					if(CurIndex < CurRoomsList.count) {
+						declare Text[Text] 	CurRoom 		= CurRoomsList[CurIndex];
+						Label_RoomOwner.Value 				= CurRoom["player_login"];
+						Prev_IndexSelectY 					= G_IndexSelectY;
+					}
+				}
+				
+				//GET PLAYER SELECTION
+				Selection = GetSelection();
+				if(Selection >= 0) {
+					declare Integer CurIndex 		= StartIndex + Selection;
+					if(CurIndex < CurRoomsList.count) {
+						declare Text[Text] CurRoom 		= CurRoomsList[CurIndex];
+						// log(CurServer["join_link"]);
+						SendCustomEvent("JoinRoom", [CurRoom["join_link"]]);
+					}
+				}
+				
+				//HIDE TIMER
+				if(G_HideTime <= Now && G_HideTime != -1) {
+					G_HideTime = -1;
+				}
+			
+				foreach(Event in PendingEvents) {
+					switch(Event.Type) {
+
+						case CMlEvent::Type::PluginCustomEvent: {
+							declare Page = Event.CustomEventData[0];
+							switch(Event.PluginCustomEventType) {
+								case "Show" : {
+									SendCustomEvent("RequestRoomsList", [""]);
+									ShowPage(Page);
+									{{{_ShowAnim}}}
+								}
+								case "Hide" : {
+									{{{_HideAnim}}}
+									HidePage(Page);
+								}
+							}
+						}
+						case CMlEvent::Type::MenuNavigation: {
+							if(G_LockInput + 50 > Now) continue;
+							G_LockInput = Now; // Sécurité pour éviter le double input
+							{{{SelectArray2D::InjectInMenuNavigation()}}}
+						}
+					}
+				}
+			}	
+		}
+		
+
+	--></script>
+	""";
+
+
+	return MLText;
+}

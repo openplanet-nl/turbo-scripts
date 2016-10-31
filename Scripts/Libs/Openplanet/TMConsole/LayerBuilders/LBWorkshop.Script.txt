@@ -1,0 +1,803 @@
+
+#Include "Libs/Openplanet/Manialink2.Script.txt"								as Manialink
+#Include "Libs/Openplanet/TMConsole/Menu/2DSelectArray.Script.txt"			as SelectArray2D
+#Include "Libs/Openplanet/TMConsole/PanelParameter.Script.txt"	            as PanelParameter
+#Include "Libs/Openplanet/TMConsole/FontManager.Script.txt"					as Font
+#Include "Libs/Openplanet/TMConsole/Colors.Script.txt"		   				as Colors
+#Include "Libs/Openplanet/UIPadButtons.Script.txt"							as LibUIButtons
+
+#Const C_ImgBase 	"file://Media/Manialinks/Nadeo/TMConsole/Images/"
+#Const C_ImgBase2	"file://Media/Images/TMConsole/Ingame/"
+#Const EditorPlugin "PartyEditor2.Script.txt"
+
+#Const C_BrowseSlot_SlotNb			6
+#Const C_BrowseSlot_Landmark		4
+
+#Const SizeXSlot					150.
+#Const SizeYSlot					10.
+#Const Count_InstancesX				1
+#Const Count_InstancesY				10
+#Const LabelSizen					30
+#Const C_RATIO						26.3
+
+#Const C_Enviro_Canyon				"Canyon"
+#Const C_Enviro_Valley				"Valley"
+#Const C_Enviro_Lagoon				"Lagoon"
+#Const C_Enviro_Stadium				"Stadium"
+
+Text Build(Text _ShowAnim, Text _HideAnim) {
+	
+	
+	declare Text 	IMGSlotSmallBg           = C_ImgBase2^"slot-medium-bg.dds";
+	declare Text 	IMGSlotSmallFg           = C_ImgBase2^"slot-medium-fg.dds";
+	declare Text 	IMGSlotMediumBg          = C_ImgBase2^"slot-medium-bg.dds";
+	declare Text 	IMGSlotMediumFg          = C_ImgBase^"slot-medium-fg2.dds";
+	declare Text 	IMGSlotBigBg             = "file://Media/_ERR_.dds";	//C_ImgBase^"slot-big-bg2.dds";
+	declare Text 	IMGSlotBigFg             = C_ImgBase^"slot-big-fg2.dds";
+
+	declare Text 	IMGMenuBg                = C_ImgBase2^"menu-bg-1.dds";
+	declare Text 	IMGBoard                 = C_ImgBase^"Board.dds";
+	declare Real	SM_SizeTotalX            = 259.0;
+	declare Real	SM_SizeTotalY            = 150.;
+	declare Real	SM_SizeX                 = 217.5;
+	declare Real	SM_SizeY                 = SM_SizeX / C_RATIO;
+	declare Real	SM_SizeOngletInfoX       = 17.6;
+	declare Real	Hack_ReglageX            = 5.;
+	declare Real	Hack_ReglageY            = 10.;
+	declare Real	SM_PosX                  = 80. + Hack_ReglageX;
+	declare Real	SM_PosY                  = 50. + Hack_ReglageY;
+	declare Real	SM_Separator             = SM_SizeY * 0.095;
+	declare Real	SM_PosYElementAlignTop   = SM_PosY - SM_Separator;
+	declare Real	SM_SizeYElement          = SM_SizeY - SM_Separator;
+	declare Real	PosnXLabel               = 33.5;
+	declare Real	PosnYLabel               = 48.5;
+	declare Real	PositionFirstQuadX       = -64.5;
+	declare Real	PositionFirstQuadY       = -22.8;
+	//declare Text 	IMGBackground            = C_ImgBase^"PlaceHolder/leaderboard-06.png";
+	// declare Text 	IMGBackground            = C_ImgBase^"LOADING_01.dds";
+
+	declare Integer Platform                 = LibUIButtons::GetPlatform();
+
+	SelectArray2D::Init(SM_SizeX, SM_SizeYElement, Count_InstancesX, Count_InstancesY);
+	SelectArray2D::SetPosFirstQuad(PositionFirstQuadX + 5., PositionFirstQuadY + 59.1);
+	SelectArray2D::SetQuadMarge(0., SM_Separator);
+
+	SelectArray2D::AddLabel		("TrackName",  		<-95., 0.>, 	LabelSizen, Font::GetFontName("Main"), "eee", "left", "center");
+	SelectArray2D::AddLabel		("Lenght",  		<-20., 0.>, 	LabelSizen, Font::GetFontName("Main"), "eee", "center", "center");
+	SelectArray2D::AddLabel		("Environment",    	<25., 0.>,   	LabelSizen);
+	SelectArray2D::AddLabel		("State",    		<69., 0.>,   	LabelSizen, Font::GetFontName("Main"), "eee", "left", "center");
+	//SelectArray2D::AddQuad		("Difficulty", 		<20., 0.>, 		<8., 8.>);
+	//SelectArray2D::AddQuad		("Friend", 			<45., 0.0>, 	<8., 8.>);
+	//SelectArray2D::AddLabel		("Likes", 			<60., 0.0>, 	LabelSizen);
+
+	
+	declare Text 	IMGR1          = LibUIButtons::GetImage(CManiaAppEvent::EMenuNavAction::PageUp);
+	declare Text 	IMGL1          = LibUIButtons::GetImage(CManiaAppEvent::EMenuNavAction::PageDown);
+
+	declare Text MLText = """
+
+
+	<framemodel id="Frame_SubMenu">
+		<quad halign="center" valign="center" sizen="{{{SM_SizeX}}} {{{SM_SizeYElement}}}" image="{{{IMGSlotMediumFg}}}" opacity="1.0"
+		 posn="{{{SM_PosX}}} {{{SM_PosYElementAlignTop}}} 4" />
+
+		<label halign="left" valign="center" style="TextButtonNav" posn="{{{PosnXLabel+Hack_ReglageX}}} {{{PosnYLabel+Hack_ReglageY}}} 3" opacity="0.85"
+		 id="Label_SubMenu" textsize="4." sizen="{{{SM_SizeX-2}}}" text="" textcolor="fff" textfont="{{{Font::GetFontName("Main")}}}"
+		 />
+		<quad halign="center" valign="center" sizen="{{{SM_SizeX}}} {{{SM_SizeYElement}}}" image="{{{IMGSlotMediumBg}}}" opacity="1.0"
+		 posn="{{{SM_PosX}}} {{{SM_PosYElementAlignTop}}} 0" />
+
+		<quad halign="center" valign="center" sizen="{{{SM_SizeX}}} {{{SM_SizeY}}}" image="{{{IMGMenuBg}}}" opacity="1."
+		 posn="{{{SM_PosX}}} {{{SM_PosY}}} 0" />
+	</framemodel>
+	
+	/* -SubMenu-
+		Le SubMenu est fait en 3 parties
+		Frame_SubMenu       - Les boutons de sélection
+		Frame_SubMenuLegend - Les 3 lignes de legendes
+		Frame_SubMenuEnd    - Les 2 dernières lignes du menu
+	*/
+	<framemodel id="Frame_SubMenuLegend">
+		<quad halign="center" valign="center" sizen="{{{SM_SizeX}}} {{{SM_SizeYElement}}}"  bgcolor="{{{Colors::GetColorHexa("Black")}}}" opacity="1."
+		 posn="{{{SM_PosX}}} {{{SM_PosYElementAlignTop}}} 2" />
+		<quad halign="center" valign="center" sizen="{{{SM_SizeX}}} {{{SM_SizeY}}}" image="{{{IMGMenuBg}}}" opacity="1."
+		 posn="{{{SM_PosX}}} {{{SM_PosY}}} 1" />
+	</framemodel>
+	
+	<framemodel id="Frame_SubMenuEnd">
+		<quad halign="center" valign="center" sizen="{{{SM_SizeX}}} {{{SM_SizeYElement}}}"  bgcolor="000" opacity="0."
+		 posn="{{{SM_PosX}}} {{{SM_PosYElementAlignTop}}} 2" />
+		<quad halign="center" valign="center" sizen="{{{SM_SizeX}}} {{{SM_SizeY}}}" image="{{{IMGMenuBg}}}" opacity="1."
+		 posn="{{{SM_PosX}}} {{{SM_PosY}}} 1" />
+		<quad halign="center" valign="center" sizen="{{{SM_SizeX}}} {{{SM_SizeY}}}" image="{{{IMGMenuBg}}}" opacity="0."
+		 posn="{{{SM_PosX}}} {{{SM_PosY - SM_SizeY}}} 1" />
+	</framemodel>
+	
+
+
+	<framemodel id="FrameModel_Tag">
+		<quad 
+			id="Quad_TagBg"
+			posn="0 0 0"
+			halign="left" 
+			valign="center" 
+			sizen="10 5" 
+			bgcolor="000"
+		/>
+		<label 
+			id="Label_TagName"
+			posn="0 0 0"
+			halign="left" 
+			valign="center" 
+			sizen="12 7" 
+			text="Tech"
+		/>
+	</framemodel>
+	
+	<framemodel id="FrameModel_Landmark">
+		<label 
+			id="Label_LandmarkName"
+			posn="0 0 0"
+			halign="center" 
+			valign="center" 
+			sizen="30 7"
+			textfont="{{{Font::GetFontName("Main")}}}"
+			textcolor="000"
+			text=""
+		/>
+		<quad halign="center" valign="center"
+		sizen="{{{(SM_SizeTotalX - SM_SizeOngletInfoX)/C_BrowseSlot_Landmark-0.2}}} {{{SM_SizeYElement*0.95}}}"        
+		posn="-0.2 -0.6 -1" bgcolor="00E2FF" opacity="0.6"/>
+	</framemodel>
+	
+	<framemodel id="FrameModel_InputInfo">
+		<quad halign="center" valign="bottom" sizen="50 {{{SM_SizeYElement}}}"
+		 image="{{{IMGSlotSmallBg}}}"   posn="0 0 6" opacity="1."/>
+		<label halign="right" valign="center" posn="14 4.5 7" textcolor="ddd" text="BACK"
+		 id="Label_InputInfo" textsize="3."  sizen="34"  opacity="1.0"/>
+		<quad halign="center" valign="center" sizen="7 7" bgcolor="900" id="Quad_InputInfo"
+		 image=""  posn="18.5 4 7" opacity="1.0" />
+		<quad halign="center" valign="bottom" sizen="50 {{{SM_SizeYElement}}}"
+		 image="{{{IMGSlotSmallFg}}}"  posn="0 0 8" opacity="1.0"/>
+	</framemodel>
+
+	{{{SelectArray2D::InjectInFrameModel()}}}
+	
+	<frame id="Frame_General" posn="0 0 -20">
+		<quad 	
+			id="Quad_Board"
+			posn="0 0 -3"
+			halign="center"
+			valign="center"
+			sizen="{{{SM_SizeTotalX+0.5}}} {{{SM_SizeTotalY}}}"
+			opacity="1.0"
+			image="{{{IMGBoard}}}"
+		/>
+	""";
+		
+	for(I, 0, C_BrowseSlot_Landmark-1) {
+		//declare Real PosnX = -96.4 + I*48.27;
+		declare Real PosnX = -90.4 + I*60.46;
+		MLText ^= """
+		<frameinstance 
+			modelid="FrameModel_Landmark" 
+			posn="{{{PosnX}}} 54 0"
+			halign="center" 
+			valign="center" 
+			id="FrameInstance_Landmark{{{I}}}" 
+		/>
+		""";
+	}
+		
+	
+	//declare Real PosnX = -50.;
+	//declare Real PosnY = 25.;
+	for(K, 0, Count_InstancesY-1)
+	{
+		declare Real FramePosnX = PositionFirstQuadX;
+		declare Real FramePosnY = PositionFirstQuadY + K * - SM_SizeY;
+
+		MLText^="""
+	<frameinstance modelid="Frame_SubMenu" posn="{{{FramePosnX}}} {{{FramePosnY}}} 4." id="Frame_InstanceSubMenu{{{K}}}" hidden="0"/>
+		""";
+	}
+		
+
+
+	MLText^="""
+	<frame id="Frame_Title" posn="-85 0.9 0">
+		<quad halign="center" valign="bottom" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeY*2.}}}"
+		 image="{{{IMGSlotBigFg}}}"                  posn="{{{SM_PosX}}} {{{SM_PosY-2.8}}} 7" opacity="1."/>
+		<quad  halign="center" valign="bottom" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeY*2.}}}"
+		 image="{{{IMGSlotBigBg}}}"                  posn="{{{SM_PosX}}} {{{SM_PosY-2.8}}} 5" opacity="1."/>
+		<label halign="left" valign="center"  textfont="{{{Font::GetFontName("Title")}}}" posn="{{{-SM_PosX/2.}}}  {{{SM_PosY + SM_SizeY - 1.}}} 6" textcolor="fff"
+		 id="Label_Title" textsize="13." text="Workshop" sizen="{{{SM_SizeX-2.}}}"  opacity="1.0"/>
+	</frame>
+		
+	<frame id="Frame_Onglet" posn="-85 -5.8 -3">
+		<quad halign="center" valign="center" sizen="{{{SM_SizeTotalX}}} {{{SM_SizeYElement*0.95}}}" image="{{{IMGSlotMediumFg}}}"  
+		 posn="{{{SM_PosX}}} {{{SM_PosYElementAlignTop}}} 4" opacity="1.0"/>
+
+		<quad halign="center" valign="center" sizen="{{{(SM_SizeTotalX - SM_SizeOngletInfoX)/C_BrowseSlot_Landmark-0.04}}} {{{SM_SizeYElement*0.95}}}"        
+		 posn="-11.6 {{{SM_PosYElementAlignTop}}} 3" bgcolor="00E2FF" opacity="1.0" id="OngletFocus" />
+
+		<quad halign="center" valign="center" sizen="{{{(SM_SizeTotalX - SM_SizeOngletInfoX)}}} {{{SM_SizeYElement*0.95}}}" image="{{{IMGSlotMediumBg}}}"
+		 posn="{{{SM_PosX}}} {{{SM_PosYElementAlignTop}}} 1" opacity="1.0" />
+
+
+		<quad halign="center" valign="center" sizen="8 8" image="{{{IMGL1}}}" keepratio="Fit"
+		 posn="-40.0 {{{SM_PosYElementAlignTop+0.5}}} 3" opacity="1.0" />
+		<quad halign="center" valign="center" sizen="8 8" image="{{{IMGR1}}}" keepratio="Fit"
+		 posn="210.0 {{{SM_PosYElementAlignTop+0.5}}} 3" opacity="1.0" />
+		 
+	</frame>
+	
+	<frame id="Frame_InputInfos" posn="0 -74.8 7">
+	""";
+	for(I, 0, 3) {
+		declare Real PosnX = 104. - I*57.4;
+		MLText ^= """
+		<frameinstance 
+			modelid="FrameModel_InputInfo" 
+			posn="{{{PosnX}}} 0 0"
+			halign="center" 
+			valign="center" 
+			id="FrameInputInfo{{{I}}}" 
+		/>
+		""";
+	}
+	MLText ^= """
+	</frame>
+	""";
+
+
+
+
+/*
+
+	declare Real LabelLegendPosnX = PosnX + PosnXLabel - SM_SizeX + 5.;
+	declare Real LabelLegendPosnY = PosnY + PosnYLabel + 2.;
+
+	MLText^="""
+	//Frame_SubMenuEnd - Contient le label des 3 lignes de legend + 1 ligne de ronds + 1 ligne d'info sur les inputs dispos
+	<frame id="Frame_SubMenuEnd">
+		<label halign="left" valign="top" id="Label_SubMenuLegend" posn="{{{LabelLegendPosnX}}} {{{LabelLegendPosnY}}} 10" opacity="0.8" textcolor="fff200"
+		textsize="3." sizen="{{{SM_SizeX-8}}}" textfont="{{{Font::GetFontName("MainSmall2")}}}" linespacing="1.55" autonewline="1" maxline="3"/>
+		
+			""";
+*/
+	
+
+
+
+	MLText ^="""
+		<frame id="Frame_MapContent">
+			<frame id="Frame_MapList" posn="80 0 0">
+				{{{SelectArray2D::InjectInManialink()}}}
+			</frame>
+			<frame id="Frame_TracksInfo" posn="-109.3 -40 10">
+				<frame id="Published" hidden="1">
+					<label id="Label_Info1" posn="0 31.5 0" halign="center" valign="center" sizen="38" textsize="4." text="Info Track" hidden="0"
+					textfont="{{{Font::GetFontName("Main")}}}" textcolor="eee"/>
+				</frame>
+				<frame id="Validate" hidden="1">
+					<label id="Label_Info1" posn="0 31.5 0" halign="center" valign="center" sizen="38" textsize="4." text="Published to the cloud" hidden="0"
+					textfont="{{{Font::GetFontName("Main")}}}" textcolor="eee"/>
+					<label id="Label_Info2" posn="0 20 0" halign="center" valign="center" sizen="38"   textsize="3." text="" />
+					<quad posn="0 18 4" halign="center" valign="center" sizen="10 10" bgcolor="fff"
+					image="{{{LibUIButtons::GetImage(Platform, CManiaAppEvent::EMenuNavAction::Action2)}}}" />
+				</frame>
+				<frame id="WIP" hidden="1">
+					<label id="Label_Info1" posn="0 31.5 0" halign="center" valign="center" sizen="38" textsize="4." text="Validate the map in the editor" hidden="0"
+					textfont="{{{Font::GetFontName("Main")}}}" textcolor="eee"/>
+				</frame>
+			</frame>
+			<frame id="Frame_MapDetail" posn="-100 -5 1">
+				<quad id="Quad_MapDetailThumbnail" posn="-9.2 25.2 4" halign="center" valign="center" sizen="40 40" bgcolor="fff" />
+				<label id="Label_MapDetailName" posn="-22 -4 6" halign="left" valign="center" sizen="30" textsize="4." text="aAa" textcolor="000" />
+			</frame>
+		</frame>
+	</frame>
+	
+	<script><!--
+		#Const DebugName  "L_Workshop"
+		
+		#Const TMC_MEDAL_AUTHOR      0
+		#Const TMC_MEDAL_GOLD        1
+		#Const TMC_MEDAL_SILVER      2
+		#Const TMC_MEDAL_BRONZE      3
+		#Const TMC_MEDAL_NONE        4
+		#Const C_TimeTransitionPage2 {{{PanelParameter::GetTimeTransitionPage2()}}}
+		#Const C_TimeStartClip2      {{{PanelParameter::GetTimeStartClip2()}}}
+		#Const C_TimeAnimClip2       {{{PanelParameter::GetTimeAnimClip2()}}}
+		
+		
+		#Include "TextLib" as TL
+		#Include "MathLib" as ML
+		
+		{{{Manialink::GetIncludes()}}}
+		{{{Manialink::Load()}}}
+		declare Integer						G_LockInput;
+		//declare Integer					G_PageIndex;
+		declare Integer						G_IndexFocusX;
+		declare Integer						G_IndexFocusY;
+		declare Text[]						G_Onglets;
+		declare Integer						G_OngletFocus;
+		declare Integer						G_TimeSwitchOnglet;
+		declare Boolean						G_CanSetNewTrack; //Définis si on peut sélectionner le bouton "New Track" dans la liste
+		declare Integer						G_MyArrayMaxCount;
+		declare Integer[Integer]			G_TracksState; //0: WIP | 1:Validate | 2:Published
+		
+		{{{SelectArray2D::InjectInGlobalDeclaration()}}}
+		{{{SelectArray2D::InjectInFunction()}}}
+		
+		
+		Void Init()
+		{
+			//G_Onglets.add("My Tracks");
+			G_Onglets.add("Canyon");
+			G_Onglets.add("Valley");
+			G_Onglets.add("Lagoon");
+			G_Onglets.add("Stadium");
+
+			for(I, 0, G_Onglets.count - 1)
+			{
+				declare CMlFrame  FrameInstance_Landmark <=> (Page.GetFirstChild("FrameInstance_Landmark"^I) as CMlFrame);
+				declare CMlLabel  Label_LandmarkName <=> (FrameInstance_Landmark.GetFirstChild("Label_LandmarkName") as CMlLabel);
+				Label_LandmarkName.Value = G_Onglets[I];
+				
+			}
+
+
+			{{{SelectArray2D::InjectInInit()}}}
+		}
+		
+		//Renvois l'index de la Track sélectionnée ou -1 si "NewTrack" sélectionné
+		Integer GetInputInArray()
+		{
+			declare Integer InputInArray;
+
+			declare Integer StartIndexPosition = {{{Count_InstancesY}}}*G_PageIndex;
+			InputInArray = StartIndexPosition + G_IndexFocusY;
+			
+			if(G_CanSetNewTrack)
+			{
+				if(G_IndexFocusY == 0) return -1;
+				InputInArray -= (G_PageIndex+1);
+			}
+			return InputInArray;
+		}
+
+
+		Void UpdateTrackFocus()
+		{
+			declare Text[Text][] Net_WS_RequestIndex for Page;
+
+			SetNearestIndex(G_MyArrayMaxCount, {{{Count_InstancesY}}});
+			declare Integer TracksIndex = GetInputInArray();
+			declare CMlQuad  Quad_MapDetailThumbnail <=> (Page.GetFirstChild("Quad_MapDetailThumbnail") as CMlQuad);
+			
+			if(Net_WS_RequestIndex.existskey(TracksIndex))
+			{
+
+				//declare Text Name      = Net_WS_RequestIndex[TracksIndex]["Id"];
+				declare Integer IdTrack   = TL::ToInteger(Net_WS_RequestIndex[TracksIndex]["Id"]);
+				
+				
+				DataMgr.LoadMapThumbnail(IdTrack);
+
+				//Label_MapDetailName.Value   = Name;
+				//Label_MapDetailAuthor.Value = Author;
+				Quad_MapDetailThumbnail.Image = DataMgr.MapThumbnail;
+			}
+			else
+			{
+				declare CImage ImageEmpty;
+				Quad_MapDetailThumbnail.Image = ImageEmpty;
+				Quad_MapDetailThumbnail.BgColor = <0.,0.,0.>;
+			}			
+			
+		}
+
+		Void Update2DArray() {
+			declare Text[Text][] Net_WS_RequestIndex for Page;
+			declare Text[Text] FocusTracks;
+
+			//*INFOS DISPO*//
+			//id
+			//name
+			//environment
+			//nb_laps
+			//file_url
+			//thumbnail_url
+			//uploader
+
+
+			declare Integer StartIndexPosition =  {{{Count_InstancesY}}}*(G_PageIndex);
+			declare Boolean SetPlayerInfo      = G_CanSetNewTrack;
+			declare Integer LineFocus          = 0;
+			if(StartIndexPosition > 0 && G_CanSetNewTrack) LineFocus -= 1*G_PageIndex;
+
+			for(I, 0, {{{Count_InstancesY - 1}}}) {
+				declare Integer TracksIndex = StartIndexPosition + LineFocus;
+				
+				declare Text Label_Lenght;
+				declare Text Label_TrackName;
+				declare Text Label_Environment;
+				declare Text Label_State;
+
+				if(SetPlayerInfo && I == 0)
+				{
+					LineFocus -= 1;
+					SetPlayerInfo = False;
+					ActivateLine(I, True);
+					Label_TrackName   = "";
+					Label_Lenght      = "New Track";
+					Label_Environment = "";
+					Label_State = "";
+				}
+				else
+				{
+					if(Net_WS_RequestIndex.existskey(TracksIndex))
+					{
+						FocusTracks = Net_WS_RequestIndex[TracksIndex];
+						ActivateLine(I, True);
+						Label_TrackName   = FocusTracks["Name"];
+						declare Integer Time = TL::ToInteger(FocusTracks["BestTime"]);
+						declare Integer SecTime = Time/99;
+						declare Integer MilTime = Time%99;
+						Label_Lenght      = SecTime^"\""^MilTime^"'";
+						Label_Environment = FocusTracks["Enviro"];
+						Label_State       = "Published";
+						if(Label_State == "WIP")
+						{
+							Label_State = "$dd0" ^ Label_State;
+							G_TracksState[I] = 0;
+						}
+						else if(Label_State == "Validate")
+						{
+							Label_State = "$519" ^ Label_State;
+							G_TracksState[I] = 1;
+						}
+						else
+						{
+							Label_State = "$091" ^ Label_State;
+							G_TracksState[I] = 2;
+						}
+					}
+					else
+					{
+						ActivateLine(I, False);
+						Label_TrackName   = "";
+						Label_Lenght      = "";
+						Label_Environment = "";
+						Label_State = "";
+					}
+				}
+				/*
+				if(Net_WS_RequestIndex.count == 0 && I == 0 && !G_CanSetNewTrack ||Net_WS_RequestIndex.count == 0 && I == 1 && G_CanSetNewTrack)
+				{
+					G_MyArrayMaxCount += 1; //Sert pour pouvoir sélectionner la ligne
+					ActivateLine(I, True);
+					Label_TrackName   = "";
+					Label_Lenght      = "(No Track)";
+					Label_Environment = "";
+					Label_State = "";
+				}
+				*/
+
+				SetColumnTextData		("TrackName"   , I, Label_TrackName);
+				SetColumnTextData		("Lenght"      , I, Label_Lenght);
+				SetColumnTextData		("Environment" , I, Label_Environment);
+				SetColumnTextData		("State"       , I, Label_State);
+				LineFocus += 1;
+			}
+			UpdateTrackFocus();
+		}
+
+		Void SwitchOnglet()
+		{
+			declare CMlQuad  OngletFocus <=> (Page.GetFirstChild("OngletFocus") as CMlQuad);
+			declare Real NewFramePosX = -5.6 + G_OngletFocus *  {{{(SM_SizeTotalX - SM_SizeOngletInfoX)/C_BrowseSlot_Landmark+0.08}}};
+			declare Vec3 NewFramePos  = <NewFramePosX, OngletFocus.RelativePosition.Y, OngletFocus.RelativePosition.Z>;
+			LibManialink_SetTargetPosition(OngletFocus, NewFramePos);
+			LibManialink_PresetAnim(OngletFocus, 250, "EaseOutQuint");
+			G_TimeSwitchOnglet = Now + 500;
+		}
+
+		Void SetOnglet()
+		{
+			declare CMlQuad  OngletFocus <=> (Page.GetFirstChild("OngletFocus") as CMlQuad);
+			declare Real NewFramePosX = -5.6 + G_OngletFocus *  {{{(SM_SizeTotalX - SM_SizeOngletInfoX)/C_BrowseSlot_Landmark+0.08}}};
+			declare Vec3 NewFramePos  = <NewFramePosX, OngletFocus.RelativePosition.Y, OngletFocus.RelativePosition.Z>;
+			OngletFocus.RelativePosition = NewFramePos;
+		}
+
+		Void SendRequestTracks()
+		{
+			switch(G_OngletFocus)
+			{
+				//case 0  : SendCustomEvent("RequestTracksList", [""^4]);
+				case 0  : SendCustomEvent("RequestTracksList", [""^0]);
+				case 1  : SendCustomEvent("RequestTracksList", [""^1]);
+				case 2  : SendCustomEvent("RequestTracksList", [""^2]);
+				case 3  : SendCustomEvent("RequestTracksList", [""^3]);
+			}
+		}
+
+		Text GetEnviroFocus()
+		{
+			switch(G_OngletFocus)
+			{
+				case 0  : return "{{{C_Enviro_Canyon}}}";
+				case 1  : return "{{{C_Enviro_Valley}}}";
+				case 2  : return "{{{C_Enviro_Lagoon}}}";
+				case 3  : return "{{{C_Enviro_Stadium}}}";
+			}
+			return "";
+		}
+
+		Void SetLabelInputInfo()
+		{
+			declare Text[] LabelInputInfo;
+			declare Text[] IMGInputInfo;
+			LabelInputInfo.add(_("Back"));
+			if(G_CanSetNewTrack)
+			{
+				LabelInputInfo.add(_("Edit"));
+				LabelInputInfo.add(_("Erase"));
+			}
+			else
+			{
+				LabelInputInfo.add(_("Select"));
+			}
+			IMGInputInfo.add("{{{LibUIButtons::GetImage(Platform, CManiaAppEvent::EMenuNavAction::Cancel) }}}");
+			IMGInputInfo.add("{{{LibUIButtons::GetImage(Platform, CManiaAppEvent::EMenuNavAction::Select) }}}");
+			IMGInputInfo.add("{{{LibUIButtons::GetImage(Platform, CManiaAppEvent::EMenuNavAction::Action1)}}}");
+			
+
+			G_CanSetNewTrack;
+
+			for(I, 0, 3) {
+				declare CMlFrame FrameInputInfo  <=> (Page.GetFirstChild("FrameInputInfo"^I) as CMlFrame);
+				declare CMlLabel Label_InputInfo <=> (FrameInputInfo.GetFirstChild("Label_InputInfo") as CMlLabel);
+				declare CMlQuad  Quad_InputInfo  <=> (FrameInputInfo.GetFirstChild("Quad_InputInfo")  as CMlQuad);
+				if(LabelInputInfo.existskey(I))
+				{
+					FrameInputInfo.Show();
+					declare Text MonLabel = LabelInputInfo[I];
+					Label_InputInfo.SetText(TL::ToUpperCase(MonLabel));
+					Quad_InputInfo.ChangeImageUrl(IMGInputInfo[I]);
+				}
+				else
+				{
+					FrameInputInfo.Hide();
+				}
+			}
+		}
+
+		main() {
+			Init();
+			//EnableMenuNavigation(True,False,Null,1);
+			
+			declare Integer      Update2DArray    for Page;
+			declare Integer      AllTracksUpdate    for Page; //TODELETE
+
+			declare Integer      Prev_Update2DArray;
+			declare Integer      Prev_TimeSwitchOnglet;
+			declare Integer      PrevOngletFocus;
+
+			Prev_Update2DArray = Update2DArray;
+			G_IndexFocusX = GetIndexFocusX();
+			G_IndexFocusY = GetIndexFocusY();
+
+			
+			declare Integer Selection;
+			declare Text[Text][] Net_WS_RequestIndex for Page;
+			G_OngletFocus = 0;
+			PrevOngletFocus = G_OngletFocus;
+
+
+			while(True) {
+				yield;
+				if(! PageIsVisible) continue;
+				LibManialink_AnimLoop();
+				
+				//declare Integer StartIndexPosition 	=  {{{C_BrowseSlot_SlotNb}}}*(G_PageIndex);
+				
+
+
+
+				if(Prev_TimeSwitchOnglet != G_TimeSwitchOnglet && G_TimeSwitchOnglet < Now && PrevOngletFocus != G_OngletFocus)
+				{
+					Prev_TimeSwitchOnglet = G_TimeSwitchOnglet;
+					PrevOngletFocus = G_OngletFocus;
+					//LoadNewTab();
+
+					SendRequestTracks();
+				}
+				
+				if(Prev_Update2DArray != Update2DArray)
+				{
+					Prev_Update2DArray = Update2DArray;
+					Update2DArray(); //TODO - Regarder si le tableau mis à jours est le bon
+				}
+				
+				
+
+				Selection = GetSelection();
+				if(Selection >= 0) {
+					//log("Selection: " ^ Selection);
+					declare Integer IdTrackSelect = GetInputInArray();
+
+					if(G_CanSetNewTrack)
+					{
+						if(IdTrackSelect != -1)
+						{
+							declare Integer IdTrack = TL::ToInteger(Net_WS_RequestIndex[IdTrackSelect]["Id"]);
+							declare Text TrackPath  = DataMgr.Maps[IdTrack].FileName;
+							//log("TrackPath: "^ TrackPath);
+							SendCustomEvent("EditTrack", [TrackPath, "{{{EditorPlugin}}}"]);
+						}
+						else
+						{
+							declare Text KindOfTracksMenuSelect for This;
+							KindOfTracksMenuSelect = "NewTrack";
+							SendCustomEvent("GotoPage", ["KindOfTracks"]);
+
+							continue;
+							declare Text Enviro = GetEnviroFocus();
+							declare Text Mood = "Day";
+							//HACK
+							if(Enviro == "{{{C_Enviro_Lagoon}}}") Mood = "Day48";
+							//HACKEND
+							SendCustomEvent("EditNewTrack", [Enviro, Mood, "", Enviro^"Car", "", "PartyEditor2.Script.txt"]);
+
+						}
+					}
+					else
+					{
+						if(!Net_WS_RequestIndex.existskey(IdTrackSelect)) continue;
+						declare Integer IdTrack = TL::ToInteger(Net_WS_RequestIndex[IdTrackSelect]["Id"]);
+						declare TheMap = DataMgr.Maps[IdTrack];
+						declare Text TrackPath  	= TheMap.FileName;
+						declare Text TrackEnviro  	= TheMap.CollectionName;
+						SendCustomEvent("PlayMap", [TrackPath, TrackEnviro]);
+					}
+				}
+
+				declare IndexFocusX = GetIndexFocusX();
+				if(G_IndexFocusX != IndexFocusX)
+				{
+					G_IndexFocusX = IndexFocusX;
+					UpdateTrackFocus();
+				}
+
+				declare IndexFocusY = GetIndexFocusY();
+				if(G_IndexFocusY != IndexFocusY)
+				{
+					G_IndexFocusY = IndexFocusY;
+					UpdateTrackFocus();
+				}
+				
+				foreach(Event in PendingEvents) {
+					switch(Event.Type) {
+
+						case CMlEvent::Type::PluginCustomEvent: {
+							switch(Event.PluginCustomEventType) {
+								case "Show" : {
+									//declare Page = Event.CustomEventData[0];
+									{{{_ShowAnim}}}
+									EnableMenuNavigation(True,False,Null,1);
+									//G_CanSetNewTrack = True;
+									G_OngletFocus = 0;
+									SetOnglet();
+									SendRequestTracks();
+									//SendCustomEvent("RequestTracksList", [""]);
+								}
+								case "Hide" : {
+									EnableMenuNavigation(True,False,Null,0);
+									{{{_HideAnim}}}
+									SendCustomEvent("DetachPage", ["Workshop"]);
+								}
+								case "AllInfosSent" : {
+									declare Text[Text][] Net_WS_RequestIndex	for Page;
+									declare Boolean		 Net_EditionMode		for Page;
+									declare Real NbPages = ((Net_WS_RequestIndex.count)*1.0)/({{{Count_InstancesY}}}*1.0);
+									G_MyArrayMaxCount = Net_WS_RequestIndex.count;
+									declare Integer NbPagesInt = ML::CeilingInteger(NbPages);
+
+									DataMgr.RetrieveUserFiles (DataMgr.MenuUserId, "data0", CDataMgr::EFileType::Map);
+									wait(DataMgr.Ready);
+
+									if(NbPages == (NbPagesInt - 1) * 1.)
+									{
+										NbPagesInt -= 1;
+										if(G_CanSetNewTrack)G_MyArrayMaxCount += 1;
+									}
+
+									G_CanSetNewTrack = Net_EditionMode;
+									SetLabelInputInfo();
+									if(G_CanSetNewTrack)
+									{
+										G_MyArrayMaxCount += NbPagesInt;
+										NbPages = (G_MyArrayMaxCount*1.0)/({{{Count_InstancesY}}}*1.0);
+										NbPagesInt = ML::CeilingInteger(NbPages);
+										if(NbPages == (NbPagesInt - 1) * 1.) NbPagesInt -= 1;
+									}
+
+									SetPageMax(NbPagesInt);
+									Update2DArray();
+								}
+								case "ReloadLayer":	{
+									SendRequestTracks();
+								}
+							}
+						}
+						//HACK
+						case CMlEvent::Type::KeyPress: {
+							switch(Event.KeyName) {
+								case "Numpad0" : {
+									//SendCustomEvent("RequestTracksList", [""]);
+								}
+							}
+						}
+						//HACKEND
+						case CMlEvent::Type::MenuNavigation: {
+							if(G_LockInput + 50 > Now) continue;
+							G_LockInput = Now; // Sécurité pour éviter le double input
+							switch(Event.MenuNavAction) {
+								case CMlEvent::EMenuNavAction::PageUp : {
+									if(G_OngletFocus > 0)
+									{
+										G_OngletFocus -= 1;
+										SwitchOnglet();
+									}
+								}
+								case CMlEvent::EMenuNavAction::PageDown : {
+									if(G_OngletFocus < {{{C_BrowseSlot_Landmark-1}}})
+									{
+										G_OngletFocus += 1;
+										SwitchOnglet();
+									}
+								}
+								case CMlEvent::EMenuNavAction::Cancel : {
+									SendCustomEvent("GotoPrevious", [""]);
+								}
+								case CMlEvent::EMenuNavAction::AppMenu : {
+									SendCustomEvent("GotoPrevious", [""]);
+								}
+								case CMlEvent::EMenuNavAction::Action1 : {
+									if(G_CanSetNewTrack)
+									{
+										declare Integer IdTrackSelect = GetInputInArray();
+										if(IdTrackSelect == -1) continue;
+										//declare Text MapSelect = Net_WS_RequestIndex[G_IndexFocusY]["file_url"];
+										declare Integer IdTrack = TL::ToInteger(Net_WS_RequestIndex[IdTrackSelect]["Id"]);
+										declare Text TrackPath  = DataMgr.Maps[IdTrack].FileName;
+										SendCustomEvent("DeleteMap", [TrackPath]);
+									}
+								}
+								case CMlEvent::EMenuNavAction::Action2 : {
+									
+									if(G_CanSetNewTrack)
+									{
+										declare Integer IdTrackSelect = GetInputInArray();
+										if(IdTrackSelect == -1) continue;
+										declare Integer IdTrack = TL::ToInteger(Net_WS_RequestIndex[IdTrackSelect]["Id"]);
+										//declare Text TrackPath  = DataMgr.Maps[IdTrack].FileName;
+										SendCustomEvent("PushTrack", [""^IdTrack]);
+									}
+								}
+							}
+							{{{SelectArray2D::InjectInMenuNavigation()}}}
+						}
+					}
+				}
+			}
+		}
+	--></script>
+	""";
+	
+	return MLText;
+}

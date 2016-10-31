@@ -1,0 +1,407 @@
+#Include "Libs/Openplanet/TMConsole/Menu/LibOnlineGameplay.Script.txt"		as GamePlay
+#Include "Libs/Openplanet/TMConsole/MenuColor.Script.txt"					as MenuColor
+#Include "Libs/Openplanet/TMConsole/FontManager.Script.txt"					as Font
+#Include "Libs/Openplanet/TMConsole/Menu/LibInputInfos.Script.txt"			as InputInfos
+
+#Include "TextLib" as TL
+
+#Const C_ImgBase 	"file://Media/Manialinks/Nadeo/TMConsole/Images/"
+#Const C_ImgBase2	"file://Media/Images/TMConsole/Ingame/"
+
+#Const C_Filters_Count				4
+
+declare Text[][] 	G_AllFilters;
+
+Void Init() {
+	G_AllFilters.add(GamePlay::GetGameModesDisplayNames());
+	G_AllFilters.add(GamePlay::GetRoomEnvironments());
+	G_AllFilters.add(GamePlay::GetRoomStyles());
+	G_AllFilters.add(GamePlay::GetDurations());
+}
+
+Text InjectInManialink() {
+	declare Text 	IMGBackground 			 = C_ImgBase^"SystemStartBg2.dds";
+	
+	declare Text 	IMGSlotMediumBg          = C_ImgBase2^"slot-medium-bg.dds";
+	declare Text 	IMGSlotMediumFg          = C_ImgBase^"slot-medium-fg2.dds";
+	declare Text 	IMGSlotBigBg             = C_ImgBase^"slot-big-bg2.dds";
+	declare Text 	IMGSlotBigFg             = C_ImgBase^"slot-big-fg2.dds";
+	declare Text 	IMGMenuBg                = C_ImgBase2^"menu-bg-1.dds";
+	
+	
+	declare Real Filters_TotalSizeX		= 215.;
+	declare Real Filters_FilterSizeX 	= (Filters_TotalSizeX * 6 / 30);
+	declare Real Filters_SizeY			= 8.27;
+	declare Real Filters_SizeYElement	= Filters_SizeY * 0.905;
+
+	InputInfos::Init("Filters", Filters_TotalSizeX / 30., Filters_SizeY, 1.);
+	InputInfos::AddInput(7., "Select");
+	InputInfos::AddInput(7., "Cancel");
+	InputInfos::AddInput(7., "Action2");
+	
+	InputInfos::SetConstantInput("Select"		, _("|16 chars max|TOGGLE"));
+	InputInfos::SetConstantInput("Cancel"		, _("|16 chars max|BACK"));
+	InputInfos::SetConstantInput("Action2"		, _("|16 chars max|RESET"));
+	
+	declare Text MLText;
+	
+	MLText = """<frame id="Frame_Filters" posn="0 48.7 50" hidden="1">""";
+	
+	////////////////
+	//FRAME TITLE
+	////////////////
+	MLText ^= """
+		<frame id="Frame_Title" posn="0 0 0">
+			<quad id="Quad_BackGround"	posn="0 -48.6 -3" halign="center" valign="center" sizen="320 180" image="{{{IMGBackground}}}" />
+			<quad 						posn="0 0 7"		halign="center" valign="bottom" sizen="{{{Filters_TotalSizeX}}} {{{Filters_SizeY*2.}}}"	 image="{{{IMGSlotBigFg}}}" opacity="1."/>
+			<quad 						posn="0 0 5"		halign="center" valign="bottom" sizen="{{{Filters_TotalSizeX}}} {{{Filters_SizeY*2.}}}"	 image="{{{IMGSlotBigBg}}}" opacity="1."/>
+			
+			<label posn="{{{-(Filters_TotalSizeX-2)/2.}}} {{{Filters_SizeY + 1.8}}} 6" halign="left" valign="center" textprefix="$t" textfont="{{{Font::GetFontName("Main")}}}" textcolor="{{{TL::ColorToText(MenuColor::GetMenuColor(0))}}}" textsize="13." text="{{{_("Filters Selection")}}}" sizen="{{{Filters_TotalSizeX-2.}}}"  opacity="1.0"/>
+		</frame>
+	""";
+	
+	////////////////
+	//BACKGROUND
+	////////////////
+	for (I, 0, 13)
+	{
+		MLText ^= """
+			<quad posn="0 {{{- I * Filters_SizeY}}} 0" image="{{{IMGMenuBg}}}" halign="right" sizen="{{{Filters_TotalSizeX / 2.}}} {{{Filters_SizeY}}}"/>
+			<quad posn="0 {{{- I * Filters_SizeY}}} 0" image="{{{IMGMenuBg}}}" halign="left" sizen="{{{Filters_TotalSizeX / 2.}}} {{{Filters_SizeY}}}"/>
+		""";
+	}
+	
+	////////////////
+	//FILTERS
+	////////////////
+	for (I, 0, G_AllFilters.count - 1)
+	{
+		declare Text FilterName;
+		switch(I)
+		{
+			case 0 : FilterName = _("|ServerFilters|MODES");
+			case 1 : FilterName = _("|ServerFilters|ENVIRONMENTS");
+			case 2 : FilterName = _("|ServerFilters|STYLES");
+			case 3 : FilterName = _("|ServerFilters|DURATIONS");
+		}
+		MLText  ^= """
+		<frame id="Filters_{{{I}}}" posn="{{{- Filters_TotalSizeX * 0.5 + I * (Filters_FilterSizeX + Filters_TotalSizeX * 2. / 30.)}}}">
+			<quad sizen="{{{Filters_FilterSizeX}}} {{{Filters_SizeYElement * 0.96}}}" valign="center" posn="0 {{{-Filters_SizeY * 0.5}}} 2.5" bgcolor="fff" opacity="0.95"/>
+			<quad sizen="{{{Filters_FilterSizeX}}} {{{Filters_SizeYElement}}}" 	image="{{{IMGSlotMediumBg}}}" 	opacity="1.0" 	posn="0 0 2" />
+			<quad sizen="{{{Filters_FilterSizeX}}} {{{Filters_SizeYElement}}}" 	image="{{{IMGSlotMediumFg}}}" 	opacity="0.5" 	posn="0 0 4" />
+			<quad sizen="{{{Filters_FilterSizeX}}} {{{Filters_SizeY}}}"	 		image="{{{IMGMenuBg}}}" 		opacity="1."	posn="0 0 1" />
+			<label posn="2 {{{-Filters_SizeY * 0.5}}} 3" sizen="{{{Filters_FilterSizeX - 2.5}}}" style="TextValueSmallSm" valign="center2" textcolor="000" textsize="2." text="{{{FilterName}}}"/>
+		""";
+		for (J, 0, G_AllFilters[I].count - 1)
+		{
+			MLText  ^= """
+				<quad id="quad_selected{{{J}}}" sizen="{{{Filters_FilterSizeX}}} {{{Filters_SizeYElement * 0.96}}}" valign="center" posn="0 {{{-Filters_SizeY * (J + 1.5)}}} 2.5" bgcolor="f00" opacity="0.95"/>
+				<quad sizen="{{{Filters_FilterSizeX}}} {{{Filters_SizeYElement}}}" 	image="{{{IMGSlotMediumBg}}}" 	opacity="1.0" 	posn="0 {{{-Filters_SizeY * (J + 1)}}} 2" />
+				<quad sizen="{{{Filters_FilterSizeX}}} {{{Filters_SizeYElement}}}" 	image="{{{IMGSlotMediumFg}}}" 	opacity="0.5" 	posn="0 {{{-Filters_SizeY * (J + 1)}}} 4" />
+				<quad sizen="{{{Filters_FilterSizeX}}} {{{Filters_SizeY}}}" 		image="{{{IMGMenuBg}}}" 		opacity="1."  	posn="0 {{{-Filters_SizeY * (J + 1)}}} 1" />
+				<quad sizen="{{{Filters_FilterSizeX}}} {{{Filters_SizeYElement}}}" opacity="0." scriptevents="1" posn="0 {{{-Filters_SizeY * (J + 1)}}} 5" id="MouseInput_Filter_{{{I}}}:{{{J}}}"/>
+			""";
+			
+			if (I == 2)
+			{
+				MLText ^= """<label posn="2 {{{-Filters_SizeY * (J+1.5)}}} 3" sizen="{{{Filters_FilterSizeX - 2.5}}}" style="TextValueSmallSm" valign="center2" textsize="2." text="{{{TL::GetTranslatedText(G_AllFilters[I][J])}}}"/>""";
+			} else {
+				MLText ^= """<label posn="2 {{{-Filters_SizeY * (J+1.5)}}} 3" sizen="{{{Filters_FilterSizeX - 2.5}}}" style="TextValueSmallSm" valign="center2" textsize="2." text="{{{G_AllFilters[I][J]}}}"/>""";
+			}
+		}
+		MLText ^= "</frame>";
+	}
+	
+	////////////////
+	//INPUTS
+	////////////////
+	MLText ^="""
+		<frame posn="{{{Filters_TotalSizeX / 2.}}} {{{- 14 * Filters_SizeY}}}">
+			{{{InputInfos::InjectInManialink()}}}
+		</frame>
+	""";
+	
+	MLText ^= "</frame>";
+	
+	return MLText;
+}
+
+Text InjectInGlobals() {
+	declare Globals = """
+		declare Boolean						G_DisplayingFilters;
+		declare Integer						G_SelectedFilterType;
+		declare Integer						G_SelectedFilterValue;
+		declare Text[][] 					G_AllFilters;
+		{{{InputInfos::InjectInGlobals()}}}
+	""";
+
+	return Globals;
+}
+
+Text InjectInFunctions() {
+	declare Functions = """
+		{{{InputInfos::InjectInFunctions()}}}
+	
+		Void UpdateFiltersSelection()
+		{
+			declare Text[][] CurrentFilters for Page;
+			declare CMlFrame FrameFilters <=> (Page.GetFirstChild("Frame_Filters") as CMlFrame);
+			
+			for (I, 0, G_AllFilters.count - 1)
+			{
+				declare CMlFrame FrameCurrentFilter <=> (FrameFilters.GetFirstChild("Filters_"^I) as CMlFrame);
+				if (I == 1 && G_IsLimitedToCanyon)
+				{
+					for (J, 0, G_AllFilters[1].count-1)
+					{
+						declare CMlQuad QuadSelected <=> (FrameCurrentFilter.GetFirstChild("quad_selected"^J) as CMlQuad);
+						if (G_AllFilters[1][J] == "Canyon")
+						{
+							QuadSelected.BgColor = <0., 1., 0.>;
+							QuadSelected.Show();
+						} else {
+							QuadSelected.BgColor = <0.4, 0.4, 0.4>;
+							QuadSelected.Show();
+						}
+					}
+				} else {
+					for (J, 0, G_AllFilters[I].count-1)
+					{
+						declare CMlQuad QuadSelected <=> (FrameCurrentFilter.GetFirstChild("quad_selected"^J) as CMlQuad);
+						if (G_SelectedFilterType == I && G_SelectedFilterValue == J)
+						{
+							QuadSelected.BgColor = <1., 0., 0.>;
+							QuadSelected.Show();
+						} else if (CurrentFilters[I].exists(G_AllFilters[I][J])) {
+							QuadSelected.BgColor = <0., 1., 0.>;
+							QuadSelected.Show();
+						} else {
+							QuadSelected.Hide();
+						}
+					}
+				}
+			}
+		}
+		
+		Void ToggleFilter()
+		{	//on ne toggle pas la couleur du quad de background vu qu'on est sélectionné (quad rouge). Le chgt de couleur se fera quand on déselectionnera ce filtre
+			declare Text[][] CurrentFilters for Page;			
+			declare CMlFrame FrameFilters <=> (Page.GetFirstChild("Frame_Filters") as CMlFrame);
+			
+			
+			if (CurrentFilters[G_SelectedFilterType].exists(G_AllFilters[G_SelectedFilterType][G_SelectedFilterValue]))
+				CurrentFilters[G_SelectedFilterType].remove(G_AllFilters[G_SelectedFilterType][G_SelectedFilterValue]);
+			else
+				CurrentFilters[G_SelectedFilterType].add(G_AllFilters[G_SelectedFilterType][G_SelectedFilterValue]);
+		}
+		
+		Void Filters_SetNewSelection(Integer _NewFilterType, Integer _NewFilterValue)
+		{
+			declare CMlFrame FrameFilters <=> (Page.GetFirstChild("Frame_Filters") as CMlFrame);
+			declare Text[][] CurrentFilters for Page;		
+			
+			declare CMlFrame FrameOldFilter <=> (FrameFilters.GetFirstChild("Filters_"^G_SelectedFilterType) as CMlFrame);
+			declare CMlQuad QuadSelected <=> 	(FrameOldFilter.GetFirstChild("quad_selected"^G_SelectedFilterValue) as CMlQuad);
+			if (CurrentFilters[G_SelectedFilterType].exists(G_AllFilters[G_SelectedFilterType][G_SelectedFilterValue]))
+			{
+				QuadSelected.BgColor = <0., 1., 0.>;
+				QuadSelected.Show();
+			} else {
+				QuadSelected.Hide();
+			}
+			
+			G_SelectedFilterType = _NewFilterType;
+			G_SelectedFilterValue = _NewFilterValue;
+			
+			declare CMlFrame FrameNewFilter <=> (FrameFilters.GetFirstChild("Filters_"^G_SelectedFilterType) as CMlFrame);
+			QuadSelected <=> (FrameNewFilter.GetFirstChild("quad_selected"^G_SelectedFilterValue) as CMlQuad);
+			QuadSelected.BgColor = <1., 0., 0.>;
+			QuadSelected.Show();			
+		}
+		
+		Void Filters_OnUp()
+		{
+			if (G_SelectedFilterValue == 0)
+				return;
+			
+			Filters_SetNewSelection(G_SelectedFilterType, G_SelectedFilterValue - 1);
+		}
+		
+		Void Filters_OnDown()
+		{
+			if (G_SelectedFilterValue >= G_AllFilters[G_SelectedFilterType].count - 1)
+				return;
+			
+			Filters_SetNewSelection(G_SelectedFilterType, G_SelectedFilterValue + 1);
+		}
+		
+		Void Filters_OnLeft()
+		{
+			if (G_SelectedFilterType == 0)
+				return;
+				
+			declare Integer NewFilterType;
+			if (G_IsLimitedToCanyon && G_SelectedFilterType == 2)
+				NewFilterType = G_SelectedFilterType - 2;
+			else
+				NewFilterType = G_SelectedFilterType - 1;
+				
+			Filters_SetNewSelection(NewFilterType, ML::Min(G_SelectedFilterValue, G_AllFilters[NewFilterType].count-1));
+		}
+		
+		Void Filters_OnRight()
+		{
+			if (G_SelectedFilterType >= G_AllFilters.count - 1)
+				return;
+			
+			declare Integer NewFilterType;
+			if (G_IsLimitedToCanyon && G_SelectedFilterType == 0)
+				NewFilterType = G_SelectedFilterType + 2;
+			else
+				NewFilterType = G_SelectedFilterType + 1;
+			Filters_SetNewSelection(NewFilterType, ML::Min(G_SelectedFilterValue, G_AllFilters[NewFilterType].count-1));
+		}
+		
+		Void Filters_Reset()
+		{
+			declare Text[][] CurrentFilters for Page;
+			for (I, 0, CurrentFilters.count-1)
+				CurrentFilters[I].clear();
+			UpdateFiltersSelection();
+		}
+		
+		Void Filters_Show()
+		{
+			declare CMlFrame FrameFilters <=> (Page.GetFirstChild("Frame_Filters") as CMlFrame);
+			
+			//Cacher les autres environnements et sélectionner Canyon si on est restricted
+			UpdateFiltersSelection();
+			G_DisplayingFilters = True;
+			FrameFilters.Show();
+			
+			ToggleInputInfo("Frame_InputInfo_Filters_Cancel", False);
+			ToggleInputInfo("Frame_InputInfo_Filters_Select", False);
+			ToggleInputInfo("Frame_InputInfo_Filters_Action2", False);
+			
+			G_PageIndex = 0;
+		}
+		
+		Void Filters_Hide()
+		{
+			declare CMlFrame FrameFilters <=> (Page.GetFirstChild("Frame_Filters") as CMlFrame);
+			G_DisplayingFilters = False;
+			FrameFilters.Hide();
+		}
+		
+		Void Filters_UpdateHelpersForPlatform(Integer _Platform) {
+			declare Text[] InputIds = ["Select", "Cancel", "Action2"];
+			declare CMlQuad  QuadInputIcon;
+			for (I, 0, 2) {
+				for (J, 0, InputIds.count - 1) {
+					declare CMlFrame FrameInput <=> (Page.GetFirstChild("Frame_InputInfo_Filters_"^InputIds[J]) as CMlFrame);
+					QuadInputIcon <=> (FrameInput.GetFirstChild("Quad_InputIcon_"^I) as CMlQuad);
+					if (I == _Platform)
+						QuadInputIcon.Show();
+					else
+						QuadInputIcon.Hide();
+				}
+			}
+		}
+		
+	""";
+	
+	return Functions;
+}
+
+Text InjectInInit() {
+	declare Text Init = """
+		{{{InputInfos::InjectInInit()}}}
+		Filters_InitInputInfos("");
+	
+		declare Text[][] CurrentFilters for Page;
+		CurrentFilters = [Text[],Text[],Text[],Text[]];
+	
+		G_SelectedFilterType = 0;
+		G_SelectedFilterValue = 0;
+		G_DisplayingFilters = False;
+	""";
+	
+	for (I, 0, C_Filters_Count - 1)
+		Init ^= """G_AllFilters.add({{{dump(G_AllFilters[I])}}});""";
+
+	return Init;
+}
+
+Text InjectInMouseClick() {
+	declare MouseClick = """
+		declare Text[] InputId = TL::Split("_", Event.ControlId);
+		if (InputId.count < 2 || InputId[0] != "MouseInput")
+			continue;
+		switch (InputId[1]) {
+			case "FiltersInputInfo"	: {
+				switch (InputId[2]) {
+					case "Select"		: ToggleFilter();
+					case "Cancel"		: ServerBrowserStatus_Switch(C_STATUS_BROWSER);
+					case "AppMenu"		: ServerBrowserStatus_Switch(C_STATUS_BROWSER);
+					case "Action2"		: Filters_Reset();
+				}
+			}
+			case "Filter" : {
+				declare Text[] PositionInfo = TL::Split(":", InputId[2]);
+				Filters_SetNewSelection(TL::ToInteger(PositionInfo[0]), TL::ToInteger(PositionInfo[1]));
+				ToggleFilter();
+			}
+		}
+	""";
+	
+	return MouseClick;
+}
+
+Text InjectInMouseOver() {
+	declare MouseOver = """
+		declare Text[] InputId = TL::Split("_", Event.ControlId);
+		if (InputId.count < 2 || InputId[0] != "MouseInput")
+			continue;
+		switch (InputId[1]) {
+			case "Filter" : {
+				declare Text[] PositionInfo = TL::Split(":", InputId[2]);
+				Filters_SetNewSelection(TL::ToInteger(PositionInfo[0]), TL::ToInteger(PositionInfo[1]));
+			}
+			case "FiltersInputInfo" : ToggleInputInfo("Frame_InputInfo_Filters_"^InputId[2], True);
+		}
+	""";
+	
+	return MouseOver;
+}
+
+Text InjectInMouseOut() {
+	declare MouseOut = """
+		declare Text[] InputId = TL::Split("_", Event.ControlId);
+		if (InputId.count < 2 || InputId[0] != "MouseInput")
+			continue;
+		switch (InputId[1]) {
+			case "FiltersInputInfo" : ToggleInputInfo("Frame_InputInfo_Filters_"^InputId[2], False);
+		}
+	""";
+	
+	return MouseOut;
+}
+
+Text InjectInMenuNavigation() {
+	
+	declare MenuNav = """
+	switch (Event.MenuNavAction) {
+		case CMlEvent::EMenuNavAction::Up 		: Filters_OnUp();
+		case CMlEvent::EMenuNavAction::Down 	: Filters_OnDown();
+		case CMlEvent::EMenuNavAction::Left 	: Filters_OnLeft();
+		case CMlEvent::EMenuNavAction::Right 	: Filters_OnRight();
+		
+		case CMlEvent::EMenuNavAction::Select 	: ToggleFilter();
+		case CMlEvent::EMenuNavAction::Cancel 	: ServerBrowserStatus_Switch(C_STATUS_BROWSER);
+		case CMlEvent::EMenuNavAction::AppMenu 	: ServerBrowserStatus_Switch(C_STATUS_BROWSER);
+		case CMlEvent::EMenuNavAction::Action2 	: Filters_Reset();
+	}
+	""";
+	
+	return MenuNav;
+}

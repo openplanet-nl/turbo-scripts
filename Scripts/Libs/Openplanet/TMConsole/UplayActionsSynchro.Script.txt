@@ -1,0 +1,70 @@
+
+
+declare Text 				G_PreviousActionUnlocked;
+declare Boolean				G_UplayActionsLoaded;
+declare Integer 			G_PrevShowUplayPopup;
+
+Void LoadUplayActions() {
+	G_PreviousActionUnlocked = "";
+	G_UplayActionsLoaded = True;
+	
+	declare persistent 	Text[] 	UplayActionsDone 	for UserMgr.MainUser;
+	declare 			Text[] 	UIUplayActionsDone 	for LocalUser;
+	declare  			Integer Net_UpdateUplayAction 	for LocalUser;
+	
+	
+	// hack pour reinit
+	// UplayActionsDone = Text[];
+	// UserMgr.MainUser.PersistentSave();
+	
+	
+	UIUplayActionsDone = Text[];
+	G_PrevShowUplayPopup = Net_UpdateUplayAction;
+	foreach(Action in UplayActionsDone) 
+	{
+		UIUplayActionsDone.add(Action);
+	}
+	
+	
+	// Logger::Log("LoadUplayActions done. UplayActionsDone   = "^UplayActionsDone);
+	// Logger::Log("                       UIUplayActionsDone = "^UIUplayActionsDone);
+}
+
+
+Void CheckUplayActions() {
+	if(UserMgr.MainUser == Null) return;
+	
+	if(! UserMgr.MainUser.PersistentIsReady) return;
+	if(! G_UplayActionsLoaded) LoadUplayActions();
+	
+	declare  Integer Net_UpdateUplayAction for LocalUser;
+	if(G_PrevShowUplayPopup == Net_UpdateUplayAction) return;
+	
+	G_PrevShowUplayPopup = Net_UpdateUplayAction;
+	
+	declare 			Text[] 	UIUplayActionsDone 	for LocalUser;
+	declare persistent 	Text[] 	UplayActionsDone 	for UserMgr.MainUser;
+	
+	// Logger::Log("     UplayActionsDone   = "^UplayActionsDone);
+	// Logger::Log("     UIUplayActionsDone = "^UIUplayActionsDone);
+	
+	
+	declare Boolean SaveNeeded = False;
+	foreach(UIActionDone in UIUplayActionsDone) {
+		if(UplayActionsDone.exists(UIActionDone)) continue;
+		
+		UplayActionsDone.add(UIActionDone);
+		SaveNeeded = True;
+		
+		// Logger::Log("New action done : UIActionDone = "^UIActionDone);
+	}
+	
+	if(SaveNeeded) {
+		UserMgr.MainUser.PersistentSave();
+		
+		// Logger::Log("Saving Actions");
+		// Logger::Log("     UplayActionsDone   = "^UplayActionsDone);
+		// Logger::Log("     UIUplayActionsDone = "^UIUplayActionsDone);
+	}
+}
+

@@ -1,0 +1,90 @@
+#Const ScriptName	"SystemText.Script.txt"
+
+#Include "TextLib" as TextLib
+
+// Plaforms
+#Const C_Platforms [
+	"PS4"	=> 0,	///< Take care before changing this number, it is linked to the index of the BUTTONS_MENU, etc arrays !
+	"XB1"	=> 1,	///< Take care before changing this number, it is linked to the index of the BUTTONS_MENU, etc arrays !
+	"PC"	=> 2	///< Take care before changing this number, it is linked to the index of the BUTTONS_MENU, etc arrays !
+]
+#Const C_DefaultPlatform		2 // PC
+
+declare Integer	G_Private_Platform; ///< Current platform, always use Private_SetPlatform() and GetPlatform() to set and get its value
+
+Void Private_SetPlatform(Integer _Platform) {
+	G_Private_Platform = _Platform;
+}
+
+Integer Private_GetPlatform(Text _Platform) {
+	if (!C_Platforms.existskey(_Platform)) return C_DefaultPlatform;
+	return C_Platforms[_Platform];
+}
+
+Integer GetPlatform() {
+	return G_Private_Platform;
+}
+
+// ---------------------------------- //
+/** Get the platform index associated to the given system
+ *
+ *	@param	_System					The system to check
+ *
+ *	@return							The platform index of the given system
+ */
+Integer GetPlatformIndexFromSystem(Text _System) {
+	switch (_System) {
+		case "::ESystemPlatform::PS4"	: return C_Platforms["PS4"];
+		case "::ESystemPlatform::XBoxOne"	: return C_Platforms["XB1"];
+		// Display XB1 controller buttons on PC for now
+		case "::ESystemPlatform::Steam"	: return C_Platforms["PC"];//return C_Platforms["PC"];
+		case "::ESystemPlatform::Uplay"	: return C_Platforms["PC"];//return C_Platforms["PC"];
+		case "::ESystemPlatform::None"	: return C_Platforms["PC"];//return C_Platforms["PC"];
+	}
+	
+	return C_DefaultPlatform;
+}
+
+/// Load the library
+Void Load() {
+	declare PlatformIndex = GetPlatformIndexFromSystem(SystemPlatform^"");
+	//HACK - Force la version ps4
+	//PlatformIndex = 0;
+	//HACKEND
+	Private_SetPlatform(PlatformIndex);
+}
+
+Text GetProfileName() {
+	declare Integer Platform = GetPlatform();
+	switch(Platform) {
+		// ne pas modifier, c'est TRC.
+		case C_Platforms["PS4"] : return _("|Player's profile for the PS4|Profile");
+		case C_Platforms["XB1"] : return _("|Player's profile for the X1|Gamercard");
+		default                 : return "";
+	}
+	
+	return _("|Player's profile for the unknow plateform|Profile");
+}
+
+Text GetShowProfileTextForInputCard() {
+	declare Integer Platform = GetPlatform();
+	switch(Platform) {
+		// ne pas modifier, c'est TRC.
+		case C_Platforms["PS4"] : return TextLib::GetTranslatedText(_("|Player's profile for the PS4|Profile"));
+		case C_Platforms["XB1"] : return TextLib::GetTranslatedText(_("|Player's profile for the X1|Gamercard"));
+		default                 : return TextLib::GetTranslatedText(_("|Player's profile for the unknow plateform|Profile"));
+	}
+	return TextLib::GetTranslatedText(_("|Player's profile for the unknow plateform|Profile"));
+}
+
+Text GetSavingMessage() {
+	declare Integer Platform = GetPlatform();
+	switch(Platform) {
+		// ne pas modifier, c'est TRC.
+		case C_Platforms["PS4"] : return _("|PS4|Saving content. Please do not turn off your system.");
+		case C_Platforms["XB1"] : return _("|X1|Saving content. Please do not turn off your console.");
+	}
+	
+	return _("|PC or unknown platform|Saving content. Please do not turn off your system.");
+}
+

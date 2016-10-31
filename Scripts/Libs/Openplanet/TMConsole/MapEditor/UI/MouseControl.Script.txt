@@ -1,0 +1,171 @@
+/** 
+ * Mouse control UI
+ */
+
+#Const Version		"2016-03-08"
+#Const ScriptName	"MouseControl.Script.txt"
+
+#Include "Libs/Openplanet/TMConsole/MapEditor/Layers.Script.txt" as Layers
+
+// ---------------------------------- //
+// Constants
+// ---------------------------------- //
+#Const C_InitialTick_SelectionUpdate	500	///< Initial time between selection update activation
+#Const C_Tick_SelectionUpdate					250	///< Time between selection update activation
+/// Events
+#Const C_Event_GetCoordinates		"LibMouseControl_GetCoordinates"
+#Const C_Event_SelectionStart		"LibMouseControl_SelectionStart"
+#Const C_Event_SelectionUpdate	"LibMouseControl_SelectionUpdate"
+#Const C_Event_SelectionStop		"LibMouseControl_SelectionStop"
+/// Mouse modes
+#Const C_MouseMode_Click			0
+#Const C_MouseMode_Selection	1
+#Const C_MouseMode_Move				2
+
+// ---------------------------------- //
+// Functions
+// ---------------------------------- //
+// ---------------------------------- //
+// Private
+// ---------------------------------- //
+// ---------------------------------- //
+/** Get the mouse control manialink
+ *
+ *	@return							The manialink
+ */
+Text Private_GetMouseControlML() {
+	return """
+<manialink version="3" name="MapEditor:MouseControl">
+<frame z-index="-1000" id="Frame_Global">
+	<quad pos="-160 90" size="320 180" scriptevents="1" id="Quad_GetCoordinates" />
+</frame>
+<script><!--
+main() {
+	declare L_MouseLeftButton for Page = False;
+	declare L_MouseMode for Page = {{{C_MouseMode_Click}}};
+	L_MouseLeftButton = False;
+	
+	declare NextSend = -1;
+	declare PrevMousePos = <-1., -1.>;
+	declare WaitSend = False;
+	
+	while (True) {
+		yield;
+		
+		if (NextSend > 0) {
+			if (MouseLeftButton) {
+				declare MousePos = <MouseX, MouseY>;
+				if (Now >= NextSend || PrevMousePos != MousePos) {
+					PrevMousePos = MousePos;
+					L_MouseLeftButton = True;
+					NextSend = Now + {{{C_Tick_SelectionUpdate}}};
+					SendCustomEvent("{{{C_Event_SelectionUpdate}}}", Text[]);
+				}
+			} else {
+				L_MouseLeftButton = False;
+				NextSend = -1;
+				SendCustomEvent("{{{C_Event_SelectionStop}}}", Text[]);
+			}
+		}
+		
+		if (WaitSend && !MouseLeftButton) {
+			WaitSend = False;
+			SendCustomEvent("{{{C_Event_GetCoordinates}}}", Text[]);
+		}
+		
+		foreach (Event in PendingEvents) {
+			if (Event.Type == CMlEvent::Type::MouseClick) {
+				if (L_MouseMode == {{{C_MouseMode_Selection}}}) {
+					SendCustomEvent("{{{C_Event_SelectionStart}}}", Text[]);
+					NextSend = Now + {{{C_InitialTick_SelectionUpdate}}};
+					PrevMousePos = <MouseX, MouseY>;
+				} else if (L_MouseMode == {{{C_MouseMode_Move}}}) {
+					WaitSend = True;
+				} else {
+					SendCustomEvent("{{{C_Event_GetCoordinates}}}", Text[]);
+				}
+			}
+		}
+	}
+}
+--></script>
+</manialink>	
+""";
+}
+
+// ---------------------------------- //
+// Public
+// ---------------------------------- //
+// ---------------------------------- //
+/** Return the version number of the script
+ *
+ *	@return							The version number of the script
+ */
+Text GetScriptVersion() {
+	return Version;
+}
+
+// ---------------------------------- //
+/** Return the name of the script
+ *
+ *	@return							The name of the script
+ */
+Text GetScriptName() {
+	return ScriptName;
+}
+
+// ---------------------------------- //
+/// Get the events constants
+Text Event_GetCoordinates() { return C_Event_GetCoordinates; }
+Text Event_SelectionStart() { return C_Event_SelectionStart; }
+Text Event_SelectionUpdate() { return C_Event_SelectionUpdate; }
+Text Event_SelectionStop() { return C_Event_SelectionStop; }
+
+// ---------------------------------- //
+/// Get the mouse modes constants
+Integer MouseMode_Click() { return C_MouseMode_Click; }
+Integer MouseMode_Selection() { return C_MouseMode_Selection; }
+Integer MouseMode_Move() { return C_MouseMode_Move; }
+
+// ---------------------------------- //
+/** Set the mouse mode to use
+ *
+ *	@param	_MouseMode				The mouse mode to use
+ */
+Void SetMouseMode(Integer _MouseMode) {
+	declare Page <=> Layers::GetPage("MouseControl");
+	declare L_MouseMode for Page = C_MouseMode_Click;
+	L_MouseMode = _MouseMode;
+}
+
+// ---------------------------------- //
+/** Check if the left mouse button is pressed
+ *
+ * @return							True if the left mouse button is pressed
+ */
+Boolean MouseLeftButton() {
+	declare Page <=> Layers::GetPage("MouseControl");
+	declare L_MouseLeftButton for Page = False;
+	return L_MouseLeftButton;
+}
+
+// ---------------------------------- //
+/// Unload the library
+Void Unload() {
+	Layers::Destroy("MouseControl");
+}
+
+// ---------------------------------- //
+/// Load the library
+Void Load() {
+	Unload();
+	
+	declare LayerMouseControl <=> Layers::Create("MouseControl");
+	LayerMouseControl.ManialinkPage = Private_GetMouseControlML();
+	
+	declare Page <=> LayerMouseControl.LocalPage;
+	declare L_MouseLeftButton for Page = False;
+	declare L_MouseMode for Page = C_MouseMode_Click;
+	L_MouseLeftButton = False;
+	L_MouseMode = C_MouseMode_Click;
+}

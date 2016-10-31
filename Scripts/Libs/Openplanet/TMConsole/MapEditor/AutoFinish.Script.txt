@@ -1,0 +1,170 @@
+/** 
+ * Auto-finish library
+ */
+
+#Const Version		"2015-11-18"
+#Const ScriptName	"AutoFinish.Script.txt"
+
+#Include "Libs/Openplanet/TMConsole/MapEditor/Macroblock.Script.txt" as Macroblock
+
+// ---------------------------------- //
+// Globales
+// ---------------------------------- //
+declare Text[] G_FinishesClips;
+declare Text[][Text] G_ClipsConnectivity;
+declare Integer[Text] G_ClipsPenalties;
+
+// ---------------------------------- //
+// Private
+// ---------------------------------- //
+// ---------------------------------- //
+/** Get the minimum number of blocks we need to reach a finish from a given clip
+ *
+ *	@param	_ClipName				The name of the starting clip
+ *
+ *	@return							The number of blocks
+ */
+Integer Private_GetFinishDepth(Text _ClipName) {
+	declare MaxDepth = 0;
+	declare Tested = Text[];
+	declare ToTest = Integer[Text];
+	
+	ToTest = [_ClipName => 0];
+	
+	while (ToTest.count > 0) {
+		ToTest = ToTest.sort();
+		declare ClipName = "";
+		foreach (Clip => Depth in ToTest) {
+			ClipName = Clip;
+			break;
+		}
+		Tested.add(ClipName);
+		
+		declare ConnectableClipsNames = Macroblock::GetConnectableClips(ClipName);
+		
+		if (G_FinishesClips.containsoneof(ConnectableClipsNames)) return ToTest[ClipName];
+		
+		foreach (ConnectableClipName in ConnectableClipsNames) {
+			if (!G_ClipsConnectivity.existskey(ConnectableClipName)) continue;
+			
+			declare ConnectedClips = G_ClipsConnectivity[ConnectableClipName];
+			foreach (ConnectedClip in ConnectedClips) {
+				if (Tested.exists(ConnectedClip) || ToTest.existskey(ConnectedClip)) continue;
+				declare Depth = ToTest[ClipName] + 1;
+				if (Depth > MaxDepth) MaxDepth = Depth;
+				ToTest[ConnectedClip] = Depth;
+			}
+		}
+			
+		ToTest.removekey(ClipName);
+	}
+	
+	// If the clip can't be connected to a finish, return the greatest depth
+	return MaxDepth;
+}
+
+// ---------------------------------- //
+// Public
+// ---------------------------------- //
+// ---------------------------------- //
+/** Return the version number of the script
+ *
+ *	@return						The version number of the script
+ */
+Text GetScriptVersion() {
+	return Version;
+}
+
+// ---------------------------------- //
+/** Return the name of the script
+ *
+ *	@return						The name of the script
+ */
+Text GetScriptName() {
+	return ScriptName;
+}
+
+// ---------------------------------- //
+/** Get the penalty associated to a clip
+ *
+ *	@param	_ClipName				The name of the clip
+ *	@param	_Coord					The coordinates of the clip
+ *
+ *	@return							The penalty associated to the clip
+ */
+Integer GetClipPenalty(Text _ClipName, Int3 _Coord) {
+	declare Penalty = 0;
+	
+	switch (Map.CollectionName) {
+		case "Lagoon": {
+			/* If we are on a flipped (upside-down) road theme park 
+			 * near the ground without enough space for a demiloop
+			 * then increase the penalty to switch in priority
+			 * to a RoadThemeParkWall clip
+			 */
+			if (_ClipName == "RoadThemeParkFlipClip") {
+				declare Height = _Coord.Y - GetGroundHeight(_Coord.X, _Coord.Z);
+				if (Height <= 12) Penalty += 10;
+			}
+		}
+	}
+	
+	if (!G_ClipsPenalties.existskey(_ClipName)) return Penalty;
+	
+	return G_ClipsPenalties[_ClipName] + Penalty;
+}
+
+// ---------------------------------- //
+/// Recompute the clips connectivity and penalties
+Void Private_Compute() {
+	G_ClipsConnectivity.clear();
+	G_ClipsPenalties.clear();
+	
+	foreach (Count => MacroblockModel in MacroblockModels) {
+		if (Count % 50 == 0) yield;
+		
+		if (!Macroblock::GetValidity(MacroblockModel)) continue;
+		declare ClipNames = Macroblock::GetClipNames(MacroblockModel);
+		
+		foreach (ClipId => ClipName in ClipNames) {
+			// Save clip connectivity
+			if (!G_ClipsConnectivity.existskey(ClipName)) {
+				G_ClipsConnectivity[ClipName] = Text[];
+			}
+			foreach (ConnectClipId => ConnectClipName in ClipNames) {
+				if (ConnectClipId == ClipId) continue;
+				if (!G_ClipsConnectivity[ClipName].exists(ConnectClipName)) {
+					G_ClipsConnectivity[ClipName].add(ConnectClipName);
+				}
+			}
+		}
+	}
+	
+	foreach (StartingClip => ConnectingClips in G_ClipsConnectivity) {
+		G_ClipsPenalties[StartingClip] = Private_GetFinishDepth(StartingClip);
+	}
+}
+
+// ---------------------------------- //
+/// Unload the library
+Void Unload() {
+	G_FinishesClips.clear();
+	G_ClipsConnectivity.clear();
+	G_ClipsPenalties.clear();
+}
+
+// ---------------------------------- //
+/// Load the library
+Void Load() {
+	Unload();
+	
+	// Save finish clip name
+	foreach (MacroblockModel in MacroblockModels) {
+		if (!MacroblockModel.HasFinish || !Macroblock::GetValidity(MacroblockModel)) continue;
+		declare ClipNames = Macroblock::GetClipNames(MacroblockModel);
+		foreach (ClipId => ClipName in ClipNames) {
+			if (!G_FinishesClips.exists(ClipName)) G_FinishesClips.add(ClipName);
+		}
+	}
+	Private_Compute();
+}

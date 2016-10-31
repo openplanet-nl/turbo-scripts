@@ -1,0 +1,318 @@
+#Include "Libs/Openplanet/TMConsole/Colors.Script.txt"			as Colors
+#Include "Libs/Openplanet/TMConsole/LibAudio.Script.txt"			as LibAudio
+#Include "Libs/Openplanet/TMConsole/Volumes.Script.txt"			as Volumes
+#Include "TextLib"									as TextLib
+
+#Const C_NbSceneries 1
+
+
+declare Text   		G_FrameContent;
+declare Vec2   		G_QuadSize;
+declare Vec2   		G_PosFirstQuad;
+declare Vec2   		G_QuadMarge;
+declare Integer		G_Count_InstancesX;
+declare Integer		G_Count_InstancesY;
+declare Vec3		G_SelectorColor;
+
+Void UnLoad()
+{
+	G_FrameContent     = "";
+	G_PosFirstQuad     = <0., 0.>;
+	G_QuadMarge        = <0., 0.>;
+}
+
+Void Init(Real _SizeXQuad, Real _SizeYQuad, Integer Count_InstancesX, Integer Count_InstancesY)
+{
+	UnLoad();
+	G_QuadSize = <_SizeXQuad, _SizeYQuad>;
+	G_Count_InstancesY = Count_InstancesY;
+	G_Count_InstancesX = Count_InstancesX;
+	G_SelectorColor = Colors::GetColor("Red");
+}
+
+Void SetPosFirstQuad(Real _PosX, Real _PosY)
+{
+	G_PosFirstQuad = <_PosX, _PosY>;
+}
+
+Void SetQuadMarge(Real _MargeX, Real _MargeY)
+{
+	G_QuadMarge = <_MargeX, _MargeY>;
+}
+
+Void SetSelectorColor(Vec3 _Color)
+{
+	G_SelectorColor = _Color;
+}
+
+Void AddLabel(Text _Id, Vec2 _Position, Integer _Size, Text _Font, Text _Color, Text _HAlign, Text _VAlign, Text _AddParam) {
+	declare Text AddFont;
+	if(_Font != "") AddFont = """textfont="{{{_Font}}}" """;
+	
+	G_FrameContent^="""
+	<label id="Content_{{{_Id}}}"  halign="{{{_HAlign}}}" valign="{{{_VAlign}}}" textcolor="{{{_Color}}}" {{{AddFont}}} {{{_AddParam}}} posn="{{{_Position.X}}} {{{_Position.Y+0.8}}} 2" sizen="{{{_Size}}}"/>""";
+}
+
+Void AddLabel(Text _Id, Vec2 _Position, Integer _Size) {
+	 AddLabel(_Id, _Position, _Size, "", "fff", "left", "center", "");
+}
+
+Void AddLabel(Text _Id, Vec2 _Position, Integer _Size, Text _Font, Text _Color, Text _HAlign, Text _VAlign) {
+	 AddLabel(_Id, _Position, _Size, _Font, _Color, _HAlign, _VAlign, "");
+}
+
+Void AddQuad(Text _Id, Vec2 _Position, Vec2 _Size) {
+	G_FrameContent^="""
+	<quad id="Content_{{{_Id}}}" halign="center" valign="center" sizen="{{{_Size.X}}} {{{_Size.Y}}}" posn="{{{_Position.X}}} {{{_Position.Y}}} 2"/>
+	""";
+}
+
+Void AddQuad(Text _Id, Vec3 _Position, Vec2 _Size) {
+	G_FrameContent^="""
+	<quad id="Content_{{{_Id}}}" halign="center" valign="center" sizen="{{{_Size.X}}} {{{_Size.Y}}}" posn="{{{_Position.X}}} {{{_Position.Y}}} {{{2 + _Position.Z}}}"/>
+	""";
+}
+
+Text InjectInFrameModel(){
+	declare Text FrameBouton="""<framemodel id="Frame_Bouton">
+		<quad halign="center" valign="center" sizen="{{{G_QuadSize.X}}} {{{G_QuadSize.Y}}}" bgcolor="333" id="Quad_Bg" scriptevents="1" opacity="0.3" />""";
+	FrameBouton^=G_FrameContent;
+	FrameBouton^="""</framemodel>""";
+
+	return FrameBouton;
+}
+
+Text InjectInManialink(){
+	declare Text BrowseContent;
+	BrowseContent="""
+		<quad halign="center" valign="center" sizen="{{{G_QuadSize.X}}} {{{G_QuadSize.Y}}}" bgcolor="{{{TextLib::ColorToText(G_SelectorColor)}}}" id="Quad_Selector" posn="{{{G_PosFirstQuad.X}}} {{{G_PosFirstQuad.Y+0.2}}} 6"  opacity="1.0" />""";
+		
+	for(I, 0, G_Count_InstancesY -1)
+	{
+		declare Real IndexY = I*1.;
+		declare Real PosnY = G_PosFirstQuad.Y - IndexY*G_QuadSize.Y - IndexY*G_QuadMarge.Y;
+
+		for(J, 0, G_Count_InstancesX -1)
+		{
+			declare Real IndexJ = J*1.;
+			declare Real PosnX = G_PosFirstQuad.X + IndexJ*G_QuadSize.X + IndexJ*G_QuadMarge.X;
+			BrowseContent^="""
+			<frameinstance modelid="Frame_Bouton" posn="{{{PosnX}}} {{{PosnY}}} 5." id="Frame_Instance{{{I}}}{{{J}}}" />""";
+		}
+	}
+	return BrowseContent;
+}
+
+
+Text InjectInGlobalDeclaration(){
+	declare Text GlobalInject;
+	GlobalInject="""
+	declare Integer 		 G_Selection;
+	declare Integer			 G_IndexSelectY;
+	declare Integer			 G_IndexSelectX;
+	declare Integer 		 G_PageIndex;
+	declare Integer 		 G_PageMax;
+	declare Boolean[Integer] G_IsActivate;
+	""";
+	return GlobalInject;
+}
+
+Text InjectInInit(){
+	declare Text Init;
+	Init="""
+	G_Selection    = -1;
+	G_IndexSelectX = 0;
+	G_IndexSelectY = 0;
+	G_PageIndex    = 0;
+	G_PageMax      = 0;
+	""";
+	return Init;
+}
+
+Text InjectInMenuNavigation(){
+	declare Text MenuNavigationContent;
+
+	declare Text 	SoundPageForward 		 = LibAudio::GetSound("PageForward");
+	declare Text 	SoundMove                = LibAudio::GetSoundMove();
+
+	MenuNavigationContent="""
+	switch(Event.MenuNavAction) {
+		case CMlEvent::EMenuNavAction::Up : {
+			declare Integer NewIndex = G_IndexSelectY - 1;
+			if(!G_IsActivate.existskey(NewIndex)) break;
+			if(G_IndexSelectY > 0 && G_IsActivate[NewIndex])
+			{
+				Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+				G_IndexSelectY -= 1;
+				UpdateSelection();
+			}
+		}
+		case CMlEvent::EMenuNavAction::Down : {
+			declare Integer NewIndex = G_IndexSelectY + 1;
+			if(!G_IsActivate.existskey(NewIndex)) break;
+
+			if(G_IndexSelectY < {{{G_Count_InstancesY - 1}}} && G_IsActivate[NewIndex])
+			{
+				Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+				G_IndexSelectY += 1;
+				UpdateSelection();
+			}
+		}
+		case CMlEvent::EMenuNavAction::Left : {
+			if(G_PageIndex > 0) {
+				Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+				declare Integer Update2DArray    for Page;
+				G_PageIndex -= 1;
+				Update2DArray = Now;
+			}
+		}
+		case CMlEvent::EMenuNavAction::Right : {
+			if(G_PageIndex < G_PageMax - 1)
+			{
+				Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+				declare Integer Update2DArray    for Page;
+				G_PageIndex += 1;
+				Update2DArray = Now;
+			}
+		}
+		case CMlEvent::EMenuNavAction::Select : {
+			Audio.PlaySoundEvent("{{{SoundPageForward}}}", {{{Volumes::GetVolumedB("MenuPageForward")}}});
+			G_Selection = G_IndexSelectY;
+		}
+		case CMlEvent::EMenuNavAction::Cancel : {
+			//SendCustomEvent("GotoPrevious", [""]);
+		}
+	}
+	break;
+	""";
+
+	return MenuNavigationContent;
+}
+
+
+Text InjectInFunction(){
+	declare Text Functions;
+
+	Functions="""
+
+	Void ActivateLine(Integer _Index, Boolean _IsActivate)
+	{
+		G_IsActivate[_Index] = _IsActivate;
+	}
+
+	Void SetColumnTextData(Text _Id, Integer _Index, Text _ContentLabel){
+		declare CMlFrame Frame_Instance <=> (Page.GetFirstChild("Frame_Instance"^_Index^"0") as CMlFrame);
+		if(Frame_Instance == Null){
+			log("[SetColumnTextData()]Frame_Instance"^_Index^"0 doesn't exist");
+			return;
+		}
+		declare CMlLabel MyLabel <=> (Frame_Instance.GetFirstChild("Content_"^_Id) as CMlLabel);
+		MyLabel.Value = _ContentLabel;
+	}
+
+	Void SetColumnTextData(Text _Id, Integer _Index, Text _ContentLabel, Vec3 _TextColor) {
+		declare CMlFrame Frame_Instance <=> (Page.GetFirstChild("Frame_Instance"^_Index^"0") as CMlFrame);
+		if(Frame_Instance == Null){
+			log("[SetColumnTextData()]Frame_Instance"^_Index^"0 doesn't exist");
+			return;
+		}
+		declare CMlLabel MyLabel <=> (Frame_Instance.GetFirstChild("Content_"^_Id) as CMlLabel);
+		MyLabel.Value = _ContentLabel;
+		MyLabel.TextColor = _TextColor;
+	}
+	
+	Void SetColumnImageData(Text _Id, Integer _Index, Text _ImageURL){
+		declare CMlFrame Frame_Instance <=> (Page.GetFirstChild("Frame_Instance"^_Index^"0") as CMlFrame);
+		if(Frame_Instance == Null){
+			log("[SetColumnImageData()]Frame_Instance"^_Index^"0 doesn't exist");
+			return;
+		}
+		declare CMlQuad MyQuad <=> (Frame_Instance.GetFirstChild("Content_"^_Id) as CMlQuad);
+		MyQuad.ChangeImageUrl(_ImageURL);
+	}
+	
+	Void SetColumnImageData(Text _Id, Integer _Index, Text _ImageURL, Vec3 _Colorize){
+		declare CMlFrame Frame_Instance <=> (Page.GetFirstChild("Frame_Instance"^_Index^"0") as CMlFrame);
+		if(Frame_Instance == Null){
+			log("[SetColumnImageData()]Frame_Instance"^_Index^"0 doesn't exist");
+			return;
+		}
+		declare CMlQuad MyQuad <=> (Frame_Instance.GetFirstChild("Content_"^_Id) as CMlQuad);
+		MyQuad.ChangeImageUrl(_ImageURL);
+		MyQuad.Colorize = _Colorize;
+	}
+
+	Void SetPageMax(Integer _PageMax)
+	{
+		G_PageMax = _PageMax;
+		G_PageIndex = 0;
+	}
+
+	Void UpdateSelection()
+	{
+		declare CMlFrame NewFrame_Instance <=> (Page.GetFirstChild("Frame_Instance"^G_IndexSelectY^G_IndexSelectX) as CMlFrame);
+		
+		if (NewFrame_Instance != Null)
+		{
+			declare CMlQuad  Quad_Selector     <=> (Page.GetFirstChild("Quad_Selector")                                as CMlQuad);
+			Quad_Selector.RelativePosition.X    = NewFrame_Instance.RelativePosition.X;
+			Quad_Selector.RelativePosition.Y    = NewFrame_Instance.RelativePosition.Y + 0.2;
+		}
+	}
+	
+	Integer GetSelection()
+	{
+		declare Integer Selection;
+		if(G_Selection < 0) return -1;
+		Selection = G_Selection;
+		G_Selection = -1;
+		return Selection;
+	}
+	
+	Void InitIndexFocus()
+	{
+		G_IndexSelectX = 0;
+		G_IndexSelectY = 0;
+		UpdateSelection();
+	}
+
+	Void SetNearestIndex(Integer _ArrayInfoCount)
+	{
+		//log("NearestIndex"^_ArrayInfoCount^" "^G_PageIndex^"/"^G_PageMax);
+		declare IndexMax = _ArrayInfoCount % {{{G_Count_InstancesY}}};
+		if(G_PageIndex >= G_PageMax - 1 && IndexMax != 0 && G_IndexSelectY > IndexMax - 1) G_IndexSelectY = IndexMax - 1;
+		
+		UpdateSelection();
+	}
+
+	Void SetNearestIndex(Integer _ArrayInfoCount, Integer _Count_InstanceY)
+	{
+		declare IndexMax = _ArrayInfoCount % _Count_InstanceY;
+		if(G_PageIndex >= G_PageMax - 1 && G_IndexSelectY > IndexMax - 1 && IndexMax != 0) G_IndexSelectY = IndexMax - 1;
+		if(_ArrayInfoCount == 0) G_IndexSelectY = 0;
+		UpdateSelection();
+	}
+
+	/*
+	Void SetNearestIndex(Integer _ArrayInfoCount, Integer _Test)
+	{
+		declare Integer IndexSelectY;
+		declare IndexMax = _ArrayInfoCount % {{{G_Count_InstancesY-1}}};
+		log("IndexMax: " ^ IndexMax);
+		if(G_PageIndex >= G_PageMax - 1 && G_IndexSelectY > IndexMax - 1) G_IndexSelectY = IndexMax - 1;
+		
+		UpdateSelection();
+	}
+	*/
+	Integer GetIndexFocusX()
+	{
+		return G_IndexSelectX;
+	}
+	
+	Integer GetIndexFocusY()
+	{
+		return G_IndexSelectY;
+	}
+	""";
+	return Functions;
+}

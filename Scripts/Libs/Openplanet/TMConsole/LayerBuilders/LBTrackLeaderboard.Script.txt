@@ -1,0 +1,41 @@
+
+// file://Media/Manialinks/Nadeo/TMConsole/MainMenuArnaud.Script.txt
+#Include "Libs/Openplanet/TMConsole/LayerBuilders/MenuWIP/MenuWIPBuilder.Script.txt"	as WIPBuilder
+
+#Const C_ImgBasePlaceHolder 	"file://Media/Manialinks/Nadeo/TMConsole/Images/PlaceHolder/"
+ 
+Text Build(Text _ShowAnim, Text _HideAnim) {
+	// log("HERE BUILD");
+	//declare Text IMGPopupBg           = C_ImgBase^"popup-bg.png";
+	declare Text	LabelTitle       = "Track Leaderboard";
+	declare Text	ImgBackground    = C_ImgBasePlaceHolder^"Map Ranking.png";
+	declare Integer Count_InstancesY = 1;
+	declare Integer Count_InstancesX = 1;
+	declare Real	MarginY_Button   = 0.6;
+	declare Real	MarginX_Button   = 0.6;
+	declare Real	SizeX_Total      = 60.;
+	declare Real	SizeY_Total      = 90.;
+	declare Real	PosXFirstQuad    = 120.0;
+	declare Real	PosYFirstQuad    = 57.95;
+	declare Text[]	LayersToDetach   = ["TrackLeaderboard"];
+	
+	declare Text[Integer][Integer]	MenuName;
+	declare Text[Integer][Integer]	MenuGotoPage;
+
+	for(I, 0, Count_InstancesY - 1)
+	{
+		MenuName[I] = Text[Integer];
+		MenuGotoPage[I] = Text[Integer];
+	}
+	
+	MenuName[0][0]     = "Play track with selected ghost's player";
+	// MenuName[1][0]     = "Return";
+	MenuGotoPage[0][0] = "";
+	// MenuGotoPage[1][0] = "NextPage2";
+	// MenuGotoPage[2][0] = "NextPage3";
+
+	declare Text MLText = WIPBuilder::CreateMLText(_ShowAnim, _HideAnim, Count_InstancesY, Count_InstancesX, MarginY_Button, MarginX_Button, SizeX_Total, SizeY_Total, PosXFirstQuad, PosYFirstQuad, MenuName, MenuGotoPage, LabelTitle, ImgBackground, LayersToDetach);
+	
+
+	return MLText;
+}

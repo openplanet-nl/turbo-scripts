@@ -1,0 +1,250 @@
+
+#Include "MathLib" as ML
+
+#Include "Libs/Openplanet/TMConsole/Menu/IngameAccessController.Script.txt"						as IngameAccessController
+#Include "Libs/Openplanet/TMConsole/Menu/Controller/ModeController.Script.txt" 					as ModeController
+#Include "Libs/Openplanet/TMConsole/Menu/XmlCreator.Script.txt"									as XmlCreator
+#Include "Libs/Openplanet/TMConsole/Menu/PageHandlers/KindOfTracksHandler.Script.txt"			as KindOfTracksHandler
+#Include "Libs/Openplanet/TMConsole/Menu/LibCheats.Script.txt"									as LibCheats
+
+// NB: DCS = DevCustomStartup
+
+#Const C_DCS_Type_Menu			0	// passe automatiquement l'intro et le Insert coin, mais on reste alors dans le menu principal
+#Const C_DCS_Type_Arcade		1	// passe automatiquement l'intro et le Insert coin, puis lance directement un des 3 modes de Home Arcade (avec une map de la campagne ou une map custom)
+#Const C_DCS_Type_TrackBuilder	2	// passe automatiquement l'intro et le Insert coin, puis lance directement le Track builder (avec une nouvelle map uniquement)
+
+#Const C_Enviro_Canyon	"Canyon"
+#Const C_Enviro_Valley	"Valley"
+#Const C_Enviro_Lagoon	"Lagoon"
+#Const C_Enviro_Stadium	"Stadium"
+
+#Const C_EnviroAsInt_Canyon		0
+#Const C_EnviroAsInt_Valley		1
+#Const C_EnviroAsInt_Lagoon		2
+#Const C_EnviroAsInt_Stadium	3
+
+#Const C_ModeName_HotSeat		"HotSeat"
+#Const C_ModeName_Arcade		"Arcade"
+#Const C_ModeName_SplitScreen	"Rounds"
+
+// cf. C_Screen_OneScreen dans ModeController
+#Const C_SplitScreenMode_OneScreen			"OneScreen"
+#Const C_SplitScreenMode_DualSplitScreen	"DualSplitScreen"
+#Const C_SplitScreenMode_FourSplitScreen	"FourSplitScreen"
+
+// cf. C_EditorBeginner dans LBKindOfTracks
+#Const C_EditorLevel_Beginner		0
+#Const C_EditorLevel_Normal			1
+#Const C_EditorLevel_Advanced		2
+
+#Const C_Mood_Sunrise	0
+#Const C_Mood_Day		1
+#Const C_Mood_Sunset	2
+#Const C_Mood_Night		3
+#Const C_Mood_Random	-1
+
+declare Boolean	G_DCS_Enabled;
+declare Integer	G_DCS_Type;
+declare Boolean	G_DCS_IsCampaignMap;
+declare Integer	G_DCS_CampaignMapNumber;
+declare Integer	G_DCS_CustomMapIndex;
+declare Text	G_DCS_CustomMapEnviro;
+declare Text	G_DCS_ModeName;
+declare Text	G_DCS_SplitScreenMode;
+declare Text	G_DCS_NewMap_Enviro;
+declare Integer	G_DCS_EditorLevel;
+declare Integer G_DCS_Mood;
+
+declare Text	G_DCS_CheatMode;
+declare Text	G_DCS_AdditionalCheatMode;
+
+
+
+Integer GetCampaignMapEnviro(Integer _MapNumber)
+{
+	return ((_MapNumber - 1) / 10) % 4;
+}
+
+Text BuildCampaignMapPath(Integer _MapNumber)
+{
+	if(_MapNumber < 1 || _MapNumber > 200)
+		return "Campaigns\\01_White\\01_Canyon\\001_C_Discovery.Map.Gbx";
+	// Root
+	declare Text MapPath;
+	declare MapIndex = _MapNumber - 1;
+	MapPath = "Campaigns\\";
+	// Difficulty folder
+	declare Difficulty = MapIndex / 40;
+	switch(Difficulty)
+	{
+		case 0: MapPath ^= "01_White\\";
+		case 1: MapPath ^= "02_Green\\";
+		case 2: MapPath ^= "03_Blue\\";
+		case 3: MapPath ^= "04_Red\\";
+		case 4: MapPath ^= "05_Black\\";
+	}
+	// Environment folder
+	declare Enviro = (MapIndex % 40) / 10;
+	switch(Enviro)
+	{
+		case 0: MapPath ^= "01_Canyon\\";
+		case 1: MapPath ^= "02_Valley\\";
+		case 2: MapPath ^= "03_Lagoon\\";
+		case 3: MapPath ^= "04_Stadium\\";
+	}
+	// Number
+	if(_MapNumber < 10)
+		MapPath ^= "00";
+	else if(_MapNumber < 100)
+		MapPath ^= "0";
+	MapPath ^= _MapNumber;
+	// Extension
+	MapPath ^= ".Map.Gbx";
+	
+	return MapPath;
+}
+
+Text BuildCustomMapPath(Integer _MapIndex)
+{
+	return ":usr00000000-data0:Map\\" ^ _MapIndex ^ ".Map.gbx";
+}
+
+Void DoDevStartup_Menu()
+{
+	// Rien à faire.
+}
+
+Void DoDevStartup_Arcade()
+{
+	// choix de la map
+	declare IsCampaign = G_DCS_IsCampaignMap;
+	declare Text MapPath;
+	declare Integer Enviro;
+	if(IsCampaign)
+	{
+		MapPath	= BuildCampaignMapPath(G_DCS_CampaignMapNumber);
+		Enviro	= GetCampaignMapEnviro(G_DCS_CampaignMapNumber);
+	}
+	else
+	{
+		MapPath = BuildCustomMapPath(G_DCS_CustomMapIndex);
+		Enviro = C_EnviroAsInt_Canyon;
+		switch(G_DCS_CustomMapEnviro)
+		{
+			case C_Enviro_Canyon:	Enviro = C_EnviroAsInt_Canyon;
+			case C_Enviro_Valley:	Enviro = C_EnviroAsInt_Valley;
+			case C_Enviro_Lagoon:	Enviro = C_EnviroAsInt_Lagoon;
+			case C_Enviro_Stadium:	Enviro = C_EnviroAsInt_Stadium;
+		}
+	}
+	declare IsCustomMap = !IsCampaign;
+	
+	// choix du mode
+	if(G_DCS_CheatMode == "")
+		LibCheats::ResetCheat();
+	else
+	{
+		if(G_DCS_CheatMode == "MonoScreenFun" || G_DCS_CheatMode == "MonoScreenPro")
+			G_DCS_AdditionalCheatMode = "UniqueCameraMode";
+		else
+			G_DCS_AdditionalCheatMode = "";		// mettre "UniqueCameraMode" si jamais on veut tester un mode qui n'existe pas, comme MonoScreen ButtonSmash...
+		LibCheats::UnlockCheatByName(G_DCS_ModeName, G_DCS_CheatMode,  G_DCS_AdditionalCheatMode);
+	}
+	
+	ModeController::SetModeName(G_DCS_ModeName);
+	declare Mode = ModeController::GetModeName();
+	declare MultiMode = G_DCS_SplitScreenMode;
+	// blindage
+	//if(G_DCS_ModeName == C_ModeName_SplitScreen && MultiMode == C_SplitScreenMode_OneScreen)
+	//	MultiMode = C_SplitScreenMode_FourSplitScreen;
+	if(G_DCS_ModeName != C_ModeName_SplitScreen && MultiMode != C_SplitScreenMode_OneScreen)
+		MultiMode = C_SplitScreenMode_OneScreen;
+	// choix des cheats
+	
+	declare Text SettingsXml = XmlCreator::GetXml_OnlyCheatSettings(False);	// FIXME : ce n'est qu'une sous-partie (suffisante pour nos tests) des settings du cas réel où on choisit depuis le menu
+	// lance la partie
+	IngameAccessController::PlayTrack(MapPath, Mode, SettingsXml, MultiMode, IsCampaign, Enviro, IsCustomMap);
+}
+
+Void DoDevStartup_Trackbuilder()
+{
+	declare Enviro 		= G_DCS_NewMap_Enviro;
+	declare EditorLevel	= G_DCS_EditorLevel;
+	declare Mood		= G_DCS_Mood;
+	if(Mood == C_Mood_Random)
+		Mood = ML::Rand(0, 3);
+	KindOfTracksHandler::DoEditNewTrack(Enviro, EditorLevel^"", "", "", Mood^"");
+}
+
+Void DoDevCustomStartup()
+{
+	if(G_DCS_Type == C_DCS_Type_Menu)
+		DoDevStartup_Menu();
+	else if(G_DCS_Type == C_DCS_Type_Arcade)
+		DoDevStartup_Arcade();
+	else if(G_DCS_Type == C_DCS_Type_TrackBuilder)
+		DoDevStartup_Trackbuilder();
+}
+
+Boolean IsDevCustomStartupEnabled()
+{
+	return G_DCS_Enabled;
+}
+
+Void SetDefaultValues()
+{
+	// Pour plus de robustesse, on remplit toutes les variables globales sans exception avec des valeurs pas trop absurdes
+	// Mais ce n'est pas ici qu'il faut modifier les valeurs, c'est dans Load() !
+	G_DCS_Enabled			= False;
+	G_DCS_Type 				= C_DCS_Type_Arcade;
+	G_DCS_IsCampaignMap		= True;
+	G_DCS_CampaignMapNumber	= 1;
+	G_DCS_CustomMapIndex	= 0;
+	G_DCS_CustomMapEnviro	= C_Enviro_Canyon;
+	G_DCS_ModeName			= C_ModeName_HotSeat;
+	G_DCS_SplitScreenMode	= C_SplitScreenMode_OneScreen;
+	G_DCS_NewMap_Enviro		= C_Enviro_Canyon;
+	G_DCS_EditorLevel		= C_EditorLevel_Normal;
+	G_DCS_Mood				= C_Mood_Day;
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Seule fonction à modifier pour paramétrer son démarrage personnalisé //
+//////////////////////////////////////////////////////////////////////////
+Void Load()
+{
+	SetDefaultValues();
+
+	// FIXME : à remplacer un jour par de la lecture des paramètres de la ligne de commande ?
+	
+	G_DCS_Enabled						= True; // True | False
+	G_DCS_Type							= C_DCS_Type_Menu; // C_DCS_Type_Menu | C_DCS_Type_Arcade | C_DCS_Type_TrackBuilder
+	if(G_DCS_Type == C_DCS_Type_Menu)
+	{
+		// rien à initialiser
+	}
+	else if(G_DCS_Type == C_DCS_Type_Arcade)
+	{
+		G_DCS_IsCampaignMap				= True; // True | False
+		if(G_DCS_IsCampaignMap)
+		{
+			G_DCS_CampaignMapNumber		= 1; // de 1 à 200
+		}
+		else
+		{
+			G_DCS_CustomMapIndex		= 0; // de 0 à le nombre de map custom créées en local moins 1
+			G_DCS_CustomMapEnviro		= C_Enviro_Lagoon; // C_Enviro_Canyon | C_Enviro_Valley | C_Enviro_Lagoon | C_Enviro_Stadium	// NB : en cas d'erreur, ca n'empeche pas la map de se charger...
+		}
+		G_DCS_ModeName					= C_ModeName_Arcade; // C_ModeName_HotSeat | C_ModeName_Arcade | C_ModeName_SplitScreen
+		G_DCS_SplitScreenMode			= C_SplitScreenMode_OneScreen; // C_SplitScreenMode_OneScreen | C_SplitScreenMode_DualSplitScreen | C_SplitScreenMode_FourSplitScreen
+		G_DCS_CheatMode					= "StuntFun"; // "" | "ButtonSmashFun" | "ButtonSmashPro" | "CollisionsFun" | "CollisionsPro" | "BonusFun" | "BonusPro" | "StuntFun" | "StuntPro" | "MonoScreenFun" | "MonoScreenPro"
+		
+	}
+	else if(G_DCS_Type == C_DCS_Type_TrackBuilder)
+	{
+		G_DCS_NewMap_Enviro				= C_Enviro_Lagoon; // C_Enviro_Canyon | C_Enviro_Valley | C_Enviro_Lagoon | C_Enviro_Stadium
+		G_DCS_EditorLevel				= C_EditorLevel_Normal; // C_EditorLevel_Beginner | C_EditorLevel_Normal | C_EditorLevel_Advanced
+		G_DCS_Mood						= C_Mood_Day; // C_Mood_Sunrise | C_Mood_Day | C_Mood_Sunset | C_Mood_Night | C_Mood_Random
+	}
+}
+

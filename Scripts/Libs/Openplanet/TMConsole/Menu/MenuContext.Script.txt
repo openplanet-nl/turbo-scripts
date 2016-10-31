@@ -1,0 +1,33 @@
+//Lib utilisée pour passer un contexte d'une layer à une autre.
+
+declare Text[][Text] G_Contexts;
+
+Void Load() {
+	G_Contexts.clear();
+}
+
+Text[] GetContext(Text _TargetPage)
+{
+	if (G_Contexts.existskey(_TargetPage))
+	{
+		declare Text[] Context = G_Contexts[_TargetPage];
+		G_Contexts[_TargetPage].clear();
+		return Context;
+	}
+	return Text[];
+}
+
+Void Loop() {
+	foreach(Event in PendingEvents) {
+		if(Event.Type != CMlAppEvent::EType::LayerCustomEvent) continue;
+		if(Event.CustomEventType == "SetMenuContext")
+		{
+			log("SetMenuContext");
+			declare Text TargetPage = Event.CustomEventData[0];
+			declare Text[] Context;
+			for (I, 1, Event.CustomEventData.count-1)
+				Context.add(Event.CustomEventData[I]);
+			G_Contexts[TargetPage] = Context;
+		}
+	}
+}

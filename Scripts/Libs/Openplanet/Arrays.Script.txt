@@ -1,0 +1,169 @@
+Boolean Compare(Boolean[] _Array1, Boolean[] _Array2) 
+{
+	if(_Array1.count != _Array2.count) return False;
+	foreach(I => Element in _Array1) if(Element != _Array2[I]) return False;
+	return True;
+}
+
+Boolean Compare(Text[] _Array1, Text[] _Array2) 
+{
+	if(_Array1.count != _Array2.count) return False;
+	foreach(I => Element in _Array1) if(Element != _Array2[I]) return False;
+	return True;
+}
+
+Boolean Compare(Real[] _Array1, Real[] _Array2) 
+{
+	if(_Array1.count != _Array2.count) return False;
+	foreach(I => Element in _Array1) if(Element != _Array2[I]) return False;
+	return True;
+}
+
+Boolean Compare(Integer[] _Array1, Integer[] _Array2) 
+{
+	if(_Array1.count != _Array2.count) return False;
+	foreach(I => Element in _Array1) if(Element != _Array2[I]) return False;
+	return True;
+}
+
+Boolean Compare(Vec2[] _Array1, Vec2[] _Array2) 
+{
+	if(_Array1.count != _Array2.count) return False;
+	foreach(I => Element in _Array1) if(Element != _Array2[I]) return False;
+	return True;
+}
+
+Boolean Compare(Vec3[] _Array1, Vec3[] _Array2) 
+{
+	if(_Array1.count != _Array2.count) return False;
+	foreach(I => Element in _Array1) if(Element != _Array2[I]) return False;
+	return True;
+}
+
+Boolean Compare(Ident[] _Array1, Ident[] _Array2) 
+{
+	if(_Array1.count != _Array2.count) return False;
+	foreach(I => Element in _Array1) if(Element != _Array2[I]) return False;
+	return True;
+}
+
+Integer[] GetKeysToRemove_AlreadyExistingElements(Integer[][] _ArraysToSearch, Integer[] _ArraySeeked) 
+{
+	declare Integer[] KeysToRemove;
+	foreach(I => Array in _ArraysToSearch) if(Compare(Array, _ArraySeeked)) KeysToRemove.add(I);
+	return KeysToRemove;
+}
+
+Text InjectCompare(Text[] _Types) 
+{
+	declare Text Lib;
+	
+	if(_Types.exists("Boolean") || _Types.count == 0) Lib ^=
+	""" 
+	Boolean Compare(Boolean[] _Array1, Boolean[] _Array2) 
+	{
+		if(_Array1.count != _Array2.count) return False;
+		foreach(I => Element in _Array1) if(Element != _Array2[I]) return False;
+		return True;
+	}
+	""";
+
+	if(_Types.exists("Text") || _Types.count == 0) Lib ^=
+	""" 
+	Boolean Compare(Text[] _Array1, Text[] _Array2) 
+	{
+		if(_Array1.count != _Array2.count) return False;
+		foreach(I => Element in _Array1) if(Element != _Array2[I]) return False;
+		return True;
+	}
+	""";
+
+	if(_Types.exists("Real") || _Types.count == 0) Lib ^=
+	""" 
+	Boolean Compare(Real[] _Array1, Real[] _Array2) 
+	{
+		if(_Array1.count != _Array2.count) return False;
+		foreach(I => Element in _Array1) if(Element != _Array2[I]) return False;
+		return True;
+	}
+	""";
+
+
+	if(_Types.exists("Integer") || _Types.count == 0) Lib ^=
+	""" 
+	Boolean Compare(Integer[] _Array1, Integer[] _Array2) 
+	{
+		if(_Array1.count != _Array2.count) return False;
+		foreach(I => Element in _Array1) if(Element != _Array2[I]) return False;
+		return True;
+	}
+	""";
+
+	if(_Types.exists("Vec2") || _Types.count == 0) Lib ^=
+	""" 
+	Boolean Compare(Vec2[] _Array1, Vec2[] _Array2) 
+	{
+		if(_Array1.count != _Array2.count) return False;
+		foreach(I => Element in _Array1) if(Element != _Array2[I]) return False;
+		return True;
+	}
+	""";
+
+	if(_Types.exists("Vec3") || _Types.count == 0) Lib ^=
+	"""
+	Boolean Compare(Vec3[] _Array1, Vec3[] _Array2) 
+	{
+		if(_Array1.count != _Array2.count) return False;
+		foreach(I => Element in _Array1) if(Element != _Array2[I]) return False;
+		return True;
+	}
+	""";
+
+	if(_Types.exists("Ident") || _Types.count == 0) Lib ^=
+	""" 
+	Boolean Compare(Ident[] _Array1, Ident[] _Array2) 
+	{
+		if(_Array1.count != _Array2.count) return False;
+		foreach(I => Element in _Array1) if(Element != _Array2[I]) return False;
+		return True;
+	}
+	""";
+
+	return Lib;
+}
+
+Text InjectGetKeysToRemove(Text[] _Types) 
+{
+	declare Text Lib;
+	
+	if(_Types.exists("Integer") || _Types.count == 0) Lib ^=
+	"""
+	Integer[] GetKeysToRemove_AlreadyExistingElements(Integer[][] _ArraysToSearch, Integer[] _ArraySeeked) 
+	{
+		declare Integer[] KeysToRemove;
+		foreach(I => Array in _ArraysToSearch) if(Compare(Array, _ArraySeeked)) KeysToRemove.add(I);
+		return KeysToRemove;
+	}
+	""";
+	
+	if(_Types.exists("Text") || _Types.count == 0) Lib ^=
+	"""
+	Integer[] GetKeysToRemove_AlreadyExistingElements(Text[][] _ArraysToSearch, Text[] _ArraySeeked) 
+	{
+		declare Integer[] KeysToRemove;
+		foreach(I => Array in _ArraysToSearch) if(Compare(Array, _ArraySeeked)) KeysToRemove.add(I);
+		return KeysToRemove;
+	}
+	""";
+	return Lib;
+}
+
+Text Inject(Text[] _Types) 
+{
+	declare Text Lib;
+	
+	Lib ^= InjectCompare(_Types);
+	Lib ^= InjectGetKeysToRemove(_Types);
+	
+	return Lib;
+}

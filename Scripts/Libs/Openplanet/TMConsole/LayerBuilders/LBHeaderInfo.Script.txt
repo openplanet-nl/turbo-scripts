@@ -1,0 +1,328 @@
+
+#Include "Libs/Openplanet/Manialink2.Script.txt"					as Manialink
+#Include "Libs/Openplanet/TMConsole/BuilderHelper.Script.txt"	as BuilderHelper
+#Include "Libs/Openplanet/TMConsole/PanelParameter.Script.txt"	as PanelParameter
+#Include "Libs/Openplanet/TMConsole/Menu/ClipTransitions.Script.txt"	as ClipTransitions
+#Include "Libs/Openplanet/TMConsole/FontManager.Script.txt"		as Font
+
+#Const C_ImgBase 	"file://Media/Manialinks/Nadeo/TMConsole/Images/"
+#Const C_SizePanelX          6.
+#Const C_SizePanelY          1.
+#Const C_TimeScrollRanking   1000
+#Const C_LabelRankDecalY     7
+ 
+Text Build(Text _ShowAnim, Text _HideAnim) {
+	
+	declare Text IMGBackground        = "file://Media/_ERR_.dds";	//C_ImgBase^"board-bg-footer2.png";
+	
+	declare Real	SizeX_Total       = PanelParameter::GetSizePanelX(C_SizePanelX);
+	declare Real	SizeY_Total       = PanelParameter::GetSizePanelY(C_SizePanelY);
+	declare Real	PosXFirstQuad     = PanelParameter::GetPosPanelX(C_SizePanelX);
+	declare Real	PosYFirstQuad     = PanelParameter::GetPosPanelY(C_SizePanelY) + (PanelParameter::GetOneScreenSizeY()*5.);
+	
+	
+	declare Text MLText = """
+	
+	<framemodel id="Frame_LabelRanking">
+		<label halign="right" valign="center" style="TextButtonNav" posn="-2 1.0 1" id="Label_Ranking" textsize="3" textcolor="fff"/>
+	</framemodel>
+
+	<frame id="Frame_AllHeaderInfo" posn="{{{PosXFirstQuad}}} {{{PosYFirstQuad}}} 10" hidden="1">
+		<label halign="left" valign="center"  textfont="{{{Font::GetFontName("Title")}}}" posn="-117 1.0 5" id="Label_Title" textsize="21" text="" textcolor=""/>
+
+		<frame id="Frame_Content" clip="true" clipsizen="320 180" clipposn="320 0">
+			<label halign="left" valign="center"  textfont="{{{Font::GetFontName("Title")}}}" posn="-117 1.0 5" id="Label_Title" textsize="21" text="" textcolor=""/>
+
+			<frame id="Frame_LabelInfoRight" posn="0 -8 1" hidden="1">
+				<label halign="right" valign="center" style="TextButtonNav" posn="115 16.0 5" id="Label_PlayerName" textsize="4" text="Zlatanus#75" textcolor="ff0"/>
+				<frame id="InfoMedal" posn="115 7 1">
+					<label halign="right" valign="center" style="TextButtonNav" posn="-2 1.0 5" id="Label_SubTitle"
+					textsize="3" text="x25 Medals - 2345" textcolor="fff"/>
+					<quad posn="1 0.5 0" sizen="4.5 3.5" bgcolor="fff"
+					halign="center" opacity="1." valign="center"/>
+				</frame>
+
+				<frame id="Clip_InfoRanking" posn="0 0 0" clip="true" clipsizen="320 3" clipposn="320. 0.6" hidden="0" >
+					<quad posn="0 0 3" sizen="320 180" bgcolor="911" halign="center" opacity="0." valign="center"/>
+					<frame id="InfoRanking" posn="115 0 1">
+						<frame posn="0 0 1">
+							<frameinstance modelid="Frame_LabelRanking" posn="0 0 5."                          id="Frame_Instance0" />
+							<frameinstance modelid="Frame_LabelRanking" posn="0 -{{{C_LabelRankDecalY}}}   5." id="Frame_Instance1" />
+							<frameinstance modelid="Frame_LabelRanking" posn="0 -{{{C_LabelRankDecalY*2}}} 5." id="Frame_Instance2" />
+						</frame>
+					</frame>
+					<quad posn="116 0.5 0" sizen="4.5 3.5" bgcolor="fff" halign="center" opacity="1." valign="center"/>
+				</frame>
+			</frame>
+			<quad posn="0 0" sizen="{{{SizeX_Total}}} {{{SizeY_Total}}}" id="Quad_Background" colorize="000"
+			halign="center" opacity="1." valign="center" image="{{{IMGBackground}}}"/>
+
+
+			<frame id="Frame_ScoreTable" posn="0 3 0" clip="true" clipsizen="{{{SizeX_Total}}} {{{SizeY_Total-23.0}}}" clipposn="0.0">
+				<quad posn="0.1 113.0 1" sizen="{{{SizeX_Total}}} {{{SizeY_Total}}}" id="Quad_BackgroundScoreTable" colorize="333"
+				halign="center" opacity="1.0" valign="center" image="{{{IMGBackground}}}"/>
+			</frame>
+		</frame>
+	</frame>
+
+	<script><!--
+		#Const DebugName  "L_HeaderInfo"
+
+		#Const C_TimeTick			 4000
+		#Const C_TimeStartClip       {{{PanelParameter::GetTimeStartClip()}}}
+		#Const C_TimeAnimClip        {{{PanelParameter::GetTimeAnimClip()}}}
+		#Const C_TimeStartClip2      {{{PanelParameter::GetTimeStartClip2()}}}
+		#Const C_TimeAnimClip2       {{{PanelParameter::GetTimeAnimClip2()}}}
+		#Const C_TimeTransitionMaps  {{{PanelParameter::GetTimeTransitionMaps()}}}
+
+		{{{Manialink::GetIncludes()}}}
+		{{{Manialink::Load()}}}
+		{{{BuilderHelper::MLCommonFunctions()}}}
+		{{{ClipTransitions::Functions(["Frame_Content","Clip_InfoRanking"])}}}
+		
+		declare Boolean G_IsScoreTableVisible;
+		declare Integer G_RankingIndex;
+		declare Integer G_ShowTime;
+		declare Integer G_EndTransitionTime;
+
+
+
+		Void NextRankingScroll()
+		{
+			declare CMlFrame InfoRanking     <=> (Page.GetFirstChild("InfoRanking")     as CMlFrame);
+			declare CMlFrame Frame_Instance0 <=> (Page.GetFirstChild("Frame_Instance0") as CMlFrame);
+			declare CMlFrame Frame_Instance1 <=> (Page.GetFirstChild("Frame_Instance1") as CMlFrame);
+			declare CMlFrame Frame_Instance2 <=> (Page.GetFirstChild("Frame_Instance2") as CMlFrame);
+			
+			G_RankingIndex -=1;
+			if(G_RankingIndex < 0)
+			{
+				G_RankingIndex = 2;
+			}
+			
+			InfoRanking.RelativePosition.Y = 0.;
+			declare Real NewPositionY = 7.;
+			declare Vec3 NewQuadPosition = <InfoRanking.RelativePosition.X, NewPositionY, InfoRanking.RelativePosition.Z>;
+			LibManialink_SetTargetPosition(InfoRanking, NewQuadPosition);
+			LibManialink_PresetAnim(InfoRanking, {{{C_TimeScrollRanking}}}, "EaseLinear");
+		}
+
+		//Permet de créer un roulement des labels
+		Void ReplaceFrame()
+		{
+			declare CMlFrame InfoRanking     <=> (Page.GetFirstChild("InfoRanking")     as CMlFrame);
+			declare CMlFrame Frame_Instance0 <=> (Page.GetFirstChild("Frame_Instance0") as CMlFrame);
+			declare CMlFrame Frame_Instance1 <=> (Page.GetFirstChild("Frame_Instance1") as CMlFrame);
+			declare CMlFrame Frame_Instance2 <=> (Page.GetFirstChild("Frame_Instance2") as CMlFrame);
+
+			InfoRanking.RelativePosition.Y = 0.;
+			for(I,0,2)
+			{
+				declare CMlFrame Frame_Instance <=> (Page.GetFirstChild("Frame_Instance"^I) as CMlFrame);
+				declare Real NewPositionY = (G_RankingIndex + I) % 3  *{{{-C_LabelRankDecalY}}}*1.;
+				
+				Frame_Instance.RelativePosition.Y = NewPositionY;
+			}
+		}
+
+		Void ShowScoreTable(Boolean _Show)
+		{
+			declare CMlQuad  Quad_BackgroundScoreTable <=> (Page.GetFirstChild("Quad_BackgroundScoreTable") as CMlQuad);
+			declare Real NewPositionY;
+			if(_Show)
+			{
+				NewPositionY = 0.;
+			}
+			else
+			{
+				NewPositionY = 113.;
+			}
+			declare Vec3 NewQuadPosition = <Quad_BackgroundScoreTable.RelativePosition.X, NewPositionY, Quad_BackgroundScoreTable.RelativePosition.Z>;
+			LibManialink_SetTargetPosition(Quad_BackgroundScoreTable, NewQuadPosition);
+			LibManialink_PresetAnim(Quad_BackgroundScoreTable, 750, "QuintOut");
+		}
+
+		Void UpdateHeader(Boolean _TransitionEase)
+		{
+			declare CMlQuad  Quad_Background <=> (Page.GetFirstChild("Quad_Background") as CMlQuad);
+			declare CMlLabel Label_Title     <=> (Page.GetFirstChild("Label_Title")     as CMlLabel);
+
+			declare Text HeaderInfo_LabelTitle for This;
+			declare Vec3 HeaderInfo_LabelTitleColor for This;
+			declare Vec3 NextColorHeaderInfo for This;
+
+			if(_TransitionEase)
+			{
+				LibManialink_SetTargetColorize(Quad_Background, NextColorHeaderInfo);
+				LibManialink_PresetAnim(Quad_Background, 500, "QuintOut");
+			}
+			else
+			{
+				Quad_Background.Colorize = NextColorHeaderInfo;
+			}
+
+
+			Label_Title.SetText(HeaderInfo_LabelTitle);
+			Label_Title.TextColor = HeaderInfo_LabelTitleColor;
+		}
+
+		Void ChangeTitle(Text _TitleText)
+		{
+			declare CMlLabel Label_Title <=> (Page.GetFirstChild("Label_Title") as CMlLabel);
+			Label_Title.Value = _TitleText;
+		}
+
+		Void Init()
+		{
+			declare CMlFrame Frame_Instance0 <=> (Page.GetFirstChild("Frame_Instance0") as CMlFrame);
+			declare CMlFrame Frame_Instance1 <=> (Page.GetFirstChild("Frame_Instance1") as CMlFrame);
+			declare CMlFrame Frame_Instance2 <=> (Page.GetFirstChild("Frame_Instance2") as CMlFrame);
+			declare CMlLabel Label_Ranking0  <=> (Frame_Instance0.GetFirstChild("Label_Ranking")     as CMlLabel);
+			declare CMlLabel Label_Ranking1  <=> (Frame_Instance1.GetFirstChild("Label_Ranking")     as CMlLabel);
+			declare CMlLabel Label_Ranking2  <=> (Frame_Instance2.GetFirstChild("Label_Ranking")     as CMlLabel);
+			Label_Ranking0.SetText("Region Ranking 250/769");
+			Label_Ranking1.SetText("France Ranking 250/1269");
+			Label_Ranking2.SetText("Monde Ranking 250/23272");
+		}
+
+
+		Void HidePage(Text _NextPage)
+		{
+			declare CMlFrame  Frame_All <=> (Page.GetFirstChild("Frame_AllHeaderInfo") as CMlFrame);
+
+			if(_NextPage == "Main")
+			{
+				StartSetClipPosition_Frame_Content(<320., 0.>, <0., 0.>, C_TimeStartClip2, C_TimeAnimClip2);
+				StartSetClipPosition_Clip_InfoRanking(<320., 0.6>, <0., 0.6>, C_TimeStartClip2, C_TimeAnimClip2);
+			}
+		}
+
+		Void ShowPage(Text _PreviousPage)
+		{
+			declare CMlFrame  Frame_All <=> (Page.GetFirstChild("Frame_AllHeaderInfo") as CMlFrame);
+			declare CMlFrame  Frame_Content    <=> (Page.GetFirstChild("Frame_Content")    as CMlFrame);
+			declare CMlFrame  Clip_InfoRanking <=> (Page.GetFirstChild("Clip_InfoRanking") as CMlFrame);
+			Frame_All.Show();
+
+			if(_PreviousPage == "Main")
+			{
+				StartSetClipPosition_Frame_Content(<0.1, 0.>, <320., 0.>, C_TimeStartClip, C_TimeAnimClip);
+				StartSetClipPosition_Clip_InfoRanking(<0., 0.6>, <320., 0.6>, C_TimeStartClip, C_TimeAnimClip);
+				G_EndTransitionTime = Now + C_TimeAnimClip;
+			}
+			else if(_PreviousPage == "MapsOverview")
+			{
+				Frame_Content.ClipWindowRelativePosition    = <0.1, 0.>;
+				Clip_InfoRanking.ClipWindowRelativePosition = <0., 0.6>;
+				Frame_All.Hide();
+				G_ShowTime = Now + C_TimeTransitionMaps/2;
+			}
+			else
+			{
+				Frame_Content.ClipWindowRelativePosition    = <0.1, 0.>;
+				Clip_InfoRanking.ClipWindowRelativePosition = <0., 0.6>;
+			}
+		}
+
+		main() {
+			declare CMlFrame  Frame_Content    <=> (Page.GetFirstChild("Frame_Content")    as CMlFrame);
+			declare CMlFrame  Clip_InfoRanking <=> (Page.GetFirstChild("Clip_InfoRanking") as CMlFrame);
+
+			{{{BuilderHelper::MLEnableMenuNavigationInputs()}}}
+			declare Integer TimeRanking      = Now + C_TimeTick;
+			declare Integer TimeReplaceFrame = Now + C_TimeTick + {{{C_TimeScrollRanking}}} + 100;
+
+			declare Integer Prev_TimeRanking = -1;
+			declare Integer Prev_TimeReplaceFrame = -1;
+			G_IsScoreTableVisible = False;
+			G_RankingIndex        = 0;
+			G_ShowTime            = -1;
+			G_EndTransitionTime   = -1;
+			Init();
+
+
+			while(True) {
+				yield;
+				if(! PageIsVisible) continue;
+				LibManialink_AnimLoop();
+
+				//log("Now: " ^ Now);
+
+				declare CMlFrame  Frame_Content <=> (Page.GetFirstChild("Frame_Content") as CMlFrame);
+
+				//log("Now: " ^ Frame_Content.Visible);
+
+				{{{ClipTransitions::InjectInWhile(["Frame_Content","Clip_InfoRanking"])}}}
+
+				if(G_ShowTime <= Now && G_ShowTime != -1)
+				{
+					declare CMlFrame  Frame_All <=> (Page.GetFirstChild("Frame_AllHeaderInfo") as CMlFrame);
+					Frame_All.Show();
+					G_ShowTime = -1;
+				}
+
+				if(G_EndTransitionTime <= Now && G_EndTransitionTime != -1)
+				{
+					Frame_Content.ClipWindowRelativePosition    = <0.1, 0.>;
+					Clip_InfoRanking.ClipWindowRelativePosition = <0., 0.6>;
+					G_EndTransitionTime = -1;
+				}
+
+				if(Now > TimeRanking && TimeRanking != Prev_TimeRanking)
+				{
+					NextRankingScroll();
+					Prev_TimeRanking = TimeRanking;
+					TimeRanking      = Now + C_TimeTick;
+					TimeReplaceFrame = Now + {{{C_TimeScrollRanking}}} + 100;
+				}
+
+				if(Now > TimeReplaceFrame && TimeRanking != Prev_TimeReplaceFrame)
+				{
+					ReplaceFrame();
+					Prev_TimeReplaceFrame = TimeReplaceFrame;
+				}
+
+				foreach(Event in PendingEvents) {
+					switch(Event.Type) {
+						case CMlEvent::Type::MenuNavigation: {
+							switch(Event.MenuNavAction) {
+								case CMlEvent::EMenuNavAction::Up : {
+
+								}
+								case CMlEvent::EMenuNavAction::Down : {
+
+								}
+								case CMlEvent::EMenuNavAction::PageUp : {
+									G_IsScoreTableVisible = !G_IsScoreTableVisible;
+									ShowScoreTable(G_IsScoreTableVisible);
+								}
+							}
+						}
+
+						
+						case CMlEvent::Type::PluginCustomEvent: {
+							declare PageName = Event.CustomEventData[0];
+							switch(Event.PluginCustomEventType) {
+								case "Show" : {
+									ShowPage(PageName);
+									{{{_ShowAnim}}}
+								}
+								case "Hide" : {
+									
+									{{{_HideAnim}}}
+									HidePage(PageName);
+								}
+								case "ChangeColor" : {
+									UpdateHeader(True);
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	--></script>
+	""";
+	
+	return MLText;
+}
