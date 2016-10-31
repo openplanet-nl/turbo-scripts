@@ -166,7 +166,7 @@ Text Build(Text _ShowAnim, Text _HideAnim) {
 
 	
 	<frame id="Frame_General" posn="0 0 2" hidden="0">
-		<label halign="left" valign="center" posn="-150 -80. 7" textcolor="000" text="{{{_("Version:")}}} {{{ManiaPlanet.ExeVersion}}}"
+		<label halign="left" valign="center" posn="-150 -80. 7" textcolor="000" text="Openplanet Turbo {{{ManiaPlanet.ExeVersion}}}"
 	 id="Label_VersionExe" textsize="2."  sizen="48"  opacity="0.8" textfont="{{{Font::GetFontName("Main")}}}"/>
 			""";
 			if(SystemPlatform == CManiaPlanet::ESystemPlatform::XBoxOne)
