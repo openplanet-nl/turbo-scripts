@@ -1,9 +1,0 @@
-Void SendGlobalRanking(Integer _GlobalRanking) {
-	ManiaPlanet.MasterServer_Tracking_StatGlobalRanking(DataMgr.MenuUserId, _GlobalRanking);
-	log(Now^"> MasterServer_Tracking_StatGlobalRanking with GR "^_GlobalRanking);
-}
-
-Void SendEchelon(Integer _Echelon) {
-	ManiaPlanet.MasterServer_Tracking_StatOnline(DataMgr.MenuUserId, _Echelon);
-	log(Now^"> MasterServer_Tracking_StatOnline with Echelon "^_Echelon);
-}
