@@ -1,0 +1,71 @@
+
+<maniaplanet_title version="2">
+	<id>TMTurbo@nadeolabs</id>
+	<name>Trackmania Turbo</name>
+	<desc>$lhttp://trackmaniaturbo.com$l</desc>
+	<url></url>
+	<download_url></download_url>
+	<title_version></title_version>
+	<base>TMAll</base>
+	<player_model></player_model>
+	<scriptcloud_enabled>false</scriptcloud_enabled>
+	<packaging>
+		<image name="PackImage.dds"/>
+		<logos name="Logos.png"/>
+		<collection></collection>
+		<sortindex>100</sortindex>
+		<station_manialink url=""/>
+		<station_noquickenter>false</station_noquickenter>
+		<boxcase_manialink url=""/>
+	</packaging>
+	<menu>
+		<background_img name=""/>
+		<background_replay name=""/>
+		<header name=""/>
+		<music name=""/>
+		<manialink url="file://Media/Manialinks/Nadeo/TMConsole/Menus/MainMenu.Script.txt"/>
+	</menu>
+	<menu_style name=""/>
+	<music folder=""/>
+	<mod name=""/>
+	<editor>
+		<maptype name=""/>
+		<simple_editor_map name=""/>
+		<internalitems/>
+	</editor>
+	<solo>
+		<medals>800</medals>
+		<!-- either campaign or playlist-->
+		<mode name=""/>
+		<campaign folder="Campaigns\" autoincludemaps="false"/>
+		<playlist name=""/>
+		<datapack name=""/>
+	</solo>
+	<network>
+		<mode name=""/>
+		<playlist name=""/>
+	</network>
+	<splitscreen>
+		<mode name=""/>
+		<playlist name=""/>
+	</splitscreen>
+	<files>
+		<file name="Scripts\EditorPlugins\TrackMania\PartyEditor2.Script.txt" public="false" internal="true"/>
+	</files>
+	<folders>
+		<folder name="Media\PluginNadeo\" public="false" internal="false"/>
+		<folder name="Media\Config\" public="false" internal="false"/>
+		<folder name="Media\Manialinks\Nadeo\TMConsole\Ingame\" public="false" internal="false"/>
+		<folder name="Media\Manialinks\Nadeo\TMConsole\Menus\" public="false" internal="false"/>
+		<folder name="Media\Manialinks\Nadeo\TMConsole\Images\MainMenu\StartMain\Patch01\" public="false" internal="false"/>
+		<folder name="Media\Manialinks\Nadeo\TMConsole\Images\AdditionalBoard\" public="false" internal="false"/>
+		<folder name="Media\Manialinks\Nadeo\TMConsole\Images\Loading\AdditionalLoadings\" public="false" internal="false"/>
+		<folder name="Scripts\" public="false" internal="false"/>
+	</folders>
+	<allowed_client_title_version></allowed_client_title_version>
+	<limit_camera_fov>false</limit_camera_fov>
+	<unlock_features>64</unlock_features>
+	<!--  64 = use CE variant of collections -->
+	<use_hmd>false</use_hmd>
+	<hud3dfont name="Media\Font\TMAG-super-italic-01.Font.gbx"/>
+</maniaplanet_title>
