@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<manialink version="2">
+<label posn="-130 70 0" sizen="230 10" text="Woops ! Your Manialink code triggered an XML error." style="TextTitle3" textsize="5" />
+<label posn="-130 55 0" sizen="230 10" text="Here is a little description that might help you :" style="TextTitle3" textsize="4"  />
+<label id="errordesc" posn="-130 45" sizen="260 125" autonewline="1" style="TextCardRaceRank" textsize="4" text=""/>
+</manialink>

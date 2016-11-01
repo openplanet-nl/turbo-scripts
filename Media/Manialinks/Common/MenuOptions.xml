@@ -1,0 +1,101 @@
+<manialink version="1" background="stations" navigable3d="0">
+    <timeout>0</timeout>
+	
+	
+	
+	<stylesheet>
+		<frame3dstyles>
+			<style3d id="TitleTest" 	model="Title" 		thickness="0.050" 	color="dedede05" lightcolor="009adc" fcolor="dedede05" flightcolor="00acfe" fzoffset="0.025" />
+			<style3d id="Backdrop"   	model="Title"   	thickness="0.010" 	color="0066aa00" lightcolor="000000" fcolor="0066aa00" flightcolor="000000" fzoffset="-0.200" zoffset="-0.200" />
+		</frame3dstyles>
+	</stylesheet>
+	
+	<frame3d posn="-163 45 -1" sizen="135 65" scale="1.35" style3d="Floating" >
+		<frame posn="-0.5 3 2">
+			<label posn="2.85 -2.85 3" text="Options" style="BgMainMenuTitleHeader" textsize="4" textcolor="FFF" opacity="0.95" translate="1" />
+			<quad posn="0 0 2" sizen="80 12" image="file://Media/Manialinks/Common/header1.png" />
+			<quad posn="77 -6.9 2" sizen="61 4.5" image="file://Media/Manialinks/Common/metalbar1.png" />
+		</frame>
+
+		<frame posn="24 -15 0" scale="1.28">
+			<frame posn="-20.65 5 1">
+				<quad id="Quad_MainBg" 		posn="0 0 1"  	 	sizen="74 37" style="ManiaPlanetMainMenu" substyle="MainBg" />
+				<quad id="Quad_BottomDeco"	posn="0.25 -39.25 0" sizen="75 8.5"  halign="left" 	valign="center2" style="ManiaPlanetMainMenu" 	substyle="BottomBar" 	styleselected="0" scriptevents="1" />
+				<frame posn="3 -5.5 2" scale="0.75">
+					<label posn="0 0 2" 	sizen="64 10" halign="left" valign="center2" style="CardMain_Tool_NoBg" substyle="Profile" action="menu_profile" textsize="5" textcolor="000" translate="1" text="Profile" />
+					<label posn="0 -10.5 2" sizen="64 10" halign="left" valign="center2" style="CardMain_Tool_NoBg" substyle="PlayerPage" goto="http://livemenu.maniaplanet.com/manialink-home/gateway/?url=http%3A%2F%2Fplayer.maniaplanet.com" textsize="5" textcolor="000" translate="1" text="Player Page" />
+					<label posn="0 -21 2" 	sizen="64 10" halign="left" valign="center2" style="CardMain_Tool_NoBg" substyle="Options" action="system_settings" textsize="5" textcolor="000" translate="1" text="Settings" />
+					<label posn="0 -31.5 2" sizen="64 10" halign="left" valign="center2" style="CardMain_Tool_NoBg" substyle="Puzzle" external="http://wiki.maniaplanet.com" textsize="5" textcolor="000" translate="1" text="Help" />
+				</frame>
+			</frame>
+			
+			<frame posn="30 5 1">
+				<quad id="Quad_MainBg"	 	posn="0 0 -1" 		sizen="85 47.5" halign="left" style="ManiaPlanetMainMenu" substyle="MainBg" />
+				<quad id="Quad_BottomBg"	posn="0.25 -40 0" 	sizen="84 10"  halign="left" 	valign="center2" style="ManiaPlanetMainMenu" 	substyle="TitleBg" 	styleselected="0" scriptevents="1" />
+				<quad id="Quad_MetalBar" posn="1.5 -45 2" sizen="58.5 4.9" image="file://Media/Manialinks/Common/metalbar2.png" />
+				<frame posn="5 -4.1" scale="0.75">
+					<label 	posn="0 0 1" 		sizen="68.5 10" halign="left" valign="center2" 		style="TextButtonBig" textcolor="fff" opacity="0.85" translate="1" text="Buy stations" goto="maniaplanet://#menustations=store?page=buyStations" id="Label_BuyStation" 	scriptevents="1"/> 
+					<label	posn="0 -7.5 1" 	sizen="68.5 10" halign="left" valign="center2" 		style="TextButtonBig" textcolor="fff" opacity="0.85" translate="1" text="Enter a key" action="enter_gamekey"			id="Label_EnterKey" 	scriptevents="1"/> 
+					<label 	posn="0 -15 1" 		sizen="68.5 10" halign="left" valign="center2" 		style="TextButtonBig" textcolor="fff" opacity="0.85" translate="1" text="Edit packs" action="pack_editor" 				id="Label_EditPacks" 	scriptevents="1"/> 
+					<label 	posn="0 -22.5 1"	sizen="68.5 10" halign="left" valign="center2" 		style="TextButtonBig" textcolor="fff" opacity="0.85" translate="1" text="Open my packs folder" action="explore_packs" 	id="Label_PackFolder" 	scriptevents="1"/> 
+					<label	posn="0 -47.5 1" 	sizen="60 0" 	halign="left" valign="center2" 		style="TextButtonBig" textcolor="fff" opacity="0.85" textsize="2"	id="Label_CustomizeLayout" 	scriptevents="1" text="Customize the layout:" translate="1" />
+					<quad 	posn="65 -47.5 1" 	halign="center" 	valign="center2" style="Icons64x64_1" 	substyle="Check" styleselected="0"	id="Check_ManualLayout"  	scriptevents="1" sizen="8 8" />
+					<label 	id="Label_ToolTip" 	posn="0 -33 1" sizen="68.5 25" halign="left" valign="center2" style="TextTips" translate="1" autonewline="1" text=""  />
+				</frame>
+			</frame>
+		</frame>
+	</frame3d>
+	
+	<script><!--
+	
+	
+		main() {						
+			declare Check_ManualLayout <=> (Page.MainFrame.GetFirstChild("Check_ManualLayout") as CMlQuad);
+			declare Label_BuyStation <=> (Page.MainFrame.GetFirstChild("Label_BuyStation") as CMlLabel);
+			declare Label_EnterKey <=> (Page.MainFrame.GetFirstChild("Label_EnterKey") as CMlLabel);
+			declare Label_EditPacks <=> (Page.MainFrame.GetFirstChild("Label_EditPacks") as CMlLabel);
+			declare Label_CustomizeLayout <=> (Page.MainFrame.GetFirstChild("Label_CustomizeLayout") as CMlLabel);
+			declare Label_PackFolder <=> (Page.MainFrame.GetFirstChild("Label_PackFolder") as CMlLabel);
+			declare Label_ToolTip <=> (Page.MainFrame.GetFirstChild("Label_ToolTip") as CMlLabel);
+			
+			while(True) {
+				yield;	
+				foreach(Event in PendingEvents) {
+					switch(Event.Type) {
+						// Events On MouseClick
+						case CMlEvent::Type::MouseClick: {
+							if(Event.Control == Check_ManualLayout || Event.Control == Label_CustomizeLayout) {
+								ManiaPlanet.Settings_StationsManualLayout = !ManiaPlanet.Settings_StationsManualLayout;
+							}
+						}				
+						
+						case CMlEvent::Type::MouseOver: {	
+							if(Event.Control == Label_CustomizeLayout) {
+								Label_ToolTip.Visible = True;
+								Label_ToolTip.Value = _("Press the 'Control' key to drag your stations. Use the scroll wheel to change the station size.");
+							} else if (Event.Control == Label_PackFolder) {
+								Label_ToolTip.Visible = True;
+								Label_ToolTip.Value = _("Move Pack files to this folder to add them to your collection.");
+							} else if (Event.Control == Label_BuyStation) {
+								Label_ToolTip.Visible = True;
+								Label_ToolTip.Value = _("Extend your available space by buying new stations with your planets.");
+							} else if (Event.Control == Label_EditPacks) {
+								Label_ToolTip.Visible = True;
+								Label_ToolTip.Value = _("Create and manage your own titles. (Advanced users only.)");
+							}else if (Event.Control == Label_EnterKey) {
+								Label_ToolTip.Visible = True;
+								Label_ToolTip.Value = _("If you have a game key, enter it here to add the game to your collection.");
+							}
+						}			
+						
+						case CMlEvent::Type::MouseOut: {	
+							Label_ToolTip.Visible = False;
+						}														
+					}
+				}
+				Check_ManualLayout.StyleSelected = ManiaPlanet.Settings_StationsManualLayout;
+			}
+		}
+	--></script>	
+
+</manialink>

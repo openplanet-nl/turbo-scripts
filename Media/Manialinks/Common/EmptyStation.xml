@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manialink version="1">
+	<frame posn="10 -6" scale="1.05" >
+	
+		<frame posn="-157 87 2" scale="1.27">
+			<label id="Label_Title" posn="2.85 -2.85 3" text="INSTALL TITLE" style="BgMainMenuTitleHeader" textcolor="FFF" opacity="0.95" translate="1" scale="1.1" />
+			<quad id="Quad_TitleBackground" posn="0 0 2" sizen="80 12.75" image="file://Media/Manialinks/Common/header1.png" />
+		</frame>		
+
+		<frame posn="-105.75 74" scale="1.5">
+			<quad posn="-0.85 -3.25 0" sizen="66.4 35.5" halign="center" valign="top" image="file://Media/Manialinks/Common/background3.png" />
+			<frame posn="0 -4">
+				<label posn="0 0 3" 	halign="center" style="CardMain_Tool_NoBg" substyle="Coppers" 	text="From The Store"	action="menustations_store"  />
+				<label posn="0 -12 3"	halign="center" style="CardMain_Tool_NoBg" substyle="Browse" 	text="From Disk" 		action="install_browse"  />
+				<label posn="0 -24 3" 	halign="center" style="CardMain_Tool_NoBg" substyle="Download" 	text="From Url" 		action="install_url" />
+			</frame>
+		</frame>		
+	</frame>
+</manialink>

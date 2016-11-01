@@ -1,0 +1,186 @@
+<manialink version="1" background="stations" navigable3d="0">
+    <timeout>0</timeout>
+	
+	<framemodel id="Framemodel_InfoRight">
+		<quad 	id="Quad_Selection"							posn="0 4 1." 			sizen="60 20" 	bgcolor="0f0" bgcolorfocus="f00" opacity="0."	valign="top"	halign="left"  scriptevents="1" />
+		<quad 	id="Quad_Icon" 								posn="0 0 0.1" 			sizen="8 8" 	style="Icons128x128_1" 	substyle="Buddies" 	valign="center"	halign="left" />
+		<label 	id="Label_Title"							posn="10 0 0.2"			sizen="60 8" 	style="TextButtonNav" 	textsize="4"		valign="center"	halign="left" 								text="_TESTITEM" />
+		<label 	id="Label_Infos"							posn="0 -4 0.2"			sizen="57 8" 	scale="1.25"			textsize="1"		valign="top"	halign="left"  maxline="2" opacity="0.25" 	text="_Description du super item comme on pourrait l'attendre de la part d'une description. d'autant plus pour un très bon item." />
+	</framemodel>
+	
+	<frame id="Frame_Global" posn="0 20" scale="0.9">
+	
+			<frame posn="0 0 0.1">
+				
+				<frame3d posn="0 -17 -1" sizen="320 320" scale="1.6" style3d="Floating" valign="center" halign="center" >
+					<frame id="Frame_Content">
+						<frame id="Frame_Left" 					posn="-42.5 6 0">
+							<frame id="Frame_Play">
+								<quad id="Quad_Selection"		posn="0 7 1." 			sizen="72 22" 	bgcolor="0f0" opacity="0."	valign="top"	halign="right" scriptevents="1" />
+								<quad id="Quad_Icon"			posn="0.5 -0.75 0.1" 	sizen="17 17" 	style="Icons128x128_1" 	substyle="Buddies" 	valign="center"	halign="right" />
+								<label 	id="Label_Title"		posn="-18 0 0.2"		sizen="60 8" 	style="TextButtonNav" 	textsize="12"		valign="center"	halign="right" text="_PLAY" />
+								<label 	id="Label_Infos"		posn="0 -8 0.2"			sizen="57 8" 	scale="1.25"			textsize="2"		valign="top"	halign="right" text="_Click to select a game." maxline="2" />
+							</frame>
+						</frame>
+						
+						<frame id="Frame_Right" 				posn="42.5 25 0">
+							<frameinstance id="Frame_Buddies" 	posn="0 0 0.1" 			modelid="Framemodel_InfoRight"  />
+							<frameinstance id="Frame_Settings" 	posn="0 -20 0.1"		modelid="Framemodel_InfoRight"  />
+							<frameinstance id="Frame_Store" 	posn="0 -40 0.1"		modelid="Framemodel_InfoRight"  />
+						</frame>
+					</frame>
+					
+					<frame id="Frame_Bg">
+						<quad id="Quad_Bg" 						posn="0 0 0" 			sizen="230 70" 		style="Bgs1" 		substyle="BgWindow2" 	halign="center" valign="center"/>
+						<quad id="Quad_BgMetalBar" 				posn="0 -35 0.1" 		sizen="230 1.75" 	style="Bgs1InRace" 	substyle="BgMetalBar" 	halign="center" valign="center"/>
+						<quad id="Quad_BgGlow" 					posn="0 34.75 0.1" 		sizen="236.5 8" 	style="Bgs1InRace" 	substyle="BgGlow2" 		halign="center" valign="center"/>
+					</frame>
+					
+					<quad id="Quad_MPLogo" 						posn="0 -1.25 0.3" 		sizen="78 78" 		style="ManiaPlanetLogoBig" substyle="ManiaPlanetLogoBig" halign="center" valign="center"/>
+				</frame3d>
+				
+				
+				
+				<frame id="Frame_Arrows" 					posn="0 0 75" >
+					<quad id="Quad_ArrowPlay" 				posn="0 -60 0.3" 		sizen="25 25" 		image="file://Media/Manialinks/Common/Arrow.dds" halign="center" valign="center" rot="0" 	hidden="0"	/>
+					<quad id="Quad_ArrowBuddies" 			posn="-12.5 63 0.3" 	sizen="25 25" 		image="file://Media/Manialinks/Common/Arrow.dds" halign="center" valign="center" rot="180" 	hidden="1" 	/>
+					<quad id="Quad_ArrowSettings" 			posn="135.5 63 0.3" 	sizen="25 25" 		image="file://Media/Manialinks/Common/Arrow.dds" halign="center" valign="center" rot="180" 	hidden="1" 	/>
+					<quad id="Quad_ArrowStore" 				posn="-109 -6 0.3" 		sizen="25 25" 		image="file://Media/Manialinks/Common/Arrow.dds" halign="center" valign="center" rot="90" 	hidden="1" 	/>
+				</frame>
+				
+			</frame>
+	</frame>
+	
+	
+	
+	<script><!--
+	
+		#Include "MathLib" as ML
+	
+		main() {						
+			declare Quad_ArrowPlay 			<=> (Page.MainFrame.GetFirstChild("Quad_ArrowPlay") 	as CMlQuad);
+			declare Quad_ArrowBuddies 		<=> (Page.MainFrame.GetFirstChild("Quad_ArrowBuddies") 	as CMlQuad);
+			declare Quad_ArrowSettings 		<=> (Page.MainFrame.GetFirstChild("Quad_ArrowSettings") as CMlQuad);
+			declare Quad_ArrowStore 		<=> (Page.MainFrame.GetFirstChild("Quad_ArrowStore") 	as CMlQuad);
+			
+			declare Frame_Play				<=>	(Page.MainFrame.GetFirstChild("Frame_Play") 		as CMlFrame);
+			declare Quad_SelectionPlay 		<=> (Frame_Play.GetFirstChild("Quad_Selection") 		as CMlQuad);
+			declare Quad_IconPlay 			<=> (Frame_Play.GetFirstChild("Quad_Icon") 				as CMlQuad);
+			declare Label_TitlePlay			<=> (Frame_Play.GetFirstChild("Label_Title") 			as CMlLabel);
+			declare Label_InfosPlay 		<=> (Frame_Play.GetFirstChild("Label_Infos") 			as CMlLabel);
+			
+			declare Frame_Buddies			<=>	(Page.MainFrame.GetFirstChild("Frame_Buddies") 		as CMlFrame);
+			declare Quad_SelectionBuddies 	<=> (Frame_Buddies.GetFirstChild("Quad_Selection")		as CMlQuad);
+			declare Quad_IconBuddies 		<=> (Frame_Buddies.GetFirstChild("Quad_Icon") 			as CMlQuad);
+			declare Label_TitleBuddies		<=> (Frame_Buddies.GetFirstChild("Label_Title") 		as CMlLabel);
+			declare Label_InfosBuddies		<=> (Frame_Buddies.GetFirstChild("Label_Infos") 		as CMlLabel);
+			
+			declare Frame_Settings			<=>	(Page.MainFrame.GetFirstChild("Frame_Settings") 	as CMlFrame);
+			declare Quad_SelectionSettings 	<=> (Frame_Settings.GetFirstChild("Quad_Selection")		as CMlQuad);
+			declare Quad_IconSettings 		<=> (Frame_Settings.GetFirstChild("Quad_Icon") 			as CMlQuad);
+			declare Label_TitleSettings		<=> (Frame_Settings.GetFirstChild("Label_Title") 		as CMlLabel);
+			declare Label_InfosSettings		<=> (Frame_Settings.GetFirstChild("Label_Infos") 		as CMlLabel);
+			
+			declare Frame_Store				<=>	(Page.MainFrame.GetFirstChild("Frame_Store") 		as CMlFrame);
+			declare Quad_SelectionStore 	<=> (Frame_Store.GetFirstChild("Quad_Selection")		as CMlQuad);
+			declare Quad_IconStore	 		<=> (Frame_Store.GetFirstChild("Quad_Icon") 			as CMlQuad);
+			declare Label_TitleStore 		<=> (Frame_Store.GetFirstChild("Label_Title") 			as CMlLabel);
+			declare Label_InfosStore 		<=> (Frame_Store.GetFirstChild("Label_Infos") 			as CMlLabel);
+			
+			Quad_IconPlay				.ImageUrl 	= "file://Media/Manialinks/Common/StationEmpty.png";
+			Quad_IconBuddies			.Style 		= "Icons128x128_1";
+			Quad_IconBuddies			.Substyle 	= "Buddies";
+			Quad_IconSettings			.Style 		= "ManiaPlanetMainMenu";
+			Quad_IconSettings			.Substyle 	= "IconSettings";
+			Quad_IconStore				.Style 		= "ManiaPlanetMainMenu";
+			Quad_IconStore				.Substyle 	= "IconStore";
+			
+			Label_TitlePlay				.Value 		= _("Play");
+			Label_TitleBuddies			.Value 		= _("Buddies");
+			Label_TitleSettings			.Value 		= _("Settings");
+			Label_TitleStore			.Value 		= _("Store");
+			
+			Label_InfosPlay				.Value 		= _("Click to select a game.");
+			Label_InfosBuddies			.Value 		= _("Use the buddy system to play with your friends.");
+			Label_InfosSettings			.Value 		= _("Click on the right of the toolbar to edit your settings.");
+			Label_InfosStore			.Value 		= _("Go to the store and discover many other games created by players like you!");
+		
+			declare Text 	Desired_Mode;
+			declare Real 	IncOpacity;
+			declare Real 	IncPosition;
+			declare Integer LatestFocus;
+			
+			while(True) {
+				foreach(Event in PendingEvents) {
+					switch(Event.Type) {
+						case CMlEvent::Type::MouseOver: {	
+							if(Event.Control.ControlId == "Quad_Selection"){
+								LatestFocus = Now;
+								switch(Event.Control) {
+									case Quad_SelectionPlay 	: Desired_Mode = "Play";
+									case Quad_SelectionBuddies 	: Desired_Mode = "Buddies";
+									case Quad_SelectionSettings : Desired_Mode = "Settings";
+									case Quad_SelectionStore 	: Desired_Mode = "Store";
+								}
+							}
+						}								
+					}
+				}
+				
+				
+				// Animation Arrows
+				{
+					declare Time = Now - LatestFocus;
+					declare Real OpacityReduction = 0.66;
+					IncOpacity 		= (ML::Cos(Time*0.005+3.14)*0.5+0.5)*OpacityReduction;
+					IncPosition 	=  ML::Cos(Time*0.005+3.14);
+					Quad_ArrowPlay		.RelativePosition.Y = -60.  + IncPosition;
+					Quad_ArrowBuddies	.RelativePosition.Y =  60.  + IncPosition;
+					Quad_ArrowSettings	.RelativePosition.Y =  60.  + IncPosition;
+					Quad_ArrowStore		.RelativePosition.X = -120. + IncPosition;
+					Quad_ArrowPlay		.Opacity = 0.95 - OpacityReduction + IncOpacity;
+					Quad_ArrowBuddies	.Opacity = 0.95 - OpacityReduction + IncOpacity;
+					Quad_ArrowSettings	.Opacity = 0.95 - OpacityReduction + IncOpacity;
+					Quad_ArrowStore		.Opacity = 0.95 - OpacityReduction + IncOpacity;
+					
+				}
+				
+				// Hide Show Arrows, Text Opacity
+				{
+					Label_InfosPlay			.Opacity = 0.25;
+					Label_InfosBuddies		.Opacity = 0.25;
+					Label_InfosSettings		.Opacity = 0.25;
+					Label_InfosStore		.Opacity = 0.25;	
+					Quad_ArrowPlay			.Visible = False;
+					Quad_ArrowBuddies		.Visible = False;
+					Quad_ArrowSettings		.Visible = False;
+					Quad_ArrowStore			.Visible = False;
+					
+					switch (Desired_Mode) {
+						case "Buddies" : {
+							Label_InfosBuddies		.Opacity = 1.;
+							Quad_ArrowBuddies		.Visible = True;
+						}
+						
+						case "Settings" : {
+							Label_InfosSettings		.Opacity = 1.;
+							Quad_ArrowSettings		.Visible = True;
+						}
+						
+						case "Store" : {
+							Label_InfosStore		.Opacity = 1.;
+							Quad_ArrowStore			.Visible = True;
+						}
+						
+						default : {
+							Label_InfosPlay			.Opacity = 1.;
+							Quad_ArrowPlay			.Visible = True;
+						}
+					}
+				}
+			yield;	
+			}
+		}
+	--></script>	
+
+</manialink>

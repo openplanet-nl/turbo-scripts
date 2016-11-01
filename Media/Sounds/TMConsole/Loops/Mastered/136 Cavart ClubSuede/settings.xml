@@ -1,0 +1,32 @@
+
+<music>
+	<tempo beatsperminute="136" beatsperbar="4" />
+	<segment name="lap">
+		<trackgroup>
+			<variant name="01 Lap"/>
+		</trackgroup>
+	</segment>
+	<segment name="freewheel">
+		<trackgroup>
+			<variant name="02 Freewheel"/>
+		</trackgroup>
+	</segment>
+	<segment name="loop" variant_maxcycles="8">
+		<trackgroup variant_order="random">
+			<variant name="03"/>
+			<variant name="04"/>
+			<variant name="05"/>
+			<variant name="06"/>
+			<variant name="07"/>
+			<variant name="08"/>
+			<variant name="09"/>
+			<variant name="10"/>
+			<variant name="11"/>
+			<variant name="12"/>
+			<variant name="13"/>
+			<variant name="14"/>
+			<variant name="15"/>
+			<variant name="16"/>
+		</trackgroup>
+	</segment>
+</music>

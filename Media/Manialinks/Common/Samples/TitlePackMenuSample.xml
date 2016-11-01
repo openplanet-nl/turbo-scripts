@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<manialink version="2">
+	<stylesheet>
+		<style id="TitleLogo" posn="-149 85" style="TitleLogos" substyle="Title" sizen="68 26"/>
+		<style id="BgTitleMenu" posn="-150 100 -25" opacity="0.75" style="Bgs1" substyle="BgWindow2" sizen="70 200"/>
+		<style id="PlanetLogo" posn="-146 52" style="Icons128x128_1" substyle="Vehicles" sizen="16 16"/>
+		<style id="LabelWelcome" posn="-128 49" style="TextRankingsBig" sizen="40 5"/>
+		<style id="LabelActivity" posn="-128 43" style="TextSubTitle1" sizen="44 5"/>
+		
+		<style id="FrameMenuButtons" posn="-144 27.5"/>	
+		<style id="FrameSolo"/>		
+		<style id="FrameMulti" posn="0 -14"/>	
+		<style id="FrameLocalPlay" posn="0 -58"/>		
+		<style id="FrameEditors" posn="0 -72"/>		
+		<style id="FrameProfile" posn="0 -86"/>		
+		
+		<style id="ButtonSolo ButtonMulti ButtonLocalPlay ButtonEditors ButtonProfile" posn="0 -4.5" style="TextButtonBig" sizen="48 5" valign="center2"/>
+		<style id="ButtonQuit" posn="-160 -72" style="CardMain_Quit" sizen="60 5"/>
+		
+		<style posn="59 -4.5" style="Icons128x128_1" sizen="9 9" halign="right" valign="center">
+			<style id="QuadIconSolo" 		substyle="Solo" />
+			<style id="QuadIconMulti" 		substyle="Multiplayer" />
+			<style id="QuadIconLocalPlay" 	substyle="Hotseat" />
+			<style id="QuadIconEditors" 	substyle="Editor" />
+			<style id="QuadIconProfile" 	substyle="Profile" />
+		</style>
+	</stylesheet>
+	<quad id="TitleLogo"/>
+	<quad id="BgTitleMenu"/>
+	<frame>
+		<quad id="PlanetLogo"/>
+		<label id="LabelWelcome" text="Welcome!"/>
+		<label id="LabelActivity" text="Choose an activity"/>
+	</frame>
+	<frame id="FrameMenuButtons">
+		<frame id="FrameSolo">
+			<label id="ButtonSolo" text="Solo" action="menu_solo" scriptevents="1"/>
+			<quad id="QuadIconSolo"/>
+		</frame>
+		<frame id="FrameMulti" hidden="1">
+			<label id="ButtonMulti" text="Multiplayer" scriptevents="1"/>
+			<quad id="QuadIconMulti"/>
+		</frame>
+		<frame id="FrameLocalPlay">
+			<label id="ButtonLocalPlay" text="Local Play" action="menu_local" scriptevents="1"/>
+			<quad id="QuadIconLocalPlay"/>
+		</frame>
+		<frame id="FrameEditors">
+			<label id="ButtonEditors" text="Editors" action="menu_editors" scriptevents="1"/>
+			<quad id="QuadIconEditors"/>
+		</frame>
+		<frame id="FrameProfile">
+			<label id="ButtonProfile" text="Profile" action="menu_profile" scriptevents="1"/>
+			<quad id="QuadIconProfile"/>
+		</frame>
+	</frame>
+	<label id="ButtonQuit" text="Quit" action="quit" scriptevents="1"/>
+</manialink>

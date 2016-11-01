@@ -1,0 +1,287 @@
+<!-- version : 2016-02-24 -->
+<themepacks>
+<!-- ======================================================================= -->
+<!-- ======================================================================= -->
+<!-- ======================================================================= -->
+<!-- CANYON -->
+<!-- ======================================================================= -->
+<!-- ======================================================================= -->
+<!-- ======================================================================= -->
+  <environment name="Canyon">
+    <trackstyles>
+      <trackstyle name="|BlockStyle|Grand Prix" clips="RoadRaceClipLeft,RoadRaceClipLeftDown,RoadRaceClipLeftUp,RoadRaceClipRight,RoadRaceClipRightDown,RoadRaceClipRightUp,RoadRaceTiltClipLeft,RoadRaceTiltClipRight" id="0">
+        <category name="">
+          <!-- Straight -->
+          <macroblock id="RoadRace\Roads\Straight" simple="1" />
+          <macroblock id="RoadRace\Bridges\WaterCliffRightFree" />
+          <macroblock id="RoadRace\Bridges\HillRightFree" />
+          <macroblock id="RoadRace\Bridges\DirtCliffRightFree" />
+          <macroblock id="RoadRace\Bridges\WaterCliffLeftFree" />
+          <macroblock id="RoadRace\Bridges\HillLeftFree" />
+          <macroblock id="RoadRace\Bridges\DirtCliffLeftFree" />
+          <!-- Turn -->
+          <macroblock id="RoadRace\Turns\CornerOut" />
+          <macroblock id="RoadRace\Turns\CornerIn" />
+          <macroblock id="RoadRace\Turns\CurveOut" />
+          <macroblock id="RoadRace\Turns\CurveIn" />
+          <!-- Slope -->
+          <macroblock id="RoadRace\Slopes\SlopeLongRight" />
+          <macroblock id="RoadRace\Slopes\SlopeLongLeft" />
+          <!-- Transition -->
+          <macroblock id="RoadRace\Transitions\RaceRightToMain" />
+          <!-- Turbo -->
+          <macroblock id="RoadRace\Turbos\TurboRight" name="|BlockCategory|Turbo" />
+          <!-- Checkpoint -->
+          <macroblock id="RoadRace\Checkpoints\StartRight" name="|BlockInfo|Start" />
+          <macroblock id="RoadRace\Checkpoints\CheckpointRight" name="|BlockInfo|Checkpoint" />
+          <macroblock id="RoadRace\Checkpoints\FinishRight" name="|BlockInfo|Finish" />
+          <macroblock id="RoadMain\Checkpoints\Start" name="|BlockInfo|Start" />
+        </category>
+      </trackstyle>
+      <trackstyle name="|BlockStyle|Road" clips="Cliff12RoadHighClipLeft,Cliff12RoadHighClipRight,Cliff12RoadMedClipLeft,Cliff12RoadMedClipRight,CliffLowLoop,RoadHill2ClipLeft,RoadHill2ClipRight,RoadMainClip,RoadMainDown,RoadMainUp" id="1">
+        <category name="">
+          <!-- Straight -->
+          <macroblock id="RoadMain\Roads\Straight" symmetrical="1" simple="1" />
+          <macroblock id="RoadMain\Bridges\WaterCliffFree" />
+          <macroblock id="RoadMain\Bridges\HillFree" />
+          <macroblock id="RoadMain\Bridges\DirtCliffFree" />
+          <!-- Turn -->
+          <macroblock id="RoadMain\Turns\Corner" />
+          <macroblock id="RoadMain\Turns\Curve" />
+          <!-- Slope -->
+          <macroblock id="RoadMain\Slopes\SlopeLong" />
+          <!-- Transition -->
+          <macroblock id="RoadRace\Transitions\RaceLeftToMain" />
+          <!-- Turbo -->
+          <macroblock id="RoadMain\Turbos\Turbo" name="|BlockCategory|Turbo" />
+          <!-- Checkpoint -->
+          <macroblock id="RoadRace\Checkpoints\StartRight" name="|BlockInfo|Start" />
+          <macroblock id="RoadMain\Checkpoints\Start" name="|BlockInfo|Start" />
+          <macroblock id="RoadMain\Checkpoints\Checkpoint" name="|BlockInfo|Checkpoint" />
+          <macroblock id="RoadMain\Checkpoints\Finish" name="|BlockInfo|Finish" />
+        </category>
+      </trackstyle>
+    </trackstyles>
+    <decostyles>
+      <decostyle name="|BlockStyle|Decoration" id="0">
+        <category name="|Decoration|Technology" ratio="0.7" color="1.,0.196,0.109">
+        </category>
+        <category name="|Decoration|Nature" ratio="0.25" color="0.407,0.631,0.168">
+        </category>
+        <category name="|Decoration|International Turbo" ratio="0.40" color="0.,0.741,0.494">
+        </category>
+      </decostyle>
+    </decostyles>
+  </environment>
+<!-- ======================================================================= -->
+<!-- ======================================================================= -->
+<!-- ======================================================================= -->
+<!-- VALLEY -->
+<!-- ======================================================================= -->
+<!-- ======================================================================= -->
+<!-- ======================================================================= -->
+  <environment name="Valley">
+    <trackstyles>
+      <trackstyle name="|BlockStyle|Road" clips="Road2WayClip,Road2WayDown,Road2WayUp" id="0">
+        <category name="">
+          <!-- Straight -->
+          <macroblock id="Road2Way\Roads\Straight" symmetrical="1" simple="1" />
+          <macroblock id="Road2Way\Bridges\GrassHills" />
+          <macroblock id="Road2Way\Bridges\GrassCliff2" />
+          <macroblock id="Road2Way\Bridges\GrassCliff8" />
+          <!-- Turn -->
+          <macroblock id="Road2Way\Turns\Corner" />
+          <macroblock id="Road2Way\Turns\Curve" />
+          <!-- Slope -->
+          <macroblock id="Road2Way\Slopes\BiSlope" />
+          <!-- Transition -->
+          <macroblock id="RoadDirt\Transitions\2WayToForestLarge" />
+          <!-- Turbo -->
+          <macroblock id="Road2Way\Turbos\Turbo" name="|BlockCategory|Turbo" />
+          <!-- Checkpoint -->
+          <macroblock id="Road2Way\Checkpoints\Start" name="|BlockInfo|Start" />
+          <macroblock id="RoadDirt\Checkpoints\ForestLargeStart" name="|BlockInfo|Start" />
+          <macroblock id="Road2Way\Checkpoints\Checkpoint" name="|BlockInfo|Checkpoint" />
+          <macroblock id="Road2Way\Checkpoints\Finish" name="|BlockInfo|Finish" />
+        </category>
+      </trackstyle>
+      <trackstyle name="|BlockStyle|Dirt" clips="DirtCliffDown,DirtCliffUp,RoadDirtClip,RoadForestLargeFreeClip,RoadForestLargeGrassFreeClip,RoadForestLargeSlopeClip,RoadForestLargeSlopeGrassClip,RoadForestLargeTechClip,RoadForestLargeTechGrassClip" id="1">
+        <category name="">
+          <!-- Straight -->
+          <macroblock id="RoadDirt\Roads\ForestLargeStraight" symmetrical="1" simple="1" />
+          <!-- Turn -->
+          <macroblock id="RoadDirt\Turns\ForestLargeCorner" />
+          <macroblock id="RoadDirt\Turns\ForestLargeGTCurve2" />
+          <!-- Slope -->
+          <macroblock id="RoadDirt\Slopes\ForestLargeStraight" />
+          <!-- Transition -->
+          <macroblock id="RoadDirt\Transitions\2WayToForestLarge" />
+          <!-- Turbo -->
+          <macroblock id="RoadDirt\Turbos\ForestLargeTurbo" name="|BlockCategory|Turbo" />
+          <!-- Checkpoint -->
+          <macroblock id="Road2Way\Checkpoints\Start" name="|BlockInfo|Start" />
+          <macroblock id="RoadDirt\Checkpoints\ForestLargeStart" name="|BlockInfo|Start" />
+          <macroblock id="RoadDirt\Checkpoints\ForestLargeCheckpoint" name="|BlockInfo|Checkpoint" />
+          <macroblock id="RoadDirt\Checkpoints\ForestLargeFinish" name="|BlockInfo|Finish" />
+        </category>
+      </trackstyle>
+    </trackstyles>
+    <decostyles>
+      <decostyle name="|BlockStyle|Decoration" id="0">
+        <category name="|Decoration|Technology" ratio="0.05" color="1.,0.196,0.109">
+        </category>
+        <category name="|Decoration|Nature" ratio="1." color="0.407,0.631,0.168">
+        </category>
+        <category name="|Decoration|International Turbo" ratio="0.25" color="0.,0.741,0.494">
+        </category>
+      </decostyle>
+    </decostyles>
+  </environment>
+<!-- ======================================================================= -->
+<!-- ======================================================================= -->
+<!-- ======================================================================= -->
+<!-- STADIUM -->
+<!-- ======================================================================= -->
+<!-- ======================================================================= -->
+<!-- ======================================================================= -->
+  <environment name="Stadium">
+    <trackstyles>
+      <trackstyle name="|BlockStyle|Simple" clips="StadiumRoadMainClip,StadiumRoadMainDown,StadiumRoadMainUp,StadiumTrenchFreeClip,StadiumTrenchToLoopStartFreeClipLeft,StadiumTrenchToLoopStartFreeClipRight,StadiumTrenchToPlatformBiSlopeStartFreeClipLeft,StadiumTrenchToPlatformBiSlopeStartFreeClipRight" id="0">
+        <category name="">
+          <!-- Straight -->
+          <macroblock id="RoadMain\Roads\Straight" symmetrical="1" simple="1" />
+          <!-- Turn -->
+          <macroblock id="RoadMain\Turns\Corner" />
+          <macroblock id="RoadMain\Turns\Curve01" />
+          <!-- Slope -->
+          <macroblock id="RoadSlope\Roads\SlopeLong" />
+          <!-- Transition -->
+          <macroblock id="RoadDirt\Transitions\LowToRoadMain" />
+          <!-- Turbo -->
+          <macroblock id="RoadMain\Turbos\Turbo" name="|BlockCategory|Turbo" />
+          <!-- Checkpoint -->
+          <macroblock id="RoadMain\Checkpoints\Start" name="|BlockInfo|Start" />
+          <macroblock id="RoadMain\Checkpoints\Checkpoint" name="|BlockInfo|Checkpoint" />
+          <macroblock id="RoadMain\Checkpoints\Finish" name="|BlockInfo|Finish" />
+        </category>
+      </trackstyle>
+      <trackstyle name="|BlockStyle|Dirt" clips="StadiumRoadDirtClip,StadiumRoadDirtHighClip,StadiumRoadDirtHillTiltClipLeft,StadiumRoadDirtHillTiltClipRight" id="1">
+        <category name="">
+          <!-- Straight -->
+          <macroblock id="RoadDirt\Roads\LowStraightFence" symmetrical="1" simple="1" />
+          <macroblock id="RoadDirt\Obstacles\FenceCross01" simple="1" />
+          <!-- Turn -->
+          <macroblock id="RoadDirt\Turns\LowCornerFence" />
+          <macroblock id="RoadDirt\Turns\LowCurve01" />
+          <!-- Slope -->
+          <macroblock id="RoadDirt\Slopes\StraightShort" />
+          <!-- Transition -->
+          <macroblock id="RoadDirt\Transitions\LowToRoadMain" />
+          <!-- Turbo -->
+          <macroblock id="RoadDirt\Turbos\LowTurbo" name="|BlockCategory|Turbo" />
+          <!-- Checkpoint -->
+          <macroblock id="RoadDirt\Checkpoints\LowCheckpoint" name="|BlockInfo|Checkpoint" />
+        </category>
+      </trackstyle>
+    </trackstyles>
+    <decostyles>
+      <decostyle name="|BlockStyle|Decoration" id="0">
+        <category name="|Decoration|Technology" ratio="0.1" color="1.,0.196,0.109">
+        </category>
+        <category name="|Decoration|Nature" ratio="0.5" color="0.407,0.631,0.168">
+        </category>
+        <category name="|Decoration|International Turbo" ratio="0.1" color="0.,0.741,0.494">
+        </category>
+        <category name="|Decoration|Inflatables" ratio="0.2" color="1.,0.356,0.109">
+        </category>
+      </decostyle>
+    </decostyles>
+  </environment>
+<!-- ======================================================================= -->
+<!-- ======================================================================= -->
+<!-- ======================================================================= -->
+<!-- LAGOON -->
+<!-- ======================================================================= -->
+<!-- ======================================================================= -->
+<!-- ======================================================================= -->
+  <environment name="Lagoon">
+    <trackstyles>
+      <trackstyle name="|BlockStyle|Road" clips="RoadMainClip,RoadMainDown,RoadMainToCityFreeClipLeft,RoadMainToCityFreeClipRight,RoadMainUp" id="0">
+        <category name="">
+          <!-- Straight -->
+          <macroblock id="RoadMain\Roads\Straight" symmetrical="1" simple="1" />
+          <macroblock id="RoadMain\Transitions\BridgeBeach" />
+          <macroblock id="RoadMain\Transitions\BridgeHill" />
+          <macroblock id="RoadMain\Transitions\BridgeHill6" />
+          <macroblock id="RoadMain\Transitions\BridgeCliffLand" />
+          <macroblock id="RoadMain\Transitions\BridgeCliffWater" />
+          <!-- Turn -->
+          <macroblock id="RoadMain\Turns\Corner" />
+          <macroblock id="RoadMain\Turns\Curve01" />
+          <!-- Slope -->
+          <macroblock id="RoadMain\Slopes\SlopLong" />
+          <!-- Transition -->
+          <macroblock id="RoadMain\Transitions\RoadMainToRoadThemeParkMT" />
+          <!-- Turbo -->
+          <macroblock id="RoadMain\Turbos\Turbo" name="|BlockCategory|Turbo" />
+          <!-- Checkpoint -->
+          <macroblock id="RoadMain\Checkpoints\Start" name="|BlockInfo|Start" />
+          <macroblock id="RoadMain\Checkpoints\Checkpoint" name="|BlockInfo|Checkpoint" />
+          <macroblock id="RoadMain\Checkpoints\Finish" name="|BlockInfo|Finish" />
+          <macroblock id="RoadThemePark\Checkpoints\Start" name="|BlockInfo|Start" />
+        </category>
+      </trackstyle>
+      <trackstyle name="|BlockStyle|Rollercoaster" clips="RoadThemeParkClip,RoadThemeParkFlipClip,RoadThemeParkWall-FreeClipLeft,RoadThemeParkWall-FreeClipRight,RoadThemeParkWallDown,RoadThemeParkWallUp" id="1">
+        <category name="">
+          <!-- Straight -->
+          <macroblock id="RoadThemePark\Roads\Straight" symmetrical="1" simple="1" />
+          <macroblock id="RoadThemePark\Flips\Straight" symmetrical="1" simple="1" />
+          <macroblock id="RoadThemePark\VerticalWalls\StraightLong" simple="1" />
+          <macroblock id="RoadThemePark\HorizontalWalls\Straight" simple="1" />
+          <!-- Turn -->
+          <macroblock id="RoadThemePark\Turns\Corner" />
+          <macroblock id="RoadThemePark\Turns\Curve" />
+          <macroblock id="RoadThemePark\TurnWalls\CornerUpRight" />
+          <macroblock id="RoadThemePark\TurnWalls\CornerUpLeft" />
+          <macroblock id="RoadThemePark\TurnWalls\CornerDownRight" />
+          <macroblock id="RoadThemePark\TurnWalls\CornerDownLeft" />
+          <macroblock id="RoadThemePark\TurnWalls\CurveUpRight" />
+          <macroblock id="RoadThemePark\TurnWalls\CurveUpLeft" />
+          <macroblock id="RoadThemePark\TurnWalls\CurveDownRight" />
+          <macroblock id="RoadThemePark\TurnWalls\CurveDownLeft" />
+          <macroblock id="RoadThemePark\Flips\Corner" />
+          <macroblock id="RoadThemePark\Flips\Curve" />
+          <!-- Slope -->
+          <macroblock id="RoadThemePark\Loops\LoopInStart" />
+          <macroblock id="RoadThemePark\Loops\LoopInEnd" />
+          <macroblock id="RoadThemePark\Loops\LoopOutStartSuper" />
+          <macroblock id="RoadThemePark\Loops\LoopOutEndSuper" />
+          <!-- Transition -->
+          <macroblock id="RoadMain\Transitions\RoadMainToRoadThemeParkMT" />
+          <!-- Turbo -->
+          <macroblock id="RoadThemePark\Turbos\Turbo" name="|BlockCategory|Turbo" />
+          <macroblock id="RoadThemePark\Turbos\TurboFlip" name="|BlockCategory|Turbo" />
+          <!-- Checkpoint -->
+          <macroblock id="RoadMain\Checkpoints\Start" name="|BlockInfo|Start" />
+          <macroblock id="RoadThemePark\Checkpoints\Start" name="|BlockInfo|Start" />
+          <macroblock id="RoadThemePark\Checkpoints\CheckpointMT" name="|BlockInfo|Checkpoint" />
+          <macroblock id="RoadThemePark\Checkpoints\CheckpointFlip" name="|BlockInfo|Checkpoint" />
+          <macroblock id="RoadThemePark\Checkpoints\CheckpointHorizontalWall" name="|BlockInfo|Checkpoint" norespawn="1" />
+          <macroblock id="RoadThemePark\Checkpoints\CheckpointVerticalWall" name="|BlockInfo|Checkpoint" norespawn="1" />
+          <macroblock id="RoadThemePark\Checkpoints\Finish" name="|BlockInfo|Finish" />
+          <macroblock id="RoadThemePark\Checkpoints\FinishFlip" name="|BlockInfo|Finish" />
+        </category>
+      </trackstyle>
+    </trackstyles>
+    <decostyles>
+      <decostyle name="|BlockStyle|Decoration" id="0">
+        <category name="|Decoration|Technology" ratio="0.25" color="1.,0.196,0.109">
+        </category>
+        <category name="|Decoration|Nature" ratio="0.7" color="0.407,0.631,0.168">
+        </category>
+        <category name="|Decoration|International Turbo" ratio="0.25" color="0.,0.741,0.494">
+        </category>
+      </decostyle>
+    </decostyles>
+  </environment>
+</themepacks>

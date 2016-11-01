@@ -1,0 +1,1793 @@
+<!-- version : 2016-02-23 -->
+<themepacks>
+<!-- ======================================================================= -->
+<!-- ======================================================================= -->
+<!-- ======================================================================= -->
+<!-- CANYON -->
+<!-- ======================================================================= -->
+<!-- ======================================================================= -->
+<!-- ======================================================================= -->
+  <environment name="Canyon">
+    <trackstyles>
+      <trackstyle name="|BlockStyle|Grand Prix" clips="RoadRaceClipLeft,RoadRaceClipLeftDown,RoadRaceClipLeftUp,RoadRaceClipRight,RoadRaceClipRightDown,RoadRaceClipRightUp,RoadRaceTiltClipLeft,RoadRaceTiltClipRight" id="0">
+        <category name="|BlockCategory|Straight">
+          <macroblock id="RoadRace\Roads\Straight" simple="1" />
+          <macroblock id="RoadRace\Roads\StraightWindows" />
+          <macroblock id="RoadRace\Roads\StraightScreen" />
+          <macroblock id="RoadRace\Roads\StraightOffice" />
+          <macroblock id="RoadRace\Bridges\WaterCliffRightFree" />
+          <macroblock id="RoadRace\Bridges\WaterCliffLeftFree" />
+          <macroblock id="RoadRace\Bridges\HillRightFree" />
+          <macroblock id="RoadRace\Bridges\HillLeftFree" />
+          <macroblock id="RoadRace\Bridges\DirtCliffRightFree" />
+          <macroblock id="RoadRace\Bridges\DirtCliffLeftFree" />
+          <macroblock id="RoadRace\Roads\SwitchRight" symmetrical="1" />
+          <macroblock id="RoadRace\Roads\SwitchLeft" symmetrical="1" />
+          <macroblock id="RoadRace\Tilts\TiltToRaceRight" />
+          <macroblock id="RoadRace\Tilts\TiltToRaceLeft" />
+          <macroblock id="RoadRace\Tilts\TiltStraight" simple="1" />
+        </category>
+        <category name="|BlockCategory|Turn">
+          <macroblock id="RoadRace\Turns\CornerOut" />
+          <macroblock id="RoadRace\Turns\CornerInScreen" />
+          <macroblock id="RoadRace\Turns\CornerIn" />
+          <macroblock id="RoadRace\Turns\GPGTCurve2InSigns" randomskin="0" />
+          <macroblock id="RoadRace\Turns\GPGTCurve2OutSigns" randomskin="0" />
+          <macroblock id="RoadRace\Turns\CurveOut" />
+          <macroblock id="RoadRace\Turns\CurveIn" />
+          <macroblock id="RoadRace\Turns\CurveOutRight" />
+          <macroblock id="RoadRace\Turns\CurveOutLeft" />
+          <macroblock id="RoadRace\Turns\CurveInRight" />
+          <macroblock id="RoadRace\Turns\CurveInLeft" />
+          <macroblock id="RoadRace\Tilts\TiltToRaceRightDiagOut" />
+          <macroblock id="RoadRace\Tilts\TiltToRaceRightDiagIn" />
+          <macroblock id="RoadRace\Tilts\TiltToRaceLeftDiagOut" />
+          <macroblock id="RoadRace\Tilts\TiltToRaceLeftDiagIn" />
+          <macroblock id="RoadRace\Tilts\TiltCornerIn" />
+          <macroblock id="RoadRace\Tilts\TiltCurveIn" />
+          <macroblock id="RoadRace\Tilts\TiltCornerOutDownRight" />
+          <macroblock id="RoadRace\Tilts\TiltCornerOutDownLeft" />
+          <macroblock id="RoadRace\Tilts\TiltCornerInUpRight" />
+          <macroblock id="RoadRace\Tilts\TiltCornerInUpLeft" />
+          <macroblock id="RoadRace\Tilts\TiltCurveTopRight" />
+          <macroblock id="RoadRace\Tilts\TiltCurveTopLeft" />
+          <macroblock id="RoadRace\Tilts\TiltCurveBottomRight" />
+          <macroblock id="RoadRace\Tilts\TiltCurveBottomLeft" />
+        </category>
+        <category name="|BlockCategory|Slope">
+          <macroblock id="RoadRace\Slopes\SlopeShortRight" />
+          <macroblock id="RoadRace\Slopes\SlopeShortLeft" />
+          <macroblock id="RoadRace\Slopes\SlopeLongRight" />
+          <macroblock id="RoadRace\Slopes\SlopeLongLeft" />
+          <macroblock id="RoadRace\Slopes\BiSlopeStartRight" />
+          <macroblock id="RoadRace\Slopes\BiSlopeStartLeft" />
+          <macroblock id="RoadRace\Slopes\StraightRight" />
+          <macroblock id="RoadRace\Slopes\StraightLeft" />
+          <macroblock id="RoadRace\Slopes\SwitchRight" />
+          <macroblock id="RoadRace\Slopes\SwitchLeft" />
+          <macroblock id="RoadRace\Slopes\BiSlopeEndRight" />
+          <macroblock id="RoadRace\Slopes\BiSlopeEndLeft" />
+        </category>
+        <category name="|BlockCategory|Obstacle">
+          <macroblock id="RoadRace\Obstacles\Jump" />
+          <macroblock id="RoadRace\Obstacles\StraightWindowsContainers" randomskin="0" />
+          <macroblock id="RoadRace\Obstacles\StopEngineRight" />
+          <macroblock id="RoadRace\Obstacles\StopEngineSlopeRight" />
+          <macroblock id="RoadRace\Obstacles\StopEngineSlopeLeft" />
+          <macroblock id="RoadRace\Obstacles\StopEngineTilt" />
+        </category>
+        <category name="|BlockCategory|Transition">
+          <macroblock id="RoadRace\Transitions\RaceRightToMain" />
+          <macroblock id="RoadRace\Transitions\RaceLeftToMain" />
+          <macroblock id="RoadRace\Transitions\RaceRightToArena" />
+          <macroblock id="RoadRace\Transitions\RaceLeftToArena" />
+        </category>
+        <category name="|BlockCategory|Turbo">
+          <macroblock id="RoadRace\Turbos\TurboRight" />
+          <macroblock id="RoadRace\Turbos\TurboLeft" />
+          <macroblock id="RoadRace\Turbos\TurboSuperRight" />
+          <macroblock id="RoadRace\Turbos\TurboSuperLeft" />
+          <macroblock id="RoadRace\Turbos\TurboSlopeUpRight" />
+          <macroblock id="RoadRace\Turbos\TurboSlopeUpLeft" />
+          <macroblock id="RoadRace\Turbos\TurboSlopeDownRight" />
+          <macroblock id="RoadRace\Turbos\TurboSlopeDownLeft" />
+          <macroblock id="RoadRace\Turbos\TurboSuperSlopeUpRight" />
+          <macroblock id="RoadRace\Turbos\TurboSuperSlopeUpLeft" />
+          <macroblock id="RoadRace\Turbos\TurboSuperSlopeDownRight" />
+          <macroblock id="RoadRace\Turbos\TurboSuperSlopeDownLeft" />
+          <macroblock id="RoadRace\Turbos\TurboTiltRight" />
+          <macroblock id="RoadRace\Turbos\TurboTiltLeft" />
+          <macroblock id="RoadRace\Turbos\TurboSuperTiltRight" />
+          <macroblock id="RoadRace\Turbos\TurboSuperTiltLeft" />
+        </category>
+        <category name="|BlockCategory|Checkpoint">
+          <macroblock id="RoadRace\Checkpoints\StartRight" />
+          <macroblock id="RoadRace\Checkpoints\StartLeft" />
+          <macroblock id="RoadRace\Checkpoints\GPCopterStartMidAir" />
+          <macroblock id="RoadRace\Checkpoints\CheckpointRight" />
+          <macroblock id="RoadRace\Checkpoints\CheckpointScreenRight" />
+          <macroblock id="RoadRace\Checkpoints\CheckpointLeft" />
+          <macroblock id="RoadRace\Checkpoints\CheckpointScreenLeft" />
+          <macroblock id="RoadRace\Checkpoints\CheckpointUpRight" />
+          <macroblock id="RoadRace\Checkpoints\CheckpointUpRightScreen" />
+          <macroblock id="RoadRace\Checkpoints\CheckpointUpLeft" />
+          <macroblock id="RoadRace\Checkpoints\CheckpointUpLeftScreen" />
+          <macroblock id="RoadRace\Checkpoints\CheckpointDownRight" />
+          <macroblock id="RoadRace\Checkpoints\CheckpointDownRightScreen" />
+          <macroblock id="RoadRace\Checkpoints\CheckpointDownLeft" />
+          <macroblock id="RoadRace\Checkpoints\CheckpointDownLeftScreen" />
+          <macroblock id="RoadRace\Checkpoints\CheckpointTiltRight" />
+          <macroblock id="RoadRace\Checkpoints\CheckpointTiltRightScreen" />
+          <macroblock id="RoadRace\Checkpoints\CheckpointTiltLeft" />
+          <macroblock id="RoadRace\Checkpoints\CheckpointTiltLeftScreen" />
+        </category>
+        <category name="|BlockCategory|Finish">
+          <macroblock id="RoadRace\Checkpoints\GPFinishRampAir" randomskin="0" />
+          <macroblock id="RoadRace\Checkpoints\GPFinishRampMirrorAir" randomskin="0" />
+          <macroblock id="RoadRace\Checkpoints\FinishRight" />
+          <macroblock id="RoadRace\Checkpoints\FinishLeft" />
+        </category>
+      </trackstyle>
+      <trackstyle name="|BlockStyle|Road" clips="Cliff12RoadHighClipLeft,Cliff12RoadHighClipRight,Cliff12RoadMedClipLeft,Cliff12RoadMedClipRight,CliffLowLoop,RoadHill2ClipLeft,RoadHill2ClipRight,RoadMainClip,RoadMainDown,RoadMainUp" id="1">
+        <category name="|BlockCategory|Straight">
+          <macroblock id="RoadMain\Roads\Straight" symmetrical="1" simple="1" />
+          <macroblock id="RoadMain\Roads\Trees" symmetrical="1" />
+          <macroblock id="RoadMain\Bridges\WaterCliffFree" />
+          <macroblock id="RoadMain\Bridges\DirtCliffFree" />
+          <macroblock id="RoadMain\Bridges\HillFree" />
+          <macroblock id="Hill\Roads\Straight" simple="1" terraforming="1" />
+          <macroblock id="Hill\Transitions\HillRightToMainFree" terraforming="1" />
+          <macroblock id="Hill\Transitions\HillLeftToMainFree" terraforming="1" />
+          <macroblock id="CliffLow\Roads\Straight" simple="1" terraforming="1" />
+          <macroblock id="CliffLow\Roads\BarrageRight" terraforming="1" />
+          <macroblock id="CliffLow\Roads\BarrageLeft" terraforming="1" />
+          <macroblock id="CliffHigh\Roads\Straight" simple="1" terraforming="1" />
+          <macroblock id="CliffHigh\Roads\BarrageRight" terraforming="1" />
+          <macroblock id="CliffHigh\Roads\BarrageLeft" terraforming="1" />
+          <macroblock id="CliffHigh\Roads\DiagShortRight" terraforming="1" />
+          <macroblock id="CliffHigh\Roads\DiagShortLeft" terraforming="1" />
+          <macroblock id="CliffLow\Transitions\MainToCliffLowRightFree" />
+          <macroblock id="CliffLow\Transitions\MainToCliffLowLeftFree" />
+          <macroblock id="CliffHigh\Transitions\MainToCliffHighRightFree" />
+          <macroblock id="CliffHigh\Transitions\MainToCliffHighLeftFree" />
+        </category>
+        <category name="|BlockCategory|Turn">
+          <macroblock id="RoadMain\Turns\Corner" />
+          <macroblock id="RoadMain\Turns\Curve" />
+          <macroblock id="RoadMain\Turns\CurveUpSigns" randomskin="0" />
+          <macroblock id="RoadMain\Turns\CurveUp" />
+          <macroblock id="RoadMain\Turns\CurveDownSigns" randomskin="0" />
+          <macroblock id="RoadMain\Turns\CurveDown" />
+          <macroblock id="RoadMain\Roads\DiagShortRight" symmetrical="1" />
+          <macroblock id="RoadMain\Roads\DiagShortLeft" symmetrical="1" />
+          <macroblock id="RoadMain\Roads\DiagLongRightDonut" randomskin="0" />
+          <macroblock id="RoadMain\Roads\DiagLongRight" symmetrical="1" />
+          <macroblock id="RoadMain\Roads\DiagLongLeftDonut" randomskin="0" />
+          <macroblock id="RoadMain\Roads\DiagLongLeft" symmetrical="1" />
+          <macroblock id="Hill\Turns\CornerOut" terraforming="1" />
+          <macroblock id="Hill\Turns\CornerIn" terraforming="1" />
+          <macroblock id="Hill\Turns\CurveOut" terraforming="1" />
+          <macroblock id="Hill\Turns\CurveIn" terraforming="1" />
+          <macroblock id="CliffLow\Turns\CornerIn" terraforming="1" />
+          <macroblock id="CliffLow\Turns\CornerOut" terraforming="1" />
+          <macroblock id="CliffLow\Turns\CurveOut" terraforming="1" />
+          <macroblock id="CliffLow\Turns\CurveIn" terraforming="1" />
+          <macroblock id="CliffHigh\Turns\CornerIn" terraforming="1" />
+          <macroblock id="CliffHigh\Turns\CornerOut" terraforming="1" />
+          <macroblock id="CliffHigh\Turns\CurveOut" terraforming="1" />
+          <macroblock id="CliffHigh\Turns\CurveIn" terraforming="1" />
+        </category>
+        <category name="|BlockCategory|Slope">
+          <macroblock id="RoadMain\Slopes\SlopeShort" />
+          <macroblock id="RoadMain\Slopes\SlopeLong" />
+          <macroblock id="RoadMain\Slopes\BiSlopeStart" />
+          <macroblock id="RoadMain\Slopes\Straight" />
+          <macroblock id="RoadMain\Slopes\BiSlopeEnd" />
+          <macroblock id="CliffLow\Transitions\CliffLowToHighRight" terraforming="1" />
+          <macroblock id="CliffLow\Transitions\CliffLowToHighLeft" terraforming="1" />
+          <macroblock id="CliffHigh\Transitions\CliffHighRightToMainFree" terraforming="1" />
+          <macroblock id="CliffHigh\Transitions\CliffHighLeftToMainFree" terraforming="1" />
+        </category>
+        <category name="|BlockCategory|Obstacle">
+          <macroblock id="RoadMain\Obstacles\Hole" symmetrical="1" />
+          <macroblock id="RoadMain\Obstacles\Bump" symmetrical="1" />
+          <macroblock id="RoadMain\Obstacles\RoadMainContainers" oriented="1" randomskin="0" />
+          <macroblock id="RoadMain\Obstacles\RoadMainWheel" oriented="1" randomskin="0" />
+          <macroblock id="RoadMain\Obstacles\JumpDonut" oriented="1" randomskin="0" />
+          <macroblock id="RoadMain\Obstacles\StopEngine" symmetrical="1" />
+          <macroblock id="RoadMain\Obstacles\DiagHoleRight" symmetrical="1" />
+          <macroblock id="RoadMain\Obstacles\DiagHoleLeft" symmetrical="1" />
+          <macroblock id="RoadMain\Obstacles\Jump" />
+          <macroblock id="CliffLow\Obstacles\Rocks" terraforming="1" />
+          <macroblock id="CliffLow\Obstacles\StopEngine" terraforming="1" />
+          <macroblock id="CliffLow\Obstacles\LoopingRight" terraforming="1" />
+          <macroblock id="CliffLow\Obstacles\LoopingLeft" terraforming="1" />
+          <macroblock id="CliffHigh\Obstacles\Rocks" terraforming="1" />
+          <macroblock id="CliffHigh\Obstacles\StopEngine" terraforming="1" />
+        </category>
+        <category name="|BlockCategory|Transition">
+          <macroblock id="RoadRace\Transitions\RaceRightToMain" />
+          <macroblock id="RoadRace\Transitions\RaceLeftToMain" />
+          <macroblock id="RoadMain\Transitions\MainToBankRightHard" />
+          <macroblock id="RoadMain\Transitions\MainToBankLeftHard" />
+          <macroblock id="RoadMain\Transitions\MainToBankRightSoft" />
+          <macroblock id="RoadMain\Transitions\MainToBankLeftSoft" />
+          <macroblock id="RoadMain\Transitions\MainToArenaTunnel" />
+          <macroblock id="RoadMain\Transitions\MainToArenaSlope" />
+          <macroblock id="RoadMain\Transitions\MainToArenaShort" />
+          <macroblock id="RoadMain\Transitions\MainToArenaLong" />
+          <macroblock id="Tunnel\Transitions\WaterCliffLowToMainFree" />
+          <macroblock id="Tunnel\Transitions\WaterCliffMedToMainFree" />
+          <macroblock id="Tunnel\Transitions\WaterCliffHighToMainFree" />
+          <macroblock id="Tunnel\Transitions\DirtCliffLow2Free" />
+          <macroblock id="Tunnel\Transitions\DirtCliffHighFree" />
+          <macroblock id="Tunnel\Transitions\MainToTunnel" />
+        </category>
+        <category name="|BlockCategory|Turbo">
+          <macroblock id="RoadMain\Turbos\Turbo" />
+          <macroblock id="RoadMain\Turbos\TurboSuper" />
+          <macroblock id="CliffLow\Turbos\TurboLeft" terraforming="1" />
+          <macroblock id="CliffLow\Turbos\TurboRight" terraforming="1" />
+          <macroblock id="CliffLow\Turbos\TurboSuperLeft" terraforming="1" />
+          <macroblock id="CliffLow\Turbos\TurboSuperRight" terraforming="1" />
+          <macroblock id="CliffHigh\Turbos\TurboLeft" terraforming="1" />
+          <macroblock id="CliffHigh\Turbos\TurboRight" terraforming="1" />
+          <macroblock id="CliffHigh\Turbos\TurboSuperLeft" terraforming="1" />
+          <macroblock id="CliffHigh\Turbos\TurboSuperRight" terraforming="1" />
+        </category>
+        <category name="|BlockCategory|Checkpoint">
+          <macroblock id="RoadMain\Checkpoints\Start" />
+          <macroblock id="RoadMain\Checkpoints\RoadMainCopterStartMidAir" />
+          <macroblock id="RoadMain\Checkpoints\Checkpoint" />
+          <macroblock id="RoadMain\Checkpoints\CheckpointScreen" />
+          <macroblock id="Hill\Checkpoints\CheckpointRight" terraforming="1" />
+          <macroblock id="Hill\Checkpoints\CheckpointRightScreen" terraforming="1" />
+          <macroblock id="Hill\Checkpoints\CheckpointLeft" terraforming="1" />
+          <macroblock id="Hill\Checkpoints\CheckpointLeftScreen" terraforming="1" />
+          <macroblock id="CliffLow\Checkpoints\CheckpointRight" terraforming="1" />
+          <macroblock id="CliffLow\Checkpoints\CheckpointRightScreen" terraforming="1" />
+          <macroblock id="CliffLow\Checkpoints\CheckpointLeft" terraforming="1" />
+          <macroblock id="CliffLow\Checkpoints\CheckpointLeftScreen" terraforming="1" />
+          <macroblock id="CliffHigh\Checkpoints\CheckpointRight" terraforming="1" />
+          <macroblock id="CliffHigh\Checkpoints\CheckpointRightScreen" terraforming="1" />
+          <macroblock id="CliffHigh\Checkpoints\CheckpointLeft" terraforming="1" />
+          <macroblock id="CliffHigh\Checkpoints\CheckpointLeftScreen" terraforming="1" />
+        </category>
+        <category name="|BlockCategory|Finish">
+          <macroblock id="RoadMain\Checkpoints\RoadMainFinishRampAir" randomskin="0" />
+          <macroblock id="RoadMain\Checkpoints\Finish" />
+        </category>
+      </trackstyle>
+      <trackstyle name="|BlockStyle|Arena" clips="ArenaBankFreeClipLeft,ArenaBankFreeClipRight,ArenaBiSlopeEndFreeClipLeft,ArenaBiSlopeEndFreeClipRight,ArenaBiSlopeStartFreeClipLeft,ArenaBiSlopeStartFreeClipRight,ArenaBiSlopeStraightFreeClipLeft,ArenaBiSlopeStraightFreeClipRight,ArenaCornerDown,ArenaCornerUp,ArenaCurveDown,ArenaCurveUp,ArenaFreeClip,ArenaHalfBaseFreeClipEst,ArenaHalfBaseFreeClipWest,ArenaHallwayFreeClip,ArenaHighDown,ArenaHighUp,ArenaLoopDown,ArenaLoopUp,ArenaLowDown,ArenaLowUp,ArenaSlopeBase2FreeClipLeft,ArenaSlopeBase2FreeClipRight,ArenaSlopeBaseFreeClipLeft,ArenaSlopeBaseFreeClipRight,ArenaSlopeEndFreeClipLeft,ArenaSlopeEndFreeClipRight,ArenaSlopeStartFreeClipLeft,ArenaSlopeStartFreeClipRight,ArenaSlopeStraightFreeClipLeft,ArenaSlopeStraightFreeClipRight,ArenaTunnelFreeClip,ArenaTunnelHighDown,ArenaTunnelHighUp,ArenaTunnelLowDown,ArenaTunnelLowUp,ArenaTunnelOpen1SideFreeClipLeft,ArenaTunnelOpen1SideFreeClipRight,ArenaTunnelOpen2SidesFreeClip,ArenaTunnelOpenFreeClip,ArenaWallRideLoopEndFreeClip,ArenaWallRideLoopEndFreeClipLeft,ArenaWallRideLoopEndFreeClipRight,ArenaWallRideLoopStartFreeClipLeft,ArenaWallRideLoopStartFreeClipRight,ArenaWallRideStartCornerFreeClipLeft,ArenaWallRideStartCornerFreeClipRight,ArenaWallRideStraightFreeClipLeft,ArenaWallRideStraightFreeClipRight,ArenaWallRideTopFreeClipLeft,ArenaWallRideTopFreeClipRight" id="2">
+        <category name="|BlockCategory|Straight">
+          <macroblock id="Arena\Bases\Simple" symmetrical="1" simple="1" />
+          <macroblock id="Arena\Bases\Bridge" symmetrical="1" />
+          <macroblock id="Arena\Bases\Half" />
+          <macroblock id="ArenaWall\Walls\Straight" />
+          <macroblock id="ArenaWall\Banks\Straight" simple="1" />
+          <macroblock id="ArenaTunnel\Roads\Straight" symmetrical="1" simple="1" />
+          <macroblock id="ArenaTunnel\Roads\StraightDemiTunnel" />
+          <macroblock id="ArenaTunnel\Roads\Open" symmetrical="1" />
+          <macroblock id="ArenaTunnel\Roads\HalfOpen" />
+          <macroblock id="ArenaTunnel\Roads\DiagShortRight" symmetrical="1" />
+          <macroblock id="ArenaTunnel\Roads\DiagShortLeft" symmetrical="1" />
+          <macroblock id="ArenaTunnel\Roads\DiagLongRight" symmetrical="1" />
+          <macroblock id="ArenaTunnel\Roads\DiagLongLeft" symmetrical="1" />
+        </category>
+        <category name="|BlockCategory|Turn">
+          <macroblock id="Arena\Turns\Corner" />
+          <macroblock id="Arena\Turns\Curve" />
+          <macroblock id="Arena\Turns\Round" />
+          <macroblock id="Arena\Turns\Diag" />
+          <macroblock id="ArenaWall\Walls\Corner" />
+          <macroblock id="ArenaWall\Walls\Curve" />
+          <macroblock id="ArenaWall\Banks\Curve" />
+          <macroblock id="ArenaTunnel\Turns\Corner" />
+          <macroblock id="ArenaTunnel\Turns\CurveMedium" />
+          <macroblock id="ArenaTunnel\Turns\CurveLong" />
+          <macroblock id="ArenaTunnel\Transitions\ArenaTunnelToBankRight" />
+          <macroblock id="ArenaTunnel\Transitions\ArenaTunnelToBankLeft" />
+          <macroblock id="ArenaTunnel\Turns\UTurnLeft" oriented="1" randomskin="0" />
+          <macroblock id="ArenaTunnel\Turns\UTurnRight" oriented="1" randomskin="0" />
+        </category>
+        <category name="|BlockCategory|Slope">
+          <macroblock id="Arena\Slopes\SlopeShort" />
+          <macroblock id="Arena\Slopes\SlopeLong" />
+          <macroblock id="Arena\Slopes\BiSlopeLowStart" />
+          <macroblock id="Arena\Slopes\StraightLow" />
+          <macroblock id="Arena\Slopes\BiSlopeLowEnd" />
+          <macroblock id="Arena\Slopes\BiSlopeHighStart" />
+          <macroblock id="Arena\Slopes\StraightHigh" />
+          <macroblock id="Arena\Slopes\BiSlopeHighEnd" />
+          <macroblock id="ArenaTunnel\Slopes\SlopeShort" />
+          <macroblock id="ArenaTunnel\Slopes\SlopeLongOpen" />
+          <macroblock id="ArenaTunnel\Slopes\SlopeLongHoles" />
+          <macroblock id="ArenaTunnel\Slopes\SlopeLong" />
+          <macroblock id="ArenaTunnel\Slopes\BiSlopeLowStart" />
+          <macroblock id="ArenaTunnel\Slopes\StraightLow" />
+          <macroblock id="ArenaTunnel\Slopes\BiSlopeLowEnd" />
+          <macroblock id="ArenaTunnel\Slopes\BiSlopeHighStart" />
+          <macroblock id="ArenaTunnel\Slopes\StraightHigh" />
+          <macroblock id="ArenaTunnel\Slopes\BiSlopeHighEnd" />
+          <macroblock id="ArenaTunnel\Transitions\ArenaTunnelToArena" />
+        </category>
+        <category name="|BlockCategory|Obstacle">
+          <macroblock id="Arena\Obstacles\ArenaLoopAir" oriented="1" randomskin="0" />
+          <macroblock id="Arena\Obstacles\ArenaWallrideAir" oriented="1" randomskin="0" />
+          <macroblock id="Arena\Obstacles\ArenaWallRideMirrorAir" oriented="1" randomskin="0" />
+          <macroblock id="ArenaWall\Hallways\TwoWays" symmetrical="1" />
+          <macroblock id="ArenaWall\Hallways\Straight" symmetrical="1" />
+          <macroblock id="ArenaWall\Hallways\Corner" />
+          <macroblock id="Arena\Lights\Wall" />
+          <macroblock id="Arena\Obstacles\Jump" />
+          <macroblock id="Arena\Obstacles\StopEngine" symmetrical="1" />
+          <macroblock id="Arena\Obstacles\StopEngineSlopeUpDown" />
+          <macroblock id="Arena\Obstacles\StopEngineSlopeLeftRight" />
+          <macroblock id="Arena\Obstacles\LightMiddle" />
+          <macroblock id="Arena\Obstacles\LightSide" />
+          <macroblock id="Arena\Obstacles\LightCorner" />
+          <macroblock id="ArenaWall\Loops\LoopTop" />
+          <macroblock id="ArenaWall\Loops\LoopBottom" />
+        </category>
+        <category name="|BlockCategory|Transition">
+          <macroblock id="RoadRace\Transitions\RaceRightToArena" />
+          <macroblock id="RoadRace\Transitions\RaceLeftToArena" />
+          <macroblock id="RoadMain\Transitions\MainToBankRightHard" />
+          <macroblock id="RoadMain\Transitions\MainToBankLeftHard" />
+          <macroblock id="RoadMain\Transitions\MainToBankRightSoft" />
+          <macroblock id="RoadMain\Transitions\MainToBankLeftSoft" />
+          <macroblock id="RoadMain\Transitions\MainToArenaTunnel" />
+          <macroblock id="RoadMain\Transitions\MainToArenaSlope" />
+          <macroblock id="RoadMain\Transitions\MainToArenaShort" />
+          <macroblock id="RoadMain\Transitions\MainToArenaLong" />
+        </category>
+        <category name="|BlockCategory|Turbo">
+          <macroblock id="Arena\Turbos\Turbo" />
+          <macroblock id="Arena\Turbos\TurboSlopeUp" />
+          <macroblock id="Arena\Turbos\TurboSlopeRight" />
+          <macroblock id="Arena\Turbos\TurboSlopeDown" />
+          <macroblock id="Arena\Turbos\TurboSlopeLeft" />
+          <macroblock id="Arena\Turbos\TurboSuper" />
+          <macroblock id="Arena\Turbos\TurboSuperSlopeUp" />
+          <macroblock id="Arena\Turbos\TurboSuperSlopeRight" />
+          <macroblock id="Arena\Turbos\TurboSuperSlopeDown" />
+          <macroblock id="Arena\Turbos\TurboSuperSlopeLeft" />
+        </category>
+        <category name="|BlockCategory|Checkpoint">
+          <macroblock id="Arena\Checkpoints\Start" />
+          <macroblock id="Arena\Checkpoints\ArenaLargeCopterStartMidAir" randomskin="0" />
+          <macroblock id="Arena\Checkpoints\Checkpoint" />
+          <macroblock id="Arena\Checkpoints\CheckpointScreen" />
+          <macroblock id="Arena\Checkpoints\CheckpointSlopeUp" />
+          <macroblock id="Arena\Checkpoints\CheckpointSlopeUpScreen" />
+          <macroblock id="Arena\Checkpoints\CheckpointSlopeRight" />
+          <macroblock id="Arena\Checkpoints\CheckpointSlopeRightScreen" />
+          <macroblock id="Arena\Checkpoints\CheckpointSlopeLeft" />
+          <macroblock id="Arena\Checkpoints\CheckpointSlopeLeftScreen" />
+          <macroblock id="Arena\Checkpoints\CheckpointSlopeDown" />
+          <macroblock id="Arena\Checkpoints\CheckpointSlopeDownScreen" />
+          <macroblock id="Arena\Checkpoints\CheckpointDirt" />
+          <macroblock id="Arena\Checkpoints\CheckpointDirtScreen" />
+          <macroblock id="ArenaTunnel\Checkpoints\Checkpoint" />
+          <macroblock id="ArenaTunnel\Checkpoints\CheckpointOpen" />
+          <macroblock id="ArenaWall\Checkpoints\CheckpointVertical" />
+        </category>
+        <category name="|BlockCategory|Finish">
+          <macroblock id="Arena\Checkpoints\ArenaFinishRampAir" randomskin="0" />
+          <macroblock id="Arena\Checkpoints\Finish" />
+        </category>
+      </trackstyle>
+      <trackstyle name="|BlockStyle|Tunnel" clips="RoadCaveClip,RoadCaveDoubleDown,RoadCaveDoubleFreeClip,RoadCaveDoubleUp" id="3">
+        <category name="|BlockCategory|Straight">
+          <macroblock id="Tunnel\Roads\Straight" symmetrical="1" simple="1" />
+          <macroblock id="TunnelDouble\Roads\Straight" symmetrical="1" simple="1" />
+          <macroblock id="TunnelDouble\Transitions\DoubleToSimple" />
+          <macroblock id="TunnelDouble\Switches\Short" symmetrical="1" />
+          <macroblock id="TunnelDouble\Switches\MediumRight" symmetrical="1" />
+          <macroblock id="TunnelDouble\Switches\MediumLeft" symmetrical="1" />
+          <macroblock id="TunnelDouble\Switches\LongRight" symmetrical="1" />
+          <macroblock id="TunnelDouble\Switches\LongLeft" symmetrical="1" />
+        </category>
+        <category name="|BlockCategory|Turn">
+          <macroblock id="Tunnel\Turns\Corner" />
+          <macroblock id="Tunnel\Turns\Curve" />
+          <macroblock id="TunnelDouble\Turns\Corner" />
+          <macroblock id="TunnelDouble\Turns\CurveShort" />
+          <macroblock id="TunnelDouble\Turns\CurveLong" />
+          <macroblock id="Tunnel\Slopes\SlopeRight" />
+          <macroblock id="Tunnel\Slopes\SlopeLeft" />
+          <macroblock id="TunnelDouble\Roads\DiagShortRight" symmetrical="1" />
+          <macroblock id="TunnelDouble\Roads\DiagShortLeft" symmetrical="1" />
+          <macroblock id="TunnelDouble\Roads\DiagLongRight" symmetrical="1" />
+          <macroblock id="TunnelDouble\Roads\DiagLongLeft" symmetrical="1" />
+        </category>
+        <category name="|BlockCategory|Slope">
+          <macroblock id="Tunnel\Slopes\SlopeLong" />
+        </category>
+        <category name="|BlockCategory|Obstacle">
+          <macroblock id="Tunnel\Roads\ObstacleY" />
+          <macroblock id="TunnelDouble\Roads\Obstacle" />
+        </category>
+        <category name="|BlockCategory|Transition">
+          <macroblock id="Tunnel\Transitions\MainToTunnel" />
+          <macroblock id="Tunnel\Transitions\WaterCliffLowToMainFree" />
+          <macroblock id="Tunnel\Transitions\WaterCliffMedToMainFree" />
+          <macroblock id="Tunnel\Transitions\WaterCliffHighToMainFree" />
+          <macroblock id="Tunnel\Transitions\DirtCliffLow2Free" />
+          <macroblock id="Tunnel\Transitions\DirtCliffHighFree" />
+        </category>
+        <category name="|BlockCategory|Turbo">
+        </category>
+        <category name="|BlockCategory|Checkpoint">
+          <macroblock id="Tunnel\Checkpoints\Checkpoint" />
+          <macroblock id="TunnelDouble\Checkpoints\Checkpoint" />
+        </category>
+        <category name="|BlockCategory|Finish">
+          <macroblock id="Tunnel\Checkpoints\Finish" />
+          <macroblock id="TunnelDouble\Checkpoints\Finish" />
+        </category>
+      </trackstyle>
+    </trackstyles>
+    <landstyles>
+      <landstyle name="|Landscape|Plain" id="0">
+        <terrain>
+          <layer type="Perlin" frequency="0.4" octaves="10.">
+            <block id="" height="70." />
+            <block id="WaterCliff12" height="80." />
+            <block id="" height="118." />
+            <block id="DirtCliff8" height="120." />
+            <block id="" height="150." />
+            <block id="DirtHill2" height="152." />
+            <block id="" height="210." />
+            <block id="DirtCliff8" height="220." />
+            <block id="" height="256." />
+          </layer>
+        </terrain>
+        <decoration>
+          <category id="Desert" ratio="0.4" />
+          <category id="Forest" ratio="0.9" />
+          <category id="Pipelines" ratio="0." />
+          <category id="Signs" ratio="0." />
+          <category id="Structures" ratio="0.1" />
+          <category id="Podium" ratio="0." />
+        </decoration>
+      </landstyle>
+      <landstyle name="|Landscape|Rampart" id="1">
+        <terrain>
+          <layer type="Radial" frequency="0.4" octaves="10.">
+            <block id="" height="35." />
+            <block id="DirtCliff8" height="256." />
+          </layer>
+        </terrain>
+        <decoration>
+          <category id="Desert" ratio="0." />
+          <category id="Forest" ratio="0." />
+          <category id="Pipelines" ratio="0.1" />
+          <category id="Signs" ratio="0." />
+          <category id="Structures" ratio="0.3" />
+          <category id="Podium" ratio="0." />
+        </decoration>
+      </landstyle>
+      <landstyle name="|Landscape|Lake" id="2">
+        <terrain>
+          <layer type="Perlin" frequency="0.4" octaves="10.">
+            <block id="WaterHill" height="90." />
+            <block id="" height="115." />
+            <block id="WaterHill" height="120." />
+            <block id="" height="150." />
+            <block id="DirtCliff8" height="152." />
+            <block id="" height="240." />
+            <block id="DirtCliff8" height="256." />
+          </layer>
+          <layer type="Perlin" frequency="0.4" octaves="10.">
+            <block id="" height="115." />
+            <block id="DirtCliff12" height="130." />
+          </layer>
+        </terrain>
+        <decoration>
+          <category id="Desert" ratio="0.5" />
+          <category id="Forest" ratio="0.3" />
+          <category id="Pipelines" ratio="0.01" />
+          <category id="Signs" ratio="0." />
+          <category id="Structures" ratio="0.3" />
+          <category id="Podium" ratio="0." />
+        </decoration>
+      </landstyle>
+      <landstyle name="|Landscape|Mountain" id="3">
+        <terrain>
+          <layer type="Perlin" frequency="0.4" octaves="10.">
+            <block id="WaterCliff12" height="80." />
+            <block id="" height="100." />
+            <block id="DirtHill2" height="102." />
+            <block id="DirtCliff8" height="120." />
+            <block id="" height="140." />
+            <block id="DirtCliff8" height="160." />
+            <block id="" height="200." />
+            <block id="DirtCliff8" height="256." />
+          </layer>
+        </terrain>
+        <decoration>
+          <category id="Desert" ratio="1." />
+          <category id="Forest" ratio="0.05" />
+          <category id="Pipelines" ratio="0.01" />
+          <category id="Signs" ratio="0." />
+          <category id="Structures" ratio="0.01" />
+          <category id="Podium" ratio="0." />
+        </decoration>
+      </landstyle>
+    </landstyles>
+    <terrainstyles>
+      <terrainstyle name="|Landscape|Plateau" blockid="Terrain\Terrains\1" id="0" />
+      <terrainstyle name="|Landscape|Water" blockid="Terrain\Terrains\2" id="1" />
+      <terrainstyle name="|Landscape|Rift" blockid="Terrain\Terrains\3" id="2" />
+      <terrainstyle name="|Landscape|Hills" blockid="Terrain\Terrains\4" id="3" />
+      <terrainstyle name="|Landscape|Empty" blockid="Terrain\Terrains\5" id="4" />
+    </terrainstyles>
+    <decostyles>
+      <decostyle name="|BlockStyle|Decoration" id="0">
+        <category name="|Decoration|Technology" ratio="0.7" color="1.,0.196,0.109">
+        </category>
+        <category name="|Decoration|Nature" ratio="0.25" color="0.407,0.631,0.168">
+        </category>
+        <category name="|Decoration|International Turbo" ratio="0.4" color="0.,0.741,0.494">
+        </category>
+      </decostyle>
+    </decostyles>
+  </environment>
+<!-- ======================================================================= -->
+<!-- ======================================================================= -->
+<!-- ======================================================================= -->
+<!-- VALLEY -->
+<!-- ======================================================================= -->
+<!-- ======================================================================= -->
+<!-- ======================================================================= -->
+  <environment name="Valley">
+    <trackstyles>
+      <trackstyle name="|BlockStyle|Road" clips="HighwayClip,Road4WayClip,Road4WayDown,Road4WayFlip,Road4WayLoopTopLeft,Road4WayLoopTopRight,Road4WayUp,Road4WayWallDown,Road4WayWallUp,Road2WayClip,Road2WayDown,Road2WayUp" id="0">
+        <category name="|BlockCategory|Straight">
+          <macroblock id="Road4Way\Roads\StraightNoLights" simple="1" symmetrical="1" />
+          <macroblock id="Road4Way\Roads\HighwayStraight" simple="1" symmetrical="1" />
+          <macroblock id="Road4Way\Roads\HighwaySwitch" symmetrical="1" />
+          <macroblock id="Road4Way\Transitions\4WayToHighway" />
+          <macroblock id="Road4Way\Transitions\4WayToHighwayRight" />
+          <macroblock id="Road4Way\Transitions\4WayToHighwayLeft" />
+          <macroblock id="Road4Way\Bridges\GrassHills" />
+          <macroblock id="Road4Way\Bridges\GrassCliff2" />
+          <macroblock id="Road4Way\Bridges\GrassCliff8" />
+          <macroblock id="Road2Way\Roads\Straight" simple="1" symmetrical="1" />
+          <macroblock id="Road2Way\Bridges\GrassHills" />
+          <macroblock id="Road2Way\Bridges\GrassCliff2" />
+          <macroblock id="Road2Way\Bridges\GrassCliff8" />
+          <macroblock id="Castle\Transitions\CastleBridgeToRoad" />
+          <macroblock id="Castle\Roads\Bridge" symmetrical="1" />
+        </category>
+        <category name="|BlockCategory|Turn">
+          <macroblock id="Road4Way\Turns\Corner" />
+          <macroblock id="Road4Way\Turns\GTCurve2" />
+          <macroblock id="Road4Way\Turns\Road4WayGTCurve3SignsAir" randomskin="0" />
+          <macroblock id="Road4Way\Turns\GTCurve3" />
+          <macroblock id="Road4Way\Turns\GTCurve4" />
+          <macroblock id="Road4Way\Turns\BiGTCurve4" />
+          <macroblock id="Road4Way\Roads\Diag3" symmetrical="1" />
+          <macroblock id="Road4Way\Roads\Diag3Mirror" symmetrical="1" />
+          <macroblock id="Road4Way\Roads\Diag4" symmetrical="1" />
+          <macroblock id="Road4Way\Roads\Diag4Mirror" symmetrical="1" />
+          <macroblock id="Road2Way\Turns\Corner" />
+          <macroblock id="Road2Way\Turns\CurveSigns" randomskin="0" />
+          <macroblock id="Road2Way\Turns\Road2WayGTCurve2SignsAir" randomskin="0" />
+          <macroblock id="Road2Way\Turns\Curve" />
+          <macroblock id="Road2Way\Roads\Diag2" symmetrical="1" />
+          <macroblock id="Road2Way\Roads\Diag2Mirror" symmetrical="1" />
+        </category>
+        <category name="|BlockCategory|Slope">
+          <macroblock id="Road4Way\Slopes\SlopeShort" />
+          <macroblock id="Road4Way\Slopes\BiSlope" />
+          <macroblock id="Road4Way\Slopes\BiStart" />
+          <macroblock id="Road4Way\Slopes\BiStraight" />
+          <macroblock id="Road4Way\Slopes\BiEnd" />
+          <macroblock id="Road4Way\Slopes\HighwayBiStart" />
+          <macroblock id="Road4Way\Slopes\HighwayBiStraight" />
+          <macroblock id="Road4Way\Slopes\HighwayBiEnd" />
+          <macroblock id="Road4Way\Slopes\SlopeTop" symmetrical="1" />
+          <macroblock id="Road4Way\Slopes\SlopeBottom" symmetrical="1" />
+          <macroblock id="Road4Way\Slopes\GTCurve2" />
+          <macroblock id="Road4Way\Slopes\GTCurve2Mirror" />
+          <macroblock id="Road4Way\Slopes\GTCurve3" />
+          <macroblock id="Road4Way\Slopes\GTCurve3Mirror" />
+          <macroblock id="Road2Way\Slopes\BiSlope" />
+          <macroblock id="Road2Way\Slopes\BiSlopeStart" />
+          <macroblock id="Road2Way\Slopes\BiSlopeStraight" />
+          <macroblock id="Road2Way\Slopes\BiSlopeEnd" />
+          <macroblock id="Road2Way\Slopes\GTCurve" />
+          <macroblock id="Road2Way\Slopes\GTCurveMirror" />
+          <macroblock id="Road2Way\Slopes\GTCurveStart" />
+          <macroblock id="Road2Way\Slopes\GTCurveStartMirror" />
+          <macroblock id="Road2Way\Slopes\GTCurveEnd" />
+          <macroblock id="Road2Way\Slopes\GTCurveEndMirror" />
+          <macroblock id="Road2Way\Roads\TetrisCliff3" terraforming="1" />
+          <macroblock id="Road2Way\Roads\TetrisCliff3Mirror" terraforming="1" />
+          <macroblock id="Road2Way\Slopes\Cliff8Diag" terraforming="1" />
+          <macroblock id="Road2Way\Slopes\Cliff8DiagMirror" terraforming="1" />
+          <macroblock id="Road2Way\Slopes\Cliff8Corner" terraforming="1" />
+          <macroblock id="Road2Way\Slopes\Cliff8CornerMirror" terraforming="1" />
+        </category>
+        <category name="|BlockCategory|Obstacle">
+          <macroblock id="Road4Way\Obstacles\Road4WayLoopAir" oriented="1" randomskin="0" />
+          <macroblock id="Road4Way\Obstacles\Road4WayLoopMirrorAir" oriented="1" randomskin="0" />
+          <macroblock id="Road4Way\Loops\BigLoop" oriented="1" randomskin="0" />
+          <macroblock id="Road4Way\Obstacles\StopEngine" symmetrical="1" />
+          <macroblock id="Road4Way\Obstacles\StopEngineUpDown" />
+          <macroblock id="Road4Way\Obstacles\Bumper" symmetrical="1" />
+          <macroblock id="Road4Way\Obstacles\HighwaySwitchRight" />
+          <macroblock id="Road4Way\Obstacles\HighwaySwitchLeft" />
+          <macroblock id="Road4Way\Loops\Looping" />
+          <macroblock id="Road4Way\Loops\LoopingMirror" />
+          <macroblock id="Road2Way\Obstacles\StopEngine" symmetrical="1" />
+          <macroblock id="Road2Way\Obstacles\StopEngineUpDown" />
+          <macroblock id="Road2Way\Obstacles\Bumper" oriented="1"  randomskin="0" />
+          <macroblock id="Road2Way\Obstacles\Road2WayBigJumpAir" oriented="1" randomskin="0" />
+          <macroblock id="Road2Way\Obstacles\Road2WaySmallJumpAir" oriented="1" randomskin="0" />
+          <macroblock id="Road2Way\Obstacles\Road2WayTMBuilding" oriented="1" randomskin="0" />
+          <macroblock id="Road2Way\Obstacles\Road2WayWheel" oriented="1" randomskin="0" />
+        </category>
+        <category name="|BlockCategory|Transition">
+          <macroblock id="Road2Way\Transitions\4WayToRoadShort" />
+          <macroblock id="Road2Way\Transitions\4WayToRoad" />
+          <macroblock id="Road2Way\Transitions\4WayToRoadMirror" />
+          <macroblock id="RoadDirt\Transitions\2WayToRoadDirt" />
+          <macroblock id="Tunnel\Transitions\4WayGrassFlat" />
+          <macroblock id="Tunnel\Transitions\4WayGrassCliff2" />
+          <macroblock id="Tunnel\Transitions\4WayGrassCliff8" />
+          <macroblock id="Tunnel\Transitions\4WayGrassCliff8_1" />
+          <macroblock id="Tunnel\Transitions\4WayGrassCliff8_2" />
+          <macroblock id="Tunnel\Transitions\4WayGrassCliff8_3" />
+          <macroblock id="Tunnel\Transitions\GrassFlat" />
+          <macroblock id="Tunnel\Transitions\GrassCliff2" />
+          <macroblock id="Tunnel\Transitions\GrassCliff8" />
+          <macroblock id="Tunnel\Transitions\GrassCliff8_1" />
+          <macroblock id="Tunnel\Transitions\GrassCliff8_2" />
+          <macroblock id="Tunnel\Transitions\GrassCliff8_3" />
+          <macroblock id="Arena\Transitions\RoofToRoad4Way" />
+          <macroblock id="Arena\Transitions\BaseToRoad4Way" />
+          <macroblock id="Arena\Transitions\ParkToRoad4Way" />
+        </category>
+        <category name="|BlockCategory|Turbo">
+          <macroblock id="Road4Way\Turbos\Turbo" />
+          <macroblock id="Road4Way\Turbos\TurboUp" />
+          <macroblock id="Road4Way\Turbos\TurboDown" />
+          <macroblock id="Road2Way\Turbos\Turbo" />
+          <macroblock id="Road2Way\Turbos\TurboUp" />
+          <macroblock id="Road2Way\Turbos\TurboDown" />
+        </category>
+        <category name="|BlockCategory|Checkpoint">
+          <macroblock id="Road4Way\Checkpoints\Start" />
+          <macroblock id="Road4Way\Checkpoints\Road4WayCopterStartMidAir" />
+          <macroblock id="Road2Way\Checkpoints\Start" />
+          <macroblock id="Road2Way\Checkpoints\Road2WayCopterStartMidAir" />
+          <macroblock id="Road4Way\Checkpoints\Checkpoint" />
+          <macroblock id="Road4Way\Checkpoints\CheckpointScreen" />
+          <macroblock id="Road4Way\Checkpoints\CheckpointUp" />
+          <macroblock id="Road4Way\Checkpoints\CheckpointUpScreen" />
+          <macroblock id="Road4Way\Checkpoints\CheckpointDown" />
+          <macroblock id="Road4Way\Checkpoints\CheckpointDownScreen" />
+          <macroblock id="Road2Way\Checkpoints\Checkpoint" />
+          <macroblock id="Road2Way\Checkpoints\CheckpointScreen" />
+          <macroblock id="Road2Way\Checkpoints\CheckpointUp" />
+          <macroblock id="Road2Way\Checkpoints\CheckpointUpScreen" />
+          <macroblock id="Road2Way\Checkpoints\CheckpointDown" />
+          <macroblock id="Road2Way\Checkpoints\CheckpointDownScreen" />
+        </category>
+        <category name="|BlockCategory|Finish">
+          <macroblock id="Road4Way\Checkpoints\Road4WayFinishRampAir" randomskin="0" />
+          <macroblock id="Road4Way\Checkpoints\Finish" />
+          <macroblock id="Road2Way\Checkpoints\Road2WayFinishRampAir" randomskin="0" />
+          <macroblock id="Road2Way\Checkpoints\Finish" />
+        </category>
+      </trackstyle>
+      <trackstyle name="|BlockStyle|Dirt" clips="DirtCliffDown,DirtCliffUp,RoadDirtClip,RoadForestLargeFreeClip,RoadForestLargeGrassFreeClip,RoadForestLargeSlopeClip,RoadForestLargeSlopeGrassClip,RoadForestLargeTechClip,RoadForestLargeTechGrassClip" id="1">
+        <category name="|BlockCategory|Straight">
+          <macroblock id="RoadDirt\Roads\Straight" simple="1" symmetrical="1" />
+          <macroblock id="RoadDirt\Roads\RiverCrossStraight" symmetrical="1" terraforming="1" />
+          <macroblock id="RoadDirt\Roads\ForestLargeStraight" simple="1" symmetrical="1" />
+          <macroblock id="RoadDirtCliff\Roads\Arch" terraforming="1" />
+          <macroblock id="RoadDirtCliff\Slopes\HighSlopeTopSmall" simple="1" terraforming="1" />
+          <macroblock id="RoadDirtCliff\Slopes\HighSlopeTopBig" terraforming="1" />
+          <macroblock id="RoadDirtCliff\Slopes\HighSlopeBottomSmall" simple="1" terraforming="1" />
+          <macroblock id="RoadDirtCliff\Slopes\HighSlopeBottomBig" terraforming="1" />
+        </category>
+        <category name="|BlockCategory|Turn">
+          <macroblock id="RoadDirt\Turns\Corner" />
+          <macroblock id="RoadDirt\Turns\Sign" />
+          <macroblock id="RoadDirt\Turns\GTCurve2" />
+          <macroblock id="RoadDirt\Turns\GTCurve2Pond" />
+          <macroblock id="RoadDirt\Turns\GTCurve2Lake" terraforming="1" />
+          <macroblock id="RoadDirt\Roads\Diag2x2" symmetrical="1" />
+          <macroblock id="RoadDirt\Roads\Diag2x2Mirror" symmetrical="1" />
+          <macroblock id="RoadDirt\Roads\Diag2x2Pond" symmetrical="1" terraforming="1" />
+          <macroblock id="RoadDirt\Roads\Diag2x2PondMirror" symmetrical="1" terraforming="1" />
+          <macroblock id="RoadDirt\Roads\Diag2x2Lake" symmetrical="1" terraforming="1" />
+          <macroblock id="RoadDirt\Roads\Diag2x2LakeMirror" symmetrical="1" terraforming="1" />
+          <macroblock id="RoadDirt\Roads\RiverCrossDiag3x2" symmetrical="1" terraforming="1" />
+          <macroblock id="RoadDirt\Roads\RiverCrossDiag3x2Mirror" symmetrical="1" terraforming="1" />
+          <macroblock id="RoadDirt\Turns\ForestLargeCorner" />
+          <macroblock id="RoadDirt\Turns\ForestLargeCornerSignBarrier" />
+          <macroblock id="RoadDirt\Turns\ForestLargeGTCurve2" />
+          <macroblock id="RoadDirt\Roads\ForestLargeDiag2" symmetrical="1" />
+          <macroblock id="RoadDirt\Roads\ForestLargeDiag2Mirror" symmetrical="1" />
+          <macroblock id="RoadDirt\Slopes\ForestLargeCornerUturn" terraforming="1" />
+          <macroblock id="RoadDirtCliff\Turns\HighCurveOut" terraforming="1" />
+          <macroblock id="RoadDirtCliff\Turns\HighCurveIn" terraforming="1" />
+          <macroblock id="RoadDirtCliff\Slopes\HighTurnStartOutRight" terraforming="1" />
+          <macroblock id="RoadDirtCliff\Slopes\HighTurnStartOutLeft" terraforming="1" />
+          <macroblock id="RoadDirtCliff\Slopes\HighTurnStartInRight" terraforming="1" />
+          <macroblock id="RoadDirtCliff\Slopes\HighTurnStartInLeft" terraforming="1" />
+          <macroblock id="RoadDirtCliff\Slopes\HighTurnEndOutRight" terraforming="1" />
+          <macroblock id="RoadDirtCliff\Slopes\HighTurnEndOutLeft" terraforming="1" />
+          <macroblock id="RoadDirtCliff\Slopes\HighTurnEndInRight" terraforming="1" />
+          <macroblock id="RoadDirtCliff\Slopes\HighTurnEndInLeft" terraforming="1" />
+        </category>
+        <category name="|BlockCategory|Slope">
+          <macroblock id="RoadDirt\Slopes\ForestLargeStraight" terraforming="1" />
+          <macroblock id="RoadDirt\Slopes\ForestLargeX2" terraforming="1" />
+          <macroblock id="RoadDirt\Slopes\ForestLargeGTCurve2" terraforming="1" />
+          <macroblock id="RoadDirt\Slopes\ForestLargeGTCurve2Mirror" terraforming="1" />
+          <macroblock id="RoadDirtCliff\Slopes\LowSlopeLong" terraforming="1" />
+          <macroblock id="RoadDirtCliff\Slopes\LowRight" terraforming="1" />
+          <macroblock id="RoadDirtCliff\Slopes\LowLeft" terraforming="1" />
+          <macroblock id="RoadDirtCliff\Slopes\LowUTurnRight" terraforming="1" />
+          <macroblock id="RoadDirtCliff\Slopes\LowUTurnLeft" terraforming="1" />
+          <macroblock id="RoadDirtCliff\Slopes\HighBiSlopeStartRight" terraforming="1" />
+          <macroblock id="RoadDirtCliff\Slopes\HighBiSlopeStartLeft" terraforming="1" />
+          <macroblock id="RoadDirtCliff\Slopes\HighBiSlopeEndRight" terraforming="1" />
+          <macroblock id="RoadDirtCliff\Slopes\HighBiSlopeEndLeft" terraforming="1" />
+        </category>
+        <category name="|BlockCategory|Obstacle">
+          <macroblock id="RoadDirt\Obstacles\StraightContainers" />
+          <macroblock id="RoadDirt\Obstacles\CrossRiverLeft" symmetrical="1" terraforming="1" />
+          <macroblock id="RoadDirt\Obstacles\CrossRiveRight" symmetrical="1" terraforming="1" />
+          <macroblock id="RoadDirt\Obstacles\ForestLargeStopEngine" symmetrical="1" />
+          <macroblock id="RoadDirt\Obstacles\ForestLargeBump" symmetrical="1" />
+          <macroblock id="RoadDirt\Obstacles\ForestLargeStraightObstacle" symmetrical="1" />
+          <macroblock id="RoadDirt\Obstacles\ForestLargeStraightBarrier" symmetrical="1" />
+          <macroblock id="RoadDirt\Obstacles\ForestLargeStraightNarrow" />
+          <macroblock id="RoadDirt\Roads\ForestLargeDeadEnd" />
+          <macroblock id="RoadDirt\Obstacles\LakeJump" terraforming="1" />
+          <macroblock id="RoadDirt\Obstacles\LakeJump2" terraforming="1" />
+          <macroblock id="RoadDirt\Transitions\RoadDirtToFieldEntry" terraforming="1" />
+          <macroblock id="RoadDirtCliff\Obstacles\HighBumpRight" terraforming="1" />
+          <macroblock id="RoadDirtCliff\Obstacles\HighBumpLeft" terraforming="1" />
+        </category>
+        <category name="|BlockCategory|Transition">
+          <macroblock id="RoadDirt\Transitions\2WayToRoadDirt" />
+          <macroblock id="RoadDirt\Transitions\ForestLargeToRoadDirt" />
+        </category>
+        <category name="|BlockCategory|Turbo">
+          <macroblock id="RoadDirt\Turbos\ForestLargeTurbo" />
+        </category>
+        <category name="|BlockCategory|Checkpoint">
+          <macroblock id="RoadDirt\Checkpoints\ForestLargeStart" />
+          <macroblock id="RoadDirt\Checkpoints\Checkpoint" />
+          <macroblock id="RoadDirt\Checkpoints\CheckpointScreen" />
+          <macroblock id="RoadDirt\Checkpoints\ForestLargeCheckpoint" />
+          <macroblock id="RoadDirt\Checkpoints\ForestLargeCheckpointScreen" />
+          <macroblock id="Offroad\Checkpoints\Checkpoint" />
+          <macroblock id="Offroad\Checkpoints\CheckpointScreen" />
+          <macroblock id="RoadDirtCliff\Checkpoints\HighCheckpointTopRight" terraforming="1" />
+          <macroblock id="RoadDirtCliff\Checkpoints\HighCheckpointTopRightScreen" terraforming="1" />
+          <macroblock id="RoadDirtCliff\Checkpoints\HighCheckpointTopLeft" terraforming="1" />
+          <macroblock id="RoadDirtCliff\Checkpoints\HighCheckpointTopLeftScreen" terraforming="1" />
+          <macroblock id="RoadDirtCliff\Checkpoints\HighCheckpointBottomRight" terraforming="1" />
+          <macroblock id="RoadDirtCliff\Checkpoints\HighCheckpointBottomRightScreen" terraforming="1" />
+          <macroblock id="RoadDirtCliff\Checkpoints\HighCheckpointBottomLeft" terraforming="1" />
+          <macroblock id="RoadDirtCliff\Checkpoints\HighCheckpointBottomLeftScreen" terraforming="1" />
+        </category>
+        <category name="|BlockCategory|Finish">
+          <macroblock id="RoadDirt\Checkpoints\RoadForestLargeFinishRamp" randomskin="0" />
+          <macroblock id="RoadDirt\Checkpoints\ForestLargeFinish" />
+        </category>
+      </trackstyle>
+      <trackstyle name="|BlockStyle|Arena" clips="ArenaBaseDown,ArenaBaseFreeClip,ArenaBaseSlopeBaseLeftFreeClip,ArenaBaseSlopeBaseRightFreeClip,ArenaBaseSlopeEndLeftFreeClip,ArenaBaseSlopeEndRightFreeClip,ArenaBaseSlopeLeftFreeClip,ArenaBaseSlopeRightFreeClip,ArenaBaseSlopeStartLeftFreeClip,ArenaBaseSlopeStartRightFreeClip,ArenaBaseUp,ArenaBorderSmallFreeClipLoopFlipLeft,ArenaBorderSmallFreeClipLoopFlipRight,ArenaBorderSmallFreeClipOpenLeft,ArenaBorderSmallFreeClipOpenRight,ArenaBorderSmallLoopEndFreeClipLeft,ArenaBorderSmallLoopEndFreeClipRight,ArenaBorderSmallLoopSmallEndFreeClipLeft,ArenaBorderSmallLoopSmallEndFreeClipRight,ArenaBorderSmallLoopSmallStartFreeClipLeft,ArenaBorderSmallLoopSmallStartFreeClipRight,ArenaBorderSmallLoopStartFreeClipLeft,ArenaBorderSmallLoopStartFreeClipRight,ArenaBorderSmallLoopStraightTopFreeClipLeft,ArenaBorderSmallLoopStraightTopFreeClipRight,ArenaGT2FreeClipLeft,ArenaGT2FreeClipRight,ArenaParkBiSlopeLeft,ArenaParkBiSlopeLongLeft,ArenaParkBiSlopeLongRight,ArenaParkBiSlopeRight,ArenaParkBorderFreeClipLeft,ArenaParkBorderFreeClipRight,ArenaParkFreeClip,ArenaParkRoofBaseFreeClip,ArenaParkRoofLoopFreeClipFlip,ArenaParkRoofLoopFreeClipVLeft,ArenaParkRoofLoopFreeClipVRight,ArenaParkRoofSlopeBaseFreeClipLeft,ArenaParkRoofSlopeBaseFreeClipRight,ArenaParkRoofSlopeEndFreeClipLeft,ArenaParkRoofSlopeEndFreeClipRight,ArenaParkRoofSlopeStartFreeClipLeft,ArenaParkRoofSlopeStartFreeClipRight,ArenaParkRoofSlopeStraightFreeClipLeft,ArenaParkRoofSlopeStraightFreeClipRight,ArenaRoofSlopeDown,ArenaRoofSlopeUp,ArenaRoofWallDown,ArenaRoofWallUp,CastleBorderLakeFreeClipLeft,CastleBorderLakeFreeClipRight,CastleBridgeLakeFreeClip,CastleCenterLakeFreeClip,CastleGardenLakeFreeClip" id="2">
+        <category name="|BlockCategory|Straight">
+          <!-- <macroblock id="Castle\Roads\Base" simple="1" symmetrical="1" />
+          <macroblock id="Castle\Roads\BaseToNarrow" />
+          <macroblock id="Castle\Roads\Narrow" symmetrical="1" />
+          <macroblock id="Castle\Roads\Bridge" symmetrical="1" />
+          <macroblock id="Castle\Borders\CastleToBridge" /> -->
+          <macroblock id="Arena\Roads\RoofBase" simple="1" symmetrical="1" />
+          <macroblock id="Arena\Roads\ParkBase" simple="1" symmetrical="1" />
+          <macroblock id="Arena\Roads\Base" simple="1" symmetrical="1" />
+          <macroblock id="Arena\Loops\Straight4" />
+        </category>
+        <category name="|BlockCategory|Turn">
+          <!-- <macroblock id="Castle\Turns\CornerLarge" />
+          <macroblock id="Castle\Turns\Corner" /> -->
+          <macroblock id="Arena\Loops\GTCurve" />
+        </category>
+        <category name="|BlockCategory|Slope">
+          <macroblock id="Arena\Slopes\ParkRoofStart" />
+          <macroblock id="Arena\Slopes\ParkRoofStraight" />
+          <macroblock id="Arena\Slopes\ParkRoofEnd" />
+          <macroblock id="Arena\Slopes\ParkBase" />
+          <macroblock id="Arena\Slopes\Base" />
+          <macroblock id="Arena\Slopes\BaseStart" />
+          <macroblock id="Arena\Slopes\BaseStraight" />
+          <macroblock id="Arena\Slopes\BaseEnd" />
+        </category>
+        <category name="|BlockCategory|Obstacle">
+          <macroblock id="Arena\Obstacles\ArenaWallrideAir" oriented="1" randomskin="0" />
+          <macroblock id="Arena\Obstacles\ArenaWallrideMirrorAir" oriented="1" randomskin="0" />
+          <macroblock id="Arena\Obstacles\StopEngine" symmetrical="1" />
+          <macroblock id="Arena\Obstacles\StopEngineUpDown" />
+          <macroblock id="Arena\Obstacles\StopEngineLeftRight" />
+          <!--<macroblock id="Arena\Roads\ParkBaseGrassCenter" />-->
+          <macroblock id="Arena\Loops\StartSmall" />
+          <macroblock id="Arena\Loops\Start" />
+          <macroblock id="Arena\Loops\EndSmall" />
+          <macroblock id="Arena\Loops\End" />
+        </category>
+        <category name="|BlockCategory|Transition">
+          <!-- <macroblock id="Castle\Transitions\CastleBridgeToRoad" /> -->
+          <macroblock id="Arena\Transitions\RoofToRoad4Way" />
+          <macroblock id="Arena\Transitions\BaseToRoad4Way" />
+          <macroblock id="Arena\Transitions\ParkToRoad4Way" />
+          <macroblock id="Arena\Transitions\BaseToParkUp" />
+          <macroblock id="Arena\Transitions\BaseToParkDown" />
+        </category>
+        <category name="|BlockCategory|Turbo">
+          <macroblock id="Arena\Turbos\Turbo" />
+          <macroblock id="Arena\Turbos\TurboUp" />
+          <macroblock id="Arena\Turbos\TurboDown" />
+          <macroblock id="Arena\Turbos\TurboRight" />
+          <macroblock id="Arena\Turbos\TurboLeft" />
+        </category>
+        <category name="|BlockCategory|Checkpoint">
+          <!-- <macroblock id="Castle\Checkpoints\CheckpointLarge" />
+          <macroblock id="Castle\Checkpoints\CheckpointNarrow" />
+          <macroblock id="Castle\Checkpoints\CheckpointBorderNorth" />
+          <macroblock id="Castle\Checkpoints\CheckpointBorderSouth" /> -->
+          <macroblock id="Arena\Checkpoints\ArenaCopterStartMidAir" randomskin="0" />
+          <macroblock id="Arena\Checkpoints\CheckpointBaseAir" />
+          <macroblock id="Arena\Checkpoints\CheckpointBaseAirScreen" />
+          <macroblock id="Arena\Checkpoints\CheckpointSlopeUp" />
+          <macroblock id="Arena\Checkpoints\CheckpointSlopeUpScreen" />
+          <macroblock id="Arena\Checkpoints\CheckpointSlopeDown" />
+          <macroblock id="Arena\Checkpoints\CheckpointSlopeDownScreen" />
+          <macroblock id="Arena\Checkpoints\CheckpointSlopeRight" />
+          <macroblock id="Arena\Checkpoints\CheckpointSlopeRightScreen" />
+          <macroblock id="Arena\Checkpoints\CheckpointSlopeLeft" />
+          <macroblock id="Arena\Checkpoints\CheckpointSlopeLeftScreen" />
+          <macroblock id="Arena\Checkpoints\CheckpointHorizontalWall" />
+          <macroblock id="Arena\Checkpoints\CheckpointVerticalWall" />
+        </category>
+        <category name="|BlockCategory|Finish">
+        </category>
+      </trackstyle>
+      <trackstyle name="|BlockStyle|Tunnel" clips="TunnelClip,TunnelDown,TunnelHighwayClip,TunnelUp" id="3">
+        <category name="|BlockCategory|Straight">
+          <macroblock id="Tunnel\Roads\Straight" simple="1" symmetrical="1" />
+          <macroblock id="Tunnel\Roads\BiStraight" simple="1" symmetrical="1" />
+          <macroblock id="Tunnel\Roads\BiSwitch" symmetrical="1" />
+          <macroblock id="Tunnel\Transitions\4WayToHighway" />
+          <macroblock id="Tunnel\Transitions\4WayToHighwayRight" />
+          <macroblock id="Tunnel\Transitions\4WayToHighwayLeft" />
+        </category>
+        <category name="|BlockCategory|Turn">
+          <macroblock id="Tunnel\Turns\Corner" />
+          <macroblock id="Tunnel\Turns\GTCurve2" />
+          <macroblock id="Tunnel\Turns\GTCurve3" />
+          <macroblock id="Tunnel\Turns\BiCurve2" />
+          <macroblock id="Tunnel\Turns\BiCurve3" />
+          <macroblock id="Tunnel\Turns\BiCurve4" />
+        </category>
+        <category name="|BlockCategory|Slope">
+          <macroblock id="Tunnel\Slopes\Base" />
+          <macroblock id="Tunnel\Slopes\BaseX2" />
+          <macroblock id="Tunnel\Slopes\Start" />
+          <macroblock id="Tunnel\Slopes\Straight" />
+          <macroblock id="Tunnel\Slopes\End" />
+          <macroblock id="Tunnel\Slopes\Top" symmetrical="1" />
+          <macroblock id="Tunnel\Slopes\Bottom" symmetrical="1" />
+          <macroblock id="Tunnel\Slopes\GTCurve3" />
+          <macroblock id="Tunnel\Slopes\GTCurve3Mirror" />
+        </category>
+        <category name="|BlockCategory|Obstacle">
+          <macroblock id="Tunnel\Obstacles\StopEngine" symmetrical="1" />
+          <macroblock id="Tunnel\Obstacles\StopEngineUpDown" />
+          <macroblock id="Tunnel\Obstacles\BiSwitchRight" />
+          <macroblock id="Tunnel\Obstacles\BiSwitchLeft" />
+        </category>
+        <category name="|BlockCategory|Transition">
+          <macroblock id="Tunnel\Transitions\4WayGrassFlat" />
+          <macroblock id="Tunnel\Transitions\4WayGrassCliff2" />
+          <macroblock id="Tunnel\Transitions\4WayGrassCliff8" />
+          <macroblock id="Tunnel\Transitions\4WayGrassCliff8_1" />
+          <macroblock id="Tunnel\Transitions\4WayGrassCliff8_2" />
+          <macroblock id="Tunnel\Transitions\4WayGrassCliff8_3" />
+          <macroblock id="Tunnel\Transitions\GrassFlat" />
+          <macroblock id="Tunnel\Transitions\GrassCliff2" />
+          <macroblock id="Tunnel\Transitions\GrassCliff8" />
+          <macroblock id="Tunnel\Transitions\GrassCliff8_1" />
+          <macroblock id="Tunnel\Transitions\GrassCliff8_2" />
+          <macroblock id="Tunnel\Transitions\GrassCliff8_3" />
+        </category>
+        <category name="|BlockCategory|Turbo">
+          <macroblock id="Tunnel\Turbos\Turbo" />
+          <macroblock id="Tunnel\Turbos\TurboUp" />
+          <macroblock id="Tunnel\Turbos\TurboDown" />
+          <macroblock id="Tunnel\Turbos\TurboDouble" />
+        </category>
+        <category name="|BlockCategory|Checkpoint">
+          <macroblock id="Tunnel\Checkpoints\Checkpoint" />
+          <macroblock id="Tunnel\Checkpoints\CheckpointUp" />
+          <macroblock id="Tunnel\Checkpoints\CheckpointDown" />
+        </category>
+        <category name="|BlockCategory|Finish">
+          <macroblock id="Tunnel\Checkpoints\Finish" />
+        </category>
+      </trackstyle>
+    </trackstyles>
+    <landstyles>
+      <landstyle name="|Landscape|Mixed" id="0">
+        <terrain>
+          <layer type="Perlin" frequency="0.4" octaves="10.">
+            <block id="LakeShore" height="80." />
+            <block id="" height="94." />
+            <block id="GrassToField" height="95." />
+            <block id="" height="116." />
+            <block id="GrassToForest" height="120." />
+            <block id="" height="139." />
+            <block id="GrassCliff2" height="140." />
+            <block id="" height="151." />
+            <block id="GrassHill1" height="151.5" />
+            <block id="" height="160." />
+            <block id="GrassCliff8" height="256." />
+          </layer>
+        </terrain>
+        <decoration>
+          <category id="Farms" ratio="0.2" />
+          <category id="Houses" ratio="0.25" />
+          <category id="Industrial" ratio="0.1" />
+          <category id="Natural" ratio="0.5" />
+          <category id="Signs" ratio="0.1" />
+          <category id="Podium" ratio="0." />
+        </decoration>
+      </landstyle>
+    </landstyles>
+    <terrainstyles>
+      <terrainstyle name="|Landscape|Mountains" blockid="Terrain\Terrains\1" id="0" />
+      <terrainstyle name="|Landscape|Water" blockid="Terrain\Terrains\2" id="1" />
+      <terrainstyle name="|Landscape|Forest" blockid="Terrain\Terrains\3" id="2" />
+      <terrainstyle name="|Landscape|Fields" blockid="Terrain\Terrains\4" id="3" />
+      <terrainstyle name="|Landscape|Empty" blockid="Terrain\Terrains\5" id="4" />
+    </terrainstyles>
+    <decostyles>
+      <decostyle name="|BlockStyle|Decoration" id="0">
+        <category name="|Decoration|Technology" ratio="0.05" color="1.,0.196,0.109">
+        </category>
+        <category name="|Decoration|Nature" ratio="1." color="0.407,0.631,0.168">
+        </category>
+        <category name="|Decoration|International Turbo" ratio="0.25" color="0.,0.741,0.494">
+        </category>
+      </decostyle>
+    </decostyles>
+  </environment>
+<!-- ======================================================================= -->
+<!-- ======================================================================= -->
+<!-- ======================================================================= -->
+<!-- STADIUM -->
+<!-- ======================================================================= -->
+<!-- ======================================================================= -->
+<!-- ======================================================================= -->
+  <environment name="Stadium">
+    <trackstyles>
+      <trackstyle name="|BlockStyle|Simple" clips="StadiumRoadMainClip,StadiumRoadMainDown,StadiumRoadMainUp,StadiumTrenchFreeClip,StadiumTrenchToLoopStartFreeClipLeft,StadiumTrenchToLoopStartFreeClipRight,StadiumTrenchToPlatformBiSlopeStartFreeClipLeft,StadiumTrenchToPlatformBiSlopeStartFreeClipRight" id="0">
+        <category name="|BlockCategory|Straight">
+          <macroblock id="RoadMain\Roads\Straight" simple="1" symmetrical="1" trial="1" />
+          <macroblock id="Trench\Roads\Straight" simple="1" symmetrical="1" />
+          <macroblock id="Trench\Roads\StraightTunnel" simple="1" symmetrical="1" />
+          <macroblock id="Trench\Obstacles\Screen" oriented="1" />
+        </category>
+        <category name="|BlockCategory|Turn">
+          <macroblock id="RoadMain\Turns\Corner" trial="1" />
+          <macroblock id="RoadMain\Turns\Curve01" />
+          <macroblock id="RoadMain\Turns\Curve02" />
+          <macroblock id="RoadMain\Turns\RoadMainGTCurve3Signs" randomskin="0" />
+          <macroblock id="RoadMain\Turns\Curve03" />
+          <macroblock id="RoadMain\Turns\RoadMainGTCurve4Signs" randomskin="0" />
+          <macroblock id="RoadMain\Turns\Curve04" />
+          <macroblock id="RoadMain\Roads\DiagShortRight" symmetrical="1" />
+          <macroblock id="RoadMain\Roads\DiagShortLeft" symmetrical="1" />
+          <macroblock id="RoadMain\Roads\DiagMediumRight" symmetrical="1" />
+          <macroblock id="RoadMain\Roads\DiagMediumLeft" symmetrical="1" />
+          <macroblock id="RoadMain\Roads\DiagLongRight" symmetrical="1" />
+          <macroblock id="RoadMain\Roads\DiagLongLeft" symmetrical="1" />
+          <macroblock id="RoadTilt\Turns\TiltTransitionCurveRight" />
+          <macroblock id="RoadTilt\Turns\TiltTransitionCurveLeft" />
+          <macroblock id="RoadTilt\Turns\CurveTopRight" />
+          <macroblock id="RoadTilt\Turns\CurveTopLeft" />
+          <macroblock id="RoadTilt\Turns\CurveBottomRight" />
+          <macroblock id="RoadTilt\Turns\CurveBottomLeft" />
+          <macroblock id="RoadTilt\Turns\CornerTopRight" />
+          <macroblock id="RoadTilt\Turns\CornerTopLeft" />
+          <macroblock id="RoadTilt\Turns\CornerBottomRight" />
+          <macroblock id="RoadTilt\Turns\CornerBottomLeft" />
+          <macroblock id="Trench\Turns\Corner" />
+          <macroblock id="Trench\Turns\Curve" />
+          <macroblock id="Trench\Turns\CurveTunnel" />
+        </category>
+        <category name="|BlockCategory|Slope">
+          <macroblock id="RoadSlope\Roads\SlopeShortHigh" />
+          <macroblock id="RoadSlope\Roads\SlopeShort" trial="1" />
+          <macroblock id="RoadSlope\Roads\SlopeLong" />
+          <macroblock id="RoadSlope\Roads\BiSlopeStart" />
+          <macroblock id="RoadSlope\Roads\SlopeStraight" />
+          <macroblock id="RoadSlope\Roads\DiagShortRight" />
+          <macroblock id="RoadSlope\Roads\DiagShortLeft" />
+          <macroblock id="RoadSlope\Roads\DiagMediumRight" />
+          <macroblock id="RoadSlope\Roads\DiagMediumLeft" />
+          <macroblock id="RoadSlope\Roads\DiagLongRight" />
+          <macroblock id="RoadSlope\Roads\DiagLongLeft" />
+          <macroblock id="RoadSlope\Roads\BiSlopeEnd" />
+          <macroblock id="RoadSlope\Roads\SlopeTop" symmetrical="1" />
+          <macroblock id="RoadSlope\Roads\SlopeBottom" symmetrical="1" />
+          <macroblock id="RoadSlope\Roads\SlopeBottomInGround" symmetrical="1" />
+        </category>
+        <category name="|BlockCategory|Obstacle">
+          <macroblock id="RoadMain\Obstacles\JumpRings" oriented="1" randomskin="0" />
+          <macroblock id="RoadMain\Loops\RoadMainLoopAir" oriented="1" randomskin="0" />
+          <macroblock id="RoadMain\Loops\RoadMainLoopMirrorAir" oriented="1" randomskin="0" />
+          <macroblock id="RoadMain\Loops\RoadMainWallrideAir" oriented="1" randomskin="0" />
+          <macroblock id="RoadMain\Loops\RoadMainWallrideMirrorAir" oriented="1" randomskin="0" />
+          <macroblock id="RoadMain\Loops\WallRideUTurnLeft" oriented="1" randomskin="0" />
+          <macroblock id="RoadMain\Loops\WallRideUTurnRight" oriented="1" randomskin="0" />
+          <macroblock id="RoadMain\Obstacles\StopEngine" symmetrical="1" />
+          <macroblock id="RoadMain\Obstacles\Narrow" symmetrical="1" trial="1" />
+          <macroblock id="RoadMain\Obstacles\Hole" symmetrical="1" trial="1" />
+          <macroblock id="RoadMain\Obstacles\Bump" symmetrical="1" />
+          <macroblock id="RoadMain\Obstacles\PillarSingle" symmetrical="1" />
+          <macroblock id="RoadMain\Obstacles\PillarLine" symmetrical="1" />
+          <macroblock id="RoadMain\Obstacles\PillarFront" symmetrical="1" />
+          <macroblock id="RoadMain\Obstacles\PillarThree" />
+          <macroblock id="RoadMain\Obstacles\RoadMainPillarSignsAir" oriented="1" />
+          <macroblock id="RoadMain\Obstacles\RoadMainInBeamTowerAir" oriented="1" />
+          <macroblock id="RoadMain\Obstacles\BeamFront" oriented="1" />
+          <macroblock id="RoadMain\Obstacles\WallLine" symmetrical="1" />
+          <macroblock id="RoadMain\Obstacles\WallFront" symmetrical="1" />
+          <macroblock id="RoadMain\Obstacles\JumpLow" />
+          <macroblock id="RoadMain\Obstacles\JumpHigh" />
+          <macroblock id="RoadMain\Loops\LoopRight" />
+          <macroblock id="RoadMain\Loops\LoopLeft" />
+          <macroblock id="RoadSlope\Obstacles\StopEngine" />
+          <macroblock id="RoadSlope\Obstacles\Narrow" />
+          <macroblock id="RoadSlope\Obstacles\Hole" />
+          <macroblock id="RoadSlope\Obstacles\Bump" />
+          <macroblock id="RoadSlope\Obstacles\Pillar" />
+          <macroblock id="RoadSlope\Obstacles\RoadMainSlopePillarSignsAir" />
+          <macroblock id="RoadSlope\Obstacles\RoadMainSlopeInBeamTowerAir" />
+          <macroblock id="RoadSlope\Obstacles\BeamFront" />
+          <macroblock id="RoadSlope\Obstacles\WallLine" />
+          <macroblock id="RoadSlope\Obstacles\WallFront" />
+          <macroblock id="Trench\Obstacles\Pillar" symmetrical="1" />
+        </category>
+        <category name="|BlockCategory|Transition">
+          <macroblock id="RoadTilt\Roads\TiltTransitionRightShort" />
+          <macroblock id="RoadTilt\Roads\TiltTransitionLeftShort" />
+          <macroblock id="RoadTilt\Roads\TiltTransitionRightLong" />
+          <macroblock id="RoadTilt\Roads\TiltTransitionLeftLong" />
+          <macroblock id="RoadTilt\Roads\TiltTransitionDiagRight" />
+          <macroblock id="RoadTilt\Roads\TiltTransitionDiagLeft" />
+          <macroblock id="Platform\Transitions\RoadToGridRight" />
+          <macroblock id="Platform\Transitions\RoadToGridLeft" />
+          <macroblock id="Platform\Transitions\RoadToGrid" />
+          <macroblock id="Platform\Transitions\RoadToArena" />
+          <macroblock id="RoadDirt\Transitions\LowToRoadMain" />
+          <macroblock id="RoadDirt\Transitions\HighToRoadMain" />
+          <macroblock id="Trench\Transitions\TrenchToRoadMainShort" />
+          <macroblock id="Trench\Transitions\TrenchToRoadMainLong" />
+          <macroblock id="Trench\Transitions\TrenchToRoadBiSlopeStart" />
+          <macroblock id="Trench\Transitions\TrenchToPlatformBiSlopeStart" />
+          <macroblock id="Trench\Transitions\TrenchToLoopStart" />
+          <macroblock id="Trench\Transitions\TrenchToDirtLowShort" />
+          <macroblock id="Trench\Transitions\TrenchToDirtLowLong" />
+        </category>
+        <category name="|BlockCategory|Turbo">
+          <macroblock id="RoadMain\Turbos\Turbo" trial="1" />
+          <macroblock id="RoadMain\Turbos\TurboRoulette" trial="1" />
+          <macroblock id="RoadSlope\Turbos\TurboUp" />
+          <macroblock id="RoadSlope\Turbos\TurboDown" />
+          <macroblock id="RoadSlope\Turbos\TurboRouletteUp" />
+          <macroblock id="RoadSlope\Turbos\TurboRouletteDown" />
+          <macroblock id="Trench\Turbos\Turbos" />
+        </category>
+        <category name="|BlockCategory|Checkpoint">
+          <macroblock id="RoadMain\Checkpoints\Start" trial="1" />
+          <macroblock id="RoadMain\Checkpoints\RoadMainCopterStartMidAir" randomskin="0" />
+          <macroblock id="RoadMain\Checkpoints\Checkpoint" trial="1" />
+          <macroblock id="RoadMain\Checkpoints\CheckpointGrass" />
+          <macroblock id="RoadSlope\Checkpoints\CheckpointUp" />
+          <macroblock id="RoadSlope\Checkpoints\ChekpointDown" />
+          <macroblock id="Trench\Checkpoints\TrenchCopterStartMid" randomskin="0" />
+          <macroblock id="Trench\Checkpoints\Checkpoint" />
+        </category>
+        <category name="|BlockCategory|Finish">
+          <macroblock id="RoadMain\Checkpoints\RoadMainFinishRampAir" randomskin="0" />
+          <macroblock id="RoadMain\Checkpoints\RoadMainFinishSignsAir" randomskin="0" />
+          <macroblock id="RoadMain\Checkpoints\Finish" trial="1" />
+        </category>
+      </trackstyle>
+      <trackstyle name="|BlockStyle|Tilt" clips="StadiumRoadTiltClipLeft,StadiumRoadTiltClipRight" id="1">
+        <category name="|BlockCategory|Straight">
+          <macroblock id="RoadTilt\Roads\Straight" simple="1" />
+        </category>
+        <category name="|BlockCategory|Turn">
+          <macroblock id="RoadTilt\Turns\Corner" />
+          <macroblock id="RoadTilt\Turns\Curve1" />
+          <macroblock id="RoadTilt\Turns\Curve2" />
+          <macroblock id="RoadTilt\Turns\Curve3" />
+          <macroblock id="RoadTilt\Roads\DiagShortRight" />
+          <macroblock id="RoadTilt\Roads\DiagShortLeft" />
+          <macroblock id="RoadTilt\Roads\DiagLongRight" />
+          <macroblock id="RoadTilt\Roads\DiagLongLeft" />
+          <macroblock id="RoadTilt\Turns\TiltTransitionCurveRight" />
+          <macroblock id="RoadTilt\Turns\TiltTransitionCurveLeft" />
+          <macroblock id="RoadTilt\Turns\CurveTopRight" />
+          <macroblock id="RoadTilt\Turns\CurveTopLeft" />
+          <macroblock id="RoadTilt\Turns\CurveBottomRight" />
+          <macroblock id="RoadTilt\Turns\CurveBottomLeft" />
+          <macroblock id="RoadTilt\Turns\CornerTopRight" />
+          <macroblock id="RoadTilt\Turns\CornerTopLeft" />
+          <macroblock id="RoadTilt\Turns\CornerBottomRight" />
+          <macroblock id="RoadTilt\Turns\CornerBottomLeft" />
+        </category>
+        <category name="|BlockCategory|Slope">
+        </category>
+        <category name="|BlockCategory|Obstacle">
+          <macroblock id="RoadTilt\Obstacles\StopEngine" />
+          <macroblock id="RoadTilt\Obstacles\Narrow" />
+          <macroblock id="RoadTilt\Obstacles\Hole" />
+          <macroblock id="RoadTilt\Obstacles\Bump" />
+          <macroblock id="RoadTilt\Obstacles\Pillar" />
+          <macroblock id="RoadTilt\Obstacles\RoadTiltPillarSignsAir" />
+          <macroblock id="RoadTilt\Obstacles\WallLine" />
+          <macroblock id="RoadTilt\Obstacles\WallFront" />
+        </category>
+        <category name="|BlockCategory|Transition">
+          <macroblock id="RoadTilt\Roads\TiltTransitionRightShort" />
+          <macroblock id="RoadTilt\Roads\TiltTransitionLeftShort" />
+          <macroblock id="RoadTilt\Roads\TiltTransitionRightLong" />
+          <macroblock id="RoadTilt\Roads\TiltTransitionLeftLong" />
+          <macroblock id="RoadTilt\Roads\TiltTransitionDiagRight" />
+          <macroblock id="RoadTilt\Roads\TiltTransitionDiagLeft" />
+        </category>
+        <category name="|BlockCategory|Turbo">
+          <macroblock id="RoadTilt\Turbos\TurboRight" />
+          <macroblock id="RoadTilt\Turbos\TurboLeft" />
+          <macroblock id="RoadTilt\Turbos\TurboRouletteRight" />
+          <macroblock id="RoadTilt\Turbos\TurboRouletteLeft" />
+        </category>
+        <category name="|BlockCategory|Checkpoint">
+          <macroblock id="RoadTilt\Checkpoints\CheckpointRight" />
+          <macroblock id="RoadTilt\Checkpoints\CheckpointLeft" />
+        </category>
+        <category name="|BlockCategory|Finish">
+        </category>
+      </trackstyle>
+      <trackstyle name="|BlockStyle|Dirt" clips="StadiumRoadDirtClip,StadiumRoadDirtHighClip,StadiumRoadDirtHillTiltClipLeft,StadiumRoadDirtHillTiltClipRight" id="2">
+        <category name="|BlockCategory|Straight">
+          <macroblock id="RoadDirt\Roads\LowStraightFence" simple="1" symmetrical="1" />
+          <macroblock id="RoadDirt\Obstacles\FenceCross01" />
+          <macroblock id="RoadDirt\Roads\HightStraightFence" simple="1" symmetrical="1" />
+          <macroblock id="RoadDirt\Hills\Straight" simple="1" terraforming="1" />
+          <macroblock id="RoadDirt\Hills\LowToHillRight" terraforming="1" />
+          <macroblock id="RoadDirt\Hills\LowToHillLeft" terraforming="1" />
+        </category>
+        <category name="|BlockCategory|Turn">
+          <macroblock id="RoadDirt\Turns\LowCornerFence" />
+          <macroblock id="RoadDirt\Turns\LowCurve01" />
+          <macroblock id="RoadDirt\Turns\LowCurve01Bretzel" randomskin="0" />
+          <macroblock id="RoadDirt\Turns\LowCurve02" />
+          <macroblock id="RoadDirt\Turns\LowCurve02Containers" randomskin="0" />
+          <macroblock id="RoadDirt\Roads\LowDiagMediumRight" symmetrical="1" />
+          <macroblock id="RoadDirt\Roads\LowDiagMediumLeft" symmetrical="1" />
+          <macroblock id="RoadDirt\Turns\HighCornerFence" />
+          <macroblock id="RoadDirt\Turns\HighCurve02" />
+          <macroblock id="RoadDirt\Hills\CornerRight" terraforming="1" />
+          <macroblock id="RoadDirt\Hills\CornerLeft" terraforming="1" />
+          <macroblock id="RoadDirt\Hills\CornerOut" terraforming="1" />
+          <macroblock id="RoadDirt\Hills\CornerIn" terraforming="1" />
+        </category>
+        <category name="|BlockCategory|Slope">
+          <macroblock id="RoadDirt\Slopes\StraightShort" terraforming="1" />
+          <macroblock id="RoadDirt\Slopes\StraightLong" terraforming="1" />
+          <macroblock id="RoadDirt\Slopes\StraightWave" terraforming="1" />
+          <macroblock id="RoadDirt\Slopes\CurveRight" terraforming="1" />
+          <macroblock id="RoadDirt\Slopes\CurveLeft" terraforming="1" />
+        </category>
+        <category name="|BlockCategory|Obstacle">
+          <macroblock id="RoadDirt\Obstacles\HighNarrowDolls" oriented="1" randomskin="0" />
+          <macroblock id="RoadDirt\Obstacles\StopEngine" symmetrical="1" />
+          <macroblock id="RoadDirt\Obstacles\SmallBump" symmetrical="1" />
+          <macroblock id="RoadDirt\Obstacles\SmallBumpDolls" oriented="1" randomskin="0" />
+          <macroblock id="RoadDirt\Obstacles\BigBump" symmetrical="1" />
+          <macroblock id="RoadDirt\Obstacles\BigBumpDolls" oriented="1" randomskin="0" />
+        </category>
+        <category name="|BlockCategory|Transition">
+          <macroblock id="RoadDirt\Transitions\LowToRoadMain" />
+          <macroblock id="RoadDirt\Transitions\LowToHighShort" />
+          <macroblock id="RoadDirt\Transitions\LowToHighLong" />
+          <macroblock id="RoadDirt\Transitions\HighToRoadMain" />
+          <macroblock id="Trench\Transitions\TrenchToDirtLowShort" />
+          <macroblock id="Trench\Transitions\TrenchToDirtLowLong" />
+        </category>
+        <category name="|BlockCategory|Turbo">
+          <macroblock id="RoadDirt\Turbos\LowTurbo" />
+        </category>
+        <category name="|BlockCategory|Checkpoint">
+          <macroblock id="RoadDirt\Checkpoints\LowCheckpoint" />
+          <macroblock id="RoadDirt\Checkpoints\HighCheckpoint" />
+          <macroblock id="RoadDirt\Hills\CheckpointRight" terraforming="1" />
+          <macroblock id="RoadDirt\Hills\CheckpointLeft" terraforming="1" />
+        </category>
+        <category name="|BlockCategory|Finish">
+        </category>
+      </trackstyle>
+      <trackstyle name="|BlockStyle|Arena" clips="ArenaSlopeDown,ArenaSlopeUp,Platform,PlatformGridLoopEndLeft,PlatformGridLoopEndRight,PlatformGridLoopStartLeft,PlatformGridLoopStartRight,PlatformGridWallDown,PlatformGridWallLeft,PlatformGridWallRight,PlatformGridWallUp,PlatformSlopeDown,PlatformSlopeEndLeft,PlatformSlopeEndRight,PlatformSlopeLeft,PlatformSlopeRight,PlatformSlopeStartLeft,PlatformSlopeStartRight,PlatformSlopeUp,StadiumCircuitBorderLoopStartFreeClipLeft,StadiumCircuitBorderLoopStartFreeClipRight,StadiumCircuitFabricFreeClip,StadiumCircuitFabricPillarFreeClipLeft,StadiumCircuitFabricPillarFreeClipRight,StadiumCircuitFabricRampFreeClipLeftAir,StadiumCircuitFabricRampFreeClipLeftGround,StadiumCircuitFabricRampFreeClipRightAir,StadiumCircuitFabricRampFreeClipRightGround,StadiumCircuitFreeClip,StadiumCircuitPlatformGridFreeClip,StadiumCircuitPlatformLoopFreeClip,StadiumCircuitPlatformWallBorderFront,StadiumCircuitPlatformWallBorderLeft,StadiumCircuitPlatformWallBorderRight,StadiumCircuitSculptArchFreeClipEnd,StadiumCircuitSculptArchFreeClipEndMirror,StadiumCircuitSculptArchFreeClipStart,StadiumCircuitSculptArchFreeClipStartMirror,StadiumCircuitSculptBridgeFreeClip,StadiumCircuitSculptBridgeFreeClipMirror,StadiumCircuitSlopeEndFreeClipLeft,StadiumCircuitSlopeEndFreeClipRight,StadiumCircuitSlopeStartFreeClipLeft,StadiumCircuitSlopeStartFreeClipRight,StadiumCircuitSlopeStraightFreeClipLeft,StadiumCircuitSlopeStraightFreeClipRight" id="3">
+        <category name="|BlockCategory|Straight">
+          <macroblock id="Arena\Bases\Base" simple="1" symmetrical="1" />
+          <macroblock id="Platform\Roads\GridStraight" simple="1" symmetrical="1" />
+          <macroblock id="Platform\Walls\StraightBig" simple="1" />
+        </category>
+        <category name="|BlockCategory|Turn">
+          <macroblock id="Platform\Walls\CurveShortBig" />
+          <macroblock id="Platform\Walls\CurveLongBig" />
+        </category>
+        <category name="|BlockCategory|Slope">
+          <macroblock id="Platform\Roads\BiSlopeStart" />
+          <macroblock id="Platform\Roads\SlopeStraight" />
+          <macroblock id="Platform\Roads\BiSlopeEnd" />
+        </category>
+        <category name="|BlockCategory|Obstacle">
+          <macroblock id="Arena\Obstacles\StopEngine" symmetrical="1" />
+          <macroblock id="Platform\Obstacles\StopEngineUpDown" />
+          <macroblock id="Arena\Obstacles\RampShortLow" />
+          <macroblock id="Arena\Obstacles\RampLongLow" />
+          <macroblock id="Arena\Obstacles\RampLongHigh" />
+          <macroblock id="Arena\Obstacles\Hole" />
+          <macroblock id="Arena\Obstacles\BumpSmall" />
+          <macroblock id="Arena\Obstacles\BumpBig" symmetrical="1" />
+          <macroblock id="Arena\Obstacles\BumpLow" symmetrical="1" />
+          <macroblock id="Arena\Obstacles\Pillar1" symmetrical="1" />
+          <macroblock id="Arena\Obstacles\Pillar2" />
+          <macroblock id="Arena\Obstacles\Pillar3" />
+          <macroblock id="Arena\Obstacles\Pillar5" symmetrical="1" />
+          <macroblock id="Arena\Obstacles\Pillar6" />
+          <macroblock id="Arena\Obstacles\Pillar7" />
+          <macroblock id="Arena\Loops\BigLoop" oriented="1" randomskin="0" />
+          <macroblock id="Arena\Loops\LoopStart" />
+          <macroblock id="Platform\Loops\LoopStart" />
+          <macroblock id="Platform\Loops\LoopEnd" />
+        </category>
+        <category name="|BlockCategory|Transition">
+          <macroblock id="Platform\Transitions\RoadToGridRight" />
+          <macroblock id="Platform\Transitions\RoadToGridLeft" />
+          <macroblock id="Platform\Transitions\RoadToGrid" />
+          <macroblock id="Platform\Transitions\RoadToArena" />
+          <macroblock id="Trench\Transitions\TrenchToPlatformBiSlopeStart" />
+          <macroblock id="Trench\Transitions\TrenchToLoopStart" />
+        </category>
+        <category name="|BlockCategory|Turbo">
+          <macroblock id="Platform\Turbos\Turbo" />
+          <macroblock id="Platform\Turbos\TurboUp" />
+          <macroblock id="Platform\Turbos\TurboDown" />
+          <macroblock id="Platform\Turbos\TurboRight" />
+          <macroblock id="Platform\Turbos\TurboLeft" />
+        </category>
+        <category name="|BlockCategory|Checkpoint">
+          <macroblock id="Arena\Checkpoints\ArenaCopterStartMidAir" randomskin="0" />
+          <macroblock id="Platform\Checkpoints\Checkpoint" />
+          <macroblock id="Platform\Checkpoints\CheckpointUp" />
+          <macroblock id="Platform\Checkpoints\CheckpointDown" />
+          <macroblock id="Platform\Checkpoints\CheckpointRight" />
+          <macroblock id="Platform\Checkpoints\CheckpointLeft" />
+          <macroblock id="Platform\Checkpoints\CheckpointRingVertical" />
+          <macroblock id="Platform\Checkpoints\CheckpointRingVerticalCenter" />
+          <macroblock id="Platform\Checkpoints\CheckpointRingHorizontal" />
+          <macroblock id="Platform\Checkpoints\CheckpointRingHorizontalCenter" />
+        </category>
+        <category name="|BlockCategory|Finish">
+        </category>
+      </trackstyle>
+    </trackstyles>
+    <terrainstyles>
+      <terrainstyle name="|Landscape|Towers" blockid="Terrain\Terrains\1" id="0" />
+      <terrainstyle name="|Landscape|Grass" blockid="Terrain\Terrains\2" id="1" />
+      <terrainstyle name="|Landscape|Dirt" blockid="Terrain\Terrains\3" id="2" />
+      <terrainstyle name="|Landscape|Pool" blockid="Terrain\Terrains\4" id="3" />
+      <terrainstyle name="|Landscape|Empty" blockid="Terrain\Terrains\5" id="4" />
+    </terrainstyles>
+    <decostyles>
+      <decostyle name="|BlockStyle|Decoration" id="0">
+        <category name="|Decoration|Technology" ratio="0.1" color="1.,0.196,0.109">
+        </category>
+        <category name="|Decoration|Nature" ratio="0.5" color="0.407,0.631,0.168">
+        </category>
+        <category name="|Decoration|International Turbo" ratio="0.1" color="0.,0.741,0.494">
+        </category>
+        <category name="|Decoration|Inflatables" ratio="0.2" color="1.,0.356,0.109">
+        </category>
+      </decostyle>
+    </decostyles>
+  </environment>
+<!-- ======================================================================= -->
+<!-- ======================================================================= -->
+<!-- ======================================================================= -->
+<!-- LAGOON -->
+<!-- ======================================================================= -->
+<!-- ======================================================================= -->
+<!-- ======================================================================= -->
+  <environment name="Lagoon">
+    <trackstyles>
+      <trackstyle name="|BlockStyle|Road" clips="BeachLeft,BeachRight,FreeWayClip" id="0">
+        <category name="|BlockCategory|Straight">
+          <macroblock id="Freeway\Roads\Straight" simple="1" symmetrical="1" />
+          <macroblock id="Freeway\Roads\StraightCats" randomskin="0" />
+          <macroblock id="Offroad\Roads\Straight" simple="1" terraforming="1" />
+          <macroblock id="Offroad\Roads\TransfertRight" terraforming="1" />
+          <macroblock id="Offroad\Roads\TransfertLeft" terraforming="1" />
+          <macroblock id="Offroad\Roads\TransfertRacingRight" terraforming="1" />
+          <macroblock id="Offroad\Roads\TransfertRacingLeft" terraforming="1" />
+        </category>
+        <category name="|BlockCategory|Turn">
+          <macroblock id="Freeway\Turns\Corner" />
+          <macroblock id="Freeway\Turns\CornerSign" />
+          <macroblock id="Freeway\Turns\FreeWayGTCurve2Signs" randomskin="0" />
+          <macroblock id="Freeway\Turns\Curve01" />
+          <macroblock id="Freeway\Turns\FreeWayGTCurve3Signs" randomskin="0" />
+          <macroblock id="Freeway\Turns\Curve02" />
+          <macroblock id="Freeway\Roads\DiagShortRight" symmetrical="1" />
+          <macroblock id="Freeway\Roads\DiagShortLeft" symmetrical="1" />
+          <macroblock id="Freeway\Roads\DiagLongRight" symmetrical="1" />
+          <macroblock id="Freeway\Roads\DiagLongLeft" symmetrical="1" />
+          <macroblock id="Offroad\Turns\CornerOut" terraforming="1" />
+          <macroblock id="Offroad\Turns\CornerIn" terraforming="1" />
+          <macroblock id="Offroad\Turns\CurveIn" terraforming="1" />
+          <macroblock id="Offroad\Turns\CurveOut" terraforming="1" />
+          <macroblock id="Offroad\Turns\CurveOutBillboard" terraforming="1" />
+          <macroblock id="Offroad\Roads\DiagRight" terraforming="1" />
+          <macroblock id="Offroad\Roads\DiagLeft" terraforming="1" />
+          <macroblock id="Offroad\Roads\DiagRacingRight" terraforming="1" />
+          <macroblock id="Offroad\Roads\DiagRacingLeft" terraforming="1" />
+        </category>
+        <category name="|BlockCategory|Slope">
+          <macroblock id="Freeway\Slopes\SlopeShort" terraforming="1" />
+        </category>
+        <category name="|BlockCategory|Obstacle">
+          <macroblock id="Freeway\Obstacles\StopEngine" symmetrical="1" />
+          <macroblock id="Freeway\Obstacles\FreeWayContainers" oriented="1" randomskin="0" />
+          <macroblock id="Freeway\Obstacles\FreeWayOuroboros" oriented="1" randomskin="0" />
+          <macroblock id="Freeway\Roads\JumpLow" />
+          <macroblock id="Freeway\Roads\JumpHigh" />
+          <macroblock id="Freeway\Obstacles\JumpCrane" oriented="1" randomskin="0" />
+          <macroblock id="Offroad\Roads\JumpLowRight" terraforming="1" />
+          <macroblock id="Offroad\Roads\JumpLowLeft" terraforming="1" />
+          <macroblock id="Offroad\Roads\JumpHighRight" terraforming="1" />
+          <macroblock id="Offroad\Roads\JumpHighLeft" terraforming="1" />
+        </category>
+        <category name="|BlockCategory|Transition">
+          <macroblock id="Freeway\Transitions\FreeWayToRoadMainStraight" />
+          <macroblock id="Freeway\Transitions\FreeWayToRoadMainSlopeShort" />
+          <macroblock id="Freeway\Transitions\FreeWayToRoadMainSlopeLong" />
+          <macroblock id="Freeway\Transitions\FreeWayToRoadMainBiSlopeStart" />
+          <macroblock id="Offroad\Transitions\BeachToFreewayDiagRight" terraforming="1" />
+          <macroblock id="Offroad\Transitions\BeachToFreewayDiagLeft" terraforming="1" />
+          <macroblock id="Offroad\Transitions\BeachToFreewayCurveOutRight" terraforming="1" />
+          <macroblock id="Offroad\Transitions\BeachToFreewayCurveOutLeft" terraforming="1" />
+          <macroblock id="Offroad\Transitions\BeachToFreewayCurveInRight" terraforming="1" />
+          <macroblock id="Offroad\Transitions\BeachToFreewayCurveInLeft" terraforming="1" />
+        </category>
+        <category name="|BlockCategory|Turbo">
+          <macroblock id="Freeway\Turbos\Turbo" />
+          <macroblock id="Freeway\Turbos\TurboSuper" />
+        </category>
+        <category name="|BlockCategory|Checkpoint">
+          <macroblock id="Freeway\Checkpoints\Start" />
+          <macroblock id="Freeway\Checkpoints\FreeWayCopterStartLandingRampMid" />
+          <macroblock id="Freeway\Checkpoints\Checkpoint" />
+          <macroblock id="Freeway\Checkpoints\CheckpointScreen" />
+          <macroblock id="Offroad\Checkpoints\CheckpointBeachRight" terraforming="1" />
+          <macroblock id="Offroad\Checkpoints\CheckpointBeachRightScreen" terraforming="1" />
+          <macroblock id="Offroad\Checkpoints\CheckpointBeachLeft" terraforming="1" />
+          <macroblock id="Offroad\Checkpoints\CheckpointBeachLeftScreen" terraforming="1" />
+          <macroblock id="Offroad\Checkpoints\Checkpoint" />
+          <macroblock id="Offroad\Checkpoints\CheckpointScreen" />
+          <macroblock id="Offroad\Checkpoints\CheckpointSlopeUp" terraforming="1" />
+          <macroblock id="Offroad\Checkpoints\CheckpointSlopeScreenUp" terraforming="1" />
+          <macroblock id="Offroad\Checkpoints\CheckpointSlopeDown" terraforming="1" />
+          <macroblock id="Offroad\Checkpoints\CheckpointSlopeScreenDown" terraforming="1" />
+          <macroblock id="Offroad\Checkpoints\CheckpointSlopeRight" terraforming="1" />
+          <macroblock id="Offroad\Checkpoints\CheckpointSlopeScreenRight" terraforming="1" />
+          <macroblock id="Offroad\Checkpoints\CheckpointSlopeLeft" terraforming="1" />
+          <macroblock id="Offroad\Checkpoints\CheckpointSlopeScreenLeft" terraforming="1" />
+        </category>
+        <category name="|BlockCategory|Finish">
+          <macroblock id="Freeway\Checkpoints\FreeWayFinishRamp" randomskin="0" />
+          <macroblock id="Freeway\Checkpoints\Finish" />
+        </category>
+      </trackstyle>
+      <trackstyle name="|BlockStyle|Highway" clips="HighWaySlope2FreeClipLeft,HighWaySlope2FreeClipRight,HighWaySlope2LoopFreeClipLeft,HighWaySlope2LoopFreeClipRight,HighWaySlope2LoopRightFreeClipLeft,HighWaySlope2LoopRightFreeClipRight,HighwayDown,HighwayUp,RoadMainClip,RoadMainDown,RoadMainUp,TunnelDown,TunnelFreeClip,TunnelUp" id="1">
+        <category name="|BlockCategory|Straight">
+          <macroblock id="RoadMain\Roads\Straight" simple="1" symmetrical="1" />
+          <macroblock id="RoadMain\Roads\StraightSmall" simple="1" symmetrical="1" />
+          <macroblock id="RoadMain\Transitions\BridgeBeach" />
+          <macroblock id="RoadMain\Transitions\BridgeHill" />
+          <macroblock id="RoadMain\Transitions\BridgeHill6" />
+          <macroblock id="RoadMain\Transitions\BridgeCliffLand" />
+          <macroblock id="RoadMain\Transitions\BridgeCliffWater" />
+          <macroblock id="Tunnel\Roads\Straight" simple="1" symmetrical="1" />
+          <macroblock id="Highway\Slopes\SlopeStraight" />
+          <macroblock id="Highway\Slopes\SlopeSide" />
+        </category>
+        <category name="|BlockCategory|Turn">
+          <macroblock id="RoadMain\Turns\Corner" />
+          <macroblock id="RoadMain\Turns\CornerSmall" />
+          <macroblock id="RoadMain\Turns\Curve01" />
+          <macroblock id="RoadMain\Turns\Curve02" />
+          <macroblock id="RoadMain\Roads\DiagShortRight" symmetrical="1" />
+          <macroblock id="RoadMain\Roads\DiagShortLeft" symmetrical="1" />
+          <macroblock id="RoadMain\Roads\DiagLongRight" symmetrical="1" />
+          <macroblock id="RoadMain\Roads\DiagLongLeft" symmetrical="1" />
+          <macroblock id="Tunnel\Turns\Corner" />
+          <macroblock id="Tunnel\Turns\Curve01" />
+          <macroblock id="Tunnel\Turns\Curve02" />
+          <macroblock id="Highway\Turns\CornerUpRight" />
+          <macroblock id="Highway\Turns\CornerUpLeft" />
+          <macroblock id="Highway\Turns\CornerDownRight" />
+          <macroblock id="Highway\Turns\CornerDownLeft" />
+          <macroblock id="Highway\Turns\CurveUpRight" />
+          <macroblock id="Highway\Turns\CurveUpLeft" />
+          <macroblock id="Highway\Turns\CurveDownRight" />
+          <macroblock id="Highway\Turns\CurveDownLeft" />
+        </category>
+        <category name="|BlockCategory|Slope">
+          <macroblock id="RoadMain\Slopes\SlopeShort" />
+          <macroblock id="RoadMain\Slopes\SlopLong" />
+          <macroblock id="RoadMain\Slopes\SlopeHill" />
+          <macroblock id="RoadMain\Slopes\BiSlopeStart" />
+          <macroblock id="RoadMain\Slopes\SlopeStraight" />
+          <macroblock id="RoadMain\Slopes\BiSlopeEnd" />
+          <macroblock id="RoadMain\Slopes\SlopeTop" symmetrical="1" />
+          <macroblock id="RoadMain\Slopes\SlopeBottom" symmetrical="1" />
+          <macroblock id="RoadMain\Slopes\CurveRight" />
+          <macroblock id="RoadMain\Slopes\CurveLeft" />
+          <macroblock id="Tunnel\Slopes\SlopeShort" />
+          <macroblock id="Tunnel\Slopes\SlopeMedium" />
+          <macroblock id="Tunnel\Slopes\SlopeLong" />
+          <macroblock id="Tunnel\Slopes\BiSlopeStartShort" />
+          <macroblock id="Tunnel\Slopes\BiSlopeStartLong" />
+          <macroblock id="Tunnel\Slopes\SlopeStraight" />
+          <macroblock id="Tunnel\Slopes\BiSlopeEndShort" />
+          <macroblock id="Tunnel\Slopes\BiSlopeEndLong" />
+          <macroblock id="Tunnel\Slopes\SlopeTop" symmetrical="1" />
+          <macroblock id="Tunnel\Slopes\SlopeBottom" symmetrical="1" />
+          <macroblock id="Tunnel\Slopes\SlopeCurveRight" />
+          <macroblock id="Tunnel\Slopes\SlopeCurveLeft" />
+          <macroblock id="Highway\Slopes\SlopeTop" symmetrical="1" />
+          <macroblock id="Highway\Slopes\SlopeBottom" symmetrical="1" />
+        </category>
+        <category name="|BlockCategory|Obstacle">
+          <macroblock id="RoadMain\Obstacles\StopEngine" symmetrical="1" />
+          <macroblock id="RoadMain\Obstacles\Bump" symmetrical="1" />
+          <macroblock id="RoadMain\Obstacles\RoadMainToll3ContainersLeftEntryAir" oriented="1" />
+          <macroblock id="RoadMain\Obstacles\RoadMainToll3ContainersRightEntryAir" oriented="1" />
+          <macroblock id="RoadMain\Obstacles\Toll3" symmetrical="1" />
+          <macroblock id="RoadMain\Obstacles\Toll2" symmetrical="1" />
+          <macroblock id="RoadMain\Obstacles\OpenSide" symmetrical="1" />
+          <macroblock id="RoadMain\Roads\JumpLow" />
+          <macroblock id="RoadMain\Roads\JumpHigh" />
+          <macroblock id="Highway\Loops\HighWayLoopAir" oriented="1" randomskin="0" />
+          <macroblock id="Highway\Loops\HighWayLoopMirrorAir" oriented="1" randomskin="0" />
+          <macroblock id="Highway\Obstacles\StopEngineUpDown" />
+          <macroblock id="Highway\Obstacles\StopEngineLeftRight" />
+          <macroblock id="Highway\Transitions\BiSlopeStartShortToRoadMain" />
+          <macroblock id="Highway\Transitions\BiSlopeStartLongToRoadMain" />
+          <macroblock id="Highway\Transitions\BiSlopeEndShortToRoadMain" />
+          <macroblock id="Highway\Transitions\BiSlopeEndLongToRoadMain" />
+          <macroblock id="Highway\Loops\LoopRight" />
+          <macroblock id="Highway\Loops\LoopLeft" />
+        </category>
+        <category name="|BlockCategory|Transition">
+          <macroblock id="Freeway\Transitions\FreeWayToRoadMainStraight" />
+          <macroblock id="Freeway\Transitions\FreeWayToRoadMainSlopeShort" />
+          <macroblock id="Freeway\Transitions\FreeWayToRoadMainSlopeLong" />
+          <macroblock id="Freeway\Transitions\FreeWayToRoadMainBiSlopeStart" />
+          <macroblock id="RoadMain\Transitions\RoadMainToRoadThemePark" />
+          <macroblock id="Tunnel\Transitions\TunnelToRoadMain" />
+          <macroblock id="Tunnel\Transitions\TunnelToHighway" />
+          <macroblock id="Tunnel\Transitions\TunnelToRoadMainSlope" />
+          <macroblock id="Tunnel\Transitions\TunnelToRoadMainHill61" />
+          <macroblock id="Tunnel\Transitions\TunnelToRoadMainHill62" />
+          <macroblock id="Tunnel\Transitions\TunnelToRoadMainHill64" />
+          <macroblock id="Tunnel\Transitions\TunnelToRoadMainCliffGround0" />
+          <macroblock id="Tunnel\Transitions\TunnelToRoadMainCliffGround2" />
+          <macroblock id="Tunnel\Transitions\TunnelToRoadMainCliffGround4" />
+          <macroblock id="Tunnel\Transitions\TunnelToRoadMainCliffGround6" />
+          <macroblock id="Tunnel\Transitions\TunnelToRoadMainCliffGround8" />
+          <macroblock id="Tunnel\Transitions\TunnelToRoadMainCliffGround10" />
+          <macroblock id="Tunnel\Transitions\TunnelToRoadMainCliffWater1" />
+          <macroblock id="Tunnel\Transitions\TunnelToRoadMainCliffWater3" />
+          <macroblock id="Tunnel\Transitions\TunnelToRoadMainCliffWater5" />
+          <macroblock id="Tunnel\Transitions\TunnelToRoadMainCliffWater7" />
+          <macroblock id="Tunnel\Transitions\TunnelToRoadMainCliffWater9" />
+          <macroblock id="Tunnel\Transitions\TunnelToRoadMainCliffWater11" />
+          <macroblock id="Arena\Transitions\ArenaToRoadMain" />
+        </category>
+        <category name="|BlockCategory|Turbo">
+          <macroblock id="RoadMain\Turbos\Turbo" />
+          <macroblock id="RoadMain\Turbos\TurboSuper" />
+          <macroblock id="Tunnel\Turbos\Turbo" />
+          <macroblock id="Tunnel\Turbos\TurboUp" />
+          <macroblock id="Tunnel\Turbos\TurboDown" />
+          <macroblock id="Tunnel\Turbos\TurboSuper" />
+          <macroblock id="Tunnel\Turbos\TurboSuperUp" />
+          <macroblock id="Tunnel\Turbos\TurboSuperDown" />
+          <macroblock id="Highway\Turbos\TurboUp" />
+          <macroblock id="Highway\Turbos\TurboDown" />
+          <macroblock id="Highway\Turbos\TurboRight" />
+          <macroblock id="Highway\Turbos\TurboLeft" />
+          <macroblock id="Highway\Turbos\TurboSuperUp" />
+          <macroblock id="Highway\Turbos\TurboSuperDown" />
+          <macroblock id="Highway\Turbos\TurboSuperRight" />
+          <macroblock id="Highway\Turbos\TurboSuperLeft" />
+        </category>
+        <category name="|BlockCategory|Checkpoint">
+          <macroblock id="RoadMain\Checkpoints\Start" />
+          <macroblock id="RoadMain\Checkpoints\RoadMainCopterStartLandingRampMidAir" />
+          <macroblock id="RoadMain\Checkpoints\Checkpoint" />
+          <macroblock id="RoadMain\Checkpoints\CheckpointScreen" />
+          <macroblock id="Tunnel\Checkpoints\Checkpoint" />
+          <macroblock id="Tunnel\Checkpoints\CheckpointUp" />
+          <macroblock id="Tunnel\Checkpoints\CheckpointDown" />
+          <macroblock id="Highway\Checkpoints\CheckpointUp" />
+          <macroblock id="Highway\Checkpoints\CheckpointScreenUp" />
+          <macroblock id="Highway\Checkpoints\CheckpointDown" />
+          <macroblock id="Highway\Checkpoints\CheckpointScreenDown" />
+          <macroblock id="Highway\Checkpoints\CheckpointRight" />
+          <macroblock id="Highway\Checkpoints\CheckpointScreenRight" />
+          <macroblock id="Highway\Checkpoints\CheckpointLeft" />
+          <macroblock id="Highway\Checkpoints\CheckpointScreenLeft" />
+        </category>
+        <category name="|BlockCategory|Finish">
+          <macroblock id="RoadMain\Checkpoints\RoadMainFinishRampAir" randomskin="0" />
+          <macroblock id="RoadMain\Checkpoints\Finish" />
+          <macroblock id="Tunnel\Checkpoints\Finish" />
+        </category>
+      </trackstyle>
+      <trackstyle name="|BlockStyle|Arena" clips="ArenaBaseFreeClip,ArenaBorderFreeClipLeft,ArenaBorderFreeClipRight,ArenaLoopEndFreeClipLeft,ArenaLoopEndFreeClipRight,ArenaLoopFreeClipDown,ArenaLoopFreeClipLeft,ArenaLoopFreeClipRight,ArenaLoopFreeClipTop,ArenaLoopFreeClipUp,ArenaLoopStartFreeClipLeft,ArenaLoopStartFreeClipRight,ArenaSlope2End_FreeClipLeft,ArenaSlope2End_FreeClipRight,ArenaSlope2FreeClipDown,ArenaSlope2FreeClipUp,ArenaSlope2Start_FreeClipLeft,ArenaSlope2Start_FreeClipRight,ArenaSlope2Straight_FreeClipLeft,ArenaSlope2Straight_FreeClipRight,ArenaSlopeBase_FreeClipLeft,ArenaSlopeBase_FreeClipRight,DecoCityFloor-FreeClip,DecoCityFloor-FreeClipSmall,DecoCityFloorSlope-FreeClipLeft,DecoCityFloorSlope-FreeClipRight,DecoCityGarden-FreeClip,DecoCityGardenSlope-FreeClipLeft,DecoCityGardenSlope-FreeClipRight,RoadMainToCityFreeClipLeft,RoadMainToCityFreeClipRight" id="2">
+        <category name="|BlockCategory|Straight">
+          <macroblock id="Arena\Bases\Base" simple="1" symmetrical="1" />
+          <macroblock id="Arena\Turns\SlopeToCurveRight" />
+          <macroblock id="Arena\Turns\SlopeToCurveLeft" />
+          <macroblock id="Arena\Turns\SlopeLongToCurveRight" />
+          <macroblock id="Arena\Turns\SlopeLongToCurveLeft" />
+          <macroblock id="Arena\Walls\Straight" simple="1" symmetrical="1" />
+          <macroblock id="Arena\Loops\LoopTop" />
+        </category>
+        <category name="|BlockCategory|Turn">
+          <macroblock id="Arena\Turns\Corner" />
+          <macroblock id="Arena\Turns\Curve01" />
+          <macroblock id="Arena\Turns\Curve02" />
+          <macroblock id="Arena\Walls\Corner" symmetrical="1" />
+          <macroblock id="Arena\Walls\Curve" symmetrical="1" />
+          <macroblock id="Arena\Turns\UTurn" oriented="1" randomskin="0" />
+          <macroblock id="Arena\Turns\UTurnMirror" oriented="1" randomskin="0" />
+        </category>
+        <category name="|BlockCategory|Slope">
+          <macroblock id="Arena\Slopes\SlopeShort" />
+          <macroblock id="Arena\Slopes\BiSlopeStart" />
+          <macroblock id="Arena\Slopes\SlopeStraight" />
+          <macroblock id="Arena\Slopes\BiSlopeEnd" />
+        </category>
+        <category name="|BlockCategory|Obstacle">
+          <macroblock id="Arena\Loops\LoopStraight" oriented="1" randomskin="0" />
+          <macroblock id="Arena\Loops\ArenaWallrideAir" oriented="1" randomskin="0" />
+          <macroblock id="Arena\Loops\ArenaWallRideMirrorAir" oriented="1" randomskin="0" />
+          <macroblock id="Arena\Obstacles\StopEngine" />
+          <macroblock id="Arena\Obstacles\StopEngineUpDown" />
+          <macroblock id="Arena\Obstacles\StopEngineLeftRight" />
+          <macroblock id="Arena\Loops\LoopStart" />
+          <macroblock id="Arena\Loops\LoopEnd" />
+        </category>
+        <category name="|BlockCategory|Transition">
+          <macroblock id="Arena\Transitions\ArenaToRoadMain" />
+          <macroblock id="Arena\Transitions\ArenaToRoadThemePark" />
+        </category>
+        <category name="|BlockCategory|Turbo">
+          <macroblock id="Arena\Turbos\Turbo" />
+          <macroblock id="Arena\Turbos\TurboUp" />
+          <macroblock id="Arena\Turbos\TurboDown" />
+          <macroblock id="Arena\Turbos\TurboRight" />
+          <macroblock id="Arena\Turbos\TurboLeft" />
+          <macroblock id="Arena\Turbos\TurboSuper" />
+          <macroblock id="Arena\Turbos\TurboSuperUp" />
+          <macroblock id="Arena\Turbos\TurboSuperDown" />
+          <macroblock id="Arena\Turbos\TurboSuperRight" />
+          <macroblock id="Arena\Turbos\TurboSuperLeft" />
+        </category>
+        <category name="|BlockCategory|Checkpoint">
+          <macroblock id="Arena\Checkpoints\Start" />
+          <macroblock id="Arena\Checkpoints\ArenaCopterStartMidAir" randomskin="0" />
+          <macroblock id="Arena\Checkpoints\Checkpoint" />
+          <macroblock id="Arena\Checkpoints\CheckpointScreen" />
+          <macroblock id="Arena\Checkpoints\CheckpointUp" />
+          <macroblock id="Arena\Checkpoints\CheckpointUpScreen" />
+          <macroblock id="Arena\Checkpoints\CheckpointDown" />
+          <macroblock id="Arena\Checkpoints\CheckpointDownScreen" />
+          <macroblock id="Arena\Checkpoints\CheckpointRight" />
+          <macroblock id="Arena\Checkpoints\CheckpointRightScreen" />
+          <macroblock id="Arena\Checkpoints\CheckpointLeft" />
+          <macroblock id="Arena\Checkpoints\CheckpointLeftScreen" />
+          <macroblock id="Arena\Checkpoints\CheckpointHorizontal" />
+          <macroblock id="Arena\Checkpoints\CheckpointVertical" />
+        </category>
+        <category name="|BlockCategory|Finish">
+          <macroblock id="Arena\Checkpoints\Finish" />
+        </category>
+      </trackstyle>
+      <trackstyle name="|BlockStyle|Rollercoaster" clips="RoadThemeParkClip,RoadThemeParkFlipClip,RoadThemeParkWall-FreeClipLeft,RoadThemeParkWall-FreeClipRight,RoadThemeParkWallDown,RoadThemeParkWallUp" id="3">
+        <category name="|BlockCategory|Straight">
+          <macroblock id="RoadThemePark\Roads\Straight" simple="1" symmetrical="1" />
+          <macroblock id="RoadThemePark\Transitions\TwistToWallRight" />
+          <macroblock id="RoadThemePark\Transitions\TwistToWallRightSuper" />
+          <macroblock id="RoadThemePark\Transitions\TwistToWallLeft" />
+          <macroblock id="RoadThemePark\Transitions\TwistToWallLeftSuper" />
+          <macroblock id="RoadThemePark\Transitions\HorizontalWallToFlipTwistRight" />
+          <macroblock id="RoadThemePark\Transitions\HorizontalWallToFlipTwistRightSuper" />
+          <macroblock id="RoadThemePark\Transitions\HorizontalWallToFlipTwistLeft" />
+          <macroblock id="RoadThemePark\Transitions\HorizontalWallToFlipTwistLeftSuper" />
+          <macroblock id="RoadThemePark\HorizontalWalls\Straight" simple="1" />
+          <macroblock id="RoadThemePark\VerticalWalls\StraightLong" simple="1" />
+          <macroblock id="RoadThemePark\VerticalWalls\StraightMedium" simple="1" />
+          <macroblock id="RoadThemePark\VerticalWalls\StraightShort" simple="1" />
+          <macroblock id="RoadThemePark\VerticalWalls\TwistRight" />
+          <macroblock id="RoadThemePark\VerticalWalls\TwistRightSuper" />
+          <macroblock id="RoadThemePark\VerticalWalls\TwistLeft" />
+          <macroblock id="RoadThemePark\VerticalWalls\TwistLeftSuper" />
+          <macroblock id="RoadThemePark\Flips\Straight" simple="1" symmetrical="1" />
+        </category>
+        <category name="|BlockCategory|Turn">
+          <macroblock id="RoadThemePark\Turns\Corner" />
+          <macroblock id="RoadThemePark\Turns\Curve" />
+          <macroblock id="RoadThemePark\Roads\DiagShortRight" symmetrical="1" />
+          <macroblock id="RoadThemePark\Roads\DiagShortLeft" symmetrical="1" />
+          <macroblock id="RoadThemePark\HorizontalWalls\WallLoopRight" />
+          <macroblock id="RoadThemePark\HorizontalWalls\WallLoopLeft" />
+          <macroblock id="RoadThemePark\HorizontalWalls\DiagShortRight" />
+          <macroblock id="RoadThemePark\HorizontalWalls\DiagShortLeft" />
+          <macroblock id="RoadThemePark\TurnWalls\CornerUpRight" />
+          <macroblock id="RoadThemePark\TurnWalls\CornerUpLeft" />
+          <macroblock id="RoadThemePark\TurnWalls\CornerDownRight" />
+          <macroblock id="RoadThemePark\TurnWalls\CornerDownLeft" />
+          <macroblock id="RoadThemePark\TurnWalls\CurveUpRight" />
+          <macroblock id="RoadThemePark\TurnWalls\CurveUpLeft" />
+          <macroblock id="RoadThemePark\TurnWalls\CurveDownRight" />
+          <macroblock id="RoadThemePark\TurnWalls\CurveDownLeft" />
+          <macroblock id="RoadThemePark\VerticalWalls\DiagShortRight" />
+          <macroblock id="RoadThemePark\VerticalWalls\DiagShortLeft" />
+          <macroblock id="RoadThemePark\Transitions\VerticalWallToHorizontalWallRight" />
+          <macroblock id="RoadThemePark\Transitions\VerticalWallToHorizontalWallLeft" />
+          <macroblock id="RoadThemePark\Transitions\HorizontalWallToVerticalWallRight" />
+          <macroblock id="RoadThemePark\Transitions\HorizontalWallToVerticalWallLeft" />
+          <macroblock id="RoadThemePark\Transitions\HorizontalWallToFlipCurveRight" />
+          <macroblock id="RoadThemePark\Transitions\HorizontalWallToFlipCurveLeft" />
+          <macroblock id="RoadThemePark\Transitions\CurveToWallRight" />
+          <macroblock id="RoadThemePark\Transitions\CurveToWallLeft" />
+          <macroblock id="RoadThemePark\Flips\Corner" />
+          <macroblock id="RoadThemePark\Flips\Curve" />
+          <macroblock id="RoadThemePark\Flips\DiagShortRight" symmetrical="1" />
+          <macroblock id="RoadThemePark\Flips\DiagShortLeft" symmetrical="1" />
+        </category>
+        <category name="|BlockCategory|Slope">
+          <macroblock id="RoadThemePark\Loops\LoopInStart" />
+          <macroblock id="RoadThemePark\Loops\LoopInEnd" />
+          <macroblock id="RoadThemePark\Loops\LoopOutStart" />
+          <macroblock id="RoadThemePark\Loops\LoopOutStartSuper" />
+          <macroblock id="RoadThemePark\Loops\LoopOutEnd" />
+          <macroblock id="RoadThemePark\Loops\LoopOutEndSuper" />
+          <macroblock id="RoadThemePark\Loops\LoopRight" />
+          <macroblock id="RoadThemePark\Loops\LoopLeft" />
+          <macroblock id="RoadThemePark\HorizontalWalls\WallIn" />
+          <macroblock id="RoadThemePark\HorizontalWalls\WallOut" />
+          <macroblock id="RoadThemePark\HorizontalWalls\WallOutSuper" />
+        </category>
+        <category name="|BlockCategory|Obstacle">
+          <macroblock id="RoadThemePark\Obstacles\StopEngine" symmetrical="1" />
+          <macroblock id="RoadThemePark\Obstacles\StopEngineVerticalWall" />
+          <macroblock id="RoadThemePark\Obstacles\StopEngineHorizontalWall" />
+          <macroblock id="RoadThemePark\Obstacles\StopEngineFlip" symmetrical="1" />
+          <macroblock id="RoadThemePark\Obstacles\EndVerticalWall" />
+          <macroblock id="RoadThemePark\HorizontalWalls\EndRight" />
+          <macroblock id="RoadThemePark\HorizontalWalls\EndLeft" />
+        </category>
+        <category name="|BlockCategory|Transition">
+          <macroblock id="RoadMain\Transitions\RoadMainToRoadThemePark" />
+          <macroblock id="Arena\Transitions\ArenaToRoadThemePark" />
+        </category>
+        <category name="|BlockCategory|Turbo">
+          <macroblock id="RoadThemePark\Turbos\Turbo" />
+          <macroblock id="RoadThemePark\Turbos\TurboFlip" />
+          <macroblock id="RoadThemePark\Turbos\TurboSuper" />
+          <macroblock id="RoadThemePark\Turbos\TurboSuperFlip" />
+        </category>
+        <category name="|BlockCategory|Checkpoint">
+          <macroblock id="RoadThemePark\Checkpoints\Start" />
+          <macroblock id="RoadThemePark\Checkpoints\Checkpoint" />
+          <macroblock id="RoadThemePark\Checkpoints\CheckpointScreen" />
+          <macroblock id="RoadThemePark\Checkpoints\CheckpointFlip" />
+          <macroblock id="RoadThemePark\Checkpoints\CheckpointFlipScreen" />
+          <macroblock id="RoadThemePark\Checkpoints\CheckpointHorizontalWall" norespawn="1" />
+          <macroblock id="RoadThemePark\Checkpoints\CheckpointHorizontalWallScreen" norespawn="1" />
+          <macroblock id="RoadThemePark\Checkpoints\CheckpointVerticalWall" norespawn="1" />
+          <macroblock id="RoadThemePark\Checkpoints\CheckpointVerticalWallScreen" norespawn="1" />
+        </category>
+        <category name="|BlockCategory|Finish">
+          <macroblock id="RoadThemePark\Checkpoints\RoadThemeParkRampAir" randomskin="0" />
+          <macroblock id="RoadThemePark\Checkpoints\Finish" />
+          <macroblock id="RoadThemePark\Checkpoints\FinishFlip" />
+        </category>
+      </trackstyle>
+    </trackstyles>
+    <landstyles>
+      <landstyle name="|Landscape|Archipelago" id="0">
+        <terrain>
+          <layer type="Perlin" frequency="0.4" octaves="10.">
+            <block id="" height="110." />
+            <block id="Beach" height="125." />
+            <block id="" height="130." />
+            <block id="LandHill6" height="132." />
+            <block id="" height="150." />
+            <block id="CCC" height="152." />
+            <block id="" height="190." />
+            <block id="SeaCliff13" height="256." />
+          </layer>
+          <!--<layer type="Perlin" frequency="0.4" octaves="10.">
+            <block id="" height="110." />
+            <block id="Beach" height="140." />
+            <block id="" height="256." />
+          </layer>
+          <layer type="Perlin" frequency="0.4" octaves="10.">
+            <block id="" height="118." />
+            <block id="LandHill" height="120." />
+            <block id="" height="130." />
+            <block id="LandHill6" height="132." />
+            <block id="" height="170." />
+            <block id="SeaCliff13" height="256." />
+          </layer>-->
+        </terrain>
+        <decoration>
+          <category id="Building" ratio="0.1" />
+          <category id="Natural" ratio="0.5" />
+          <category id="Ship" ratio="0.05" />
+          <category id="Structures" ratio="0.1" />
+          <category id="Podium" ratio="0." />
+        </decoration>
+      </landstyle>
+    </landstyles>
+    <terrainstyles>
+      <terrainstyle name="|Landscape|Big island" blockid="Terrain\Terrains\1" id="0" />
+      <terrainstyle name="|Landscape|Mountains" blockid="Terrain\Terrains\2" id="1" />
+      <terrainstyle name="|Landscape|Beach" blockid="Terrain\Terrains\3" id="2" />
+      <terrainstyle name="|Landscape|Jungle" blockid="Terrain\Terrains\4" id="3" />
+      <terrainstyle name="|Landscape|Empty" blockid="Terrain\Terrains\5" id="4" />
+    </terrainstyles>
+    <decostyles>
+      <decostyle name="|BlockStyle|Decoration" id="0">
+        <category name="|Decoration|Technology" ratio="0.25" color="1.,0.196,0.109">
+        </category>
+        <category name="|Decoration|Nature" ratio="0.7" color="0.407,0.631,0.168">
+        </category>
+        <category name="|Decoration|International Turbo" ratio="0.25" color="0.,0.741,0.494">
+        </category>
+      </decostyle>
+    </decostyles>
+  </environment>
+</themepacks>

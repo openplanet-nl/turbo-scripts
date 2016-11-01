@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+	<manialink version="1">
+		<frame>
+			<frame>
+				<label id="ButtonOk" posn="55 -30 0" sizen="20 5" text="Ok" halign="center" style="CardButtonMediumS" scriptevents="1"/>
+				<label posn="95 -30 0" sizen="20 5" text="Cancel" halign="center" style="CardButtonMediumS" id="ButtonCancel" scriptevents="1"/>
+			</frame>
+			<label posn="75 67 0" sizen="132 13.5" text="Preview your Quad" style="TextButtonMedium" id="preview" halign="center" valign="center" />
+			<quad posn="75 60 0" sizen="132 74" bgcolor="FFFA" halign="center" valign="top" id="previewquad" scriptevents="1"/>
+		</frame>
+		<frame posn="-60 -20">
+			<label posn="-15 87 0" sizen="132 13.5" text="Choose Your Images" style="TextButtonMedium" id="choose" halign="center" valign="center"/>
+			<quad posn="-15 80 0" sizen="132 74" bgcolor="FFFA" halign="center" valign="top" id="imagequad"/>
+			<frame>
+				<label posn="-81 -17 0" sizen="132 13.5" text="myLabel" style="TextButtonMedium" id="test"/>
+				<label posn="-81 -6 0" sizen="25.8 10.5" text="Image name :" valign="center2" halign="left" style="TextButtonMedium"/>
+				<fileentry posn="-53 -6 0" sizen="104 7.73" default="..."  halign="left" valign="center2" style="TextButtonNav" name="imgpath" id="imgpath" folder="Media/Images"/>
+			</frame>
+			<frame>
+				<label posn="-81 -39.5 0" sizen="90 7" text="..." style="TextButtonMedium" id="imagepath" valign="center"/>
+				<label posn="30 -39.5 0" sizen="42 7" text="Set Image" style="CardButtonMedium" id="imagebutton" valign="center" halign="center" scriptevents="1"/>
+			</frame>
+			<frame posn="0 -9.54">
+				<label posn="-81 -39.5 0" sizen="90 7" text="..." style="TextButtonMedium" id="imagefocuspath" valign="center"/>
+				<label posn="30 -39.5 0" sizen="42 7" text="Set Imagefocus" style="CardButtonMedium" id="imagefocusbutton" valign="center" halign="center" scriptevents="1"/>
+			</frame>
+		</frame>
+		<script><!--
+#Include "TextLib" as TL
+
+declare CMlQuad PreviewQuad;
+declare CMlQuad ImageQuad;
+declare CMlFileEntry ImgPath;
+declare CMlLabel Test;
+declare CMlLabel ImagePath;
+declare CMlLabel ImageFocusPath;
+declare CMlLabel ImageButton;
+declare CMlLabel ImageFocusButton;
+
+Text ConvertPath(Text _Path) {
+ if (_Path == "") return "";
+ 
+ declare SplittedPath = TL::Split("\\", _Path);
+ declare Path = "file://Media";
+ declare FoundMedia = False;
+ foreach (Folder in SplittedPath) {
+  if (FoundMedia) Path^= "/"^Folder;
+  
+  if (!FoundMedia && Folder == "Media") FoundMedia = True;
+ }
+ return Path;
+}
+
+main() {
+ PreviewQuad <=> (Page.GetFirstChild("previewquad") as CMlQuad);
+ ImageQuad <=> (Page.GetFirstChild("imagequad") as CMlQuad);
+ ImgPath  <=> (Page.GetFirstChild("imgpath")  as CMlFileEntry);
+ Test  <=> (Page.GetFirstChild("test")   as CMlLabel);
+ ImagePath  <=> (Page.GetFirstChild("imagepath")   as CMlLabel);
+ ImageFocusPath  <=> (Page.GetFirstChild("imagefocuspath")   as CMlLabel);
+ ImageButton <=> (Page.GetFirstChild("imagebutton")  as CMlLabel);
+ ImageFocusButton <=> (Page.GetFirstChild("imagefocusbutton") as CMlLabel);
+ 
+ ImgPath.Value = "";
+ Test.SetText("");
+ ImagePath.SetText("...");
+ ImageFocusPath.SetText("...");
+ ImageQuad.ImageUrl = "";
+ PreviewQuad.ImageUrl = "";
+ PreviewQuad.ImageUrlFocus = "";
+ 
+ while (True) {
+  yield;
+  
+  foreach (Event in PendingEvents) {
+	if (Event.Type == CMlEvent::Type::MouseClick) {
+	switch (Event.ControlId) {
+              case "imagebutton": {
+                ImagePath.SetText(Test.Value);
+				PreviewQuad.ImageUrl = Test.Value;
+              }
+              case "imagefocusbutton": {
+                ImageFocusPath.SetText(Test.Value);
+				PreviewQuad.ImageUrlFocus = Test.Value;
+              }
+            }
+		}
+	}
+  if (ImgPath.Value != "")
+  {
+	Test.SetText(ConvertPath(ImgPath.FullFileName));
+	ImageQuad.ChangeImageUrl(ConvertPath(ImgPath.FullFileName));
+  }
+ }
+}
+--></script>
+</manialink>

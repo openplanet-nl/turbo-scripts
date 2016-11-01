@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+	<manialink version="1">
+		<frame posn="0 0">
+			<frame posn="0 45">
+				<label posn="-20 -60 0" sizen="25 5" text="Ok" style="CardButtonMediumS" scriptevents="1" id="ButtonOk" halign="center"/>
+				<label posn="20 -60 0" sizen="25 5" text="Cancel" style="CardButtonMediumS" scriptevents="1" id="ButtonCancel" halign="center"/>
+			</frame>
+			<label posn="0 30 0" sizen="130 10" text="Choose your media data" style="TextButtonMedium" id="choose" halign="center" valign="center"/>
+			<frame posn="0 15">
+				<label posn="-65 -15 0" sizen="132 13.5" text="myLabel" style="TextButtonMedium" id="test"/>
+				<label posn="-65 -5 0" sizen="25.8 10.5" text="Media name :" valign="center2" halign="left" style="TextButtonMedium"/>
+				<fileentry posn="-35 -5 0" sizen="104 7.73" default="..."  halign="left" valign="center2" style="TextButtonNav" id="medpath" folder="Media"/>
+			</frame>
+		</frame>
+		<script><!--
+#Include "TextLib" as TL
+
+declare CMlFileEntry MedPath;
+declare CMlLabel Test;
+
+Text ConvertPath(Text _Path) {
+ if (_Path == "") return "";
+ 
+ declare SplittedPath = TL::Split("\\", _Path);
+ declare Path = "file://Media";
+ declare FoundMedia = False;
+ foreach (Folder in SplittedPath) {
+  if (FoundMedia) Path^= "/"^Folder;
+  
+  if (!FoundMedia && Folder == "Media") FoundMedia = True;
+ }
+ return Path;
+}
+
+main() {
+ MedPath  <=> (Page.GetFirstChild("medpath")  as CMlFileEntry);
+ Test  <=> (Page.GetFirstChild("test")   as CMlLabel);
+ 
+ MedPath.Value = "";
+ Test.SetText("");
+ 
+ while (True) {
+  yield;
+  if (MedPath.Value != "")
+  {
+	Test.SetText(ConvertPath(MedPath.FullFileName));
+  }
+ }
+}
+--></script>
+</manialink>

@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<manialink version="2">
+	<!--
+		<stylesheet>
+			<style id="framespell1" posn="-50 -70 0" />
+			<style id="framespell2" posn="-15 -70 0" />
+			<style id="framespell3" posn="20 -70 0" />
+			
+			<style class="bgspell" style="UiSMSpectatorScoreBig" substyle="PlayerIconBg" valign="center" sizen="18 17"/>
+			<style class="shortcut" style="BgMainMenuTitleHeader" halign="center" valign="center2" posn="20 -0.5 0" sizen="5 5" textsize="3" />
+			<style class="shortcutbg" style="UiSMSpectatorScoreBig" substyle="PlayerSlotCenter" valign="center" posn="5 -1 -1" sizen="19 11"/>
+			
+			<style style="Icons64x64_2" valign="center" sizen="15 15" posn="1 -0.5 1">
+				<style id="iconspell1" substyle="RocketHit" />
+				<style id="iconspell2" substyle="LaserHit" />
+				<style id="iconspell3" substyle="ArrowHit" />
+			</style>
+			
+			<style valign="center" style="ProgressBar" drawblockbg="0" halign="center" sizen="58 8">
+				<style id="manabar" posn="-120 72" color="00FF" />
+				<style id="healthbar" posn="-120 80" color="F00F" />
+				<style id="staminabar" posn="-120 64" color="0F0F" grading="0.25" />
+			</style>
+			
+			<style id="timerframe" posn="0 90 0" />
+			<style id="timerbg" style="UiSMSpectatorScoreBig" substyle="CenterShield" halign="center" sizen="40 13" />
+			<style id="timerdisplay" posn="0 -6 1" sizen="16 7" halign="center" valign="center2" style="TextRaceChrono" textsize="5" />
+		</stylesheet>
+	-->
+	<stylesheet>
+		<style id="framespell1" posn="-161 0 0"/>
+		<style id="framespell2" posn="-161 -20 0"/>
+		<style id="framespell3" posn="-161 -40 0"/>
+		<style class="bgspell" style="UiSMSpectatorScoreBig" substyle="PlayerIconBg" valign="center" sizen="18 17"/>
+		<style class="shortcut" style="TextButtonBig" halign="center" valign="center2" posn="20 -0.5 0" sizen="5 5"/>
+		<style class="shortcutbg" style="UiSMSpectatorScoreBig" substyle="PlayerSlotRev" valign="center" posn="5 -1 -1" sizen="19 11"/>
+		<style style="Icons64x64_2" valign="center" sizen="15 15" posn="1 -0.5 1">
+			<style id="iconspell1" substyle="RocketElimination"/>
+			<style id="iconspell2" substyle="LaserElimination"/>
+			<style id="iconspell3" substyle="ArrowElimination"/>
+		</style>
+		<style valign="center" halign="center" sizen="58 8">
+			<style id="manabar" posn="-90 -80" color="00FF" rot="180"/>
+			<style id="healthbar" posn="0 -80" color="F00F" centered="1"/>
+			<style id="staminabar" posn="90 -80" color="0F0F" grading="0.25"/>
+		</style>
+		<style id="timerframe" posn="0 90 0"/>
+		<style id="timerbg" style="UiSMSpectatorScoreBig" substyle="CenterShield" halign="center" sizen="40 13"/>
+		<style id="timerdisplay" posn="0 -6 1" sizen="16 7" halign="center" valign="center2" style="TextRaceChrono" textsize="5"/>
+	</stylesheet>
+	
+	<frame id="framespell1">
+		<quad class="bgspell"/>	
+		<quad class="shortcutbg"/>
+		<quad id="iconspell1"/>	
+		<label class="shortcut" text="Q"/>
+	</frame>	
+		
+	<frame id="framespell2">	
+		<quad class="bgspell"/>	
+		<quad class="shortcutbg"/>	
+		<quad id="iconspell2"/>	
+		<label class="shortcut" text="W"/>
+	</frame>	
+		
+	<frame id="framespell3">		
+		<quad class="bgspell"/>	
+		<quad class="shortcutbg"/>	
+		<quad id="iconspell3"/>		
+		<label class="shortcut" text="E"/>
+	</frame>	
+		
+	<gauge id="manabar" ratio="0.8"/>	
+	<gauge id="healthbar" ratio="0.75"/>	
+	<gauge id="staminabar" ratio="0.4"/>
+
+	<frame id="timerframe">		
+		<quad id="timerbg"/>		
+		<label id="timerdisplay" text="6:42"/>
+	</frame>
+</manialink>

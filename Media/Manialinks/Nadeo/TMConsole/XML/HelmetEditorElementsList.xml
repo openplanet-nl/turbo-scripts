@@ -1,0 +1,30 @@
+
+<Main>
+	<Base 		file="base00.png" />
+	<Base 		file="base01.png" />
+	<Base 		file="base02.png" />
+	<Base 		file="base03.png" />
+	<Base 		file="base04.png" />
+	<Base 		file="base05.png" />
+
+	<Crest 		file="crest00.png" />
+	<Crest 		file="crest01.png" />
+	<Crest 		file="crest02.png" />
+	<Crest 		file="crest03.png" />
+	<Crest 		file="crest04.png" />
+	<Crest 		file="crest05.png" />
+
+	<Peak 		file="peak00.png" />
+	<Peak 		file="peak01.png" />
+	<Peak 		file="peak02.png" />
+	<Peak 		file="peak03.png" />
+	<Peak 		file="peak04.png" />
+
+	<Stencil 	file="stencil00.png" />
+	<Stencil 	file="stencil01.png" />
+	<Stencil 	file="stencil02.png" />
+
+	<Screws 	file="screws00.png" />
+	<Screws 	file="screws01.png" />
+	<Screws 	file="screws02.png" />
+</Main>
