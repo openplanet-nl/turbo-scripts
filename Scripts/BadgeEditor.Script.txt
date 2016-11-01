@@ -1,0 +1,3426 @@
+#RequireContext CBadgeEditor
+
+#Include "TextLib" as TextLib
+#Include "MathLib" as ML
+#Include "TextLib"																		as TextLib
+#Include "Libs/Openplanet/Manialink2.Script.txt"					   							as Manialink
+#Include "Libs/Openplanet/TMConsole/BuilderHelper.Script.txt"	   							as BuilderHelper
+#Include "Libs/Openplanet/UIPadButtons.Script.txt"				   							as LibUIButtons
+#Include "Libs/Openplanet/TMConsole/PanelParameter.Script.txt"	   							as PanelParameter
+#Include "Libs/Openplanet/TMConsole/LibAudio.Script.txt"			   							as LibAudio
+#Include "Libs/Openplanet/TMConsole/Menu/LibBadgeEditor.Script.txt"							as LibBadgeEditor
+#Include "Libs/Openplanet/TMConsole/Logger.Script.txt"			   							as Logger
+#Include "Libs/Openplanet/TMConsole/Selector.Script.txt"			   							as Selector
+#Include "Libs/Openplanet/TMConsole/Menu/MenuLayers.Script.txt"								as Layers
+#Include "Libs/Openplanet/TMConsole/Menu/ClipTransitions.Script.txt"							as ClipTransitions
+#Include "Libs/Openplanet/TMConsole/Menu/MenuMusicController.Script.txt"						as MenuMusicController
+#Include "Libs/Openplanet/TMConsole/FontManager.Script.txt"									as Font
+#Include "Libs/Openplanet/TMConsole/Volumes.Script.txt" 										as Volumes
+#Include "Libs/Openplanet/TMConsole/Menu/PimpUnlock.Script.txt" 								as PimpUnlock
+#Include "Libs/Openplanet/TMConsole/Prompter2.Script.txt"									as Prompter2
+#Include "Libs/Openplanet/TMConsole/LayerBuilders/LBRankingModule.Script.txt"				as LBRankingModule
+#Include "Libs/Openplanet/TMConsole/LayerBuilders/LBPopUp.Script.txt"						as LBPopUp
+#Include "Libs/Openplanet/TMConsole/Colors.Script.txt"										as Colors
+#Include "Libs/Openplanet/TMConsole/PopUpManager.Script.txt"									as PopUpManager
+#Include "Libs/Openplanet/TMConsole/Menu/PageHandlers/PadHandler.Script.txt"					as PadHandler
+#Include "Libs/Openplanet/TMConsole/LayerBuilders/LBSuperPopUp.Script.txt"					as LBSuperPopUp
+#Include "Libs/Openplanet/TMConsole/Menu/Controller/TaskMessageErrorController.Script.txt"	as TaskMessageErrorController
+#Include "Libs/Openplanet/TMConsole/Menu/Controller/PrivilegeController.Script.txt"			as PrivilegeController
+#Include "Libs/Openplanet/TMConsole/Menu/LibInputInfos.Script.txt"							as InputInfos
+
+#Const C_NbOfClubReward			5
+#Const C_ClubUnitsValuePerSkin	30
+
+#Const C_ImgBase	"file://Media/Manialinks/Nadeo/TMConsole/Images/"
+#Const C_ImgBase2	"file://Media/Images/TMConsole/Ingame/"
+#Const C_SizePanelX   6.
+#Const C_SizePanelY   6.
+#Const C_RATIO        12.962
+#Const C_SoundPath	"file://Media/Sounds/TMConsole/MapEditor/TMT_Trackbuilder_1.ogg"
+
+#Const C_LayerMaterialPosition 0
+#Const C_LayerColorPosition    1
+#Const C_LayerDrapeauPosition  2
+
+#Const Layers		        [0 => "Layer1", 1 => "Layer2",	2 => "Layer2"]
+
+#Const C_PageName			"BadgeEditor"
+
+#Const C_Helmet				0
+#Const C_Canyon				1
+#Const C_Valley				2
+#Const C_Lagoon				3
+#Const C_Stadium			4
+
+declare Text    G_RealSkinName;
+declare Integer G_ActiveButtonPlatform;
+
+
+
+Text GetRewardName(Integer _Index)
+{
+	return "TRA2REWARD0"^_Index;
+}
+
+Void UnlockAchievementCarCustomized() {
+	ManiaPlanet.AchievementsManager.SendEvent(DataMgr.MenuUserId, "OnCarCustomized", [0]);
+	Logger::Log("BadgeEditor - SendAchievementEvent OnCarCustomized [0]");
+}
+
+Boolean AddUplayReward(Integer _Reward)
+{
+	if(UserMgr.MainUser == Null) return False;
+	declare persistent Integer[]	PersRewardsUplay 	for UserMgr.MainUser;
+	if(!PersRewardsUplay.exists(_Reward))
+	{
+		PersRewardsUplay.add(_Reward);
+		return True;
+	}
+	return False;
+}
+
+Void UpdateUplayReward()
+{
+	if(UserMgr.MainUser == Null) return;
+	
+	declare CUILayer Layer  <=> Layers::Get("BadgeEditorUI");
+	declare Integer 				UpdateUplayReward		for Layer.LocalPage = Now;
+	declare Integer[]		Page_RewardsUplay		for Layer.LocalPage;
+	declare persistent Integer[]	PersRewardsUplay 		for UserMgr.MainUser;
+
+	Page_RewardsUplay = PersRewardsUplay;
+	UpdateUplayReward = Now;
+}
+
+Void CheckUplayRewards(Boolean _ForceUpdate)
+{
+	if(UserMgr.MainUser == Null) return;
+	
+	declare CUILayer Layer  <=> Layers::Get("BadgeEditorUI");
+	declare Boolean IsUplayReward1Purchased;
+	declare Boolean IsUplayReward2Purchased;
+	declare Boolean IsUplayReward3Purchased;
+	declare Boolean IsUplayReward4Purchased;
+	declare Boolean IsUplayReward5Purchased;
+	declare Integer UpdateUplayReward		for Layer.LocalPage = Now;
+	declare Boolean IsUpdate = False;
+
+	IsUplayReward1Purchased = ManiaPlanet.AchievementsManager.MasterServer_IsUplayRewardPurchased(DataMgr.MenuUserId, GetRewardName(3));
+	IsUplayReward2Purchased = ManiaPlanet.AchievementsManager.MasterServer_IsUplayRewardPurchased(DataMgr.MenuUserId, GetRewardName(2));
+	IsUplayReward3Purchased = ManiaPlanet.AchievementsManager.MasterServer_IsUplayRewardPurchased(DataMgr.MenuUserId, GetRewardName(4));
+	IsUplayReward4Purchased = ManiaPlanet.AchievementsManager.MasterServer_IsUplayRewardPurchased(DataMgr.MenuUserId, GetRewardName(1));
+	IsUplayReward5Purchased = ManiaPlanet.AchievementsManager.MasterServer_IsUplayRewardPurchased(DataMgr.MenuUserId, GetRewardName(5));
+	if(IsUplayReward1Purchased) {
+		if(AddUplayReward(1)) IsUpdate = True;
+	}
+	if(IsUplayReward2Purchased) {
+		if(AddUplayReward(2)) IsUpdate = True;
+	}
+	if(IsUplayReward3Purchased) {
+		if(AddUplayReward(3)) IsUpdate = True;
+	}
+	if(IsUplayReward4Purchased) {
+		if(AddUplayReward(4)) IsUpdate = True;
+	}
+	if(IsUplayReward5Purchased) {
+		if(AddUplayReward(5)) IsUpdate = True;
+	}
+
+	if(IsUpdate || _ForceUpdate)
+	{
+		UserMgr.MainUser.PersistentSave();
+		UpdateUplayReward();
+	}
+}
+
+Integer GetRewardIndex(Integer _UplayPurchaseReward)
+{
+	switch(_UplayPurchaseReward)
+	{
+		case 1: return 3;
+		case 2: return 2;
+		case 3: return 4;
+		case 4: return 1;
+		case 5: return 5;
+	}
+	return 0;
+}
+
+
+main() {
+	Logger::Log("[Start HelmetEditor]");
+	LibUIButtons::Load();
+	
+	PimpUnlock::Load(False);
+
+	declare CBadge Badge = BadgeCreate();
+	BadgeReadFromProfile(Badge, DataMgr.MenuUserId);
+	
+
+	declare Text MLSuperPopUp  = LBSuperPopUp::Build("", "");
+	Layers::Create("SuperPopUp", MLSuperPopUp);
+	declare CUILayer LayerSuperPopUp <=> Layers::Get("SuperPopUp");
+	declare Text Page_SuperPopUp for LayerSuperPopUp.LocalPage;
+	Page_SuperPopUp = "SuperPopUp";
+	Layers::Attach("SuperPopUp");
+	
+	
+	MenuMusicController::Load(C_SoundPath);
+	LibBadgeEditor::Load();
+	//UIOnlineGlobalRanking::Load();
+	
+	declare Ident[] G_FocusIds;
+	foreach(Id in MeshIds) {
+		G_FocusIds.add(Id);
+	}
+
+	declare Text[]	LayersDrapeaux   = LibBadgeEditor::GetLayersDrapeaux();
+	declare Text[]	StickersDrapeaux = LibBadgeEditor::GetStickersDrapeaux();
+	declare Text[]	StickersChiffres = LibBadgeEditor::GetStickersChiffres();
+	declare Text[]	LayersMaterials  = LibBadgeEditor::GetLayersMaterials();
+	declare Text[]	LayersColors     = LibBadgeEditor::GetLayersCouleurs();
+	declare Text[]	StickersSymboles = LibBadgeEditor::GetStickersSymboles();
+	declare Text[]	LayersSpecial    = LibBadgeEditor::GetLayersSpecial();
+	
+	declare Text 	IMGSelectorOn        = C_ImgBase^"popup-selector4-on.png";
+	declare Text 	IMGMenuBg            = C_ImgBase2^"menu-bg-1.dds";
+	declare Text 	IMGSlotMediumBg      = C_ImgBase2^"slot-medium-bg.dds";
+	declare Text 	IMGSlotMediumFg      = C_ImgBase2^"slot-medium-fg.dds";
+	
+	declare Integer Platform               = LibUIButtons::GetPlatform();
+	
+	//IMGAction2
+	//IMGAction1
+	//IMGSelect
+	//IMGCancel
+	//IMGPageUp
+	//IMGPageDown
+
+
+	declare Text 	IMG_PC_Action2                      = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"), CManiaAppEvent::EMenuNavAction::Action2);
+	declare Text 	IMG_PC_Action1                      = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"), CManiaAppEvent::EMenuNavAction::Action1);
+	declare Text 	IMG_PC_Select                       = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"), CManiaAppEvent::EMenuNavAction::Select);
+	declare Text 	IMG_PC_Cancel                       = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"), CManiaAppEvent::EMenuNavAction::Cancel);
+	declare Text 	IMG_PC_PageUp                       = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"), CManiaAppEvent::EMenuNavAction::PageUp);
+	declare Text 	IMG_PC_PageDown                     = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PC"), CManiaAppEvent::EMenuNavAction::PageDown);
+
+	declare Text 	IMG_PS_Action2                      = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::Action2);
+	declare Text 	IMG_PS_Action1                      = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::Action1);
+	declare Text 	IMG_PS_Select                       = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::Select);
+	declare Text 	IMG_PS_Cancel                       = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::Cancel);
+	declare Text 	IMG_PS_PageUp                       = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::PageUp);
+	declare Text 	IMG_PS_PageDown                     = LibUIButtons::GetImage(LibUIButtons::GetPlatform("PS4"), CManiaAppEvent::EMenuNavAction::PageDown);
+
+	declare Text 	IMG_XB_Action2                      = LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::Action2);
+	declare Text 	IMG_XB_Action1                      = LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::Action1);
+	declare Text 	IMG_XB_Select                       = LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::Select);
+	declare Text 	IMG_XB_Cancel                       = LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::Cancel);
+	declare Text 	IMG_XB_PageUp                       = LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::PageUp);
+	declare Text 	IMG_XB_PageDown                     = LibUIButtons::GetImage(LibUIButtons::GetPlatform("XB1"), CManiaAppEvent::EMenuNavAction::PageDown);
+
+	declare Text 	SFX_Garage_Paint_1              = LibAudio::GetSound("SFX_Garage_Paint_1");
+	declare Text 	SFX_Garage_Paint_2              = LibAudio::GetSound("SFX_Garage_Paint_2");
+	declare Text 	SFX_Garage_Paint_3              = LibAudio::GetSound("SFX_Garage_Paint_3");
+	declare Text 	SFX_Garage_Sticker              = LibAudio::GetSound("SFX_Garage_Sticker");
+	declare Text 	SFX_Garage_MetalAlloy           = LibAudio::GetSound("SFX_Garage_MetalAlloy");
+	declare Text 	TM_AMB_Garage_Loop              = LibAudio::GetSound("TM_AMB_Garage_Loop");
+	declare Text 	SFX_UI_GarageLateralCurtain_IN  = LibAudio::GetSound("SFX_UI_GarageLateralCurtain_IN");
+	declare Text 	SFX_UI_GarageLateralCurtain_OUT = LibAudio::GetSound("SFX_UI_GarageLateralCurtain_OUT");
+
+	declare Text    IMGBackground    = C_ImgBase^"Trame_XPLOD.tga";
+
+	//InputInfos::Init("Main", 36., SM_SizeY, 1.);
+	//InputInfos::AddInput(5., "Select");
+	//InputInfos::AddInput(5., "Cancel");
+	//InputInfos::AddInput(7., "Action1");
+	//InputInfos::AddInput(8., "Action2");
+	//InputInfos::AddInput(8., "IMGPageUp");
+	//InputInfos::AddInput(8., "IMGPageDown");
+	
+	//InputInfos::SetConstantInput("Back"		, _("|16 chars max|BACK"));
+	//InputInfos::SetConstantInput("Select"		, _("|16 chars max|ACTION"));
+	//InputInfos::SetConstantInput("try"		, _("|16 chars max|CRITERIA"));
+	//InputInfos::SetConstantInput("LStickPress"	, _("|16 chars max|REFRESH"));
+
+
+
+
+	declare Text 	SoundSelect            = LibAudio::GetSoundSelect();
+	declare Text 	SoundMove              = LibAudio::GetSoundMove();
+	declare Text 	SoundPageBack          = LibAudio::GetSound("PageBack");
+
+	declare Integer Count_InstancesY     = 3;
+	declare Integer Count_InstancesX     = 2;
+	declare Real	SizeY_Total          = 147.5; //146.3
+	declare Real	SizeX_Total          = 102.5; //102.5
+	declare Real	MarginY_Button       = -2.0; //0.6;
+	declare Real	MarginX_Button       = 0.6; //0.6;
+	declare Real	SizeXQuad            = (SizeX_Total - Count_InstancesX*MarginX_Button) / Count_InstancesX;
+	declare Real	SizeYQuad            = 50.7;
+	declare Real	PosnXLabel           = -SizeXQuad;
+	declare Real	PosnYLabel           = 0.;
+	declare Real	PosYFirstQuad        = 52.5; //52.67;
+	declare Real	PosXFirstQuad        = 88.7;  //88.7;
+	declare Text 	IMG_CustomFG    	 = C_ImgBase^"Helmets/QuadHelmetFG2.dds";
+	declare Text 	IMG_CustomBigFG    	 = C_ImgBase^"slot-big-fg2.dds";
+	
+
+	declare Text ImgLogoCanyon          = C_ImgBase   ^ "Logos/logo_canyon_menu.dds";
+	declare Text ImgLogoValley          = C_ImgBase   ^ "Logos/logo_valley_menu.dds";
+	declare Text ImgLogoLagoon          = C_ImgBase   ^ "Logos/logo_lagoon_menu.dds";
+	declare Text ImgLogoStadium         = C_ImgBase   ^ "Logos/logo_stadium_menu.dds";
+	
+	declare Real	SizeX_SubMTotal           = PanelParameter::GetSizePanelX(Count_InstancesX*1.25*1.2);
+	declare Real	SizeY_SubMTotal           = PanelParameter::GetSizePanelY(C_SizePanelY*1.2);
+	
+	/////////////////////////////////////////
+
+
+	/////////////////////////////////////////Parametre Création du ModelKind
+	declare Integer Count_InstancesX_ModelKind = 1;
+	declare Integer Count_InstancesY_ModelKind = 2;
+	declare Real	MarginX_ModelKind          = 0.0;
+	declare Real	MarginY_ModelKind          = 0.0;
+	declare Real	SizeX_ModelKindTotal       = 102.2; //89.5
+	declare Real	SizeY_ModelKindTotal       = 129.6; //162.
+	declare Real	SizeXQuad_ModelKind        = (SizeX_ModelKindTotal - Count_InstancesX_ModelKind*MarginX_ModelKind) / Count_InstancesX_ModelKind*1. + Count_InstancesX_ModelKind*MarginX_ModelKind;
+	declare Real	SizeYQuad_ModelKind        = (SizeY_ModelKindTotal - Count_InstancesY_ModelKind*MarginY_ModelKind) / Count_InstancesY_ModelKind*1. + Count_InstancesY_ModelKind*MarginY_ModelKind;
+	declare Real	PosYFirstQuad_ModelKind    = 36.3; //Up
+	declare Real	PosXFirstQuad_ModelKind    = 89.0; //Left
+	/////////////////////////////////////////
+	
+	declare Real	SizeXSubQuad              = (SizeX_SubMTotal - Count_InstancesX*MarginX_Button) / Count_InstancesX*1.;
+	declare Real	SizeYSubQuad              = (SizeY_SubMTotal - Count_InstancesY*MarginY_Button) / Count_InstancesY*1.;
+
+	declare Text 	IMGGarageLegend           = C_ImgBase^"Helmets/LEGEND.tga";
+	declare Text 	IMGGarageCustom           = C_ImgBase^"Helmets/CUSTOM.tga";
+	declare Text 	IMGGrid                   = C_ImgBase^"Helmets/grid-01.tga";
+
+
+	/////////////////////////////////////////Parametre Création des Sub-menus
+	declare Integer Count_InstancesX_SubMenuMax  = 8;
+	declare Integer Count_InstancesY_SubMenuMax  = 15;
+	//Name
+	declare Text[]  IMGNames               = LibBadgeEditor::GetImgName();
+	//Drapeau
+	declare Integer Count_InstancesX_Drapeau  = 7;
+	declare Integer Count_InstancesY_Drapeau  = 14;
+	declare Real	MarginX_Drapeau           = 1.4;
+	declare Real	MarginY_Drapeau           = 1.4;
+	declare Real	SizeX_DrapeauTotal        = 103.3;
+	declare Real	SizeY_DrapeauTotal        = 113.6;
+	declare Real	SizeXQuad_Drapeau         = (SizeX_DrapeauTotal - Count_InstancesX_Drapeau*MarginX_Drapeau) / Count_InstancesX_Drapeau*1.;
+	declare Real	SizeYQuad_Drapeau         = (SizeY_DrapeauTotal - Count_InstancesY_Drapeau*MarginY_Drapeau) / Count_InstancesY_Drapeau*1.;
+	declare Real	PosXFirstQuad_Drapeau     = 97.9;
+	declare Real	PosYFirstQuad_Drapeau     = 64.1;
+	declare Text 	IMGBgDrapeaux1            = C_ImgBase^"Helmets/Base/menu_flag1.dds";
+	declare Text 	IMGBgDrapeaux2            = C_ImgBase^"Helmets/Base/menu_flag2.dds";
+	declare Boolean IsJapan = LibUIButtons::IsJapan();
+	if(IsJapan) IMGBgDrapeaux2            = C_ImgBase^"Helmets/Base/menu_flag2Jap.dds";
+
+	declare Text[]  IMGDrapeaux               = LibBadgeEditor::GetImgDrapeaux();
+	declare Text[]  NamesDrapeaux             = LibBadgeEditor::GetNamesDrapeaux();
+
+	//Couleur
+	declare Integer Count_InstancesX_Couleur  = 7;
+	declare Integer Count_InstancesY_Couleur  = 8;
+	declare Real	MarginX_Couleur           = 0.5;
+	declare Real	MarginY_Couleur           = 0.7;
+	declare Real	SizeX_CouleurTotal        = 102.1;
+	declare Real	SizeY_CouleurTotal        = 113.6;
+	declare Real	SizeXQuad_Couleur         = (SizeX_CouleurTotal - Count_InstancesX_Couleur*MarginX_Couleur) / Count_InstancesX_Couleur*1.;
+	declare Real	SizeYQuad_Couleur         = (SizeY_CouleurTotal - Count_InstancesY_Couleur*MarginY_Couleur) / Count_InstancesY_Couleur*1.;
+	//declare Real	SizeYQuad_Couleur         = 12.4;
+	declare Real	PosXFirstQuad_Couleur     = 98.0;
+	declare Real	PosYFirstQuad_Couleur     = 61.6;
+	declare Text 	IMGBgCouleur              = C_ImgBase^"Helmets/Base/Color.dds";
+	declare Text 	IMGLockCouleur            = C_ImgBase^"Helmets/Locked/lock_color.dds";
+	//declare Text 	IMGBgCouleur              = "";
+	declare Text[]  IMGCouleurs               = LibBadgeEditor::GetImgCouleurs();
+	//Symbole
+	declare Integer Count_InstancesX_Symbole  = 8;
+	declare Integer Count_InstancesY_Symbole  = 10;
+	declare Real	MarginX_Symbole           = 0.6;
+	declare Real	MarginY_Symbole           = 0.6;
+	declare Real	SizeX_SymboleTotal        = 102.5;
+	declare Real	SizeY_SymboleTotal        = 122.6;
+	declare Real	SizeXQuad_Symbole         = (SizeX_SymboleTotal - Count_InstancesX_Symbole*MarginX_Symbole) / Count_InstancesX_Symbole*1.;
+	declare Real	SizeYQuad_Symbole         = (SizeY_SymboleTotal - Count_InstancesY_Symbole*MarginY_Symbole) / Count_InstancesY_Symbole*1.;
+	declare Real	PosXFirstQuad_Symbole     = 97.7;
+	declare Real	PosYFirstQuad_Symbole     = 63.0;
+	declare Text 	IMGBgSymbole              = C_ImgBase^"Helmets/Base/Mascot.dds";
+	declare Text 	IMGLockSymbole            = C_ImgBase^"Helmets/Locked/lock_mascot.dds";
+	declare Text[]  IMGSymboles               = LibBadgeEditor::GetImgSymboles();
+	//Chiffre
+	declare Integer Count_InstancesX_Chiffre  = 7;
+	declare Integer Count_InstancesY_Chiffre  = 14;
+	declare Real	MarginX_Chiffre           = 0.4;
+	declare Real	MarginY_Chiffre           = 0.3;
+	declare Real	SizeX_ChiffreTotal        = 102.1;
+	declare Real	SizeY_ChiffreTotal        = 145.2;
+	declare Real	SizeXQuad_Chiffre         = (SizeX_ChiffreTotal - Count_InstancesX_Chiffre*MarginX_Chiffre) / Count_InstancesX_Chiffre*1.;
+	declare Real	SizeYQuad_Chiffre         = (SizeY_ChiffreTotal - Count_InstancesY_Chiffre*MarginY_Chiffre) / Count_InstancesY_Chiffre*1.;
+	declare Real	PosXFirstQuad_Chiffre     = 97.9;
+	declare Real	PosYFirstQuad_Chiffre     = 71.2;
+	declare Text 	IMGBgChiffre              = C_ImgBase^"Helmets/Base/Number.dds";
+	declare Text 	IMGLockChiffre            = C_ImgBase^"Helmets/Locked/lock_number.tga";
+	declare Text[]  IMGChiffres               = LibBadgeEditor::GetImgChiffres();
+	//Material
+	declare Integer Count_InstancesX_Material = 3;
+	declare Integer Count_InstancesY_Material = 3;
+	declare Real	MarginX_Material          = 0.5;
+	declare Real	MarginY_Material          = 0.6;
+	declare Real	SizeX_MaterialTotal       = 102.6;
+	declare Real	SizeY_MaterialTotal       = 99.0;
+	declare Real	SizeXQuad_Material        = (SizeX_MaterialTotal - Count_InstancesX_Material*MarginX_Material) / Count_InstancesX_Material*1.;
+	declare Real	SizeYQuad_Material        = (SizeY_MaterialTotal - Count_InstancesY_Material*MarginY_Material) / Count_InstancesY_Material*1.;
+	declare Real	PosXFirstQuad_Material    = 97.7;
+	declare Real	PosYFirstQuad_Material    = 44.9;
+	declare Text 	IMGBgMaterial             = C_ImgBase^"Helmets/Base/Material.dds";
+	declare Text 	IMGLockMaterial           = C_ImgBase^"Helmets/Locked/lock_material.dds";
+	declare Text[]  IMGMaterials              = LibBadgeEditor::GetImgMaterials();
+	
+	//Special
+	declare Integer Count_InstancesX_Special = 3;
+	declare Integer Count_InstancesY_Special = 2;
+	declare Real	MarginX_Special          = 0.5;
+	declare Real	MarginY_Special          = 0.;
+	declare Real	SizeX_SpecialTotal       = 102.6;
+	declare Real	SizeY_SpecialTotal       = 67.0; //99.
+	declare Real	SizeXQuad_Special        = (SizeX_SpecialTotal - Count_InstancesX_Special*MarginX_Special) / Count_InstancesX_Special*1.;
+	declare Real	SizeYQuad_Special        = (SizeY_SpecialTotal - Count_InstancesY_Special*MarginY_Special) / Count_InstancesY_Special*1.;
+	//declare Real	SizeXQuad_Special        = (SizeX_SpecialTotal - Count_InstancesX_Special*MarginX_Special) / Count_InstancesX_Special*1.;
+	//declare Real	SizeYQuad_Special        = 22.4;
+	declare Real	PosXFirstQuad_Special    = 97.7;
+	declare Real	PosYFirstQuad_Special    = 52.9;
+	declare Text 	IMGBgSpecial             = C_ImgBase^"Helmets/Special/menu_specskin.tga";
+	declare Text 	IMGLockSpecial           = C_ImgBase^"Helmets/Locked/lock_material.dds";
+	//declare Text[]  IMGSpecials              = LibBadgeEditor::GetImgSpecial();
+	
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	
+	declare Real	SM_SizeX             = SizeXQuad_ModelKind;
+	declare Real	SM_SizeY             = SM_SizeX / C_RATIO;
+	declare Integer	NumberOfBG           = 20;
+	declare Real	SM_Separator           = SM_SizeY * 0.095;
+	declare Real	SM_SizeYElement        = SM_SizeY - SM_Separator-0.4;
+
+	declare Real	SM_BaseSizeX         = SM_SizeX+0.;
+
+	declare Integer UplayPurchaseReward = -1;
+
+	declare Text MLText = """
+	
+	<framemodel id="Frame_Button">
+		<label halign="center" valign="center" style="TextButtonNav" posn="{{{PosnXLabel}}} {{{PosnYLabel}}} 2"
+		 id="Label_Name" textsize="6." textcolor="fff" sizen="{{{SizeXQuad-15}}}"/>
+		<quad halign="center" valign="center" sizen="{{{SizeXQuad}}} {{{SizeYQuad}}}"  posn="{{{-SizeXQuad}}} {{{0}}}"
+		 id="Quad_IconBase" opacity="1."  scale="1.0"/>
+
+		<quad halign="center" valign="center" sizen="{{{SizeXQuad}}} {{{SizeYQuad}}}" bgcolor="9005" posn="{{{-SizeXQuad}}} {{{0}}} 10"
+		 id="Quad_FG" opacity="1.0"  scale="1.0" image="{{{IMG_CustomFG}}}" blendmode="Add"/>
+
+		<quad halign="center" valign="center" sizen="{{{SizeXQuad+0.5}}} {{{SizeYQuad}}}" bgcolor="000" id="Quad_Bg" opacity="0."/>
+	</framemodel>
+		
+	<framemodel id="FrameInstance_ModelKind">
+		<quad halign="center" valign="center" sizen="{{{SizeXQuad_ModelKind-8.5}}} {{{SizeYQuad_ModelKind}}}" bgcolor="000" posn="0 0.5 1" keepratio="Fit" id="Quad_ModelKind" opacity="1.0"  scale="1.0" />
+	</framemodel>
+	
+
+	<framemodel id="Frame_SubButton">
+		<quad halign="center" valign="center" sizen="{{{SizeXSubQuad}}} {{{SizeYSubQuad}}}" bgcolor="808" posn="{{{-SizeXSubQuad}}} {{{0}}}"
+		 id="Quad_SubIconBase" opacity="0.0"  scale="1."/>
+
+
+		<quad halign="center" valign="center" sizen="5 5" bgcolor="fff" posn="{{{-SizeXSubQuad}}} {{{0}}}"
+		 id="Quad_SubNew" opacity="0.0"  scale="1."/>
+
+		<quad halign="center" valign="center" sizen="{{{SizeXSubQuad}}} {{{SizeYSubQuad}}}" bgcolor="808" posn="{{{-SizeXSubQuad}}} {{{0}}}"
+		 id="Quad_SubLock" opacity="1."  scale="1.0"/>
+	</framemodel>
+	
+
+	<quad halign="center" valign="center" keepratio="Fit" image="{{{LocalUser.AvatarUrl}}}"
+	sizen="330 330"  posn="0 0 5" opacity="0.0" />
+
+	<frame id="Frame_InputInfos" posn="100 -40. -1">
+		{{{InputInfos::InjectInManialink()}}}
+		<frame posn="-123 -58.0 0">
+			<quad id="Quad_Enviro"   halign="center"  valign="center" sizen="25. 25." opacity="1.0" posn="0.2 0 6" keepratio="fit"/>
+			""";
+		for (I, 0, 2) {
+			declare Text Image;
+			declare Text Image2;
+			switch (I) {
+				case LibUIButtons::GetPlatform("PC") 	: {
+					Image  = IMG_PC_PageUp;
+					Image2 = IMG_PC_PageDown;
+				}
+				case LibUIButtons::GetPlatform("PS4") 	: {
+					Image  = IMG_PS_PageUp;
+					Image2 = IMG_PS_PageDown;
+				}
+				case LibUIButtons::GetPlatform("XB1") 	: {
+					Image  = IMG_XB_PageUp;
+					Image2 = IMG_XB_PageDown;
+				}
+			}
+		
+			MLText ^= """
+				<quad id="Quad_Input_PageUp{{{I}}}"	  halign="left"  valign="center" sizen="10. 10." image="{{{Image}}}"   posn="3 -16 6" keepratio="fit" colorize="fff"/>
+				<quad id="Quad_Input_PageDown{{{I}}}" halign="right" valign="center" sizen="10. 10." image="{{{Image2}}}" posn="0 -16 6" keepratio="fit" colorize="fff"/>
+			""";
+		}
+
+	MLText ^= """
+				<quad id="MouseInput_NextPage" scriptevents="1" opacity="0." halign="left"  valign="center" sizen="10. 10."  posn="3 -16 10" keepratio="fit" colorize="fff"/>
+				<quad id="MouseInput_PrevPage" scriptevents="1" opacity="0." halign="right" valign="center" sizen="10. 10." posn="0 -16 10" keepratio="fit" colorize="fff"/>
+		</frame>
+		
+		<quad  halign="center" valign="top" sizen="47.5 {{{SM_SizeYElement+1.1}}}" scriptevents="1" opacity="0.0" posn="27.4 -69.3 5" id="MouseInput_InputInfo_Select" />
+		""";
+		for (I, 0, 2) {
+			declare Text Image;
+			switch (I) {
+				case LibUIButtons::GetPlatform("PC") 	: Image = IMG_PC_Select;
+				case LibUIButtons::GetPlatform("PS4") 	: Image = IMG_PS_Select;
+				case LibUIButtons::GetPlatform("XB1") 	: Image = IMG_XB_Select;
+			}
+		
+			MLText ^= """<quad id="Quad_Input_Select{{{I}}}" halign="center" valign="top" sizen="6.4 6.4" opacity="1.0" image="{{{Image}}}" posn="8.7 -69.9 3" hidden="0"/> """;
+		
+		}
+	MLText ^= """
+		<quad  halign="center" valign="top" sizen="6.4 6.4" opacity="0.0" image="{{{IMG_PC_Select}}}" posn="8.7 -69.9 3" />
+
+		<label halign="left" valign="center" posn="12.7 -72.7 4"  textfont="{{{Font::GetFontName("MainSmall2")}}}" id="Label_Select" sizen="37" textsize="4." textcolor="fff" textprefix="$t"/>
+		
+		<quad  halign="center" valign="top" sizen="47.5 {{{SM_SizeYElement+1.1}}}" opacity="0.0" posn="-27.3 -69.3 5" scriptevents="1" id="MouseInput_InputInfo_Cancel" />
+		""";
+		for (I, 0, 2) {
+			declare Text Image;
+			switch (I) {
+				case LibUIButtons::GetPlatform("PC") 	: Image = IMG_PC_Cancel;
+				case LibUIButtons::GetPlatform("PS4") 	: Image = IMG_PS_Cancel;
+				case LibUIButtons::GetPlatform("XB1") 	: Image = IMG_XB_Cancel;
+			}
+		
+			MLText ^= """<quad id="Quad_Input_Cancel{{{I}}}" halign="center" valign="top" sizen="6.4 6.4" opacity="1.0" image="{{{Image}}}" posn="-46.7 -69.9 3" /> """;
+				
+		
+		}
+	MLText ^= """
+		<label halign="left" valign="center" posn="-42.7 -72.7 4" textfont="{{{Font::GetFontName("MainSmall2")}}}" id="Label_Cancel" sizen="37" textsize="4." textcolor="fff" textprefix="$t"/>
+
+		<frame id="Frame_Preview" posn="0 8 0" hidden="1">
+			<quad  halign="center" valign="top" sizen="47.5 {{{SM_SizeYElement+1.1}}}" opacity="0.0" posn="27.3 -69.3 5" scriptevents="1" id="MouseInput_InputInfo_Action1" />
+			""";
+		for (I, 0, 2) {
+			declare Text Image;
+			switch (I) {
+				case LibUIButtons::GetPlatform("PC") 	: Image = IMG_PC_Action1;
+				case LibUIButtons::GetPlatform("PS4") 	: Image = IMG_PS_Action1;
+				case LibUIButtons::GetPlatform("XB1") 	: Image = IMG_XB_Action1;
+			}
+		
+			MLText ^= """<quad id="Quad_Input_Action1{{{I}}}" halign="center" valign="top" sizen="6.4 6.4" opacity="1.0" image="{{{Image}}}" posn="8.7 -69.9 3" />""";
+			
+				
+		
+		}
+	MLText ^= """
+			<label halign="left" valign="center" posn="12.7 -72.7 4" textfont="{{{Font::GetFontName("MainSmall2")}}}" id="Label_Preview" sizen="37" textsize="4." textcolor="fff" textprefix="$t"/>
+		</frame>
+
+	</frame>
+	
+	<frame id="Frame_Wait" hidden="0" posn="0 0 30">
+		<label 
+		posn="0 4.0 0" 
+		sizen="120 9" 
+		textfont="TMAG-super-italic-01" 
+		textsize="11" 
+		textcolor="E6D900" 
+		halign="center" 
+		valign="bottom"
+		autonewline="1" 
+		maxline="4"
+		textprefix="$t"
+		text="Trackmania"
+		/>
+		<label id="Message" 
+		posn="0 6.0 0" 
+		sizen="175" 
+		textfont="TMAG-super-italic-01" 
+		textsize="10.0" 
+		halign="center" 
+		valign="top"
+		autonewline="1" 
+		maxline="3"
+		textprefix="$t"
+		linespacing="0.85"
+		translate="1"
+		text="{{{_("Please wait...")}}}"
+		/>
+		<quad halign="center" valign="center" sizen="320 180" image="{{{IMGBackground}}}" opacity="1."/>
+	</frame>
+	<frame id="Frame_Throbber" posn="148 -62 2">
+		<label id="Message" 
+		posn="0 6.0 0" 
+		sizen="175" 
+		textfont="TMAG-super-italic-01" 
+		textsize="5.0" 
+		halign="right" 
+		valign="center"
+		textprefix="$t"
+		translate="1"
+		text="{{{_("Please wait...")}}}"
+		/>
+	</frame>
+
+	<frame id="Frame_All" hidden="0" posn="-180 0 0">
+		
+
+		<label halign="left" valign="center" posn="-139.7 72.7 10"  textfont="{{{Font::GetFontName("Main")}}}" id="Label_Title" sizen="165"
+		textsize="11." textcolor="fff" textprefix="$t" text=""/>
+		
+
+		<frame id="Frame_Background" hidden="0" posn="89 0 -1">
+		 	""";
+
+		 	for(I, 0, NumberOfBG - 1)
+		 	{
+				declare Real Hack_Decale = 0.; //Permet de regler le problème de décalage de size assets récupérées
+				if(I >= 10)Hack_Decale = -3.0;
+		 		declare Real PosnY = 77.6 - Hack_Decale - I * SM_SizeY;
+		 		declare Real PosnX = 0.;
+		 		MLText^="""
+			<quad halign="center" valign="top" sizen="{{{SM_SizeX}}} {{{SM_SizeY}}}" image="{{{IMGMenuBg}}}" opacity="1." posn="{{{PosnX}}} {{{PosnY}}} 1"/>
+		 		""";
+		 	}
+
+
+			 MLText^="""
+		</frame>
+
+
+
+
+		<frame id="Frame_ModelKind" hidden="0">
+			{{{Selector::InsertFrameworkInManialink(2, SizeXQuad_ModelKind, SizeYQuad_ModelKind, PosXFirstQuad_ModelKind, PosYFirstQuad_ModelKind, MarginX_ModelKind, MarginY_ModelKind, "Selector_ModelKind", 1.16)}}}
+			<frame clip="true" clipsizen="{{{SizeX_Total-0.5}}} {{{SizeY_Total+SM_SizeYElement}}}" clipposn="89.1 0">
+				<frame id="ModelKindContent">
+					<quad  halign="center" valign="top" sizen="320 180" bgcolor="009" opacity="0.0"  posn="180 90 0" />
+
+					<quad bgcolor="fff" halign="left" valign="top" keepratio="Fit"
+					 sizen="{{{SM_BaseSizeX}}} {{{SM_SizeYElement}}}"  posn="38 {{{77}}} 2" opacity="1.0" />
+					<label halign="left" valign="center" style="TextButtonNav" posn="{{{32+SM_SizeY}}} {{{74.1}}} 3" text="Garage"
+					 id="Label_Title" textsize="4." textcolor="000" sizen="{{{SizeXQuad-15}}}" textfont="{{{Font::GetFontName("Main")}}}"/>
+
+					<quad image="{{{IMGSlotMediumFg}}}" halign="left" valign="top"
+					 sizen="{{{SM_BaseSizeX}}} {{{SM_SizeYElement}}}"  posn="38 {{{77}}} 4" opacity="1.0" />
+		
+					<quad halign="center" valign="center" sizen="{{{SizeXQuad_ModelKind+0.4}}} {{{SizeYQuad_ModelKind*2.+0.5}}}" image="{{{IMGGrid}}}" posn="88.9 3.5 0" />
+			""";
+			//SubMenu
+			for(I, 0, Count_InstancesY_ModelKind - 1)
+			{
+				declare Real IndexY = I*1.;
+				declare Real PosnY = PosYFirstQuad_ModelKind - IndexY*SizeYQuad_ModelKind - IndexY*MarginY_ModelKind*1.;
+				//declare Real PosnY = PosYFirstQuad;
+				for(J,0,Count_InstancesX_ModelKind-1)
+				{
+					declare Real IndexJ = J*1.;
+					//declare Real PosnX = PosXFirstSubQuad + IndexJ*SizeXQuad + IndexJ*MarginX_Button*1. + MarginX_Button/2. + SizeXQuad/2 - SizeXQuad*(Count_InstancesX-1);
+					declare Real PosnX = PosXFirstQuad_ModelKind+ IndexJ*SizeXQuad_ModelKind + IndexJ*MarginX_ModelKind*1.;
+
+					MLText^="""
+					<frame posn="{{{PosnX}}} {{{PosnY}}} 0." id="FrameInstance_ModelKind{{{I}}}" >
+						<frameinstance modelid="FrameInstance_ModelKind" />
+						<quad halign="center" valign="center" sizen="{{{SizeXQuad_ModelKind}}} {{{SizeYQuad_ModelKind}}}" posn="0 0.5 4" opacity="0." scriptevents="1" id="MouseInput_ModelKind_{{{I}}}" />
+					</frame>
+				{{{Prompter2::InjectInManialink("PromptModelKind"^I, <23. , PosnY+0.6, 3.>, <88.5, 84.>, 4, Font::GetFontName("Main"))}}}
+
+					""";
+				}
+			}
+		
+			MLText^="""
+
+				</frame>
+			</frame>
+		</frame>
+
+		{{{Selector::InsertFrameworkInManialink(8, SizeXQuad_Special,  SizeYQuad_Special,  0., 0., MarginX_Special,  MarginY_Special,  "Frame_Selector_SM0", 1.33)}}}
+		{{{Selector::InsertFrameworkInManialink(4, SizeXQuad_Drapeau,  SizeYQuad_Drapeau,  0., 0., MarginX_Drapeau,  MarginY_Drapeau,  "Frame_Selector_SM1", 3.3)}}}
+		{{{Selector::InsertFrameworkInManialink(5, SizeXQuad_Couleur,  SizeYQuad_Couleur,  0., 0., MarginX_Couleur,  MarginY_Couleur,  "Frame_Selector_SM2", 1.7)}}}
+		{{{Selector::InsertFrameworkInManialink(6, SizeXQuad_Symbole,  SizeYQuad_Symbole,  0., 0., MarginX_Symbole,  MarginY_Symbole,  "Frame_Selector_SM3", 1.8)}}}
+		{{{Selector::InsertFrameworkInManialink(7, SizeXQuad_Chiffre,  SizeYQuad_Chiffre,  0., 0., MarginX_Chiffre,  MarginY_Chiffre,  "Frame_Selector_SM4", 1.9)}}}
+		{{{Selector::InsertFrameworkInManialink(8, SizeXQuad_Material, SizeYQuad_Material, 0., 0., MarginX_Material, MarginY_Material, "Frame_Selector_SM5", 1.33)}}}
+
+
+		<frame id="Frame_SubMenu" hidden="1" clip="true" clipsizen="{{{SizeX_Total-0.5}}} {{{SizeY_Total+SM_SizeYElement}}}" clipposn="89.1 0">
+			<frame id="SubMenuContent">
+				<frame id="Frame_FlagInfo" hidden="1">
+					<quad bgcolor="fff" halign="left" valign="top" keepratio="Fit"
+					 sizen="{{{SM_BaseSizeX}}} {{{SM_SizeYElement}}}"  posn="38 {{{77}}} 2" opacity="1.0" />
+					<quad image="{{{IMGSlotMediumFg}}}" halign="left" valign="top"
+					 sizen="{{{SM_BaseSizeX}}} {{{SM_SizeYElement}}}"  posn="38 {{{77}}} 4" opacity="1.0" />
+					<label halign="left" valign="center" style="TextButtonNav" posn="{{{40}}} {{{74.1}}} 3"
+					 id="Label_SubMenuTitle" textsize="4." textcolor="000" sizen="{{{SizeXQuad*2-3.}}}" textfont="{{{Font::GetFontName("Main")}}}"/>
+				</frame>
+				<frame id="Frame_Page" hidden="1">
+					<quad bgcolor="fff" halign="right" valign="top"
+					 sizen="{{{SM_BaseSizeX/3.78}}} {{{SM_SizeYElement}}}"  posn="{{{37.9 + SM_BaseSizeX}}} {{{71.4-SM_SizeY*18.}}} 2" opacity="1.0" />
+					<quad image="{{{IMGSlotMediumFg}}}" halign="right" valign="top" sizen="{{{SM_BaseSizeX/3.78}}} {{{SM_SizeYElement}}}"  posn="{{{37.9 + SM_BaseSizeX}}} {{{71.4-SM_SizeY*18.}}} 4" opacity="1.0" scriptevents="1" id="MouseInput_InputInfo_Action2" />
+					<label halign="left" valign="top" style="TextButtonNav"  posn="{{{18.0 + SM_BaseSizeX}}} {{{70.6-SM_SizeY*18.}}} 3"
+					 id="Label_Page" text="Page 1" textsize="4." textcolor="000" sizen="{{{19}}}" textfont="{{{Font::GetFontName("Main")}}}"/>
+					 """;
+		for (I, 0, 2) {
+			declare Text Image;
+			switch (I) {
+				case LibUIButtons::GetPlatform("PC") 	: Image = IMG_PC_Action2;
+				case LibUIButtons::GetPlatform("PS4") 	: Image = IMG_PS_Action2;
+				case LibUIButtons::GetPlatform("XB1") 	: Image = IMG_XB_Action2;
+			}
+		
+			MLText ^= """<quad id="Quad_Input_Action2{{{I}}}" halign="center" valign="top" sizen="6.4 6.4" opacity="1.0" image="{{{Image}}}" posn="116.7 {{{-62.6-SM_SizeY}}} 3" /> """;
+
+				
+		
+		}
+	MLText ^= """
+				</frame>
+<!--
+<label halign="center" valign="center" style="TextButtonNav" posn="{{{88.5}}} {{{45.7}}} 1" textfont="{{{Font::GetFontName("Main")}}}"
+				 id="Label_TradSpecialSkin" textsize="2." textcolor="fff" sizen="{{{SizeXQuad+48}}}" text="Legendary & rare paintworks"/>
+
+
+				<label halign="center" valign="center" style="TextButtonNav" posn="{{{88.5}}} {{{-73}}} 1" textfont="{{{Font::GetFontName("Main")}}}"
+				 id="Label_UnlockExplain" textsize="2." textcolor="fff" sizen="{{{SizeXQuad+48}}}" />				
+-->
+				
+				<quad halign="center" valign="center" posn="{{{88.5}}} {{{-73}}} 0.99" sizen="{{{SizeXQuad+52.5}}} 7.3" bgcolor="000"/>
+				{{{Prompter2::InjectInManialink("Label_UnlockExplain", <19.5 , -73., 3.>, <100.5, 160.>, 4, Font::GetFontName("Main"))}}}
+				<quad halign="center" valign="center" posn="{{{88.5}}} {{{-74.5}}} 1.01" sizen="{{{SizeXQuad+50.5}}} 9." image="{{{IMG_CustomBigFG}}}" />
+
+				
+
+				<quad id="Quad_BG" halign="left" valign="top" keepratio="Fit"
+				sizen="{{{SM_BaseSizeX}}} 180"  posn="38 {{{76.6 - 1*(SM_SizeY-0.)}}} 0" opacity="1.0" />
+""";
+	//Création de l'écran SubMenu
+	for(I,0,Count_InstancesY_SubMenuMax-1)
+	{
+		declare Real IndexY = I*1.;
+		declare Real PosnY = PosYFirstQuad - IndexY*SizeYQuad - IndexY*MarginY_Button*1. - MarginY_Button/2. + 10.;
+		for(J,0,Count_InstancesX_SubMenuMax-1)
+		{
+			declare Real IndexJ = J*1.;
+			declare Real PosnX = PosXFirstQuad+ IndexJ*SizeXQuad + IndexJ*MarginX_Button*1.;
+			MLText^="""
+				<frame posn="{{{PosnX}}} {{{PosnY}}} 2." id="Frame_InstanceSubMenu{{{I}}}{{{J}}}" >
+					<frameinstance modelid="Frame_SubButton" />
+					<quad halign="center" valign="center" opacity="0." scriptevents="1" id="MouseInput_SubMenu_{{{I}}}:{{{J}}}" posn="{{{-SizeXSubQuad}}} 0 1" sizen="0 0" />
+				</frame>
+			""";
+		}
+	}
+	MLText^="""
+
+				<label halign="right" valign="center" style="TextButtonNav" posn="15 -65 5"
+				id="Label_SubLegend" textsize="3." textcolor="f00" text="" sizen="130" opacity="0."/>
+			</frame>
+		</frame>
+
+		<frame id="Frame_Content" posn="0.0 {{{-SM_SizeY*0}}} 1" scale="1.0" >
+
+			<frame id="Frame_InfoPage" hidden="1" posn="180 0">
+				<label halign="center" valign="center" style="TextButtonNav" posn="-50 60 5"
+			 id="Label_Titleold" textsize="7." textcolor="fff" text="Always wear your helmet" opacity="1."/>
+				<label halign="center" valign="center" style="TextButtonNav" posn="-53 53 5"
+			 id="Label_SubTitle" textsize="3." textcolor="f00" text="" opacity="1."/>
+				<label halign="right" valign="center" style="TextButtonNav" posn="15 -57 5"
+			 id="Label_Legend" textsize="3." textcolor="f00" text="Create & custom your personal number" sizen="130" opacity="1."/>
+			</frame>
+
+
+			<frame id="Frame_Custom" hidden="0" posn="0.0 {{{-SM_SizeY}}} 0">
+			{{{Selector::InsertFrameworkInManialink(3, SizeXQuad-0.7, SizeYQuad-1.0, PosXFirstQuad, PosYFirstQuad, MarginX_Button, MarginY_Button,"Frame_Selector_CustomModel", 1.23)}}}
+				<frame clip="true" clipsizen="{{{SizeX_Total-0.5}}} {{{SizeY_Total+SM_SizeYElement}}}" clipposn="89.1 {{{SM_SizeY}}}">
+					<frame id="CustomContent">
+					
+						<quad bgcolor="fff" halign="left" valign="top" keepratio="Fit"
+						 sizen="{{{SM_BaseSizeX}}} {{{SM_SizeYElement}}}"  posn="38 {{{77+SM_SizeY}}} 2" opacity="1.0" />
+						<quad image="{{{IMGSlotMediumFg}}}" halign="left" valign="top"
+						 sizen="{{{SM_BaseSizeX}}} {{{SM_SizeYElement}}}"  posn="38 {{{77+SM_SizeY}}} 4" opacity="1.0" />
+						<label halign="left" valign="center" style="TextButtonNav" posn="{{{32+SM_SizeY}}} {{{74.1+SM_SizeY}}} 3"
+						 id="Label_Title" textsize="4." text="" textcolor="000" sizen="{{{SizeXQuad*2.-2.}}}" textfont="{{{Font::GetFontName("Main")}}}"/>
+
+						<quad halign="left" valign="up" keepratio="Fit" hidden="0" sizen="102.1 150.4" bgcolor="000" posn="37.9 80 -1" opacity="1.0" />
+						
+						<frame id="Frame_InfoButton_Name" posn="{{{PosXFirstQuad-25}}} {{{PosYFirstQuad-47.5}}} 5" hidden="1" >
+							<label halign="center" valign="center" style="TextButtonNav" posn="0 62 5"
+							 textsize="2." textcolor="fff200" text="Trackmania " opacity="1."/>
+							<label halign="center" valign="center" style="TextButtonNav" posn="0 57 5"
+							 textsize="2." textcolor="fff200" text="Worldwide Ranking" opacity="1."/>
+							<label halign="center" valign="center" style="TextButtonNav" posn="0 47 5"
+							 id="Label_ShortName" textsize="14." textcolor="fff200" text="Zla" sizen="46" opacity="1."/>
+							<label halign="center" valign="center" style="TextButtonNav" posn="0 37 5"
+							 textsize="2." textcolor="fff200" text="A.K.A" sizen="130" opacity="1."/>
+							<label halign="center" valign="center" style="TextButtonNav" posn="0 33 5"
+							 id="Label_Name" textsize="2." textcolor="fff200" text="Zlatanus" sizen="46" opacity="1."/>
+						</frame>
+					
+	""";
+	//Menu
+	declare Integer count = 0;
+	for(I,0,Count_InstancesY-1)
+	{
+		declare Real IndexY = I*1.;
+		//declare Real PosnY = PosYFirstQuad - IndexY*SizeYQuad - IndexY*MarginY_Button*1. - MarginY_Button/2.;
+		declare Real PosnY = PosYFirstQuad - IndexY*SizeYQuad - IndexY*MarginY_Button*1.;
+		//declare Real PosnY = PosYFirstQuad - IndexY*SizeYQuad_ModelKind - IndexY*MarginY_ModelKind*1.;
+		for(J,0,Count_InstancesX-1)
+		{
+			declare Real IndexJ = J*1.;
+			//declare Real PosnX = PosXFirstQuad + IndexJ*SizeXQuad + IndexJ*MarginX_Button*1. + MarginX_Button/2. + SizeXQuad/2 - SizeXQuad*(Count_InstancesX-1);
+			//declare Real PosnX = PosXFirstQuad+ IndexJ*SizeXQuad + IndexJ*MarginX_Button*1. + (3-Count_InstancesX)*SizeXQuad/2.;
+			declare Real PosnX = PosXFirstQuad+ IndexJ*SizeXQuad + IndexJ*MarginX_Button*1. + SizeXQuad/2;
+			//declare Real PosnX = PosXFirstQuad+ IndexJ*SizeXQuad_ModelKind + IndexJ*MarginX_ModelKind*1.;
+			MLText^="""
+				<frame posn="{{{PosnX}}} {{{PosnY}}} 5." id="Frame_Instance{{{I}}}{{{J}}}" >
+					<frameinstance modelid="Frame_Button" />
+			""";
+			if (I != 0 || J != 0)
+				MLText ^= """<quad halign="center" valign="center" opacity="0." scriptevents="1" id="MouseInput_Custom_{{{I}}}:{{{J}}}" posn="{{{-SizeXQuad}}} 0 1" sizen="{{{SizeXQuad}}} {{{SizeYQuad}}}" />""";
+			MLText ^= "</frame>";
+		}
+	}
+
+	
+	MLText^="""
+					</frame>
+				</frame>
+			</frame>
+		</frame>
+	</frame>
+
+	<script><!--
+
+		#Const C_TimeTransitionPage  {{{PanelParameter::GetTimeTransitionPage()}}}
+		#Const C_TimeStartClip       {{{PanelParameter::GetTimeStartClip()}}}
+		#Const C_TimeAnimClip        {{{PanelParameter::GetTimeAnimClip()}}}
+		#Const C_TimeTransitionPage2 {{{PanelParameter::GetTimeTransitionPage2()}}}
+		#Const C_TimeStartClip2      {{{PanelParameter::GetTimeStartClip2()}}}
+		#Const C_TimeAnimClip2       {{{PanelParameter::GetTimeAnimClip2()}}}
+
+		{{{Manialink::GetIncludes()}}}
+		
+		{{{Manialink::Load()}}}
+		{{{BuilderHelper::MLCommonFunctions()}}}
+		{{{ClipTransitions::Functions(["Frame_Content"])}}}
+		
+		{{{PimpUnlock::MLPimpUnlockFunctions()}}}
+
+		declare Text[Integer][Integer]	G_IndexGameSelect;
+		declare Integer 				G_HideTime;
+		declare Integer 				G_LockInput;
+		declare Integer 				G_SubMenuControlled;
+		declare Text 					G_ActualMenu;
+		declare Integer 				G_SubMenuIndexX;
+		declare Integer 				G_SubMenuIndexY;
+		declare Integer[Integer]		G_SubMenuIndexMaxX;
+		declare Integer[Integer]		G_SubMenuIndexMaxY;
+		declare Integer[Integer]		G_SubIndex;
+		declare Text[Integer][Integer]	G_LabelLegendText;
+		declare Text					G_ActualSelector;
+		declare Integer					G_DeclareVarationSelector;
+		declare Integer					G_SubMenuFlagPage;
+		declare CAudioSource			G_AmbianceEnviro;
+		declare CMlQuad[] 				Quad_Buttons;
+		declare CMlLabel[] 				LabelButtons;
+		
+		{{{Prompter2::InjectInGlobals()}}}
+		{{{Prompter2::InjectInFunctions()}}}
+		{{{LibUIButtons::Inject_SetInputInfoTextSelected()}}}
+
+		Text GetEnviroLogoImg(Integer _Enviro)
+		{
+			switch(_Enviro)
+			{
+				case 1: return "{{{ImgLogoCanyon}}}";
+				case 2: return "{{{ImgLogoValley}}}";
+				case 3: return "{{{ImgLogoLagoon}}}";
+				case 4: return "{{{ImgLogoStadium}}}";
+			}
+			return "";
+		}
+
+		Vec2 GetEnviroLogoPos(Integer _Enviro)
+		{
+			switch(_Enviro)
+			{
+				case 1: return <0.1, 0.>;
+				case 2: return <0.2, 0.>;
+				case 3: return <0.1, 0.>;
+				case 4: return <1.5, -2.>;
+			}
+			return <0.,0.>;
+		}
+
+		Void UpdateQuadEnviro(Integer _Enviro)
+		{
+			declare Text EnviroLogoImg = GetEnviroLogoImg(_Enviro);
+			declare Vec2 EnviroLogoPos = GetEnviroLogoPos(_Enviro);
+			declare CMlQuad  Quad_Enviro <=> (Page.GetFirstChild("Quad_Enviro") as CMlQuad);
+			Quad_Enviro.ChangeImageUrl(EnviroLogoImg);
+			Quad_Enviro.RelativePosition.X = EnviroLogoPos.X;
+			Quad_Enviro.RelativePosition.Y = EnviroLogoPos.Y;
+		}
+
+		Void Preload()
+		{
+			PreloadImage("{{{IMGLockCouleur}}}");
+			PreloadImage("{{{IMGLockSymbole}}}");
+			PreloadImage("{{{IMGLockMaterial}}}");
+			PreloadImage("{{{IMGLockSpecial}}}");
+			PreloadImage("{{{IMGLockChiffre}}}");
+
+
+
+			""";
+
+			/*
+			for(NamesId, 0, IMGNames.count -1)
+			{
+				MLText ^ = """PreloadImage("{{{IMGNames[NamesId]}}}");
+				""";
+			}
+			for(DrapeauId, 0, IMGDrapeaux.count -1)
+			{
+				MLText ^ = """PreloadImage("{{{IMGDrapeaux[DrapeauId]}}}");
+				""";
+			}
+			for(CouleurId, 0, IMGCouleurs.count -1)
+			{
+				MLText ^ = """PreloadImage("{{{IMGCouleurs[CouleurId]}}}");
+				""";
+			}
+			for(SymboleId, 0, IMGSymboles.count -1)
+			{
+				MLText ^ = """PreloadImage("{{{IMGSymboles[SymboleId]}}}");
+				""";
+			}
+			for(ChiffreId, 0, IMGChiffres.count -1)
+			{
+				MLText ^ = """PreloadImage("{{{IMGChiffres[ChiffreId]}}}");
+				""";
+			}
+			for(MaterialId, 0, IMGMaterials.count -1)
+			{
+				MLText ^ = """PreloadImage("{{{IMGMaterials[MaterialId]}}}");
+				""";
+			}
+			*/
+			MLText ^ = """
+		}
+
+		Text GetDescriptionMenu(Integer _SubMenuIndex ,Integer _Index)
+		{
+			switch(_SubMenuIndex)
+			{
+				case 5: //Drapeaux
+				{
+					switch(_Index)
+					{
+						case  1: return _("Magnesium");
+						case  2: return _("Titanium");
+						case  3: return _("Chrome");
+						case  4: return _("Iridium");
+						case  5: return _("Gold");
+						case  6: return _("Aluminium");
+					}
+				}
+			}
+			return "";
+		}
+
+		Text GetLockImg(Integer _LockIndex)
+		{
+			switch(_LockIndex)
+			{
+				case  0: return "{{{IMGLockSpecial}}}";
+				case  2: return "{{{IMGLockCouleur}}}";
+				case  3: return "{{{IMGLockSymbole}}}";
+				case  4: return "{{{IMGLockChiffre}}}";
+				case  5: return "{{{IMGLockMaterial}}}";
+			
+			}
+			return "";
+		}
+
+
+		
+		Text GetNamesSpecial(Integer _Index)
+		{
+			switch(_Index)
+			{
+				case 0: return "TRY HARD";
+				case 1: return "FIFTY" ;
+				case 2: return "DOUBLE DRIVER" ;
+				case 3: return "PRESERVE NATURE";
+				case 4: return "FLASH";
+				case 5: return "CRASH TEST";
+			}
+			return "";
+		}
+		
+		Text GetNamesDrapeaux(Integer _Index)
+		{
+			switch(_Index)
+			{
+				""";
+				for(NamesId, 0, NamesDrapeaux.count -1)
+				{
+					if(NamesDrapeaux[NamesId] != "")
+					{
+						//log("NamesId["^NamesId^"]: " ^ NamesDrapeaux[NamesId]);
+					}
+					MLText ^ = """case  {{{NamesId}}}: return "{{{NamesDrapeaux[NamesId]}}}" ;
+					""";
+				}
+				MLText ^ = """
+			}
+			return "";
+		}
+		
+	
+		Text GetImgPath(Integer _SubMenuIndex ,Integer _Index)
+		{
+			switch(_SubMenuIndex)
+			{
+				case 0: //Names
+				{
+					switch(_Index)
+					{
+						""";
+						for(NamesId, 0, IMGNames.count -1)
+						{
+							//MLText ^ = """case  {{{NamesId}}}: return LocalUser.AvatarUrl ;
+							MLText ^ = """case  {{{NamesId}}}:
+							{
+								return "{{{IMGNames[NamesId]}}}";
+							}
+							""";
+						}
+						MLText ^ = """
+					}
+				}
+				case 1: //Drapeaux
+				{
+					switch(_Index)
+					{
+						""";
+						for(DrapeauId, 0, IMGDrapeaux.count -1)
+						{
+							MLText ^ = """case  {{{DrapeauId}}}: return "{{{IMGDrapeaux[DrapeauId]}}}" ;
+							""";
+						}
+						MLText ^ = """
+					}
+				}
+				case 2: //Couleurs
+				{
+					switch(_Index)
+					{
+						""";
+						for(CouleurId, 0, IMGCouleurs.count -1)
+						{
+							MLText ^ = """case  {{{CouleurId}}}: return "{{{IMGCouleurs[CouleurId]}}}" ;
+							""";
+						}
+						MLText ^ = """
+					}
+				}
+				case 3: //Symbole
+				{
+					switch(_Index)
+					{
+						""";
+						for(SymboleId, 0, IMGSymboles.count -1)
+						{
+							MLText ^ = """case  {{{SymboleId}}}: return "{{{IMGSymboles[SymboleId]}}}" ;
+							""";
+						}
+						MLText ^ = """
+					}
+					
+
+				}
+				case 4: //Chiffre
+				{
+					switch(_Index)
+					{
+						""";
+						for(ChiffreId, 0, IMGChiffres.count -1)
+						{
+							MLText ^ = """case  {{{ChiffreId}}}: return "{{{IMGChiffres[ChiffreId]}}}" ;
+							""";
+						}
+						MLText ^ = """
+					}
+					
+
+				}
+				case 5: // Materials
+				{
+					switch(_Index)
+					{
+						""";
+						for(MaterialId, 0, IMGMaterials.count -1)
+						{
+							MLText ^ = """case  {{{MaterialId}}}: return "{{{IMGMaterials[MaterialId]}}}" ;
+							""";
+						}
+						MLText ^ = """
+					}
+				}
+			}
+			return "";
+		}
+
+		Void ExplainUnlock(Text _Cause) {
+			Prompter_SetBanner("Label_UnlockExplain", _Cause, 4300, 2, <1.,1.,1.>);
+			Prompter_SetBannerIsActive("Label_UnlockExplain", True, False);
+		}
+		
+		Void SetHeaderInfo()
+		{
+			declare Vec3 HeaderInfo_LabelTitleColor for This;
+			declare Text HeaderInfo_LabelTitle for This;
+			declare Vec3 NextColorHeaderInfo for This;
+			HeaderInfo_LabelTitle = "Work in Progress";
+			HeaderInfo_LabelTitleColor = <1.0, 0.9, 0.0>;
+			NextColorHeaderInfo =  <0.1, 0.1, 0.1>;
+			SendCustomEvent("UpdateHeaderTitle", [""]);
+		}
+
+		Text GetSoundPaint()
+		{
+			declare Integer Rand = ML::Rand(0, 2);
+			switch(Rand)
+			{
+				case 0: return "{{{SFX_Garage_Paint_1}}}";
+				case 1: return "{{{SFX_Garage_Paint_2}}}";
+				case 2: return "{{{SFX_Garage_Paint_3}}}";
+			}
+			return "";
+		}
+		
+		Real GetSoundPaintVolume(Text _Sound)
+		{
+			switch(_Sound)
+			{
+				case "{{{SFX_Garage_Paint_1}}}": return {{{Volumes::GetVolumedB("SFX_Garage_Paint_1")}}};
+				case "{{{SFX_Garage_Paint_2}}}": return {{{Volumes::GetVolumedB("SFX_Garage_Paint_2")}}};
+				case "{{{SFX_Garage_Paint_3}}}": return {{{Volumes::GetVolumedB("SFX_Garage_Paint_3")}}};
+			}
+			return 0.;
+		}
+		
+
+		Integer GetSubMenu(Integer _IndexSelectX, Integer _IndexSelectY)
+		{
+			declare Integer SubMenuIndex = _IndexSelectY*2 + _IndexSelectX;
+			return SubMenuIndex;
+		}
+
+		Vec2 GetSubMenuIndexPosition(Integer _SubMenuIndex)
+		{
+			declare Vec2    IndexPosition;
+			declare Integer MaxX  = G_SubMenuIndexMaxX[_SubMenuIndex];
+			declare Integer Index = G_SubIndex[_SubMenuIndex];
+			if(_SubMenuIndex == 1 && G_SubMenuFlagPage == 1)
+			{
+				Index -= {{{Count_InstancesX_Drapeau * (Count_InstancesY_Drapeau + 1)}}};
+			}
+
+			IndexPosition.X = Index % MaxX*1.;
+			IndexPosition.Y = Index / MaxX*1.;
+			return IndexPosition;
+		}
+
+
+		Integer GetSubMenuIndex(Integer _SubMenuIndex ,Integer _SelectorPositionX, Integer _SelectorPositionY)
+		{
+			declare Integer MaxX    = G_SubMenuIndexMaxX[_SubMenuIndex];
+			declare Integer Index =  _SelectorPositionY*MaxX + _SelectorPositionX+1 + _SelectorPositionX/MaxX*MaxX -1;
+			if(_SubMenuIndex == 1 && G_SubMenuFlagPage == 1)
+			{
+				Index += {{{Count_InstancesX_Drapeau * (Count_InstancesY_Drapeau + 1)}}};
+			}
+			return Index;
+		}
+
+		Integer GetMenuIndex(Integer _SelectorPositionX, Integer _SelectorPositionY)
+		{
+			declare Integer MaxX    = {{{Count_InstancesX}}};
+			declare Integer Index =  _SelectorPositionY*MaxX + _SelectorPositionX+1 + _SelectorPositionX/MaxX*MaxX -1;
+			return Index;
+		}
+
+
+		
+		
+		Void UpdateCustomModel(Integer _Index)
+		{
+			declare CMlFrame Frame_Custom <=> (Page.GetFirstChild("Frame_Custom") as CMlFrame);
+			declare CMlLabel Label_Title  <=> (Frame_Custom.GetFirstChild("Label_Title") as CMlLabel);
+			if(!G_LabelLegendText[-1].existskey(_Index)) return;
+			Label_Title.Value = G_LabelLegendText[-1][_Index];
+		}
+
+		Void UpdateLabelLegend(Integer _SubMenuIndex, Integer _Index)
+		{
+
+			declare CMlFrame Frame_Content   <=> (Page.GetFirstChild("Frame_Content") as CMlFrame);
+			declare CMlLabel Label_Legend   <=> (Frame_Content.GetFirstChild("Label_Legend") as CMlLabel);
+			declare CMlLabel Label_SubLegend   <=> (Page.GetFirstChild("Label_SubLegend") as CMlLabel);
+
+			Label_SubLegend.Value = _Index+1^"";
+			if(!G_LabelLegendText[_SubMenuIndex].existskey(_Index)) return;
+			Label_Legend.Value = G_LabelLegendText[_SubMenuIndex][_Index];
+
+			//Frame_SubMenu
+			//Label_SubLegend
+		}
+		
+		
+		Boolean IsUplayUnlock(Integer _Reward)
+		{
+			declare Integer[] Page_RewardsUplay for Page;
+			if(_Reward == 6) return True; 
+			return Page_RewardsUplay.exists(_Reward);
+			/*
+			declare Boolean IsUplayReward1Purchased for Page;
+			declare Boolean IsUplayReward2Purchased for Page;
+			declare Boolean IsUplayReward3Purchased for Page;
+			declare Boolean IsUplayReward4Purchased for Page;
+			declare Boolean IsUplayReward5Purchased for Page;
+			switch(_Reward)
+			{
+				case 1: return IsUplayReward1Purchased;
+				case 2: return IsUplayReward2Purchased;
+				case 3: return IsUplayReward3Purchased;
+				case 4: return IsUplayReward4Purchased;
+				case 5: return IsUplayReward5Purchased;
+			}
+			return False;
+			*/
+		}
+
+		Text ExplainUplayUnlock(Integer _UplaySkinIndex , Boolean _isUnlocked) 
+		{
+			if(_UplaySkinIndex >= {{{C_NbOfClubReward}}}) return "";
+			
+			if(_isUnlocked) {
+				// explain nothing
+			} else {
+				return TL::Compose(_("%1Get it for %2 Club Units%3!"), "            ", "$<$ddd{{{C_ClubUnitsValuePerSkin}}}", "$>");
+			}
+			
+			return "";
+		}
+		
+		
+		
+		Text UnlockEplanation(Integer _SubMenuIndex, Integer I, Integer J, Boolean _IsUnlocked) 
+		{
+			switch(_SubMenuIndex) {
+				case 0 : return ExplainUplayUnlock(J + (I * 3), _IsUnlocked);	// UBI CLUB
+				case 2 : return ExplainSkinsUnlock(J + (I * 7), _IsUnlocked);	// SKINS
+				case 3 : return ExplainStickersUnlock(J + (I * 8), _IsUnlocked); // STICKER
+				case 4 : return ExplainNumbersUnlock(J + (I * 7), _IsUnlocked);	 // NUMBERS
+				case 5 : return ExplainMetalsUnlock(J + (I * 3), _IsUnlocked);	 // METALS
+			}
+			return "";
+		}
+		
+		Boolean IsUnlock(Integer _SubMenuIndex, Integer I, Integer J)
+		{
+			switch(_SubMenuIndex) {
+				case 0 : return IsUplayUnlock(J + (I * 3) + 1);	// SPECIAL SKINS // +1 parce que les indices des rewards commencent à 1.
+				case 1 : return True;							// COUNTRIES
+				case 2 : return IsSkinUnlocked(J + (I * 7));	// SKINS
+				case 3 : return IsStickerUnlocked(J + (I * 8));	// STICKERS
+				case 4 : return IsNumberUnlocked(J + (I * 7));	// NUMBERS
+				case 5 : return IsMetalUnlocked(J + (I * 3));	// METALS
+			}
+			return True;
+		}
+
+		Void UpdateLabelLight(CMlControl _Control)
+		{
+			foreach(I => Button in Quad_Buttons)
+			{
+				declare Label_LeftInput <=> LabelButtons[I];
+				//declare Boolean IsFocus  = ButtonSelected == Null && (I == 0 && Event.Control.ControlId == "ButtonInput_Sort" || I == 1 && Event.Control.ControlId == "ButtonInput_Cancel");
+				declare Boolean IsFocus  = False;
+				if (_Control == Button)
+				{
+					IsFocus = True;
+				}
+				else
+				{
+					IsFocus = False;
+				}
+				//log("Button["^Button^"]: " ^ IsFocus);
+				SetInputInfoTextSelected(Label_LeftInput, IsFocus);
+			}
+		}
+
+		Void UpdateIndexSub(Integer _SubMenuIndex, Integer _SelectorPositionX, Integer _SelectorPositionY)
+		{
+			//declare CMlFrame Frames_SubMenu   <=> (Page.GetFirstChild("Frame_Sub"^_SubMenuIndex)                                              as CMlFrame);
+			//declare CMlFrame Frames_Instance1 <=> (Frames_SubMenu.GetFirstChild("Frame_InstanceSub"^_SelectorPositionY^""^_SelectorPositionX) as CMlFrame);
+			//declare CMlFrame Frames_Instance2 <=> (Frames_SubMenu.GetFirstChild("Frame_InstanceSub"^G_SubMenuIndexY^""^G_SubMenuIndexX)       as CMlFrame);
+			
+
+			//G_ActualSelector
+			declare CMlFrame Frames_Selector_SubMenu <=> (Page.GetFirstChild(G_ActualSelector)                                                    as CMlFrame);
+			declare CMlFrame Frames_SubMenu          <=> (Page.GetFirstChild("Frame_SubMenu")                                                     as CMlFrame);
+			declare CMlFrame Frames_InstanceSubMenu  <=> (Frames_SubMenu.GetFirstChild("Frame_InstanceSubMenu"^_SelectorPositionY^_SelectorPositionX) as CMlFrame);
+			declare CMlQuad  Quad_Selector           <=> (Frames_Selector_SubMenu.GetFirstChild("Quad_Selector")                                   as CMlQuad);
+			
+			Frames_Selector_SubMenu.RelativePosition.X = Frames_InstanceSubMenu.RelativePosition.X;
+			Frames_Selector_SubMenu.RelativePosition.Y = Frames_InstanceSubMenu.RelativePosition.Y;
+			Quad_Selector.RelativePosition = <{{{-SizeXSubQuad}}},0.,0.>;
+
+
+			declare Real PosnY = {{{PosYFirstQuad}}} - _SelectorPositionY*{{{SizeYQuad}}} - _SelectorPositionY*{{{MarginY_Button}}}*1. - {{{MarginY_Button}}}/2. ;
+			declare Real PosnX = {{{PosXFirstQuad}}} + _SelectorPositionX*{{{SizeXQuad}}} + _SelectorPositionX*{{{MarginX_Button}}}*1. + {{{MarginX_Button}}}/2.;
+
+			if(_SubMenuIndex == 0)
+			{
+				declare Integer SubMenuIndex = GetSubMenuIndex(_SubMenuIndex, _SelectorPositionX, _SelectorPositionY);
+				declare CMlLabel Label_SubMenuTitle <=> (Page.GetFirstChild("Label_SubMenuTitle") as CMlLabel);
+				declare CMlFrame  Frame_Preview       <=> (Page.GetFirstChild("Frame_Preview")       as CMlFrame);
+				declare Text LabelTitle = GetNamesSpecial(SubMenuIndex);
+				Label_SubMenuTitle.Value = LabelTitle;
+				
+				declare Boolean IsUnlocked = IsUnlock(_SubMenuIndex, _SelectorPositionY, _SelectorPositionX);
+				declare Text Explanation = UnlockEplanation(_SubMenuIndex, _SelectorPositionY, _SelectorPositionX, IsUnlocked);
+				ExplainUnlock(Explanation);
+
+				if(IsUnlocked) Frame_Preview.Hide();
+				else           Frame_Preview.Show();
+
+			}
+			else if(_SubMenuIndex == 1)
+			{
+				declare Integer SubMenuIndex = GetSubMenuIndex(_SubMenuIndex, _SelectorPositionX, _SelectorPositionY);
+				declare CMlLabel Label_SubMenuTitle <=> (Page.GetFirstChild("Label_SubMenuTitle") as CMlLabel);
+				declare Text LabelTitle = GetNamesDrapeaux(SubMenuIndex);
+				Label_SubMenuTitle.Value = LabelTitle;
+			} else {
+				declare Boolean IsUnlocked = IsUnlock(_SubMenuIndex, _SelectorPositionY, _SelectorPositionX);
+				declare Text Explanation = UnlockEplanation(_SubMenuIndex, _SelectorPositionY, _SelectorPositionX, IsUnlocked);
+				ExplainUnlock(Explanation);
+			}
+
+			G_SubMenuIndexX = _SelectorPositionX;
+			G_SubMenuIndexY = _SelectorPositionY;
+
+			G_DeclareVarationSelector = Now - 157;
+
+		}
+
+		Void UpdateQuadsModelKindCursor(Text _SelectorPositionX)
+		{
+			declare CMlFrame	FrameInstance_ModelKind1 <=> (Page.GetFirstChild("FrameInstance_ModelKind0")	        as CMlFrame);
+			declare CMlFrame	FrameInstance_ModelKind2 <=> (Page.GetFirstChild("FrameInstance_ModelKind1")	        as CMlFrame);
+			declare CMlQuad	Quad_ModelKind1              <=> (FrameInstance_ModelKind1.GetFirstChild("Quad_ModelKind")	as CMlQuad);
+			declare CMlQuad	Quad_ModelKind2              <=> (FrameInstance_ModelKind2.GetFirstChild("Quad_ModelKind")	as CMlQuad);
+			
+			declare CMlFrame	PromptModelKind0 <=> (Page.GetFirstChild("PromptModelKind0")	        as CMlFrame);
+			declare CMlFrame	PromptModelKind1 <=> (Page.GetFirstChild("PromptModelKind1")	        as CMlFrame);
+			declare CMlLabel	Prompt1Content1         <=> (PromptModelKind0.GetFirstChild("Content1")	as CMlLabel);
+			declare CMlLabel	Prompt1Content2         <=> (PromptModelKind0.GetFirstChild("Content2")	as CMlLabel);
+			declare CMlLabel	Prompt2Content1         <=> (PromptModelKind1.GetFirstChild("Content1")	as CMlLabel);
+			declare CMlLabel	Prompt2Content2         <=> (PromptModelKind1.GetFirstChild("Content2")	as CMlLabel);
+			
+			//declare Vec3 ColorFocus        = TL::ToColor("e649d2");
+			//declare Vec3 ColorNotFocus     = TL::ToColor("611e58");
+			//declare Vec3 ColorTextFocus    = TL::ToColor("ffffff");
+			//declare Vec3 ColorTextNotFocus = TL::ToColor("525252");
+
+			declare Vec3 ColorFocus        = {{{Colors::GetColor("Yellow")}}};
+			declare Vec3 ColorNotFocus     = TL::ToColor("525252");
+			
+			if(_SelectorPositionX == "Up")
+			{
+				Quad_ModelKind1.Colorize  = ColorFocus;
+				Quad_ModelKind2.Colorize  = ColorNotFocus;
+				Quad_ModelKind1.Opacity   = 1.0;
+				Quad_ModelKind2.Opacity   = 0.3;
+				//Prompt1Content1.TextColor = ColorTextFocus;
+				//Prompt1Content2.TextColor = ColorTextFocus;
+				//Prompt2Content1.TextColor = ColorTextNotFocus;
+				//Prompt2Content2.TextColor = ColorTextNotFocus;
+				Prompt1Content1.Opacity   = 1.0;
+				Prompt1Content2.Opacity   = 1.0;
+				Prompt2Content2.Opacity   = 0.3;
+				Prompt2Content1.Opacity   = 0.3;
+			}
+			else
+			{
+				Quad_ModelKind1.Colorize  = ColorNotFocus;
+				Quad_ModelKind2.Colorize  = ColorFocus;
+				Quad_ModelKind1.Opacity   = 0.3;
+				Quad_ModelKind2.Opacity   = 1.0;
+				//Prompt1Content1.TextColor = ColorTextNotFocus;
+				//Prompt1Content2.TextColor = ColorTextNotFocus;
+				//Prompt2Content1.TextColor = ColorTextFocus;
+				//Prompt2Content2.TextColor = ColorTextFocus;
+				Prompt1Content1.Opacity   = 0.3;
+				Prompt1Content2.Opacity   = 0.3;
+				Prompt2Content2.Opacity   = 1.0;
+				Prompt2Content1.Opacity   = 1.0;
+			}
+		}
+
+		Void UpdateQuadsModelKind(Integer _SelectorPositionX, Integer _SelectorPositionY)
+		{
+			declare CMlFrame	Selector_ModelKind <=> (Page.GetFirstChild("Selector_ModelKind")	        as CMlFrame);
+			declare Real PosnX = {{{PosXFirstQuad_ModelKind}}} + _SelectorPositionX*{{{SizeXQuad_ModelKind}}} - {{{SizeXQuad_ModelKind/2}}};
+			declare Real PosnY = {{{PosYFirstQuad_ModelKind}}} - _SelectorPositionY*{{{SizeYQuad_ModelKind}}} + {{{SizeYQuad_ModelKind/2.}}};
+			Selector_ModelKind.RelativePosition.X = PosnX;
+			Selector_ModelKind.RelativePosition.Y = PosnY;
+			G_DeclareVarationSelector = Now - 157;
+		}
+
+		
+		
+		Void UpdateQuads(Integer _SelectorPositionX, Integer _SelectorPositionY)
+		{
+			declare Real PosnY = {{{PosYFirstQuad}}} - _SelectorPositionY*{{{SizeYQuad}}} - _SelectorPositionY*{{{MarginY_Button}}}*1. - {{{MarginY_Button}}}/2.;
+			declare Real PosnX = {{{PosXFirstQuad}}} + _SelectorPositionX*{{{SizeXQuad}}} + _SelectorPositionX*{{{MarginX_Button}}}*1. + {{{MarginX_Button}}}/2.;
+			
+			declare CMlFrame	Frame_Selector <=> (Page.GetFirstChild("Frame_Selector_CustomModel")	        as CMlFrame);
+			Frame_Selector.RelativePosition.X = PosnX - {{{SizeXQuad}}} + 0.1;
+			Frame_Selector.RelativePosition.Y = PosnY + {{{SizeYQuad/2.}}}-1.4;
+
+			declare Integer MenuIndex = GetMenuIndex(_SelectorPositionX, _SelectorPositionY);
+			UpdateCustomModel(MenuIndex);
+			
+			//UpdateLabelLegend(-1, MenuIndex);
+			G_DeclareVarationSelector = Now - 157;
+		}
+
+		Void SetFrameMenuVisibility(Boolean _ModelKind, Boolean _CustomModel, Boolean _SubMenu)
+		{
+			declare CMlFrame Frame_ModelKind <=> (Page.GetFirstChild("Frame_ModelKind") as CMlFrame);
+			declare CMlFrame Frame_Custom    <=> (Page.GetFirstChild("Frame_Custom")    as CMlFrame);
+			declare CMlFrame Frame_SubMenu   <=> (Page.GetFirstChild("Frame_SubMenu")   as CMlFrame);
+
+			declare CMlQuad Selector_ModelKind <=> (Page.GetFirstChild("Selector_ModelKind")   as CMlQuad);
+			declare CMlQuad Selector_Custom    <=> (Page.GetFirstChild("Frame_Selector_CustomModel")   as CMlQuad);
+			//declare CMlQuad Selector_SubMenu   <=> (Page.GetFirstChild("Selector_SubMenu")   as CMlQuad);
+
+
+			Selector_ModelKind.Visible = _ModelKind;
+			Selector_Custom.Visible    = _CustomModel;
+			//Selector_SubMenu.Visible   = _SubMenu;
+			Frame_ModelKind.Visible = True;
+			Frame_Custom.Visible    = True;
+			Frame_SubMenu.Visible   = True;
+		}
+
+		Void SetFrameMenuTransition(Text _FrameToShow, Text _FrameToHide, Text _Direction)
+		{
+			declare CMlFrame FrameToShow <=> (Page.MainFrame.GetFirstChild(_FrameToShow) as CMlFrame);
+			declare CMlFrame FrameToHide <=> (Page.MainFrame.GetFirstChild(_FrameToHide) as CMlFrame);
+
+			declare Real Direction = 1.;
+			if(_Direction == "Droite") Direction = -1.;
+
+			FrameToShow.RelativePosition.X = {{{SizeX_Total}}}*Direction;
+			FrameToHide.RelativePosition.X = 0.;
+			
+
+			declare Vec3 NewQuadPositionS = <0., FrameToShow.RelativePosition.Y, FrameToShow.RelativePosition.Z>;
+			declare Vec3 NewQuadPositionH = <{{{-SizeX_Total}}}*Direction, FrameToHide.RelativePosition.Y, FrameToHide.RelativePosition.Z>;
+
+			declare Integer Vitesse = 500;
+			declare Text    Ease    = "EaseOutQuint";
+			LibManialink_SetTargetPosition(FrameToShow, NewQuadPositionS);
+			LibManialink_PresetAnim(FrameToShow, Vitesse, Ease);
+			LibManialink_SetTargetPosition(FrameToHide, NewQuadPositionH);
+			LibManialink_PresetAnim(FrameToHide, Vitesse, Ease);
+
+		}
+
+		Text GetSubTextTitle(Integer _SubMenuIndex)
+		{
+
+			switch(_SubMenuIndex)
+			{
+				case 0:	//Special
+				{
+					return "";
+				}
+				case 1:	//Drapeau
+				{
+					return "Choose your Country";
+				}
+				case 2:	//Couleur
+				{
+					return "Choose your color";
+				}
+				case 3:	//Symbole
+				{
+					return "Choose your Mascot";
+				}
+				case 4:	//Chiffre
+				{
+					return "Choose your number";
+				}
+				case 5:	//Material
+				{
+					return "Choose your material";
+				}
+			}
+			return "";
+		}
+
+			
+		Void OpenCustomModel()
+		{
+			declare CMlLabel Label_Title <=> (Page.GetFirstChild("Label_Title") as CMlLabel);
+			//Label_Title.Value = "";
+
+			G_ActualMenu     = "CustomModel";
+			G_ActualSelector = "Frame_Selector_CustomModel";
+			SetFrameMenuVisibility(False, True, False);
+			SetFrameMenuTransition("CustomContent", "ModelKindContent", "Gauche");
+		}
+
+		Void CloseCustomModel(Text _NextMenu)
+		{
+			declare CMlLabel Label_Title <=> (Page.GetFirstChild("Label_Title") as CMlLabel);
+			Label_Title.Value = "";
+			G_ActualMenu = "ModelKind";
+			G_ActualSelector = "Selector_ModelKind";
+			SetFrameMenuVisibility(True, False, False);
+			if(_NextMenu == "ModelKind")
+			{
+				SetFrameMenuTransition("ModelKindContent", "SubMenuContent", "Droite");
+			}
+			else
+			{
+				SetFrameMenuTransition("ModelKindContent", "CustomContent", "Droite");
+			}
+		}
+
+
+		Void SetSubSelector(Integer _SubMenuIndex)
+		{ 
+			for(I, 0, 5)
+			{
+				declare CMlFrame Frame_Selector_SM   <=> (Page.GetFirstChild("Frame_Selector_SM"^I) as CMlFrame);
+				if(I ==_SubMenuIndex)
+				{
+					Frame_Selector_SM.Show();
+					G_ActualSelector = "Frame_Selector_SM"^I;
+				}
+				else
+				{
+					Frame_Selector_SM.Hide();
+				}
+			}
+		}
+
+
+
+		Boolean IsNew(Integer _SubMenuIndex, Integer I, Integer J)
+		{
+			if(_SubMenuIndex == 1) return False;
+			return False;
+		}
+
+		Void ClearNew(Integer _SubMenuIndex)
+		{
+			//TODO - Clear New!
+		}
+
+		Void CreateSubMenu(Integer _SubMenuIndex)
+		{ 
+			declare Integer	  ItemCount_InstancesY;
+			declare Integer	  ItemCount_InstancesX;
+			declare Real	  SizeYQuad;
+			declare Real	  SizeXQuad;
+			declare Real	  MarginY_Button;
+			declare Real	  MarginX_Button;
+			declare Real	  PosYFirstQuad;
+			declare Real	  PosXFirstQuad;
+			declare Vec3	  LockedPosition;
+			declare Vec2	  LockedSize;
+			declare CMlQuad  Quad_BG <=> (Page.GetFirstChild("Quad_BG")               as CMlQuad);
+			SetSubSelector(_SubMenuIndex);
+
+			declare CMlFrame Frame_FlagInfo <=> (Page.GetFirstChild("Frame_FlagInfo") as CMlFrame);
+			declare CMlFrame Frame_Page     <=> (Page.GetFirstChild("Frame_Page") as CMlFrame);
+			Frame_FlagInfo.Hide();
+			Frame_Page.Hide();
+
+			declare ImgLock = GetLockImg(_SubMenuIndex);
+
+			switch(_SubMenuIndex)
+			{
+				case 0:	//Special
+				{
+					Frame_FlagInfo.Show();
+					ItemCount_InstancesX = {{{Count_InstancesX_Special}}};
+					ItemCount_InstancesY = {{{Count_InstancesY_Special}}};
+					MarginX_Button       = {{{MarginX_Special}}};
+					MarginY_Button       = {{{MarginY_Special}}};
+					SizeXQuad            = {{{SizeXQuad_Special}}};
+					SizeYQuad            = {{{SizeYQuad_Special}}};
+					PosXFirstQuad        = {{{PosXFirstQuad_Special}}};
+					PosYFirstQuad        = {{{PosYFirstQuad_Special-SM_SizeY*4.-1.5}}};
+					Quad_BG.ChangeImageUrl("{{{IMGBgSpecial}}}");
+					Quad_BG.RelativePosition.Y = 76.6 - 1*{{{SM_SizeY}}};
+					LockedPosition       = <{{{-SizeXSubQuad}}}+0.2, -0.6,0.>;
+					LockedSize           = <SizeXQuad+0.3,SizeYQuad+1.3>;
+				}
+				case 1:	//Drapeau
+				{
+					Frame_FlagInfo.Show();
+					Frame_Page.Show();
+					if(G_SubMenuFlagPage == 0)
+					{
+						ItemCount_InstancesX = {{{Count_InstancesX_Drapeau}}};
+						ItemCount_InstancesY = {{{Count_InstancesY_Drapeau+1}}};
+						MarginX_Button       = {{{MarginX_Drapeau}}};
+						MarginY_Button       = {{{MarginY_Drapeau}}};
+						SizeXQuad            = {{{SizeXQuad_Drapeau}}};
+						SizeYQuad            = {{{SizeYQuad_Drapeau}}};
+						PosXFirstQuad        = {{{PosXFirstQuad_Drapeau}}};
+						PosYFirstQuad        = {{{PosYFirstQuad_Drapeau}}};
+						Quad_BG.ChangeImageUrl("{{{IMGBgDrapeaux1}}}");
+						Quad_BG.RelativePosition.Y = 76.6 - 1*{{{SM_SizeY}}};
+						G_SubMenuIndexMaxY[1] = {{{Count_InstancesY_Drapeau+1}}};
+					}
+					else
+					{
+						ItemCount_InstancesX = {{{Count_InstancesX_Drapeau}}};
+						ItemCount_InstancesY = {{{Count_InstancesY_Drapeau}}};
+						MarginX_Button       = {{{MarginX_Drapeau}}};
+						MarginY_Button       = {{{MarginY_Drapeau}}};
+						SizeXQuad            = {{{SizeXQuad_Drapeau}}};
+						SizeYQuad            = {{{SizeYQuad_Drapeau}}};
+						PosXFirstQuad        = {{{PosXFirstQuad_Drapeau}}};
+						PosYFirstQuad        = {{{PosYFirstQuad_Drapeau}}};
+						Quad_BG.ChangeImageUrl("{{{IMGBgDrapeaux2}}}");
+						Quad_BG.RelativePosition.Y = 76.6 - 1*{{{SM_SizeY}}};
+						G_SubMenuIndexMaxY[1] = {{{Count_InstancesY_Drapeau}}};
+					}
+				}
+				case 4:	//Chiffre
+				{
+					ItemCount_InstancesX = {{{Count_InstancesX_Chiffre}}};
+					ItemCount_InstancesY = {{{Count_InstancesY_Chiffre}}};
+					MarginX_Button       = {{{MarginX_Chiffre}}};
+					MarginY_Button       = {{{MarginY_Chiffre}}};
+					SizeXQuad            = {{{SizeXQuad_Chiffre}}};
+					SizeYQuad            = {{{SizeYQuad_Chiffre}}};
+					PosXFirstQuad        = {{{PosXFirstQuad_Chiffre}}};
+					PosYFirstQuad        = {{{PosYFirstQuad_Chiffre}}};
+					Quad_BG.ChangeImageUrl("{{{IMGBgChiffre}}}");
+					Quad_BG.RelativePosition.Y = 76.6 - 0*{{{SM_SizeY}}};
+					LockedPosition       = <{{{-SizeXSubQuad}}}-0.0,0.,0.>;
+					LockedSize           = <SizeXQuad+0.4,SizeYQuad+1.>;
+				}
+				case 3:	//Symbole
+				{
+					ItemCount_InstancesX = {{{Count_InstancesX_Symbole}}};
+					ItemCount_InstancesY = {{{Count_InstancesY_Symbole}}};
+					MarginX_Button       = {{{MarginX_Symbole}}};
+					MarginY_Button       = {{{MarginY_Symbole}}};
+					SizeXQuad            = {{{SizeXQuad_Symbole}}};
+					SizeYQuad            = {{{SizeYQuad_Symbole}}};
+					PosXFirstQuad        = {{{PosXFirstQuad_Symbole}}};
+					PosYFirstQuad        = {{{PosYFirstQuad_Symbole}}};
+					Quad_BG.ChangeImageUrl("{{{IMGBgSymbole}}}");
+					Quad_BG.RelativePosition.Y = 76.6 - 1*{{{SM_SizeY}}};
+					LockedPosition       = <{{{-SizeXSubQuad}}}+0.3,-0.2,0.>;
+					LockedSize           = <SizeXQuad+0.6,SizeYQuad+0.8>;
+				}
+				case 2:	//Couleur
+				{
+					ItemCount_InstancesX = {{{Count_InstancesX_Couleur}}};
+					ItemCount_InstancesY = {{{Count_InstancesY_Couleur}}};
+					MarginX_Button       = {{{MarginX_Couleur}}};
+					MarginY_Button       = {{{MarginY_Couleur}}};
+					SizeXQuad            = {{{SizeXQuad_Couleur}}};
+					SizeYQuad            = {{{SizeYQuad_Couleur}}};
+					PosXFirstQuad        = {{{PosXFirstQuad_Couleur}}};
+					PosYFirstQuad        = {{{PosYFirstQuad_Couleur}}};
+					Quad_BG.ChangeImageUrl("{{{IMGBgCouleur}}}");
+					Quad_BG.RelativePosition.Y = 76.6 - 1*{{{SM_SizeY}}};
+					LockedPosition       = <{{{-SizeXSubQuad}}}-0.1,-0.3,0.>;
+					LockedSize           = <SizeXQuad+0.2,SizeYQuad+0.8>;
+				}
+				case 5:	//Material
+				{
+					ItemCount_InstancesX = {{{Count_InstancesX_Material}}};
+					ItemCount_InstancesY = {{{Count_InstancesY_Material}}};
+					MarginX_Button       = {{{MarginX_Material}}};
+					MarginY_Button       = {{{MarginY_Material}}};
+					SizeXQuad            = {{{SizeXQuad_Material}}};
+					SizeYQuad            = {{{SizeYQuad_Material}}};
+					PosXFirstQuad        = {{{PosXFirstQuad_Material}}};
+					PosYFirstQuad        = {{{PosYFirstQuad_Material}}};
+					Quad_BG.ChangeImageUrl("{{{IMGBgMaterial}}}");
+					Quad_BG.RelativePosition.Y = 76.6 - 2*{{{SM_SizeY}}};
+					LockedPosition       = <{{{-SizeXSubQuad}}}+0.2, -0.6,0.>;
+					LockedSize           = <SizeXQuad+0.3,SizeYQuad+1.3>;
+				}
+			}
+
+			
+			
+			
+			
+
+			for(I, 0, {{{Count_InstancesY_SubMenuMax-1}}})
+			{
+				declare Real IndexY = I*1.;
+				declare Real PosnY = PosYFirstQuad - IndexY*SizeYQuad - IndexY*MarginY_Button*1.;
+				//declare Real PosnY = PosYFirstQuad - IndexY*SizeYQuad - IndexY*MarginY_Button*1. - MarginY_Button/2. + 10.;
+				
+				for(J, 0, {{{Count_InstancesX_SubMenuMax-1}}})
+				{
+					declare Real IndexJ = J*1.;
+					declare Real PosnX = PosXFirstQuad+ IndexJ*SizeXQuad + IndexJ*MarginX_Button*1. + SizeXQuad/2;
+					
+					declare CMlFrame Frames_SubMenu         <=> (Page.GetFirstChild("Frame_SubMenu")                       as CMlFrame);
+					declare CMlFrame Frames_InstanceSubMenu <=> (Frames_SubMenu.GetFirstChild("Frame_InstanceSubMenu"^I^J) as CMlFrame);
+					declare CMlQuad  Quad_Icon              <=> (Frames_InstanceSubMenu.GetFirstChild("Quad_SubIconBase")  as CMlQuad);
+					declare CMlQuad  MouseInput_SubMenu		<=> (Frames_InstanceSubMenu.GetFirstChild("MouseInput_SubMenu_"^I^":"^J) as CMlQuad);
+					declare CMlQuad  Quad_SubNew            <=> (Frames_InstanceSubMenu.GetFirstChild("Quad_SubNew")       as CMlQuad);
+					declare CMlQuad  Quad_Lock              <=> (Frames_InstanceSubMenu.GetFirstChild("Quad_SubLock")      as CMlQuad);
+					
+					if(I <= ItemCount_InstancesY - 1 && J <= ItemCount_InstancesX - 1)
+					{
+						Frames_InstanceSubMenu.Show();
+						Quad_Icon.Size                  = <SizeXQuad,SizeYQuad>;
+						MouseInput_SubMenu.Size 		= <SizeXQuad,SizeYQuad>;
+						Frames_InstanceSubMenu.RelativePosition.X = PosnX;
+						Frames_InstanceSubMenu.RelativePosition.Y = PosnY;
+						
+						if(IsUnlock(_SubMenuIndex, I, J))
+						{
+							Quad_Lock.Hide();
+							
+							if(IsNew(_SubMenuIndex, I, J))
+							{
+								Quad_SubNew.Show();
+								Quad_SubNew.RelativePosition      = <{{{-SizeXSubQuad}}} + SizeXQuad/2.6, SizeYQuad/2.6, Quad_SubNew.RelativePosition.Z>;
+								Quad_SubNew.Size                  = <SizeXQuad/3.,SizeXQuad/3.>;
+							}
+							else
+							{
+								Quad_SubNew.Hide();
+							}
+						}
+						else
+						{
+							if(_SubMenuIndex == 0 && I*(ItemCount_InstancesX)+J == 5)
+							{
+								Quad_Lock.Hide();
+							}
+							else
+							{
+								Quad_Lock.Show();
+								Quad_Lock.ChangeImageUrl(ImgLock);
+								// Quad_Lock.Opacity = 0.9;
+								Quad_Lock.Opacity = 1.;
+								Quad_Lock.Size             = LockedSize;
+								Quad_Lock.RelativePosition = LockedPosition;
+							}
+							
+							
+						}
+					}
+					else
+					{
+						Frames_InstanceSubMenu.Hide();
+					}
+				}
+			}
+		}
+
+		Void UpdateLabel_Page()
+		{
+			declare CMlLabel Label_Page <=> (Page.GetFirstChild("Label_Page") as CMlLabel);
+
+			if(G_SubMenuFlagPage == 0)
+			{
+				G_SubMenuFlagPage = 1;
+				Label_Page.Value = TL::Compose(_("Page %1"), "2");
+			}
+			else
+			{
+				G_SubMenuFlagPage = 0;
+				Label_Page.Value = TL::Compose(_("Page %1"), "1");
+			}
+
+		}
+
+
+		Void OpenSubMenu(Integer _SubMenuIndex)
+		{			
+			Prompter_SetBanner("Label_UnlockExplain", "", 4300, 2, <1.,1.,1.>);
+			Prompter_SetBannerIsActive("Label_UnlockExplain", True, False);
+			
+			SetFrameMenuVisibility(False, False, True);
+			if(_SubMenuIndex == 0)
+				SetFrameMenuTransition("SubMenuContent", "ModelKindContent", "Gauche");
+			else
+				SetFrameMenuTransition("SubMenuContent", "CustomContent", "Gauche");
+
+			if(_SubMenuIndex == 1) {
+				declare Integer UpdateGoToStadiumCar	for Page;
+				UpdateGoToStadiumCar = Now;
+				if(G_SubIndex[_SubMenuIndex] >= {{{Count_InstancesX_Drapeau * (Count_InstancesY_Drapeau + 1)}}})
+					G_SubMenuFlagPage = 0;
+				else
+					G_SubMenuFlagPage = 1;
+				UpdateLabel_Page();
+			} else {
+				declare Integer UpdateGoToNotStadiumCar	for Page;
+				UpdateGoToNotStadiumCar = Now;
+			}
+			CreateSubMenu(_SubMenuIndex);
+
+			G_ActualMenu = "SubMenu";
+			G_SubMenuControlled = _SubMenuIndex;
+			declare Vec2 IndexPosition = GetSubMenuIndexPosition(_SubMenuIndex);
+			G_SubMenuIndexX = ML::NearestInteger(IndexPosition.X);
+			G_SubMenuIndexY = ML::NearestInteger(IndexPosition.Y);
+		}
+
+		Void CloseSubMenu(Text _NextMenu)
+		{
+			declare CMlFrame  Frame_Preview       <=> (Page.GetFirstChild("Frame_Preview")       as CMlFrame);
+			Frame_Preview.Hide();
+
+			SetSubSelector(-1);
+			//declare Integer SelectedSkinSet  for Page;
+			//SelectedSkinSet = -1;
+
+			if(_NextMenu == "ModelKind")
+			{
+				CloseCustomModel(_NextMenu);
+			}
+			else 
+			{
+				G_ActualSelector = "Frame_Selector_CustomModel";
+				SetFrameMenuVisibility(False, True, False);
+				SetFrameMenuTransition("CustomContent", "SubMenuContent", "Droite");
+				G_ActualMenu = "CustomModel";
+			}
+
+
+			G_SubMenuControlled = -1;
+		}
+		
+		Void SubMenuFlagNextPage()
+		{
+			UpdateLabel_Page();
+			CreateSubMenu(G_SubMenuControlled);
+		
+			
+			if(G_SubMenuIndexY >= G_SubMenuIndexMaxY[1])
+			{
+				G_SubMenuIndexY = G_SubMenuIndexY - 1;
+			}
+			UpdateIndexSub(G_SubMenuControlled, G_SubMenuIndexX, G_SubMenuIndexY);
+		}
+
+
+		Text SelectGame(Integer _IndexSelectX, Integer _IndexSelectY)
+		{
+			declare Text GameSelect 			for This;
+			declare Integer DifficultySelect	for This;
+			declare Text NextPage;
+			declare Text ButtonChoose = G_IndexGameSelect[_IndexSelectY][_IndexSelectX];
+			switch(ButtonChoose) {
+				case "Boutton1": 
+				{
+					GameSelect = "Boutton1";
+					DifficultySelect = 1;
+					declare Text HeaderInfo_LabelTitle for This;
+					HeaderInfo_LabelTitle = "Boutton1";
+					NextPage = "Difficulty";
+				}
+				case "Boutton2": 
+				{
+					GameSelect = "Boutton2";
+					DifficultySelect = 1;
+					declare Text HeaderInfo_LabelTitle for This;
+					HeaderInfo_LabelTitle = "Boutton2";
+					NextPage = "Difficulty";
+				}
+				case "Boutton3": 
+				{
+					GameSelect = "Boutton3";
+					DifficultySelect = 1;
+					declare Text HeaderInfo_LabelTitle for This;
+					HeaderInfo_LabelTitle = "Boutton3";
+					NextPage = "Difficulty";
+				}
+			}
+
+			return NextPage;
+		}
+
+		Void SelectSubButton(Integer _SubMenuIndex ,Integer _SelectorPositionX, Integer _SelectorPositionY, Integer _SubPositionX, Integer _SubPositionY)
+		{
+			declare CMlFrame Frames_Instance     <=> (Page.GetFirstChild("Frame_Instance"^_SelectorPositionY^""^_SelectorPositionX) as CMlFrame);
+			declare CMlQuad  Quad_Icon           <=> (Frames_Instance.GetFirstChild("Quad_IconBase") as CMlQuad);
+			declare Integer Index = GetSubMenuIndex(G_SubMenuControlled, G_SubMenuIndexX, G_SubMenuIndexY);
+			declare Integer SelectedSpecialIndex  for Page;
+			declare Integer SelectedDrapeauIndex  for Page;
+			declare Integer SelectedChiffreIndex  for Page;
+			declare Integer SelectedSymboleIndex  for Page;
+			declare Integer SelectedColorIndex	  for Page;
+			declare Integer SelectedMaterialIndex for Page;
+			declare Boolean UpdateSkin			  for Page;
+			declare Boolean UpdateSpecialSkin	  for Page;
+
+			G_SubIndex[G_SubMenuControlled] = Index;
+			
+			
+			switch(_SubMenuIndex)
+			{
+				case 0: SelectedSpecialIndex  = Index;
+				case 1: SelectedDrapeauIndex  = Index;
+				case 2: SelectedColorIndex    = Index;
+				case 3: SelectedSymboleIndex  = Index;
+				case 4: SelectedChiffreIndex  = Index;
+				case 5: SelectedMaterialIndex = Index;
+				
+			}
+
+			if(_SubMenuIndex != 0)
+			{
+				declare Text ImgPath = GetImgPath(_SubMenuIndex, Index);
+				if(ImgPath == "") {
+					Quad_Icon.Hide();
+				} else {
+					Quad_Icon. Show();
+					Quad_Icon.ChangeImageUrl(ImgPath);
+				}
+				
+				UpdateSkin = True;
+			}
+			else
+			{
+				//Quad_Icon.ChangeImageUrl("{{{IMGSelectorOn}}}");
+				UpdateSpecialSkin = True;
+			}
+
+		}
+		Void LoadInfoPlayer()
+		{
+			declare Integer SelectedDrapeauIndex  for Page;
+			declare Integer SelectedChiffreIndex  for Page;
+			declare Integer SelectedSymboleIndex  for Page;
+			declare Integer SelectedColorIndex    for Page;
+			declare Integer SelectedMaterialIndex for Page;
+
+			G_SubIndex[0] = 0;
+			G_SubIndex[1] = SelectedDrapeauIndex;
+			G_SubIndex[2] = SelectedColorIndex;
+			G_SubIndex[3] = SelectedSymboleIndex;
+			G_SubIndex[4] = SelectedChiffreIndex;
+			G_SubIndex[5] = SelectedMaterialIndex;
+			G_SubIndex[6] = SelectedDrapeauIndex;
+
+		}
+
+		Void InitPage()
+		{
+			declare Text[] SplitUserLogin = TL::Split("_", LocalUser.Login);
+			declare Text UserLogin = SplitUserLogin[0];
+			
+			declare CMlFrame Frame_All        <=> (Page.GetFirstChild("Frame_All") as CMlFrame);
+			declare CMlFrame Frame_InputInfos <=> (Page.GetFirstChild("Frame_InputInfos") as CMlFrame);
+			declare CMlFrame ModelKindContent <=> (Page.GetFirstChild("ModelKindContent") as CMlFrame);
+			declare CMlFrame CustomContent    <=> (Page.GetFirstChild("CustomContent") as CMlFrame);
+			declare CMlFrame SubMenuContent   <=> (Page.GetFirstChild("SubMenuContent") as CMlFrame);
+			
+			ModelKindContent.RelativePosition.X = 0.;
+			CustomContent.RelativePosition.X    = {{{SizeX_Total}}};
+			SubMenuContent.RelativePosition.X   = {{{SizeX_Total*2.}}};
+			Frame_All.RelativePosition.X        = -360.;
+			
+			declare Vec3 NewQuadPositionH       = <-180., Frame_All.RelativePosition.Y, Frame_All.RelativePosition.Z>;
+
+			LibManialink_SetTargetPosition(Frame_All, NewQuadPositionH);
+			LibManialink_PresetAnim(Frame_All, 1000, "EaseOutBack");
+
+			LibManialink_SetTargetPosition(Frame_InputInfos, <100., -1., 0.>);
+			LibManialink_PresetAnim(Frame_InputInfos, 1000, "EaseOutQuint");
+			
+			
+			declare CMlLabel Label_ShortName       <=> (Page.GetFirstChild("Label_ShortName") as CMlLabel);
+			declare CMlLabel Label_Name            <=> (Page.GetFirstChild("Label_Name") as CMlLabel);
+			
+			declare Text TestLabel = TL::SubString(UserLogin, 0, 3);
+			Label_Name.Value = UserLogin;
+			Label_ShortName.Value = TestLabel;
+
+			LoadInfoPlayer();
+		
+			declare Text[] LabelModelKind;
+			declare Text[] QuadModelKind;
+			LabelModelKind.add(_("Create your own combination"));
+			LabelModelKind.add(_("Ubisoft Club exclusive rewards"));
+			QuadModelKind.add("{{{IMGGarageCustom}}}");
+			QuadModelKind.add("{{{IMGGarageLegend}}}");
+
+
+
+			for(I, 0, {{{Count_InstancesY_ModelKind - 1}}})
+			{
+				declare CMlFrame FrameInstance_ModelKind  <=> (Page.GetFirstChild("FrameInstance_ModelKind"^I) as CMlFrame);
+				declare CMlQuad Quad_ModelKind     <=> (FrameInstance_ModelKind.GetFirstChild("Quad_ModelKind") as CMlQuad);
+				Quad_ModelKind.ChangeImageUrl(QuadModelKind[I]);
+
+				Prompter_SetBanner("PromptModelKind"^I, LabelModelKind[I], 4300, 2, <1.,1.,1.>);
+				Prompter_SetBannerIsActive("PromptModelKind"^I, True, False);
+			}
+
+			UpdateQuadsModelKindCursor("Up");
+
+			
+			for(I, 0, {{{Count_InstancesY - 1}}})
+			{
+				for(J,0, {{{Count_InstancesX - 1}}})
+				{
+					declare Integer Index = GetMenuIndex(J, I);
+					declare CMlFrame Frames_Instance  <=> (Page.GetFirstChild("Frame_Instance"^I^""^J) as CMlFrame);
+					
+					declare CMlQuad  Quad_Icon        <=> (Frames_Instance.GetFirstChild("Quad_IconBase") as CMlQuad);
+					declare Text ImgPath = GetImgPath(Index, G_SubIndex[Index]);
+					Quad_Icon.ChangeImageUrl(ImgPath);
+			
+
+					if(I == 0 && J == 0)
+					{
+						declare CMlQuad  Quad_FG        <=> (Frames_Instance.GetFirstChild("Quad_FG") as CMlQuad);
+						Quad_FG.Hide();
+					}
+				}
+			}
+			SetFrameMenuVisibility(True, False, False);
+			SetSubSelector(-1);
+
+			UpdateLabel_Page();
+
+			declare Boolean LaunchMusic for Page;
+			LaunchMusic = True;
+
+			G_AmbianceEnviro = Audio.CreateSound("{{{TM_AMB_Garage_Loop}}}", {{{Volumes::GetVolumedB("TM_AMB_Garage_Loop")}}}, False, True, False);
+			G_AmbianceEnviro.Stop();
+			G_AmbianceEnviro.Play();
+
+		}
+
+
+		Void UpdateHelpersForPlatform(Integer _Platform) {
+			declare Text[] InputIds = ["Select"];
+			declare Text[] AdditionnalInputIds = ["Quad_Input_Select", "Quad_Input_Cancel", "Quad_Input_Action1", "Quad_Input_Action2", "Quad_Input_PageUp", "Quad_Input_PageDown"];
+	
+			declare CMlQuad  QuadInputIcon;
+			for (I, 0, 2) {
+				/*
+				for (J, 0, InputIds.count - 1) {
+					declare CMlFrame FrameInput <=> (Page.GetFirstChild("Frame_InputInfo_Main_"^InputIds[J]) as CMlFrame);
+					QuadInputIcon <=> (FrameInput.GetFirstChild("Quad_InputIcon_"^I) as CMlQuad);
+					if (I == _Platform)
+						QuadInputIcon.Show();
+					else
+						QuadInputIcon.Hide();
+				}
+				*/
+				for (J, 0, AdditionnalInputIds.count-1) {
+					QuadInputIcon <=> (Page.GetFirstChild(AdditionnalInputIds[J]^I) as CMlQuad);
+					if (I == _Platform)
+						QuadInputIcon.Show();
+					else
+						QuadInputIcon.Hide();
+				}
+			}
+		}
+
+		Void HidePage()
+		{
+			StartSetClipPosition_Frame_Content(<320., 0.>, <0., 0.>, C_TimeStartClip2, C_TimeAnimClip2);
+			G_HideTime  = Now + C_TimeStartClip + C_TimeAnimClip;
+			G_LockInput = Now + C_TimeStartClip + C_TimeAnimClip;
+		}
+
+		Void ShowPage(Text _PreviousPage)
+		{
+			declare CMlFrame  Frame_All <=> (Page.GetFirstChild("Frame_All") as CMlFrame);
+			declare Vec3 NewFramePos  = <Frame_All.RelativePosition.X, 0., Frame_All.RelativePosition.Z>;
+			
+			
+			if(_PreviousPage == "Main")
+			{
+				StartSetClipPosition_Frame_Content( <0., 0.>, <320., 0.>, C_TimeStartClip, C_TimeAnimClip);
+				G_LockInput = Now + C_TimeTransitionPage;
+			}
+			else
+			{
+				Frame_All.RelativePosition = NewFramePos;
+			}
+			
+				Frame_All.RelativePosition = NewFramePos;
+			
+			Frame_All.Show();
+			G_HideTime  = -1;
+		}
+
+		main() {
+			{{{BuilderHelper::MLEnableMenuNavigationInputs()}}}
+			{{{Prompter2::InjectInInit()}}}
+
+			declare Boolean Garage_IsJoin for LocalUser;
+			Garage_IsJoin = False;
+
+			declare CMlFrame Frame_Wait        <=> (Page.GetFirstChild("Frame_Wait") as CMlFrame);
+			declare CMlQuad MouseInput_PrevPage   <=> (Page.GetFirstChild("MouseInput_PrevPage")   as CMlQuad);
+			declare CMlQuad MouseInput_NextPage <=> (Page.GetFirstChild("MouseInput_NextPage") as CMlQuad);
+
+			declare Integer TimeTest = Now +2000;
+			Frame_Wait.Show();
+			//Color Selectors
+			for(I, 0, 5)
+			{
+				declare CMlFrame Frame_Selector_SM   <=> (Page.GetFirstChild("Frame_Selector_SM"^I) as CMlFrame);
+				declare CMlQuad Quad_Selector        <=> (Frame_Selector_SM.GetFirstChild("Quad_Selector")   as CMlQuad);
+				Quad_Selector.Colorize = {{{Colors::GetColor("White")}}};
+			}
+			declare CMlFrame Selector_ModelKind         <=> (Page.GetFirstChild("Selector_ModelKind")                    as CMlFrame);
+			declare CMlFrame Frame_Selector_CustomModel <=> (Page.GetFirstChild("Frame_Selector_CustomModel")            as CMlFrame);
+			declare CMlQuad Quad_SelectorMK             <=> (Selector_ModelKind.GetFirstChild("Quad_Selector")           as CMlQuad);
+			declare CMlQuad Quad_SelectorCM             <=> (Frame_Selector_CustomModel.GetFirstChild("Quad_Selector")   as CMlQuad);
+			Quad_SelectorMK.Colorize = {{{Colors::GetColor("White")}}};
+			Quad_SelectorCM.Colorize = {{{Colors::GetColor("White")}}};
+			
+			
+			//SetFrameMenuVisibility(True, False, False);
+
+			EnableMenuNavigationInputs = True;
+			Preload();
+			
+			//declare Text SelectedStickerName for Page;
+			//declare Text SelectedLayerName for Page;
+			//declare Text SelectedColorName for Page;
+			declare Boolean WantQuit for Page;
+			declare Boolean WantSave for Page;
+			declare Integer UpdatePageUp			for Page;
+			declare Integer UpdatePageDown			for Page;
+			declare Integer UpdateQuadEnviro		for Page;
+			declare Boolean Page_BlockInput			for  Page;
+
+			declare Integer PrevUpdateQuadEnviro;
+
+			PrevUpdateQuadEnviro = -1;
+
+			declare CMlFrame[][Integer]	Frames_Instance;
+			declare CMlLabel[][Integer]	Labels_Name;
+			declare CMlLabel[][Integer]	Labels_Tuto;
+			declare Integer 			IndexSelectY = 0;
+			declare Integer 			IndexSelectX = 0;
+			declare Integer 			IndexSelectModelKind_Y = 0;
+			declare Integer 			IndexSelectModelKind_X = 0;
+			declare Integer 			IndexMaxY = {{{Count_InstancesY}}};
+			declare Integer 			IndexMaxX = {{{Count_InstancesX}}};
+			declare Text 				PreviousMenu = "";
+			
+			declare Text[Integer][Integer] TextButton;
+			declare Text[Integer][Integer] IndexButton;
+			declare Text[Integer][Integer] QuadImageUrl;
+			declare Text[Integer][Integer] QuadImageTutoUrl;
+			declare Text[Integer][Integer] TextTuto;
+			for(I, 0, {{{Count_InstancesY-1}}})
+			{
+				TextButton[I]        =  Text[Integer];
+				QuadImageUrl[I]      =  Text[Integer];
+				QuadImageTutoUrl[I]  =  Text[Integer];
+				IndexButton[I]       =  Text[Integer];
+				TextTuto[I]          =  Text[Integer];
+				G_IndexGameSelect[I] = Text[Integer];
+			}
+			TextButton[0][0]        = "";
+			TextButton[0][1]        = "";
+			TextButton[1][0]        = "";
+			TextButton[1][1]        = "";
+			TextButton[2][0]        = "";
+			TextButton[2][1]        = "";
+			G_IndexGameSelect[0][0] = "Name";
+			G_IndexGameSelect[0][1] = "Drapeau";
+			G_IndexGameSelect[1][0] = "Couleurs";
+			G_IndexGameSelect[1][1] = "Symbole";
+			G_IndexGameSelect[2][0] = "Chiffre";
+			G_IndexGameSelect[2][1] = "Material";
+			G_HideTime              = -1;
+			G_SubMenuControlled     = -1;
+			G_ActualMenu            = "ModelKind";
+			G_SubMenuIndexMaxX[0] = {{{Count_InstancesX_Special}}};
+			G_SubMenuIndexMaxX[1] = {{{Count_InstancesX_Drapeau}}};
+			G_SubMenuIndexMaxX[2] = {{{Count_InstancesX_Couleur}}};
+			G_SubMenuIndexMaxX[3] = {{{Count_InstancesX_Symbole}}};
+			G_SubMenuIndexMaxX[4] = {{{Count_InstancesX_Chiffre}}};
+			G_SubMenuIndexMaxX[5] = {{{Count_InstancesX_Material}}};
+			G_SubMenuIndexMaxX[6] = {{{Count_InstancesX_Drapeau}}};
+			G_SubMenuIndexMaxY[0] = {{{Count_InstancesY_Special}}};
+			G_SubMenuIndexMaxY[1] = {{{Count_InstancesY_Drapeau}}};
+			G_SubMenuIndexMaxY[2] = {{{Count_InstancesY_Couleur}}};
+			G_SubMenuIndexMaxY[3] = {{{Count_InstancesY_Symbole}}};
+			G_SubMenuIndexMaxY[4] = {{{Count_InstancesY_Chiffre}}};
+			G_SubMenuIndexMaxY[5] = {{{Count_InstancesY_Material}}};
+			G_SubMenuIndexMaxY[6] = {{{Count_InstancesY_Drapeau}}};
+
+			G_SubIndex[0] = 0;
+			G_SubIndex[1] = 0;
+			G_SubIndex[2] = 0;
+			G_SubIndex[3] = 0;
+			G_SubIndex[4] = 0;
+			G_SubIndex[5] = 0;
+			G_SubIndex[6] = 0;
+
+			G_LabelLegendText[-1]	= Text[Integer];
+			
+
+			declare CMlLabel Label_Select <=> (Page.GetFirstChild("Label_Select") as CMlLabel);
+			declare CMlLabel Label_Cancel <=> (Page.GetFirstChild("Label_Cancel") as CMlLabel);
+			declare CMlLabel Label_Preview <=> (Page.GetFirstChild("Label_Preview") as CMlLabel);
+			Label_Select.Value = _("Select");
+			Label_Cancel.Value = _("Back");
+			Label_Preview.Value = _("try");
+			
+
+			for(I, 0, {{{Count_InstancesY-1}}})
+			{
+				Frames_Instance[I]		= CMlFrame[];
+				Labels_Name[I]			= CMlLabel[];
+				Labels_Tuto[I]			= CMlLabel[];
+
+				for(J,0,{{{Count_InstancesX-1}}})
+				{
+					Frames_Instance[I]	.add( (Page.MainFrame.GetFirstChild("Frame_Instance"^I^""^J)	as CMlFrame) );
+					Labels_Name[I]		.add( (Frames_Instance[I][J].GetFirstChild("Label_Name") 		as CMlLabel) );
+					//Labels_Tuto[I][J].Hide();
+					Labels_Name[I][J].Value = TextButton[I][J];
+					//Quad_Icon[I][J].ChangeImageUrl(QuadImageUrl[I][J]);
+					declare Index = GetMenuIndex(J, I);
+					G_LabelLegendText[Index]	= Text[Integer];
+
+				}
+			}
+			//Labels_Tuto[IndexSelectY][IndexSelectX].Show();
+
+			G_LabelLegendText[-1][0] = ""; //|I18NInternal|English
+			G_LabelLegendText[-1][1] = _("Pick a Flag");
+			G_LabelLegendText[-1][2] = _("Choose a Paintwork");
+			G_LabelLegendText[-1][3] = _("Pick a Mascotte");
+			G_LabelLegendText[-1][4] = _("Pick a Number");
+			G_LabelLegendText[-1][5] = _("Choose a Material");
+			G_LabelLegendText[-1][6] = "flag";
+			G_LabelLegendText[0][0]  = "";
+			G_LabelLegendText[0][5]  = "Drapeau 5";
+			G_LabelLegendText[1][0]  = "Drapeau 0";
+			G_LabelLegendText[1][1]  = "Drapeau 1";
+			G_LabelLegendText[1][2]  = "Drapeau 2";
+			G_LabelLegendText[1][3]  = "Drapeau 3";
+			G_LabelLegendText[1][4]  = "Drapeau 4";
+			G_LabelLegendText[1][5]  = "Drapeau 5";
+			G_LabelLegendText[2][0]  = "";
+			G_LabelLegendText[2][1]  = "";
+			G_LabelLegendText[2][2]  = "";
+			G_LabelLegendText[2][3]  = "";
+			G_LabelLegendText[2][4]  = "";
+			G_LabelLegendText[2][5]  = "";
+			G_LabelLegendText[3][0]  = "0";
+			G_LabelLegendText[3][1]  = "1";
+			G_LabelLegendText[3][2]  = "2";
+			G_LabelLegendText[3][3]  = "3";
+			G_LabelLegendText[3][4]  = "4";
+			G_LabelLegendText[3][5]  = "5";
+			G_LabelLegendText[4][0]  = "0";
+			G_LabelLegendText[4][1]  = "1";
+			G_LabelLegendText[4][2]  = "2";
+			G_LabelLegendText[4][3]  = "3";
+			G_LabelLegendText[4][4]  = "4";
+			G_LabelLegendText[4][5]  = "5";
+			G_LabelLegendText[5][0]  = "0";
+			G_LabelLegendText[5][1]  = "1";
+			G_LabelLegendText[5][2]  = "2";
+			G_LabelLegendText[5][3]  = "3";
+			G_LabelLegendText[5][4]  = "4";
+			G_LabelLegendText[5][5]  = "5";
+			//G_LabelLegendText[6][0]  = "0";
+			//G_LabelLegendText[6][1]  = "1";
+			//G_LabelLegendText[6][2]  = "2";
+			//G_LabelLegendText[6][3]  = "3";
+			//G_LabelLegendText[6][4]  = "4";
+			//G_LabelLegendText[6][5]  = "5";
+			
+			
+			G_DeclareVarationSelector = Now - 157;
+			InitPage();
+			ShowPage("");
+
+			UpdateQuadsModelKind(0,0);
+			UpdateQuads(IndexSelectX, IndexSelectY);
+			G_ActualSelector = "Selector_ModelKind";
+			
+			declare Integer UpdateUplayReward for Page;
+			declare Integer Prev_UpdateUplayReward;
+			Prev_UpdateUplayReward = UpdateUplayReward;
+			declare Boolean IsPageShow = False;
+
+			declare Integer ActiveButtonPlatform = {{{Platform}}};
+			
+			declare Integer UpdateActiveButton = Now + 200;
+			
+			//aaaaaaa
+			Quad_Buttons.add((Page.GetFirstChild("MouseInput_InputInfo_Select") as CMlQuad));
+			LabelButtons.add(Label_Select);
+			Quad_Buttons.add((Page.GetFirstChild("MouseInput_InputInfo_Cancel") as CMlQuad));
+			LabelButtons.add(Label_Cancel);
+			Quad_Buttons.add((Page.GetFirstChild("MouseInput_InputInfo_Action1") as CMlQuad));
+			LabelButtons.add(Label_Preview);
+
+
+			while(True) {
+				yield;
+				//if(! PageIsVisible) continue;
+				LibManialink_AnimLoop();
+
+				{{{ClipTransitions::InjectInWhile(["Frame_Content"])}}}
+				{{{Selector::InsertInLoop("G_ActualSelector", "G_DeclareVarationSelector")}}}
+				{{{Prompter2::InjectInLoop()}}}
+			
+				if(UpdateActiveButton < Now && UpdateActiveButton != -1)
+				{
+					SendCustomEvent("GetActiveButtonPlatform", ["BadgeEditorUI"]);
+					UpdateActiveButton = -1;
+				}
+
+				/*
+				if(!IsPageShow && !Frame_Wait.Visible)
+				{
+					//InitPage();
+				}
+				*/
+
+				if(G_HideTime <= Now && G_HideTime != -1)
+				{
+					G_HideTime = -1;
+				}
+
+				if(Prev_UpdateUplayReward != UpdateUplayReward)
+				{
+					declare Integer[] Page_RewardsUplay for Page;
+					if(G_SubMenuControlled == 0)
+					{
+						CreateSubMenu(0);
+						UpdateIndexSub(G_SubMenuControlled, G_SubMenuIndexX, G_SubMenuIndexY);
+					}
+					Prev_UpdateUplayReward = UpdateUplayReward;
+				}
+				
+				if(UpdateQuadEnviro != PrevUpdateQuadEnviro)
+				{
+					UpdateQuadEnviro(UpdateQuadEnviro);
+					PrevUpdateQuadEnviro = UpdateQuadEnviro;
+				}
+				
+				if (Input.PendingEvents.count != 0) {
+					declare Integer LastInputPlatform;
+					switch (Input.PendingEvents[Input.PendingEvents.count-1].Pad.Type) {
+						case CInputPad::EPadType::Keyboard 		: LastInputPlatform = {{{LibUIButtons::GetPlatform("PC")}}};
+						case CInputPad::EPadType::PlayStation 	: LastInputPlatform = {{{LibUIButtons::GetPlatform("PS4")}}};
+						case CInputPad::EPadType::XBox 			: LastInputPlatform = {{{LibUIButtons::GetPlatform("XB1")}}};
+						default 								: LastInputPlatform = {{{LibUIButtons::GetPlatform("PC")}}};
+					}
+					if (LastInputPlatform != ActiveButtonPlatform)
+					{
+						SendCustomEvent("SetActiveButtonPlaform", ["BadgeEditorUI", TL::ToText(LastInputPlatform)]);
+					}
+				}
+
+				foreach(Event in PendingEvents) 
+				{
+					if(G_LockInput > Now) continue;
+					
+					switch(Event.Type) {
+						case CMlEvent::Type::MouseClick: {
+							declare Text[] InputId = TL::Split("_", Event.ControlId);
+							if (InputId.count < 2 || InputId[0] != "MouseInput")
+								continue;
+							if(G_ActualMenu == "ModelKind") {
+								switch (InputId[1]) {
+									case "ModelKind" : {
+										declare Integer ModelKindIndex = TL::ToInteger(InputId[2]);
+										if (ModelKindIndex != IndexSelectModelKind_Y) {
+											IndexSelectModelKind_Y = ModelKindIndex;
+											if (IndexSelectModelKind_Y == 0)
+												UpdateQuadsModelKindCursor("Up");
+											else
+												UpdateQuadsModelKindCursor("Down");
+											UpdateQuadsModelKind(IndexSelectModelKind_X, IndexSelectModelKind_Y);
+										}
+										Audio.PlaySoundEvent("{{{SFX_UI_GarageLateralCurtain_IN}}}", {{{Volumes::GetVolumedB("SFX_UI_GarageLateralCurtain_IN")}}});
+										if(IndexSelectModelKind_Y == 0) {
+											IndexSelectX = 1;
+											IndexSelectY = 0;
+											UpdateQuads(IndexSelectX, IndexSelectY);
+											OpenCustomModel();
+										} else if(IndexSelectModelKind_Y == 1) {
+											PreviousMenu = G_ActualMenu;
+											OpenSubMenu(0);
+											UpdateIndexSub(G_SubMenuControlled, G_SubMenuIndexX, G_SubMenuIndexY);
+										}
+									}
+									case "InputInfo" : {
+										switch (InputId[2]) {
+											case "Select" : {
+												Audio.PlaySoundEvent("{{{SFX_UI_GarageLateralCurtain_IN}}}", {{{Volumes::GetVolumedB("SFX_UI_GarageLateralCurtain_IN")}}});
+												if(IndexSelectModelKind_Y == 0)
+												{
+													IndexSelectX = 1;
+													IndexSelectY = 0;
+													UpdateQuads(IndexSelectX, IndexSelectY);
+													OpenCustomModel();
+												}
+												else if(IndexSelectModelKind_Y == 1)
+												{
+													PreviousMenu = G_ActualMenu;
+													OpenSubMenu(0);
+													UpdateIndexSub(G_SubMenuControlled, G_SubMenuIndexX, G_SubMenuIndexY);
+												}
+											}
+											case "Cancel" : {
+												Audio.PlaySoundEvent("{{{SoundPageBack}}}", {{{Volumes::GetVolumedB("MenuPageBack")}}});
+												WantQuit = True;
+												HidePage();
+											}
+											case "AppMenu" : {
+												Audio.PlaySoundEvent("{{{SoundPageBack}}}", {{{Volumes::GetVolumedB("MenuPageBack")}}});
+												WantQuit = True;
+												HidePage();
+											}
+										}
+									}
+									case "NextPage" : UpdatePageDown = Now;
+									case "PrevPage" : UpdatePageUp = Now;
+								}
+							} else if(G_ActualMenu == "CustomModel") {
+								switch (InputId[1]) {
+									case "Custom" : {
+										declare Text[] Position = TL::Split(":", InputId[2]);
+										declare Integer IndexY = TL::ToInteger(Position[0]);
+										declare Integer IndexX = TL::ToInteger(Position[1]);
+										if(IndexSelectX != IndexX || IndexSelectY != IndexY)
+										{
+											IndexSelectX = IndexX;
+											IndexSelectY = IndexY;
+											Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+											UpdateQuads(IndexSelectX, IndexSelectY);
+										}
+										
+										declare Integer IndexSubMenu = GetSubMenu(IndexSelectX, IndexSelectY);
+										if(IndexSubMenu <= 0) continue;
+										PreviousMenu = G_ActualMenu;
+										OpenSubMenu(IndexSubMenu);
+										if(G_SubMenuIndexX <= -1) G_SubMenuIndexX = 0;
+										if(G_SubMenuIndexY <= -1) G_SubMenuIndexY = 0;
+										UpdateIndexSub(G_SubMenuControlled, G_SubMenuIndexX, G_SubMenuIndexY);
+										Audio.PlaySoundEvent("{{{SFX_UI_GarageLateralCurtain_IN}}}", {{{Volumes::GetVolumedB("SFX_UI_GarageLateralCurtain_IN")}}});
+									}
+									case "InputInfo" : {
+										switch (InputId[2]) {
+											case "Select" : {
+												declare Integer IndexSubMenu = GetSubMenu(IndexSelectX, IndexSelectY);
+												if(IndexSubMenu <= 0) continue;
+												PreviousMenu = G_ActualMenu;
+												OpenSubMenu(IndexSubMenu);
+												if(G_SubMenuIndexX <= -1) G_SubMenuIndexX = 0;
+												if(G_SubMenuIndexY <= -1) G_SubMenuIndexY = 0;
+												UpdateIndexSub(G_SubMenuControlled, G_SubMenuIndexX, G_SubMenuIndexY);
+												Audio.PlaySoundEvent("{{{SFX_UI_GarageLateralCurtain_IN}}}", {{{Volumes::GetVolumedB("SFX_UI_GarageLateralCurtain_IN")}}});
+											}
+											case "Cancel" : {
+												Audio.PlaySoundEvent("{{{SFX_UI_GarageLateralCurtain_OUT}}}", {{{Volumes::GetVolumedB("SFX_UI_GarageLateralCurtain_OUT")}}});
+												CloseCustomModel("Custom");
+											}
+											case "AppMenu" : {
+												Audio.PlaySoundEvent("{{{SFX_UI_GarageLateralCurtain_OUT}}}", {{{Volumes::GetVolumedB("SFX_UI_GarageLateralCurtain_OUT")}}});
+												CloseCustomModel("Custom");
+											}
+										}
+									}
+									case "NextPage" : {
+										UpdatePageDown = Now;
+										MouseInput_PrevPage.Colorize=<0.1, 0.1, 0.1>;
+										declare Vec3 ColorTarget = <1., 1., 1.>;
+										LibManialink_SetTargetColorize(MouseInput_PrevPage, ColorTarget);
+										LibManialink_PresetAnimInsert(MouseInput_PrevPage, 100, 200, "EaseInQuint");
+									}
+									case "PrevPage" : {
+										UpdatePageUp = Now;
+										MouseInput_NextPage.Colorize=<0.1, 0.1, 0.1>;
+										declare Vec3 ColorTarget = <1., 1., 1.>;
+										LibManialink_SetTargetColorize(MouseInput_NextPage, ColorTarget);
+										LibManialink_PresetAnimInsert(MouseInput_NextPage, 100, 200, "EaseInQuint");
+									}
+								}								
+							} else if(G_ActualMenu == "SubMenu") {
+								switch (InputId[1]) {
+									case "SubMenu" : {
+										declare Text[] Position = TL::Split(":", InputId[2]);
+										declare Integer IndexY = TL::ToInteger(Position[0]);
+										declare Integer IndexX = TL::ToInteger(Position[1]);
+										if(G_SubMenuIndexX != IndexX || G_SubMenuIndexY != IndexY)
+										{
+											Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+											UpdateIndexSub(G_SubMenuControlled, IndexX, IndexY);
+										}
+										
+										if(!IsUnlock(G_SubMenuControlled, G_SubMenuIndexY, G_SubMenuIndexX)) {
+											if(G_SubMenuControlled == 0) {
+												declare Integer Index = G_SubMenuIndexY * 3 + G_SubMenuIndexX + 1;
+												if(Index <= {{{C_NbOfClubReward}}}) {
+													declare Integer AskUplayPurchaseReward for Page;
+													AskUplayPurchaseReward = Index;
+												} else {
+													SelectSubButton(G_SubMenuControlled, IndexSelectX, IndexSelectY, G_SubMenuIndexX , G_SubMenuIndexY);
+												}
+											}
+											continue;
+										} else {
+											if(G_SubMenuControlled == 0)
+											{
+												declare Integer Index = G_SubMenuIndexY * 3 + G_SubMenuIndexX;
+												declare Integer SelectedSkinSet  for Page;
+												SelectedSkinSet = Index;
+											}
+										}
+										if(G_SubMenuControlled == 0 || G_SubMenuControlled == 1 || G_SubMenuControlled == 2) {
+											declare Text Sound       = GetSoundPaint();
+											declare Real SoundVolume = GetSoundPaintVolume(Sound);
+											Audio.PlaySoundEvent(Sound, SoundVolume);
+										} else if(G_SubMenuControlled == 3 || G_SubMenuControlled == 4) {
+											Audio.PlaySoundEvent("{{{SFX_Garage_Sticker}}}", {{{Volumes::GetVolumedB("SFX_Garage_Sticker")}}});
+										} else if(G_SubMenuControlled == 5) {
+											Audio.PlaySoundEvent("{{{SFX_Garage_MetalAlloy}}}", {{{Volumes::GetVolumedB("SFX_Garage_MetalAlloy")}}}); 
+										}
+										SelectSubButton(G_SubMenuControlled, IndexSelectX, IndexSelectY, G_SubMenuIndexX , G_SubMenuIndexY);
+										UpdateQuads(IndexSelectX, IndexSelectY);
+										if(G_SubMenuControlled == 0) 
+											CloseSubMenu(PreviousMenu);
+									}
+									case "InputInfo" : {
+										switch (InputId[2]) {
+											case "Select" : {
+												if(!IsUnlock(G_SubMenuControlled, G_SubMenuIndexY, G_SubMenuIndexX)) {
+													if(G_SubMenuControlled == 0) {
+														declare Integer Index = G_SubMenuIndexY * 3 + G_SubMenuIndexX + 1;
+														if(Index <= {{{C_NbOfClubReward}}}) {
+															declare Integer AskUplayPurchaseReward for Page;
+															AskUplayPurchaseReward = Index;
+														} else {
+															SelectSubButton(G_SubMenuControlled, IndexSelectX, IndexSelectY, G_SubMenuIndexX , G_SubMenuIndexY);
+														}
+													}
+													continue;
+												} else {
+													if(G_SubMenuControlled == 0)
+													{
+														declare Integer Index = G_SubMenuIndexY * 3 + G_SubMenuIndexX;
+														declare Integer SelectedSkinSet  for Page;
+														SelectedSkinSet = Index;
+													}
+												}
+												if(G_SubMenuControlled == 0 || G_SubMenuControlled == 1 || G_SubMenuControlled == 2) {
+													declare Text Sound       = GetSoundPaint();
+													declare Real SoundVolume = GetSoundPaintVolume(Sound);
+													Audio.PlaySoundEvent(Sound, SoundVolume);
+												} else if(G_SubMenuControlled == 3 || G_SubMenuControlled == 4) {
+													Audio.PlaySoundEvent("{{{SFX_Garage_Sticker}}}", {{{Volumes::GetVolumedB("SFX_Garage_Sticker")}}});
+												} else if(G_SubMenuControlled == 5) {
+													Audio.PlaySoundEvent("{{{SFX_Garage_MetalAlloy}}}", {{{Volumes::GetVolumedB("SFX_Garage_MetalAlloy")}}}); 
+												}
+												SelectSubButton(G_SubMenuControlled, IndexSelectX, IndexSelectY, G_SubMenuIndexX , G_SubMenuIndexY);
+												UpdateQuads(IndexSelectX, IndexSelectY);
+												if(G_SubMenuControlled == 0) 
+													CloseSubMenu(PreviousMenu);
+											}
+											case "Cancel" : {
+												Audio.PlaySoundEvent("{{{SFX_UI_GarageLateralCurtain_OUT}}}", {{{Volumes::GetVolumedB("SFX_UI_GarageLateralCurtain_OUT")}}});
+												CloseSubMenu(PreviousMenu);
+												declare Integer SelectedSkinSet  for Page;
+												SelectedSkinSet = -1;
+												UpdateQuads(IndexSelectX, IndexSelectY);
+											}
+											case "AppMenu" : {
+												Audio.PlaySoundEvent("{{{SFX_UI_GarageLateralCurtain_OUT}}}", {{{Volumes::GetVolumedB("SFX_UI_GarageLateralCurtain_OUT")}}});
+												CloseSubMenu(PreviousMenu);
+												declare Integer SelectedSkinSet  for Page;
+												SelectedSkinSet = -1;
+												UpdateQuads(IndexSelectX, IndexSelectY);
+											}
+											case "Action1" : {
+												if(G_SubMenuControlled != 0) continue;
+												declare Boolean IsUnlocked = IsUnlock(G_SubMenuControlled, G_SubMenuIndexY, G_SubMenuIndexX);
+												if(IsUnlocked) continue;
+												declare Integer Index = G_SubMenuIndexY * 3 + G_SubMenuIndexX;
+												declare Integer SelectedSkinSet  for Page;
+												SelectedSkinSet = Index;
+											}
+											case "Action2" : {
+												if(G_SubMenuControlled == 1)
+													SubMenuFlagNextPage();
+											}
+										}
+									}
+									case "NextPage" : {
+										UpdatePageDown = Now;
+										MouseInput_PrevPage.Colorize=<0.1, 0.1, 0.1>;
+										declare Vec3 ColorTarget = <1., 1., 1.>;
+										LibManialink_SetTargetColorize(MouseInput_PrevPage, ColorTarget);
+										LibManialink_PresetAnimInsert(MouseInput_PrevPage, 100, 200, "EaseInQuint");
+									}
+									case "PrevPage" : {
+										UpdatePageUp = Now;
+										MouseInput_NextPage.Colorize=<0.1, 0.1, 0.1>;
+										declare Vec3 ColorTarget = <1., 1., 1.>;
+										LibManialink_SetTargetColorize(MouseInput_NextPage, ColorTarget);
+										LibManialink_PresetAnimInsert(MouseInput_NextPage, 100, 200, "EaseInQuint");
+									}
+								}
+							}
+						}
+						case CMlEvent::Type::MouseOver: {
+							UpdateLabelLight(Event.Control);
+							declare Text[] InputId = TL::Split("_", Event.ControlId);
+							if (InputId.count < 2 || InputId[0] != "MouseInput")
+								continue;
+							if(G_ActualMenu == "ModelKind") {
+								switch (InputId[1]) {
+									case "ModelKind" : {
+										declare Integer ModelKindIndex = TL::ToInteger(InputId[2]);
+										if (ModelKindIndex != IndexSelectModelKind_Y) {
+											Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+											IndexSelectModelKind_Y = ModelKindIndex;
+											if (IndexSelectModelKind_Y == 0)
+												UpdateQuadsModelKindCursor("Up");
+											else
+												UpdateQuadsModelKindCursor("Down");
+											UpdateQuadsModelKind(IndexSelectModelKind_X, IndexSelectModelKind_Y);
+										}
+										
+									}
+								}
+							} else if(G_ActualMenu == "CustomModel") {
+								switch (InputId[1]) {
+									case "Custom" : {
+										declare Text[] Position = TL::Split(":", InputId[2]);
+										declare Integer IndexY = TL::ToInteger(Position[0]);
+										declare Integer IndexX = TL::ToInteger(Position[1]);
+										if(IndexSelectX != IndexX || IndexSelectY != IndexY)
+										{
+											IndexSelectX = IndexX;
+											IndexSelectY = IndexY;
+											Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+											UpdateQuads(IndexSelectX, IndexSelectY);
+										}
+									}
+								}
+							} else if(G_ActualMenu == "SubMenu") {
+								switch (InputId[1]) {
+									case "SubMenu" : {
+										declare Text[] Position = TL::Split(":", InputId[2]);
+										declare Integer IndexY = TL::ToInteger(Position[0]);
+										declare Integer IndexX = TL::ToInteger(Position[1]);
+										if(G_SubMenuIndexX != IndexX || G_SubMenuIndexY != IndexY)
+										{
+											Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+											UpdateIndexSub(G_SubMenuControlled, IndexX, IndexY);
+										}
+									}
+								}
+							}
+						}
+						case CMlEvent::Type::MenuNavigation: {
+							if(Page_BlockInput) continue;
+							if(G_ActualMenu == "ModelKind")
+							{
+								switch(Event.MenuNavAction) {
+									case CMlEvent::EMenuNavAction::Up : {
+										if(IndexSelectModelKind_Y > 0)
+										{
+											Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+											IndexSelectModelKind_Y -= 1;
+											UpdateQuadsModelKindCursor("Up");
+											UpdateQuadsModelKind(IndexSelectModelKind_X, IndexSelectModelKind_Y);
+										}
+									}
+									case CMlEvent::EMenuNavAction::Down : {
+										if(IndexSelectModelKind_Y < 1)
+										{
+											Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+											IndexSelectModelKind_Y += 1;
+											UpdateQuadsModelKindCursor("Down");
+											UpdateQuadsModelKind(IndexSelectModelKind_X, IndexSelectModelKind_Y);
+										}
+									}
+									case CMlEvent::EMenuNavAction::Select : {
+										Audio.PlaySoundEvent("{{{SFX_UI_GarageLateralCurtain_IN}}}", {{{Volumes::GetVolumedB("SFX_UI_GarageLateralCurtain_IN")}}});
+										if(IndexSelectModelKind_Y == 0)
+										{
+											IndexSelectX = 1;
+											IndexSelectY = 0;
+											UpdateQuads(IndexSelectX, IndexSelectY);
+											OpenCustomModel();
+										}
+										else if(IndexSelectModelKind_Y == 1)
+										{
+											PreviousMenu = G_ActualMenu;
+											OpenSubMenu(0);
+											UpdateIndexSub(G_SubMenuControlled, G_SubMenuIndexX, G_SubMenuIndexY);
+										}
+									}
+									case CMlEvent::EMenuNavAction::Cancel : {
+										Audio.PlaySoundEvent("{{{SoundPageBack}}}", {{{Volumes::GetVolumedB("MenuPageBack")}}});
+										WantQuit = True;
+										HidePage();
+									}
+									case CMlEvent::EMenuNavAction::AppMenu : {
+										Audio.PlaySoundEvent("{{{SoundPageBack}}}", {{{Volumes::GetVolumedB("MenuPageBack")}}});
+										WantQuit = True;
+										HidePage();
+									}
+									case CMlEvent::EMenuNavAction::PageUp : {
+										UpdatePageUp = Now;
+										//MouseInput_NextPage.Colorize=<0.1, 0.1, 0.1>;
+										//declare Vec3 ColorTarget = <1., 1., 1.>;
+										//LibManialink_SetTargetColorize(MouseInput_NextPage, ColorTarget);
+										//LibManialink_PresetAnimInsert(MouseInput_NextPage, 100, 200, "EaseInQuint");
+
+									}
+									case CMlEvent::EMenuNavAction::PageDown : {
+										UpdatePageDown = Now;
+										//MouseInput_PrevPage.Colorize=<0.1, 0.1, 0.1>;
+										//declare Vec3 ColorTarget = <1., 1., 1.>;
+										//LibManialink_SetTargetColorize(MouseInput_PrevPage, ColorTarget);
+										//LibManialink_PresetAnimInsert(MouseInput_PrevPage, 100, 200, "EaseInQuint");
+									}
+								}
+							}
+							else if(G_ActualMenu == "CustomModel")
+							{
+								switch(Event.MenuNavAction) {
+									case CMlEvent::EMenuNavAction::Up : {
+										if(IndexSelectY > 0 && !(IndexSelectX == 0 && IndexSelectY == 1))
+										{
+											IndexSelectY -= 1;
+											Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+										
+											UpdateQuads(IndexSelectX, IndexSelectY);
+										}
+									}
+									case CMlEvent::EMenuNavAction::Down : {
+										if(IndexSelectY < IndexMaxY-1)
+										{
+											IndexSelectY += 1;
+											Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+											UpdateQuads(IndexSelectX, IndexSelectY);
+										}
+									}
+									case CMlEvent::EMenuNavAction::Left : {
+										if(IndexSelectX > 0 && IndexSelectY != 0)
+										{
+											IndexSelectX -= 1;
+											Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+											UpdateQuads(IndexSelectX, IndexSelectY);
+										}
+									}
+									case CMlEvent::EMenuNavAction::Right : {
+										if(IndexSelectX < IndexMaxX-1)
+										{
+											IndexSelectX += 1;
+											Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+											UpdateQuads(IndexSelectX, IndexSelectY);
+										}
+									}
+									case CMlEvent::EMenuNavAction::Select : {
+										declare Integer IndexSubMenu = GetSubMenu(IndexSelectX, IndexSelectY);
+										if(IndexSubMenu <= 0) continue;
+										PreviousMenu = G_ActualMenu;
+										OpenSubMenu(IndexSubMenu);
+										if(G_SubMenuIndexX <= -1) G_SubMenuIndexX = 0;
+										if(G_SubMenuIndexY <= -1) G_SubMenuIndexY = 0;
+
+										UpdateIndexSub(G_SubMenuControlled, G_SubMenuIndexX, G_SubMenuIndexY);
+										
+										Audio.PlaySoundEvent("{{{SFX_UI_GarageLateralCurtain_IN}}}", {{{Volumes::GetVolumedB("SFX_UI_GarageLateralCurtain_IN")}}});
+									}
+									case CMlEvent::EMenuNavAction::Action1 : {
+										
+									}
+									case CMlEvent::EMenuNavAction::Cancel : {
+										Audio.PlaySoundEvent("{{{SFX_UI_GarageLateralCurtain_OUT}}}", {{{Volumes::GetVolumedB("SFX_UI_GarageLateralCurtain_OUT")}}});
+										CloseCustomModel("Custom");
+									}
+									case CMlEvent::EMenuNavAction::AppMenu : {
+										Audio.PlaySoundEvent("{{{SFX_UI_GarageLateralCurtain_OUT}}}", {{{Volumes::GetVolumedB("SFX_UI_GarageLateralCurtain_OUT")}}});
+										CloseCustomModel("Custom");
+									}
+									case CMlEvent::EMenuNavAction::PageUp : {
+										UpdatePageUp = Now;
+										MouseInput_NextPage.Colorize=<0.1, 0.1, 0.1>;
+										declare Vec3 ColorTarget = <1., 1., 1.>;
+										LibManialink_SetTargetColorize(MouseInput_NextPage, ColorTarget);
+										LibManialink_PresetAnimInsert(MouseInput_NextPage, 100, 200, "EaseInQuint");
+									}
+									case CMlEvent::EMenuNavAction::PageDown : {
+										UpdatePageDown = Now;
+										MouseInput_PrevPage.Colorize=<0.1, 0.1, 0.1>;
+										declare Vec3 ColorTarget = <1., 1., 1.>;
+										LibManialink_SetTargetColorize(MouseInput_PrevPage, ColorTarget);
+										LibManialink_PresetAnimInsert(MouseInput_PrevPage, 100, 200, "EaseInQuint");
+									}
+								}
+							}
+							else if(G_ActualMenu == "SubMenu")
+							{
+								switch(Event.MenuNavAction) {
+									case CMlEvent::EMenuNavAction::Up : {
+										/*
+										if(CheatUpTimer > 500) {
+											declare Boolean CheatUnlockAll for Page;
+											CheatUnlockAll = True;
+										} else {
+											//log(CheatUpTimer);
+											CheatUpTimer += Period;
+										}
+										*/
+										
+										if(G_SubMenuIndexY > 0)
+										{
+											Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+											UpdateIndexSub(G_SubMenuControlled, G_SubMenuIndexX, G_SubMenuIndexY - 1);
+											//G_SubMenuIndexMaxY
+											//G_SubMenuIndexMaxX
+										}
+									}
+									case CMlEvent::EMenuNavAction::Down : {
+										
+										//if(G_SubMenuControlled == 0 && G_SubMenuIndexX == 2) continue;
+										if(G_SubMenuIndexY < G_SubMenuIndexMaxY[G_SubMenuControlled] - 1)
+										{
+											Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+											UpdateIndexSub(G_SubMenuControlled, G_SubMenuIndexX, G_SubMenuIndexY + 1);
+										}
+									}
+									case CMlEvent::EMenuNavAction::Left : {
+										if(G_SubMenuIndexX > 0)
+										{
+											Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+											UpdateIndexSub(G_SubMenuControlled, G_SubMenuIndexX - 1, G_SubMenuIndexY);
+										}
+									}
+									case CMlEvent::EMenuNavAction::Right : {
+										//if(G_SubMenuControlled == 0 && G_SubMenuIndexY == 1 && G_SubMenuIndexX == 1) continue;
+										if(G_SubMenuIndexX < G_SubMenuIndexMaxX[G_SubMenuControlled] - 1)
+										{
+											Audio.PlaySoundEvent("{{{SoundMove}}}", {{{Volumes::GetVolumedB("MenuMove")}}});
+											UpdateIndexSub(G_SubMenuControlled, G_SubMenuIndexX + 1, G_SubMenuIndexY);
+										}
+									}
+									case CMlEvent::EMenuNavAction::Select : {
+													
+										if(!IsUnlock(G_SubMenuControlled, G_SubMenuIndexY, G_SubMenuIndexX))
+										{
+											if(G_SubMenuControlled == 0)
+											{
+												declare Integer Index = G_SubMenuIndexY * 3 + G_SubMenuIndexX + 1;
+
+												if(Index <= {{{C_NbOfClubReward}}}) {
+													declare Integer AskUplayPurchaseReward for Page;
+													AskUplayPurchaseReward = Index;
+												}
+												else
+												{
+													SelectSubButton(G_SubMenuControlled, IndexSelectX, IndexSelectY, G_SubMenuIndexX , G_SubMenuIndexY);
+												}
+
+											}
+											//Audio.PlaySoundEvent("{{{SoundSelect}}}", {{{Volumes::GetVolumedB("MenuValidate")}}});
+											continue;
+										}
+										else
+										{
+											if(G_SubMenuControlled == 0)
+											{
+												declare Integer Index = G_SubMenuIndexY * 3 + G_SubMenuIndexX;
+												declare Integer SelectedSkinSet  for Page;
+												SelectedSkinSet = Index;
+											}
+											
+										}
+
+
+										if(G_SubMenuControlled == 0 || G_SubMenuControlled == 1 || G_SubMenuControlled == 2)
+										{
+
+											declare Text Sound       = GetSoundPaint();
+											declare Real SoundVolume = GetSoundPaintVolume(Sound);
+											Audio.PlaySoundEvent(Sound, SoundVolume);
+										}
+										else if(G_SubMenuControlled == 3 || G_SubMenuControlled == 4)
+										{
+											Audio.PlaySoundEvent("{{{SFX_Garage_Sticker}}}", {{{Volumes::GetVolumedB("SFX_Garage_Sticker")}}});
+										}
+										else if(G_SubMenuControlled == 5)
+										{
+											Audio.PlaySoundEvent("{{{SFX_Garage_MetalAlloy}}}", {{{Volumes::GetVolumedB("SFX_Garage_MetalAlloy")}}});
+
+										}
+
+										SelectSubButton(G_SubMenuControlled, IndexSelectX, IndexSelectY, G_SubMenuIndexX , G_SubMenuIndexY);
+										UpdateQuads(IndexSelectX, IndexSelectY);
+										
+										if(G_SubMenuControlled == 0) CloseSubMenu(PreviousMenu);
+									}
+									case CMlEvent::EMenuNavAction::Cancel : {
+										Audio.PlaySoundEvent("{{{SFX_UI_GarageLateralCurtain_OUT}}}", {{{Volumes::GetVolumedB("SFX_UI_GarageLateralCurtain_OUT")}}});
+
+										CloseSubMenu(PreviousMenu);
+										declare Integer SelectedSkinSet  for Page;
+										SelectedSkinSet = -1;
+										UpdateQuads(IndexSelectX, IndexSelectY);
+									}
+									case CMlEvent::EMenuNavAction::AppMenu : {
+										Audio.PlaySoundEvent("{{{SFX_UI_GarageLateralCurtain_OUT}}}", {{{Volumes::GetVolumedB("SFX_UI_GarageLateralCurtain_OUT")}}});
+
+										CloseSubMenu(PreviousMenu);
+										declare Integer SelectedSkinSet  for Page;
+										SelectedSkinSet = -1;
+										UpdateQuads(IndexSelectX, IndexSelectY);
+									}
+									case CMlEvent::EMenuNavAction::PageUp : {
+										UpdatePageUp = Now;
+										MouseInput_NextPage.Colorize=<0.1, 0.1, 0.1>;
+										declare Vec3 ColorTarget = <1., 1., 1.>;
+										LibManialink_SetTargetColorize(MouseInput_NextPage, ColorTarget);
+										LibManialink_PresetAnimInsert(MouseInput_NextPage, 100, 200, "EaseInQuint");
+
+									}
+									case CMlEvent::EMenuNavAction::PageDown : {
+										UpdatePageDown = Now;
+										MouseInput_PrevPage.Colorize=<0.1, 0.1, 0.1>;
+										declare Vec3 ColorTarget = <1., 1., 1.>;
+										LibManialink_SetTargetColorize(MouseInput_PrevPage, ColorTarget);
+										LibManialink_PresetAnimInsert(MouseInput_PrevPage, 100, 200, "EaseInQuint");
+									}
+									case CMlEvent::EMenuNavAction::Action2 : {
+										//declare Integer IndexSubMenu = GetSubMenu(IndexSelectX, IndexSelectY);
+										if(G_SubMenuControlled == 1)
+										{
+											SubMenuFlagNextPage();
+										}
+									}
+									case CMlEvent::EMenuNavAction::Action1 : {
+										if(G_SubMenuControlled != 0) continue;
+										declare Boolean IsUnlocked = IsUnlock(G_SubMenuControlled, G_SubMenuIndexY, G_SubMenuIndexX);
+										if(IsUnlocked) continue;
+										declare Integer Index = G_SubMenuIndexY * 3 + G_SubMenuIndexX;
+										declare Integer SelectedSkinSet  for Page;
+										SelectedSkinSet = Index;
+									}
+								}
+							}
+						}
+
+
+						case CMlEvent::Type::PluginCustomEvent: {
+							declare PreviousPage = Event.CustomEventData[0];
+							switch(Event.PluginCustomEventType) {
+								case "Show" : {
+									UpdateQuads(IndexSelectX, IndexSelectY);
+									ShowPage(PreviousPage);
+									//SetHeaderInfo();
+									EnableMenuNavigation(True,False,Null,1);
+								}
+								case "SetActiveButtonPlatform" : {
+									ActiveButtonPlatform = TL::ToInteger(Event.CustomEventData[0]);
+									UpdateHelpersForPlatform(ActiveButtonPlatform);
+								}
+								
+								case "Hide" : {
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	--></script>
+	""";
+	
+	declare Text MLRankingModule = LBRankingModule::Build("", "");
+	declare Text MLPopUp         = LBPopUp::Build("", "");
+
+	Layers::Create("BadgeEditorUI", MLText);
+	Layers::Create("RankingModule", MLRankingModule);
+	Layers::Create("PopUp", MLPopUp);
+
+	declare CUILayer Layer  <=> Layers::Get("BadgeEditorUI");
+	declare CUILayer Layer2 <=> Layers::Get("RankingModule");
+	declare CUILayer Layer3 <=> Layers::Get("PopUp");
+	
+	
+	declare Text Page_LayerName  for Layer.LocalPage;
+	declare Text Page_LayerName2 for Layer2.LocalPage;
+	declare Text Page_LayerName3 for Layer3.LocalPage;
+	
+	Page_LayerName = "BadgeEditorUI";
+	Page_LayerName2 = "RankingModule";
+	Page_LayerName3 = "PopUp";
+
+	Layers::Attach("BadgeEditorUI");
+	Layers::Attach("RankingModule");
+	Layers::Attach("PopUp");
+
+	declare CUILayer LayerToSend = Layers::Get("RankingModule");
+	if(LayerToSend == Null) return;
+	LayerCustomEvent(LayerToSend, "Show", [""]);
+	declare Boolean    Page_BlockInput  	for Layer.LocalPage;
+	Page_BlockInput = False;
+
+	declare CUILayer LayerToSend2 = Layers::Get("PopUp");
+	if(LayerToSend2 == Null) return;
+	LayerCustomEvent(LayerToSend2, "Show", [""]);
+	DisplayCurrentBadge = Badge;
+	DisplayPosN = <0., 0.>;
+	DisplaySize = <80.0, 45.0>;
+	DisplayFoV = 1.0;
+	
+	declare Integer    SelectedDrapeauIndex  	for Layer.LocalPage = 0;
+	declare Integer    SelectedChiffreIndex  	for Layer.LocalPage = 0;
+	declare Integer    SelectedSymboleIndex  	for Layer.LocalPage = 0;
+	declare Integer    SelectedColorIndex	 	for Layer.LocalPage = 0;
+	declare Integer    SelectedMaterialIndex 	for Layer.LocalPage = 0;
+	declare Integer    SelectedSpecialIndex 	for Layer.LocalPage = 0;
+	declare Boolean    UpdateSkin			 	for Layer.LocalPage = False;
+	declare Boolean    UpdateSpecialSkin	 	for Layer.LocalPage = False;
+	declare Integer    UpdatePageUp			 	for Layer.LocalPage = -1;
+	declare Integer    UpdatePageDown		 	for Layer.LocalPage = -1;
+	declare Integer    UpdateGoToStadiumCar	 	for Layer.LocalPage = -1;
+	declare Integer    UpdateGoToNotStadiumCar	for Layer.LocalPage = -1;
+	declare Integer    UpdateQuadEnviro		 	for Layer.LocalPage = -1;
+	declare Integer    AskUplayPurchaseReward	for Layer.LocalPage = -1;
+	declare Integer    SelectedSkinSet		 	for Layer.LocalPage = -1;
+
+	/////////////////////////////////////////UPLAY REWARD
+	declare Boolean IsUplayReward1Purchased	for Layer.LocalPage = False;
+	declare Boolean IsUplayReward2Purchased	for Layer.LocalPage = False;
+	declare Boolean IsUplayReward3Purchased	for Layer.LocalPage = False;
+	declare Boolean IsUplayReward4Purchased	for Layer.LocalPage = False;
+	declare Boolean IsUplayReward5Purchased	for Layer.LocalPage = False;
+	declare Integer UpdateUplayReward		for Layer.LocalPage = Now;
+	
+	declare Boolean CheatUnlockAll			for Layer.LocalPage = False;
+	CheatUnlockAll = False;
+	
+	declare Integer ActiveButtonPlatform for LocalUser;
+	G_ActiveButtonPlatform = ActiveButtonPlatform;
+	
+	declare Integer    PrevUpdatePageUp   = UpdatePageUp;
+	declare Integer    PrevUpdatePageDown = UpdatePageDown;
+	DisplayCurrentMeshId = MeshIds[C_Canyon];
+	declare Ident DisplayPreviousMeshId = DisplayCurrentMeshId;
+	UpdateQuadEnviro = C_Canyon;
+
+	declare Boolean WantQuit            for Layer.LocalPage;
+	WantQuit = False;
+	declare Boolean WantSave for Layer.LocalPage;
+	WantSave = False;
+	declare Boolean LaunchMusic for Layer.LocalPage;
+	LaunchMusic = False;
+	declare Real FoV for Layer.LocalPage;
+	FoV = 52.;
+
+
+	
+	//Recupère les index à partir du Load des données
+	if(StickersDrapeaux.exists(Badge.StickerSlot_Get("BadgeSlot_Country")))
+	{
+		SelectedDrapeauIndex = StickersDrapeaux.keyof(Badge.StickerSlot_Get("BadgeSlot_Country"));
+	}
+	if(StickersChiffres.exists(Badge.StickerSlot_Get("BadgeSlot_Number")))
+	{
+		SelectedChiffreIndex = StickersChiffres.keyof(Badge.StickerSlot_Get("BadgeSlot_Number"));
+	}
+	if(StickersSymboles.exists(Badge.StickerSlot_Get("BadgeSlot_Mascot")))
+	{
+		SelectedSymboleIndex = StickersSymboles.keyof(Badge.StickerSlot_Get("BadgeSlot_Mascot"));
+	}
+	if(Badge.Layers.existskey(C_LayerColorPosition))
+	{
+		if(LayersColors.exists(Badge.Layers[C_LayerColorPosition]))
+		{
+			SelectedColorIndex   = LayersColors.keyof(Badge.Layers[C_LayerColorPosition]);
+		}
+	}
+	if(Badge.Layers.existskey(C_LayerMaterialPosition))
+	{
+		if(LayersMaterials.exists(Badge.Layers[C_LayerMaterialPosition]))
+		{
+			SelectedMaterialIndex   = LayersMaterials.keyof(Badge.Layers[C_LayerMaterialPosition]);
+		}
+	}
+	//log("Badge: " ^ Badge.SkinName);
+	G_RealSkinName = Badge.SkinName;
+
+	declare TimeStart = Now;
+	wait(Now > TimeStart + 200);
+	/*
+	MenuMusicController::SendEventMusic("AddTrack");
+	MenuMusicController::SendEventMusic("SetVolumeSFX",["Chopper", "-99."]);
+	MenuMusicController::SendEventMusic("SetVolumeSFX",["People", "-99."]);
+	*/
+	
+	declare CWebServicesTaskResult UplayWebTask;
+
+	if((UserMgr.MainUser != Null) && (ManiaPlanet.MasterServer_MainMSUser != Null)) {
+		if(ManiaPlanet.MasterServer_MainMSUser.ConnectionStatus == CNetMasterServerUserInfo::EMasterServerConnectionStatus::Connected)
+		{
+			declare persistent Integer[]	PersRewardsUplay 		for UserMgr.MainUser;
+			PersRewardsUplay.clear();
+		}
+	}
+	CheckUplayRewards(True);
+
+	declare Integer G_TickCheckRewardUplay = Now + 1500;
+	declare Integer Prev_SkinSet;
+
+
+	declare CMlFrame Frame_Wait	= (Layer.LocalPage.GetFirstChild("Frame_Wait") as CMlFrame);
+	declare CMlFrame Frame_Throbber	= (Layer.LocalPage.GetFirstChild("Frame_Throbber") as CMlFrame);
+
+	while(True)
+	{
+		yield;
+		
+		PadHandler::Loop();
+		TaskMessageErrorController::Loop();
+		PrivilegeController::Loop();
+
+		if(Frame_Wait.Visible)
+		{
+			Frame_Wait.Hide();
+		}
+
+		if(Frame_Throbber.Visible)
+		{
+			Frame_Throbber.Hide();
+		}
+
+		if(CheatUnlockAll) {
+			PimpUnlock::Load(True);
+			IsUplayReward1Purchased = True;
+			IsUplayReward2Purchased = True;
+			IsUplayReward3Purchased = True;
+			IsUplayReward4Purchased = True;
+			IsUplayReward5Purchased = True;
+			CheatUnlockAll = False;
+		}
+
+		if(G_TickCheckRewardUplay < Now)
+		{
+			CheckUplayRewards(False);
+			G_TickCheckRewardUplay = Now + 1500;
+		}
+
+		if(UpdateSkin)
+		{
+			Frame_Throbber.Show();
+
+			/*
+			[Reste à rajouter] NAME OF SLOTS:
+			BadgeSlot_Name
+			*/
+			//if(StickersDrapeaux.existskey(???)) Badge.StickerSlot_Set("BadgeSlot_Name", StickersDrapeaux[SelectedDrapeauIndex]);
+			
+			declare Boolean SomethingDone = False;
+			
+			if(StickersDrapeaux.existskey(SelectedDrapeauIndex) && (Badge.StickerSlot_Get("BadgeSlot_Country") != StickersDrapeaux[SelectedDrapeauIndex]))
+			{
+				Badge.StickerSlot_Set("BadgeSlot_Country", StickersDrapeaux[SelectedDrapeauIndex]);
+				SomethingDone = True;
+			}
+				
+			if(StickersChiffres.existskey(SelectedChiffreIndex) && (Badge.StickerSlot_Get("BadgeSlot_Number") != StickersChiffres[SelectedChiffreIndex]))
+			{
+				Badge.StickerSlot_Set("BadgeSlot_Number" , StickersChiffres[SelectedChiffreIndex]);
+				SomethingDone = True;
+			}
+			
+			if(StickersSymboles.existskey(SelectedSymboleIndex) && (Badge.StickerSlot_Get("BadgeSlot_Mascot") != StickersSymboles[SelectedSymboleIndex]))
+			{
+				Badge.StickerSlot_Set("BadgeSlot_Mascot", StickersSymboles[SelectedSymboleIndex]);
+				SomethingDone = True;
+			}
+	
+			if(LayersMaterials.existskey(SelectedMaterialIndex) && !Badge.Layers.exists(LayersMaterials[SelectedMaterialIndex])) {
+				SomethingDone = True;
+			}
+			if(LayersColors.existskey(SelectedColorIndex) && !Badge.Layers.exists(LayersColors[SelectedColorIndex])) {
+				SomethingDone = True;
+			}
+			if(LayersDrapeaux.existskey(SelectedDrapeauIndex) && !Badge.Layers.exists(LayersDrapeaux[SelectedDrapeauIndex])) {
+				SomethingDone = True;
+			}
+			
+	
+			Badge.Layers.clear();
+			if(LayersMaterials.existskey(SelectedMaterialIndex)) Badge.Layers.add(LayersMaterials[SelectedMaterialIndex]);
+			if(LayersColors.existskey(SelectedColorIndex))       Badge.Layers.add(LayersColors[SelectedColorIndex]);
+			if(LayersDrapeaux.existskey(SelectedDrapeauIndex))   Badge.Layers.add(LayersDrapeaux[SelectedDrapeauIndex]);
+
+			Badge.SkinName = "";
+			G_RealSkinName = Badge.SkinName;
+			//log("0 - G_RealSkinName: " ^ G_RealSkinName);
+			UpdateSkin = False;
+			WantSave = True;
+			
+			if(SomethingDone) {
+				UnlockAchievementCarCustomized();
+			}
+		}
+
+		if(UpdateSpecialSkin)
+		{
+			Frame_Throbber.Show();
+			if(LayersSpecial.existskey(SelectedSpecialIndex))
+			{
+				Badge.SkinName = LayersSpecial[SelectedSpecialIndex];
+				G_RealSkinName = Badge.SkinName;
+				//log("1 - G_RealSkinName: " ^ G_RealSkinName);
+				UnlockAchievementCarCustomized();
+			}
+						
+			UpdateSpecialSkin = False;
+			WantSave = True;
+		}
+
+		if(UpdatePageUp != PrevUpdatePageUp)
+		{
+			MeshId_Next();
+			PrevUpdatePageUp = UpdatePageUp;
+		}
+		if(UpdatePageDown != PrevUpdatePageDown)
+		{
+			MeshId_Previous();
+			PrevUpdatePageDown = UpdatePageDown;	
+		}
+		if(DisplayCurrentMeshId != DisplayPreviousMeshId) {
+			DisplayPreviousMeshId = DisplayCurrentMeshId;
+			if(DisplayCurrentMeshId == G_FocusIds[C_Helmet]) {
+				Audio.PlaySoundEvent(LibAudio::GetSound("HelmetWhoosh1"), Volumes::GetVolumedB("MenuHelmetWhoosh1"));
+			} else  {
+				Audio.PlaySoundEvent(LibAudio::GetSound("HelmetWhoosh2"), Volumes::GetVolumedB("MenuHelmetWhoosh2"));
+			}
+			if(G_FocusIds.count >= 4)
+			{
+				switch(DisplayCurrentMeshId) {
+					case G_FocusIds[C_Canyon] : UpdateQuadEnviro = 1;
+					case G_FocusIds[C_Valley] : UpdateQuadEnviro = 2;
+					case G_FocusIds[C_Lagoon] : UpdateQuadEnviro = 3;
+					case G_FocusIds[C_Stadium] : UpdateQuadEnviro = 4;
+					default : UpdateQuadEnviro = 0;
+				}	
+			}
+			else
+			{
+				switch(DisplayCurrentMeshId) {
+					case G_FocusIds[C_Canyon] : UpdateQuadEnviro = 1;
+					default : UpdateQuadEnviro = 0;
+				}	
+			}
+		}
+
+		if(AskUplayPurchaseReward > 0)
+		{
+			UplayPurchaseReward = AskUplayPurchaseReward;
+			AskUplayPurchaseReward = -1;
+
+			ManiaPlanet.IsLiveStreamingEnabled = False;
+			
+			declare Integer RewardIndex = GetRewardIndex(UplayPurchaseReward);
+			declare Text RewardName = GetRewardName(RewardIndex);
+			if(!PrivilegeController::IsOnlineAccessible()) continue;
+			if(UplayWebTask != Null) UplayWebTask.Cancel();
+			UplayWebTask = ManiaPlanet.MasterServer_UplayLaunch_v2(DataMgr.MenuUserId, CManiaPlanet::EUplayFlow::Reward, RewardName);
+			declare Boolean    Page_BlockInput  	for Layer.LocalPage;
+			Page_BlockInput = True;
+
+			//PopUpManager::AddAskYesNo(_("Go to the Ubisoft Club to unlock exclusive legendary paintworks."), _("Go to the Club?"), "fff", "PurchaseUplayReward");
+		}
+
+		if(Prev_SkinSet != SelectedSkinSet)
+		{
+			Frame_Throbber.Show();
+
+			if(SelectedSkinSet == -1)
+			{
+				Badge.SkinName = G_RealSkinName;
+				//log("2 - G_RealSkinName: " ^ G_RealSkinName);
+			}
+			else
+			{
+				declare Text SkinName = LayersSpecial[SelectedSkinSet];
+				Badge.SkinName = SkinName;
+				//log("3 - G_RealSkinName: " ^ G_RealSkinName);
+			}
+			Prev_SkinSet = SelectedSkinSet;
+		}
+
+		DisplayFoV = FoV;
+		if(LaunchMusic) {
+			MenuMusicController::PlayPageAmbiance(C_PageName);
+			LaunchMusic = False;
+			declare CUILayer LayerToSend = Layers::Get("RankingModule");
+			if(LayerToSend == Null) return;
+			//declare Text FeedbackText = GetFeedbackText(_Succeed);
+			LayerCustomEvent(LayerToSend, "Show", [""]);
+		}
+		if(WantSave) {
+			//BadgeWriteToProfile(Badge, DataMgr.MenuUserId);
+			WantSave = False;
+		}
+		if(WantQuit) {
+			BadgeWriteToProfile(Badge, DataMgr.MenuUserId);
+			//sleep(1500);
+			declare Boolean Garage_IsJoin for LocalUser;
+			Garage_IsJoin = False;
+			WantQuit = False;
+			Leave();
+		}
+
+		foreach(Event in PendingEvents) 
+		{
+			if(Event.Type != CMlAppEvent::EType::LayerCustomEvent) continue;
+			switch(Event.CustomEventType) {
+				case "PurchaseUplayReward_AskYesNo" : {
+					if(Event.CustomEventData[0] == "True")
+					{
+						ManiaPlanet.IsLiveStreamingEnabled = False;
+						
+						declare Integer RewardIndex = GetRewardIndex(UplayPurchaseReward);
+						declare Text RewardName = GetRewardName(RewardIndex);
+						//UplayWebTask = ManiaPlanet.MasterServer_UplayLaunch(DataMgr.MenuUserId, CManiaPlanet::EUplayFlow::Reward, RewardIndex);
+						if(!PrivilegeController::IsOnlineAccessible()) continue;
+						
+						if(UplayWebTask != Null) UplayWebTask.Cancel();
+						UplayWebTask = ManiaPlanet.MasterServer_UplayLaunch_v2(DataMgr.MenuUserId, CManiaPlanet::EUplayFlow::Reward, RewardName);
+						declare Boolean    Page_BlockInput  	for Layer.LocalPage;
+						Page_BlockInput = True;
+					}
+				}
+				case "ConnectOnline_AskYesNo": {
+					declare Text Answer = Event.CustomEventData[0];
+					if(Answer == "True")
+					{
+						declare Boolean Garage_IsJoin for LocalUser;
+						Garage_IsJoin = True;
+						Leave();
+					}
+				}
+				case "UPlayConnect_AskYesNo": {
+					declare Text Answer = Event.CustomEventData[0];
+					if(ManiaPlanet.MasterServer_MainMSUser == Null) {
+						Logger::Warn("[MainMenuHandler: ShowUbisoftClubPopup] ManiaPlanet.MasterServer_MainMSUser Null for Id "^DataMgr.MenuUserId);
+						continue;
+					}
+					
+					if(Answer == "True")
+					{
+						declare CWebServicesTaskResult_LaunchUplayScriptResult UplayLaunchTask = ManiaPlanet.MasterServer_UplayLaunchAndCompleteActions(DataMgr.MenuUserId, CManiaPlanet::EUplayFlow::Auth, "");
+						if(UserMgr.MainUser != Null && UserMgr.MainUser.PersistentIsReady) {
+							declare persistent 	Text[] 	UplayActionsDone 	for UserMgr.MainUser;
+							foreach(LocalAction in UplayActionsDone) {
+								UplayLaunchTask.AddActionToComplete(LocalAction);
+							}
+						}
+						UplayLaunchTask.StartTask();
+						UplayWebTask = ManiaPlanet.MasterServer_UplayLaunch_v2(DataMgr.MenuUserId, CManiaPlanet::EUplayFlow::Auth, "");
+						declare Boolean    Page_BlockInput  	for Layer.LocalPage;
+						Page_BlockInput = True;
+					}
+				}
+				case "SetActiveButtonPlaform" : {
+					G_ActiveButtonPlatform = TextLib::ToInteger(Event.CustomEventData[1]);
+					declare CUILayer Layer <=> Layers::Get(Event.CustomEventData[0]);
+					LayerCustomEvent(Layer, "SetActiveButtonPlatform", [TextLib::ToText(G_ActiveButtonPlatform)]);
+				}
+				case "GetActiveButtonPlatform" : {
+					declare CUILayer Layer <=> Layers::Get(Event.CustomEventData[0]);
+					LayerCustomEvent(Layer, "SetActiveButtonPlatform", [TextLib::ToText(G_ActiveButtonPlatform)]);
+				}
+			}
+		}
+		
+		if(UplayWebTask != Null) {
+			declare Boolean    Page_BlockInput  	for Layer.LocalPage;
+			if(UplayWebTask.HasFailed) {
+				ManiaPlanet.IsLiveStreamingEnabled = True;
+
+				declare CWebServicesTaskResult::ETaskErrorType TaskErrorType = UplayWebTask.ErrorType;
+				declare Integer                                ErrorCode     = UplayWebTask.ErrorCode;
+				TaskMessageErrorController::TaskErrorMessage(TaskErrorType, ErrorCode);
+				
+				//PopUpManager::AddPopUp2(0, _("The connection to the Trackmania Servers has been lost. Online features will become available once the connection has been re-established."), "", False);
+				Page_BlockInput = False;
+				UplayWebTask = Null;
+			}
+			else if(UplayWebTask.IsCanceled) {
+				ManiaPlanet.IsLiveStreamingEnabled = True;
+				Page_BlockInput = False;
+				UplayWebTask = Null;
+			}
+			else if(UplayWebTask.HasSucceeded) {
+				ManiaPlanet.IsLiveStreamingEnabled = True;
+				Page_BlockInput = False;
+				UplayWebTask = Null;
+				CheckUplayRewards(False);
+			}
+			
+			// log(Now^"ManiaPlanet.IsLiveStreamingEnabled : "^ManiaPlanet.IsLiveStreamingEnabled);
+		}
+	}
+}

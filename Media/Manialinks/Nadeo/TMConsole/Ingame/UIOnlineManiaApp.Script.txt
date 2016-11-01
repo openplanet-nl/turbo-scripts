@@ -1,0 +1,1481 @@
+#RequireContext CManiaAppPlayground
+
+#Include "TextLib"																		as TextLib
+#Include "Libs/Openplanet/TMConsole/Logger.Script.txt"										as Logger
+#Include "Libs/Openplanet/TMConsole/Ingame/UI/UIOnlinePopupBuilder.Script.txt"				as UIPopupBuilder
+#Include "Libs/Openplanet/TMConsole/Menu/MenuLayers.Script.txt"								as Layers
+#Include "Libs/Openplanet/TMConsole/Colors.Script.txt" 										as Colors
+#Include "Libs/Openplanet/UIPadButtons.Script.txt"											as UIButtons
+#Include "Libs/Openplanet/TMConsole/FontManager.Script.txt"									as Font
+#Include "Libs/Openplanet/TMConsole/Ingame/InAppGlobalRanking.Script.txt" 					as InAppGR
+#Include "Libs/Openplanet/TMConsole/Ingame/UI/UIOnlineGlobalRanking.Script.txt"				as UIOnlineGlobalRanking
+#Include "Libs/Openplanet/TMConsole/Ingame/UI/UI_Online.Script.txt"							as UIOnline
+#Include "Libs/Openplanet/TMConsole/Ingame/UI/UIPlayerMusicSetting.Script.txt"				as UIPlayerMusicSetting
+#Include "Libs/Openplanet/TMConsole/Ingame/UI/UIOnlineManageFavorite.Script.txt" 			as UIOMF
+#Include "Libs/Openplanet/TMConsole/Ingame/UI/UIOnlineBuddiesList.Script.txt" 				as UIOBL
+#Include "Libs/Openplanet/TMConsole/Ingame/UI/UIOnlineScoresTable.Script.txt" 				as UIOST
+// #Include "Libs/Openplanet/TMConsole/Ingame/UI/UILastDeviceUsed.Script.txt" 					as UILastDeviceUsed
+#Include "Libs/Openplanet/TMConsole/Ingame/UI/UIOnlineRoomTrackDescDisplay.Script.txt" 		as UIOnlineRoomTrackDescDisplay
+#Include "Libs/Openplanet/TMConsole/Ingame/UI/UIOnlineTempQuestion.Script.txt" 				as UIOTempQuestion
+#Include "Libs/Openplanet/TMConsole/Ingame/UI/UIOnlineCheckpointRanking.Script.txt" 			as UIOCR
+#Include "Libs/Openplanet/TMConsole/Menu/LoadingScreen.Script.txt"							as LoadingScreen
+
+#Include "Libs/Openplanet/Anim.Script.txt" 													as Anim
+#Include "Libs/Openplanet/TMConsole/Ingame/InAppAchievements.Script.txt" 					as InAppAchievements
+#Include "Libs/Openplanet/TMConsole/Ingame/UI/UISoloPairingPads.Script.txt" 					as UISoloPairingPads
+#Include "Libs/Openplanet/TMConsole/Ingame/Music.Script.txt"  								as Music
+
+#Include "Libs/Openplanet/TMConsole/Live/LiveEvent.Script.txt" 								as LiveEvent
+#Include "Libs/Openplanet/TMConsole/Live/LiveHelpers.Script.txt" 							as LiveHelpers
+#Include "Libs/Openplanet/TMConsole/Live/LiveHttp.Script.txt" 								as LiveHttp
+#Include "Libs/Openplanet/TMConsole/Live/LiveAuth.Script.txt"								as LiveAuth
+#Include "Libs/Openplanet/TMConsole/LayerBuilders/LB_Dbg_RequestLogger.Script.txt"			as LB_Dbg_RequestLogger
+
+#Include "Libs/Openplanet/TMConsole/Ingame/UI/UIBindingPadButtons.Script.txt" 				as UIBindingPadButtons
+
+#Const IMGPATH										"file://Media/Images/TMConsole/Ingame/"
+#Const IMG_ONLINE									"mode-online.png"
+#Const IMG_HELPY									"helpy-left.png"
+#Const C_ImgBase									"file://Media/Images/TMConsole/Ingame/"
+
+#Const C_MAXCOUNT_SCORESTABLE 			10
+#Const MODE_COLORID_MULTIPLAYER			1
+
+#Const IMG_BG_LINE							"menu-bg-1.dds"
+#Const IMG_BG								"slot-medium-bg.dds"
+#Const IMG_FG								"slot-medium-fg.dds"
+#Const C_RACE_MAPNAME_SIZE_X 			70.
+#Const C_RACE_MAPNAME_SIZE_MEDAL		18
+#Const C_RATIO 							12.962
+#Const C_RATIO_1CIRCLE					0.06666666667
+#Const C_MARGINS_GLOBALRATIO			1.
+#Const C_LabelRankDecalY				7
+#Const C_LabelBigRankDecalY				34
+#Const C_TimeScrollRanking				1000
+#Const C_REWARDS_TEXT_INTERVAL			-0.13
+#Const C_RACE_MAPNAME_POSX_MEDAL		-1
+#Const C_RACE_MAPNAME_TEXTSIZE_NAME		7
+
+#Const C_ENDTIMER						10000
+
+#Const TMC_TEMPQUESTION_OFF 	0
+#Const TMC_TEMPQUESTION_ACTION 	1
+#Const TMC_TEMPQUESTION_RESULT 	2
+
+//////////////////////////////////////////
+// ALIGN
+#Const vT 	""" valign="top" """
+#Const vC 	""" valign="center" """
+#Const hC 	""" halign="center" """
+#Const hR 	""" halign="right" """
+
+#Const ONLINEMODE_TIMEATTACK	0
+#Const ONLINEMODE_ROUNDS		1
+#Const ONLINEMODE_LAPS			2
+#Const ONLINEMODE_TEAM			3
+
+#Const ONLINEPOINTS_TIME		0
+#Const ONLINEPOINTS_POINTS		1
+#Const ONLINEPOINTS_CP			2
+
+#Const C_LibUI_TimeGapPos <-150., 20., 5.>
+
+#Const C_DefaultShowAnim """
+//sleep(100);
+"""
+#Const C_DefaultHideAnim 	"""
+//EnableMenuNavigation(False,False,Null);
+//Page.MainFrame.Hide();
+
+"""
+
+declare Integer 			G_PreMyPeriod;
+declare Text[Text][] 		G_FavoriteTracks;
+declare Text[Text][] 		G_MyRooms;
+declare Boolean				G_IsConnectedMasterServer;
+declare Boolean				G_IsFavoriteTracksSent;
+declare Boolean				G_IsMyRoomsSent;
+declare Text[]				G_FavoriteAuthors;
+declare Boolean				G_IsPadConnected;
+
+
+
+Void ConstructPlayersContextualPings() {
+	declare FontMain 				= Font::GetFontName("Main");
+	declare FontNumberBig 			= Font::GetFontName("NumberBig");
+	declare TextStyleEvent			= """ textprefix="$t" textfont="{{{FontMain}}}" textsize="4" scale="0.95" """;
+	declare TextStylePing			= """ textfont="{{{FontMain}}}" textsize="3.0" scale="0.80" """;
+	
+	declare ColorWhite 				= Colors::GetColor("White");
+	declare ColorYellow				= Colors::GetColor("Yellow");
+	declare ColorCyan 				= Colors::GetColor("Cyan");
+	declare PingModelImage  		= UIButtons::GetImage("PingModel");
+	declare PingButton				= UIBindingPadButtons::GetOnlinePingButton();
+	
+	//L16N. Show the button for the action. In multiplayer, allows players to answer to an event ("Hello", "GG all")
+	declare Text PingBack 			= _(" to ping players");
+	// declare Integer 
+	declare MLText = """
+		<frame posn="-150. 0. 0." id="Frame_ContextualPing">
+			<quad posn="0. 7. 0.5" 	sizen="30 15" valign="bottom" id="" image="{{{IMGPATH^IMG_HELPY}}}" hidden="0"/>			
+			<label posn="0.0 0.0 0.0" sizen="150 50" valign="bottom" id="Label_Event" {{{TextStyleEvent}}} text="MonEvent"/>
+			<frame id="Frame_Ping">
+				<label posn="7.0 -6.0 0.0" sizen="150 50" valign="bottom"  {{{TextStylePing}}} text="MonPing"/>
+				<label posn="7.0 -12.0 0.0" sizen="150 50" valign="bottom"  {{{TextStylePing}}} text="MonPing"/>
+				<label posn="7.0 -18.0 0.0" sizen="150 50" valign="bottom"  {{{TextStylePing}}} text="MonPing"/>
+				<label posn="7.0 -24.0 0.0" sizen="150 50" valign="bottom"  {{{TextStylePing}}} text="MonPing"/>
+			</frame>
+			<frame id="Frame_PingBack" posn="1. 0. 0.">
+				<quad posn="0. 3. 0.5" 	sizen="7.0 7.0" valign="center" halign="center" id="Quad_ButtonPing" image="{{{PingModelImage}}}" />
+					{{{UIBindingPadButtons::InjectInManialink("PlayersContextualPings", PingButton,	<-1., 3., 0.>, 0.6)}}}
+					<label posn="5. 0. 0.0" sizen="150 50" valign="bottom" id="Label_Event" {{{TextStyleEvent}}} text="{{{PingBack}}}"/>
+			</frame>
+		</frame>
+		
+		<script><!--
+			#Const DebugName  "L_PlayersContextualPings"
+			#Include "TextLib" as TL
+			#Include "MathLib" as ML
+			
+			#Const C_EVENTTIME	10000
+			#Const C_Device_Keyboard 			0
+			#Const C_Device_Pad 				1
+			
+			{{{UIBindingPadButtons::InjectInGlobals()}}}
+			
+			
+			{{{UIBindingPadButtons::InjectInFunctions()}}}
+			
+			{{{UIButtons::GetMLFunctionPcPing()}}}
+			
+			Void SwitchDeviceButton(Text _ButtonCode, CMlQuad _Quad) {
+				//CB. Pour savoir si le joueur est au clavier ou à la souris
+				declare netwrite Integer Net_LibLastDeviceUsed_LastDeviceUsed for UI;
+				/*
+				if(Net_LibLastDeviceUsed_LastDeviceUsed == C_Device_Keyboard) {
+					
+				} else if(Net_LibLastDeviceUsed_LastDeviceUsed == C_Device_Pad){
+					SetBindableKeysVisible(_ButtonCode, False);
+					_Quad.Visible = True;
+				}
+				*/
+				
+				SetBindableKeysVisible(_ButtonCode, True);
+				_Quad.Visible = False;
+			}
+			
+			main() {
+				{{{UIBindingPadButtons::InjectInInit("PlayersContextualPings")}}}
+				declare Label_Event				<=> (Page.GetFirstChild("Label_Event")	as CMlLabel);
+				declare Frame_ContextualPing	<=> (Page.GetFirstChild("Frame_ContextualPing")	as CMlFrame);
+				declare Frame_Ping				<=> (Page.GetFirstChild("Frame_Ping")	as CMlFrame);
+				declare Frame_PingBack			<=> (Page.GetFirstChild("Frame_PingBack")	as CMlFrame);
+				declare Quad_ButtonPing			<=> (Page.GetFirstChild("Quad_ButtonPing")	as CMlQuad);
+				
+				Label_Event.Blend 				= CMlLabel::EBlendMode::Add;				
+				Label_Event.Value 				= "POWERPROUST EST ENTRE DANS LA ROOM";
+				Label_Event.Opacity 			= 0.9;
+				Label_Event.TextColor 			= {{{ColorCyan}}};
+				
+				declare Vec3[] PingPos;
+				PingPos.add(<12.0, -6.0, 0.0>);
+				PingPos.add(<12.0, -12.0, 0.0>);
+				PingPos.add(<12.0, -18.0, 0.0>);
+				PingPos.add(<12.0, -24.0, 0.0>);
+				PingPos.add(<12.0, -30.0, 0.0>);
+				
+				declare CMlLabel[] Labels_Ping;
+				foreach (Control in Frame_Ping.Controls) {
+					Labels_Ping.add((Control as CMlLabel));
+				}
+				
+				foreach(Label in Labels_Ping) {
+					Label.Value 		= "";
+					Label.Opacity 		= 1.0;
+					Label.TextColor		= <1.0, 1.0, 1.0>;
+				}
+				
+				declare netread	Text 		Net_EventToPing		for Teams[0];
+				declare netread Text		Net_PingContent		for Teams[0];
+				declare netread	Text[] 		Net_PlayersPing 	for Teams[0];
+				declare netread Integer 	Net_GamePhase 		for UI;
+				declare netwrite Boolean	Net_IsFavoriteManagerShown	for UI;
+				declare netwrite Boolean 	Net_IsPauseMenuEnabled 		for UI;
+				declare netwrite Boolean 	Net_IsScoreTableVisible 	for UI;
+				declare netwrite Boolean 	Net_IsBuddiesListShown 		for UI;
+				
+				declare Boolean 				IsPlayerSpec 			for UI;
+				declare netwrite Boolean		Net_HasPlayerPing		for UI;
+				
+				declare Text 	Pre_EventToPing	 	= Net_EventToPing;
+				declare Integer PlayersPingCount	= 0;
+				declare Integer TimerEventDisplayed = 0;
+				declare Integer IndexForPingPos		= 0;
+				
+				IndexForPingPos = 0;
+				
+				Frame_PingBack.RelativePosition = PingPos[IndexForPingPos];
+				
+				while(True) {
+					yield;
+					if(!PageIsVisible) continue;
+					{{{UIBindingPadButtons::InjectInLoop()}}}
+					
+					//if(LocalUser.StereoDisplayMode != CUser::EStereoDisplayMode::None || Net_IsBuddiesListShown || Net_IsPauseMenuEnabled || Net_IsScoreTableVisible || Net_IsFavoriteManagerShown || UI.UISequence == CUIConfig::EUISequence::Podium) {
+					// Quad_ButtonPing.ImageUrl = GetImageForButton("{{{PingModelImage}}}");
+					SwitchDeviceButton("{{{PingButton}}}", Quad_ButtonPing);
+					
+					if(LocalUser.StereoDisplayMode != CUser::EStereoDisplayMode::None || Net_IsBuddiesListShown || Net_IsPauseMenuEnabled || Net_IsScoreTableVisible || Net_IsFavoriteManagerShown || UI.UISequence == CUIConfig::EUISequence::Podium) {
+						Frame_ContextualPing.Visible 	= False;
+						continue;
+					} else {
+						Frame_ContextualPing.Visible 	= True;
+					}
+					
+					//CB : The ping event happens whatever if the player is spectating or not
+					if(Pre_EventToPing != Net_EventToPing && GUIPlayer != Null) {
+						Frame_ContextualPing.Visible 	= True;
+						
+						if(!IsPlayerSpec) {
+							Frame_PingBack.Visible			= True;
+						} else {
+							Frame_PingBack.Visible			= False;
+						}
+						
+						Label_Event.Value 				= Net_EventToPing;
+						TimerEventDisplayed 			= C_EVENTTIME;
+						PlayersPingCount				= 0;
+						Net_HasPlayerPing				= False;
+						Pre_EventToPing = Net_EventToPing;
+						
+						foreach(Label in Labels_Ping) {
+							Label.Value 		= "";
+						}
+						IndexForPingPos = 0;
+						Frame_PingBack.RelativePosition = PingPos[IndexForPingPos];
+					}
+
+					if(TimerEventDisplayed > 0) {
+						if(PlayersPingCount != Net_PlayersPing.count) {
+							declare Integer I = Net_PlayersPing.count-4;
+							if(I < 0) I = 0;
+							IndexForPingPos = 0;
+							
+							foreach(IndexLabel => Label in Labels_Ping) {
+								if(Net_PlayersPing.existskey(I)) {
+									Label.Value = TL::Compose(_("%1: %2"), Net_PlayersPing[I], Net_PingContent);
+									IndexForPingPos += 1;
+								} else {
+									Label.Value = "";
+								}
+								I += 1;
+							}
+							
+							if (IndexForPingPos > PingPos.count-1) IndexForPingPos = PingPos.count-1;
+							Frame_PingBack.RelativePosition = PingPos[IndexForPingPos];
+							
+							PlayersPingCount = Net_PlayersPing.count;
+						}
+						
+						foreach(PadIndex => Pad in Input.Pads) 
+						{
+							if(Input.Pads.existskey(Pad))
+							{
+								foreach(Button in Input.Pads[PadIndex].ButtonEvents)
+								{
+									switch(Button) 
+									{
+										case CInputScriptPad::EButton::LeftStick : 
+										{
+											if(!IsPlayerSpec) {
+												Net_HasPlayerPing 				= True;
+												Frame_PingBack.Visible			= False;
+											}
+										}
+									}
+								}
+							}
+						}
+						TimerEventDisplayed -= Period;
+					} else {
+						if(Frame_ContextualPing.Visible)
+							Frame_ContextualPing.Visible = False;
+						
+						TimerEventDisplayed 	= 0;
+						Net_HasPlayerPing 		= False;
+					}
+					
+					// Frame_PingBack.Visible			= True;
+				}
+			}
+		--></script>
+	""";
+	Layers::Create("PlayersContextualPings", MLText);
+	Layers::Attach("PlayersContextualPings");
+}
+
+// ---------------------------------- //
+/** Create the manialink for the time gap module
+ *
+ *	@return		The manialink
+ */
+Void ConstructMLTimeGap() {
+	
+	
+	declare FontMain 				= Font::GetFontName("Main");
+	declare FontNumberBig 			= Font::GetFontName("NumberBig");
+	declare ColorCyan 				= Colors::GetColor("Cyan");
+	declare ColorYellow 			= Colors::GetColor("Yellow");
+	
+	declare TextStyleEvent			= """ textfont="{{{FontMain}}}" textsize="3.0" scale="0.80" """;
+	declare Text CheckpointLeader	= _("CHECKPOINT LEADER");
+
+	declare MLText = """
+<manialink version="1" name="Lib_UI:TimeGap">
+<framemodel id="Framemodel_Player">
+	<label posn="0. 0. 0.5" 	sizen="3.9 4" valign="bottom" id="Label_LocalRank" text="1." {{{TextStyleEvent}}} hidden="1"/>
+	<label posn="2. 0. 0.5" 	sizen="50 20" valign="bottom" id="Label_Name" text="Pseudo" {{{TextStyleEvent}}} />
+	<label posn="58. 0. 0.5" 	sizen="50 20" halign="right" valign="bottom" id="Label_Time" {{{TextStyleEvent}}}/>
+</framemodel>
+
+<frame posn="{{{C_LibUI_TimeGapPos.X}}} {{{C_LibUI_TimeGapPos.Y}}} {{{C_LibUI_TimeGapPos.Z}}}" id="Frame_TimeGap" hidden="1">
+	<label posn="2. 24. 0.5" 	sizen="50 20" valign="bottom" id="Label_Name" text="{{{CheckpointLeader}}}" {{{TextStyleEvent}}} />
+	<frame posn="0 0 2" id="Frame_PlayersList">
+		<format textemboss="1" textsize="1.5" />
+		<frameinstance posn="0 20" modelid="Framemodel_Player" />
+		<frameinstance posn="0 16" modelid="Framemodel_Player" />
+		<frameinstance posn="0 12" modelid="Framemodel_Player" />
+		<frameinstance posn="0 8" modelid="Framemodel_Player" />
+		<frameinstance posn="0 4" modelid="Framemodel_Player" />
+		<!--<frameinstance posn="0 0" modelid="Framemodel_Player" />-->
+	</frame>
+</frame>
+<script><!--
+#Include "TextLib" as TL
+#Const DebugName  "L_CpRanking"
+#Const C_LibUI_TimeGapPos <{{{C_LibUI_TimeGapPos.X}}}, {{{C_LibUI_TimeGapPos.Y}}}, {{{C_LibUI_TimeGapPos.Z}}}>
+
+#Const C_GAMEPHASE_CHALLENGE		3
+#Const C_GAMEPHASE_PREPARATION		0
+#Const C_GAMEPHASE_GAME				1
+#Const C_GAMEPHASE_POSTGAME			2
+#Const C_GAMEPHASE_OUTRO			4
+
+declare CMlFrame[] Frames_Player;
+
+Text TimeToText(Integer _Time) {
+	declare Time = TL::TimeToText(_Time, True);
+	// if (Milliseconds >= 0) Time ^= TL::ToText(Milliseconds);
+	return Time;
+}
+
+Void UpdateSlot(Integer _SlotNb, CTmMlPlayer _Player) {
+
+	if (!Frames_Player.existskey(_SlotNb)) return;
+
+	declare Frame_Player	<=> Frames_Player[_SlotNb];
+	declare Label_Time		<=> (Frame_Player.GetFirstChild("Label_Time")		as CMlLabel);
+	declare Label_LocalRank	<=> (Frame_Player.GetFirstChild("Label_LocalRank")	as CMlLabel);
+	declare Label_Name		<=> (Frame_Player.GetFirstChild("Label_Name")		as CMlLabel);
+	Label_Time			.Blend = CMlLabel::EBlendMode::Add;		
+	Label_LocalRank		.Blend = CMlLabel::EBlendMode::Add;
+	
+	Label_Name			.Blend = CMlLabel::EBlendMode::Add;
+	
+	declare Vec3 ColorToUse = <1., 1., 1.>;
+	
+	if (_Player != Null && Scores.count > 0) {
+		
+		if(_Player.User.Name == GUIPlayer.User.Name) {
+			ColorToUse = {{{ColorYellow}}};
+		} else {
+			ColorToUse = {{{ColorCyan}}};
+		}
+		Label_Name.TextColor = ColorToUse;
+		if (!Frame_Player.Visible) Frame_Player.Visible = True;
+		
+		declare Text UI_ModeName for UI;
+		declare CheckpointTime = 0;
+		
+		if (UI_ModeName != "OnlineTimeAttack") {
+			if (_Player.CurRace.Checkpoints.count > 0) {
+				CheckpointTime = _Player.CurRace.Checkpoints[GUIPlayer.CurRace.Checkpoints.count - 1];
+			} else {
+				Frame_Player.Visible = False;
+				return;
+			}
+		} else {
+			if (GUIPlayer.CurLap.Checkpoints.count <= 0) {
+				if (_Player.Id == GUIPlayer.Id) CheckpointTime = _Player.Score.PrevRace.Time;
+				else CheckpointTime = _Player.Score.BestRace.Time;
+			} else {
+				if (_Player.Id == GUIPlayer.Id) CheckpointTime = _Player.CurLap.Checkpoints[GUIPlayer.CurLap.Checkpoints.count - 1];
+				else CheckpointTime = _Player.Score.BestRace.Checkpoints[GUIPlayer.CurLap.Checkpoints.count - 1];
+			}
+		}
+		
+		declare LibUI_TimeGap_CheckpointLeadTime for GUIPlayer = 0;
+		if (_SlotNb == 0 && CheckpointTime == LibUI_TimeGap_CheckpointLeadTime) {
+			Label_Time.Value = TimeToText(CheckpointTime);
+			Label_Time.TextColor = ColorToUse;
+		} else {
+			declare LibUI_TimeGap_CheckpointLeadTime for GUIPlayer = 0;
+			declare Gap = CheckpointTime - LibUI_TimeGap_CheckpointLeadTime;
+			Label_Time.Value = "+"^TimeToText(Gap);
+			Label_Time.TextColor = ColorToUse;
+		}
+		
+		declare LibUI_TimeGap_Rank for _Player = 1;
+		Label_LocalRank.Value = LibUI_TimeGap_Rank^".";
+		Label_LocalRank.TextColor = ColorToUse;
+		Label_Name.Value = TL::ToUpperCase (_Player.Score.User.Name);
+	} else {
+		if (Frame_Player.Visible) Frame_Player.Visible = False;
+	}
+}
+
+Void UpdateTimeGap() {
+	if (GUIPlayer.CurRace.Checkpoints.count <= 0 || GUIPlayer.Score == Null) return;
+
+	declare Text UI_ModeName for UI;
+	
+	declare CheckpointsSort = Integer[CTmMlPlayer];
+	if (UI_ModeName != "OnlineTimeAttack") {
+		foreach (Player in Players) {
+			if (Player.CurRace.Checkpoints.count < GUIPlayer.CurRace.Checkpoints.count) continue;
+			CheckpointsSort[Player] = Player.CurRace.Checkpoints[GUIPlayer.CurRace.Checkpoints.count-1];
+		}
+	} else {
+		if (GUIPlayer.CurLap.Checkpoints.count <= 0 && GUIPlayer.Score.PrevRace.Checkpoints.count <= 0) return;
+	
+		declare CheckpointsCount = 0;
+		if (GUIPlayer.CurLap.Checkpoints.count <= 0) {
+			CheckpointsSort[GUIPlayer] = GUIPlayer.Score.PrevRace.Time;
+			CheckpointsCount = GUIPlayer.Score.PrevRace.Checkpoints.count;
+		} else {
+			CheckpointsSort[GUIPlayer] = GUIPlayer.CurLap.Checkpoints[GUIPlayer.CurLap.Checkpoints.count-1];
+			CheckpointsCount = GUIPlayer.CurLap.Checkpoints.count;
+		}
+		
+		foreach (Player in Players) {
+			if (Player.Score == Null) continue;
+			if (Player.Score.BestRace.Checkpoints.count < CheckpointsCount || Player.Id == GUIPlayer.Id) continue;
+			CheckpointsSort[Player] = Player.Score.BestRace.Checkpoints[CheckpointsCount-1];
+		}
+	}
+	
+	CheckpointsSort = CheckpointsSort.sort();
+	
+	declare Start = 0;
+	declare End = 0;
+	foreach (Player => CheckpointTime in CheckpointsSort) {
+		if (Player.Id == GUIPlayer.Id) break;
+		End +=1;
+	}
+	Start = End - Frames_Player.count + 1;
+	if (Start < 0) Start = 0;
+	if (End < Frames_Player.count - 1) End = Frames_Player.count - 1;
+	
+	declare LibUI_TimeGap_CheckpointLeadTime for GUIPlayer = 0;
+	declare SlotNb = 0;
+	declare I = 0;
+	foreach (Player => CheckpointTime in CheckpointsSort) {
+		if (I == 0) LibUI_TimeGap_CheckpointLeadTime = CheckpointTime;
+		if (I >= Start && I <= End) {
+			declare LibUI_TimeGap_Rank for Player = 1;
+			LibUI_TimeGap_Rank = I + 1;
+			UpdateSlot(SlotNb, Player);
+			SlotNb += 1;
+		}
+		I += 1;
+	}
+
+	for (J, SlotNb, Frames_Player.count) {
+		UpdateSlot(J, Null);
+	}
+}
+
+main() {
+	declare Frame_TimeGap		<=> (Page.GetFirstChild("Frame_TimeGap")		as CMlFrame);
+	declare Frame_PlayersList	<=> (Page.GetFirstChild("Frame_PlayersList")	as CMlFrame);
+	foreach (Control in Frame_PlayersList.Controls) {
+		Frames_Player.add((Control as CMlFrame));
+	}
+	
+	declare netread Integer Net_GamePhase for UI;
+	declare Text UI_ModeName for UI;
+	
+	declare netwrite Boolean	Net_IsFavoriteManagerShown	for UI;
+	declare netwrite Boolean	Net_IsBuddiesListShown		for UI;
+	declare netwrite Boolean 	Net_IsPauseMenuEnabled 		for UI;
+	declare netwrite Boolean 	Net_IsScoreTableVisible 	for UI;
+	
+	while (True) {
+		sleep(250);
+
+		if (
+			LocalUser.StereoDisplayMode != CUser::EStereoDisplayMode::None ||
+			Net_IsBuddiesListShown ||
+			Net_IsPauseMenuEnabled ||
+			Net_IsScoreTableVisible ||
+			Net_IsFavoriteManagerShown ||
+			UI.UISequence == CUIConfig::EUISequence::Podium
+		) {
+			if (Frame_TimeGap.Visible) Frame_TimeGap.Visible = False;
+			continue;
+		} else if (
+			GUIPlayer != Null &&
+			Net_GamePhase != C_GAMEPHASE_OUTRO &&
+			Net_GamePhase != C_GAMEPHASE_POSTGAME
+		) {
+			if (GUIPlayer.CurRace.Checkpoints.count <= 0 && Frame_TimeGap.Visible) {
+				Frame_TimeGap.Visible = False;
+			} else if (GUIPlayer.CurRace.Checkpoints.count > 0 && !Frame_TimeGap.Visible) {
+				Frame_TimeGap.Visible = True;
+				UpdateTimeGap();
+			}
+		} else {
+			if (Frame_TimeGap.Visible) Frame_TimeGap.Visible = False;
+		}
+
+		if (GUIPlayer == Null) continue;
+		if (GUIPlayer.Score == Null) continue;
+		if (!PageIsVisible) continue;
+		
+		declare NeedUpdate = False;
+		if (UI_ModeName != "OnlineTimeAttack") {
+			foreach (Player in Players) {
+				declare LibUI_TimeGap_PrevCheckpointsCount for Player = -1;
+				if (LibUI_TimeGap_PrevCheckpointsCount != Player.CurRace.Checkpoints.count) {
+					LibUI_TimeGap_PrevCheckpointsCount = Player.CurRace.Checkpoints.count;
+					if (Player.CurRace.Checkpoints.count == GUIPlayer.CurRace.Checkpoints.count) {
+						NeedUpdate = True;
+					}
+				}
+			}
+		} else {
+			declare LibUI_TimeGap_PrevCheckpointsCount for GUIPlayer = -1;
+			declare LibUI_TimeGap_PrevRaceTime for GUIPlayer = -1;
+			if (
+				LibUI_TimeGap_PrevCheckpointsCount != GUIPlayer.CurRace.Checkpoints.count 
+				|| LibUI_TimeGap_PrevRaceTime != GUIPlayer.Score.PrevRace.Time
+			) {
+				LibUI_TimeGap_PrevCheckpointsCount = GUIPlayer.CurRace.Checkpoints.count;
+				LibUI_TimeGap_PrevRaceTime = GUIPlayer.Score.PrevRace.Time;
+				NeedUpdate = True;
+			}
+			foreach (Score in Scores) {
+				declare LibUI_TimeGap_PrevBestRaceTime for Score = -1;
+				if (LibUI_TimeGap_PrevBestRaceTime != Score.BestRace.Time) {
+					LibUI_TimeGap_PrevBestRaceTime = Score.BestRace.Time;
+					NeedUpdate = True;
+				}
+			}
+		}
+		
+		if (NeedUpdate) UpdateTimeGap();
+	}
+}
+--></script>
+</manialink>""";
+	Layers::Create("CpRanking", MLText);
+	Layers::Attach("CpRanking");
+	declare Layer <=> Layers::Get("CpRanking");
+	// Layer.InOutAnimation = CUILayer::EUILayerAnimation::RightFast;
+}
+
+Void ConstructTrialTimerLeft() 
+{	
+	declare FontMain 					= Font::GetFontName("Main");
+	declare SizeX = 50.;
+	declare MarginX = 0;
+	declare MarginY = 10;
+	
+	declare Text ML =
+	"""
+	<frame id="Frame_TrialTimerLeft" posn="{{{-155+SizeX/2. - MarginX}}} {{{-90 + MarginY}}} 6." hidden="0">
+		<label id="Label_TrialTimerLeft" 
+		posn="-25 0 .2"
+		sizen="320 180" 
+		valign="top" 
+		halign="left" 
+		textfont="{{{FontMain}}}"
+		textsize="5"
+		text=""
+		textprefix="$t"
+		/>
+		
+	</frame>
+	
+	<script><!--
+	#Include "MathLib" as ML
+	#Include "TextLib" as TL
+	#Include "AnimLib" as AL
+	
+	#Const DebugName  "L_CreditsStatus"
+	
+	#Const C_AnimScale_Easing 	 "ElasticOut"
+	#Const C_AnimScale_Duration  500.
+	#Const C_AnimScale_Strength  0.5
+	
+	main() 
+	{
+		declare	Integer TimerLeft_Count	for UI;
+		declare Boolean IsDemo for UI;
+		declare Prev_PageIsVisible 			= PageIsVisible;
+		
+		declare Frame_TrialTimerLeft			<=> (Page.MainFrame.GetFirstChild("Frame_TrialTimerLeft") 			as CMlFrame);
+		declare Label_TrialTimerLeft 			<=> (Page.MainFrame.GetFirstChild("Label_TrialTimerLeft") 			as CMlLabel);
+		
+		Frame_TrialTimerLeft.Visible = True;
+		
+		while(True) 
+		{
+			yield;
+			
+			if(Prev_PageIsVisible != PageIsVisible)
+			{
+				Prev_PageIsVisible = PageIsVisible;
+			}
+			
+			if(!IsDemo) {
+				Frame_TrialTimerLeft.Visible = False;
+			}
+			
+			if(TimerLeft_Count != -1) {
+				//L16N Trial timer left
+				Label_TrialTimerLeft.Value = TL::Compose(_("Trial time left: %1"), TL::TimeToText(TimerLeft_Count*1000, False));
+			}
+		}
+	}
+	--></script>
+	""";
+	
+	Layers::Create("TrialTimerLeft", ML);
+	Layers::Attach("TrialTimerLeft");
+}
+
+Void ConstructRemainingTimeUI() {
+	declare FontMain 				= Font::GetFontName("Main");
+	declare FontNumberBig 			= Font::GetFontName("NumberBig");
+	
+	
+	declare MapNameSizeX 			= C_RACE_MAPNAME_SIZE_X + C_RACE_MAPNAME_SIZE_X * C_RATIO_1CIRCLE+0.2;
+	declare MapNameSizeY 			= C_RACE_MAPNAME_SIZE_X / C_RATIO;
+	declare MapMarginRatio 			= 1.  * C_MARGINS_GLOBALRATIO;
+	declare MapNameMarginY			= 9.  * MapMarginRatio;
+	declare QuadStyleBg				= """sizen="{{{MapNameSizeX}}} {{{MapNameSizeY}}}" image="{{{IMGPATH^IMG_BG_LINE}}}" """;
+	
+	declare MapNameSeparator 		= MapNameSizeY * 0.095;
+	declare MapNameSizeXElement		= C_RACE_MAPNAME_SIZE_X * C_RATIO_1CIRCLE * 12.;
+	declare MapNameSizeYElement			= MapNameSizeY * 2. - MapNameSeparator;
+	
+	declare QuadStyleBgRight			= """ {{{QuadStyleBg}}} {{{hR}}} """;
+	declare TimeStyle					= """ textsize="{{{C_RACE_MAPNAME_TEXTSIZE_NAME}}}"  textcolor="{{{Colors::GetColorXml("Red")}}}"	{{{vC}}} 	 """;
+	
+	declare Text ML = """
+		<frame id="Frame_TimeAttackUI" posn="0. 0. 0.">
+			<frame id="Frame_TimeAttackUIBg" posn="{{{160}}} {{{90 - MapNameMarginY - MapNameSizeY*3.}}}">
+				<quad id="Quad_Bg1" 		posn="0. 0. 				   31." 	{{{QuadStyleBgRight}}} />
+				<quad id="Quad_Bg2" 		posn="0. {{{-MapNameSizeY}}}   31." 	{{{QuadStyleBgRight}}} />
+			</frame>
+			
+			<frame id="Frame_TimeAttackUIContent" posn="{{{160}}} {{{90 - MapNameMarginY - MapNameSizeY*3.}}}">
+				<quad 	posn="-10. {{{-MapNameSeparator}}}	32."  	sizen="{{{MapNameSizeXElement+9}}} {{{MapNameSizeYElement}}}" 	{{{vT}}} 	{{{hR}}} image="{{{IMGPATH^IMG_BG}}}" />
+				<label 	id="Label_RemainingTime" posn="-45. -5.	32.5" textfont="{{{FontNumberBig}}}" 	{{{TimeStyle}}} {{{hC}}}  text="20"  />	
+				<quad 	posn="-10. {{{-MapNameSeparator}}}	33."  	sizen="{{{MapNameSizeXElement+9}}} {{{MapNameSizeYElement}}}" 	{{{vT}}} 	{{{hR}}} image="{{{IMGPATH^IMG_FG}}}" />
+			</frame>
+		</frame>
+		
+	<script ><!--
+		#Const DebugName  "L_RemainingTimeUI"
+		#Include "TextLib" as TL
+		#Include "MathLib" as ML
+		#Include "AnimLib" as AL
+		
+		{{{Anim::Inject("Minimal")}}}
+		
+		main() {
+			declare Label_RemainingTime 				<=> (Page.MainFrame.GetFirstChild("Label_RemainingTime")			as CMlLabel);
+			declare CMlFrame Frame_TimeAttackUIContent 	<=> (Page.GetFirstChild("Frame_TimeAttackUIContent") as CMlFrame);
+			declare CMlFrame Frame_TimeAttackUI 		<=> (Page.GetFirstChild("Frame_TimeAttackUI") as CMlFrame);
+			
+			declare netread Integer 		Net_CutOffTimeLimit 			for UI;
+			declare netwrite Boolean 		Net_IsPauseMenuEnabled 			for UI;
+			declare netwrite Boolean 		Net_IsScoreTableVisible 		for UI;
+			declare netwrite Boolean		Net_IsFavoriteManagerShown		for UI;
+			declare netwrite Boolean		Net_IsBuddiesListShown 			for UI;
+			declare netread Integer 	Net_GamePhase						for UI;
+			
+			
+			declare Integer TriggerAnimShow 				= 0;
+			declare Integer	AnimDuration					= 300;
+			declare Vec3	StartPosition 					= <0.0, 0.0, 0.0>;
+			declare Vec3	EndPosition						= <0.0, 0.0, 0.0>;
+			declare Boolean IsDesiredVisible 				= True;
+			declare M_IsDesiredVisible						= False;
+			declare M_FirstInit								= True;
+			declare CMlFrame FrameToMove;
+			
+			while(True) {
+				yield;
+				
+				if(LocalUser.StereoDisplayMode == CUser::EStereoDisplayMode::None) {
+					IsDesiredVisible = !Net_IsBuddiesListShown && !Net_IsPauseMenuEnabled && !Net_IsScoreTableVisible && !Net_IsFavoriteManagerShown && GameTime < Net_CutOffTimeLimit && GUIPlayer != Null && GUIPlayer.IsSpawned && Net_GamePhase == 1;
+					if(M_FirstInit) {
+						M_IsDesiredVisible 	= !IsDesiredVisible;
+						M_FirstInit			= False; 
+					}
+				} else {
+					IsDesiredVisible 		= False;
+					if(M_FirstInit) {
+						M_IsDesiredVisible 		= !IsDesiredVisible;
+						M_FirstInit				= False;
+					}
+				}
+				
+				if(IsDesiredVisible != M_IsDesiredVisible) {
+					if(IsDesiredVisible) {
+						Frame_TimeAttackUI.RelativePosition = <0., 0., 0.>;
+						FrameToMove 	<=> Frame_TimeAttackUIContent;
+						StartPosition 	= <190., {{{90 - MapNameMarginY - MapNameSizeY*3.}}}, 31.>;
+						EndPosition 	= <160., {{{90 - MapNameMarginY - MapNameSizeY*3.}}}, 31.>;
+					} else {
+						FrameToMove 	<=> Frame_TimeAttackUI;
+						StartPosition 	= <0., 0., 31.>;
+						EndPosition 	= <90., 0., 31.>;
+					}
+					TriggerAnimShow = Now;
+					M_IsDesiredVisible = IsDesiredVisible;
+				}
+				
+				if(Now > TriggerAnimShow + AnimDuration) {
+					if(FrameToMove != Null)
+						if(FrameToMove.RelativePosition != EndPosition)
+							FrameToMove.RelativePosition = EndPosition;
+				} else {
+					CheckToPlayMoveTo("BackOut", FrameToMove , TriggerAnimShow, StartPosition, EndPosition, AnimDuration);
+				}
+				
+				if (Net_CutOffTimeLimit > GameTime)
+					Label_RemainingTime.Value = TL::TimeToText(Net_CutOffTimeLimit - GameTime);
+				else
+					Label_RemainingTime.Value = "0:00";
+				
+			}
+		}
+	--></script>	
+	""";
+	
+	Layers::Create("RemainingTimeUI", ML);
+	Layers::Attach("RemainingTimeUI");
+	declare Layer <=> Layers::Get("RemainingTimeUI");
+	Layer.InOutAnimation = CUILayer::EUILayerAnimation::RightFast;
+}
+
+Void ConstructMainMenu() {
+	declare Text 		LayerName		= "MainMenu";
+	declare Vec3 		LayerPos		= <-85., 15., 60.>;
+	declare ColorGrey			= Colors::GetColor("Grey");
+	declare ColorWhite			= Colors::GetColor("White");
+	
+	declare netwrite Text 		Net_MenuPauseTitle			for UI;
+	declare netwrite Text 		Net_MenuPauseSubtitle		for UI;
+	declare netwrite Text[]		Net_MenuPauseInputs			for UI;
+	
+	declare ColorMode 		= Colors::GetModeColorName(0);
+	declare TitleParam		= "ColorText "^ColorMode;
+	
+	// Net_MenuPauseTitle 		= IMGPATH^IMG_ONLINE;
+	// Net_MenuPauseSubtitle 	= _("Time Attack");
+	
+	declare IMGSelect 		= UIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Select);
+	declare IMGCancel 		= UIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Cancel);
+	// log(IMGSelect);
+	declare TXTSelect 		= _("Select");
+	declare TXTCancel 		= _("Back");
+	Net_MenuPauseInputs 	= [IMGSelect, TXTSelect, IMGCancel, TXTCancel];
+	// Net_MenuPauseInputs 	= [IMGCancel, TXTCancel, IMGSelect, TXTSelect];
+	// log(Net_MenuPauseInputs);
+	
+	declare Text[][] 	LayerContent 	= 
+	[
+		["Title", 	"Pause", 		IMGPATH^IMG_ONLINE,			"2",	"", TitleParam, "Net_MenuPauseTitle Net_MenuPauseSubtitle"], 
+		["Space", 	"", 			  "", 						"1",	"", "", ""],
+		
+		["Button", 	"Resume", 			_("Resume"), 			"1",			"CloseInGameMenu(CMlScriptIngame::EInGameMenuResult::Resume);", "", ""],
+		//L16N In pause menu. Allows the player to browse the online scores table
+		["Button", 	"BrowseScoresTable",_("Browse scores table"), 		"1",	"Net_PlayerWantsToBrowseScoresTableUpdate += 1; CloseInGameMenu(CMlScriptIngame::EInGameMenuResult::Resume);", "", ""],
+		
+		//L16N In pause menu. Allows the player to invite his friends to join him online
+		["Button", 	"InviteFriends", _("Invite friends"), 		"1",			"Net_PlayerWantsToInviteFriendsUpdate += 1; CloseInGameMenu(CMlScriptIngame::EInGameMenuResult::Resume);", "", ""],
+		
+		//L16N in pause menu. Allows the player to manage his favorite and reports
+		["Button", 	"ManageFavorite", 	_("Favorite and report"), 		"1",	"Net_PlayerWantsToManageFavoriteUpdate += 1; CloseInGameMenu(CMlScriptIngame::EInGameMenuResult::Resume);", "", ""],
+		
+		//L16N in pause menu. Button to leave the current room.
+		["Button", 	"LeaveRoom", 		_("Quit"), 			"1",		"Net_PlayerWantsToQuitUpdate += 1; Net_PlayerQuitTimer = 5000; CloseInGameMenu(CMlScriptIngame::EInGameMenuResult::Quit);", "", ""],
+		["Space", 	"", 		  	"", 							"1",	"", "", ""],
+		["Input", 	"Input", 		"", 							"1",	"", "", "Net_MenuPauseInputs"]
+	];
+	
+	declare Text LayerBeforeWhile = 
+	"""
+		declare netwrite Integer 	Net_PlayerWantsToQuitUpdate 				for UI;
+		declare netwrite Integer 	Net_PlayerQuitTimer 						for UI;
+		declare netwrite Integer 	Net_PlayerWantsToManageFavoriteUpdate 		for UI;
+		declare netwrite Integer 	Net_PlayerWantsToLoggerRequestUpdate 		for UI;
+		declare netwrite Integer 	Net_PlayerWantsToBrowseScoresTableUpdate 	for UI;
+		declare netwrite Integer 	Net_PlayerWantsToInviteFriendsUpdate 		for UI;
+		declare netread Integer 	Net_GamePhase 								for UI;
+		declare Integer Pre_GamePhase = Net_GamePhase;
+		
+		declare CMlLabel 	Label_ManageFavorite 		<=> (Page.MainFrame.GetFirstChild("Label_ManageFavorite") as CMlLabel);
+		declare CMlLabel 	Label_BrowseScoresTable 	<=> (Page.MainFrame.GetFirstChild("Label_BrowseScoresTable") as CMlLabel);
+		declare CMlLabel 	Label_LeaveRoom 			<=> (Page.MainFrame.GetFirstChild("Label_LeaveRoom") as CMlLabel);
+		declare CMlLabel 	Label_InviteFriends			<=> (Page.MainFrame.GetFirstChild("Label_InviteFriends") as CMlLabel);
+		
+		declare netwrite Boolean	Net_IsFavoriteManagerShown	for UI;
+		// declare netwrite Boolean 	Net_IsPauseMenuEnabled 		for UI;
+		declare netwrite Boolean 	Net_IsScoreTableVisible 	for UI;
+		declare netwrite Boolean Net_IsBuddiesListShown for UI;
+		
+		declare Boolean 			Net_IsRoomSent 			for UI;
+		declare Boolean 			Net_IsTrackSent 		for UI;
+		declare netread Boolean 	Net_IsShowcase 			for Teams[0];	
+	""";
+	
+	declare Text LayerWhenShown =
+	"""
+		
+	""";
+	
+	declare Text LayerLoop =
+	"""
+		if(Pre_GamePhase != Net_GamePhase) {
+			if(Net_GamePhase == 2) {
+				Button_ManageFavorite.Hide();
+				Label_ManageFavorite.TextColor = {{{ColorGrey}}};
+				
+				Button_BrowseScoresTable.Hide();
+				Label_BrowseScoresTable.TextColor = {{{ColorGrey}}};
+				
+				Button_InviteFriends.Hide();
+				Label_InviteFriends.TextColor		= {{{ColorGrey}}};
+			}
+			Pre_GamePhase = Net_GamePhase;
+		}
+		
+		// log(Net_GamePhase^Net_IsScoreTableVisible^Net_IsFavoriteManagerShown^Net_IsBuddiesListShown);
+		
+		if(Net_GamePhase == 1) {
+			if(!Net_IsScoreTableVisible && !Net_IsFavoriteManagerShown && !Net_IsBuddiesListShown) {
+				Button_BrowseScoresTable.Show();
+				Label_BrowseScoresTable.TextColor = {{{ColorWhite}}};
+				
+				Button_InviteFriends.Show();
+				Label_InviteFriends.TextColor		= {{{ColorWhite}}};
+				
+				Button_ManageFavorite.Show();
+				Label_ManageFavorite.TextColor 		= {{{ColorWhite}}};
+			} else {
+				Button_BrowseScoresTable.Hide();
+				Label_BrowseScoresTable.TextColor 	= {{{ColorGrey}}};
+				
+				Button_InviteFriends.Hide();
+				Label_InviteFriends.TextColor		= {{{ColorGrey}}};
+				
+				Button_ManageFavorite.Hide();
+				Label_ManageFavorite.TextColor 		= {{{ColorGrey}}};
+			}
+		}
+
+		if(Net_IsShowcase) {
+			Button_LeaveRoom.Hide();
+			Label_LeaveRoom.TextColor = {{{ColorGrey}}};
+		} else {
+			Button_LeaveRoom.Show();
+			Label_LeaveRoom.TextColor = {{{ColorWhite}}};
+		}
+		
+	""";
+	
+	UIPopupBuilder::CreateLayer(
+		LayerName, 
+		"IngameMenu",
+		LayerPos,
+		LayerContent,
+		"",
+		LayerBeforeWhile,
+		LayerWhenShown,
+		LayerLoop
+	);
+	// CreateLayer(Text _LayerName, Text _Params, Vec3 _Pos, Text[][] _Elements, Text _Functions, Text _CodeBeforeWhile, Text _CodeWhenShown, Text _CodeInLoop) 
+}
+
+Void ConstructSpectateMenu() {
+	declare Text 		LayerName		= "SpectateMenu";
+	declare Vec3 		LayerPos		= <-85., 15., 33.>;
+	declare Text[][] 	LayerContent 	= 
+	[
+		["Title", 	"Pause", 		_("Spectate"), 					"2",	"", "", "Net_MenuTitle Net_MenuSubtitle"], 
+		["Button", 	"Resume", 		_("Go back in game"), 			"1",	"Net_PlayerWantsToGoBackInGame += 1; CloseInGameMenu(CMlScriptIngame::EInGameMenuResult::Resume);", "", ""],
+		["Input", 	"Input", 		"", 							"1",	"", "", "Net_MenuMainInputs"]
+	];
+	
+	declare Text LayerBeforeWhile = 
+	"""
+		declare netwrite Integer Net_PlayerWantsToGoBackInGame for UI;
+	""";
+	
+	UIPopupBuilder::CreateLayer(
+		LayerName, 
+		"",
+		LayerPos,
+		LayerContent,
+		LayerBeforeWhile
+	);
+	Layers::SetVisibility("SpectateMenu", False);
+}
+
+Boolean MustBrowseScoresTable() {
+	declare  netwrite 	Integer	Net_PlayerWantsToBrowseScoresTableUpdate for UI;
+	declare   			Integer	Pre_PlayerWantsToBrowseScoresTableUpdate for UI;
+	if(Pre_PlayerWantsToBrowseScoresTableUpdate != Net_PlayerWantsToBrowseScoresTableUpdate) {
+		Pre_PlayerWantsToBrowseScoresTableUpdate = Net_PlayerWantsToBrowseScoresTableUpdate;
+		return True;
+	}
+	return False;
+}
+
+Void FlushScoresTableEvent() {
+	declare  netwrite 	Integer	Net_PlayerWantsToBrowseScoresTableUpdate for UI;
+	declare   			Integer	Pre_PlayerWantsToBrowseScoresTableUpdate for UI;
+	Pre_PlayerWantsToBrowseScoresTableUpdate = Net_PlayerWantsToBrowseScoresTableUpdate;
+}
+
+Boolean MustDisplayManageFavorite() {
+	declare  netwrite 	Integer	Net_PlayerWantsToManageFavoriteUpdate for UI;
+	declare   			Integer	Pre_PlayerWantsToManageFavoriteUpdate for UI;
+	if(Pre_PlayerWantsToManageFavoriteUpdate != Net_PlayerWantsToManageFavoriteUpdate) {
+		Pre_PlayerWantsToManageFavoriteUpdate = Net_PlayerWantsToManageFavoriteUpdate;
+		return True;
+	}
+	return False;
+}
+
+Boolean MustDisplayLiveLogger() {
+	declare  netwrite 	Integer	Net_PlayerWantsToLoggerRequestUpdate for UI;
+	declare   			Integer	Pre_PlayerWantsToLoggerRequestUpdate for UI;
+	if(Pre_PlayerWantsToLoggerRequestUpdate != Net_PlayerWantsToLoggerRequestUpdate) {
+		Pre_PlayerWantsToLoggerRequestUpdate = Net_PlayerWantsToLoggerRequestUpdate;
+		return True;
+	}
+	return False;
+}
+
+Void SetTrackAsFavorite(Boolean _AddToFavorite) {
+	//Recuperer l'id de la track
+	// log(Playground.Map.MapInfo.MapUid);
+	// TrackController::SetTracksAsFavorite("LiveEventFeedbackML", Playground.Map.MapInfo.MapUid, _AddToFavorite);
+}
+
+Void SetRoomAsFavorite() {
+	//Recuperer l'id de la room
+}
+
+Void SetAuthorAsFavorite() {
+	//Recupere l'id de l'auteur
+}
+
+Void ConstructSpectatorML() {
+	declare FontMain 			= Font::GetFontName("Main");
+	// declare Text IMGSelect     	= UIButtons::GetImage(CManiaAppEvent::EMenuNavAction::Select);
+	declare Text PressXToPlay	= TextLib::Compose(_("SPECTATE MODE: PRESS %1 TO RESPAWN"), UIButtons::GetSelectButtonName());
+	
+	
+	
+	declare Text IMGInsterCoin1 = C_ImgBase^"insert-coin.dds";
+	declare TextStyleEvent		= """ textfont="{{{FontMain}}}" textprefix="$t" textsize="4" scale="0.95" """;
+	
+	declare Text ML = 
+	"""
+	<frame id="Frame_GoBack" posn="133. -15. 0." scale="0.7">
+		<quad halign="center" valign="center" image="{{{IMGInsterCoin1}}}" sizen="60 30"  posn="20 25 2" opacity="1.0" hidden="0" id="Quad_InsertCoin1"/>
+		<label posn="18. 5. 0.0" sizen="150 50" halign="right" valign="bottom" id="Label_Respawn" {{{TextStyleEvent}}} text="{{{PressXToPlay}}}"/>
+	</frame>
+	
+	<script ><!--
+		#Include "MathLib" as ML
+		#Include "TextLib" as TL
+		#Const C_Device_Keyboard 	0
+		#Const C_Device_Pad 		1
+		
+		{{{UIButtons::GetMLFunctionPcButtons()}}}
+		
+		Text GetSelectButtonName() {
+			declare CInputPad::EPadType Net_LibLastDeviceUsed_LastDeviceTypeUsed 	for UI;
+			switch(Net_LibLastDeviceUsed_LastDeviceTypeUsed){
+				case CInputPad::EPadType::XBox : {
+					return "A";
+				}
+				case CInputPad::EPadType::PlayStation : {
+					return _("|PS4 textual button name|Cross button");
+				}
+				case CInputPad::EPadType::Keyboard : {
+					declare CInputPad KeyboardPad;
+					foreach(Pad in Input.Pads) {
+						if(Pad.Type  == CInputPad::EPadType::Keyboard) {
+							KeyboardPad <=> Pad;
+							break;
+						}
+					}
+					return Input.GetPadButtonBinding(KeyboardPad, CInputManager::EButton::A);		
+				}	
+			}
+			return "A";
+		}
+		
+		main() {
+			
+			declare CMlQuad Quad_InsertCoin1 	<=> (Page.GetFirstChild("Quad_InsertCoin1") as CMlQuad);
+			declare CMlLabel Label_Respawn 	<=> (Page.GetFirstChild("Label_Respawn") as CMlLabel);
+			declare CMlFrame Frame_GoBack 	<=> (Page.GetFirstChild("Frame_GoBack") as CMlFrame);
+			Quad_InsertCoin1.Visible = False;
+			declare netwrite Integer Net_PlayerWantsToGoBackInGame for UI;
+			declare Boolean 	IsPlayerSpec 			for UI;
+			declare Text 		ModeName 				for UI;
+			declare netwrite Boolean	Net_IsFavoriteManagerShown	for UI;
+			declare netwrite Boolean 	Net_IsPauseMenuEnabled 		for UI;
+			declare netwrite Boolean 	Net_IsScoreTableVisible 	for UI;
+			declare netread Integer 	Net_GamePhase 				for UI;
+			declare netwrite Boolean Net_IsBuddiesListShown for UI;
+
+			// IsPlayerSpec = True;
+			
+			while(True) {
+				yield;
+				
+				// IsPlayerSpec = True;
+				// declare Real ButtonSelectedSinVar  	= ML::Sin(Now * 0.01) * 0.5 + 0.5;
+				// declare Real ButtonSelectedOpacity 	= 0.0 + ButtonSelectedSinVar * 1.;
+				// Label_Respawn.Opacity 				= ButtonSelectedOpacity;
+				
+
+				if(IsPlayerSpec) {
+					if(!Net_IsBuddiesListShown && !Net_IsPauseMenuEnabled && !Net_IsScoreTableVisible && !Net_IsFavoriteManagerShown && UI.UISequence != CUIConfig::EUISequence::Podium && Net_GamePhase !=  2) {
+						Frame_GoBack.Visible = True;
+						Label_Respawn.Value = TL::Compose(_("SPECTATE MODE: PRESS %1 TO RESPAWN"), GetSelectButtonName());
+						// Label_Respawn.Value = _("Waiting...");
+					} else {
+						Frame_GoBack.Visible = False;
+					}
+				} else if(!IsPlayerSpec) {
+					if(!Net_IsBuddiesListShown && !Net_IsPauseMenuEnabled && !Net_IsScoreTableVisible && !Net_IsFavoriteManagerShown && UI.UISequence != CUIConfig::EUISequence::Podium && Net_GamePhase !=  2) {
+						if(InputPlayer != Null && !InputPlayer.IsSpawned) {
+							//L16N. The player is waiting to respawn
+							Frame_GoBack.Visible = True;
+							Label_Respawn.Value = _("Waiting...");
+						} else if(InputPlayer != Null && InputPlayer.IsSpawned) {
+							Frame_GoBack.Visible = False;
+						} else if(InputPlayer == Null){
+							//L16N. The player is waiting to respawn
+							Frame_GoBack.Visible = True;
+							Label_Respawn.Value = _("Waiting...");
+						}
+					} else {
+						Frame_GoBack.Visible = False;
+					}
+				}
+				
+				if(IsPlayerSpec && !Net_IsBuddiesListShown && !Net_IsPauseMenuEnabled && !Net_IsScoreTableVisible && !Net_IsFavoriteManagerShown && UI.UISequence != CUIConfig::EUISequence::Podium && Net_GamePhase !=  2) {
+					foreach(Evt in Input.PendingEvents)
+					{
+						if (Evt.Type == CInputEvent::EType::PadButtonPress 
+							&& Evt.Button == CInputEvent::EButton::A) {
+							Net_PlayerWantsToGoBackInGame += 1;
+						}
+					}
+				}
+			}
+		}
+	--></script> 
+	""";
+	Layers::Create("SpectatorML", ML);
+	Layers::Attach("SpectatorML");
+}
+
+Void ConstructLiveEventFeedbackML() {
+	declare Text ML = 
+	"""
+	<script ><!--
+		main() {
+			
+			while(True) {
+				yield;
+				
+				declare Text Net_CurrentServerDesc 	for UI;
+				Net_CurrentServerDesc = CurrentServerName;
+				
+				// log("CURRENT SERVER DESC: "^CurrentServerName);
+				
+				foreach(Event in PendingEvents) {
+					switch(Event.Type) {
+						case CMlEvent::Type::PluginCustomEvent: {
+							switch(Event.PluginCustomEventType) {
+								case "FavoriteTracksSent" : {
+									SendCustomEvent("FavoriteTracksSent", [""]);
+								}
+								case "FavoriteAuthorsListSent" : {
+									SendCustomEvent("FavoriteAuthorsListSent", [""]);
+								}
+								
+								case "TrackSetAsFavorite" : {
+									SendCustomEvent("TrackSetAsFavorite", [""]);
+								}
+								case "TrackRemovedFromFavorite" : {
+									SendCustomEvent("TrackRemovedFromFavorite", [""]);
+								}
+								case "AddRoomAsFavorite" : {
+									SendCustomEvent("AddRoomAsFavorite", [""]);
+								}
+								case "RemoveRoomFromFavorite" : {
+									SendCustomEvent("RemoveRoomFromFavorite", [""]);
+								}
+								case "Request_MyRooms" : {
+									SendCustomEvent("Request_MyRooms", [""]);
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	--></script> 
+	""";
+	Layers::Create("LiveEventFeedbackML", ML);
+	Layers::Attach("LiveEventFeedbackML");
+	declare CUILayer LiveEventFeedbackML <=> Layers::Get("LiveEventFeedbackML");
+	if(LiveEventFeedbackML == Null) return;
+	declare Integer NbMaxPlayer for LiveEventFeedbackML.LocalPage;
+	NbMaxPlayer = Playground.ServerInfo.MaxPlayerCount;
+}
+
+Boolean IsTrackFavorite() {
+	foreach(TracksInfo in G_FavoriteTracks) {
+		if(TracksInfo["uid"] == Playground.Map.MapInfo.MapUid) {
+			return True;
+		}
+	}
+	return False;
+}
+
+Boolean IsAuthorsFavorite() {
+	//We use the nickname, hoping that it is the displayname
+	return G_FavoriteAuthors.exists(Map.AuthorNickName);
+}
+
+Boolean IsPlayerRoom() {
+	foreach(Room in G_MyRooms) {
+		if(Room["game_server_host"] == Playground.ServerInfo.ServerName) {
+			return True;
+		}
+	}
+	return False;
+}
+
+Void PlayerWantsToBrowseUpdate() {
+	declare netwrite Integer Net_PlayerWantsToBrowse for UI;
+	Net_PlayerWantsToBrowse += 1;
+}
+
+main() {
+	while(UserMgr.MainUser == Null) yield;
+	
+
+	
+	Logger::Log(Now^"> Start maniaapp");
+	Logger::Log("[Start RaceClient]");
+	
+	// ---------------------------------- //
+	// Connect to Master Server
+	// G_MSUser = ManiaPlanet.MasterServer_MainMSUser;
+	
+	// ---------------------------------- //
+	// Build local layers
+	UI.ScoreTableOnlyManialink = True;
+	UIButtons::Load();
+	LiveAuth::Auth_Load();
+	ConstructLiveEventFeedbackML();
+	ConstructSpectatorML();
+	ConstructMainMenu();
+	ConstructRemainingTimeUI();
+	ConstructSpectateMenu();
+	ConstructMLTimeGap();
+	ConstructPlayersContextualPings();
+	UIOTempQuestion::Load();
+	InAppAchievements::Load();
+	Music::Load();
+	UIOnline::Load();
+	// UILastDeviceUsed::Load();
+	
+	Layers::Create("Dbg_RequestLogger", LB_Dbg_RequestLogger::Build(C_DefaultShowAnim, C_DefaultHideAnim));
+	Layers::Attach("Dbg_RequestLogger");
+	Layers::SetVisibility("Dbg_RequestLogger", False);
+	FlushScoresTableEvent();
+	
+	//CB: Time to update declare for.
+	declare Integer WaitTime = Now + 3000;
+	while(Now < WaitTime) yield;
+	
+	while(UserMgr == Null || ManiaPlanet.MasterServer_MainMSUser == Null || UserMgr.MainUser == Null) yield;
+	
+	// ---------------------------------- //
+	// Build online
+	UIOnlineRoomTrackDescDisplay::Load();
+	UIOMF::Load();
+	UIOST::Load();
+	UIOBL::Load();
+	UIOCR::Load();
+	UIOnlineGlobalRanking::Load();
+	InAppGR::Load(False);
+	UISoloPairingPads::Load();
+	LoadingScreen::Load();
+	
+	declare Boolean IsTrialTimeLeft = False;
+	if(ManiaPlanet.MasterServer_MainMSUser.MultiInternetPlayTimeLeft > -1) {
+		ConstructTrialTimerLeft();
+		IsTrialTimeLeft = True;
+	}
+	
+	declare Boolean 	UIOnlineGlobalRanking_IsPlayerConnectedMasterServer 		for UI;
+	declare netwrite Text	Net_MasterServerUrl	for UI;
+	if(Net_MasterServerUrl == "") {
+		Net_MasterServerUrl = LiveHelpers::GetAPIUrl();	
+	}
+	
+	declare Boolean Net_IsTrackSent 	for UI;
+	declare Boolean Net_IsRoomSent 		for UI;
+	Net_IsTrackSent 		= False;
+	Net_IsRoomSent 			= False;
+	G_IsFavoriteTracksSent 	= False;
+	G_IsMyRoomsSent 		= False;
+	declare Boolean StartEndTimer 	= False;
+	declare Integer EndTimer 		= 0;
+	declare Boolean Pre_IsPadConnected;
+	
+	
+	declare Boolean Net_IsServerPrivate for UI;
+	Net_IsServerPrivate = Playground.ServerInfo.IsPrivate;
+	
+	declare Boolean IsPlayerSpec for UI;
+	IsPlayerSpec = False;
+	
+	declare Boolean HasBeenConnectedMSOnce = False;
+	declare Boolean PlayerCanVoiceChat 		for UI = True;
+	// declare Boolean PlayerCanUserVoiceChat	for UI;
+	declare Boolean Pre_PlayerCanVoiceChat 	for UI;
+	declare Integer TimerLeft_Count			for UI;
+	declare netread Integer 	Net_TempQuestionState			for UI;
+	declare 		Integer		Pre_TempQuestionState;
+	Pre_TempQuestionState = Net_TempQuestionState;
+	
+	declare Boolean LoadingInProgress = True;
+	
+	UIPlayerMusicSetting::Load();
+	declare Boolean IsDemo for UI;
+	
+	UI.OverlayHideChat 		 		= False;
+	UI.OverlayChatLineCount 		= 10;
+	UI.OverlayChatOffset 			= <0., 0.>;
+	// UI.HideChat 		 			= False;
+	
+	// ---------------------------------- //
+	//Main Loop
+	while(True) {
+		yield;
+		if(UserMgr.MainUser == Null) continue;
+		
+		UIPlayerMusicSetting::Loop();
+		
+		
+		// UI.OverlayHideChat 		 			= False;
+		// log(Now^" "^UI.OverlayHideChat);
+		
+		/*
+		if(Pre_PlayerMusicState != Net_PlayerMusicState && UserMgr.MainUser.PersistentIsReady) {
+			Local_SessionMusicState = Net_PlayerMusicState + 1;
+			Pre_PlayerMusicState 	= Net_PlayerMusicState;
+			UserMgr.MainUser.PersistentSave();
+		}
+		*/
+		
+		if(Pre_TempQuestionState != Net_TempQuestionState) {
+			if(Net_TempQuestionState != TMC_TEMPQUESTION_OFF) {
+				UserMgr.VoiceChat_MuteAll = True;
+			} else {
+				UserMgr.VoiceChat_MuteAll = False;
+			}
+			Pre_TempQuestionState = Net_TempQuestionState;
+		}
+		
+		if(IsTrialTimeLeft && ManiaPlanet.MasterServer_MainMSUser != Null) {
+			TimerLeft_Count = ManiaPlanet.MasterServer_MainMSUser.MultiInternetPlayTimeLeft;
+			IsDemo			= ManiaPlanet.TmTurbo_IsDemo;
+		}
+		
+		UIOST::UpdateServerValue();
+		declare Text ModeName for UI;
+		ModeName = Playground.ServerInfo.ModeName;
+		
+		if(PlayerCanVoiceChat != UserMgr.MainUser_CanUseVoiceChat) {
+			PlayerCanVoiceChat = UserMgr.MainUser_CanUseVoiceChat;	
+		}
+		
+		declare netwrite Integer 	Net_PlayerWantsToQuitUpdate 			for UI;
+		declare			Integer 	Pre_PlayerWantsToQuitUpdateInApp		for UI;
+
+		if(Pre_PlayerWantsToQuitUpdateInApp != Net_PlayerWantsToQuitUpdate) {
+			StartEndTimer 	= True;
+			EndTimer		= C_ENDTIMER;
+			Pre_PlayerWantsToQuitUpdateInApp = Net_PlayerWantsToQuitUpdate;
+		}
+		
+		declare netwrite Integer Net_PlayerWantsToGoBackInGame for UI;
+		declare  		Integer Pre_PlayerWantsToGoBackInGame for UI;
+		if(Pre_PlayerWantsToGoBackInGame != Net_PlayerWantsToGoBackInGame) {
+			if(IsPlayerSpec) {
+				Playground.RequestSpectatorClient(False);
+				IsPlayerSpec = False;
+			}
+			Pre_PlayerWantsToGoBackInGame = Net_PlayerWantsToGoBackInGame;
+		}
+		
+		if(EndTimer > 0 && StartEndTimer) {
+			EndTimer -= Playground.GameTime - G_PreMyPeriod;
+		} else if(StartEndTimer) {
+			// Playground.QuitServer(True);
+		}
+
+		G_PreMyPeriod = Playground.GameTime;
+		// log(Now^">"^Playground.GameTime);
+		//If the player is not connected anymore to master server, we quit the game
+		if(ManiaPlanet.MasterServer_MainMSUser != Null) {
+			if(ManiaPlanet.MasterServer_MainMSUser.ConnectionStatus != CMasterServerUser::EMasterServerConnectionStatus::Connected) {
+				G_IsConnectedMasterServer = False;
+			} else {
+				G_IsConnectedMasterServer = True;
+				if(!HasBeenConnectedMSOnce)
+					HasBeenConnectedMSOnce = True;
+			}
+		}
+		
+		UIOnlineGlobalRanking_IsPlayerConnectedMasterServer = G_IsConnectedMasterServer;
+		
+		if(!G_IsConnectedMasterServer) {
+			Playground.QuitServer(True);
+		}
+		
+		// ---------------------------------- //
+		// Pending events from layers
+		foreach(Event in PendingEvents) {
+			if(Event.Type != CMlAppEvent::EType::LayerCustomEvent) continue;
+			switch(Event.CustomEventType) {
+				case "Spectate": {
+					if(Event.CustomEventData.existskey(0)) {
+						declare Text Login = Event.CustomEventData[0];
+						if(Login != LocalUser.Login) {
+							if(!IsPlayerSpec) {
+								Playground.RequestSpectatorClient(True);
+								Playground.SetSpectateTarget(Login);
+								IsPlayerSpec = True;
+							} else {
+								Playground.SetSpectateTarget(Login);
+							}
+						}
+						
+						// else {
+							// if(Playground.IsSpectatorMode) {
+								// Playground.SetSpectatorMode(False);
+							// }
+						// }
+						
+						declare netwrite Integer Net_PlayerWantsCloseScoreTableUpdate for UI;
+						Net_PlayerWantsCloseScoreTableUpdate += 1;
+					}
+				}
+				case "CloseScoresTable": {
+					declare netwrite Integer Net_PlayerWantsCloseScoreTableUpdate for UI;
+					Net_PlayerWantsCloseScoreTableUpdate += 1;
+					// if(Playground.IsSpectatorMode) {
+						// Playground.SetSpectatorMode(False);
+					// }
+				}
+				case "DetachPage": {
+					Layers::SetVisibility("Dbg_RequestLogger", False);
+				}
+				
+				case "ShowProfile": {
+					if(Event.CustomEventData.existskey(0)) {
+						UserMgr.ShowProfile(DataMgr.MenuUserId, Event.CustomEventData[0]);
+					 }
+				}
+			}
+		}
+		
+		if(MustDisplayLiveLogger()) {
+			Layers::SetVisibility("Dbg_RequestLogger", True);
+		}
+		
+		if(MustBrowseScoresTable()) {
+			declare netwrite Integer Net_MustDisplayScoresTableUpdate for UI;
+			Net_MustDisplayScoresTableUpdate += 1;
+			PlayerWantsToBrowseUpdate();
+		 }
+		
+		// ---------------------------------- //
+		// Libs loop
+		InAppGR::Loop(G_PreMyPeriod);
+		UIOMF::Loop();
+		LiveHttp::Manialib_Http_Loop();
+		LiveEvent::Manialib_Event_Yield();
+		LiveAuth::Auth_Loop();
+		LiveHelpers::LiveLoop();
+		UIPopupBuilder::Loop();
+		UISoloPairingPads::Loop();
+		UIOBL::Loop();
+		UIOTempQuestion::Loop();
+		UIOnlineRoomTrackDescDisplay::Loop();
+		
+		G_IsPadConnected = UISoloPairingPads::GetIsPadConnected();
+		
+		if(Pre_IsPadConnected != G_IsPadConnected) {
+			declare netwrite Boolean Net_IsPadDisconnectUpdate for UI;
+			Net_IsPadDisconnectUpdate 	= G_IsPadConnected;
+			Pre_IsPadConnected 			= G_IsPadConnected;
+		}
+		
+		if (LoadingInProgress && !Playground.IsLoadingScreen) {
+			LoadingInProgress = False;
+			LoadingScreen::SetLoadingType(2, 0);		// change loading screen for next loading.
+		} else if (!LoadingInProgress && Playground.IsLoadingScreen) {
+			LoadingInProgress = True;
+		}
+
+		/*
+		if(!G_IsPadConnected) {
+			if(!Playground.IsSpectatorMode) {
+				// log("SET SPECTATOR ON");
+				Playground.SetSpectatorMode(True);
+				Playground.SetSpectateTarget("");
+			}
+		} else {
+			if(Playground.IsSpectatorMode) {
+				// log("SET SPECTATOR OFF");
+				Playground.SetSpectatorMode(False);
+				Playground.SetSpectateTarget("");
+			}
+		}
+		*/
+	}
+}

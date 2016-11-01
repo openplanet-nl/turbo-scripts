@@ -1,0 +1,538 @@
+#RequireContext CManiaAppPlayground
+
+#Include "TextLib"																		as TextLib
+#Include "Libs/Openplanet/TMConsole/Menu/MenuLayers.Script.txt"								as Layers
+
+#Include "Libs/Openplanet/TMConsole/Ingame/UI/UIOnlineGlobalRanking.Script.txt"				as UIOnlineGlobalRanking
+#Include "Libs/Openplanet/TMConsole/Ingame/UI/UIPlayerMusicSetting.Script.txt"				as UIPlayerMusicSetting
+#Include "Libs/Openplanet/TMConsole/Ingame/UI/UIUserCheckPrivilege.Script.txt"				as UIUserCheckPrivilege
+#Include "Libs/Openplanet/TMConsole/Ingame/UI/UIOnlineManageFavorite.Script.txt" 			as UIOMF
+// #Include "Libs/Openplanet/TMConsole/Ingame/UI/UILastDeviceUsed.Script.txt" 					as UILastDeviceUsed
+#Include "Libs/Openplanet/TMConsole/Ingame/UI/UIPadsColors.Script.txt" 						as UIPadsColors
+#Include "Libs/Openplanet/TMConsole/Ingame/UI/UISoloPairingPads.Script.txt" 					as UISoloPairingPads
+#Include "Libs/Openplanet/TMConsole/Ingame/UI/UITrackRecordCenter.Script.txt"				as UITrackRecordCenter
+#Include "Libs/Openplanet/TMConsole/Ingame/InAppGlobalRanking.Script.txt" 					as InAppGR
+#Include "Libs/Openplanet/TMConsole/Ingame/UI/UIOnlineRoomTrackDescDisplay.Script.txt" 		as UIOnlineRoomTrackDescDisplay
+
+#Include "Libs/Openplanet/TMConsole/Ingame/InAppAchievements.Script.txt" 					as InAppAchievements
+#Include "Libs/Openplanet/TMConsole/Menu/Controller/ChallengeController.Script.txt" 			as ChallengeController
+#Include "Libs/Openplanet/TMConsole/Menu/Controller/PrivilegeController.Script.txt" 			as PrivilegeController
+#Include "Libs/Openplanet/TMConsole/Ingame/Music.Script.txt"  								as Music
+
+#Include "Libs/Openplanet/TMConsole/Live/LiveEvent.Script.txt" 								as LiveEvent
+#Include "Libs/Openplanet/TMConsole/Live/LiveHelpers.Script.txt" 							as LiveHelpers
+#Include "Libs/Openplanet/TMConsole/Live/LiveHttp.Script.txt" 								as LiveHttp
+#Include "Libs/Openplanet/TMConsole/Live/LiveAuth.Script.txt"								as LiveAuth
+#Include "Libs/Openplanet/TMConsole/Ingame/UI/UIOnlineTempQuestion.Script.txt" 				as UIOTempQuestion
+#Include "Libs/Openplanet/TMConsole/UplayActionsSynchro.Script.txt"							as UplayActionsSynchro
+
+#Include "TextLib" as TL
+#Include "MathLib" as ML
+
+#Const GLOBALRANKING_WORLDR				0
+#Const GLOBALRANKING_WORLDP				1
+#Const GLOBALRANKING_COUNTRYR			2
+#Const GLOBALRANKING_COUNTRYP			3
+#Const GLOBALRANKING_REGIONR			4
+#Const GLOBALRANKING_REGIONP			5
+
+#Const TMC_MEDAL_AUTHOR					0
+#Const TMC_MEDAL_GOLD					1
+#Const TMC_MEDAL_SILVER					2
+#Const TMC_MEDAL_BRONZE					3
+#Const TMC_MEDAL_PLAYER					4
+#Const TMC_MEDAL_NONE					5
+
+#Const TMC_RACEMODE_SOLO				1
+#Const TMC_RACEMODE_DOUBLEDRIVER		2
+#Const TMC_RACEMODE_SUPERSOLO			3
+
+declare Boolean				G_IsConnectedMasterServer;
+declare Integer 			G_PreMyPeriod;
+declare Boolean				G_IsPadConnected;
+
+Void ConstructLiveEventFeedbackML() {
+	declare Text ML = 
+	"""
+	<script ><!--
+		main() {
+			declare Integer PlayerLadderPoints 		for Page;
+			declare Integer PlayerLadderPointsWon 	for Page;
+		
+			while(True) {
+				yield;
+				
+				// log(Now^">"^PlayerLadderPointsWon);
+				// log(Now)
+				/*
+				if(PlayerLadderPointsWon > 0) {
+					SendCustomEvent("PlayerLadderPointsWon", [""^PlayerLadderPointsWon]);
+				}
+				*/
+				
+				foreach(Event in PendingEvents) {
+					switch(Event.Type) {
+						case CMlEvent::Type::PluginCustomEvent: {
+							switch(Event.PluginCustomEventType) {
+								case "Request_StartRace_Success" : {
+									SendCustomEvent("Request_StartRace_Success", [""]);
+								}
+								case "Request_BeginMap_Success" : {
+									// log(Now^">BEGIN MAP");
+									SendCustomEvent("Request_BeginMap_Success", [""]);
+								}
+								case "Request_EndMap_Success" : {
+									// log(Now^">END MAP");
+									SendCustomEvent("Request_EndMap_Success", [""^PlayerLadderPointsWon]);
+								}
+								case "Request_FinishRace_Success" : {
+									SendCustomEvent("Request_FinishRace_Success", [""]);
+								}
+								case "Request_StartRace_Failure" : {
+									SendCustomEvent("Request_StartRace_Failure", [""]);
+								}
+								case "Request_BeginMap_Failure" : {
+									SendCustomEvent("Request_BeginMap_Failure", [""]);
+								}
+								case "Request_EndMap_Failure" : {
+									SendCustomEvent("Request_EndMap_Failure", [""]);
+								}
+								case "Request_FinishRace_Failure" : {
+									SendCustomEvent("Request_FinishRace_Failure", [""]);
+								}
+								case "Request_GetResult_Success" : {
+									SendCustomEvent("Request_GetResult_Success", [""^PlayerLadderPointsWon]);
+								}
+								case "Request_GetResult_Failure" : {
+									SendCustomEvent("Request_GetResult_Failure", [""]);
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	--></script> 
+	""";
+	Layers::Create("LiveEventFeedbackML", ML);
+	Layers::Attach("LiveEventFeedbackML");
+	declare CUILayer LiveEventFeedbackML <=> Layers::Get("LiveEventFeedbackML");
+	if(LiveEventFeedbackML == Null) return;
+}
+
+// Void RequestEndTrack(Integer _ChallengeId, Text _MapUid, Integer _RaceId, Integer _BestTimePlayer) {
+Void RequestEndTrack(Text _GhostUrl, Integer _BestTimePlayer, Integer _ChallengeId, Text _MapUid, Integer _RaceId) {
+	declare Text Body = "{\"time\":"^_BestTimePlayer^"}";
+	declare Text LinkText = LiveHelpers::GetAPIUrl()^"challenges/"^_ChallengeId^"/race/try/"^_RaceId^"/maps/"^_MapUid^"/end";
+	// log("BODY: "^Body);
+	// log("LINK TEXT: "^LinkText);
+	wait(DataMgr.Ready);
+	DataMgr.UploadUserFile(LinkText, _GhostUrl, Body, LiveAuth::Auth_GetLinearizedHeader());
+	wait(DataMgr.Ready);
+	declare CUILayer LayerToSend = Layers::Get("LiveEventFeedbackML");
+	if(LayerToSend == Null) return;
+	
+	if(DataMgr.LatestResult == CDataMgr::EResult::Finished_Ok) {
+		LayerCustomEvent(LayerToSend, "Request_EndMap_Success", Text[]);
+	} else {
+		LayerCustomEvent(LayerToSend, "Request_EndMap_Failure", Text[]);
+	}
+}
+
+Void  RequestEndTrackLight(Integer _ChallengeId, Text _MapUid, Integer _RaceId) {
+	ChallengeController::EndMap("LiveEventFeedbackML", _ChallengeId, _MapUid, _RaceId, -1);
+}
+
+
+main() {
+	while(UserMgr.MainUser == Null) yield;
+	
+	
+	
+	// declare CMasterServerUser MSUser <=> ManiaPlanet.MasterServer_MainMSUser;
+	LiveAuth::Auth_Load();
+	
+	if(Playground.ServerInfo.ModeName == "TMC_CampaignSolo" || Playground.ServerInfo.ModeName == "TMC_Championship") {
+		UIOnlineGlobalRanking::Load();
+		declare Boolean LoadMapRanking = False;
+		if(Playground.ServerInfo.ModeName == "TMC_CampaignSolo") LoadMapRanking = True;
+		InAppGR::Load(LoadMapRanking);
+	}
+	
+	UIOMF::Load();
+	UIOTempQuestion::Load();
+	UIUserCheckPrivilege::Load();
+	UIPadsColors::ConstructReinitPadsML();
+	// UILastDeviceUsed::Load();
+	
+	if(Playground.ServerInfo.ModeName == "TMC_Championship") {	
+		ChallengeController::Load();
+	} else if(Playground.ServerInfo.ModeName == "TMC_CampaignSolo") {
+		UITrackRecordCenter::Load();
+	}
+	
+	ConstructLiveEventFeedbackML();
+	// LoadPadButton()
+	InAppAchievements::Load();
+	UIOnlineRoomTrackDescDisplay::Load();
+	
+	declare netread Integer Net_BeginTrackUpdate						for UI;
+	declare netread Integer Net_EndTrackUpdate 							for UI;
+	declare netread Integer Net_ChallengeId 							for UI;
+	declare netread Integer Net_RaceId									for UI;
+	declare netread Integer Net_BestTimePlayer 							for UI;
+	declare netread Integer Net_PlayerVoteUpdate 						for UI;
+	declare netread Boolean Net_PlayerHasFinishedChallenge				for UI;
+	
+	declare netread Integer Net_AddJokerUpdate							for UI;
+	declare netread Integer Net_RemoveJokerUpdate						for UI;
+	
+	declare netread Integer Net_MedalJoker								for UI;
+	
+	declare netwrite Boolean 	Net_IsPlayerConnectedMasterServer 		for UI;
+	declare 	 	 Boolean 	UplayNet_IsPlayerConnectedMasterServer 	for LocalUser; // duplication dans le LocalUser pour les popup uplay :/
+	declare 	 	 Boolean 	UplayNet_HasUplayProfile 				for LocalUser; // duplication dans le LocalUser pour les popup uplay :/
+	
+	declare netwrite Integer 	Net_PlayerWantsToQuitUpdate 			for UI;
+	declare netwrite Integer 	Pre_ManiaAppPlayerWantsToQuitUpdate 	for UI;
+	declare netread  Text 		Net_CurrentTrackUid 					for UI;
+	declare netwrite Integer	Net_CurrentTrackJoker					for UI;
+	// declare netwrite Integer 	Net_PlayerWantsToQuitUpdate for UI;
+	declare netread Integer 	Net_NewDefaultMedalChoiceUpdate			for UI;
+	declare netread Integer 	Net_NewDefaultMedalChoice				for UI;
+	declare netread Integer		Net_RaceMode							for UI;
+	declare netwrite Integer	Net_LastDefaultMedalChoice				for UI;
+	declare netread Text		Net_PlayerGhostUrl						for UI;
+	declare netread Integer 	Net_AskPrivilegeCheckUpdate 			for UI;
+	declare netwrite Integer[] 	LibTMC_PairingPads_PadsPlaying 			for UI;
+	declare Boolean				IsPairingPads							for UI;
+	declare Boolean 	UIOnlineGlobalRanking_IsPlayerConnectedMasterServer 		for UI;
+	IsPairingPads = False;
+	
+	declare netwrite Boolean			Net_IsSuperSolo							for UI;
+	declare netwrite Integer[Integer] 	Net_SuperSoloOpponentTime				for UI;
+	declare netread Boolean 			Net_IsTrackUgc 							for UI;
+	
+	declare netwrite Integer 			Net_PlayerWantsToNextTrackUpdate 		for UI;
+	declare netwrite Integer 			Pre_PlayerWantsToNextTrackUpdate 		for UI;
+	
+	declare Integer Pre_AskPrivilegeCheckUpdate;
+	declare Integer Pre_NewDefaultMedalChoiceUpdate	= Net_NewDefaultMedalChoiceUpdate;
+	declare Integer Pre_AddJokerUpdate		= Net_AddJokerUpdate;
+	declare Integer Pre_RemoveJokerUpdate	= Net_RemoveJokerUpdate;
+	declare Integer Pre_PlayerVoteUpdate	= Net_PlayerVoteUpdate;
+	declare Integer Pre_BeginTrackUpdate 	= Net_BeginTrackUpdate;
+	declare Integer Pre_EndTrackUpdate 		= Net_EndTrackUpdate;
+	declare Integer Pre_RaceMode			= 0;
+	declare netwrite Integer Net_EndTrackUpdateInApp					for UI;
+	
+	declare Boolean ChallengeHasBeenStarted = False;
+	declare Boolean MustQuitAfterRequest	= False;
+	
+	if (ManiaPlanet.ActiveContext == CManiaPlanet::EContext::EditorTrack) {
+		Music::Load(Null, True);
+	} else {
+		Music::Load();
+	}
+	
+	declare Integer EndTime = Now + 100;
+	wait(Now >= EndTime);
+	wait(UserMgr.MainUser != Null);
+	
+	/*
+	declare netwrite Integer Net_MainUserControllerId for UI;
+	Net_MainUserControllerId = -1;
+	if(UserMgr.MainUserPad != Null) {
+		Net_MainUserControllerId = UserMgr.MainUserPad.ControllerId;
+	}
+	*/
+	
+	// declare persistent Integer[Integer]	Pers_SettingsSliders 			for UserMgr.MainUser;
+	UIPadsColors::ReinitPad();
+	
+	declare persistent Integer[Integer]	Pers_SoloJokers 				for UserMgr.MainUser;
+	declare persistent Integer[Integer]	Pers_DoubleDriverJokers 		for UserMgr.MainUser;
+	declare persistent Integer			Pers_DefaultChoiceMedalSolo		for UserMgr.MainUser;
+	declare persistent Integer			Pers_DefaultChoiceMedalSSolo	for UserMgr.MainUser;
+	declare persistent Integer			Pers_DefaultChoiceMedalDD		for UserMgr.MainUser;
+
+	declare Text 	MapName 	= TL::Trim(TL::StripFormatting(Map.MapName));
+	declare Integer MapNumber 	= TL::ToInteger(MapName);
+	
+	UISoloPairingPads::Load();
+	
+	declare Boolean HasBeenConnectedMSOnce = False;
+	declare Integer[Integer] 	SuperSoloOpponentTime 		for LocalUser;
+	declare Boolean 			IsInSuperSolo				for LocalUser;
+	Net_IsSuperSolo 			= IsInSuperSolo;
+	Net_SuperSoloOpponentTime 	= SuperSoloOpponentTime;
+	UIOnlineRoomTrackDescDisplay::SetNewTrackName();
+	
+	declare Boolean CanNextTrack 	for LocalUser;
+	declare Boolean DoNextTrack 	for LocalUser;
+	DoNextTrack = False;
+	
+	declare netwrite Boolean Net_CanNextTrack 	for UI;
+	declare netread  Boolean Net_DoNextTrack	for UI;
+	declare Boolean Pre_DoNextTrack;
+	Net_CanNextTrack = CanNextTrack;
+	// Net_CanNextTrack = True;
+	
+	UIPlayerMusicSetting::Load();
+	
+	// ---------------------------------- //
+	//Main Loop
+	while(True) {
+		yield;
+		if(UserMgr.MainUser == Null) continue;
+		
+		if(Pre_PlayerWantsToNextTrackUpdate != Net_PlayerWantsToNextTrackUpdate) {
+			log("HERE NEXT TRACK");
+			DoNextTrack = True;
+			Pre_PlayerWantsToNextTrackUpdate = Net_PlayerWantsToNextTrackUpdate;
+			Playground.QuitServer(True);
+		}
+		
+		if(Net_DoNextTrack != Pre_DoNextTrack) {
+			DoNextTrack 		= Net_DoNextTrack;
+			Pre_DoNextTrack 	= Net_DoNextTrack;
+			log("NEXT TRACK");
+		}
+		
+		UIPlayerMusicSetting::Loop();
+		UplayActionsSynchro::CheckUplayActions();
+		
+		declare netwrite Integer Net_MainUserControllerId for UI;
+		Net_MainUserControllerId = -1;
+		if(UserMgr.MainUserPad != Null && Net_MainUserControllerId != UserMgr.MainUserPad.ControllerId) {
+			Net_MainUserControllerId = UserMgr.MainUserPad.ControllerId;
+		}
+		
+		if(Pre_RaceMode != Net_RaceMode && UserMgr.MainUser.PersistentIsReady) {
+			if(Net_RaceMode == TMC_RACEMODE_SOLO) {
+				if(Pers_SoloJokers.existskey(MapNumber-1)) {
+					Net_CurrentTrackJoker = Pers_SoloJokers[MapNumber-1];
+				} else {
+					Net_CurrentTrackJoker = TMC_MEDAL_NONE;
+				}
+				Net_LastDefaultMedalChoice = Pers_DefaultChoiceMedalSolo;
+			} else if(Net_RaceMode == TMC_RACEMODE_DOUBLEDRIVER) {
+				if(Pers_DoubleDriverJokers.existskey(MapNumber-1)) {
+					Net_CurrentTrackJoker = Pers_DoubleDriverJokers[MapNumber-1];
+				} else {
+					Net_CurrentTrackJoker = TMC_MEDAL_NONE;
+				}
+				Net_LastDefaultMedalChoice = Pers_DefaultChoiceMedalDD;
+			} else if(Net_RaceMode == TMC_RACEMODE_SUPERSOLO) {
+				Net_LastDefaultMedalChoice = Pers_DefaultChoiceMedalSSolo;
+			}
+			Pre_RaceMode = Net_RaceMode;
+		}
+		
+		if(Pre_AddJokerUpdate != Net_AddJokerUpdate && UserMgr.MainUser.PersistentIsReady) {
+			Pre_AddJokerUpdate = Net_AddJokerUpdate;
+			if(Net_RaceMode == TMC_RACEMODE_SOLO) {
+				Pers_SoloJokers[MapNumber-1] = Net_MedalJoker;
+			} else if(Net_RaceMode == TMC_RACEMODE_DOUBLEDRIVER){
+				Pers_DoubleDriverJokers[MapNumber-1] = Net_MedalJoker;
+			}
+			UserMgr.MainUser.PersistentSave();
+		}
+		
+		if(Pre_RemoveJokerUpdate != Net_RemoveJokerUpdate && UserMgr.MainUser.PersistentIsReady) {
+			Pre_RemoveJokerUpdate	= Net_RemoveJokerUpdate;
+			declare Text 	MapName 	= TL::Trim(TL::StripFormatting(Map.MapName));
+			declare Integer MapNumber 	= TL::ToInteger(MapName);
+			if(Net_RaceMode == TMC_RACEMODE_SOLO) {
+				if(Pers_SoloJokers.existskey(MapNumber-1)) {
+					Pers_SoloJokers.removekey(MapNumber-1);
+					Net_CurrentTrackJoker = TMC_MEDAL_NONE;
+				}
+			} else if(Net_RaceMode == TMC_RACEMODE_DOUBLEDRIVER) {
+				if(Pers_DoubleDriverJokers.existskey(MapNumber-1)) {
+					Pers_DoubleDriverJokers.removekey(MapNumber-1);
+					Net_CurrentTrackJoker = TMC_MEDAL_NONE;
+				}
+			}
+			UserMgr.MainUser.PersistentSave();
+		}
+		
+		if(Pre_NewDefaultMedalChoiceUpdate != Net_NewDefaultMedalChoiceUpdate && UserMgr.MainUser.PersistentIsReady) {
+			Pre_NewDefaultMedalChoiceUpdate = Net_NewDefaultMedalChoiceUpdate;
+			if(Net_RaceMode == TMC_RACEMODE_SOLO) {
+				Pers_DefaultChoiceMedalSolo 	= Net_NewDefaultMedalChoice;
+			} else if(Net_RaceMode == TMC_RACEMODE_DOUBLEDRIVER) {
+				Pers_DefaultChoiceMedalDD 		= Net_NewDefaultMedalChoice;
+			} else if(Net_RaceMode == TMC_RACEMODE_SUPERSOLO) {
+				Pers_DefaultChoiceMedalSSolo 	= Net_NewDefaultMedalChoice;
+			}
+			UserMgr.MainUser.PersistentSave();
+		}
+		
+		if(Pre_PlayerVoteUpdate != Net_PlayerVoteUpdate) {
+			declare netwrite Integer Net_PlayerVoteChoice 	for UI;
+			if(Net_PlayerVoteChoice == -1 || Net_PlayerVoteChoice == 1) {
+				declare Boolean Upvote = False;
+				if(Net_PlayerVoteChoice == 1) {
+					Upvote = True;
+				}
+				ChallengeController::VoteForChallenge("LiveEventFeedbackML", Net_ChallengeId, Upvote);
+			}
+			
+			Pre_PlayerVoteUpdate = Net_PlayerVoteUpdate;
+		}
+
+		if(Pre_BeginTrackUpdate != Net_BeginTrackUpdate) {
+			ChallengeController::BeginMap("LiveEventFeedbackML", Net_ChallengeId, Net_CurrentTrackUid, Net_RaceId);
+			Pre_BeginTrackUpdate = Net_BeginTrackUpdate;
+			ChallengeHasBeenStarted = True;
+		}
+		
+		if(Pre_EndTrackUpdate != Net_EndTrackUpdate) {
+			if(Net_BestTimePlayer != 0) {
+				RequestEndTrack(Net_PlayerGhostUrl, Net_BestTimePlayer, Net_ChallengeId, Net_CurrentTrackUid, Net_RaceId);
+			} else {
+				RequestEndTrackLight(Net_ChallengeId, Net_CurrentTrackUid, Net_RaceId);
+			}
+			Pre_EndTrackUpdate = Net_EndTrackUpdate;
+		}
+		
+		G_PreMyPeriod = Playground.GameTime;
+		
+		if(ManiaPlanet.MasterServer_MainMSUser != Null) {
+			UplayNet_HasUplayProfile = ManiaPlanet.MasterServer_MainMSUser.HasUplayProfile;
+			
+			if(ManiaPlanet.MasterServer_MainMSUser.ConnectionStatus != CMasterServerUser::EMasterServerConnectionStatus::Connected) {
+				G_IsConnectedMasterServer = False;
+			} else {
+				G_IsConnectedMasterServer = True;
+				if(!HasBeenConnectedMSOnce)
+					HasBeenConnectedMSOnce = True;
+			}
+		}
+
+		if(Playground.ServerInfo.ModeName == "TMC_Championship") {
+			/*
+			if(Pre_ManiaAppPlayerWantsToQuitUpdate != Net_PlayerWantsToQuitUpdate) {
+				Pre_ManiaAppPlayerWantsToQuitUpdate = Net_PlayerWantsToQuitUpdate;
+				if(ChallengeHasBeenStarted) {
+					if(Net_BestTimePlayer != 0) {
+						RequestEndTrack(Net_PlayerGhostUrl, Net_BestTimePlayer, Net_ChallengeId, Net_CurrentTrackUid, Net_RaceId);
+					} else {
+						RequestEndTrackLight(Net_ChallengeId, Net_CurrentTrackUid, Net_RaceId);
+					}
+				}
+			}
+			*/
+
+			if(!G_IsConnectedMasterServer) {
+				Playground.QuitServerAndSetResult(True, "Network_Disconnection", Text[]);
+			}
+			
+		} else if(Playground.ServerInfo.ModeName == "TMC_CampaignSolo") {
+			// if(Pre_ManiaAppPlayerWantsToQuitUpdate != Net_PlayerWantsToQuitUpdate) {
+				// UITrackRecordCenter::ReleaseTrackRecordResult();
+				// UITrackRecordCenter::SetVisibility(False);
+				// Playground.QuitServer(False);
+				// Pre_ManiaAppPlayerWantsToQuitUpdate = Net_PlayerWantsToQuitUpdate;
+			// }
+		}
+		
+		Net_IsPlayerConnectedMasterServer 					= G_IsConnectedMasterServer;
+		UIOnlineGlobalRanking_IsPlayerConnectedMasterServer = G_IsConnectedMasterServer;
+		// log(UIOnlineGlobalRanking_IsPlayerConnectedMasterServer);
+		// Net_IsPlayerConnectedMasterServer 		= False;
+		UplayNet_IsPlayerConnectedMasterServer 				= G_IsConnectedMasterServer;		
+
+		foreach(Event in PendingEvents) {
+			if(Event.Type != CMlAppEvent::EType::LayerCustomEvent) continue;
+			switch(Event.CustomEventType) {
+				case "Request_StartRace_Success" : {
+					// log("Request_StartRace_Success");
+				}
+				case "Request_BeginMap_Success" : {
+					log("Request start map BEGIN");
+				}
+				case "Request_EndMap_Success" : {
+					// log("END MAP SUCCESS");
+					if(Net_PlayerHasFinishedChallenge) {
+						// log("GET LADDER POINTS WON");
+						ChallengeController::GetLadderPointsWon("LiveEventFeedbackML", Net_ChallengeId, Net_RaceId);
+						//HACK BECAUSE THERE IS NO LADDER POINTS
+						// declare netwrite Integer Net_EndTrackUpdateInApp for UI;
+						// Net_EndTrackUpdateInApp += 1;
+					} else {
+						declare netwrite Integer Net_EndTrackUpdateInApp for UI;
+						Net_EndTrackUpdateInApp += 1;
+					}
+				}
+				case "Request_GetResult_Success" : {
+					declare Real LadderPointWon = TL::ToInteger(Event.CustomEventData[0])*1.0;
+					if(Net_PlayerHasFinishedChallenge) {
+						ScoreMgr.Multiplayer_AddToScore(DataMgr.MenuUserId, LadderPointWon, Now);
+					}
+					declare netwrite Integer Net_EndTrackUpdateInApp for UI;
+					Net_EndTrackUpdateInApp += 1;
+				}
+				case "Request_GetResult_Failure" : {
+					log("PLAYER LADDER POINTS WON FAILURE");
+				}
+				case "PlayerLadderPointsWon" : {
+					log("PLAYER LADDER POINTS WON");
+					
+				}
+				
+				case "Request_FinishRace_Success" : {
+					log("Request finish race sent");
+					
+				}
+				case "Request_StartRace_Failure" : {
+					log("Request start race sent");
+				}
+				case "Request_BeginMap_Failure" : {
+					log("Request start map sent");
+				}
+				case "Request_EndMap_Failure" : {
+					log("END MAP FAILURE");
+					// if(MustQuitAfterRequest) {
+						// Playground.QuitServer(True);
+					// }
+					declare netwrite Integer Net_EndTrackUpdateInApp for UI;
+					Net_EndTrackUpdateInApp += 1;
+				}
+				case "Request_FinishRace_Failure" : {
+					log("Request finish race sent");
+					
+				}
+			}
+		}
+		
+		if(Playground.ServerInfo.ModeName == "TMC_Championship") {
+			ChallengeController::LiveLoop();
+			UIOnlineRoomTrackDescDisplay::Loop();
+		}
+		
+		if(Playground.ServerInfo.ModeName == "TMC_CampaignSolo" || Playground.ServerInfo.ModeName == "TMC_Championship" || Net_IsTrackUgc) {
+			InAppGR::Loop(G_PreMyPeriod);
+			
+			if(Playground.ServerInfo.ModeName == "TMC_CampaignSolo") {
+				UITrackRecordCenter::Loop();
+			}
+			
+			if(Playground.ServerInfo.ModeName == "TMC_Championship" || Net_IsTrackUgc) {
+				UIOMF::Loop();
+				LiveHttp::Manialib_Http_Loop();
+				LiveEvent::Manialib_Event_Yield();
+				LiveAuth::Auth_Loop();
+				LiveHelpers::LiveLoop();
+				UIOTempQuestion::Loop();
+				UIUserCheckPrivilege::Loop();
+			}
+		}
+		if(!Playground.IsLoadingScreen) {
+			UISoloPairingPads::Loop();
+			G_IsPadConnected = UISoloPairingPads::GetIsPadConnected();
+		}
+	}
+}
+

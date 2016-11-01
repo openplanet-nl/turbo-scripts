@@ -1,0 +1,496 @@
+#RequireContext CMlApp
+
+// file://Media/Manialinks/Nadeo/TMConsole/Menus/HelmetEditor.Script.txt
+
+#Include "MathLib" as ML
+#Include "TextLib" as TL
+
+#Include "Libs/Openplanet/TMConsole/Logger.Script.txt"				as Logger
+#Include "Libs/Openplanet/TMConsole/HelmetReader.Script.txt"			as HelmetReader
+#Include "Libs/Openplanet/Manialink2.Script.txt"						as Manialink
+
+
+
+#Const C_BASE 		0
+#Const C_CREST		1
+#Const C_PEAK		2
+#Const C_STENCIL	3
+#Const C_SCREWS 	4
+
+#Const C_Suggestions 		True
+#Const C_AnimZoomDuration 	500
+#Const C_ReadersCount		7
+
+
+
+Text[] GetHelmetSettingsToText(Integer _HelmetKey)
+{
+	declare Text[] HelmetSettingsToText;
+	
+	declare Helmet = HelmetReader::GetHelmet(_HelmetKey);
+	foreach (Element in Helmet) HelmetSettingsToText.add(TL::ToText(Element));
+	
+	return HelmetSettingsToText;
+}
+
+
+
+Text[] GetSuggestions(Integer _DesiredElement, Integer _Value)
+{
+	declare PicturesCount			= HelmetReader::GetPicturesCountFromElement(_DesiredElement);
+	declare NewValue 				= _Value;
+	declare PrevValue 				= (NewValue - 1 + PicturesCount) 	% PicturesCount;
+	declare NextValue 				= (NewValue + 1) 					% PicturesCount;
+	
+	declare PrevValueToText 		= TL::ToText(PrevValue);
+	declare NextValueToText 		= TL::ToText(NextValue);
+	declare DesiredElementToText 	= TL::ToText(_DesiredElement);
+		
+	return [DesiredElementToText, PrevValueToText, NextValueToText];
+}
+
+
+
+Void UpdateHelmetEditorPicture(CUILayer _LayerHelmetEditor, Integer _DesiredHelmet, Integer _DesiredElement)
+{
+	declare Value 					= HelmetReader::GetHelmetElementValue(_DesiredHelmet, _DesiredElement);
+	declare Suggestions 			= GetSuggestions(_DesiredElement, Value);
+	declare HelmetSettingsToText 	= GetHelmetSettingsToText(_DesiredHelmet);
+	
+	
+	LayerCustomEvent(_LayerHelmetEditor, "SetSuggestions", 	Suggestions);
+	LayerCustomEvent(_LayerHelmetEditor, "SetPictures", 	HelmetSettingsToText);
+}
+
+
+
+Void UpdateHelmetsReaderPictures(CUILayer _LayerHelmetReader, Integer _DesiredHelmet)
+{
+	declare Count = _DesiredHelmet + C_ReadersCount;
+			
+	declare Integer[] HelmetsList;
+	
+	for(I, _DesiredHelmet, Count-1) 
+	{
+		if(HelmetReader::GetHelmetsExists(I)) HelmetsList.add(I);
+	}
+	
+	for(I, 0, C_ReadersCount-1)
+	{
+		if(I < HelmetsList.count) 
+		{
+			declare HelmetKey = HelmetsList[I];
+			declare SmallHelmetSettingsToText = GetHelmetSettingsToText(HelmetKey);
+			SmallHelmetSettingsToText.add(TL::ToText(I));
+			LayerCustomEvent(_LayerHelmetReader, "SetPicture", 	SmallHelmetSettingsToText);
+		}
+		else
+		{
+			LayerCustomEvent(_LayerHelmetReader, "HidePicture", [TL::ToText(I)]);
+		}
+		
+	}
+}
+
+
+
+main() 
+{
+	Logger::Log("[Start Main]");
+	HelmetReader::Load();
+	EnableMenuNavigationInputs = True;
+	
+	
+	declare SizeLayers 				= 100.;
+	declare SpaceSuggestions 		= 7.;
+	declare SizeRatioSuggestions 	= 0.6;
+	
+	declare SizeSuggestions = SizeLayers*SizeRatioSuggestions;
+	declare Layer_HelmetEditor = UILayerCreate();
+	Layer_HelmetEditor.IsVisible = True;
+	Layer_HelmetEditor.ManialinkPage = """ 
+	
+	{{{HelmetReader::GetHelmetReaderFramemodel("Framemodel_Reader", SizeLayers)}}}
+	
+	<frame posn="0 20">
+		<frame id="Frame_Suggestions">
+			<quad id="Quad_Prev" 	posn=" {{{SizeLayers + SpaceSuggestions}}} 0 .5" sizen="{{{SizeSuggestions}}} {{{SizeSuggestions}}}" valign="center" halign="center" />
+			<quad id="Quad_Next" 	posn="-{{{SizeLayers + SpaceSuggestions}}} 0 .5" sizen="{{{SizeSuggestions}}} {{{SizeSuggestions}}}" valign="center" halign="center" />
+		</frame>
+		
+		<frameinstance id="Frame_Reader" posn="0 0 0." modelid="Framemodel_Reader" />
+		
+	</frame>
+	
+	
+	<script><!--
+		{{{Manialink::GetIncludes()}}}
+		
+		#Const C_BASE 		{{{C_BASE}}}
+		#Const C_CREST		{{{C_CREST}}}
+		#Const C_PEAK		{{{C_PEAK}}}
+		#Const C_STENCIL	{{{C_STENCIL}}}
+		#Const C_SCREWS 	{{{C_SCREWS}}}
+		
+		{{{HelmetReader::GetConst()}}}
+		{{{HelmetReader::GetFunctions()}}}
+		
+		{{{Manialink::Load()}}}
+		
+		
+		Void PlayAnimZoom(CMlQuad _Quad, Integer _Duration)
+		{
+			_Quad.RelativeScale = 0.25;
+			LibManialink_AnimStop		(_Quad);
+			LibManialink_SetTargetScale	(_Quad, 1.);
+			LibManialink_PresetAnim		(_Quad, _Duration, "ElasticOut");
+		}
+		
+		Void PlayAnimZoom(CMlQuad[] _Quads, Integer _Duration)
+		{
+			foreach(Quad in _Quads) PlayAnimZoom(Quad, _Duration);
+		}
+		
+		main()
+		{
+			
+			declare CMlFrame 	Frame_Reader 		= (Page.MainFrame.GetFirstChild("Frame_Reader") 		as CMlFrame);
+			declare CMlFrame 	Frame_Suggestions 	= (Page.MainFrame.GetFirstChild("Frame_Suggestions") 	as CMlFrame);
+			declare CMlQuad 	Quad_Prev 			= (Page.MainFrame.GetFirstChild("Quad_Prev") 			as CMlQuad);
+			declare CMlQuad 	Quad_Next 			= (Page.MainFrame.GetFirstChild("Quad_Next") 			as CMlQuad);
+			
+			
+			
+			declare CMlQuad[Integer] Quads;
+			
+			Quads[C_BASE] 		= (Frame_Reader.GetFirstChild("Quad_Base") 		as CMlQuad);
+			Quads[C_CREST] 		= (Frame_Reader.GetFirstChild("Quad_Crest") 	as CMlQuad);
+			Quads[C_PEAK] 		= (Frame_Reader.GetFirstChild("Quad_Peak") 		as CMlQuad);
+			Quads[C_STENCIL] 	= (Frame_Reader.GetFirstChild("Quad_Stencil") 	as CMlQuad);
+			Quads[C_SCREWS] 	= (Frame_Reader.GetFirstChild("Quad_Screws") 	as CMlQuad);
+			
+			
+			declare Integer DesiredElementForHelmetLayers for Page;
+			declare Integer LatestElementSwitch for This;
+			
+			Frame_Suggestions.Visible = {{{C_Suggestions}}};
+			
+			
+			
+			while(True) 
+			{
+				yield;
+				
+				foreach(Event in PendingEvents) 
+				{
+					if(Event.Type == CMlEvent::Type::PluginCustomEvent) 
+					{
+						if(Event.CustomEventType == "ChangePicture")
+						{
+							if(Event.CustomEventData.existskey(0))
+							{
+								declare Quad			= Quads[DesiredElementForHelmetLayers];
+								declare ElementKey 		= TL::ToInteger(Event.CustomEventData[0]);
+								declare ElementValue 	= TL::ToInteger(Event.CustomEventData[1]);
+								SetQuadFromHelmetElement(Quad, ElementKey, ElementValue);
+								PlayAnimZoom([Quad], {{{C_AnimZoomDuration}}});
+							}
+							else 
+							{
+								log("WARNING : Not enough CustomEventData for 'ChangePicture' ");
+							}
+						}
+						else if(Event.CustomEventType == "SetPictures")
+						{
+							foreach(I => Data in Event.CustomEventData) 
+							{ 
+								declare Quad  			= Quads[I];
+								declare ElementValue 	= TL::ToInteger(Data);
+								SetQuadFromHelmetElement(Quad, I, ElementValue);
+								PlayAnimZoom([Quad], {{{C_AnimZoomDuration}}});
+							}
+						}						
+						else if(Event.CustomEventType == "SetSuggestions")
+						{
+							if(Event.CustomEventData.existskey(0) && Event.CustomEventData.existskey(1) && Event.CustomEventData.existskey(2))
+							{
+								declare ElementKey 		= TL::ToInteger(Event.CustomEventData[0]);
+								declare PrevValue 		= TL::ToInteger(Event.CustomEventData[1]);
+								declare NextValue 		= TL::ToInteger(Event.CustomEventData[2]);
+								
+								SetQuadFromHelmetElement(Quad_Prev, ElementKey, PrevValue);
+								SetQuadFromHelmetElement(Quad_Next, ElementKey, NextValue);
+								
+								PlayAnimZoom([Quad_Prev, Quad_Next], {{{C_AnimZoomDuration}}});
+								LatestElementSwitch = Now;
+							}
+							else 
+							{
+								log("WARNING : Not enough CustomEventData for 'SetSuggestions' ");
+							}	
+						}						
+						else if(Event.CustomEventType == "TriggerPageActionBack")
+						{
+							TriggerPageAction("back"); 
+						}
+					} 
+				}
+				
+				foreach(I => Quad in Quads) {
+					if(I != DesiredElementForHelmetLayers) 
+					{
+						Quad.Scale 		= 1.;
+						Quad.Opacity 	= 1.;
+					}
+				}
+				
+				declare Integer Timer = Now - (LatestElementSwitch + {{{C_AnimZoomDuration}}});
+				declare Sin = ML::Sin(Timer*0.006);
+				Quads[DesiredElementForHelmetLayers].Scale 		= Sin * 0.015 + 1.;
+				Quads[DesiredElementForHelmetLayers].Opacity 	= Sin * 0.3   + 0.7;
+				
+				LibManialink_AnimLoop();
+			}
+		}
+	
+	--></script>
+	""";
+	
+	
+	
+	// READERS LIST SETTINGS
+	
+	declare SizeX_Reader 		= 35.;
+	declare MarginX_Selected 	= 4.;
+	declare MarginX_Reader 		= 2.;
+	
+	
+	// READERS LIST CALCULATIONS
+	
+	declare SizeX_ReaderWithMargin 	= SizeX_Reader+MarginX_Reader+MarginX_Selected;
+	declare SizeX_Selected 			= SizeX_Reader+MarginX_Selected;
+	declare SizeX_ReaderTotal 		= C_ReadersCount*SizeX_ReaderWithMargin;
+	declare PosX_Readers 			= (SizeX_ReaderTotal - SizeX_ReaderWithMargin) * 0.5;
+	
+	
+	// READERS LIST LAYER DECLARATION
+	
+	declare Layer_HelmetSelector = UILayerCreate();
+	Layer_HelmetSelector.IsVisible = True;
+	Layer_HelmetSelector.ManialinkPage = """ 
+	
+	{{{HelmetReader::GetHelmetReaderFramemodel("Framemodel_ReaderSmall", SizeX_Reader)}}}
+	<frame posn="-{{{PosX_Readers}}} -{{{90-SizeX_ReaderWithMargin*0.5}}}">
+	""";
+	for(I, 0, C_ReadersCount-1)
+	{	
+		Layer_HelmetSelector.ManialinkPage ^= 
+		""" 
+			<frameinstance id="Frame_ReaderSmall{{{I}}}" 	posn="{{{SizeX_ReaderWithMargin*I}}} 0 0." 	modelid="Framemodel_ReaderSmall" /> 
+		""";
+	}
+	
+	Layer_HelmetSelector.ManialinkPage ^= """
+	<quad id="Quad_Selected" 	posn="0 0 0." 	sizen="{{{SizeX_Selected}}} {{{SizeX_Selected}}}" bgcolor="0f0" style="Bgs1" substyle="NavButtonBlink"  valign="center" halign="center" /> 
+	</frame>
+	
+	<script><!--
+		#Include "MathLib" as ML
+		#Include "TextLib" as TL
+		
+		#Const C_BASE 		{{{C_BASE}}}
+		#Const C_CREST		{{{C_CREST}}}
+		#Const C_PEAK		{{{C_PEAK}}}
+		#Const C_STENCIL	{{{C_STENCIL}}}
+		#Const C_SCREWS 	{{{C_SCREWS}}}
+		
+		{{{HelmetReader::GetConst()}}}
+		
+		{{{HelmetReader::GetFunctions()}}}
+		
+		main()
+		{
+			declare CMlQuad Quad_Selected = (Page.MainFrame.GetFirstChild("Quad_Selected") as CMlQuad);
+			
+			declare CMlFrame[] Frame_ReaderSmall;
+			for(I, 0, {{{C_ReadersCount-1}}})
+			{
+				Frame_ReaderSmall .add((Page.MainFrame.GetFirstChild("Frame_ReaderSmall"^I) as CMlFrame));
+			}
+			
+			foreach(Frame in Frame_ReaderSmall) SetFrameFromHelmet(Frame);
+			
+			declare Integer LatestElementSwitch for This;
+			
+			while(True) 
+			{
+				yield;
+				
+				foreach(Event in PendingEvents) 
+				{
+					if(Event.Type == CMlEvent::Type::PluginCustomEvent) 
+					{
+						if(Event.CustomEventType == "SetPicture")
+						{
+							declare Integer[Integer] HelmetSettings;
+							declare LastKey 	= Event.CustomEventData.count - 1;
+							declare LastData 	= TL::ToInteger(Event.CustomEventData[LastKey]);
+							foreach(I => Data in Event.CustomEventData) 
+							{ 
+								// DON'T TAKE LAST DATA ( = FrameKey )
+								if(I < LastKey) HelmetSettings[I] = TL::ToInteger(Data);
+							}
+							
+							SetFrameFromHelmetSettings(Frame_ReaderSmall[LastData], HelmetSettings);
+							Frame_ReaderSmall[LastData].Visible = True;
+						}	
+						else if(Event.CustomEventType == "HidePicture")
+						{
+							declare KeyToHide = TL::ToInteger(Event.CustomEventData[0]);
+							Frame_ReaderSmall[KeyToHide].Visible = False;
+						}
+						
+					} 
+				}
+				
+				declare Strength			= 0.7; 
+				declare Speed 				= 0.006;
+				declare Timer 				= Now - (LatestElementSwitch + {{{C_AnimZoomDuration}}});
+				declare Sin 				= ML::Sin(Timer*Speed) * 0.5 + 0.5;
+				declare SelectedOpacity 	= Sin*Strength + (1-Strength);
+				Quad_Selected.Opacity 		= SelectedOpacity;
+			}
+		}
+	
+	--></script>
+	""";
+	
+	
+	declare Boolean InitNeeded 		= True;
+	declare Integer DesiredHelmet 	= 0;
+	declare Integer DesiredElement 	= 0;
+	
+	
+	while(True)
+	{
+		yield;
+		
+		if(InitNeeded)
+		{
+			declare InitValue 				= HelmetReader::GetHelmetElementValue(DesiredHelmet, DesiredElement);
+			declare HelmetSettingsToText 	= GetHelmetSettingsToText(DesiredHelmet);
+			
+			LayerCustomEvent(Layer_HelmetEditor, "SetSuggestions", 	GetSuggestions(DesiredElement, InitValue));
+			LayerCustomEvent(Layer_HelmetEditor, "SetPictures", 	HelmetSettingsToText);
+			
+			UpdateHelmetsReaderPictures(Layer_HelmetSelector, DesiredHelmet);
+			
+			InitNeeded = False;
+		}
+		
+		
+		
+		foreach(Event in PendingEvents) 
+		{
+			if(Event.Type == CMlAppEvent::EType::LayerCustomEvent) 
+			{
+				
+			} 
+			
+			else if(Event.Type == CMlAppEvent::EType::MenuNavigation) 
+			{
+				if(Event.MenuNavAction == CMlAppEvent::EMenuNavAction::Left || Event.MenuNavAction == CMlAppEvent::EMenuNavAction::Right)
+				{
+					declare PreviousIndex 	= HelmetReader::GetHelmetElementValue(DesiredHelmet, DesiredElement);
+					declare PicturesCount	= HelmetReader::GetPicturesCountFromElement(DesiredElement);
+					
+					declare Integer NextIndex;
+					switch(Event.MenuNavAction) 
+					{
+						case CMlAppEvent::EMenuNavAction::Right : NextIndex = (PreviousIndex + 1) 					% PicturesCount;
+						case CMlAppEvent::EMenuNavAction::Left 	: NextIndex = (PreviousIndex - 1 + PicturesCount) 	% PicturesCount;
+					}
+					
+					HelmetReader::SetHelmetElement(DesiredHelmet, DesiredElement, NextIndex);
+					
+					declare NewValue 		= HelmetReader::GetHelmetElementValue(DesiredHelmet, DesiredElement);
+					declare ElementKey  	= TL::ToText(DesiredElement);
+					declare ElementValue  	= TL::ToText(NewValue);
+					LayerCustomEvent(Layer_HelmetEditor, "ChangePicture", [ElementKey, ElementValue]);
+					LayerCustomEvent(Layer_HelmetEditor, "SetSuggestions", GetSuggestions(DesiredElement, NewValue));
+					UpdateHelmetsReaderPictures(Layer_HelmetSelector, DesiredHelmet);
+				}
+				else if(Event.MenuNavAction == CMlAppEvent::EMenuNavAction::Up || Event.MenuNavAction == CMlAppEvent::EMenuNavAction::Down)
+				{
+					declare ElementsCount = HelmetReader::GetElementsCount();
+					
+					switch(Event.MenuNavAction) 
+					{
+						case CMlAppEvent::EMenuNavAction::Down 	: DesiredElement = (DesiredElement + 1) 				% ElementsCount;
+						case CMlAppEvent::EMenuNavAction::Up 	: DesiredElement = (DesiredElement - 1 + ElementsCount) % ElementsCount;
+					}
+					LayerCustomEvent(Layer_HelmetEditor, "SetSuggestions", GetSuggestions(DesiredElement, HelmetReader::GetHelmetElementValue(DesiredHelmet, DesiredElement)));
+				}
+				else if(Event.MenuNavAction == CMlAppEvent::EMenuNavAction::Action1)
+				{
+					declare HasRemovedHelmet = HelmetReader::RemoveHelmet(DesiredHelmet, False);
+					if(HasRemovedHelmet) {
+						while(!HelmetReader::GetHelmetsExists(DesiredHelmet) && DesiredHelmet > 0)
+						{
+							DesiredHelmet -= 1;
+						}
+					}
+					
+					UpdateHelmetEditorPicture(Layer_HelmetEditor, DesiredHelmet, DesiredElement);
+					UpdateHelmetsReaderPictures(Layer_HelmetSelector, DesiredHelmet);
+				}
+				else if(Event.MenuNavAction == CMlAppEvent::EMenuNavAction::Cancel)
+				{
+					LayerCustomEvent(Layer_HelmetEditor, "TriggerPageActionBack", 	[""]);
+				}
+				// else if(Event.MenuNavAction == CMlAppEvent::EMenuNavAction::Action1)
+				// {
+					// declare RandomHelmetSettings = HelmetReader::GenerateRandomHelmetSettings();
+					// HelmetReader::SetHelmet(DesiredHelmet, RandomHelmetSettings);
+					
+					// UpdateHelmetEditorPicture(Layer_HelmetEditor, DesiredHelmet, DesiredElement);
+					// UpdateHelmetsReaderPictures(Layer_HelmetSelector, DesiredHelmet);
+				// }
+				else if(Event.MenuNavAction == CMlAppEvent::EMenuNavAction::Action2)
+				{
+					HelmetReader::GenerateRandomHelmet();
+					DesiredHelmet = 0;
+					
+					UpdateHelmetEditorPicture(Layer_HelmetEditor, DesiredHelmet, DesiredElement);
+					UpdateHelmetsReaderPictures(Layer_HelmetSelector, DesiredHelmet);
+				}
+				else if(Event.MenuNavAction == CMlAppEvent::EMenuNavAction::PageUp || Event.MenuNavAction == CMlAppEvent::EMenuNavAction::PageDown)
+				{
+					declare HelmetsCount = HelmetReader::GetHelmetsCount();
+					switch(Event.MenuNavAction) 
+					{
+						// case CMlAppEvent::EMenuNavAction::PageDown 	: DesiredHelmet = (DesiredHelmet + 1) 					% HelmetsCount;
+						// case CMlAppEvent::EMenuNavAction::PageUp 	: DesiredHelmet = (DesiredHelmet - 1 + HelmetsCount) 	% HelmetsCount;
+						case CMlAppEvent::EMenuNavAction::PageDown 	: DesiredHelmet += 1;
+						case CMlAppEvent::EMenuNavAction::PageUp 	: DesiredHelmet -= 1;
+					}
+					
+					if		(DesiredHelmet < 0) 					DesiredHelmet = 0;
+					else if	(DesiredHelmet > HelmetsCount-1)		DesiredHelmet = HelmetsCount-1;
+					
+					UpdateHelmetsReaderPictures(Layer_HelmetSelector, DesiredHelmet);
+					UpdateHelmetEditorPicture(Layer_HelmetEditor, DesiredHelmet, DesiredElement);
+				}
+			}
+		}
+		
+		
+		
+		// HELMET LAYERS
+		
+		{
+			declare Integer DesiredElementForHelmetLayers for Layer_HelmetEditor.LocalPage;
+			DesiredElementForHelmetLayers = DesiredElement;
+		}
+	}
+}

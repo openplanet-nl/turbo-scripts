@@ -1,0 +1,13 @@
+#RequireContext CEditorPlugin
+
+while(True)
+{
+	yield;
+	
+	//*
+	CursorBrightnessFactor = 1.;
+	TurboClassicMapEditorMode = False;
+	log("EnableUnlimitedUndoHistory=" ^ EnableUnlimitedUndoHistory ^ "; UndoHistorySize=" ^ UndoHistorySize);
+	return;
+	//*/
+}

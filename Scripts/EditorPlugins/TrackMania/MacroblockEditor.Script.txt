@@ -1,0 +1,1693 @@
+/**
+ *	Macroblock Editor
+ */
+#RequireContext CEditorPlugin
+
+#Const	Version		"2015-11-10"
+#Const	ScriptName	"MacroblockEditor.Script.txt"
+
+#Include "TextLib" as TL
+#Include "MathLib" as ML
+#Include "Libs/Openplanet/TMConsole/MapEditor/Macroblock.Script.txt" as Macroblock
+#Include "Libs/Openplanet/TMConsole/MapEditor/Utils.Script.txt" as Utils
+
+// ---------------------------------- //
+// Constants
+// ---------------------------------- //
+#Const C_MaxClips	2				///< Maximum number of clip on a macroblock
+#Const C_NullClipId	-1				///< Null value for clip id
+#Const C_NullCoord	<-1, -1, -1>	///< Null value for coord
+#Const C_NullDir	CEditorPlugin::CardinalDirections::North	///< Null value for dir
+
+// ---------------------------------- //
+// Globales
+// ---------------------------------- //
+declare Ident[Text] G_LayersIds;	///< Ids of the plugin layers
+declare Int3 G_MacroblockCoord;		///< Current macroblock coordinates
+declare CEditorPlugin::CardinalDirections G_MacroblockDir; ///< Current macroblock direciton
+
+// ---------------------------------- //
+// Functions
+// ---------------------------------- //
+// ---------------------------------- //
+/** Get the manialink of the macroblock editor window
+ *
+ *	@return		The manialink text
+ */
+Text GetMLMacroblockEditor() {
+	declare List = "";
+	for (Row, 0, 4) {
+		declare PosY = -Row * 21.;
+		for (Col, 0, 2) {
+			declare PosX = Col * 21.;
+			List ^= """<frameinstance pos="{{{PosX}}} {{{PosY}}}" modelid="Framemodel_Macroblock" class="Frame_Macroblock" />""";
+		}
+	}
+	
+	return """
+<manialink version="3" name="MacroblockEditor">
+<framemodel id="Framemodel_Macroblock">
+	<quad z-index="-1" size="20 20" bgcolor= "000" bgcolorfocus="222" opacity="0.7" scriptevents="1" id="Quad_Select" />
+	<quad z-index="0" size="20 20" bgcolor="007" id="Quad_Image" />
+	<quad z-index="1" size="5 5" pos="15 -15" style="Icons64x64_1" substyle="YellowHigh" id="Quad_IconDisabled" />
+	<quad z-index="1" size="5 5" pos="0 -15" style="Icons64x64_1" substyle="RedHigh" id="Quad_IconCollision" />
+	<label pos="10 0" z-index="2" size="20 6" halign="center" textemboss="1" id="Label_Name" />
+</framemodel>
+<stylesheet>
+	<style class="text-title" valign="center2" style="TextValueSmallSm" textemboss="1" textsize="2" />
+	<style class="text-normal" valign="center2" textemboss="1" textsize="2" />
+	<style class="text-entry" valign="center2" focusareacolor1="777" focusareacolor2="999" textemboss="1" textsize="2" />
+</stylesheet>
+<frame id="Frame_Global">
+	<!-- Macroblocks list -->
+	<frame pos="90 68">
+		<quad z-index="0" size="70 125" bgcolor="000" opacity="0.7" />
+		<frame pos="35 -5" z-index="2">
+			<label size="40 10" halign="center" valign="center2" style="TextValueSmallSm" text="Category" id="Label_Category" />
+			<quad pos="-20 0" size="10 10" halign="right" valign="center" style="Icons64x64_1" substyle="ArrowPrev" scriptevents="1" id="Button_CategoryPrev" />
+			<quad pos="20 0" size="10 10" valign="center" style="Icons64x64_1" substyle="ArrowNext" scriptevents="1" id="Button_CategoryNext" />
+		</frame>
+		<frame pos="4 -10" z-index="1" id="Frame_MacroblocksList">
+			{{{List}}}
+		</frame>
+		<frame pos="35 -120" z-index="2">
+			<label size="10 10" halign="center" valign="center2" textemboss="1" text="1/1" id="Label_Page" />
+			<quad pos="-5 0" size="10 10" halign="right" valign="center" style="Icons64x64_1" substyle="ArrowUp" scriptevents="1" id="Button_MacroblocksPrev" />
+			<quad pos="5 0" size="10 10" valign="center" style="Icons64x64_1" substyle="ArrowDown" scriptevents="1" id="Button_MacroblocksNext" />
+		</frame>
+	</frame>
+	<!-- Actions -->
+	<frame pos="-160 30">
+		<quad z-index="0" size="50 82" bgcolor="000" opacity="0.7" />
+		<frame pos="25 -2" z-index="1">
+			<label halign="center" style="CardButtonSmall" text="Generate metadata" scriptevents="1" data-action="GenerateMetadata" class="action" />
+			<label pos="0 -8" halign="center" style="CardButtonSmall" text="Save metadata" scriptevents="1" data-action="SaveMetadata" class="action" />
+			<label pos="0 -16" halign="center" style="TextRaceMessage" textsize="2" text="Macroblocks total: 0" id="Label_Total" />
+			<label pos="0 -24" halign="center" style="CardButtonSmall" text="Check version" scriptevents="1" data-action="CheckVersion" class="action" />
+			<!--<label pos="0 -32" halign="center" style="CardButtonSmall" text="Reset metadata" scriptevents="1" data-action="ResetMetadata" class="action" />-->
+			<label pos="0 -32" halign="center" style="CardButtonSmall" text="Log metadata" scriptevents="1" data-action="LogMetadata" class="action" />
+			<label pos="0 -40" halign="center" style="CardButtonSmall" text="Export metadata" scriptevents="1" data-action="ExportMetadata" class="action" />
+			<label pos="0 -48" halign="center" style="CardButtonSmall" text="Toggle UI" scriptevents="1" id="Button_ToggleUI" />
+			<label pos="0 -56" halign="center" style="TextRaceMessage" textsize="2" text="Display mode" />
+			<label pos="0 -64" halign="center" style="CardButtonSmall" text="Clips" scriptevents="1" data-action="DisplayModeClips" class="action" />
+			
+			<label pos="0 -72" halign="center" style="CardButtonSmall" text="Collisions" scriptevents="1" data-action="DisplayModeCollisions" class="action" />
+		</frame>
+	</frame>
+	<!-- Macroblock details -->
+	<frame pos="-100 85">
+		<quad z-index="0" size="180 47" bgcolor="000" opacity="0.7" scriptevents="1" />
+		<quad pos="0 -7" z-index="2" size="180 40" bgcolor="000" opacity="0.7" scriptevents="1" id="Quad_EditMode" />
+		<label pos="147 -4" z-index="3" valign="center2" style="CardButtonSmallS" text="View/Edit" scriptevents="1" class="action" data-action="EditClips" id="Button_EditClips" />
+		<frame pos="2 -4" z-index="1">
+			<label size="10 6" text="id :" class="text-title" />
+			<frame pos="5 -8">
+				<quad size="6 6" halign="right" valign="center" style="Icons64x64_1" substyle="ArrowPrev" scriptevents="1" id="Button_ClipPrev" />
+				<quad size="6 6" valign="center" style="Icons64x64_1" substyle="ArrowNext" scriptevents="1" id="Button_ClipNext" />
+				<label pos="8 0" size="30 10" text="Clip # 0/0" class="text-title" id="Label_ClipId" />
+				<frame id="Frame_DisableClip">
+					<label pos="102 0" halign="right" text="Disable" class="text-title" />
+					<quad pos="108 0" size="6 6" halign="right" valign="center" style="Icons64x64_1" substyle="Check" scriptevents="1" id="Button_Disable" />
+				</frame>
+				<label pos="110 0" valign="center2" style="CardButtonSmallS" text="Add" scriptevents="1" class="action" data-action="AddClip" id="Button_AddClip" />
+				<label pos="140 0" valign="center2" style="CardButtonSmallS" textcolor="777" text="Remove" scriptevents="1" class="action" data-action="RemoveClip" id="Button_RemoveClip" />
+			</frame>
+			<label pos="0 -15" size="20 6" text="name :" class="text-title" />
+			<label pos="0 -22" size="20 6" text="offset :" class="text-title" />
+			<label pos="0 -29" size="20 6" text="direction :" class="text-title" />
+		</frame>
+		<frame pos="22 -4" z-index="1" id="Frame_Details">
+			<label size="120 6" class="text-normal" id="Label_MacroblockId" />
+			<entry pos="0 -15" size="153 6" class="text-entry" id="Entry_ClipName" />
+			<frame pos="0 -22">
+				<label text="<" class="text-normal" />
+				<entry pos="5 0" size="5 6" halign="center" default="0" class="text-entry" id="Entry_ClipOffsetX" />
+				<label pos="8 0" text=","class="text-normal" />
+				<entry pos="12 0" size="5 6" halign="center" default="0" class="text-entry" id="Entry_ClipOffsetY" />
+				<label pos="15 0" text=","class="text-normal" />
+				<entry pos="19 0" size="5 6" halign="center" default="0" class="text-entry" id="Entry_ClipOffsetZ" />
+				<label pos="22 0" text=">" class="text-normal" />
+			</frame>
+			<label pos="0 -29" valign="center2" style="CardButtonSmallS" text="North" scriptevents="1" id="Button_ClipDir" />
+		</frame>
+	</frame>
+	<!-- Clip edition -->
+	<frame pos="-150 75" id="Frame_ClipEdit">
+		<quad z-index="0" size="40 40" bgcolor="000" opacity="0.7" />
+		<frame pos="20 -5" z-index="1">
+			<label halign="center" text="Clip edit" class="text-title" />
+			<label pos="0 -6" halign="center" text="<0, 0, 0>" class="text-normal" id="Label_ClipOffset" />
+			<label pos="0 -12" halign="center" text="North" class="text-normal" id="Label_ClipDir" />
+		</frame>
+	</frame>
+	<!-- Collision details -->
+	<frame pos="-100 -60" id="Frame_CollisionsDetails">
+		<quad z-index="0" size="180 25" bgcolor="000" opacity="0.7" scriptevents="1" />
+		<quad pos="0 -7" z-index="2" size="180 18" bgcolor="000" opacity="0.7" scriptevents="1" id="Quad_CollisionMode" />
+		<label pos="147 -4" z-index="3" valign="center2" style="CardButtonSmallS" text="View/Edit" scriptevents="1" class="action" data-action="EditCollisions" id="Button_EditCollisions" />
+		<frame pos="7 -12" z-index="1">
+			<quad size="6 6" halign="right" valign="center" style="Icons64x64_1" substyle="ArrowPrev" scriptevents="1" id="Button_CollisionPrev" />
+			<quad size="6 6" valign="center" style="Icons64x64_1" substyle="ArrowNext" scriptevents="1" id="Button_CollisionNext" />
+			<label pos="8 0" size="30 10" text="Collision # 0/0" class="text-title" id="Label_CollisionId" />
+			<label pos="110 0" valign="center2" style="CardButtonSmallS" text="Add" scriptevents="1" class="action" data-action="AddCollision" id="Button_AddCollision" />
+			<label pos="140 0" valign="center2" style="CardButtonSmallS" textcolor="777" text="Remove" scriptevents="1" class="action" data-action="RemoveCollision" id="Button_RemoveCollision" />
+			<label pos="-5 -7" size="20 6" text="offset :" class="text-title" />
+		</frame>
+		<frame pos="22 -4" z-index="1" id="Frame_Collisions">
+			<frame pos="0 -15">
+				<label text="<" class="text-normal" />
+				<entry pos="5 0" size="5 6" halign="center" default="0" class="text-entry" id="Entry_CollisionOffsetX" />
+				<label pos="8 0" text=","class="text-normal" />
+				<entry pos="12 0" size="5 6" halign="center" default="0" class="text-entry" id="Entry_CollisionOffsetY" />
+				<label pos="15 0" text=","class="text-normal" />
+				<entry pos="19 0" size="5 6" halign="center" default="0" class="text-entry" id="Entry_CollisionOffsetZ" />
+				<label pos="22 0" text=">" class="text-normal" />
+			</frame>
+		</frame>
+	</frame>
+</frame>
+<script><!--
+#Include "TextLib" as TL
+
+declare Text G_Category;
+declare Integer G_MacroblocksStart;
+declare Integer G_MacroblocksMax;
+declare Integer G_Clip;
+declare Integer G_Collision;
+
+Text DirToText(CEditorPlugin::CardinalDirections _Dir) {
+	return TL::Split("::", ""^_Dir)[2];
+}
+
+Void Check() {
+	declare Ident[][Text] ME_MacroblocksIds for Page;
+	if (!ME_MacroblocksIds.existskey(G_Category)) {
+		if (ME_MacroblocksIds.count > 0) {
+			foreach (Category => MacroblocksIds in ME_MacroblocksIds) {
+				G_Category = Category;
+				break;
+			}
+		} else {
+			G_Category = "";
+		}
+	}
+	
+	if (ME_MacroblocksIds.existskey(G_Category)) {
+		if (G_MacroblocksStart > ME_MacroblocksIds[G_Category].count - 1) {
+			G_MacroblocksStart = (ME_MacroblocksIds[G_Category].count / G_MacroblocksMax) * G_MacroblocksMax;
+		}
+	} else {
+		G_MacroblocksStart = 0;
+	}
+}
+
+Void UpdateMacroblocks(Ident[] _MacroblocksIds) {
+	declare Text[Ident] ME_MacroblocksNames for Page;
+	declare Ident[] ME_MacroblocksCustoms for Page;
+	declare Ident[] ME_MacroblocksNoClips for Page;
+	declare Ident[] ME_MacroblocksDisabledClips for Page;
+	declare Ident[] ME_MacroblocksCollisions for Page;
+	declare Ident ME_SelectedMacroblock for Page;
+	
+	declare Frame_MacroblocksList <=> (Page.GetFirstChild("Frame_MacroblocksList") as CMlFrame);
+	Page.GetClassChildren("Frame_Macroblock", Frame_MacroblocksList, False);
+	foreach (Key => Control in Page.GetClassChildren_Result) {
+		declare Frame_Macroblock <=> (Control as CMlFrame);
+		if (_MacroblocksIds.existskey(Key)) {
+			declare MacroblockModelId = _MacroblocksIds[Key];
+			declare MacroblockModel <=> Editor.MacroblockModels[MacroblockModelId];
+			
+			declare Quad_Image <=> (Frame_Macroblock.GetFirstChild("Quad_Image") as CMlQuad);
+			declare Label_Name <=> (Frame_Macroblock.GetFirstChild("Label_Name") as CMlLabel);
+			declare Quad_Select <=> (Frame_Macroblock.GetFirstChild("Quad_Select") as CMlQuad);
+			declare Quad_IconDisabled <=> (Frame_Macroblock.GetFirstChild("Quad_IconDisabled") as CMlQuad);
+			declare Quad_IconCollision <=> (Frame_Macroblock.GetFirstChild("Quad_IconCollision") as CMlQuad);
+			
+			Quad_Image.Image = MacroblockModel.Icon;
+			Label_Name.Value = ME_MacroblocksNames[MacroblockModelId];
+			if (ME_SelectedMacroblock == MacroblockModelId) Quad_Select.BgColor = <1., 0., 0.>;
+			else if (ME_MacroblocksCustoms.exists(MacroblockModelId)) Quad_Select.BgColor = <0., 0., 1.>;
+			else if (ME_MacroblocksNoClips.exists(MacroblockModelId)) Quad_Select.BgColor = <0., 1., 0.>;
+			else Quad_Select.BgColor = <0., 0., 0.>;
+			
+			Quad_IconDisabled.Visible = ME_MacroblocksDisabledClips.exists(MacroblockModelId);
+			
+			Quad_IconCollision.Visible = ME_MacroblocksCollisions.exists(MacroblockModelId);
+			
+			declare Ident ME_MacroblockModelId for Quad_Select;
+			ME_MacroblockModelId = MacroblockModelId;
+			
+			Frame_Macroblock.Visible = True;
+		} else {
+			Frame_Macroblock.Visible = False;
+		}
+	}
+}
+
+Void UpdateMacroblocks() {
+	declare Ident[][Text] ME_MacroblocksIds for Page;
+	declare Text[Ident] ME_MacroblocksNames for Page;
+	declare Ident[] FullMacroblocksIds;
+	declare Ident[] MacroblocksIds;
+	
+	Check();
+	
+	if (ME_MacroblocksIds.existskey(G_Category)) {
+		FullMacroblocksIds = ME_MacroblocksIds[G_Category];
+		
+		if (G_MacroblocksStart <= FullMacroblocksIds.count) {
+			declare Max = G_MacroblocksStart + G_MacroblocksMax;
+			foreach (Key => MacroblockId in FullMacroblocksIds) {
+				if (Key < G_MacroblocksStart) continue;
+				if (Key > Max) break;
+				
+				MacroblocksIds.add(MacroblockId);
+			}
+		}
+	}
+	
+	declare Label_Category <=> (Page.GetFirstChild("Label_Category") as CMlLabel);
+	declare Label_Total <=> (Page.GetFirstChild("Label_Total") as CMlLabel);
+	Label_Category.Value = G_Category;
+	Label_Total.Value = "Macroblocks total: "^ME_MacroblocksNames.count;
+	
+	declare Label_Page <=> (Page.GetFirstChild("Label_Page") as CMlLabel);
+	declare PageCurrent = 1;
+	declare PageMax = 1;
+	if (FullMacroblocksIds.count > 0) {
+		PageCurrent = (G_MacroblocksStart / G_MacroblocksMax) + 1;
+		PageMax = (FullMacroblocksIds.count / G_MacroblocksMax) + 1;
+	}
+	Label_Page.Value = PageCurrent^"/"^PageMax;
+	
+	UpdateMacroblocks(MacroblocksIds);
+}
+
+Void UpdateCategory(Integer _Shift) {
+	declare Ident[][Text] ME_MacroblocksIds for Page;
+	declare Text[] Categories;
+	foreach (Category => MacroblocksIds in ME_MacroblocksIds) {
+		Categories.add(Category);
+	}
+	
+	Check();
+	
+	declare Key = Categories.keyof(G_Category);
+	if (!Categories.existskey(Key)) return;
+	
+	Key += _Shift;
+	if (Key > Categories.count - 1) Key = 0;
+	if (Key < 0) Key = Categories.count - 1;
+	
+	G_Category = Categories[Key];
+	
+	UpdateMacroblocks();
+}
+
+Void UpdatePage(Integer _Shift) {
+	declare Ident[][Text] ME_MacroblocksIds for Page;
+	
+	Check();
+	
+	if (!ME_MacroblocksIds.existskey(G_Category)) return;
+	declare MacroblocksIds = ME_MacroblocksIds[G_Category];
+	
+	declare Start = G_MacroblocksStart;
+	Start += G_MacroblocksMax * _Shift;
+	
+	if (Start > MacroblocksIds.count - 1) Start = (MacroblocksIds.count / G_MacroblocksMax) * G_MacroblocksMax;
+	if (Start < 0) Start = 0;
+	
+	G_MacroblocksStart = Start;
+	
+	UpdateMacroblocks();
+}
+
+Void UpdateDetails() {
+	declare Boolean ME_EditMode for Page;
+	declare Boolean ME_CollisionMode for Page;
+	declare Ident ME_MacroblockId for Page;
+	declare Boolean[] ME_ClipsCustoms for Page;
+	declare Boolean[] ME_ClipsDisabled for Page;
+	declare Text[] ME_ClipsNames for Page;
+	declare Int3[] ME_ClipsOffsets for Page;
+	declare CEditorPlugin::CardinalDirections[] ME_ClipsDirs for Page;
+	
+	declare Quad_EditMode <=> (Page.GetFirstChild("Quad_EditMode") as CMlQuad);
+	Quad_EditMode.Visible = !ME_EditMode;
+	
+	declare Frame_ClipEdit <=> (Page.GetFirstChild("Frame_ClipEdit") as CMlFrame);
+	Frame_ClipEdit.Visible = ME_EditMode || ME_CollisionMode;
+	
+	declare ClipCurrent = G_Clip + 1;
+	declare ClipDisableCount = 0;
+	foreach (ClipDisabled in ME_ClipsDisabled) {
+		if (ClipDisabled) ClipDisableCount += 1;
+	}
+	declare ClipMax = ME_ClipsCustoms.count - ClipDisableCount;
+	declare ClipCustom = False;
+	declare ClipDisabled = False;
+	declare ClipName = "";
+	declare ClipOffset = <0, 0, 0>;
+	declare ClipDir = CEditorPlugin::CardinalDirections::North;
+	if (ME_ClipsCustoms.existskey(G_Clip)) {
+		ClipCustom = ME_ClipsCustoms[G_Clip];
+		ClipDisabled = ME_ClipsDisabled[G_Clip];
+		ClipName = ME_ClipsNames[G_Clip];
+		ClipOffset = ME_ClipsOffsets[G_Clip];
+		ClipDir = ME_ClipsDirs[G_Clip];
+	}
+	
+	declare Button_EditClips <=> (Page.GetFirstChild("Button_EditClips") as CMlLabel);
+	if (ME_EditMode) {
+		Button_EditClips.Value = "View";
+	} else {
+		Button_EditClips.Value = "Edit";
+	}
+	declare Button_RemoveClip <=> (Page.GetFirstChild("Button_RemoveClip") as CMlLabel);
+	if (ClipCustom) {
+		//Button_RemoveClip.Style = "CardButtonSmallS";
+	} else {
+		//Button_RemoveClip.Style = "TextButtonSmall";
+	}
+	
+	declare Frame_DisableClip <=> (Page.GetFirstChild("Frame_DisableClip") as CMlFrame);
+	declare Button_Disable <=> (Page.GetFirstChild("Button_Disable") as CMlQuad);
+	Frame_DisableClip.Visible = !ClipCustom;
+	Button_Disable.StyleSelected = ClipDisabled;
+	
+	declare Frame_Details <=> (Page.GetFirstChild("Frame_Details") as CMlFrame);
+	declare Label_ClipId <=> (Page.GetFirstChild("Label_ClipId") as CMlLabel);
+	declare Label_MacroblockId <=> (Frame_Details.GetFirstChild("Label_MacroblockId") as CMlLabel);
+	declare Entry_ClipName <=> (Frame_Details.GetFirstChild("Entry_ClipName") as CMlEntry);
+	declare Entry_ClipOffsetX <=> (Frame_Details.GetFirstChild("Entry_ClipOffsetX") as CMlEntry);
+	declare Entry_ClipOffsetY <=> (Frame_Details.GetFirstChild("Entry_ClipOffsetY") as CMlEntry);
+	declare Entry_ClipOffsetZ <=> (Frame_Details.GetFirstChild("Entry_ClipOffsetZ") as CMlEntry);
+	declare Button_ClipDir <=> (Frame_Details.GetFirstChild("Button_ClipDir") as CMlLabel);
+	Label_MacroblockId.Value = ""^ME_MacroblockId;
+	if (ClipMax > 0 || ClipDisableCount > 0) {
+		Label_ClipId.Value = "Clip # "^ClipCurrent^"/"^ClipMax+ClipDisableCount;
+		if (ClipDisableCount > 0) Label_ClipId.Value ^= " ("^ClipMax^" + "^ClipDisableCount^")";
+	} else {
+		Label_ClipId.Value = "...";
+	}
+	if (ClipCustom) Label_ClipId.TextColor = <0., 0.7, 0.>;
+	else Label_ClipId.TextColor = <0.7, 0., 0.>;
+	Entry_ClipName.Value = ClipName;
+	Entry_ClipOffsetX.Value = TL::ToText(ClipOffset.X);
+	Entry_ClipOffsetY.Value = TL::ToText(ClipOffset.Y);
+	Entry_ClipOffsetZ.Value = TL::ToText(ClipOffset.Z);
+	Button_ClipDir.Value = DirToText(ClipDir);
+	
+	declare PrevClipName for Entry_ClipName = "";
+	declare PrevClipOffsetX for Entry_ClipOffsetX = "";
+	declare PrevClipOffsetY for Entry_ClipOffsetY = "";
+	declare PrevClipOffsetZ for Entry_ClipOffsetZ = "";
+	PrevClipName = ClipName;
+	PrevClipOffsetX = TL::ToText(ClipOffset.X);
+	PrevClipOffsetY = TL::ToText(ClipOffset.Y);
+	PrevClipOffsetZ = TL::ToText(ClipOffset.Z);
+}
+
+Void UpdateClip(Integer _Shift) {
+	declare Boolean[] ME_ClipsCustoms for Page;
+	
+	if (ME_ClipsCustoms.count > 0) {
+		G_Clip += _Shift;
+		
+		if (G_Clip < 0) G_Clip = ME_ClipsCustoms.count - 1;
+		else if (G_Clip > ME_ClipsCustoms.count - 1) G_Clip = 0;
+	} else {
+		G_Clip = -1;
+	}
+	
+	declare Integer ME_SelectedClip for Page;
+	ME_SelectedClip = G_Clip;
+	
+	UpdateDetails();
+}
+
+Void UpdateCollisions() {
+	declare Boolean ME_EditMode for Page;
+	declare Boolean ME_CollisionMode for Page;
+	declare Ident ME_MacroblockId for Page;
+	declare Int3[] ME_CollisionsOffsets for Page;
+	
+	declare Frame_CollisionsDetails <=> (Page.GetFirstChild("Frame_CollisionsDetails") as CMlFrame);
+	
+	declare Quad_CollisionMode <=> (Frame_CollisionsDetails.GetFirstChild("Quad_CollisionMode") as CMlQuad);
+	Quad_CollisionMode.Visible = !ME_CollisionMode;
+	
+	declare Frame_ClipEdit <=> (Page.GetFirstChild("Frame_ClipEdit") as CMlFrame);
+	Frame_ClipEdit.Visible = ME_EditMode || ME_CollisionMode;
+	
+	declare CollisionCurrent = G_Collision + 1;
+	declare CollisionOffset = <0, 0, 0>;
+	if (ME_CollisionsOffsets.existskey(G_Collision)) {
+		CollisionOffset = ME_CollisionsOffsets[G_Collision];
+	}
+	
+	declare Button_EditCollisions <=> (Frame_CollisionsDetails.GetFirstChild("Button_EditCollisions") as CMlLabel);
+	if (ME_CollisionMode) Button_EditCollisions.Value = "View";
+	else Button_EditCollisions.Value = "Edit";
+	
+	declare Frame_Collisions <=> (Frame_CollisionsDetails.GetFirstChild("Frame_Collisions") as CMlFrame);
+	declare Label_CollisionId <=> (Frame_CollisionsDetails.GetFirstChild("Label_CollisionId") as CMlLabel);
+	declare Entry_CollisionOffsetX <=> (Frame_Collisions.GetFirstChild("Entry_CollisionOffsetX") as CMlEntry);
+	declare Entry_CollisionOffsetY <=> (Frame_Collisions.GetFirstChild("Entry_CollisionOffsetY") as CMlEntry);
+	declare Entry_CollisionOffsetZ <=> (Frame_Collisions.GetFirstChild("Entry_CollisionOffsetZ") as CMlEntry);
+	if (ME_CollisionsOffsets.count > 0) {
+		Label_CollisionId.Value = "Collision # "^CollisionCurrent^"/"^ME_CollisionsOffsets.count;
+	} else {
+		Label_CollisionId.Value = "...";
+	}
+	Entry_CollisionOffsetX.Value = TL::ToText(CollisionOffset.X);
+	Entry_CollisionOffsetY.Value = TL::ToText(CollisionOffset.Y);
+	Entry_CollisionOffsetZ.Value = TL::ToText(CollisionOffset.Z);
+	
+	declare PrevCollisionOffsetX for Entry_CollisionOffsetX = "";
+	declare PrevCollisionOffsetY for Entry_CollisionOffsetY = "";
+	declare PrevCollisionOffsetZ for Entry_CollisionOffsetZ = "";
+	PrevCollisionOffsetX = TL::ToText(CollisionOffset.X);
+	PrevCollisionOffsetY = TL::ToText(CollisionOffset.Y);
+	PrevCollisionOffsetZ = TL::ToText(CollisionOffset.Z);
+}
+
+Void UpdateCollision(Integer _Shift) {
+	declare Int3[] ME_CollisionsOffsets for Page;
+	
+	if (ME_CollisionsOffsets.count > 0) {
+		G_Collision += _Shift;
+		
+		if (G_Collision < 0) G_Collision = ME_CollisionsOffsets.count - 1;
+		else if (G_Collision > ME_CollisionsOffsets.count - 1) G_Collision = 0;
+	} else {
+		G_Collision = -1;
+	}
+	
+	declare Integer ME_SelectedCollision for Page;
+	ME_SelectedCollision = G_Collision;
+	
+	UpdateCollisions();
+}
+
+Void UpdateCursor() {
+	declare Frame_ClipEdit <=> (Page.GetFirstChild("Frame_ClipEdit") as CMlFrame);
+	declare Label_ClipOffset <=> (Frame_ClipEdit.GetFirstChild("Label_ClipOffset") as CMlLabel);
+	declare Label_ClipDir <=> (Frame_ClipEdit.GetFirstChild("Label_ClipDir") as CMlLabel);
+	
+	declare Int3 ME_MacroblockCoord for Page;
+	declare Coord = Editor.CursorCoord - ME_MacroblockCoord;
+	
+	Label_ClipOffset.Value = ""^Coord;
+	Label_ClipDir.Value = DirToText(Editor.CursorDir);
+}
+
+Void SelectMacroblock(Ident _MacroblockModelId) {
+	declare Ident ME_SelectedMacroblock for Page;
+	declare Integer ME_SelectedMacroblockUpdate for Page;
+	ME_SelectedMacroblock = _MacroblockModelId;
+	ME_SelectedMacroblockUpdate = Now;
+	UpdateMacroblocks();
+}
+
+Void SendAction(Text _Action) {
+	declare Integer ME_ActionUpdate for Page;
+	declare Text ME_Action for Page;
+	ME_Action = _Action;
+	ME_ActionUpdate = Now;
+}
+
+Void UpdateClipName(Text _Name) {
+	declare Text[] ME_ClipsNames for Page;
+	if (!ME_ClipsNames.existskey(G_Clip)) return;
+	
+	ME_ClipsNames[G_Clip] = _Name;
+	
+	SendAction("UpdateClipDetails");
+}
+
+Void UpdateClipOffset(Int3 _Offset) {
+	declare Int3[] ME_ClipsOffsets for Page;
+	if (!ME_ClipsOffsets.existskey(G_Clip)) return;
+	
+	ME_ClipsOffsets[G_Clip] = _Offset;
+	
+	SendAction("UpdateClipDetails");
+}
+
+Void UpdateClipDir() {
+	declare CEditorPlugin::CardinalDirections[] ME_ClipsDirs for Page;
+	if (!ME_ClipsDirs.existskey(G_Clip)) return;
+	
+	switch (ME_ClipsDirs[G_Clip]) {
+		case CEditorPlugin::CardinalDirections::North	: ME_ClipsDirs[G_Clip] = CEditorPlugin::CardinalDirections::East;
+		case CEditorPlugin::CardinalDirections::East	: ME_ClipsDirs[G_Clip] = CEditorPlugin::CardinalDirections::South;
+		case CEditorPlugin::CardinalDirections::South	: ME_ClipsDirs[G_Clip] = CEditorPlugin::CardinalDirections::West;
+		case CEditorPlugin::CardinalDirections::West	: ME_ClipsDirs[G_Clip] = CEditorPlugin::CardinalDirections::North;
+	}
+	
+	SendAction("UpdateClipDetails");
+}
+
+Void UpdateCollisionOffset(Int3 _Offset) {
+	declare Int3[] ME_CollisionsOffsets for Page;
+	if (!ME_CollisionsOffsets.existskey(G_Collision)) return;
+	
+	ME_CollisionsOffsets[G_Collision] = _Offset;
+	
+	SendAction("UpdateCollisionDetails");
+}
+
+Void DisableClip() {
+	declare Button_Disable <=> (Page.GetFirstChild("Button_Disable") as CMlQuad);
+	Button_Disable.StyleSelected = !Button_Disable.StyleSelected;
+	if (Button_Disable.StyleSelected) SendAction("DisableClip");
+	else SendAction("EnableClip");
+}
+
+main() {
+	declare Integer ME_MacroblocksUpdate for Page;
+	declare Integer ME_DetailsUpdate for Page;
+	declare Integer ME_CollisionsUpdate for Page;
+	declare Boolean ME_EditMode for Page;
+	declare Boolean ME_CollisionMode for Page;
+	
+	declare PrevMacroblocksUpdate = -1;
+	declare PrevDetailsUpdate = -1;
+	declare PrevCollisionsUpdate = -1;
+	declare PrevEditMode = False;
+	declare PrevCollisionMode = False;
+	declare Int3 PrevCursorCoord;
+	declare CEditorPlugin::CardinalDirections PrevCursorDir;
+	
+	declare Frame_MacroblocksList <=> (Page.GetFirstChild("Frame_MacroblocksList") as CMlFrame);
+	Page.GetClassChildren("Frame_Macroblock", Frame_MacroblocksList, False);
+	
+	G_Category = "";
+	G_MacroblocksStart = 0;
+	G_MacroblocksMax = Page.GetClassChildren_Result.count;
+	G_Clip = -1;
+	G_Collision = -1;
+	
+	declare Entry_ClipName <=> (Page.GetFirstChild("Entry_ClipName") as CMlEntry);
+	declare Entry_ClipOffsetX <=> (Page.GetFirstChild("Entry_ClipOffsetX") as CMlEntry);
+	declare Entry_ClipOffsetY <=> (Page.GetFirstChild("Entry_ClipOffsetY") as CMlEntry);
+	declare Entry_ClipOffsetZ <=> (Page.GetFirstChild("Entry_ClipOffsetZ") as CMlEntry);
+	declare PrevClipName for Entry_ClipName = "";
+	declare PrevClipOffsetX for Entry_ClipOffsetX = "";
+	declare PrevClipOffsetY for Entry_ClipOffsetY = "";
+	declare PrevClipOffsetZ for Entry_ClipOffsetZ = "";
+	
+	declare Frame_CollisionsDetails <=> (Page.GetFirstChild("Frame_CollisionsDetails") as CMlFrame);
+	declare Frame_Collisions <=> (Frame_CollisionsDetails.GetFirstChild("Frame_Collisions") as CMlFrame);
+	declare Entry_CollisionOffsetX <=> (Frame_Collisions.GetFirstChild("Entry_CollisionOffsetX") as CMlEntry);
+	declare Entry_CollisionOffsetY <=> (Frame_Collisions.GetFirstChild("Entry_CollisionOffsetY") as CMlEntry);
+	declare Entry_CollisionOffsetZ <=> (Frame_Collisions.GetFirstChild("Entry_CollisionOffsetZ") as CMlEntry);
+	declare PrevCollisionOffsetX for Entry_CollisionOffsetX = "";
+	declare PrevCollisionOffsetY for Entry_CollisionOffsetY = "";
+	declare PrevCollisionOffsetZ for Entry_CollisionOffsetZ = "";
+	
+	SelectMacroblock(NullId);
+	UpdateClip(0);
+	UpdateCollision(0);
+	
+	while (True) {
+		yield;
+		
+		if (PrevMacroblocksUpdate != ME_MacroblocksUpdate) {
+			PrevMacroblocksUpdate = ME_MacroblocksUpdate;
+			UpdateMacroblocks();
+		}
+		
+		if (PrevDetailsUpdate != ME_DetailsUpdate || PrevEditMode != ME_EditMode) {
+			PrevDetailsUpdate = ME_DetailsUpdate;
+			PrevEditMode = ME_EditMode;
+			UpdateClip(0);
+		}
+		
+		if (PrevCollisionsUpdate != ME_CollisionsUpdate || PrevCollisionMode != ME_CollisionMode) {
+			PrevCollisionsUpdate = ME_CollisionsUpdate;
+			PrevCollisionMode = ME_CollisionMode;
+			UpdateCollision(0);
+		}
+		
+		if (PrevCursorCoord != Editor.CursorCoord || PrevCursorDir != Editor.CursorDir) {
+			PrevCursorCoord = Editor.CursorCoord;
+			PrevCursorDir = Editor.CursorDir;
+			UpdateCursor();
+		}
+		
+		if (PrevClipName != Entry_ClipName.Value) {
+			PrevClipName = Entry_ClipName.Value;
+			UpdateClipName(Entry_ClipName.Value);
+		}
+		
+		if (
+			PrevClipOffsetX != Entry_ClipOffsetX.Value ||
+			PrevClipOffsetY != Entry_ClipOffsetY.Value ||
+			PrevClipOffsetZ != Entry_ClipOffsetZ.Value
+		) {
+			PrevClipOffsetX = Entry_ClipOffsetX.Value;
+			PrevClipOffsetY = Entry_ClipOffsetY.Value;
+			PrevClipOffsetZ = Entry_ClipOffsetZ.Value;
+			declare Offset = <TL::ToInteger(Entry_ClipOffsetX.Value), TL::ToInteger(Entry_ClipOffsetY.Value), TL::ToInteger(Entry_ClipOffsetZ.Value)>;
+			UpdateClipOffset(Offset);
+		}
+		
+		if (
+			PrevCollisionOffsetX != Entry_CollisionOffsetX.Value ||
+			PrevCollisionOffsetY != Entry_CollisionOffsetY.Value ||
+			PrevCollisionOffsetZ != Entry_CollisionOffsetZ.Value
+		) {
+			PrevCollisionOffsetX = Entry_CollisionOffsetX.Value;
+			PrevCollisionOffsetY = Entry_CollisionOffsetY.Value;
+			PrevCollisionOffsetZ = Entry_CollisionOffsetZ.Value;
+			declare Offset = <TL::ToInteger(Entry_CollisionOffsetX.Value), TL::ToInteger(Entry_CollisionOffsetY.Value), TL::ToInteger(Entry_CollisionOffsetZ.Value)>;
+			UpdateCollisionOffset(Offset);
+		}
+		
+		foreach (Event in PendingEvents) {
+			if (Event.Type == CMlEvent::Type::MouseClick) {
+				if (Event.Control.HasClass("action")) {
+					SendAction(Event.Control.DataAttributeGet("action"));
+				} else {
+					switch (Event.ControlId) {
+						case "Button_CategoryNext": UpdateCategory(1);
+						case "Button_CategoryPrev": UpdateCategory(-1);
+						case "Button_MacroblocksNext": UpdatePage(1);
+						case "Button_MacroblocksPrev": UpdatePage(-1);
+						case "Button_ClipNext": UpdateClip(1);
+						case "Button_ClipPrev": UpdateClip(-1);
+						case "Button_CollisionNext": UpdateCollision(1);
+						case "Button_CollisionPrev": UpdateCollision(-1);
+						case "Button_Disable": DisableClip();
+						case "Quad_Select": {
+							declare Ident ME_MacroblockModelId for Event.Control;
+							SelectMacroblock(ME_MacroblockModelId);
+						}
+						case "Button_ClipDir": {
+							UpdateClipDir();
+						}
+						case "Button_ToggleUI": Editor.HideEditorInterface = !Editor.HideEditorInterface;
+					}
+				}
+			} else if (Event.Type == CMlEvent::Type::KeyPress) {
+				switch (Event.KeyName) {
+					case "Right": UpdateClip(1);
+					case "Left": UpdateClip(-1);
+				}
+			}
+		}
+	}
+}
+--></script>
+</manialink>
+""";
+}
+
+// ---------------------------------- //
+/** Create a layer
+ *
+ *	@param	_Name		The name of the layer to create
+ *
+ *	@return				The created layer
+ */
+CUILayer CreateLayer(Text _Name) {
+	declare CUILayer Layer;
+	
+	Layer <=> UILayerCreate();
+	G_LayersIds[_Name] = Layer.Id;
+	
+	return Layer;
+}
+
+// ---------------------------------- //
+/** Destroy the layer with the specified name
+ *
+ *	@param	_Name		The name of the layer to destroy
+ */
+Void DestroyLayer(Text _Name) {
+	if (!G_LayersIds.existskey(_Name)) return;
+	declare LayerId = G_LayersIds[_Name];
+	if (UILayers.existskey(LayerId)) UILayerDestroy(UILayers[LayerId]);
+}
+
+// ---------------------------------- //
+/** Destroy the layer with the specified id
+ *
+ *	@param	_Id		The id of the layer to destroy
+ */
+Void DestroyLayer(Ident _Id) {
+	if (UILayers.existskey(_Id)) UILayerDestroy(UILayers[_Id]);
+	declare Removed = G_LayersIds.remove(_Id);
+}
+
+// ---------------------------------- //
+/// Destroy all the layers created by the plugin
+Void DestroyLayers() {
+	foreach (LayerId in G_LayersIds) DestroyLayer(LayerId);
+}
+
+// ---------------------------------- //
+/** Get a layer from its name
+ *
+ *	@param	_Name		The name of the layer to get
+ *
+ *	@return			The layer if found, Null otherwise
+ */
+CUILayer GetLayer(Text _Name) {
+	if (!G_LayersIds.existskey(_Name)) return Null;
+	declare LayerId = G_LayersIds[_Name];
+	if (!UILayers.existskey(LayerId)) return Null;
+	
+	return UILayers[LayerId];
+}
+
+// ---------------------------------- //
+/** Convert an Int3 block position into a Vec3 world position
+ *
+ *	@param	_BlockPosition	The block position
+ *
+ *	@return					The world position
+ */
+Vec3 GetWorldPosition(Int3 _BlockPosition) {
+	return <CollectionSquareSize * _BlockPosition.X, CollectionSquareHeight * (_BlockPosition.Y - CollectionGroundY), CollectionSquareSize * _BlockPosition.Z>;
+}
+
+// ---------------------------------- //
+/// Send the blocks list to the UI
+Void SendBlockList() {
+	// Send the block list to the UI
+	declare Page <=> GetLayer("MacroblockEditor").LocalPage;
+	declare Ident[][Text] ME_MacroblocksIds for Page;
+	declare Text[Ident] ME_MacroblocksNames for Page;
+	declare Ident[] ME_MacroblocksCustoms for Page;
+	declare Ident[] ME_MacroblocksNoClips for Page;
+	declare Ident[] ME_MacroblocksDisabledClips for Page;
+	declare Ident[] ME_MacroblocksCollisions for Page;
+	declare Text[CMacroblockModel][Text][Text] SortedMacroblocks;
+	ME_MacroblocksIds.clear();
+	ME_MacroblocksNames.clear();
+	ME_MacroblocksCustoms.clear();
+	ME_MacroblocksNoClips.clear();
+	ME_MacroblocksDisabledClips.clear();
+	ME_MacroblocksCollisions.clear();
+	
+	foreach (MacroblockModel in MacroblockModels) {
+		if (!Macroblock::GetValidity(MacroblockModel)) continue;
+		
+		declare Name = Macroblock::GetName(MacroblockModel);
+		ME_MacroblocksNames[MacroblockModel.Id] = Name;
+		
+		declare Family = Macroblock::GetFamily(MacroblockModel);
+		declare Type = Macroblock::GetType(MacroblockModel);
+		if (!SortedMacroblocks.existskey(Family)) SortedMacroblocks[Family] = Text[CMacroblockModel][Text];
+		if (!SortedMacroblocks[Family].existskey(Type)) SortedMacroblocks[Family][Type] = Text[CMacroblockModel];
+		SortedMacroblocks[Family][Type][MacroblockModel] = Name;
+		
+		if (Macroblock::HasCustomClips(MacroblockModel)) ME_MacroblocksCustoms.add(MacroblockModel.Id);
+		
+		if (Macroblock::GetClipCount(MacroblockModel) <= 0) ME_MacroblocksNoClips.add(MacroblockModel.Id);
+		
+		if (Macroblock::GetDisabledClipDirs(MacroblockModel).count > 0) ME_MacroblocksDisabledClips.add(MacroblockModel.Id);
+		
+		if (Macroblock::HasCollision(MacroblockModel)) ME_MacroblocksCollisions.add(MacroblockModel.Id);
+	}
+	
+	SortedMacroblocks = SortedMacroblocks.sortkey();
+	foreach (Family => Types in SortedMacroblocks) {
+		declare SortedTypes = Types.sortkey();
+		foreach (Type => Macroblocks in SortedTypes) {
+			declare SortedMacroblocks = Macroblocks.sort();
+			foreach (MacroblockModel => Name in SortedMacroblocks) {
+				if (!ME_MacroblocksIds.existskey(Family)) ME_MacroblocksIds[Family] = Ident[];
+				ME_MacroblocksIds[Family].add(MacroblockModel.Id);
+			}
+		}
+	}
+	
+	declare Integer ME_MacroblocksUpdate for Page;
+	ME_MacroblocksUpdate = Now;
+}
+
+// ---------------------------------- //
+/// Send a block details to the UI
+Void SendMacroblockDetails(Ident _BlockId) {
+	declare MacroblockModel <=> Macroblock::GetMacroblockModelFromId(_BlockId);
+	if (MacroblockModel == Null) return;
+	
+	declare Page <=> GetLayer("MacroblockEditor").LocalPage;
+	
+	declare Boolean[] ME_ClipsCustoms for Page;
+	declare Boolean[] ME_ClipsDisabled for Page;
+	declare Text[] ME_ClipsNames for Page;
+	declare Int3[] ME_ClipsOffsets for Page;
+	declare CEditorPlugin::CardinalDirections[] ME_ClipsDirs for Page;
+	ME_ClipsCustoms.clear();
+	ME_ClipsDisabled.clear();
+	ME_ClipsNames.clear();
+	ME_ClipsOffsets.clear();
+	ME_ClipsDirs.clear();
+	declare ClipsCustoms = Macroblock::GetClipCustoms(MacroblockModel);
+	declare ClipsNames = Macroblock::GetClipNames(MacroblockModel);
+	declare ClipsOffsets = Macroblock::GetClipOffsets(MacroblockModel);
+	declare ClipsDirs = Macroblock::GetClipDirs(MacroblockModel);
+	foreach (ClipKey => ClipName in ClipsNames) {
+		ME_ClipsCustoms.add(ClipsCustoms[ClipKey]);
+		ME_ClipsDisabled.add(False);
+		ME_ClipsNames.add(ClipName);
+		ME_ClipsOffsets.add(ClipsOffsets[ClipKey]);
+		ME_ClipsDirs.add(ClipsDirs[ClipKey]);
+	}
+	
+	ClipsNames = Macroblock::GetDisabledClipNames(MacroblockModel);
+	ClipsOffsets = Macroblock::GetDisabledClipOffsets(MacroblockModel);
+	ClipsDirs = Macroblock::GetDisabledClipDirs(MacroblockModel);
+	foreach (ClipKey => ClipName in ClipsNames) {
+		ME_ClipsCustoms.add(False);
+		ME_ClipsDisabled.add(True);
+		ME_ClipsNames.add(ClipName);
+		ME_ClipsOffsets.add(ClipsOffsets[ClipKey]);
+		ME_ClipsDirs.add(ClipsDirs[ClipKey]);
+	}
+	
+	declare Integer ME_DetailsUpdate for Page;
+	declare Boolean ME_EditMode for Page;
+	declare Ident ME_MacroblockId for Page;
+	if (ME_MacroblockId != _BlockId) ME_EditMode = False;
+	ME_MacroblockId = _BlockId;
+	ME_DetailsUpdate = Now;
+	
+	if (ME_EditMode) EditMode = CEditorPlugin::EditMode::SelectionAdd;
+	else EditMode = CEditorPlugin::EditMode::FreeLook;
+}
+
+// ---------------------------------- //
+/// Send a block collisions to the UI
+Void SendMacroblockCollisions(Ident _BlockId) {
+	declare MacroblockModel <=> Macroblock::GetMacroblockModelFromId(_BlockId);
+	if (MacroblockModel == Null) return;
+	
+	declare Page <=> GetLayer("MacroblockEditor").LocalPage;
+	
+	declare Int3[] ME_CollisionsOffsets for Page;
+	ME_CollisionsOffsets = Macroblock::GetCollisionsOffsets(MacroblockModel);
+	
+	declare Integer ME_CollisionsUpdate for Page;
+	declare Boolean ME_CollisionMode for Page;
+	declare Ident ME_MacroblockId for Page;
+	declare Ident ME_CollisionMacroblockId for Page;
+	if (ME_MacroblockId != _BlockId) ME_CollisionMode = False;
+	if (ME_CollisionMacroblockId != _BlockId) ME_CollisionMode = False;
+	ME_MacroblockId = _BlockId;
+	ME_CollisionMacroblockId = _BlockId;
+	ME_CollisionsUpdate = Now;
+	
+	if (ME_CollisionMode) EditMode = CEditorPlugin::EditMode::SelectionAdd;
+	else EditMode = CEditorPlugin::EditMode::FreeLook;
+}
+
+// ---------------------------------- //
+/// View a macroblock clips
+Void ViewClips(Ident _BlockId) {
+	declare MacroblockModel <=> Macroblock::GetMacroblockModelFromId(_BlockId);
+	if (MacroblockModel == Null) return;
+	
+	declare Page <=> GetLayer("MacroblockEditor").LocalPage;
+	declare Boolean ME_EditMode for Page;
+	declare Integer ME_SelectedClip for Page;
+	
+	// Dislay clips
+	CustomSelectionRGB = <0.5, 0.5, 0.5>;
+	CustomSelectionCoords.clear();
+	declare ClipsCoords = Macroblock::GetClipCoords(MacroblockModel, G_MacroblockCoord, G_MacroblockDir);
+	foreach (ClipKey => ClipCoord in ClipsCoords) {
+		if (ME_EditMode && ClipKey != ME_SelectedClip) continue;
+		CustomSelectionCoords.add(ClipCoord);
+	}
+	declare Int3[] ME_ClipsOffsets for Page;
+	if (ME_EditMode && !ClipsCoords.existskey(ME_SelectedClip) && ME_ClipsOffsets.existskey(ME_SelectedClip)) {
+		declare ClipCoord = Macroblock::GetClipCoord(MacroblockModel, G_MacroblockCoord, G_MacroblockDir, ME_ClipsOffsets[ME_SelectedClip]);
+		CustomSelectionCoords.add(ClipCoord);
+		CustomSelectionRGB = <0.5, 0., 0.>;
+	}
+}
+
+// ---------------------------------- //
+/// View a macroblock clips
+Void ViewCollisions(Ident _BlockId) {
+	declare MacroblockModel <=> Macroblock::GetMacroblockModelFromId(_BlockId);
+	if (MacroblockModel == Null) return;
+	
+	declare Page <=> GetLayer("MacroblockEditor").LocalPage;
+	declare Boolean ME_CollisionMode for Page;
+	declare Integer ME_SelectedCollision for Page;
+	
+	// Dislay collisions
+	CustomSelectionRGB = <0.5, 0., 0.>;
+	CustomSelectionCoords.clear();
+	declare CollisionsCoords = Macroblock::GetCollisionsCoords(MacroblockModel, G_MacroblockCoord, G_MacroblockDir);
+	foreach (CollisionKey => CollisionCoord in CollisionsCoords) {
+		if (ME_CollisionMode && CollisionKey != ME_SelectedCollision) continue;
+		CustomSelectionCoords.add(CollisionCoord);
+	}
+}
+
+// ---------------------------------- //
+/** View a macroblock
+ *
+ *	@param	_BlockId		The id of the macroblock to view
+ */
+Void ViewMacroblock(Ident _BlockId) {
+	declare MacroblockModel <=> Macroblock::GetMacroblockModelFromId(_BlockId);
+	if (MacroblockModel == Null) return;
+	
+	RemoveAll();
+	
+	PlaceMode = CEditorPlugin::PlaceMode::Terraform;
+	EditMode = CEditorPlugin::EditMode::Place;
+	declare Start = <(Map.Size.X / 2) - 10, 0, (Map.Size.Z / 2) - 10>;
+	declare End = <(Map.Size.X / 2) + 10, 0, (Map.Size.Z / 2) + 10>;
+	declare Placed = True;		
+	switch (Map.CollectionName) {
+		case "Lagoon": {
+			if (!TL::Find("Water", Macroblock::GetName(MacroblockModel), False, True)) {
+				Placed = PlaceTerrainBlocks(GetTerrainBlockModelFromName("Beach"), Start, End);
+			}
+		}
+		case "Valley": {
+			if (Macroblock::GetVariant(MacroblockModel) == Macroblock::VariantForest()) {
+				Placed = PlaceTerrainBlocks(GetTerrainBlockModelFromName("GrassToForest"), Start, End);
+				
+			} else if (Macroblock::GetFamily(MacroblockModel) == "Castle") {
+				Placed = PlaceTerrainBlocks(GetTerrainBlockModelFromName("LakeShore"), Start, End);
+			}
+		}
+		case "Stadium": {
+			if (Macroblock::GetVariant(MacroblockModel) == Macroblock::VariantDirt()) {
+				Placed = PlaceTerrainBlocks(GetTerrainBlockModelFromName("StadiumDirtBorder"), Start, End);
+			}
+		}
+	}	
+	if (!Placed) {
+		log(Now^"> Can't place necessary terrain");
+		return;
+	}
+	
+	PlaceMode = CEditorPlugin::PlaceMode::Macroblock;
+	EditMode = CEditorPlugin::EditMode::FreeLook;
+	//CursorCoord = Coord;
+	CursorDir = CEditorPlugin::CardinalDirections::North;
+	CursorMacroblockModel = MacroblockModel;
+	CameraToTargetDistance = 400.;
+	CameraHAngle = ML::PI()/4. * 1.;
+	CameraVAngle = ML::PI()/8. * 2.;
+	
+	declare Page <=> GetLayer("MacroblockEditor").LocalPage;
+	declare Int3 ME_MacroblockCoord for Page;
+	
+	Placed = False;
+	declare StartX = Map.Size.X / 2;
+	declare EndX = StartX + Map.Size.X - 1;
+	declare StartY = 0;//Map.Size.Y / 2;
+	declare EndY = StartY + Map.Size.Y - 1;
+	declare StartZ = Map.Size.Z / 2;
+	declare EndZ = StartZ + Map.Size.Z - 1;
+	for (X, StartX, EndX) {
+		yield;
+		for (Z, StartZ, EndZ) {
+			for (Y, StartY, EndY) {
+				for (DirInt, 0, 3) {
+					declare Coord = <X % Map.Size.X, Y % Map.Size.Y, Z % Map.Size.Z>;
+					declare Dir = Utils::IntToDir(DirInt);
+					Placed = PlaceMacroblock(MacroblockModel, Coord, Dir);
+					if (Placed) {
+						CameraTargetPosition = GetWorldPosition(<Coord.X, Coord.Y, Coord.Z+1>);
+						G_MacroblockCoord = Coord;
+						ME_MacroblockCoord = Coord;
+						G_MacroblockDir = Dir;
+						
+						declare Variant <=> Macroblock::GetBlockModelVariant(MacroblockModel);
+						if (Variant != Null) {
+							UndergroundMode = Variant.IsAllUnderground;
+						}
+						
+						ViewClips(_BlockId);
+						break;
+					}
+				}
+				if (Placed) break;
+			}
+			if (Placed) break;
+		}
+		if (Placed) break;
+	}
+}
+
+// ---------------------------------- //
+/// Enable/Disable the clips edition
+Void EditClips() {
+	declare Page <=> GetLayer("MacroblockEditor").LocalPage;
+	declare Boolean ME_EditMode for Page;
+	declare Boolean ME_CollisionMode for Page;
+	ME_EditMode = !ME_EditMode;
+	if (ME_EditMode) ME_CollisionMode = False;
+	
+	declare Ident ME_SelectedMacroblock for Page;
+	ViewMacroblock(ME_SelectedMacroblock);
+	
+	SendMacroblockDetails(ME_SelectedMacroblock);
+	ViewClips(ME_SelectedMacroblock);
+}
+
+// ---------------------------------- //
+/// Add a new clip
+Void AddClip() {
+	declare Page <=> GetLayer("MacroblockEditor").LocalPage;
+	declare Boolean ME_EditMode for Page;
+	if (!ME_EditMode) return;
+	
+	declare Ident ME_SelectedMacroblock for Page;
+	declare MacroblockModel <=> Macroblock::GetMacroblockModelFromId(ME_SelectedMacroblock);
+	Macroblock::AddClipCustom(MacroblockModel);
+	
+	SendMacroblockDetails(ME_SelectedMacroblock);
+	ViewClips(ME_SelectedMacroblock);
+}
+
+// ---------------------------------- //
+/// Remove an existing clip
+Void RemoveClip() {
+	declare Page <=> GetLayer("MacroblockEditor").LocalPage;
+	declare Boolean ME_EditMode for Page;
+	if (!ME_EditMode) return;
+	
+	declare Integer ME_SelectedClip for Page;
+	declare Ident ME_SelectedMacroblock for Page;
+	declare MacroblockModel <=> Macroblock::GetMacroblockModelFromId(ME_SelectedMacroblock);
+	Macroblock::RemoveClipCustom(MacroblockModel, ME_SelectedClip);
+	
+	SendMacroblockDetails(ME_SelectedMacroblock);
+	ViewClips(ME_SelectedMacroblock);
+}
+
+// ---------------------------------- //
+/// Enable a clip
+Void EnableClip() {
+	declare Page <=> GetLayer("MacroblockEditor").LocalPage;
+	declare Boolean ME_EditMode for Page;
+	if (!ME_EditMode) return;
+	
+	declare Integer ME_SelectedClip for Page;
+	declare Text[] ME_ClipsNames for Page;
+	if (!ME_ClipsNames.existskey(ME_SelectedClip)) return;
+	
+	declare Ident ME_SelectedMacroblock for Page;
+	declare MacroblockModel <=> Macroblock::GetMacroblockModelFromId(ME_SelectedMacroblock);
+	
+	declare Int3[] ME_ClipsOffsets for Page;
+	declare CEditorPlugin::CardinalDirections[] ME_ClipsDirs for Page;
+	declare ClipName = ME_ClipsNames[ME_SelectedClip];
+	declare ClipOffset = ME_ClipsOffsets[ME_SelectedClip];
+	declare ClipDir = ME_ClipsDirs[ME_SelectedClip];
+	Macroblock::EnableClip(MacroblockModel, ClipName, ClipOffset, ClipDir);
+	
+	SendMacroblockDetails(ME_SelectedMacroblock);
+	ViewClips(ME_SelectedMacroblock);
+}
+
+// ---------------------------------- //
+/// Disable a clip
+Void DisableClip() {
+	declare Page <=> GetLayer("MacroblockEditor").LocalPage;
+	declare Boolean ME_EditMode for Page;
+	if (!ME_EditMode) return;
+	
+	declare Integer ME_SelectedClip for Page;
+	declare Ident ME_SelectedMacroblock for Page;
+	declare MacroblockModel <=> Macroblock::GetMacroblockModelFromId(ME_SelectedMacroblock);
+	declare ClipName = Macroblock::GetClipName(MacroblockModel, ME_SelectedClip);
+	declare ClipOffset = Macroblock::GetClipOffset(MacroblockModel, ME_SelectedClip);
+	declare ClipDir = Macroblock::GetClipDir(MacroblockModel, ME_SelectedClip);
+	Macroblock::DisableClip(MacroblockModel, ClipName, ClipOffset, ClipDir);
+	
+	SendMacroblockDetails(ME_SelectedMacroblock);
+	ViewClips(ME_SelectedMacroblock);
+}
+
+// ---------------------------------- //
+/** Edit an existing clip
+ *
+ *	@param	_CursorInfo		Use the cursor position and direction as the new position and direction for the selected clip
+ */
+Void EditClip(Boolean _CursorInfo) {
+	declare Page <=> GetLayer("MacroblockEditor").LocalPage;
+	declare Boolean ME_EditMode for Page;
+	if (!ME_EditMode) return;
+	
+	declare Integer ME_SelectedClip for Page;
+	declare Boolean[] ME_ClipsCustoms for Page;
+	if (!ME_ClipsCustoms.existskey(ME_SelectedClip)) return;
+	if (!ME_ClipsCustoms[ME_SelectedClip]) return;
+	
+	declare Text[] ME_ClipsNames for Page;
+	declare Int3[] ME_ClipsOffsets for Page;
+	declare CEditorPlugin::CardinalDirections[] ME_ClipsDirs for Page;
+	declare Name = ME_ClipsNames[ME_SelectedClip];
+	declare Offset = ME_ClipsOffsets[ME_SelectedClip];
+	declare Dir = ME_ClipsDirs[ME_SelectedClip];
+	
+	if (_CursorInfo && EditMode != CEditorPlugin::EditMode::FreeLook) {
+		Offset = CursorCoord - G_MacroblockCoord;
+		Dir = CursorDir;
+	}
+	
+	declare Ident ME_SelectedMacroblock for Page;
+	declare MacroblockModel <=> Macroblock::GetMacroblockModelFromId(ME_SelectedMacroblock);
+	Macroblock::EditClipCustom(MacroblockModel, ME_SelectedClip, Name, Offset, Dir);
+	
+	SendMacroblockDetails(ME_SelectedMacroblock);
+	ViewClips(ME_SelectedMacroblock);
+}
+
+// ---------------------------------- //
+/// Enable/Disable the collisions edition
+Void EditCollisions() {
+	declare Page <=> GetLayer("MacroblockEditor").LocalPage;
+	declare Boolean ME_CollisionMode for Page;
+	declare Boolean ME_EditMode for Page;
+	ME_CollisionMode = !ME_CollisionMode;
+	if (ME_CollisionMode) ME_EditMode = False;
+	
+	declare Ident ME_SelectedMacroblock for Page;
+	ViewMacroblock(ME_SelectedMacroblock);
+	
+	SendMacroblockCollisions(ME_SelectedMacroblock);
+	ViewCollisions(ME_SelectedMacroblock);
+}
+
+// ---------------------------------- //
+/// Add a new collision
+Void AddCollision() {
+	declare Page <=> GetLayer("MacroblockEditor").LocalPage;
+	declare Boolean ME_CollisionMode for Page;
+	if (!ME_CollisionMode) return;
+	
+	declare Ident ME_SelectedMacroblock for Page;
+	declare MacroblockModel <=> Macroblock::GetMacroblockModelFromId(ME_SelectedMacroblock);
+	Macroblock::AddCollision(MacroblockModel);
+	
+	SendMacroblockCollisions(ME_SelectedMacroblock);
+	ViewCollisions(ME_SelectedMacroblock);
+}
+
+// ---------------------------------- //
+/// Remove an existing collision
+Void RemoveCollision() {
+	declare Page <=> GetLayer("MacroblockEditor").LocalPage;
+	declare Boolean ME_CollisionMode for Page;
+	if (!ME_CollisionMode) return;
+	
+	declare Integer ME_SelectedCollision for Page;
+	declare Ident ME_SelectedMacroblock for Page;
+	declare MacroblockModel <=> Macroblock::GetMacroblockModelFromId(ME_SelectedMacroblock);
+	Macroblock::RemoveCollision(MacroblockModel, ME_SelectedCollision);
+	
+	SendMacroblockCollisions(ME_SelectedMacroblock);
+	ViewCollisions(ME_SelectedMacroblock);
+}
+
+// ---------------------------------- //
+/** Edit an existing collision
+ *
+ *	@param	_CursorInfo		Use the cursor position and direction as the new position and direction for the selected collision
+ */
+Void EditCollision(Boolean _CursorInfo) {
+	declare Page <=> GetLayer("MacroblockEditor").LocalPage;
+	declare Boolean ME_CollisionMode for Page;
+	if (!ME_CollisionMode) return;
+	
+	declare Integer ME_SelectedCollision for Page;
+	declare Int3[] ME_CollisionsOffsets for Page;
+	if (!ME_CollisionsOffsets.existskey(ME_SelectedCollision)) return;
+	declare Offset = ME_CollisionsOffsets[ME_SelectedCollision];
+	
+	if (_CursorInfo && EditMode != CEditorPlugin::EditMode::FreeLook) {
+		Offset = CursorCoord - G_MacroblockCoord;
+	}
+	
+	declare Ident ME_SelectedMacroblock for Page;
+	declare MacroblockModel <=> Macroblock::GetMacroblockModelFromId(ME_SelectedMacroblock);
+	Macroblock::EditCollision(MacroblockModel, ME_SelectedCollision, Offset);
+	
+	SendMacroblockCollisions(ME_SelectedMacroblock);
+	ViewCollisions(ME_SelectedMacroblock);
+}
+
+// ---------------------------------- //
+/// Generate the macroblocks metadata
+Void GenerateMacroblocksMetadata() {
+	Macroblock::GenerateMetadata(False);
+	SendBlockList();
+	
+	declare Page <=> GetLayer("MacroblockEditor").LocalPage;
+	declare Ident ME_SelectedMacroblock for Page;
+	SendMacroblockDetails(ME_SelectedMacroblock);
+	SendMacroblockCollisions(ME_SelectedMacroblock);
+}
+
+// ---------------------------------- //
+/// Save the macroblocks metadata
+Void SaveMacroblocksMetadata() {
+	declare ProgressionMax = MacroblockModels.count;
+	declare Progression = 0;
+	
+	declare ProgressionLayer <=> UILayerCreate();
+	declare LibMacroblock_MetadataProgression for ProgressionLayer.LocalPage = 0.;
+	LibMacroblock_MetadataProgression = 0.;
+	ProgressionLayer.ManialinkPage = """
+<manialink version="3" name="SaveMetadata">
+<frame pos="0 0" z-index="10000">
+	<quad pos="0 0" z-index="-1" size="320 180" halign="center" valign="center" style="Bgs1" substyle="BgDialogBlur" />
+	<quad pos="0 0" z-index="-2" size="320 180" halign="center" valign="center" bgcolor="000" opacity="0.8" scriptevents="1" />
+	<label pos="0 15" halign="center" textsize="8" text="Progression" />
+	<gauge size="200 20" halign="center" style="BgCard" drawbg="1" drawblockbg="1" id="Gauge_Progression" />
+</frame>
+<script><!--
+main() {
+	declare Gauge_Progression <=> (Page.GetFirstChild("Gauge_Progression") as CMlGauge);
+	declare LibMacroblock_MetadataProgression for Page = 0.;
+	
+	while (True) {
+		yield;
+		Gauge_Progression.Ratio = LibMacroblock_MetadataProgression / 100.;
+	}
+}
+--></script>
+</manialink>""";
+	
+	foreach (MacroblockModel in MacroblockModels) {
+		Progression += 1;
+		LibMacroblock_MetadataProgression = (Progression / (ProgressionMax*1.)) * 100.;
+		
+		// Skip macroblocks that are not inside the PartyEditor folder
+		declare MacroblockPathSplit = TL::Split("\\", ""^MacroblockModel.Id);
+		if (!MacroblockPathSplit.exists("PartyEditor")) continue;
+		
+		Macroblock::SaveMetadata(MacroblockModel);
+		
+		//log(Now^"> Save > "^MacroblockModel.Id);
+		if (Progression % 10 == 0) yield;
+	}
+	SendBlockList();
+	
+	declare Page <=> GetLayer("MacroblockEditor").LocalPage;
+	declare Ident ME_SelectedMacroblock for Page;
+	SendMacroblockDetails(ME_SelectedMacroblock);
+	SendMacroblockCollisions(ME_SelectedMacroblock);
+	
+	UILayerDestroy(ProgressionLayer);
+}
+
+// ---------------------------------- //
+/// Reset the macroblocks metadata
+Void ResetMacroblocksMetadata() {
+	foreach (MacroblockModel in MacroblockModels) {
+		// Skip macroblocks that are not inside the PartyEditor folder
+		declare MacroblockPathSplit = TL::Split("\\", ""^MacroblockModel.Id);
+		if (!MacroblockPathSplit.exists("PartyEditor")) continue;
+		
+		Macroblock::ResetMetadata(MacroblockModel);
+	}
+	SendBlockList();
+}
+
+// ---------------------------------- //
+/// List the clips of all existing blocks
+Text[] ListBlocksClips() {
+	declare Clips = Text[];
+	
+	foreach (BlockModel in BlockModels) {
+		if (BlockModel.VariantGround != Null) {
+			foreach (BlockUnitModel in BlockModel.VariantGround.BlockUnitModels) {
+				foreach (Dir => Clip in BlockUnitModel.Clips) {
+					if (Clip == Null) continue;
+					if (!Clips.exists(Clip.Name)) Clips.add(Clip.Name);
+					
+					//if (Clip.Name == "FreeClipExcluder") log(Now^"> FreeClipExcluder : "^BlockModel.Id);
+				}
+			}
+		}
+		if (BlockModel.VariantAir != Null) {
+			foreach (BlockUnitModel in BlockModel.VariantAir.BlockUnitModels) {
+				foreach (Dir => Clip in BlockUnitModel.Clips) {
+					if (Clip == Null) continue;
+					if (!Clips.exists(Clip.Name)) Clips.add(Clip.Name);
+					
+					//if (Clip.Name == "ArenaLoopFreeClipTop") log(Now^"> ArenaLoopFreeClipTop : "^BlockModel.Id);
+				}
+			}
+		}
+	}
+	
+	log(Now^"> Block clips : "^dump(Clips.sort()));
+	
+	return Clips;
+}
+
+// ---------------------------------- //
+/// List the clips of valid macroblocks
+Text[] ListMacroblocksClips() {
+	declare Clips = Text[];
+	
+	foreach (MacroblockModel in MacroblockModels) {
+		// Skip macroblocks that are not inside the PartyEditor folder
+		declare MacroblockPathSplit = TL::Split("\\", ""^MacroblockModel.Id);
+		if (!MacroblockPathSplit.exists("PartyEditor")) continue;
+		
+		declare ClipsNames = Macroblock::GetClipNames(MacroblockModel);
+		foreach (ClipName in ClipsNames) {
+			if (!Clips.exists(ClipName)) Clips.add(ClipName);
+			
+			//if (ClipName == "ArenaLoopFreeClipTop") log(Now^"> ArenaLoopFreeClipTop : "^MacroblockModel.Id);
+		}
+	}
+	
+	log(Now^"> Macroblock clips : "^dump(Clips.sort()));
+	
+	return Clips;
+}
+
+// ---------------------------------- //
+/// List the clips of macroblocks and blocks
+Void ListAllClips() {
+	declare BlocksClips = ListBlocksClips();
+	declare MacroblocksClips = ListMacroblocksClips();
+	declare Clips = Text[];
+	
+	foreach (Clip in BlocksClips) {
+		if (Clips.exists(Clip)) continue;
+		Clips.add(Clip);
+	}
+	
+	foreach (Clip in MacroblocksClips) {
+		if (Clips.exists(Clip)) continue;
+		Clips.add(Clip);
+	}
+	
+	log(Now^"> All clips : "^dump(Clips.sort()));
+}
+
+// ---------------------------------- //
+/// Log the metadata of all macroblocks
+Void LogMacroblocksMetadata() {
+	foreach (MacroblockModel in MacroblockModels) {
+		// Skip macroblocks that are not inside the PartyEditor folder
+		declare MacroblockPathSplit = TL::Split("\\", ""^MacroblockModel.Id);
+		if (!MacroblockPathSplit.exists("PartyEditor")) continue;
+		
+		Macroblock::LogMetadata(MacroblockModel);
+	}
+}
+
+// ---------------------------------- //
+/// Check if all macroblocks are at the latest version
+Void CheckMacroblocksVersion() {
+	declare ErrorsNb = 0;
+	foreach (MacroblockModel in MacroblockModels) {
+		// Skip macroblocks that are not inside the PartyEditor folder
+		declare MacroblockPathSplit = TL::Split("\\", ""^MacroblockModel.Id);
+		if (!MacroblockPathSplit.exists("PartyEditor")) continue;
+		
+		if (!Macroblock::IsLatestVersion(MacroblockModel)) {
+			ErrorsNb += 1;
+			log(Now^"> "^MacroblockModel.Id^" > Not latest version : "^ Macroblock::GetVersion(MacroblockModel));
+		}
+	}
+	if (ErrorsNb > 1) {
+		log(Now^"> "^ErrorsNb^" macroblocks are not at the latest version");
+	} else if (ErrorsNb == 1) {
+		log(Now^"> "^ErrorsNb^" macroblock is not at the latest version");
+	} else {
+		log(Now^"> All macroblocks are up to date");
+	}
+}
+
+// ---------------------------------- //
+/// Export the macroblocks metadata into the logs
+Void ExportMacroblocksMetadata() {
+	declare ProgressionMax = MacroblockModels.count;
+	declare Progression = 0;
+	
+	declare ProgressionLayer <=> UILayerCreate();
+	declare LibMacroblock_MetadataProgression for ProgressionLayer.LocalPage = 0.;
+	declare LibMacroblock_Date for ProgressionLayer.LocalPage = "";
+	declare LibMacroblock_Finished for ProgressionLayer.LocalPage = False;
+	declare LibMacroblock_XmlUpdate for ProgressionLayer.LocalPage = -1;
+	declare LibMacroblock_Xml for ProgressionLayer.LocalPage = "";
+	LibMacroblock_MetadataProgression = 0.;
+	LibMacroblock_Date = "";
+	LibMacroblock_Finished = False;
+	LibMacroblock_XmlUpdate = -1;
+	LibMacroblock_Xml = "";
+	
+	ProgressionLayer.ManialinkPage = """
+<manialink version="3" name="SaveMetadata">
+<frame pos="0 0" z-index="10000">
+	<quad pos="0 0" z-index="-1" size="320 180" halign="center" valign="center" style="Bgs1" substyle="BgDialogBlur" />
+	<quad pos="0 0" z-index="-2" size="320 180" halign="center" valign="center" bgcolor="000" opacity="0.8" scriptevents="1" />
+	<textedit pos="0 80" size="220 100" halign="center" textformat="script" textsize="2" id="TextEdit_Xml" />
+	<label pos="0 -25" halign="center" style="CardButtonMedium" scriptevents="1" text="OK" id="Button_OK" />
+	<label pos="0 -40" halign="center" textsize="8" text="Progression" />
+	<gauge pos="0 -50" size="200 15" halign="center" style="BgCard" drawbg="1" drawblockbg="1" id="Gauge_Progression" />
+</frame>
+<script><!--
+main() {
+	declare TextEdit_Xml <=> (Page.GetFirstChild("TextEdit_Xml") as CMlTextEdit);
+	
+	declare Gauge_Progression <=> (Page.GetFirstChild("Gauge_Progression") as CMlGauge);
+	declare LibMacroblock_MetadataProgression for Page = 0.;
+	declare LibMacroblock_Date for Page = "";
+	declare LibMacroblock_Finished for Page = False;
+	declare LibMacroblock_XmlUpdate for Page = -1;
+	declare LibMacroblock_Xml for Page = "";
+	LibMacroblock_Date = CurrentLocalDateText;
+	
+	declare PrevXmlUpdate = -1;
+	
+	while (True) {
+		yield;
+		Gauge_Progression.Ratio = LibMacroblock_MetadataProgression / 100.;
+		
+		if (PrevXmlUpdate != LibMacroblock_XmlUpdate) {
+			PrevXmlUpdate = LibMacroblock_XmlUpdate;
+			TextEdit_Xml.Value = LibMacroblock_Xml;
+		}
+		
+		foreach (Event in PendingEvents) {
+			if (Event.Type == CMlEvent::Type::MouseClick) {
+				if (Event.ControlId == "Button_OK") LibMacroblock_Finished = True;
+			}
+		}
+	}
+}
+--></script>
+</manialink>""";
+	
+	sleep(100);
+	
+	LibMacroblock_Xml ^= """<macroblockmodels date="{{{TL::MLEncode(LibMacroblock_Date)}}}">""";
+	foreach (MacroblockModel in MacroblockModels) {
+		Progression += 1;
+		LibMacroblock_MetadataProgression = (Progression / (ProgressionMax*1.)) * 100.;
+		
+		// Skip macroblocks that are not inside the PartyEditor folder
+		declare MacroblockPathSplit = TL::Split("\\", ""^MacroblockModel.Id);
+		if (!MacroblockPathSplit.exists("PartyEditor")) continue;
+		
+		LibMacroblock_Xml ^= Macroblock::ExportMetadata(MacroblockModel);
+		
+		if (Progression % 10 == 0) yield;
+	}
+	LibMacroblock_Xml ^= """</macroblockmodels>""";
+	LibMacroblock_XmlUpdate = Now;
+	
+	wait(LibMacroblock_Finished);
+	
+	UILayerDestroy(ProgressionLayer);
+}
+
+// ---------------------------------- //
+/// Unload the plugin
+Void Unload() {
+	DestroyLayers();
+	RemoveAll();
+}
+
+// ---------------------------------- //
+/// Unload the plugin
+Void Load() {
+	Unload();
+	
+	IsTrustedPlugin_DevBuild = True;
+	CustomSelectionCoords.clear();
+	
+	G_MacroblockCoord = Int3;
+	G_MacroblockDir = CEditorPlugin::CardinalDirections::North;
+	
+	declare LayerMacroblockEditor <=> CreateLayer("MacroblockEditor");
+	LayerMacroblockEditor.ManialinkPage = GetMLMacroblockEditor();
+	
+	declare Ident[][Text] ME_MacroblocksIds for LayerMacroblockEditor.LocalPage;
+	declare Text[Ident] ME_MacroblocksNames for LayerMacroblockEditor.LocalPage;
+	declare Ident[] ME_MacroblocksCustoms for LayerMacroblockEditor.LocalPage;
+	declare Ident[] ME_MacroblocksNoClips for LayerMacroblockEditor.LocalPage;
+	declare Ident[] ME_MacroblocksDisabledClips for LayerMacroblockEditor.LocalPage;
+	declare Ident[] ME_MacroblocksCollisions for LayerMacroblockEditor.LocalPage;
+	declare Integer ME_MacroblocksUpdate for LayerMacroblockEditor.LocalPage;
+	declare Boolean[] ME_ClipsCustoms for LayerMacroblockEditor.LocalPage;
+	declare Boolean[] ME_ClipsDisabled for LayerMacroblockEditor.LocalPage;
+	declare Text[] ME_ClipsNames for LayerMacroblockEditor.LocalPage;
+	declare Int3[] ME_ClipsOffsets for LayerMacroblockEditor.LocalPage;
+	declare CEditorPlugin::CardinalDirections[] ME_ClipsDirs for LayerMacroblockEditor.LocalPage;
+	declare Ident ME_MacroblockId for LayerMacroblockEditor.LocalPage;
+	declare Boolean ME_EditMode for LayerMacroblockEditor.LocalPage;
+	declare Integer ME_DetailsUpdate for LayerMacroblockEditor.LocalPage;
+	declare Int3 ME_MacroblockCoord for LayerMacroblockEditor.LocalPage;
+	declare Boolean ME_CollisionMode for LayerMacroblockEditor.LocalPage;
+	declare Integer ME_CollisionsUpdate for LayerMacroblockEditor.LocalPage;
+	declare Int3[] ME_CollisionsOffsets for LayerMacroblockEditor.LocalPage;
+	ME_MacroblocksIds.clear();
+	ME_MacroblocksNames.clear();
+	ME_MacroblocksCustoms.clear();
+	ME_MacroblocksNoClips.clear();
+	ME_MacroblocksDisabledClips.clear();
+	ME_MacroblocksCollisions.clear();
+	ME_MacroblocksUpdate = -1;
+	ME_ClipsCustoms.clear();
+	ME_ClipsDisabled.clear();
+	ME_ClipsNames.clear();
+	ME_ClipsOffsets.clear();
+	ME_ClipsDirs.clear();
+	ME_MacroblockId = NullId;
+	ME_EditMode = False;
+	ME_DetailsUpdate = -1;
+	ME_MacroblockCoord = Int3;
+	ME_CollisionMode = False;
+	ME_CollisionsUpdate = -1;
+	ME_CollisionsOffsets.clear();
+	
+	declare Ident ME_SelectedMacroblock for LayerMacroblockEditor.LocalPage;
+	declare Integer ME_SelectedMacroblockUpdate for LayerMacroblockEditor.LocalPage;
+	declare Integer ME_SelectedClip for LayerMacroblockEditor.LocalPage;
+	declare Integer ME_SelectedCollision for LayerMacroblockEditor.LocalPage;
+	declare Integer ME_ActionUpdate for LayerMacroblockEditor.LocalPage;
+	declare Text ME_Action for LayerMacroblockEditor.LocalPage;
+	ME_SelectedMacroblock = NullId;
+	ME_SelectedMacroblockUpdate = -1;
+	ME_SelectedClip = -1;
+	ME_SelectedCollision = -1;
+	ME_ActionUpdate = -1;
+	ME_Action = "";
+	
+	SendBlockList();
+}
+
+// ---------------------------------- //
+// Main
+// ---------------------------------- //
+main() {
+	Load();
+	
+	CursorBrightnessFactor = 1.;
+	HideBlockHelpers = False;
+	
+	declare Page <=> GetLayer("MacroblockEditor").LocalPage;
+	declare Ident ME_SelectedMacroblock for Page;
+	declare Integer ME_SelectedMacroblockUpdate for Page;
+	declare Integer ME_ActionUpdate for Page;
+	declare Text ME_Action for Page;
+	declare Integer ME_SelectedClip for Page;
+	declare Integer ME_SelectedCollision for Page;
+	declare Boolean ME_EditMode for Page;
+	declare Boolean ME_CollisionMode for Page;
+	
+	declare Integer PrevSelectedMacroblockUpdate;
+	declare Integer PrevActionUpdate;
+	declare Integer PrevSelectedClip;
+	declare Integer PrevSelectedCollision;
+	
+	declare DisplayMode = 0;
+	declare PrevDisplayMode = DisplayMode;
+	
+	// @Debug
+	//ListAllClips();
+	
+	while (True) {
+		yield;
+		
+		if (PrevSelectedMacroblockUpdate != ME_SelectedMacroblockUpdate) {
+			PrevSelectedMacroblockUpdate = ME_SelectedMacroblockUpdate;
+			ViewMacroblock(ME_SelectedMacroblock);
+			SendMacroblockDetails(ME_SelectedMacroblock);
+			SendMacroblockCollisions(ME_SelectedMacroblock);
+			
+			PrevSelectedCollision = -2;
+			PrevSelectedClip = -2;
+		}
+		
+		if (PrevDisplayMode != DisplayMode) {
+			PrevDisplayMode = DisplayMode;
+			
+			PrevSelectedCollision = -2;
+			PrevSelectedClip = -2;
+		}
+		
+		if (ME_CollisionMode || DisplayMode == 1) {
+			if (PrevSelectedCollision != ME_SelectedCollision) {
+				PrevSelectedCollision = ME_SelectedCollision;
+				ViewCollisions(ME_SelectedMacroblock);
+			}
+		} else if (ME_EditMode || DisplayMode == 0) {
+			if (PrevSelectedClip != ME_SelectedClip) {
+				PrevSelectedClip = ME_SelectedClip;
+				ViewClips(ME_SelectedMacroblock);
+			}
+		}
+		
+		if (PrevActionUpdate != ME_ActionUpdate) {
+			PrevActionUpdate = ME_ActionUpdate;
+			
+			switch (ME_Action) {
+				case "GenerateMetadata"			: GenerateMacroblocksMetadata();
+				case "SaveMetadata"				: SaveMacroblocksMetadata();
+				case "CheckVersion"				: CheckMacroblocksVersion();
+				case "ResetMetadata"			: ResetMacroblocksMetadata();
+				case "LogMetadata"				: LogMacroblocksMetadata();
+				case "ExportMetadata"			: ExportMacroblocksMetadata();
+				case "EditClips"				: EditClips();
+				case "AddClip"					: AddClip();
+				case "RemoveClip"				: RemoveClip();
+				case "EnableClip"				: EnableClip();
+				case "DisableClip"				: DisableClip();
+				case "UpdateClipDetails"		: EditClip(False);
+				case "EditCollisions"			: EditCollisions();
+				case "AddCollision"				: AddCollision();
+				case "RemoveCollision"			: RemoveCollision();
+				case "UpdateCollisionDetails"	: EditCollision(False);
+				case "DisplayModeClips"			: DisplayMode = 0;
+				case "DisplayModeCollisions"	: DisplayMode = 1;
+			}
+		}
+		
+		foreach (Event in PendingEvents) {
+			if (Event.Type == CEditorPluginEvent::Type::CursorSelectionEnd) {
+				if (ME_EditMode) EditClip(True);
+				else if (ME_CollisionMode) EditCollision(True);
+			}
+		}
+	}
+	
+	Unload();
+}

@@ -1,0 +1,95 @@
+#Include "TextLib" as TL
+
+#Include "Libs/Openplanet/Manialink2.Script.txt"					as Manialink
+#Include "Libs/Openplanet/TMConsole/UIXmlBuilder.Script.txt"		as UIXmlBuilder
+#Include "Libs/Openplanet/TMConsole/Menu/MenuLayers.Script.txt" 	as Layers
+
+#Const C_LayerName				"Layer_TMC_Plugin_NotificationsPopUp"
+
+Void CreateLayer()
+{
+  // declare TXTOpen 	= TL::ToUpperCase(_("Press \"Left Stick\" to open the Record Center"));
+
+	declare Real LayerScale = 0.60;
+	declare Vec3 LayerPos 	= <0. / LayerScale, 57.85 / LayerScale, 15.>;
+	declare Text[][] LayersContent;
+
+	LayersContent.add(["Title", 	"Title",     "Record beaten!", 	"2",	"", "", "Net_MiscMode_MenuPopupTitle"]);
+	LayersContent.add(["Space", 	"", 	     "", 			 	"1",	"", "", ""]);
+	LayersContent.add(["Label", 	"Score",  "",	 		"1",	"", "Big Bg3", ""]);
+	LayersContent.add(["Label", 	"Desc",  "",	 		"1",	"", "Dark Bg3", ""]);
+	LayersContent.add(["Label", 	"Open",  "TouchPad to open",	 		"1",	"", "Dark Right", ""]);
+	LayersContent.add(["Space", 	"", 	     "", 			 	"1",	"", "", ""]);
+
+	declare MLShowAnim = UIXmlBuilder::GetShowAnim(LayersContent, LayerPos);
+
+  declare ML =
+  """
+  <frame scale="{{{LayerScale}}}">
+		{{{UIXmlBuilder::GetXml("PluginNotificationsPopUp", LayersContent, 1., LayerPos)}}}
+	</frame>
+
+	<script><!--
+		#Include "TextLib" as TL
+		{{{Manialink::GetIncludes()}}}
+		#Const DebugName "L_PluginNotificationsPopUp"
+		{{{Manialink::Load()}}}
+		main()
+		{
+
+			// CONTROLS DECLARATIONS
+			declare Label_Score			    <=> (Page.MainFrame.GetFirstChild("Label_Score") 			as CMlLabel);
+			declare Label_Desc			    <=> (Page.MainFrame.GetFirstChild("Label_Desc") 			as CMlLabel);
+
+			{{{MLShowAnim[0]}}}
+
+			// VAR DECLARATIONS
+
+			declare Text 	Net_NotificationsPopUp_Description 	 for Page;
+			declare Text 	Net_NotificationsPopUp_Score 	       for Page;
+
+			log(Now^" > LOAD OK : {{{C_LayerName}}}");
+
+			while(True)
+			{
+				yield;
+
+				EnableMenuNavigation(False, False, Null, 1);
+
+				{{{MLShowAnim[1]}}}
+
+				LibManialink_AnimLoop();
+
+				if(!PageIsVisible) continue;
+
+        Label_Score.Value = TL::ToUpperCase(Net_NotificationsPopUp_Score);
+        Label_Desc.Value = TL::ToUpperCase(Net_NotificationsPopUp_Description);
+			}
+		}
+	--></script>
+	""";
+
+
+	Layers::Create(C_LayerName, ML);
+	Layers::Attach(C_LayerName);
+	declare Layer = Layers::Get(C_LayerName);
+	Layer.OutAnimation = CUILayer::EUILayerAnimation::UpFast;
+	Layer.IsVisible = False;
+}
+
+
+
+Void Load()
+{
+	CreateLayer();
+}
+
+CUILayer GetLayer()
+{
+	return Layers::Get(C_LayerName);
+}
+
+Text GetLayerName()
+{
+	return C_LayerName;
+}

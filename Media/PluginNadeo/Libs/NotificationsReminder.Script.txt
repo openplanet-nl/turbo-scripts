@@ -1,0 +1,80 @@
+
+#Include "Libs/Openplanet/Manialink2.Script.txt"					as Manialink
+#Include "Libs/Openplanet/TMConsole/UIXmlBuilder.Script.txt"		as UIXmlBuilder
+#Include "Libs/Openplanet/TMConsole/Menu/MenuLayers.Script.txt" 	as Layers
+
+#Const C_LayerName				"Layer_TMC_Plugin_NotificationsReminder"
+
+Void CreateLayer()
+{
+  // declare TXTOpen 	= TL::ToUpperCase(_("Press \"Left Stick\" to open the Record Center"));
+
+	declare Real LayerScale = 0.35;
+	declare Vec3 LayerPos 	= <0. / LayerScale, 85.75 / LayerScale, 15.>;
+	declare Text[][] LayersContent;
+
+	LayersContent.add(["Label", 	"Info",  "New record(s)!",	 		"1",	"", "Bg3", ""]);
+	LayersContent.add(["Label", 	"Open",  "TouchPad to open",	 		"1",	"", "Dark Right", ""]);
+	LayersContent.add(["Space", 	"", 	     "", 			 	"1",	"", "", ""]);
+
+	declare MLShowAnim = UIXmlBuilder::GetShowAnim(LayersContent, LayerPos);
+
+  declare ML =
+  """
+  <frame scale="{{{LayerScale}}}">
+		{{{UIXmlBuilder::GetXml("PluginNotificationsReminder", LayersContent, 1., LayerPos)}}}
+	</frame>
+
+	<script><!--
+		{{{Manialink::GetIncludes()}}}
+		#Const DebugName "L_PluginNotificationsReminder"
+		{{{Manialink::Load()}}}
+		main()
+		{
+			{{{MLShowAnim[0]}}}
+
+			// VAR DECLARATIONS
+
+
+			log(Now^" > LOAD OK : {{{C_LayerName}}}");
+
+			while(True)
+			{
+				yield;
+
+				EnableMenuNavigation(False, False, Null, 1);
+
+				{{{MLShowAnim[1]}}}
+
+				LibManialink_AnimLoop();
+
+				if(!PageIsVisible) continue;
+			}
+		}
+	--></script>
+	""";
+
+
+	Layers::Create(C_LayerName, ML);
+	Layers::Attach(C_LayerName);
+	declare Layer = Layers::Get(C_LayerName);
+	Layer.OutAnimation = CUILayer::EUILayerAnimation::UpFast;
+	Layer.IsVisible = False;
+}
+
+
+
+Void Load()
+{
+	CreateLayer();
+}
+
+CUILayer GetLayer()
+{
+	return Layers::Get(C_LayerName);
+}
+
+Text GetLayerName()
+{
+	return C_LayerName;
+}

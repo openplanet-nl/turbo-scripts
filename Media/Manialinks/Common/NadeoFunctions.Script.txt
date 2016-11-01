@@ -1,0 +1,1178 @@
+#RequireContext CManiaplanetPlugin
+#Const InterfaceName 			"NadeoFunctions"
+#Const C_ImgPath_Demo 			"file://Media/Manialinks/Common/Demo/"
+#Const C_ImgPath_Connect 		"file://Media/Manialinks/Common/Connect/"
+#Const C_LogosPath 				"file://Media/Manialinks/Common/Logos/"
+#Const C_PopupSizeX 			140
+#Const C_PopupSizeY 			30
+#Const C_LogoSize 				38
+#Const C_ButtonSize 			36
+#Const C_ButtonScale 			0.9
+
+#Const C_ConnectPos				113
+#Const C_ConnectSizeX 			51
+#Const C_ConnectItemSizeY 		6.5
+#Const C_ConnectItemMarginX		4
+#Const C_ConnectTitleMarginX	8
+#Const C_ItemMaxCount_Links		9
+#Const C_ItemMaxCount_Share		5
+
+#Const C_ConnectTextSize		1
+#Const C_ConnectTextScale		1.2
+
+#Const C_GA_Category_Demo		"pluginDemo"
+#Const C_GA_Category_Share		"pluginShare"
+#Const C_GA_Category_Link		"pluginLink"
+
+#Include "TextLib" as TL
+#Include "TextLib" as TextLib
+
+#Include "MathLib" as ML
+#Include "MathLib" as MathLib
+
+
+/////////////////////////////////////
+// LIVE : DEBUG
+
+declare Boolean G_Debug_Debug;
+
+Void Debug_Log(Text Message)
+{
+	if(G_Debug_Debug)
+	{
+		log(Message);
+	}
+}
+
+Void Debug_Log(Text[] Message)
+{
+	if(G_Debug_Debug)
+	{
+		log(Message);
+	}
+}
+
+Void Debug_Log(Text[Text] Message)
+{
+	if(G_Debug_Debug)
+	{
+		log(Message);
+	}
+}
+
+Void Debug_LogLine()
+{
+	Debug_Log("---------------------------------------------");
+}
+
+Void Debug_Init(Boolean _DebugMode)
+{
+	G_Debug_Debug = _DebugMode;
+    if(G_Debug_Debug)
+    {
+        Debug_LogLine();
+    }
+}
+
+
+/////////////////////////////////////
+// LIVE : EVENT
+
+declare Text[][][] G_Event_PendingEvents;
+declare Text[][][] G_Event_UpcomingEvents;
+
+Void Event_Init() {
+
+}
+
+Void Event_DispatchCustomEvent(Text _Type, Text[] _Data) {
+    if(_Data.count > 0)
+    {
+        Debug_Log("[Event] "^_Type^" "^_Data[0]);
+    }
+    else
+    {
+        Debug_Log("[Event] "^_Type);
+    }
+	G_Event_UpcomingEvents.add([[_Type], _Data]);
+}
+
+Void Event_DispatchCustomEvent(Text _Type) {
+	Event_DispatchCustomEvent(_Type, Text[]);
+}
+
+Text[][][] Event_PendingEvents() {
+	return G_Event_PendingEvents;
+}
+
+Void Event_Yield() {
+    G_Event_PendingEvents = G_Event_UpcomingEvents;
+	if(G_Event_UpcomingEvents.count > 0) {
+		G_Event_UpcomingEvents = Text[][][];
+	}
+}
+
+
+/////////////////////////////////////
+// LIVE : XML
+
+Text XML_NodeToText(CXmlNode _Node)
+{
+	if(_Node == Null)
+	{
+		Debug_Log("[XML] Undefined node");
+		return "";
+	}
+	return _Node.TextContents;
+}
+
+Text[Text] XML_NodeToArray(CXmlNode _Node)
+{
+	declare Text[Text] result;
+    if(_Node == Null)
+	{
+		Debug_Log("[XML] Undefined node");
+		return result;
+	}
+    foreach(child in _Node.Children)
+    {
+        result[child.Name] = XML_NodeToText(child);
+    }
+	return result;
+}
+
+Text[Text][] XML_NodeToArray2(CXmlNode _Node)
+{
+	declare Text[Text][] result;
+    if(_Node == Null)
+	{
+		Debug_Log("[XML] Undefined node");
+		return result;
+	}
+    foreach(child in _Node.Children)
+    {
+        result.add(XML_NodeToArray(child));
+    }
+	return result;
+}
+
+Text[Text][][] XML_NodeToArray3(CXmlNode _Node)
+{
+	declare Text[Text][][] result;
+    if(_Node == Null)
+	{
+		Debug_Log("[XML] Undefined node");
+		return result;
+	}
+    foreach(child in _Node.Children)
+    {
+        result.add(XML_NodeToArray2(child));
+    }
+	return result;
+}
+
+CXmlDocument XML_TextToXMLDocument(Text _XmlText) {
+	declare CXmlDocument Xml <=> Xml.Create(_XmlText);
+	if(Xml == Null)
+	{
+		Debug_Log("[XML] Couldn't create CXmlDocument");
+	}
+	return Xml;
+}
+
+/////////////////////////////////////
+// LIVE : HTTP
+
+declare Ident[Ident] G_HTTP_Requests;
+declare Text[Ident] G_HTTP_RequestsResultsSuccess;
+declare Text[Ident] G_HTTP_RequestsResultsError;
+
+Ident HTTP_PostAsync(Text _Url, Text _Data) {
+	declare Request <=> Http.CreatePost(_Url, _Data);
+	if (Request != Null) {
+		G_HTTP_Requests[Request.Id] = Request.Id;
+	}
+	Debug_Log("[HTTP] PostAsync: "^_Url);
+	return Request.Id;
+}
+
+Ident HTTP_GetAsync(Text _Url) {
+	declare Request <=> Http.CreateGet(_Url, False);
+	if (Request != Null) {
+		G_HTTP_Requests[Request.Id] = Request.Id;
+	}
+	Debug_Log("[HTTP] GetAsync ("^Request.Id^"): "^_Url);
+	return Request.Id;
+}
+
+Void Private_HTTP_HandleFinishedRequests() {
+	declare Ident[] ToRemove;
+	foreach (Request in Http.Requests) {
+		if (!G_HTTP_Requests.existskey(Request.Id)) continue; //Ignore other requests
+		if (Request.IsCompleted) { 
+			if (Request.StatusCode == 200) {
+				G_HTTP_RequestsResultsSuccess[Request.Id] = Request.Result;
+				//Debug_Log("[HTTP] OK "^Request.Id);
+				Event_DispatchCustomEvent("HTTP.Success", [""^Request.Id, Request.Result]);
+			}
+			else {
+				G_HTTP_RequestsResultsError[Request.Id] = Request.Result;
+                Event_DispatchCustomEvent("HTTP.Error", [""^Request.Id, Request.Result]);
+                Debug_Log("[HTTP] "^Request.Id^": "^Request.StatusCode);
+			}
+			ToRemove.add(Request.Id);
+		}
+	}
+	foreach (RequestId in ToRemove) {
+		G_HTTP_Requests.removekey(RequestId);
+		Http.Destroy(Http.Requests[RequestId]);
+	}
+}
+
+Void Private_HTTP_EmptyResultsSuccess() {
+	foreach(RequestId => Request in G_HTTP_RequestsResultsSuccess) {
+		G_HTTP_RequestsResultsSuccess.removekey(RequestId);
+	}
+}
+
+Void Private_HTTP_EmptyResultsError() {
+	foreach(RequestId => Request in G_HTTP_RequestsResultsError) {
+		G_HTTP_RequestsResultsError.removekey(RequestId);
+	}
+}
+
+Text[Ident] HTTP_PendingResponses() {
+	declare Text[Ident] result;
+	Private_HTTP_HandleFinishedRequests();
+	result = G_HTTP_RequestsResultsSuccess;
+	Private_HTTP_EmptyResultsSuccess();
+	return result;
+}
+
+Text[Ident] HTTP_PendingErrors() {
+	declare Text[Ident] result;
+	Private_HTTP_HandleFinishedRequests();
+	result = G_HTTP_RequestsResultsError;
+	Private_HTTP_EmptyResultsError();
+	return result;
+}
+
+Void HTTP_Loop() {
+    Private_HTTP_HandleFinishedRequests();
+}
+/////////////////////////////////////
+// LIVE : URL
+
+Text Private_URL_BuildQueryString(Text[Text] _Query) {
+	declare Text result = "";
+	foreach (Key => Value in _Query) {
+		result ^= TextLib::URLEncode(Key)^"="^TextLib::URLEncode(Value)^"&";
+	}
+	return result;
+}
+
+Text URL_BuildURL(Text _Url, Text[Text] _Query) {
+	return _Url^"?"^Private_URL_BuildQueryString(_Query);
+}
+
+
+
+/////////////////////////////////////
+// LIVE : APPLICATION DATA
+
+declare Text G_ApplicationData_BaseUrl;
+declare Text G_ApplicationData_Login;
+declare Text G_ApplicationData_SID;
+declare Text[] G_ApplicationData_RequestIds;
+
+Text ApplicationData_BuildUrl(Text _Route, Text[Text] _Query) {
+	declare Text[Text] Query = _Query;
+	if(G_ApplicationData_Login != "")
+    {
+        Query["login"] = G_ApplicationData_Login;
+    }
+	if (G_ApplicationData_SID != "") {
+		declare Text[] SID = TextLib::Split("=", G_ApplicationData_SID);
+		if (SID.count == 2) {
+			Query[SID[0]] = SID[1];
+		}
+	}
+	return URL_BuildURL(G_ApplicationData_BaseUrl^_Route, Query);
+}
+
+Boolean ApplicationData_HasError(Text _XmlText) {
+	declare Text ValidTextStart = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<response";
+	if (TextLib::SubText(_XmlText, 0, TextLib::Length(ValidTextStart)) != ValidTextStart) {
+		Debug_Log("[ApplicationData] Error: "^_XmlText);
+		return True;
+	}
+	return False;
+}
+
+Void Private_ApplicationData_CustomEventListener(Text[][] _Event) {
+    switch(_Event[0][0]) {
+        case "HTTP.Success": {
+            if(G_ApplicationData_RequestIds.exists(_Event[1][0])) {
+                if(ApplicationData_HasError(_Event[1][1])) {
+                    Event_DispatchCustomEvent("ApplicationData.Error", [_Event[1][0], _Event[1][1]]);
+                    return;
+                }
+                Event_DispatchCustomEvent("ApplicationData.Success", [_Event[1][0], _Event[1][1]]);
+            }
+        }
+    }
+}
+
+Void ApplicationData_Init(Text _BaseUrl, Text _Login, Text _SID) {
+	G_ApplicationData_SID = _SID;
+	G_ApplicationData_BaseUrl = _BaseUrl;
+	G_ApplicationData_Login = _Login;
+}
+
+Void ApplicationData_Init(Text _BaseUrl, Text _Login) {
+	ApplicationData_Init(_BaseUrl, _Login, "");
+}
+
+Void ApplicationData_Register(Ident _RequestId) {
+    if(!G_ApplicationData_RequestIds.exists(""^_RequestId)) {
+        Debug_Log("[ApplicationData] Registered "^_RequestId);
+        G_ApplicationData_RequestIds.add(""^_RequestId);
+    }
+}
+
+Void ApplicationData_Loop() {
+    foreach(Event in Event_PendingEvents()) {
+        Private_ApplicationData_CustomEventListener(Event);
+    }
+}
+
+
+
+/////////////////////////////////////
+// LIVE : ANALYTICS
+
+declare Text G_GoogleAnalytics_TrackingId;
+declare Boolean G_GoogleAnalytics_Enabled;
+
+Void GoogleAnalytics_Init(Boolean _Enabled, Text _TrackingId) {
+	G_GoogleAnalytics_Enabled = _Enabled;
+	G_GoogleAnalytics_TrackingId = _TrackingId;
+}
+
+Text GoogleAnalytics_GetURL(Text[Text] _Query) {
+	declare Text[Text] Query = _Query;
+	Query["v"] = "1";
+	Query["z"] = ""^MathLib::Rand(0,10000); //Randomness to avoid cache
+	Query["cid"] = ""^LocalUser.Id;
+	Query["tid"] = G_GoogleAnalytics_TrackingId;
+	return URL_BuildURL("http://www.google-analytics.com/collect", Query);
+}
+
+Void GoogleAnalytics_TrackEvent(Text _Category, Text _Action, Text _Label, Integer _Value) {
+	if (!G_GoogleAnalytics_Enabled) {
+		return;
+	}
+	declare Text[Text] Query;
+	Query["t"] = "event";
+	Query["ec"] = _Category;
+	Query["ea"] = _Action;
+	if (_Label != "") {
+		Query["el"] = _Label;
+	}
+	if (_Value > 0) {
+		Query["ev"] = ""^_Value;
+	}
+	HTTP_GetAsync(GoogleAnalytics_GetURL(Query));
+}
+
+Void GoogleAnalytics_TrackEvent(Text _Category, Text _Action, Text _Label) {
+	GoogleAnalytics_TrackEvent(_Category, _Action, _Label, -1);
+}
+
+Void GoogleAnalytics_TrackEvent(Text _Category, Text _Action) {
+	GoogleAnalytics_TrackEvent(_Category, _Action, "");
+}
+
+
+
+/////////////////////////////////////
+// NADEO : DEMO
+
+Text GetTimeWithColor(Integer _Time, Boolean _ShowSeconds) {
+	declare Text Color = "";
+	declare Integer Time;
+	
+	if  	(_Time < 0) 				Time 	= 0;
+	else 								Time 	= _Time;
+	
+	if 		(Time <= 0) 				Color 	= "$f00";
+	else if (Time > 0 && Time < 300) 	Color 	= "$f60";
+	else 								Color 	= "$0f0";
+	
+	if(_ShowSeconds) {
+		if(Time <= 0) 
+			return Color ^ "00:00:00";
+		else if(Time < 600) 
+			return Color ^ "00:0" ^ TL::SubText(TL::TimeToText(Time*1000, True), 0, 4);
+		else if(Time < 3600) 
+			return Color ^ "00:" ^ 	TL::SubText(TL::TimeToText(Time*1000, True), 0, 5);
+		else if(Time < 36000) 
+			return Color ^ "0" ^ 	TL::SubText(TL::TimeToText(Time*1000, True), 0, 7);
+		else 
+			return Color ^ 			TL::SubText(TL::TimeToText(Time*1000, True), 0, 8);
+	}
+	if(Time/3600 >= 3)
+		return Color ^ TL::ToText(Time/3600);
+		
+	return Color ^ TL::ToText(Time/60);
+}
+
+Text GetBaseTitleName(Text _BaseTitleId) {
+	declare Text Name;
+	switch (_BaseTitleId) {
+		case "SMStorm" 		: Name = "Storm";
+		case "TMCanyon" 	: Name = "Canyon";
+		case "TMValley" 	: Name = "Valley";
+		case "TMLagoon" 	: Name = "Lagoon" ;
+		case "TMStadium" 	: Name = "Stadium";
+	}
+	return Name;
+}
+
+Text GetBaseTitleIconUrl(Text _BaseTitleId) {
+	declare Text Icon = GetBaseTitleName(_BaseTitleId);
+	return C_ImgPath_Demo^"demo-icon-"^Icon^".png";
+}
+
+Text GetBaseTitleLogoUrl(Text _BaseTitleId) {
+	declare Text Logo = GetBaseTitleName(_BaseTitleId);
+	return C_LogosPath^Logo^".dds";
+}
+
+Text FormatTitle (Text _Title) {
+	return TL::ToUpperCase(TL::SubText(_Title, 0, 1))^TL::ToLowerCase(TL::SubText(_Title, 1, TL::Length(_Title)-1));
+}
+
+main() {
+	
+	declare Layer_WidgetConnect 				= UILayerCreate();
+	Layer_WidgetConnect.Type 					= CUILayer::EUILayerType::ManiaplanetPlugin;
+	declare Layer_WidgetConnect_DesiredVisible 	= True;
+	Layer_WidgetConnect.IsVisible 				= Layer_WidgetConnect_DesiredVisible;
+	Layer_WidgetConnect.ManialinkPage 			= 
+	"""
+	
+	<frame id="Frame_Widget" posn="{{{C_ConnectPos}}} 90 10">
+		<quad 	id="Quad_WidgetBg"		posn="0 0 0" sizen="8 6" scriptevents="1"  bgcolor="0006" bgcolorfocus="09f" halign="center" />
+		<quad 	id="Quad_WidgetIcon"	posn="0 -3 0.1" sizen="4 4" valign="center" halign="center" image="{{{C_ImgPath_Connect}}}icon-connect.png" />
+	</frame>
+	
+	<script><!--
+		
+		#Include "MathLib" as ML
+		#Include "TextLib" as TL			
+		
+		main() {		
+		
+			declare Quad_WidgetBg			<=> (Page.MainFrame.GetFirstChild("Quad_WidgetBg")		as CMlQuad);
+			declare Quad_WidgetIcon			<=> (Page.MainFrame.GetFirstChild("Quad_WidgetIcon")	as CMlQuad);
+			
+			declare Boolean Layer_WidgetConnect_CanShowConnectPlugin for Page;
+			
+			while(True) {
+				yield;
+				
+				foreach(Event in PendingEvents) {
+					switch(Event.Type) {			
+					
+						case CMlEvent::Type::MouseClick: {
+							if (Event.Control == Quad_WidgetBg) {	
+								SendCustomEvent("Event_Connect_Toggle", [""]);
+							}
+						}
+					}
+				}
+				
+				if(Layer_WidgetConnect_CanShowConnectPlugin) 	{ Quad_WidgetIcon.Opacity = 1.; 	Quad_WidgetBg.Visible = True; }
+				else 									{ Quad_WidgetIcon.Opacity = 0.55; 	Quad_WidgetBg.Visible = False; }
+				
+			}
+		}
+	--></script>
+	""";
+	
+	declare Layer_WidgetDemo 				= UILayerCreate();
+	Layer_WidgetDemo.Type 					= CUILayer::EUILayerType::ManiaplanetPlugin;
+	declare Layer_WidgetDemo_DesiredVisible = False;
+	Layer_WidgetDemo.IsVisible 				= Layer_WidgetDemo_DesiredVisible;
+	Layer_WidgetDemo.ManialinkPage 			= 
+	"""
+	<frame id="Frame_Widget" posn="135 90 10">
+		<quad 	id="Quad_WidgetBg"		posn="0 0 0" sizen="13 6" scriptevents="1"  bgcolor="0006" bgcolorfocus="09f" halign="center" />
+		<label 	id="Label_WidgetDemo"  	posn="0 -3.5 0" sizen="13 6" style="TextRaceChrono" textsize="2" valign="center2" halign="center" />
+	</frame>
+	
+	<script><!--
+		
+		#Include "MathLib" as ML
+		#Include "TextLib" as TL			
+		
+		main() {		
+		
+			declare Quad_WidgetBg				<=> (Page.MainFrame.GetFirstChild("Quad_WidgetBg")		as CMlQuad);
+			declare Label_WidgetDemo			<=> (Page.MainFrame.GetFirstChild("Label_WidgetDemo")	as CMlLabel);
+			
+			declare Text Layer_WidgetDemo_Time for Page;
+			
+			while(True) {
+				yield;
+				
+				foreach(Event in PendingEvents) {
+					switch(Event.Type) {			
+					
+						case CMlEvent::Type::MouseClick: {
+							if (Event.Control == Quad_WidgetBg) {	
+								SendCustomEvent("Event_Demo_Toggle", [""]);
+							}
+						}
+					}
+				}
+				Label_WidgetDemo.Value = Layer_WidgetDemo_Time;
+			}
+		}
+	--></script>
+	""";
+	
+	
+	
+	
+	
+	declare Layer_Connect = UILayerCreate();
+	Layer_Connect.Type = CUILayer::EUILayerType::ManiaplanetPlugin;
+	declare Layer_Connect_DesiredVisible = False;
+	Layer_Connect.IsVisible = Layer_Connect_DesiredVisible;
+	
+	declare SizeY 				= C_ConnectItemSizeY*(C_ItemMaxCount_Share+C_ItemMaxCount_Links) + C_ConnectTitleMarginX*4 + 1.5*C_ConnectTextScale;
+	declare ItemSizeX 			= C_ConnectSizeX-2*C_ConnectItemMarginX;
+	declare SharePosX			= C_ConnectItemSizeY*C_ItemMaxCount_Links + C_ConnectTitleMarginX*2;
+	declare LabelInfoSharePosX	= C_ConnectItemSizeY*C_ItemMaxCount_Share + C_ConnectTitleMarginX*0.9;
+	declare ItemTitleSizex		= (ItemSizeX-C_ConnectItemSizeY-3)/C_ConnectTextScale;
+	Layer_Connect.ManialinkPage = 
+	"""
+	<framemodel id="Framemodel_Item">
+		<quad 	id="Quad_Icon" 		posn="0.5 						 0  	 0.1" 	sizen="{{{C_ConnectItemSizeY-1.75}}} {{{C_ConnectItemSizeY-1.75}}}"  	valign="center" 	halign="left" image="{{{C_ImgPath_Connect}}}icon-facebook.png"  />
+		<label 	id="Label_Title" 	posn="{{{C_ConnectItemSizeY}}} 	 0  	 0.1"  	sizen="{{{ItemTitleSizex}}} 		 {{{C_ConnectItemSizeY}}}"  		valign="center2" 	halign="left" textsize="{{{C_ConnectTextSize}}}" scale="{{{C_ConnectTextScale}}}" text="Facebook" />
+		<quad 	id="Button_Bg" 		posn="0 						-0.05 	-0.1" 	sizen="{{{ItemSizeX}}} 				 {{{C_ConnectItemSizeY}}}" 			valign="center" 	halign="left" colorize="000" opacity="0.33" style="Bgs1InRace" substyle="BgWindow4"  scriptevents="1" />
+		
+	</framemodel>
+	
+	<frame posn="{{{C_ConnectPos}}} 83.75 0">
+		<frame id="Frame_Connect" posn="0 0 10" >		
+			
+			<frame id="Frame_Links" posn="0 -3">
+				<label id="Label_TitleLinks" posn="0 -4 0.4" 	sizen="{{{ItemSizeX}}} 6" 	style="TextButtonBig" 	textsize="{{{C_ConnectTextSize}}}" scale="{{{C_ConnectTextScale}}}" valign="bottom" text="LINKS" />
+				""";
+	for(I, 1, C_ItemMaxCount_Links)
+		Layer_Connect.ManialinkPage ^ = """ <frameinstance id="Frame_LinksItem{{{I}}}"  	posn="0 -{{{C_ConnectItemSizeY*(I-1) + C_ConnectTitleMarginX}}}	0.5"  	modelid="Framemodel_Item" />	""";
+	Layer_Connect.ManialinkPage ^ = """			
+			</frame>
+			
+			<frame id="Frame_Share" posn="0 -{{{SharePosX}}}">
+				<label id="Label_TitleShare" 	posn="0 -4 0.4" 	sizen="{{{ItemSizeX}}} 6" 	style="TextButtonBig" 	textsize="{{{C_ConnectTextSize}}}" scale="{{{C_ConnectTextScale}}}" valign="bottom" text="SHARE" />
+				""";
+	for(I, 1, C_ItemMaxCount_Share)
+		Layer_Connect.ManialinkPage ^ = """ <frameinstance id="Frame_ShareItem{{{I}}}"  posn="0 -{{{C_ConnectItemSizeY*(I-1) + C_ConnectTitleMarginX}}}	0.5"  	modelid="Framemodel_Item" />	""";
+	Layer_Connect.ManialinkPage ^ = """	
+				<label id="Label_InfoShare" posn="0 -{{{LabelInfoSharePosX}}} 0.4" 	sizen="{{{ItemSizeX/C_ConnectTextScale}}} 12"   maxline="2" autonewline="1"	textsize="{{{C_ConnectTextSize}}}" scale="{{{C_ConnectTextScale}}}" text="Invite your friends to play for free!" />
+			</frame>
+				
+			<quad id="Quad_Title" 		posn="-{{{C_ConnectItemMarginX}}} 	 0	 		 0.2"	sizen="{{{C_ConnectSizeX}}} 	1" 				bgcolor="5cf"							valign="top" 	halign="left" 	 />
+			<quad id="Quad_Arrow" 		posn="-{{{C_ConnectItemMarginX-3}}} -0.25	 	 0.1"	sizen="2.5						2.5" 			style="Icons128x32_1" colorize="5cf"	substyle="ArrowUp"  			valign="bottom" halign="left"	 />
+			<quad id="Quad_MetalBar"  	posn="-{{{C_ConnectItemMarginX}}} 	-{{{SizeY}}} 0.1"	sizen="{{{C_ConnectSizeX}}} 	1" 				style="Bgs1" 	substyle="BgMetalBar" 	valign="top" 	halign="left" 	 />
+			<quad id="Quad_Bg" 			posn="-{{{C_ConnectItemMarginX}}} 	0.6	 		 0.0"	sizen="{{{C_ConnectSizeX}}} 	{{{SizeY}}}" 	style="Bgs1" 	substyle="BgWindow2" 	valign="top" 	halign="left" 	 />
+		</frame>
+	</frame>
+	
+	<script><!--
+		
+		#Include "MathLib" as ML
+		#Include "TextLib" as TL			
+		
+		main() {						
+		
+		
+		
+		
+			declare Frame_Share 					<=> (Page.MainFrame.GetFirstChild("Frame_Share") 					as CMlFrame);
+			declare Label_TitleLinks 				<=> (Page.MainFrame.GetFirstChild("Label_TitleLinks") 				as CMlLabel);
+			declare Label_TitleShare 				<=> (Page.MainFrame.GetFirstChild("Label_TitleShare") 				as CMlLabel);
+			declare Label_InfoShare 				<=> (Page.MainFrame.GetFirstChild("Label_InfoShare") 				as CMlLabel);
+			declare Quad_MetalBar 					<=> (Page.MainFrame.GetFirstChild("Quad_MetalBar") 					as CMlQuad);
+			declare Quad_Bg 						<=> (Page.MainFrame.GetFirstChild("Quad_Bg") 						as CMlQuad);
+		
+		
+			declare CMlFrame[] 	Frames_LinksItem;
+			declare CMlQuad[] 	Quads_LinksIcon;
+			declare CMlQuad[] 	Buttons_LinksBg;
+			declare CMlLabel[] 	Labels_LinksTitle;
+			
+			for(I, 1, {{{C_ItemMaxCount_Links}}}) {
+				Frames_LinksItem					.add( (Page.MainFrame.GetFirstChild("Frame_LinksItem"^I) 			as CMlFrame) );
+				Quads_LinksIcon						.add( (Frames_LinksItem[I-1].GetFirstChild("Quad_Icon") 			as CMlQuad) );
+				Buttons_LinksBg						.add( (Frames_LinksItem[I-1].GetFirstChild("Button_Bg") 			as CMlQuad) );
+				Labels_LinksTitle					.add( (Frames_LinksItem[I-1].GetFirstChild("Label_Title") 			as CMlLabel) );
+			}
+			
+			declare CMlFrame[] 	Frames_ShareItem;
+			declare CMlQuad[] 	Quads_ShareIcon;
+			declare CMlQuad[] 	Buttons_ShareBg;
+			declare CMlLabel[] 	Labels_ShareTitle;
+			
+			for(I, 1, {{{C_ItemMaxCount_Share}}}) {
+				Frames_ShareItem					.add( (Page.MainFrame.GetFirstChild("Frame_ShareItem"^I) 			as CMlFrame) );
+				Quads_ShareIcon						.add( (Frames_ShareItem[I-1].GetFirstChild("Quad_Icon") 			as CMlQuad) );
+				Buttons_ShareBg						.add( (Frames_ShareItem[I-1].GetFirstChild("Button_Bg") 			as CMlQuad) );
+				Labels_ShareTitle					.add( (Frames_ShareItem[I-1].GetFirstChild("Label_Title") 			as CMlLabel) );
+			}
+			
+			
+			
+			
+			declare Text  	Layer_Connect_CurrentShareUrl	for Page;
+			declare Text[] 	Layer_Connect_LinksName			for Page;
+			declare Text[] 	Layer_Connect_LinksUrl			for Page;
+			
+			
+			Label_TitleLinks		.Value 		= _("LINKS");
+			Label_TitleShare		.Value 		= _("SHARE");
+			Label_InfoShare			.Value 		= _("Invite your friends to play for free!");
+			
+			Labels_ShareTitle[0]	.Value		= _("Copy");
+			Labels_ShareTitle[1]	.Value		= _("Email");
+			Labels_ShareTitle[2]	.Value		= "Twitter";
+			Labels_ShareTitle[3]	.Value		= "Facebook";
+			Labels_ShareTitle[4]	.Value		= "Google+";
+			
+			Quads_ShareIcon[0]		.ImageUrl	= "{{{C_ImgPath_Connect}}}icon-copy.png";
+			Quads_ShareIcon[1]		.ImageUrl	= "{{{C_ImgPath_Connect}}}icon-email.png";
+			Quads_ShareIcon[2]		.ImageUrl	= "{{{C_ImgPath_Connect}}}icon-twitter.png";
+			Quads_ShareIcon[3]		.ImageUrl	= "{{{C_ImgPath_Connect}}}icon-facebook.png";
+			Quads_ShareIcon[4]		.ImageUrl	= "{{{C_ImgPath_Connect}}}icon-google+.png";
+			
+			
+			
+			
+			while(True) {
+				yield;
+				
+				if(PendingEvents.count == 0) continue;	
+				
+				Frame_Share.Visible = Layer_Connect_CurrentShareUrl != "";
+				
+				foreach(Event in PendingEvents) {
+					switch(Event.Type) {			
+					
+						case CMlEvent::Type::MouseOut: {
+							for(I, 0, Buttons_ShareBg.count-1) {
+								Buttons_ShareBg[I].Colorize = <0.,0.,0.>;
+							}
+							
+							for(I, 0, Layer_Connect_LinksName.count-1) {
+								Buttons_LinksBg[I].Colorize = <0.,0.,0.>;
+							}
+						}
+						
+						case CMlEvent::Type::MouseOver: {
+							if (Event.Control.ControlId == "Button_Bg") {
+								declare Boolean IsControlFound;
+								for(I, 0, Buttons_ShareBg.count-1) {
+									if (Event.Control == Buttons_ShareBg[I]) {
+										Buttons_ShareBg[I].Colorize = <1.,1.,1.>;
+										IsControlFound = True;
+										break;
+									}
+								}	
+								if(!IsControlFound) {
+									for(I, 0, Layer_Connect_LinksName.count-1) {
+										if (Event.Control == Buttons_LinksBg[I]) {
+											Buttons_LinksBg[I].Colorize = <1.,1.,1.>;
+											break;
+										}
+									}	
+								}
+							} 
+						}	
+						
+						case CMlEvent::Type::MouseClick: {
+							if (Event.Control.ControlId == "Button_Bg") {
+								declare Boolean IsControlFound;
+								for(I, 0, Buttons_ShareBg.count-1) {
+									if (Event.Control == Buttons_ShareBg[I]) {
+										SendCustomEvent("Event_Connect_ClickOnShare", [TL::ToText(I)]);
+										IsControlFound = True;
+										break;
+									}
+								}	
+								if(!IsControlFound) {
+									for(I, 0, Layer_Connect_LinksName.count-1) {
+										if (Event.Control == Buttons_LinksBg[I]) {
+											SendCustomEvent("Event_Connect_ClickOnLink", [TL::ToText(I)]);
+											break;
+										}
+									}
+								}
+							} 
+						}							
+						
+						case CMlEvent::Type::PluginCustomEvent: 	{	
+							
+							if(Event.PluginCustomEventType == "Event_Update") {
+								for(I, 0, {{{C_ItemMaxCount_Links-1}}}) {
+									if(I > Layer_Connect_LinksName.count-1) {
+										Frames_LinksItem[I]		.Visible 	= False;
+									} else {
+										Frames_LinksItem[I]		.Visible 	= True;
+										Quads_LinksIcon[I]		.ImageUrl 	= "{{{C_ImgPath_Connect}}}icon-"^Layer_Connect_LinksName[I]^".png" ;
+										Labels_LinksTitle[I]	.Value 		= Layer_Connect_LinksName[I];
+									}
+								}
+								
+								declare SizeY = {{{C_ConnectItemSizeY}}}*Layer_Connect_LinksName.count + {{{C_ConnectTitleMarginX*1.25 + 1.5*C_ConnectTextScale}}};
+								if(Layer_Connect_CurrentShareUrl != "")
+									SizeY += {{{C_ConnectItemSizeY}}}*{{{C_ItemMaxCount_Share}}}+ {{{C_ConnectTitleMarginX*2.75}}};
+								declare SharePosY = {{{C_ConnectItemSizeY}}}*Layer_Connect_LinksName.count + {{{C_ConnectTitleMarginX*2}}};
+								Frame_Share		.RelativePosition.Y 	= -SharePosY;
+								Quad_MetalBar	.RelativePosition.Y 	= -SizeY;
+								Quad_Bg			.Size.Y 				= SizeY+0.8;
+							}
+						}
+					}
+				}
+			}
+		}
+	--></script>
+	""";
+	
+	
+	
+	
+	
+	
+	declare Layer_Demo = UILayerCreate();
+	Layer_Demo.Type = CUILayer::EUILayerType::ManiaplanetPlugin;
+	declare Layer_Demo_DesiredVisible = False;
+	Layer_Demo.IsVisible = Layer_Demo_DesiredVisible;
+	Layer_Demo.ManialinkPage = 
+	"""
+	<frame posn="{{{160-C_PopupSizeX}}} 83.7 0">
+		<frame id="Frame_Message" 			posn="0 													 0 					   	 	10" >		
+			<label id="Label_Title" 		posn="22 													-3.5 				   	 	0.4" 	sizen="60 6" 											style="TextButtonBig" 					textsize="2" text="DEMO MODE" />
+			<label id="Label_Description" 	posn="22 													-7.75				   	 	0.3" 	sizen="75 1" 											style="TextValueSmall" 					textsize="1" text="" autonewline="1" maxline="3" />
+			<label id="Label_TimeLeft" 		posn="22.5 													-18 				   	 	0.3" 	sizen="13 1" 											style="TextButtonBig" 					textsize="5" text="$0f017" />
+			<label id="Label_Mn" 			posn="22.5 													-23.75 				   	 	0.3" 	sizen="20 1" 											style="TextValueSmallSm" 				textsize="1" text="$0f0mn left" />	
+			<label id="Button_EnterKey"		posn="{{{C_PopupSizeX-0.5-C_ButtonSize*C_ButtonScale}}} 	-{{{C_PopupSizeY-0.5}}}  	0.6" 	sizen="{{{C_ButtonSize}}} 	3" 							style="CardButtonMedium" 				textsize="1" text="ENTER KEY"	valign="bottom" halign="right" scriptevents="1" scale="{{{C_ButtonScale}}}" />
+			<label id="Button_Buy" 			posn="{{{C_PopupSizeX-0.5}}} 								-{{{C_PopupSizeY-0.5}}}  	0.6" 	sizen="{{{C_ButtonSize}}} 	3" 							style="CardButtonMediumSpecial" 		textsize="1" text="BUY" 		valign="bottom" halign="right" scriptevents="1" scale="{{{C_ButtonScale}}}" />
+			<quad id="Quad_Icon" 			posn="3.5 													-{{{C_PopupSizeY/2+0.5}}}	0.2" 	sizen="23         			{{{C_PopupSizeY-2}}}" 								 												valign="center"	halign="left"  	image="{{{C_ImgPath_Demo}}}demo-icon-canyon.png" 	keepratio="Fit"/>
+			<quad id="Quad_Logo" 			posn="{{{C_PopupSizeX-2}}} 			   						-1.5   					 	0.2"	sizen="{{{C_LogoSize}}}   	{{{C_LogoSize/2}}}" 								 												valign="top"	halign="right" 	image="{{{C_ImgPath_Demo}}}demo-logo-test.png" 		keepratio="Fit"/>
+			<quad id="Button_CloseMesage" 	posn="{{{C_PopupSizeX-0.5}}} 								-1.25 				  		0.7"	sizen="5 5" 											style="Icons64x64_1" 					substyle="Close" 				valign="top" 	halign="right"	 				scriptevents="1" hidden="1" />
+			<quad id="Button_MessageBg" 	posn="0.1 									 				-0.9 				  	 	0.1" 	sizen="{{{C_PopupSizeX}}} 	{{{C_PopupSizeY}}}" 		bgcolor="000" 											 				valign="top" 	halign="left" 	opacity="0.33" 	scriptevents="1" hidden="1" />
+			<quad id="Quad_MessageBg" 		posn="0 									 				 1					  	 	0.0"	sizen="{{{C_PopupSizeX}}} 	{{{C_PopupSizeY+1}}}" 		style="Bgs1" 							substyle="BgWindow2" 			valign="top" 	halign="left" 	 />
+			<quad id="Quad_MessageMetalBar" posn="0 									 				 -{{{C_PopupSizeY}}}	 	0.1"	sizen="{{{C_PopupSizeX}}} 	1" 							style="Bgs1" 							substyle="BgMetalBar" 			valign="top" 	halign="left" 	 />
+			<quad id="Quad_MessageTitle" 	posn="0 									 				 0	 					 	0.2"	sizen="{{{C_PopupSizeX}}} 	1." 						bgcolor="5cf"															valign="top" 	halign="left" 	 />
+			<quad id="Quad_MessageArrow" 	posn="118 									 				 -0.25	 				 	0.1"	sizen="2.5					2.5" 						style="Icons128x32_1" colorize="5cf"	substyle="ArrowUp"  			valign="bottom" halign="left"	 />
+		</frame>
+	</frame>
+	
+	<script><!--
+		
+		#Include "MathLib" as ML
+		#Include "TextLib" as TL			
+		
+		main() {						
+		
+			declare Frame_Message				<=> (Page.MainFrame.GetFirstChild("Frame_Message") 				as CMlFrame);
+			declare Quad_Icon 					<=> (Page.MainFrame.GetFirstChild("Quad_Icon") 					as CMlQuad);
+			declare Quad_Logo 					<=> (Page.MainFrame.GetFirstChild("Quad_Logo") 					as CMlQuad);
+			declare Label_Title 				<=> (Page.MainFrame.GetFirstChild("Label_Title") 				as CMlLabel);
+			declare Label_Description 			<=> (Page.MainFrame.GetFirstChild("Label_Description") 			as CMlLabel);
+			declare Label_TimeLeft 				<=> (Page.MainFrame.GetFirstChild("Label_TimeLeft") 			as CMlLabel);
+			declare Label_Mn 					<=> (Page.MainFrame.GetFirstChild("Label_Mn") 					as CMlLabel);
+			declare Button_Buy 					<=> (Page.MainFrame.GetFirstChild("Button_Buy") 				as CMlLabel);
+			declare Button_EnterKey 			<=> (Page.MainFrame.GetFirstChild("Button_EnterKey") 			as CMlLabel);
+			declare Button_MessageBg 			<=> (Page.MainFrame.GetFirstChild("Button_MessageBg") 			as CMlQuad);
+			declare Button_CloseMesage 			<=> (Page.MainFrame.GetFirstChild("Button_CloseMesage") 		as CMlQuad);
+			
+			declare Boolean Layer_Demo_IsVisible 		for Page;
+			declare Boolean Layer_Demo_TitleOnStore		for Page;
+			declare Text 	Layer_Demo_Time 			for Page;
+			declare Text 	Layer_Demo_IconUrl 			for Page;
+			declare Text 	Layer_Demo_LogoUrl 			for Page;
+			declare Text 	Layer_Demo_TitleName 		for Page;
+			declare Text 	Layer_Demo_BaseTitleName 	for Page;
+			
+			Label_Title				.Value 		= _("DEMO MODE");
+			Button_Buy				.Value 		= _("BUY");
+			Button_EnterKey			.Value 		= _("ENTER KEY");
+			
+			while(True) {
+				yield;
+				
+				Layer_Demo_IsVisible 			= Frame_Message.Visible;
+				Quad_Icon			.ImageUrl 	= Layer_Demo_IconUrl;
+				Quad_Logo			.ImageUrl 	= Layer_Demo_LogoUrl;
+				Label_TimeLeft		.Value 		= Layer_Demo_Time;
+				Quad_Logo			.Visible 	= !Layer_Demo_TitleOnStore;
+				Label_Title			.Value 		= _("DEMO MODE");
+				if(Layer_Demo_TitleOnStore)
+					Label_Title		.Value 		= TL::Compose(_("DEMO MODE : %1"), TL::ToUpperCase(Layer_Demo_TitleName));
+					
+				if(ManiaPlanet.TitleTimeLeft > 3 * 3600) 
+					Label_Mn		.Value 		= TL::Compose(_("|12 hours left|%1hours left"), TL::SubText(Layer_Demo_Time, 0, 4));
+				else
+					Label_Mn		.Value 		= TL::Compose(_("|12 minutes left|%1mn left"), TL::SubText(Layer_Demo_Time, 0, 4));
+
+				if(TL::SubText(Layer_Demo_Time, 4, 1) == "1")
+					Label_TimeLeft.RelativePosition.X = 21.;
+				else 
+					Label_TimeLeft.RelativePosition.X = 22.5;
+				
+				if(PendingEvents.count == 0) continue;	
+				
+				foreach(Event in PendingEvents) {
+					switch(Event.Type) {			
+					
+						case CMlEvent::Type::MouseClick: {
+							if (Event.Control == Button_MessageBg) {
+								SendCustomEvent("Event_Demo_Toggle", [""]);	
+							} else if (Event.Control == Button_CloseMesage) {	
+								SendCustomEvent("Event_Demo_Toggle", [""]);
+							} else if (Event.Control.ControlId == "Button_EnterKey") {	
+								SendCustomEvent("Event_Demo_EnterKey", [""]);
+							} else if (Event.Control.ControlId == "Button_Buy") {	
+								SendCustomEvent("Event_Demo_Buy", [""]);
+							}
+						}							
+						
+						case CMlEvent::Type::PluginCustomEvent: 	{	
+							if(Event.PluginCustomEventType == "Event_SetPopupText") {
+								if (Event.PluginCustomEventData[1] == "3") {
+									Label_Description.Value = TL::Compose(_("Demo mode expired.\nYou will be able to play again tomorrow.\nTo continue to play right now, buy the environment '%1'."), Layer_Demo_BaseTitleName);
+								} else if (Event.PluginCustomEventData[1] == "2") {
+									Label_Description.Value = TL::Compose(_("The demo will expire in a few moments.\nTo fully enjoy this Title, buy the environment '%1'."), Layer_Demo_BaseTitleName);
+								} else {
+									if(ManiaPlanet.TitleTimeLeft < 7200) {
+										if(Layer_Demo_TitleOnStore)
+											Label_Description.Value = TL::Compose(_("To fully enjoy the title %1, use your planets to buy it on the store.\n$0f0Happy Summer ! Demo time +50% !$z"), Layer_Demo_TitleName);
+										else
+											Label_Description.Value = TL::Compose(_("To fully enjoy this Title, buy the environment '%1'.\n$0f0Happy Summer ! Demo time +50%% !$z"), Layer_Demo_BaseTitleName);
+									}
+									else
+										Label_Description.Value = _("Enjoy unlimited access the first 48 hours. \nThen, you can play one hour per day.\n$0f0Happy Summer ! Demo time +50% !$z");
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	--></script>
+	""";
+	
+	/////////////////////////////////////
+	// LIVE 
+	
+	declare Ident HTTPRequestId;
+	
+	Debug_Init(False);
+	Event_Init();
+	ApplicationData_Init("http://titles.maniaplanet.com/application-data", "");
+	GoogleAnalytics_Init(True, "UA-22426969-20");
+	
+	/////////////////////////////////////
+	// NADEO : DEMO
+	
+	declare Boolean Layer_Demo_IsVisible 			for Layer_Demo.LocalPage;
+	
+	declare Text  	Layer_Connect_CurrentShareUrl	for Layer_Connect.LocalPage;
+	declare Text[] 	Layer_Connect_LinksName			for Layer_Connect.LocalPage;
+	declare Text[] 	Layer_Connect_LinksUrl			for Layer_Connect.LocalPage;
+	
+	declare Text 	TimeLimitedTitleId 				= "";
+	declare Text 	LatestTimeLimitedBaseTitleId 	= "";
+	declare Boolean TimeLimitAlreadyWarned 			= False;
+	declare Boolean TimeLimitAlreadyFinished 		= False;
+	declare Boolean CanShowConnectPlugin			= False;
+	declare Ident 	PreviousLoadedTitleId;
+	declare CManiaPlanet::EContext PreviousActiveContext;
+			
+	while(True) {
+		
+		/////////////////////////////////////
+		// EVENTS : MANAPLANET
+		foreach(Event in PendingEvents) {
+		
+			if(Event.Type == CManiaplanetPluginEvent::EType::LayerCustomEvent) {
+			
+				if (Event.CustomEventType == "Event_Dialog_BuyTitle") {
+					if (TimeLimitedTitleId != "")
+						Dialog_BuyTitleDialog( TimeLimitedTitleId, "", -1 );
+				}
+
+				else if (Event.CustomEventType == "Event_Demo_Toggle") {
+					if(Layer_Demo_DesiredVisible && LoadedTitle != Null)
+						GoogleAnalytics_TrackEvent(C_GA_Category_Demo, "close:from:user", LoadedTitle.TitleId);
+					Layer_Demo_DesiredVisible = !Layer_Demo_DesiredVisible;
+					Layer_Connect_DesiredVisible = False;
+				} 
+				
+				else if (Event.CustomEventType == "Event_Connect_Toggle") {
+					if(Layer_Demo_DesiredVisible) {
+						Layer_Demo_DesiredVisible = False;
+						Layer_Connect_DesiredVisible = True;
+					} else {
+						Layer_Connect_DesiredVisible = !Layer_Connect_DesiredVisible;
+					}
+					if(Layer_Connect_DesiredVisible && LoadedTitle != Null)
+						GoogleAnalytics_TrackEvent(C_GA_Category_Link, "showPlugin", LoadedTitle.Name);
+				} 
+				
+				else if (Event.CustomEventType == "Event_Demo_EnterKey") {
+					ManiaPlanet.Dialog_EnterGameKey();
+					Layer_Demo_DesiredVisible = !Layer_Demo_DesiredVisible;
+					if(LoadedTitle != Null)
+						GoogleAnalytics_TrackEvent(C_GA_Category_Demo, "enterKey", LoadedTitle.BaseTitleId^":from:"^LoadedTitle.TitleId);
+				} 
+				
+				else if (Event.CustomEventType == "Event_Demo_Buy") {
+					if(ManiaPlanet.CanUnlockTitleTimeLimitOnStore) {
+						Dialog_BuyTitleDialog(LoadedTitle.TitleId, "", -1);
+						GoogleAnalytics_TrackEvent(C_GA_Category_Demo, "buyTitleWithPlanet", LoadedTitle.TitleId);
+					} else {
+						OpenLink("maniaplanet://#openstore=" ^ LoadedTitle.BaseTitleId, ::ELinkType::ExternalBrowser);
+						GoogleAnalytics_TrackEvent(C_GA_Category_Demo, "buyEnvironment", LoadedTitle.BaseTitleId^":from:"^LoadedTitle.TitleId);
+					}
+					Layer_Demo_DesiredVisible = !Layer_Demo_DesiredVisible;
+				} 
+				
+				else if (Event.CustomEventType == "Event_Connect_ClickOnShare") {
+					declare I = TL::ToInteger(Event.CustomEventData[0]);
+					declare EventAction = "";
+					declare EventLabel = "";
+						
+					switch(I) {
+						case 0: { ClipboardSet(Layer_Connect_CurrentShareUrl); EventAction = "copy"; }
+						case 1: { OpenLink("mailto:?to=&subject=&body="						^TL::URLEncode(Layer_Connect_CurrentShareUrl), ::ELinkType::ExternalBrowser); EventAction = "email"; }
+						case 2: { OpenLink("https://twitter.com/share?url="					^TL::URLEncode(Layer_Connect_CurrentShareUrl), ::ELinkType::ExternalBrowser); EventAction = "twitter"; }
+						case 3: { OpenLink("https://www.facebook.com/sharer/sharer.php?u="	^TL::URLEncode(Layer_Connect_CurrentShareUrl), ::ELinkType::ExternalBrowser); EventAction = "facebook"; } 
+						case 4: { OpenLink("https://plus.google.com/share?url="				^TL::URLEncode(Layer_Connect_CurrentShareUrl), ::ELinkType::ExternalBrowser); EventAction = "google+"; }
+					}
+					
+					if(LoadedTitle != Null)
+						EventLabel = LoadedTitle.Name;
+						
+					GoogleAnalytics_TrackEvent(C_GA_Category_Share, EventAction, EventLabel);
+				}	
+				
+				else if (Event.CustomEventType == "Event_Connect_ClickOnLink") {
+					declare I = TL::ToInteger(Event.CustomEventData[0]);
+					declare EventAction = TL::ToLowerCase(Layer_Connect_LinksName[I]);
+					declare EventLabel = "";
+					
+					if(Layer_Connect_LinksName[I] == "News") 		OpenLink("maniaflash?"^Layer_Connect_LinksUrl[I], 	::ELinkType::ManialinkBrowser);
+					else if(Layer_Connect_LinksName[I] == "Home") 	OpenLink(Layer_Connect_LinksUrl[I], 				::ELinkType::ManialinkBrowser); 
+					else 											OpenLink(Layer_Connect_LinksUrl[I], 				::ELinkType::ExternalBrowser);
+					
+					if(LoadedTitle != Null)
+						EventLabel = LoadedTitle.Name;
+						
+					GoogleAnalytics_TrackEvent(C_GA_Category_Link, EventAction, EventLabel);
+				}	
+				
+			} 
+		}
+		
+		/////////////////////////////////////
+		// EVENTS : ASYNC
+		foreach(Event in Event_PendingEvents()) {
+			switch(Event[0][0]) {
+				
+				case "TitleChange": {
+					if(LoadedTitle != Null) {
+						HTTPRequestId = HTTP_GetAsync(ApplicationData_BuildUrl("/titles/details/", ["titleUid" => LoadedTitle.TitleId]));
+						ApplicationData_Register(HTTPRequestId);
+					}
+				}
+				
+				case "TitleInfoLoaded": {
+					declare CXmlDocument XMLDocument = XML_TextToXMLDocument(Event[1][0]);
+					declare Text[Text] 	 TitleInfos  = XML_NodeToArray(XMLDocument.GetFirstChild("title"));
+					
+					Layer_Connect_LinksName = Text[];
+					Layer_Connect_LinksUrl 	= Text[];
+					Layer_Connect_CurrentShareUrl = "";
+					
+					declare Items = ["manialink", "maniaflash", "website", "forum", "twitter", "facebook", "googleplus", "youtube", "twitch"];
+					foreach (Item in Items) {
+						if (TitleInfos.existskey(Item) && TitleInfos[Item] != "") {
+							declare 						Name = FormatTitle(Item);
+							if(Item == "manialink") 		Name = "Home";
+							else if(Item == "maniaflash") 	Name = "News";
+							else if(Item == "googleplus") 	Name = "Google+";
+							
+							Layer_Connect_LinksName.add(Name);
+							Layer_Connect_LinksUrl.add(TitleInfos[Item]);
+						}
+					}
+					
+					if (TitleInfos.existskey("shareURL")) 	
+						Layer_Connect_CurrentShareUrl = TitleInfos["shareURL"];
+					
+					LayerCustomEvent(Layer_Connect, "Event_Update", [""]);	
+					
+				}
+				case "ApplicationData.Success": {
+					if (""^HTTPRequestId == Event[1][0]) {
+						Event_DispatchCustomEvent("TitleInfoLoaded", [Event[1][1]]);
+					}	
+				}
+				case "ApplicationData.Error": {
+					if (""^HTTPRequestId == Event[1][0]) {
+						//??
+					}
+				}
+			}
+		}
+
+		
+		
+		
+		
+		
+		/////////////////////////////////////
+		// BUISNESS LOGIC
+			
+		// DEMO PLUGIN
+		if( (LoadedTitle != Null) && (ManiaPlanet.IsTitleTimeLimited) ) {
+		
+			ToolBarForceShow 				= Layer_Demo_DesiredVisible;
+			ToolBarClockVisible 			= False;
+			Layer_WidgetDemo_DesiredVisible = ToolBarIsActive;
+			
+			if (LoadedTitle.BaseTitleId != "")
+				LatestTimeLimitedBaseTitleId 	= LoadedTitle.BaseTitleId;
+			else if (LoadedTitle.TitleId != "")
+				LatestTimeLimitedBaseTitleId 	= LoadedTitle.TitleId;
+			
+			if(PreviousActiveContext != ManiaPlanet.ActiveContext) {
+				PreviousActiveContext = ManiaPlanet.ActiveContext;
+				Layer_Demo_DesiredVisible = ( ManiaPlanet.ActiveContext == ::EContext::MenuManiaTitleMain );
+			}
+			
+			declare Boolean SendSetPopupTextEvent = False;
+			declare Text 	SetPopupTextEventType = "";
+			if (TimeLimitedTitleId != LoadedTitle.TitleId) {
+				Layer_Demo_DesiredVisible 	= True;
+				TimeLimitedTitleId 			= LoadedTitle.TitleId;
+				TimeLimitAlreadyWarned 		= False;
+				TimeLimitAlreadyFinished 	= False;
+				SendSetPopupTextEvent		= True;
+				SetPopupTextEventType		= "1";
+			}
+			if (!TimeLimitAlreadyWarned && (ManiaPlanet.TitleTimeLeft < 2 * 60)) {
+				Layer_Demo_DesiredVisible 	= True;
+				TimeLimitAlreadyWarned 		= True;
+				SendSetPopupTextEvent		= True;
+				SetPopupTextEventType		= "2";
+			} 
+			if (!TimeLimitAlreadyFinished && (ManiaPlanet.TitleTimeLeft == 0)) {
+				Layer_Demo_DesiredVisible 	= True;
+				TimeLimitAlreadyFinished 	= True;
+				SendSetPopupTextEvent		= True;
+				SetPopupTextEventType		= "3";
+			}
+			
+			if( SendSetPopupTextEvent )
+				LayerCustomEvent(Layer_Demo, "Event_SetPopupText", [TimeLimitedTitleId, SetPopupTextEventType]);	
+		
+		}  else {
+		
+			ToolBarClockVisible 					= True;
+			Layer_Demo_DesiredVisible 				= False;
+			Layer_WidgetDemo_DesiredVisible 		= False;
+			TimeLimitedTitleId 						= "";
+			TimeLimitAlreadyWarned 					= False;
+			TimeLimitAlreadyFinished 				= False;
+		}
+		
+		declare Ident LoadedTitleId;
+		
+		if(LoadedTitle == Null) LoadedTitleId = NullId;
+		else 					LoadedTitleId = LoadedTitle.Id;
+		
+		if (PreviousLoadedTitleId != LoadedTitleId) {
+			PreviousLoadedTitleId = LoadedTitleId;
+			Event_DispatchCustomEvent("TitleChange");
+		}
+		
+		
+		
+		// VISIBILITY
+		
+		CanShowConnectPlugin				= LoadedTitle != Null && (Layer_Connect_CurrentShareUrl != "" || Layer_Connect_LinksName.count != 0);
+		ToolBarForceShow 					= Layer_Connect_DesiredVisible || Layer_Demo_DesiredVisible;
+		Layer_WidgetConnect	.IsVisible 		= Layer_WidgetConnect_DesiredVisible;
+		Layer_WidgetDemo	.IsVisible 		= Layer_WidgetDemo_DesiredVisible;
+		Layer_Connect		.IsVisible 		= Layer_Connect_DesiredVisible && CanShowConnectPlugin && !Layer_Demo_DesiredVisible;
+		Layer_Demo			.IsVisible 		= Layer_Demo_DesiredVisible;
+		
+		
+		
+		
+		
+		/////////////////////////////////////
+		// LAYERS MANAGEMENT
+		
+		// LAYER WIDGET DEMO
+		{
+			declare Text 	Layer_WidgetDemo_Time 				for Layer_WidgetDemo.LocalPage;
+			
+			Layer_WidgetDemo_Time 					= GetTimeWithColor(ManiaPlanet.TitleTimeLeft, True);
+		}
+		
+		// LAYER WIDGET CONNECT
+		{
+			declare Boolean Layer_WidgetConnect_CanShowConnectPlugin 	for Layer_WidgetConnect.LocalPage;
+			
+			Layer_WidgetConnect_CanShowConnectPlugin 		= CanShowConnectPlugin;
+			
+		}
+		
+		// LAYER CONNECT
+		// {
+		// }
+		
+		// LAYER POP UP
+		{
+			declare Boolean	Layer_Demo_TitleOnStore				for Layer_Demo.LocalPage;
+			declare Text 	Layer_Demo_Time 					for Layer_Demo.LocalPage;
+			declare Text 	Layer_Demo_BaseTitleName 			for Layer_Demo.LocalPage;
+			declare Text 	Layer_Demo_TitleName 				for Layer_Demo.LocalPage;
+			declare Text 	Layer_Demo_IconUrl 					for Layer_Demo.LocalPage;
+			declare Text 	Layer_Demo_LogoUrl 					for Layer_Demo.LocalPage;
+			
+			Layer_Demo_Time 					= GetTimeWithColor(ManiaPlanet.TitleTimeLeft, False);
+			Layer_Demo_BaseTitleName			= GetBaseTitleName(LatestTimeLimitedBaseTitleId);
+			Layer_Demo_IconUrl					= GetBaseTitleIconUrl(LatestTimeLimitedBaseTitleId);
+			Layer_Demo_LogoUrl					= GetBaseTitleLogoUrl(LatestTimeLimitedBaseTitleId);
+			Layer_Demo_TitleOnStore				= ManiaPlanet.CanUnlockTitleTimeLimitOnStore;
+			if(LoadedTitle != Null)
+				Layer_Demo_TitleName			= LoadedTitle.Name;
+		}
+		
+		HTTP_Loop();
+		ApplicationData_Loop();
+		Event_Yield();
+		yield;
+		// END WHILE
+	}
+}

@@ -1,0 +1,607 @@
+/**
+ *	MapType for Race CE
+ *
+ *	Only one Start. 
+ *	Any number of Finish. 
+ *	Any number of Checkpoint.
+ *	OR
+ *	Only one multilaps Start
+ *	Any number of Finish
+ *	At least one Checkpoint
+ */
+
+#RequireContext			CTmMapType
+#Const Version			"2016-03-18"
+#Const MapTypeVersion	5
+#Const ScriptName		"RaceCE.Script.txt"
+
+#Include "TextLib" as TL
+#Include "MathLib" as ML
+#Include "Libs/Openplanet/MapType.Script.txt" 							as MapType
+#Include "Libs/Openplanet/UIPadButtons.Script.txt"						as Buttons
+#Include "Libs/Openplanet/TMConsole/Volumes.Script.txt" 					as Volumes
+#Include "Libs/Openplanet/TMConsole/Ingame/Game.Script.txt" 				as Game
+#Include "Libs/Openplanet/TMConsole/Ingame/IngameMusic.Script.txt"	as IGMusic
+#Include "Libs/Openplanet/TMConsole/Ingame/UI/UI.Script.txt" 			as GameUI
+#Include "Libs/Openplanet/TMConsole/MapEditor/UI/Validation.Script.txt"	as UI_Validation
+#Include "Libs/Openplanet/TMConsole/MapEditor/MapTypeSynchro.Script.txt" as MapTypeSynchro
+#Include "Libs/Openplanet/TMConsole/MapEditor/MapInfo.Script.txt"		as MapInfo
+
+// ---------------------------------- //
+// Constants
+// ---------------------------------- //
+#Const C_SoundsPath 		"file://Media/Sounds/TMConsole/MapEditor/"	///< Path to the sounds
+#Const C_ValidationSpeed	0.037
+#Const C_ManiaAppUrl		"file://Media/Manialinks/Nadeo/TMConsole/Ingame/UILocalManiaApp.Script.txt" ///< Path to the mania app
+
+/// Medals
+#Const TMC_MEDAL_PLAYER	4
+#Const TMC_MEDAL_NONE	5
+
+// ---------------------------------- //
+// Globales
+// ---------------------------------- //
+declare CAudioSource G_SoundCamera;
+declare CAudioSource G_SoundStartTest;
+declare CAudioSource G_SoundStartValidation;
+declare CAudioSource G_SoundImprove;
+declare CAudioSource G_SoundSnap;
+
+// ---------------------------------- //
+// Functions
+// ---------------------------------- //
+// ---------------------------------- //
+/// Normalize the anchors
+Void NormalizeAnchors() {
+	foreach (Anchor in AnchorData) {
+		if (Anchor.Tag != Anchor.DefaultTag) {
+			Anchor.Tag = Anchor.DefaultTag;
+		}
+			
+		if (Anchor.Order != Anchor.DefaultOrder) {
+			Anchor.Order = Anchor.DefaultOrder;
+		}
+	}
+}
+
+// ---------------------------------- //
+/** Count the number of podium in the track
+ *
+ *	@return														The number of podium in the track
+ */
+Integer CountPodium() {
+	declare PodiumIds = Ident[];
+	
+	foreach (Block in Blocks) {
+		if (Block == Null) continue;
+		if (!PodiumIds.exists(Block.Id) && Block.BlockModel.IsPodium) {
+			PodiumIds.add(Block.Id);
+		}
+	}
+	
+	return PodiumIds.count;
+}
+
+// ---------------------------------- //
+/// Check if the map is valid
+Void UpdateValidability() {
+	NormalizeAnchors();
+	//Anchor::Count();
+	
+	declare StartsFinishes = 0;
+	declare Starts = 0;
+	declare Finishes = 0;
+	declare Checkpoints = 0;
+	foreach (Anchor in AnchorData) {
+		if (Anchor.Block == Null) continue;
+		switch (Anchor.Block.BlockModel.WaypointType) {
+			case CBlockModel::EWayPointType::StartFinish: StartsFinishes += 1;
+			case CBlockModel::EWayPointType::Start: Starts += 1;
+			case CBlockModel::EWayPointType::Finish: Finishes += 1;
+			case CBlockModel::EWayPointType::Checkpoint: Checkpoints += 1;
+		}
+	}
+	
+	// It's a multilap
+	if (StartsFinishes > 0) {
+		// Exactly one multilap block
+		if (StartsFinishes != 1) {
+			ValidationStatus = CMapType::ValidationStatus::NotValidable;
+			//L16N [MapEditor] Message explaining to the player that a track can contain only one start line block.
+			ValidabilityRequirementsMessage = _("You can place only one starting point!");
+			return;
+		}
+		// No start
+		if (Starts != 0) {
+			ValidationStatus = CMapType::ValidationStatus::NotValidable;
+			//L16N [MapEditor] Message explaining to the player that a track can contain only one start line block.
+			ValidabilityRequirementsMessage = _("You can place only one starting point!");
+			return;
+		}
+		// Has at least one checkpoint
+		if (Checkpoints < 1) {
+			ValidationStatus = CMapType::ValidationStatus::NotValidable;
+			//L16N [MapEditor] Message explaining to the player that a track has to contain at least one checkpoint block.
+			ValidabilityRequirementsMessage = _("You must place at least one checkpoint!");
+			return;
+		}
+	} 
+	// It's a simple race
+	else {
+		// Exactly one start
+		if (Starts != 1) {
+			ValidationStatus = CMapType::ValidationStatus::NotValidable;
+			//L16N [MapEditor] Message explaining to the player that a track has to contain exactly one start line block.
+			ValidabilityRequirementsMessage = _("You need to place a starting point!");
+			return;
+		}
+		// At least one finish
+		if (Finishes < 1) {
+			ValidationStatus = CMapType::ValidationStatus::NotValidable;
+			//L16N [MapEditor] Message explaining to the player that a track has to contain exactly one finish line block.
+			ValidabilityRequirementsMessage = _("You must place at least one finish line!");
+			return;
+		}
+	}
+	
+	// Exactly one podium
+	declare PodiumNb = CountPodium();
+	if (PodiumNb < 1) {
+		ValidationStatus = CMapType::ValidationStatus::NotValidable;
+		//L16N [MapEditor] Pop-up warning the player that he has to place exactly one podium.
+		ValidabilityRequirementsMessage = _("You have to place exactly one podium!");
+		return;
+	} else if (PodiumNb > 1) {
+		ValidationStatus = CMapType::ValidationStatus::NotValidable;
+		//L16N [MapEditor] Pop-up warning the player that he has to place exactly one podium. %1 is replaced by the number of podium already placed on the track (always more than one).
+		ValidabilityRequirementsMessage = TL::Compose(_("There are %1 podiums on your track. You can only place one."), TL::ToText(PodiumNb));
+		return;
+	}
+	
+	// If the objectives times are not valid, the author must revalidate his map
+	if (!MapType::ObjectivesAreValid()) {
+		ValidationStatus = CMapType::ValidationStatus::Validable;
+		return;
+	}
+	
+	// Allow to start the validation
+	if (ValidationStatus == CMapType::ValidationStatus::NotValidable) {
+		ValidationStatus = CMapType::ValidationStatus::Validable;
+	}
+}
+
+// ---------------------------------- //
+/// Fake synchro
+Void Synchro_DoBarrier() {
+	// Ca marche pas dans l'editeur, à debugger
+	//declare Barrier = Mode.Synchro_AddBarrier();
+	//wait(Mode.Synchro_BarrierReached(Barrier) || Mode.ServerShutdownRequested);
+
+	// HACK WORKAROUND
+	yield;
+	yield;
+	yield;
+}
+
+// ---------------------------------- //
+/** Set the best checkpoints times
+ *
+ *	@param	_CheckpointsTimes		The checkpoints times
+ */
+Void SetBestCheckpointsTimes(Integer[] _CheckpointsTimes) {
+	if (_CheckpointsTimes.count > 0) {
+		Game::SetOpponent(TMC_MEDAL_PLAYER, _CheckpointsTimes);
+		//Game::SetOpponentName("Opponent");
+		//Game::SetPlayerNickname("PLAYER");
+	} else {
+		Game::SetOpponent(TMC_MEDAL_NONE, Integer[]);
+	}
+}
+
+// ---------------------------------- //
+/** Copy the checkpoints times into an array
+ *
+ *	@param	_Result					The result from where the checkpoints times are extracted
+ *
+ *	@return							The checkpoints times
+ */
+Integer[] CopyCheckpoints(CTmResult _Result) {
+	if (_Result == Null) return Integer[];
+	
+	declare Integer[] CheckpointsTimes;
+	foreach (Time in _Result.Checkpoints) {
+		CheckpointsTimes.add(Time);
+	}
+	return CheckpointsTimes;
+}
+
+// ---------------------------------- //
+/// Update the camera position for the thumbnail
+Void UpdateThumbnail() {
+	declare Vec3 Position;
+	declare Real Yaw;
+	declare Real Pitch;
+	declare Real Roll;
+	declare Real FovY;
+	declare CameraGet = GetRaceCamera(Position, Yaw, Pitch, Roll, FovY);
+	MapTypeSynchro::SetThumbnailPos(Position);
+	MapTypeSynchro::SetThumbnailRot(<Yaw, Pitch, Roll>);
+	MapTypeSynchro::SetThumbnailFov(FovY);
+	MapTypeSynchro::SetThumbnailUpdate(Now);
+	G_SoundSnap.Stop();
+	G_SoundSnap.Play();
+	UI_Validation::Snap();
+}
+
+// ---------------------------------- //
+/** Do a run on the map to validate it
+ *
+ *	@param	_Validation				True if it's a validation, False if it's a only test
+ */
+Void StartValidation(Boolean _Validation) {
+	if (_Validation) {
+		UpdateValidability();
+		
+		if(
+			ValidationStatus != CMapType::ValidationStatus::Validable &&
+			ValidationStatus != CMapType::ValidationStatus::Validated
+		) {
+			return;
+		}
+	}
+	
+	// Hide default UI
+	Mode.UIManager.UIAll.OverlayHideBackground = True;
+	Mode.UIManager.UIAll.OverlayHideNotices = True;
+	Mode.UIManager.UIAll.OverlayHideMapInfo = True;
+	Mode.UIManager.UIAll.OverlayHideOpponentsInfo = True;
+	Mode.UIManager.UIAll.OverlayHideChat = True;
+	Mode.UIManager.UIAll.OverlayHideCheckPointList = True;
+	Mode.UIManager.UIAll.OverlayHideCountdown = True;
+	Mode.UIManager.UIAll.OverlayHideChrono = True;
+	Mode.UIManager.UIAll.OverlayHideSpeedAndDist = True;
+	Mode.UIManager.UIAll.OverlayHidePersonnalBestAndRank = True;
+	Mode.UIManager.UIAll.OverlayHidePosition = True;
+	Mode.UIManager.UIAll.OverlayHideMultilapInfos = True;
+	Mode.UIManager.UIAll.OverlayHideSpectatorControllers = True;
+	Mode.UIManager.UIAll.OverlayHideSpectatorInfos = True;
+	Mode.UIManager.UIAll.OverlayChatHideAvatar = True;
+	
+	Mode.UiDisableHelpMessage = True;	// never display the standard "press X to reswpan" message in console mode.
+	
+	// Load local mania app
+	if (UserMgr != Null) Mode.ClientManiaAppUrl = C_ManiaAppUrl;
+	
+	// Load skins
+	declare SkinPath = "Skins\\Models\\"^Map.CollectionName^"CarCE\\";
+	Mode.ItemList_Begin();
+	declare TrackbuilderSkin = Mode.ItemList_AddWithSkin("DefaultPlayerModel", SkinPath^"Default.zip");
+	Mode.ItemList_End();
+	
+	// on prend cet enum plutot que d'en rajouter un juste pour ce cas particulier
+	Mode.UIManager.UIAll.UISequence = CUIConfig::EUISequence::RollingBackgroundIntro;
+	Synchro_DoBarrier();
+	
+	// Start validation and spawn player
+	MapType::EnterPlayground(1);
+	
+	if (_Validation) {
+		G_SoundStartValidation.Stop();
+		G_SoundStartValidation.Play();
+	} else {
+		G_SoundStartTest.Stop();
+		G_SoundStartTest.Play();
+	}
+	
+	declare Player <=> Mode.AllPlayers[0];
+	Player.ForceModelId = TrackbuilderSkin;
+	Player.RaceStartTime = -1;
+	Player.IsSpawned = True;
+	Player.Score.Clear();
+	
+	Synchro_DoBarrier();
+	
+	G_SoundCamera.Stop();
+	G_SoundCamera.Play();
+	
+	//Intro
+	if (/*_Validation && */!ManiaPlanet.HMD_IsActive) {
+		Mode.UIManager.UIAll.UISequence = CUIConfig::EUISequence::Intro;
+		while (!Mode.UIManager.UIAll.UISequenceIsCompleted) {
+			yield;
+		}
+	}
+	
+	UI_Validation::Load(_Validation);
+	
+	Game::Load(Mode, "Trackbuilder", "");
+	Mode.NbLaps = Map.TMObjective_NbLaps;
+	Game::SetNbLaps(Mode.NbLaps);
+	Game::WaitTime(100);
+	GameUI::SetMapNameFrameVisibility(True); ///< Force the map name to be hidden
+	GameUI::IsTrackbuilder(True); ///< Force the map name to be hidden again
+	
+	Mode.CutOffTimeLimit = -1;
+	Mode.UIManager.UIAll.UISequence = CUIConfig::EUISequence::Playing;
+	declare UI <=> UIManager.GetUI(Player);
+	declare netwrite Integer Net_GamePhase for UI;
+	Net_GamePhase = 1;
+	
+	// Temporarely reset the author time
+	// We will restore it if the validation is not completed
+	if (MapTypeSynchro::TimeToRestore() >= 0) {
+		Map.TMObjective_AuthorTime = -1;
+	}
+	
+	declare PrevThumbnailUpdate = UI_Validation::GetThumbnailUpdate();
+	
+	declare BestCheckpointsTimes = MapInfo::GetAuthorCheckpointsTimes();
+	declare BestTime = Map.TMObjective_AuthorTime;
+	declare Length = 0.;
+	declare ValidateMap = True;
+	UI_Validation::SetTime(BestTime, -1);
+	while (ValidateMap) {
+		yield;
+		
+		Game::Loop();
+		
+		if (Player.RaceStartTime <= 0 && Game::IsWaiting(Player)) {
+			if (_Validation) {
+				SetBestCheckpointsTimes(BestCheckpointsTimes);
+				Game::StartRace(Player, Mode.Now + Game::GetSpawnDuration(), False);
+			} else {
+				Game::StartRace(Player, Mode.Now, False, False);
+			}
+		}
+		
+		// Events
+		foreach (Event in Mode.PendingEvents) {
+			Mode.PassOn(Event);
+			
+			if (Event.Type == CTmModeEvent::EType::WayPoint) {
+				if (_Validation && Event.IsEndRace) {
+					Game::EndRace(Player);
+					
+					if (Event.Player.Score != Null) {
+						if (Event.Player.Score.BestRace.Compare(Event.Player.CurRace, CTmResult::ETmRaceResultCriteria::Time) <= 0) {
+							Event.Player.Score.BestRace = Event.Player.CurRace;
+						}
+					}
+					Event.Player.Score.PrevRace = Event.Player.CurRace;
+					
+					declare PlayerTime = Event.Player.Score.PrevRace.Time;
+					UI_Validation::SetTime(BestTime, PlayerTime);
+					
+					declare Integer[] PlayerCheckpointsTimes;
+					if (BestTime <= 0 && Event.Player.CurRace.Time > 0) {
+						BestTime = Event.Player.CurRace.Time;
+						PlayerCheckpointsTimes = CopyCheckpoints(Event.Player.CurRace);
+					} else if (Event.Player.Score.BestRace != Null && Event.Player.Score.BestRace.Time > 0 && Event.Player.Score.BestRace.Time < BestTime) {
+						BestTime = Event.Player.Score.BestRace.Time;
+						PlayerCheckpointsTimes = CopyCheckpoints(Event.Player.Score.BestRace);
+					}
+					
+					// Update checkpoints times
+					if (BestTime > 0 && PlayerCheckpointsTimes.count > 0 && (Map.TMObjective_AuthorTime <= 0 || BestTime < Map.TMObjective_AuthorTime)) {
+						BestCheckpointsTimes = PlayerCheckpointsTimes;
+					}
+					
+					// Try again ?
+					declare PrevAnswerUpdate = UI_Validation::GetAnswerUpdate();
+					UI_Validation::Show();
+					Audio.LimitSceneSoundVolumedB = -100.;
+					Mode.UIManager.UIAll.UISequence = CUIConfig::EUISequence::UIInteraction;
+					while (True) {
+						yield;
+						
+						foreach (Event in Mode.PendingEvents) {
+							Mode.Discard(Event);
+						}
+						
+						if (PrevAnswerUpdate != UI_Validation::GetAnswerUpdate()) {
+							ValidateMap = !UI_Validation::GetAnswer();
+							Length = UI_Validation::GetDistance();
+							if (ValidateMap) {
+								Game::WaitRace(Player);
+								G_SoundImprove.Stop();
+								G_SoundImprove.Play();
+							}
+							break;
+						}
+					}
+					
+					UI_Validation::SetTime(BestTime, PlayerTime);
+					Audio.LimitSceneSoundVolumedB = 0.;
+					UI_Validation::Hide();
+					Mode.UIManager.UIAll.UISequence = CUIConfig::EUISequence::Playing;
+					
+					// Cancel thumbnail update done during the pop-up
+					PrevThumbnailUpdate = UI_Validation::GetThumbnailUpdate();
+				}
+			}
+		}
+		
+		// Input events
+		foreach (Event in Input.PendingEvents) {
+			if (Event.Type == CInputEvent::EType::PadButtonPress && Event.Button == CInputEvent::EButton::Up && Event.Pad != Null && Event.Pad.Type != CInputPad::EPadType::Keyboard) {
+				// Save thumbnail camera position and rotation
+				UpdateThumbnail();
+			}
+		}
+		
+		if (PrevThumbnailUpdate != UI_Validation::GetThumbnailUpdate()) {
+			PrevThumbnailUpdate = UI_Validation::GetThumbnailUpdate();
+			UpdateThumbnail();
+		}
+		
+		
+		// Confirm leave editor
+		if (ValidationEndRequested && ValidateMap) {
+			ValidateMap = False;
+			/*declare PrevAnswerUpdate = UI_Validation::GetAnswerUpdate();
+			UI_Validation::ShowExit();
+			Mode.UIManager.UIAll.UISequence = CUIConfig::EUISequence::UIInteraction;
+					
+			while (True) {
+				yield;
+				
+				foreach (Event in Mode.PendingEvents) {
+					Mode.Discard(Event);
+				}
+				
+				if (PrevAnswerUpdate != UI_Validation::GetAnswerUpdate()) {
+					if (UI_Validation::GetAnswer()) {
+						ValidateMap = False;
+					} else {
+						ValidationEndRequested = False;
+					}
+					break;
+				}
+			}
+			
+			UI_Validation::HideExit();*/
+		}
+	}
+	
+	IGMusic::StopMusic(Player);
+	Game::WaitRace(Player);
+	Game::Unload();
+	
+	Synchro_DoBarrier();
+	
+	UI_Validation::Unload();
+	Mode.UIManager.UILayerDestroyAll();
+	
+	// New best author time, save it
+	if (BestTime > 0 && (Map.TMObjective_AuthorTime <= 0 || BestTime < Map.TMObjective_AuthorTime)) {
+		//MapType::SetObjectivesFromAuthorTime(BestTime);
+		MapType::SetObjectivesFromAuthorScore(Player.Score);
+		MapInfo::SetAuthorCheckpointsTimes(BestCheckpointsTimes);
+		MapTypeSynchro::SetLength(Length);
+		MapTypeSynchro::NewValidation(True);
+	}
+	// Restore the old saved author time if we modified it before
+	// and the validation was not completed
+	else if (MapTypeSynchro::TimeToRestore() >= 0) {
+		Map.TMObjective_AuthorTime = MapTypeSynchro::TimeToRestore();
+	}
+	
+	MapType::LeavePlayground();
+	
+	// Unload mania app
+	Mode.ClientManiaAppUrl = "";
+	
+	// Reset audio volume
+	Audio.LimitSceneSoundVolumedB = 0.;
+	
+	if (Map.TMObjective_AuthorTime > 0) {
+		ValidationStatus = CMapType::ValidationStatus::Validated;
+	}
+}
+
+// ---------------------------------- //
+// Main
+// ---------------------------------- //
+main() {
+	// Don't display the default leave confirm pop-up
+	ValidationEndNoConfirm = True;
+	
+	Buttons::Load();
+	MapType::SetVersion(MapTypeVersion);
+	UpdateValidability();
+	
+	if (ValidationStatus != CMapType::ValidationStatus::Validated) {
+		MapType::ResetObjectives();
+		MapInfo::ResetAuthorCheckpointsTimes();
+	}
+	
+	G_SoundCamera = Audio.CreateSound(
+		C_SoundsPath^"SFX_WhooshCam.ogg",
+		Volumes::GetVolumedB("EditorCameraZoom"),
+		False,
+		False,
+		False
+	);
+	G_SoundCamera.PanRadiusLfe = Volumes::GetPanRadiusLfe("MenuUISpreadLarge");
+	
+	G_SoundStartTest = Audio.CreateSound(
+		C_SoundsPath^"SFX_UI_TestTrack.wav",
+		Volumes::GetVolumedB("EditorTestStart"),
+		False,
+		False,
+		False
+	);
+	G_SoundStartTest.PanRadiusLfe = Volumes::GetPanRadiusLfe("MenuUISpreadLarge");
+	
+	G_SoundStartValidation = Audio.CreateSound(
+		C_SoundsPath^"SFX_UI_TerminateValidateTrack.ogg",
+		Volumes::GetVolumedB("EditorValidationStop"),
+		False,
+		False,
+		False
+	);
+	G_SoundStartValidation.PanRadiusLfe = Volumes::GetPanRadiusLfe("MenuUISpreadLarge");
+	
+	G_SoundImprove = Audio.CreateSound(
+		"file://Media/Sounds/TMConsole/event-validate.wav",
+		Volumes::GetVolumedB("EditorMenuValid"),
+		False,
+		False,
+		False
+	);
+	G_SoundImprove.PanRadiusLfe = Volumes::GetPanRadiusLfe("MenuUISpreadLarge");
+	
+	G_SoundSnap = Audio.CreateSound(
+		"file://Media/Sounds/TMConsole/SFX_UI_ClicInterfaceLeftRight.wav",
+		Volumes::GetVolumedB("FinishLine"),
+		False,
+		False,
+		False
+	);
+	G_SoundSnap.PanRadiusLfe = Volumes::GetPanRadiusLfe("MenuUISpreadLarge");
+	
+	while(True) {
+		yield;
+		
+		// Force validated status
+		if (MapTypeSynchro::ForcedValidation()) {
+			if (ValidationStatus != CMapType::ValidationStatus::Validated) {
+				ValidationStatus = CMapType::ValidationStatus::Validated;
+				MapType::SetObjectivesFromAuthorTime(ML::NearestInteger(MapTypeSynchro::GetLength() * C_ValidationSpeed) * 1000);
+			}
+			
+			if (!MapTypeSynchro::Synchronized()) {
+				MapTypeSynchro::ValidSynchro();
+			}
+		} else {
+			if (!MapTypeSynchro::Synchronized()) {
+				UpdateValidability();
+				MapTypeSynchro::ValidSynchro();
+			}
+			
+			// Manage events
+			foreach(Event in PendingEvents) {
+				if (Event.Type == CPluginEvent::Type::MapModified) {
+					UpdateValidability();
+					
+					if (ValidationStatus != CMapType::ValidationStatus::Validated) {
+						MapType::ResetObjectives();
+						MapInfo::ResetAuthorCheckpointsTimes();
+					}
+				} else if (Event.Type == CPluginEvent::Type::StartValidation) {
+					StartValidation(True);
+				} else if (Event.Type == CPluginEvent::Type::StartTest) {
+					StartValidation(False);
+				}
+			}
+		}
+	}
+	
+	Audio.DestroySound(G_SoundCamera);
+	Audio.DestroySound(G_SoundStartTest);
+	Audio.DestroySound(G_SoundStartValidation);
+	Audio.DestroySound(G_SoundImprove);
+	Audio.DestroySound(G_SoundSnap);
+	
+	UILayerDestroyAll();
+}
