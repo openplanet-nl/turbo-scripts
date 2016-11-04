@@ -1,9 +1,9 @@
 # Openplanet Turbo
 
-All the original Trackmania Turbo scripts bundled together so that the game can be modded.
+All the original Trackmania Turbo scripts bundled together for research purposes.
 
 ## Running
 
-Put both folders (Media and Scripts) inside of `C:\Users\Username\Documents\TrackmaniaTurbo`. (You could also use `<GameFolder>\GameData`, but this has not been tested thoroughly.)
+If you have the ability to run a custom menu script (you need a patched game), you can run these customized scripts in the game.
 
-You also need a game patch so that it loads `MissMenu.Script.txt` as the menu script. A tool for this will be posted in some time.
+Put both folders (Media and Scripts) inside of `C:\Users\Username\Documents\TrackmaniaTurbo`. (You could also use `<GameFolder>\GameData`, but this has not been tested thoroughly.)
